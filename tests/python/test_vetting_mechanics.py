@@ -78,10 +78,18 @@ def test_vetting_tree_names_conform_to_spec_mechanics():
 
 def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     """The checker must actually fail on each defect class - a lint that cannot fail is not a lint.
-    Plants one of each and requires all six to be reported. Each planted file isolates a single
+    Plants one of each and requires all seven to be reported. Each planted file isolates a single
     defect, so an assertion failing here names the rule that stopped being enforced."""
     (tmp_path / "tests" / "python").mkdir(parents=True)
-    (tmp_path / "tests" / "test_all.cc").write_text("", encoding="utf-8")
+    # a TEST body with two callees: case = UPPER(function) has no single function to mirror
+    (tmp_path / "tests" / "test_all.cc").write_text(
+        "TEST(TEST_NYXUS, TEST_2D_GLSZM_SZE_REGRESSION) {\n"
+        "    test_2d_glszm_sze_regression();\n"
+        "    test_2d_glszm_lze_regression();\n"
+        "}\n", encoding="utf-8")
+    (tmp_path / "tests" / "test_2d_glszm_regression.h").write_text(
+        "void test_2d_glszm_sze_regression() {}\nvoid test_2d_glszm_lze_regression() {}",
+        encoding="utf-8")
     (tmp_path / "tests" / "test_2d_glcm.h").write_text("", encoding="utf-8")
     (tmp_path / "tests" / "test_glcm_regression.h").write_text("", encoding="utf-8")
     (tmp_path / "tests" / "test_2d_glcm_regression.h").write_text(
@@ -100,3 +108,5 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     assert any("test_2d_gldm_sde_regression" in e and "SPEC 2" in e for e in errs)  # wrong kind for file
     assert any("test_3d_ngldm_sde_ibsi" in e and "_2d_ dim token" in e for e in errs)  # wrong dim for file
     assert any("test_helper" in e and "assert_*" in e for e in errs)          # helper as test_
+    assert any("TEST_2D_GLSZM_SZE_REGRESSION" in e and "calls 2 test_ functions" in e
+               for e in errs)                                                # case mirrors no single fn

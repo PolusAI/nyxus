@@ -16,7 +16,7 @@ using namespace Nyxus;
 // counted pixel, i.e. by 1/bscore >= 1.1e-2 on these ROIs, an order of magnitude above it.
 static constexpr double GABOR_ORACLE_FRAC_TOL = 1000.;   // ground_truth/1000 == rel 1e-3
 
-void test_2d_gabor_skimage(bool gpu)
+void assert_2d_gabor_skimage(bool gpu)
 {
     SCOPED_TRACE("GABOR_SKIMAGE");
 

@@ -681,7 +681,9 @@ oracle token**. Verified: **gtest 730/730**, 36 gldzm cases (19 ibsi + 17 regres
   instead of excusing the old one.
 - **37 functions renamed**, `test_ibsi_GLDZM_<F>` → `test_gldzm_<f>_ibsi`, `test_3GLDZM_<F>` →
   `test_3d_gldzm_<f>_regression`; 4 helpers → `assert_*`, one of them (`assert_gldzm_matrix_ibsi`)
-  a zero-arg helper that was never registered and so had looked like a dead test.
+  a zero-arg helper that was never registered and so read as a dead test. (Clarified in Wave 28:
+  it only *read* that way from its name — `not_covered.md` §B.2 had it correctly listed under
+  "Not dead, listed to avoid double-counting" both before and after this wave.)
 
 **A third case-name defect class:** 17 of the 2D cases carried a stray `MATRIX_` infix
 (`TEST_GLDZM_MATRIX_LDE`, `TEST_GLDZM_MATRIX_ZP`, …) although they assert *feature values*; the
@@ -707,7 +709,10 @@ the registry's own count and is unchanged by the rename.
   `unvetted_no_direct_oracle` claim phrase for a plain `_regression` suffix.
 - **42 functions renamed**; 5 helpers → `assert_*`, two of which
   (`assert_ngldm_matrix_{ibsi,nonibsi}_mode`) were zero-arg helpers never registered as cases, so
-  `not_covered.md` §B.2 had counted them as dead tests.
+  their `test_` prefix made them read as dead tests. (Corrected in Wave 28: this originally claimed
+  `not_covered.md` §B.2 "had counted them as dead tests", which is false — §B.2's dead-function
+  table never listed them, and the paragraph below it already said "Not dead, listed to avoid
+  double-counting". The rename made the names honest; it corrected no miscount.)
 - All 40 case names were already `UPPER(function)` after the function renames — the first family in
   this series with no case-name defect at all.
 
@@ -935,6 +940,60 @@ inside a `test_2d_*` file. Verified by mutation: dropping `2d_` from one functio
 **Final state of the tree:** 108 files (60 `2d`, 30 `3d`, 18 untagged: 10 declared
 dimension-independent + 8 fixtures/harness), 672 in-taxonomy test functions, 526 gtest cases,
 **zero** violations from both checkers.
+
+---
+
+## 5.38 Wave 29 (PR-review findings) — executed
+
+Waves 1-28 were pure renames, so a reviewer who found a *real* defect logged it instead of fixing
+it inline, to keep the rename diffs readable. That backlog is closed here. It is deliberately a
+**separate commit from Wave 28**: the rename stays mechanically verifiable on its own, and every
+behavioural change lives here where it can be reviewed as such. Nothing in this wave changes a
+`status` or `oracle` verdict.
+
+- **Three registry pointers, all drift a rename wave introduced and did not follow up.**
+  Four intensity-histogram rows (`IH_ROBUST_MEAN_{VAL,IDX}`, `IH_INTERQUANTILE_RANGE_VAL`,
+  `IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL`) had `current_test=test_2d_intensity_histogram_ibsi.h`,
+  but that file *disclaims* them in comments ("has no IBSI feature", "intentionally NOT anchored
+  here") and the assertions live in `..._analytic.h` — repointed. Nineteen imea caliper rows
+  (`STAT_{FERET,MARTIN,NASSENSTEIN}_DIAM_*`, `DIAMETER_MIN_ENCLOSING_CIRCLE`) are `status=vetted
+  oracle=imea`, so §6.2.1 rule 1 makes `test_2d_morphology_imea.h` the destination; `target_test`
+  still said `..._regression.h`, which showed placed rows as backlog. And `3COVERED_IMAGE_INTENSITY_
+  RANGE` never picked up `test_3d_firstorder_regression.h` when its assertion moved there.
+- **The checker's one undocumented carve-out is gone.** `test_gabor_skimage` takes a `bool gpu`
+  argument — the exact shape SPEC §6.2 says must be `assert_*` — and was exempted by a literal
+  `fn != "test_gabor_skimage"` inside the checker rather than through the documented exception list.
+  Renamed to `assert_2d_gabor_skimage`; the carve-out is deleted, not relocated.
+- **The `case == UPPER(function)` check no longer degrades silently.** It only ever ran when a
+  `TEST()` body called exactly one recognized `test_` function; two or more fell through to the weak
+  "case ends in a kind token" branch — the same blind spot that let a mismatched case name survive
+  into Wave 27. Multiple callees are now an explicit error (0 of 526 cases hit it today). Zero
+  callees stays legal and keeps the suffix check: that is the `assert_*`-only body above.
+- **Two narrative corrections.** §5.30 and §5.31 claimed their helper renames "corrected" a
+  `not_covered.md` §B.2 dead-test miscount. §B.2's dead table never contained those helpers — they
+  were already under "Not dead, listed to avoid double-counting". Both sentences now say what
+  actually happened, marked as corrected here.
+- **§B.3's case table was stale.** Its brace-abbreviated names (`TEST_HU_LOADER_DICOM_{U16,I16}_…`)
+  are not literal tokens, so the mechanical substitution stepped over them; refreshed against
+  `test_all.cc`.
+- **One layout fix:** `TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_EDGE_INTENSITY_CELLPROFILER)` sat *after*
+  `int main()`. Legal (static registration runs first regardless) but it broke the file's
+  "all `TEST`s precede `main`" layout; moved in with the other morphology cases.
+
+**Deliberately still open**, because they are correctness or status changes rather than naming:
+`test_3d_gldm_lgle_regression()` asserts `GLDM_SDE`/`"3GLDM_SDE"` instead of `LGLE` (a real
+copy-paste bug, currently dead code — `test_3d_gldm_regression.h` is unwired per §B.1);
+`test_2d_firstorder_robust_mean_absolute_deviation_pyradiomics()` inlines a literal golden instead
+of using the file's tolerance map; and `assert_morphology_feature_cellprofiler()` is a pass-through
+to the regression-snapshot helper while the registry marks those rows `oracle=cellprofiler` (§C
+already discloses this; changing it is a `status`/`oracle` decision, out of scope per §6.2.1).
+
+The checker's self-test grew from six planted defect classes to **seven** — a `TEST()` body with two
+callees, so the rule above cannot decay back into the branch it replaced.
+
+**Verified:** gtest 731/731 (unchanged); pytest 84 passed / 1 skipped with the 7 pre-existing Arrow
+failures of a tiff-only build; `check_test_names.py --check` and `check_coverage.py --check` both
+clean, and `--write` reproduces `coverage_report.md` byte-identically.
 
 ---
 

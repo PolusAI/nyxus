@@ -182,7 +182,7 @@ def check(root):
         else:
             fns = [(m.group(1), m.group(2).strip()) for m in CPP_DEF.finditer(txt)]
         for fn, params in fns:
-            if params and params not in ("", "void") and fn != "test_2d_gabor_skimage":
+            if params and params not in ("", "void"):
                 errors.append(f"{p.name}: helper {fn}() takes arguments - helpers must not use "
                               f"the test_ prefix, rename to assert_* (SPEC 6.2)")
                 continue
@@ -229,10 +229,20 @@ def check(root):
             j += 1
         called = {c for c in re.findall(r"\b(test_[A-Za-z0-9_]*)\s*\(", txt[body_start:j])
                   if c in defined}
+        # case = UPPER(function) is a 1:1 rule, so it can only be checked against a single
+        # callee. A body calling two or more test_ functions is rejected rather than waved
+        # through: the mirror check would silently degrade to the weak suffix test below,
+        # which is the gap that let a mismatched case name survive once already.
         if len(called) == 1:
             fn = called.pop()
             if case != fn.upper():
                 errors.append(f"test_all.cc: TEST case {case} must be UPPER({fn}) (SPEC 6.2)")
+        elif len(called) > 1:
+            errors.append(f"test_all.cc: TEST case {case} calls {len(called)} test_ functions "
+                          f"({', '.join(sorted(called))}) - case = UPPER(function) needs one "
+                          f"callee, so split the case or make the extras assert_* (SPEC 6.2)")
+        # len(called) == 0: the body only calls assert_* helpers, so there is no function name
+        # to mirror; the case must still declare its kind.
         elif case.rsplit("_", 1)[-1].lower() not in KINDS:
             errors.append(f"test_all.cc: TEST case {case} does not end in a kind/oracle "
                           f"token (SPEC 6.2)")
