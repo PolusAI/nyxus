@@ -991,9 +991,53 @@ already discloses this; changing it is a `status`/`oracle` decision, out of scop
 The checker's self-test grew from six planted defect classes to **seven** — a `TEST()` body with two
 callees, so the rule above cannot decay back into the branch it replaced.
 
-**Verified:** gtest 731/731 (unchanged); pytest 84 passed / 1 skipped with the 7 pre-existing Arrow
-failures of a tiff-only build; `check_test_names.py --check` and `check_coverage.py --check` both
-clean, and `--write` reproduces `coverage_report.md` byte-identically.
+---
+
+## 5.39 A latent bindings bug the reorder exposed — fixed
+
+Wave 28 turned the wheel CI red on the ARM runners: `test_nyxus.py::test_gabor_gpu` failed with
+*"the following ROIS are oversized and cannot be processed: 1"*, intermittently — `macos-14` cp310
+and cp313 failed while cp311 and cp312 passed on the same commit, and every x86 job was green. A
+rename cannot produce a version-dependent failure, and the cause turned out not to be the names at
+all.
+
+**The bug.** `new_bindings_py.cpp` caches each instance's `Environment` in `pynyxus_cache`, keyed on
+`id(self)`, and `findenv()` reuses an entry if one is present (`try_emplace`). Nothing ever erased an
+entry, and the Python wrapper had no `__del__`. But `id()` is the object's *address*, and CPython
+hands a freed address straight to the next allocation — so once an instance was collected, the next
+`Nyxus` allocated at that address silently inherited the dead one's entire `Environment`: its
+`ram_limit`, feature list, gpu flag and ibsi mode. `test_2d_ooc_invariant.py` deliberately builds
+instances with `ram_limit=0`, which makes `roiFootprint >= ramLim` true for *every* ROI; when one of
+those addresses was recycled into `test_gabor_gpu`'s `Nyxus(["GABOR"])`, every ROI came back
+oversized.
+
+**Why Wave 28 surfaced it.** The out-of-core modules sorted *after* `test_nyxus.py` before the
+rename and *before* it afterwards, so their `ram_limit=0` instances now die just ahead of the
+allocations in `test_nyxus.py`. Whether a given address is actually recycled depends on the
+allocator's state, which is why the failure was intermittent and platform-dependent rather than
+uniform. The reorder only changed the odds; the defect predates the whole rename series and reaches
+well beyond tests — any long-running script that creates and drops `Nyxus` objects could have one
+start with another's settings.
+
+**The fix.** `Nyxus::releaseenv(instid)` erases the cache entry, exposed as
+`release_environment_imp` and called from a `__del__` on all four id-keyed classes (`Nyxus`,
+`Nyxus3D`, `ImageQuality`, `Nested`), guarded against interpreter-shutdown teardown. Keying stays
+`id(self)` deliberately: `id(obj)` is public surface (`nyxus.gpu_is_available(id(nyx))`), so
+re-keying would break callers. A recycled address now finds no entry and gets a fresh `Environment`.
+Residual risk, recorded rather than hidden: `__del__` does not run for objects trapped in a
+reference cycle, so an entry can still outlive its object in that case.
+
+`tests/python/test_environment_lifecycle_mechanics.py` guards it — it poisons an instance with
+`ram_limit=0`, drops it, and requires the next instance to compute normally, asserting that an
+address really was recycled so the test cannot pass vacuously. Verified by mutation: it fails when
+the `__del__` body is disabled and passes when restored.
+
+---
+
+**Verified across Waves 28-29 and this fix:** gtest 731/731 (unchanged); pytest 85 passed / 1
+skipped with the 7 pre-existing Arrow failures of a tiff-only build; `check_test_names.py --check`
+and `check_coverage.py --check` both clean, and `--write` reproduces `coverage_report.md`
+byte-identically.
 
 ---
 
