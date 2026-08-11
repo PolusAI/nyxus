@@ -30,7 +30,7 @@
 using namespace Nyxus;
 
 // Pinned PyRadiomics firstorder goldens (all 17 mapped features agreed; 0 flags).
-static const std::unordered_map<std::string, double> oracle_pyradiomics_firstorder_gt = {
+static const std::unordered_map<std::string, double> firstorder_2d_pyradiomics_ref_vals = {
     {"MEAN", 32566.38961038961},
     {"MEDIAN", 29803.5},
     {"MIN", 11079.0},
@@ -51,7 +51,7 @@ static const std::unordered_map<std::string, double> oracle_pyradiomics_firstord
 };
 
 // Per-feature agrees_gt frac_tolerance: exact=1e6 (rel<=1e-6), approx=20 (rel<=5%).
-static const std::unordered_map<std::string, double> oracle_pyradiomics_firstorder_tol = {
+static const std::unordered_map<std::string, double> firstorder_2d_pyradiomics_ref_tols = {
     {"MEAN", 1e6}, {"MEDIAN", 1e6}, {"MIN", 1e6}, {"MAX", 1e6}, {"RANGE", 1e6},
     {"VARIANCE", 20.0}, {"SKEWNESS", 1e6}, {"KURTOSIS", 1e6}, {"ENERGY", 1e6},
     {"ROOT_MEAN_SQUARED", 1e6}, {"MEAN_ABSOLUTE_DEVIATION", 1e6},
@@ -86,10 +86,10 @@ static void assert_fo_pyradiomics(const std::vector<std::vector<double>>& fvals,
                                   Nyxus::Feature2D code, const std::string& name)
 {
     SCOPED_TRACE("PYRADIOMICS_ORACLE__" + name);
-    ASSERT_TRUE(oracle_pyradiomics_firstorder_gt.count(name)) << name;
+    ASSERT_TRUE(firstorder_2d_pyradiomics_ref_vals.count(name)) << name;
     ASSERT_TRUE(Nyxus::agrees_gt(fvals[(int)code][0],
-        oracle_pyradiomics_firstorder_gt.at(name),
-        oracle_pyradiomics_firstorder_tol.at(name))) << name;
+        firstorder_2d_pyradiomics_ref_vals.at(name),
+        firstorder_2d_pyradiomics_ref_tols.at(name))) << name;
 }
 
 void test_2d_firstorder_pyradiomics()

@@ -6,10 +6,11 @@
 // they move here with the snapshot table and helper they use.
 
 #include "test_2d_ngldm_ibsi.h"   // shared fixture: assert_ngldm_feature_ibsi and the phantom loader
+#include "test_ref_vals.h"
 
 // GLM and DCM are Nyxus mean-style rows that are not defined in the IBSI
 // NGLDM table, so only those two remain local regression references here.
-static std::unordered_map<std::string, double> unvetted_nyxus_regression_ngldm_feature_reference_values
+static ref_vals_map<double> ngldm_2d_regression_ref_vals
 {
 	{"NGLDM_GLM",		2.1178319573443410e+00},
 	{"NGLDM_DCM",		3.9832043343653250e+00}
@@ -20,7 +21,7 @@ void assert_ngldm_feature_regression(const Feature2D& feature_, const std::strin
 	assert_ngldm_feature_against_golden_values(
 		feature_,
 		feature_name,
-		unvetted_nyxus_regression_ngldm_feature_reference_values,
+		ngldm_2d_regression_ref_vals,
 		"UNVETTED_NO_DIRECT_ORACLE__");
 }
 

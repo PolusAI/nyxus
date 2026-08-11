@@ -100,6 +100,11 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
         "void test_3d_ngldm_sde_ibsi() {}", encoding="utf-8")
     (tmp_path / "tests" / "test_2d_ngtdm_regression.h").write_text(
         "void test_helper(int x) {}", encoding="utf-8")
+    # a golden table under the pre-6.3.1 naming
+    (tmp_path / "tests" / "test_2d_glrlm_regression.h").write_text(
+        'static std::unordered_map<std::string, double> ibsi_reference_glrlm_golden_values\n'
+        '{\n    {"GLRLM_SRE", 1.0},\n};\n'
+        'void test_2d_glrlm_sre_regression() {}', encoding="utf-8")
 
     errs = ctn.check(tmp_path)
     assert any("test_2d_glcm.h" in e and "SPEC 6.1" in e for e in errs)       # file, no kind
@@ -110,3 +115,5 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     assert any("test_helper" in e and "assert_*" in e for e in errs)          # helper as test_
     assert any("TEST_2D_GLSZM_SZE_REGRESSION" in e and "calls 2 test_ functions" in e
                for e in errs)                                                # case mirrors no single fn
+    assert any("ibsi_reference_glrlm_golden_values" in e and "SPEC 6.3.1" in e
+               for e in errs)                                                # golden table off-convention

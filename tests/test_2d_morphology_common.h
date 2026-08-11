@@ -2,9 +2,7 @@
 
 #include <gtest/gtest.h>
 
-#include <array>
 #include <string>
-#include <unordered_map>
 
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/basic_morphology.h"
@@ -24,6 +22,7 @@
 #include <filesystem>
 #include <memory>
 #include "../src/nyx/grayscale_tiff.h"
+#include "test_ref_vals.h"
 
 // "Unvetted" means this table is not claiming an accepted independent
 // built-in/package oracle for these rows. Some entries, such as area,
@@ -33,7 +32,7 @@
 // and Nyxus coordinate/spacing conventions rather than using a third-party
 // oracle. Rows with accepted external built-in/API comparators live in the
 // oracle_3p table below.
-static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d_feature_golden_values{
+static ref_vals_map<double> morphology_2d_regression_ref_vals{
 	{"AREA_PIXELS_COUNT", 26.0},
 	{"AREA_UM2", 104.0},
 	{"CENTROID_X", 2.61538461538462},
@@ -76,35 +75,13 @@ static std::unordered_map<std::string, double> unvetted_nyxus_regression_shape2d
 //   FRACT_DIM_PERIMETER = box count of the ROI edge (cross-method vs Nyxus' Richardson divider,
 //                         estimating the same boundary dimension) -> 1.0493, asserted at 3%
 //                         (Nyxus divider = 1.0572, a 0.8% gap).
-static std::unordered_map<std::string, double> oracle_fractal_blob512_golden_values{
+static ref_vals_map<double> morphology_2d_fraclac_ref_vals{
 	{"FRACT_DIM_BOXCOUNT", 1.8706},   // vetted by ImageJ/FracLac: an independent implementation of the same box-count method
 	{"FRACT_DIM_PERIMETER", 1.0493},  // vetted by ImageJ/FracLac edge box-count: cross-method vs Nyxus' divider
 };
 
-static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_values{
-	// CONVEX_HULL_AREA / SOLIDITY are cross-checked against scikit-image on this exact ROI. Nyxus
-	// computes a Pick's-theorem pixel-count hull area (convex_hull_nontriv.cpp) = 27, solidity
-	// 26/27 = 0.9629630. Because Nyxus hulls through pixel CENTRES, this reproduces skimage's
-	// convex_hull_image(offset_coordinates=False) == 27 EXACTLY, so we vet against THAT convention
-	// (27 / 0.9629630) with a tight 1% tolerance (frac_tolerance=100). The hull area is a
-	// provably-exact integer lattice count, so 1% is float/platform slack -- not a convention fudge --
-	// and it still catches a >=1 px regression. (skimage's regionprops DEFAULT uses
-	// offset_coordinates=True, which first expands every pixel to its +/-0.5 corners and rasterises
-	// the hull to 28 / 0.9285714; that +1 px is a corner-expansion convention, not an error, and is
-	// why we pin the offset_coordinates=False value rather than the default.) SOLIDITY is thus a real
-	// skimage-vetted <= 1 check (unlike the old impossible 1.3), matched exactly rather than within a
-	// loose band.
-	{"CONVEX_HULL_AREA", 27.0},
-	{"SOLIDITY", 0.9629629629629629},
-	{"DIAMETER_EQUAL_PERIMETER", 8.57365809435587},
-	{"DIAMETER_CIRCUMSCRIBING_CIRCLE", 12.3317073399088},
-	{"DIAMETER_INSCRIBING_CIRCLE", 0.828486893405308},
-	// Real-valued rectangle-model roots after the geo_len_thickness.cpp perimeter-truncation fix
-	// (were the integer-truncated 10.0 / 3.0). Now vetted against imea's geodeticlength_and_thickness
-	// in test_2d_morphology_imea.h.
-	{"GEODETIC_LENGTH", 11.13182483477333},
-	{"THICKNESS", 2.3356458070362205},
-	{"EROSIONS_2_VANISH", 1.0},
+// Extrema coordinates, vetted against MATLAB (registry: status=vetted, oracle=matlab).
+static ref_vals_map<double> morphology_2d_matlab_extrema_ref_vals{
 	// EXTREMA P1..P8 (X,Y) match MATLAB/Octave regionprops('Extrema') EXACTLY under the documented
 	// coordinate convention: MATLAB returns 1-based sub-pixel *corner* coords, Nyxus returns 0-based
 	// pixel *centers*. The corner is direction-specific -> the offset is per-point: left/top coords
@@ -130,6 +107,55 @@ static std::unordered_map<std::string, double> oracle_3p_shape2d_feature_golden_
 	{"EXTREMA_P8_X", 0.0},
 	{"EXTREMA_P8_Y", 2.0},
 };
+
+// Convex-hull area, solidity and erosion count, vetted against scikit-image.
+static ref_vals_map<double> morphology_2d_skimage_hull_ref_vals{
+	// CONVEX_HULL_AREA / SOLIDITY are cross-checked against scikit-image on this exact ROI. Nyxus
+	// computes a Pick's-theorem pixel-count hull area (convex_hull_nontriv.cpp) = 27, solidity
+	// 26/27 = 0.9629630. Because Nyxus hulls through pixel CENTRES, this reproduces skimage's
+	// convex_hull_image(offset_coordinates=False) == 27 EXACTLY, so we vet against THAT convention
+	// (27 / 0.9629630) with a tight 1% tolerance (frac_tolerance=100). The hull area is a
+	// provably-exact integer lattice count, so 1% is float/platform slack -- not a convention fudge --
+	// and it still catches a >=1 px regression. (skimage's regionprops DEFAULT uses
+	// offset_coordinates=True, which first expands every pixel to its +/-0.5 corners and rasterises
+	// the hull to 28 / 0.9285714; that +1 px is a corner-expansion convention, not an error, and is
+	// why we pin the offset_coordinates=False value rather than the default.) SOLIDITY is thus a real
+	// skimage-vetted <= 1 check (unlike the old impossible 1.3), matched exactly rather than within a
+	// loose band.
+	{"CONVEX_HULL_AREA", 27.0},
+	{"SOLIDITY", 0.9629629629629629},
+	{"EROSIONS_2_VANISH", 1.0},
+};
+
+// Equal-perimeter diameter, geodetic length and thickness, vetted against imea.
+static ref_vals_map<double> morphology_2d_imea_geodetic_ref_vals{
+	{"DIAMETER_EQUAL_PERIMETER", 8.57365809435587},
+	// Real-valued rectangle-model roots after the geo_len_thickness.cpp perimeter-truncation fix
+	// (were the integer-truncated 10.0 / 3.0). Now vetted against imea's geodeticlength_and_thickness
+	// in test_2d_morphology_imea.h.
+	{"GEODETIC_LENGTH", 11.13182483477333},
+	{"THICKNESS", 2.3356458070362205},
+};
+
+// Circumscribing/inscribing circle diameters. status=regression: pinned Nyxus output with
+// no third-party oracle, so the name must not borrow the vetted claim of the tables above.
+static ref_vals_map<double> morphology_2d_regression_diameters_ref_vals{
+	{"DIAMETER_CIRCUMSCRIBING_CIRCLE", 12.3317073399088},
+	{"DIAMETER_INSCRIBING_CIRCLE", 0.828486893405308},
+};
+
+// These four were one table until SPEC 6.3.1 required a table to name a single oracle. One
+// lookup keeps the call site unchanged; each table now states where its own numbers came from.
+static bool shape2d_ref_val (const std::string& key, double& out)
+{
+    for (const auto* t : { &morphology_2d_matlab_extrema_ref_vals, &morphology_2d_skimage_hull_ref_vals, &morphology_2d_imea_geodetic_ref_vals, &morphology_2d_regression_diameters_ref_vals })
+    {
+        auto it = t->find(key);
+        if (it != t->end()) { out = it->second; return true; }
+    }
+    return false;
+}
+
 
 static Fsettings make_shape2d_settings()
 {
@@ -214,8 +240,8 @@ static void assert_unvetted_no_direct_oracle_shape2d_feature(
 	double frac_tolerance = 1000.0)
 {
 	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-	ASSERT_TRUE(unvetted_nyxus_regression_shape2d_feature_golden_values.count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], unvetted_nyxus_regression_shape2d_feature_golden_values[feature_name], frac_tolerance));
+	ASSERT_TRUE(morphology_2d_regression_ref_vals.count(feature_name) > 0);
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_ref_vals[feature_name], frac_tolerance));
 }
 
 static void assert_verifiable_with_3p_builtin_oracle_shape2d_feature(
@@ -225,8 +251,9 @@ static void assert_verifiable_with_3p_builtin_oracle_shape2d_feature(
 	double frac_tolerance = 1000.0)
 {
 	SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
-	ASSERT_TRUE(oracle_3p_shape2d_feature_golden_values.count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], oracle_3p_shape2d_feature_golden_values[feature_name], frac_tolerance));
+	double ref_val{};
+	ASSERT_TRUE(shape2d_ref_val(feature_name, ref_val));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], ref_val, frac_tolerance));
 }
 
 // Loads the large ROI mask tests/data/fractal_blob512_seg.ome.tif (path resolved relative to this

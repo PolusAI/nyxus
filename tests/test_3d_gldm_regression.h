@@ -1,15 +1,15 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_gldm.h"
+#include "test_ref_vals.h"
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
 // (100 grey levels, offset 1, and asymmetric cooc matrix)
-static std::unordered_map<std::string, float> d3gldm_GT
+static ref_vals_map<float> gldm_3d_regression_ref_vals
 {
     {"3GLDM_SDE", 0.26},
     {"3GLDM_LDE", 34.77},
@@ -67,7 +67,7 @@ void assert_3d_gldm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3gldm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, gldm_3d_regression_ref_vals[fname], 10.));
 #endif
 
     // get segment info
@@ -127,7 +127,7 @@ void assert_3d_gldm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3gldm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, gldm_3d_regression_ref_vals[fname], 10.));
 
 }
 

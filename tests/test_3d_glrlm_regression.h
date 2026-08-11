@@ -1,15 +1,15 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glrlm.h"
+#include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static std::unordered_map<std::string, float> d3glrlm_GT{
+static ref_vals_map<float> glrlm_3d_regression_ref_vals{
     {"3GLRLM_SRE", 0.84},
     {"3GLRLM_LRE", 40.8},
     {"3GLRLM_LGLRE", 0.072},
@@ -68,7 +68,7 @@ void assert_3d_glrlm_feature_regression (const Nyxus::Feature3D& expecting_fcode
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3glrlm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_regression_ref_vals[fname], 10.));
 #endif
 
     // get segment info
@@ -128,7 +128,7 @@ void assert_3d_glrlm_feature_regression (const Nyxus::Feature3D& expecting_fcode
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, d3glrlm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_regression_ref_vals[fname], 10.));
 
 }
 

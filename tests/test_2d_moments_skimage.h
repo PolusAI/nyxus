@@ -1,8 +1,9 @@
 #pragma once
 
 #include "test_2d_moments_common.h"
+#include "test_ref_vals.h"
 
-static const std::vector<GeomomentGoldenValue> oracle_3p_shape_geomoment_feature_golden_values{
+static const ref_vals_list<GeomomentGoldenValue> moments_2d_skimage_shape_ref_vals{
 	{Nyxus::Feature2D::SPAT_MOMENT_00, "SPAT_MOMENT_00", 1920},
 	{Nyxus::Feature2D::SPAT_MOMENT_01, "SPAT_MOMENT_01", 37440},
 	{Nyxus::Feature2D::SPAT_MOMENT_02, "SPAT_MOMENT_02", 985920},
@@ -48,7 +49,7 @@ static const std::vector<GeomomentGoldenValue> oracle_3p_shape_geomoment_feature
 	{Nyxus::Feature2D::HU_M7, "HU_M7", -2.3604559630908652e-10},
 };
 
-static const std::vector<GeomomentGoldenValue> oracle_3p_intensity_geomoment_feature_golden_values{
+static const ref_vals_list<GeomomentGoldenValue> moments_2d_skimage_intensity_ref_vals{
 	{Nyxus::Feature2D::IMOM_RM_00, "IMOM_RM_00", 346635},
 	{Nyxus::Feature2D::IMOM_RM_01, "IMOM_RM_01", 8040325},
 	{Nyxus::Feature2D::IMOM_RM_02, "IMOM_RM_02", 227941125},
@@ -98,7 +99,7 @@ static const std::vector<GeomomentGoldenValue> oracle_3p_intensity_geomoment_fea
 // this file whose odd-order etas are big enough to vet Hu h5/h6 against skimage above the assertion
 // tolerance. Provenance: scikit-image 0.26.0 / numpy 2.4.6, generator
 // tests/vetting/oracles/gen_moments_skimage.py (section C), 2026-07-16.
-static const std::vector<GeomomentGoldenValue> wedge_shape_hu_skimage_golden_values{
+static const ref_vals_list<GeomomentGoldenValue> moments_2d_skimage_wedge_hu_ref_vals{
 	{Nyxus::Feature2D::SPAT_MOMENT_00, "SPAT_MOMENT_00", 180},
 	{Nyxus::Feature2D::SPAT_MOMENT_10, "SPAT_MOMENT_10", 4560},
 	{Nyxus::Feature2D::SPAT_MOMENT_01, "SPAT_MOMENT_01", 420},
@@ -131,19 +132,19 @@ void test_2d_moments_hu_wedge_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_wedge_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, wedge_shape_hu_skimage_golden_values, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_wedge_hu_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
 }
 
 void test_2d_moments_shape_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, oracle_3p_shape_geomoment_feature_golden_values, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_shape_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
 }
 
 void test_2d_moments_intensity_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, oracle_3p_intensity_geomoment_feature_golden_values, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_intensity_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
 }

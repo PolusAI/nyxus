@@ -1,8 +1,9 @@
 #pragma once
 
 #include "test_2d_moments_common.h"
+#include "test_ref_vals.h"
 
-static const std::vector<GeomomentGoldenValue> unvetted_nyxus_regression_shape_geomoment_feature_golden_values{
+static const ref_vals_list<GeomomentGoldenValue> moments_2d_regression_shape_ref_vals{
 	{Nyxus::Feature2D::NORM_SPAT_MOMENT_00, "NORM_SPAT_MOMENT_00", 1},
 	{Nyxus::Feature2D::NORM_SPAT_MOMENT_01, "NORM_SPAT_MOMENT_01", 0.44502457797294748},
 	{Nyxus::Feature2D::NORM_SPAT_MOMENT_02, "NORM_SPAT_MOMENT_02", 0.26744791666666667},
@@ -52,7 +53,7 @@ static const std::vector<GeomomentGoldenValue> unvetted_nyxus_regression_shape_g
 	{Nyxus::Feature2D::WEIGHTED_HU_M7, "WEIGHTED_HU_M7", -1.3078000499389243e-09},
 };
 
-static const std::vector<GeomomentGoldenValue> unvetted_nyxus_regression_intensity_geomoment_feature_golden_values{
+static const ref_vals_list<GeomomentGoldenValue> moments_2d_regression_intensity_ref_vals{
 	{Nyxus::Feature2D::IMOM_NRM_00, "IMOM_NRM_00", 1},
 	{Nyxus::Feature2D::IMOM_NRM_01, "IMOM_NRM_01", 0.039397166363954135},
 	{Nyxus::Feature2D::IMOM_NRM_02, "IMOM_NRM_02", 0.001897046009773198},
@@ -106,12 +107,12 @@ void test_2d_moments_shape_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, unvetted_nyxus_regression_shape_geomoment_feature_golden_values, "UNVETTED_NO_DIRECT_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_regression_shape_ref_vals, "UNVETTED_NO_DIRECT_ORACLE__");
 }
 
 void test_2d_moments_intensity_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, unvetted_nyxus_regression_intensity_geomoment_feature_golden_values, "UNVETTED_NO_DIRECT_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_regression_intensity_ref_vals, "UNVETTED_NO_DIRECT_ORACLE__");
 }

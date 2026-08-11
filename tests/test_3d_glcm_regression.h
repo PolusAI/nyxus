@@ -1,16 +1,16 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glcm.h"
 #include "../src/nyx/helpers/fsystem.h"
+#include "test_ref_vals.h"
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
 // (100 grey levels, offset 1, and asymmetric cooc matrix)
-static std::unordered_map<std::string, float> d3glcm_GT
+static ref_vals_map<float> glcm_3d_regression_ref_vals
 {
     {"3GLCM_ACOR", 8686.0},
     {"3GLCM_ASM", 0.87},
@@ -65,8 +65,8 @@ void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     // (1) prepare
 
     // check that requested feature exists
-    auto iter = d3glcm_GT.find(fname);
-    ASSERT_TRUE(iter != d3glcm_GT.end());
+    auto iter = glcm_3d_regression_ref_vals.find(fname);
+    ASSERT_TRUE(iter != glcm_3d_regression_ref_vals.end());
 
     // get segment info
     auto [ipath, mpath, label] = get_3d_segmented_phantom();
@@ -136,7 +136,7 @@ void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     double atot = f.calc_ave(r.fvals[fcode]);
 
     // (7) verdict
-    ASSERT_TRUE(agrees_gt(atot, d3glcm_GT[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals[fname], 10.));
 }
 
 void test_3d_glcm_acor_regression()

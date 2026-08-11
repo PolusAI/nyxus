@@ -1,13 +1,13 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <unordered_map> 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glszm.h"
 #include "../src/nyx/raw_nifti.h"
 #include "../src/nyx/helpers/fsystem.h"
+#include "test_ref_vals.h"
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
 // (100 grey levels, offset 1, and asymmetric cooc matrix)
@@ -31,7 +31,7 @@
 //      glszm:
 //
 
-static std::unordered_map<std::string, double> compat_3glszm_GT
+static ref_vals_map<double> glszm_3d_pyradiomics_ref_vals
 {
     {"3GLSZM_GLN", 61.77441860465116},  // Case-1_original_glszm_GrayLevelNonUniformity
     {"3GLSZM_GLNN", 0.07183071930773391},  // Case-1_original_glszm_GrayLevelNonUniformityNormalized
@@ -56,8 +56,8 @@ void assert_3d_glszm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcod
     // (1) prepare
 
     // check that requested feature exists
-    auto iter = compat_3glszm_GT.find(fname);
-    ASSERT_TRUE(iter != compat_3glszm_GT.end());
+    auto iter = glszm_3d_pyradiomics_ref_vals.find(fname);
+    ASSERT_TRUE(iter != glszm_3d_pyradiomics_ref_vals.end());
 
     // get segment info
     auto [ipath, mpath, label] = get_3d_compat_phantom();
@@ -125,7 +125,7 @@ void assert_3d_glszm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcod
     double atot = f.calc_ave(r.fvals[fcode]);
 
     // (7) verdict
-    ASSERT_TRUE (agrees_gt(atot, compat_3glszm_GT[fname], 10.));
+    ASSERT_TRUE (agrees_gt(atot, glszm_3d_pyradiomics_ref_vals[fname], 10.));
 }
 
 void test_3d_glszm_matrix_correctness_pyradiomics()

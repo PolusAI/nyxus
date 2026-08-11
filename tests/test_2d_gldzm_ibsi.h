@@ -6,11 +6,12 @@
 #include "../src/nyx/features/gldzm.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
+#include "test_ref_vals.h"
 
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. https://ibsi.readthedocs.io/en/latest/03_Image_features.html
 // Dataset: dig phantom. Aggr. method: 2D, averaged)
-static std::unordered_map<std::string, double> ibsi_reference_gldzm_feature_golden_values
+static ref_vals_map<double> gldzm_2d_ibsi_ref_vals
 {
     {"GLDZM_SDE",		0.946}, // Small distance emphasis
     {"GLDZM_LDE",       1.21},  // Large distance emphasis
@@ -185,7 +186,7 @@ void assert_gldzm_feature_against_golden_values_ibsi(
 void assert_gldzm_feature_ibsi (const Feature2D& feature_, const std::string& feature_name)
 {
     SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
-    assert_gldzm_feature_against_golden_values_ibsi(feature_, feature_name, ibsi_reference_gldzm_feature_golden_values);
+    assert_gldzm_feature_against_golden_values_ibsi(feature_, feature_name, gldzm_2d_ibsi_ref_vals);
 }
 
 void test_2d_gldzm_matrix_correctness_ibsi()

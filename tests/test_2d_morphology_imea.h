@@ -1,7 +1,7 @@
 #pragma once
 
 #include "test_2d_morphology_common.h"
-#include "test_2d_remaining_common.h"   // imea_ellipse_caliper_oracle + assert_caliper_close_to_imea
+#include "test_2d_remaining_common.h"   // morphology_2d_imea_ref_vals + assert_caliper_close_to_imea
 
 // DIAMETER_EQUAL_PERIMETER vetted vs imea (tests/vetting/oracles/gen_morphology_imea.py).
 //

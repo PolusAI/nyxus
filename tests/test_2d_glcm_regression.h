@@ -9,7 +9,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
-#include <unordered_map> 
+#include "test_ref_vals.h"
 
 // Nyxus-convention GLCM regression snapshot. These values pin current Nyxus output to catch
 // drift. Calculated at 100 grey levels, offset 1, via the MATLAB-binning path with
@@ -41,7 +41,7 @@
 // genuinely third-party-vetted on the IBSI path (symmetric matrix, identity binning), where Nyxus
 // ibsi=True == PyRadiomics exactly (ACOR 20.512755, SUMAVERAGE 9.020408, IDN 0.779479, IDMN
 // 0.887342) -- covered by the dense-phantom oracle test in tests/python/test_glcm_oracle.py.
-static std::unordered_map<std::string, double> vetted_nyxus_convention_regression_glcm_feature_golden_values
+static ref_vals_map<double> glcm_2d_regression_vetted_convention_ref_vals
 {
     {"GLCM_CONTRAST", 1.4448130208333334e+03},
     {"GLCM_DIFAVE", 23.6493},
@@ -71,7 +71,7 @@ static std::unordered_map<std::string, double> vetted_nyxus_convention_regressio
 // vetted by rerunning with symmetric_glcm=true (or the radiomics/IBSI path). (Note: CLUTEND/
 // SUMVARIANCE are NOT symmetrization-invariant in Nyxus because they use the single row-marginal mean
 // by_row_mean; the earlier comment listing them as invariant was inaccurate.)
-static std::unordered_map<std::string, double> unvetted_nyxus_convention_regression_glcm_feature_golden_values
+static ref_vals_map<double> glcm_2d_regression_unvetted_convention_ref_vals
 {
     {"GLCM_ACOR", 1437.33},                 // moved from vetted 2026-07-09: absolute-level-dependent, ibsi=False != oracle (IBSI-path vetted)
     {"GLCM_IDMN", 9.0029152005531590e-01},  // moved from vetted 2026-07-09: Ng-dependent, ibsi=False != oracle (IBSI-path vetted)
@@ -98,14 +98,14 @@ static std::unordered_map<std::string, double> unvetted_nyxus_convention_regress
 // A GLCM golden value now lives in exactly one of the two snapshots above. Look it up wherever it is.
 static double glcm_golden_value(const std::string& golden_key, bool& found)
 {
-    auto itv = vetted_nyxus_convention_regression_glcm_feature_golden_values.find(golden_key);
-    if (itv != vetted_nyxus_convention_regression_glcm_feature_golden_values.end())
+    auto itv = glcm_2d_regression_vetted_convention_ref_vals.find(golden_key);
+    if (itv != glcm_2d_regression_vetted_convention_ref_vals.end())
     {
         found = true;
         return itv->second;
     }
-    auto itu = unvetted_nyxus_convention_regression_glcm_feature_golden_values.find(golden_key);
-    if (itu != unvetted_nyxus_convention_regression_glcm_feature_golden_values.end())
+    auto itu = glcm_2d_regression_unvetted_convention_ref_vals.find(golden_key);
+    if (itu != glcm_2d_regression_unvetted_convention_ref_vals.end())
     {
         found = true;
         return itu->second;
