@@ -1,7 +1,7 @@
 """OFFLINE imea oracle for the 2D morphology features DIAMETER_EQUAL_PERIMETER,
 GEODETIC_LENGTH and THICKNESS (SPEC 4, oracle=imea), on the 8x8 shape2d fixture
 (shape2d_morphology_mask, test_data.h). Validates the goldens pinned in
-test_morphology_imea.h.
+test_2d_morphology_imea.h.
 
 DIAMETER_EQUAL_PERIMETER -- the DIN ISO 9276-6 perimeter-equal diameter: the diameter
   of the circle whose circumference equals the object's perimeter, i.e. perimeter/pi.
@@ -40,7 +40,7 @@ ROWS = [
 ]
 MASK = np.array([[int(c) for c in r] for r in ROWS], dtype=bool)
 
-# Nyxus goldens (test_morphology_common.h)
+# Nyxus goldens (test_2d_morphology_common.h)
 NYX_AREA = 26.0
 NYX_PERIMETER = 26.9349412836191
 NYX_DEP = 8.57365809435587

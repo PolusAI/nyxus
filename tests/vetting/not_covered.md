@@ -29,15 +29,15 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_3d_nifti_mechanics.h` | 2 | NIfTI loader geometry / data access |
 | `test_arrow_mechanics.h` | 2 | Arrow + Parquet writer plumbing |
 | `test_arrow_file_name_mechanics.h` | 1 | output-file naming rules |
-| `test_glcm_mechanics.h` | 1 | guards the `GLCM_OFFSET` default (a setting, not a value) |
+| `test_2d_glcm_mechanics.h` | 1 | guards the `GLCM_OFFSET` default (a setting, not a value) |
 | `test_initialization_mechanics.h` | 1 | environment init |
-| `test_omezarr_mechanics.h` | 6 | OME-Zarr tile/raw loader |
+| `test_2d_omezarr_mechanics.h` | 6 | OME-Zarr tile/raw loader |
 | `test_roi_blacklist_mechanics.h` | 1 | ROI blacklisting |
-| `test_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
-| `test_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
-| `test_ooc_mechanics.py` | 1 | oversized-montage failure path |
+| `test_2d_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
+| `test_2d_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
+| `test_2d_ooc_mechanics.py` | 1 | oversized-montage failure path |
 | `test_vetting_mechanics.py` | 5 | self-test of `check_coverage.py` |
-| `test_3d_coverage_common.h`, `test_3d_morphology_common.h`, `test_moments_common.h`, `test_morphology_common.h`, `test_remaining2d_common.h` | 0 | shared fixtures; the kind belongs to the files that include them |
+| `test_3d_coverage_common.h`, `test_3d_morphology_common.h`, `test_2d_moments_common.h`, `test_2d_morphology_common.h`, `test_2d_remaining_common.h` | 0 | shared fixtures; the kind belongs to the files that include them |
 | `test_feature_calculation_common.h` | 0 | shared `test_feature` template helper |
 
 ### A.2 Assert feature values but no row lists them — real gaps (7 files)
@@ -47,14 +47,14 @@ omission matters:
 
 | file | functions | what it asserts | why it matters |
 |---|---:|---|---|
-| ~~`test_neighbors_oracle.py`~~ | 2 | `PERCENT_TOUCHING`, `NUM_NEIGHBORS`, closest-neighbor distance on the production `featurize()` path | **CLOSED in Wave 15.** On inspection it asserts bounds and relations (`<= 100`, `> 0`, `== 100` for an enclosed ROI), not oracle values — so it is an `_invariant`, not the CellProfiler oracle assumed here. Renamed `test_neighbor_invariant.py` and added to `current_test` on the 3 rows it covers. |
-| `test_hu_regression.py` | 3 | first-order MIN/MAX/MEAN/INTEGRATED in `--preserve-hu` mode | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
-| `test_hu_nifti_regression.py` | 3 | the same on a 3D NIfTI volume with `scl_slope`/`scl_inter` | ditto, 3D |
+| ~~`test_neighbors_oracle.py`~~ | 2 | `PERCENT_TOUCHING`, `NUM_NEIGHBORS`, closest-neighbor distance on the production `featurize()` path | **CLOSED in Wave 15.** On inspection it asserts bounds and relations (`<= 100`, `> 0`, `== 100` for an enclosed ROI), not oracle values — so it is an `_invariant`, not the CellProfiler oracle assumed here. Renamed `test_2d_neighbor_invariant.py` and added to `current_test` on the 3 rows it covers. |
+| `test_2d_hu_regression.py` | 3 | first-order MIN/MAX/MEAN/INTEGRATED in `--preserve-hu` mode | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
+| `test_3d_hu_nifti_regression.py` | 3 | the same on a 3D NIfTI volume with `scl_slope`/`scl_inter` | ditto, 3D |
 | `test_hu_analytic.h` | 3 | closed form of the HU offset mapping (`uint_friendly_inten`) | analytic assertion with no row |
-| `test_hu_mechanics.h` | 8 | loader-level HU preservation (TIFF / DICOM / float) | plumbing, but it pins values |
-| `test_signed_int16_loader_mechanics.py` | 2 | MIN/MAX/MEAN do not wrap for signed int16 | guards a wrap bug that silently corrupted values |
-| `test_tiff_loader_mechanics.py` | 2 | pixel values and feature equality for uint32 strip TIFFs | guards a heap over-read that corrupted values |
-| `test_contour_analytic.h` | 5 | contour tracing (pixel counts / connectivity) | underlies `PERIMETER`, but asserts geometry rather than a feature |
+| `test_2d_hu_mechanics.h` | 8 | loader-level HU preservation (TIFF / DICOM / float) | plumbing, but it pins values |
+| `test_2d_signed_int16_loader_mechanics.py` | 2 | MIN/MAX/MEAN do not wrap for signed int16 | guards a wrap bug that silently corrupted values |
+| `test_2d_tiff_loader_mechanics.py` | 2 | pixel values and feature equality for uint32 strip TIFFs | guards a heap over-read that corrupted values |
+| `test_2d_contour_analytic.h` | 5 | contour tracing (pixel counts / connectivity) | underlies `PERIMETER`, but asserts geometry rather than a feature |
 
 **Decision needed per row:** either add these files to `current_test` for the features they touch, or
 state in `notes` that the HU / loader configs are deliberately out of the per-feature registry.
@@ -63,30 +63,30 @@ state in `notes` that the HU / loader configs are deliberately out of the per-fe
 
 `target_test` is the reorg destination, so a dangling entry is **backlog, not error**: it names where
 an assertion is to be written or moved. **204 refs across 14 filenames** (was 256 across 17; the gldm
-and firstorder waves closed `test_3d_gldm_regression.h`, `test_firstorder_matlab.h` and
+and firstorder waves closed `test_3d_gldm_regression.h`, `test_2d_firstorder_matlab.h` and
 `test_3d_firstorder_matlab.h`).
 
 | target file named by the registry | rows waiting | family |
 |---|---:|---|
-| `test_glcm_pyradiomics.h` | 34 | glcm |
+| `test_2d_glcm_pyradiomics.h` | 34 | glcm |
 | `test_3d_glcm_regression.h` | 31 | glcm (3D) |
-| `test_intensity_histogram_analytic.h` | 26 | intensity_histogram |
-| `test_glrlm_pyradiomics.h` | 20 | glrlm |
-| `test_ngldm_mirp.h` | 19 | ngldm |
-| `test_gldzm_mirp.h` | 17 | gldzm |
+| `test_2d_intensity_histogram_analytic.h` | 26 | intensity_histogram |
+| `test_2d_glrlm_pyradiomics.h` | 20 | glrlm |
+| `test_2d_ngldm_mirp.h` | 19 | ngldm |
+| `test_2d_gldzm_mirp.h` | 17 | gldzm |
 | `test_3d_gldzm_regression.h` | 18 | gldzm (3D) |
-| `test_glcm_matlab.h` | 10 | glcm |
-| `test_glszm_pyradiomics.h` | 10 | glszm |
-| `test_morphology_cellprofiler.h` | 6 | morphology |
-| `test_ngtdm_pyradiomics.h` | 5 | ngtdm |
+| `test_2d_glcm_matlab.h` | 10 | glcm |
+| `test_2d_glszm_pyradiomics.h` | 10 | glszm |
+| `test_2d_morphology_cellprofiler.h` | 6 | morphology |
+| `test_2d_ngtdm_pyradiomics.h` | 5 | ngtdm |
 | `test_3d_glcm_mirp.h` | 5 | glcm (3D) |
 | `test_3d_glrlm_mirp.h` | 2 | glrlm (3D) |
 | `test_3d_ngldm_mirp.h` | 1 | ngldm (3D) |
 
 One genuine error, separate from the backlog: **`test_glcm.h` appeared in `current_test` on 3 rows**
-although Wave 2 renamed it to `test_glcm_regression.h`. **CLOSED in the glcm wave — but not by
+although Wave 2 renamed it to `test_2d_glcm_regression.h`. **CLOSED in the glcm wave — but not by
 repointing it.** The three rows are the *first-order* `ENERGY`, `ENTROPY` and `VARIANCE`, and
-`test_glcm_regression.h` asserts only `Feature2D::GLCM_ENERGY`/`GLCM_ENTROPY`/`GLCM_VARIANCE`, never
+`test_2d_glcm_regression.h` asserts only `Feature2D::GLCM_ENERGY`/`GLCM_ENTROPY`/`GLCM_VARIANCE`, never
 the bare first-order features. The reference was a name-collision artifact of the original audit scan,
 so it was removed rather than renamed; each row already lists the first-order files that do assert it.
 `current_test` must track renames — but a reference has to be checked for meaning before it is
@@ -112,7 +112,7 @@ Per family, how much of the destination map is already in place:
 | intensity_histogram | 47 | 1 | 26 | 20 |
 
 **Done so far:** `gldm` (Wave 11, pure rename — all targets already existed) and `firstorder`
-(Wave 12, which had to *create* `test_firstorder_matlab.h` and move 26 assertions into it, because
+(Wave 12, which had to *create* `test_2d_firstorder_matlab.h` and move 26 assertions into it, because
 column J named a file that did not exist).
 
 ---
@@ -147,7 +147,7 @@ behavioural decision (they may fail on first run) and belongs to each family's w
 | file | function |
 |---|---|
 | `test_3d_glcm_pyradiomics.h` | `test_3d_glcm_jvar_pyradiomics` |
-| `test_firstorder_ibsi.h` | `test_firstorder_robust_mean_absolute_deviation_ibsi` |
+| `test_2d_firstorder_ibsi.h` | `test_2d_firstorder_robust_mean_absolute_deviation_ibsi` |
 
 Both are complete assertions with no `TEST()` entry — a missing registration, most likely an
 oversight when the surrounding cases were added. Enabling them may fail, so treat as triage.
@@ -169,9 +169,9 @@ so a green local run is not a green matrix.
 
 ### B.4 Python tests skipped at runtime
 
-- `test_hu_regression.py`, `test_hu_nifti_regression.py`, `test_hu_ct_small_values_pydicom.py` — module-level
+- `test_2d_hu_regression.py`, `test_3d_hu_nifti_regression.py`, `test_2d_hu_ct_small_pydicom.py` — module-level
   `skipif` when their committed fixtures are absent.
-- `test_morphology_invariant.py`, `test_glcm_pyradiomics.py`, `test_gldm_pyradiomics.py` — skip when the
+- `test_2d_morphology_invariant.py`, `test_2d_glcm_pyradiomics.py`, `test_2d_gldm_pyradiomics.py` — skip when the
   canonical ROI cannot be parsed out of `test_data.h`. **A skip here silently removes an oracle
   assertion**; these should fail rather than skip, since the fixture is committed.
 - `test_nyxus.py` — one case is skipped on Python 3.12, one is `skip_ci`.
@@ -185,10 +185,10 @@ Surfaced by Wave 12 and not yet satisfied:
 
 | site | assertions | what is missing |
 |---|---:|---|
-| `test_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
+| `test_2d_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
 | `test_3d_firstorder_matlab.h` | 35 | `d3inten_GT` values also come from MATLAB, but the map says nothing about it. The 36th assertion moved to `test_3d_firstorder_regression.h`, which reads the same map — so the gap covers both files |
 
-| `test_morphology_cellprofiler.h` | 6 | the 5 `EDGE_*` + `MASS_DISPLACEMENT` read their values from `unvetted_nyxus_regression_shape2d_feature_golden_values` in `test_morphology_common.h` — a map whose name still says snapshot. The registry vets these against CellProfiler; the map carries no version, config or generator, and renaming golden tables tree-wide is a separate pass. |
+| `test_2d_morphology_cellprofiler.h` | 6 | the 5 `EDGE_*` + `MASS_DISPLACEMENT` read their values from `unvetted_nyxus_regression_shape2d_feature_golden_values` in `test_2d_morphology_common.h` — a map whose name still says snapshot. The registry vets these against CellProfiler; the map carries no version, config or generator, and renaming golden tables tree-wide is a separate pass. |
 
 Closing these means writing tool + version + config + generator down at each assertion site, ideally
 by regenerating through the Octave harness so the values become reproducible. The values themselves are
@@ -200,10 +200,10 @@ Found while placing assertions by column J. Each needs a registry decision, not 
 
 | row | `oracle` (E) | `target_test` (J) | what the tree actually holds |
 |---|---|---|---|
-| 2D `UNIFORMITY` | pyradiomics | `test_firstorder_regression.h` | **RESOLVED.** A pyradiomics assertion already exists in `test_firstorder_pyradiomics.h`, so column J was stale: repointed there, no code moved. The MATLAB-valued assertion in `test_firstorder_matlab.h` is a *second* assertion at the MATLAB config and needs its own row per SPEC §3. |
-| 2D `ENTROPY` | pyradiomics | `test_firstorder_regression.h` | **RESOLVED.** Also already asserted in `test_firstorder_pyradiomics.h`; column J repointed, no code moved. The snapshot in the regression file is the drift guard on the default config. |
-| 2D `moments` ×40 | skimage | `test_moments_regression.h` | **RESOLVED in Wave 13.** All 40 were already asserted in `test_moments_skimage.h`; only the registry was stale, so `target_test` was repointed there and no code moved. This is the common case of the class: the assertion was migrated in an earlier wave and column J was never updated. |
-| 2D `ngldm` x19 | mirp | `test_ngldm_mirp.h` | The tree holds **IBSI** goldens for 17 of these 19 features, cited page-by-page against the IBSI documentation in `test_ngldm_ibsi.h`; the other two (`GLM`, `DCM`) are explicitly *not* IBSI features and are now snapshots in `test_ngldm_regression.h`. So the in-tree 2D NGLDM oracle is `ibsi`, not `mirp`. Either these rows should read `oracle=ibsi` (already satisfied, 17 of them), or MIRP is wanted as a second opinion per SPEC 3 and the rows stay backlog until it is run. |
+| 2D `UNIFORMITY` | pyradiomics | `test_2d_firstorder_regression.h` | **RESOLVED.** A pyradiomics assertion already exists in `test_2d_firstorder_pyradiomics.h`, so column J was stale: repointed there, no code moved. The MATLAB-valued assertion in `test_2d_firstorder_matlab.h` is a *second* assertion at the MATLAB config and needs its own row per SPEC §3. |
+| 2D `ENTROPY` | pyradiomics | `test_2d_firstorder_regression.h` | **RESOLVED.** Also already asserted in `test_2d_firstorder_pyradiomics.h`; column J repointed, no code moved. The snapshot in the regression file is the drift guard on the default config. |
+| 2D `moments` ×40 | skimage | `test_2d_moments_regression.h` | **RESOLVED in Wave 13.** All 40 were already asserted in `test_2d_moments_skimage.h`; only the registry was stale, so `target_test` was repointed there and no code moved. This is the common case of the class: the assertion was migrated in an earlier wave and column J was never updated. |
+| 2D `ngldm` x19 | mirp | `test_2d_ngldm_mirp.h` | The tree holds **IBSI** goldens for 17 of these 19 features, cited page-by-page against the IBSI documentation in `test_2d_ngldm_ibsi.h`; the other two (`GLM`, `DCM`) are explicitly *not* IBSI features and are now snapshots in `test_2d_ngldm_regression.h`. So the in-tree 2D NGLDM oracle is `ibsi`, not `mirp`. Either these rows should read `oracle=ibsi` (already satisfied, 17 of them), or MIRP is wanted as a second opinion per SPEC 3 and the rows stay backlog until it is run. |
 | 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `d3inten_GT` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 35 `_matlab` functions and the 18 rows point there. The 36th, `3COVERED_IMAGE_INTENSITY_RANGE`, is the one regression-only feature and was split into `test_3d_firstorder_regression.h`. Two carry-overs: neither file is `#include`d (B.1), and the same map also covers 17 `oracle=pyradiomics` features which per SPEC 3 need a second (matlab) row each. |
 
 The general form: **a `vetted` row whose `target_test` names a `_regression` file** is asserting that

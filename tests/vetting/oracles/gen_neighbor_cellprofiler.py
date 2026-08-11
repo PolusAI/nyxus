@@ -2,7 +2,7 @@
 (SPEC 4, oracle=cellprofiler). Runs the real cellprofiler.modules.
 MeasureObjectNeighbors module on the gtest fixture `neighborhood2d_scene_labels`
 (test_data.h) and validates it against the goldens pinned in
-test_neighbor_cellprofiler.h.
+test_2d_neighbor_cellprofiler.h.
 
 Result of this comparison (see the printed table):
   NUM_NEIGHBORS           -- CP == Nyxus  (VETS it)
@@ -49,7 +49,7 @@ SCENE = [
 PAD = 3  # keep every ROI off the image border (CP border handling)
 LABELS = [1, 2, 3, 4, 5]
 
-# goldens the CP run must reproduce (pinned in test_neighbor_cellprofiler.h == Nyxus)
+# goldens the CP run must reproduce (pinned in test_2d_neighbor_cellprofiler.h == Nyxus)
 CP_VETS = {  # feature -> {label: value}  (features where CP == Nyxus)
     "NUM_NEIGHBORS": {1: 4, 2: 1, 3: 1, 4: 1, 5: 1},
     "CLOSEST_NEIGHBOR1_DIST": {1: 2.5, 2: 2.54950975679639, 3: 2.54950975679639,

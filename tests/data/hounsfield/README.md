@@ -1,6 +1,6 @@
 # Hounsfield-Unit (HU) loader test fixtures
 
-Tiny tiled TIFFs used by the HU loader mechanics tests in `tests/test_hu_mechanics.h`
+Tiny tiled TIFFs used by the HU loader mechanics tests in `tests/test_2d_hu_mechanics.h`
 to verify the `--preserve-hu` offset mapping through the real TIFF decode path.
 
 | File | Type | Notes |
@@ -20,7 +20,7 @@ against stays auditable.
 
 ## 3D NIfTI fixtures
 
-Used by `tests/python/test_hu_nifti_regression.py` to verify `preserve_hu` through the 3D NIfTI
+Used by `tests/python/test_3d_hu_nifti_regression.py` to verify `preserve_hu` through the 3D NIfTI
 loader path (`RawNiftiLoader`/`NiftiLoader`).
 
 | File | Type | Notes |
@@ -50,7 +50,7 @@ Obtain the original via: `python -c "from pydicom.data import get_testdata_file;
 | `ct_small_hu.tif` | 128×128 signed int16 | the **true-HU field** of `CT_small.dcm` (HU = slope·stored + intercept), HU range −896..1167 |
 | `ct_small_mask.tif` | 128×128 uint16, all ones | whole-image ROI |
 
-Used by `tests/python/test_hu_ct_small_pydicom.py` — the oracle test that vets HU *feature*
+Used by `tests/python/test_2d_hu_ct_small_pydicom.py` — the oracle test that vets HU *feature*
 values (MIN/MAX/MEAN/INTEGRATED) against pydicom (docs/vetting SPEC.md §4 token `pydicom`). The
 pixels come from pydicom's decode of a real scanner slice and the goldens are pinned from
 pydicom+numpy, so it is an independent oracle, not a self-consistency snapshot (§5.2). CI

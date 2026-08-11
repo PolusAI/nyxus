@@ -1,0 +1,285 @@
+#pragma once
+
+#include <gtest/gtest.h>
+#include <unordered_map> 
+#include "../src/nyx/environment.h"
+#include "../src/nyx/features/gldzm.h"
+#include "test_data.h"
+#include "test_main_nyxus.h"
+
+// Digital phantom values for intensity based features
+// (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. https://ibsi.readthedocs.io/en/latest/03_Image_features.html
+// Dataset: dig phantom. Aggr. method: 2D, averaged)
+static std::unordered_map<std::string, double> ibsi_reference_gldzm_feature_golden_values
+{
+    {"GLDZM_SDE",		0.946}, // Small distance emphasis
+    {"GLDZM_LDE",       1.21},  // Large distance emphasis
+    {"GLDZM_LGLZE",     0.371}, // Low grey level zone emphasis
+    {"GLDZM_HGLZE",     16.4},  // High grey level zone emphasis
+    {"GLDZM_SDLGLE",    0.34788359788359785}, // Small distance low grey level emphasis
+    {"GLDZM_SDHGLE",    15.2},  // Small distance high grey level emphasis
+    {"GLDZM_LDLGLE",    0.386}, // Large distance low grey level emphasis
+    {"GLDZM_LDHGLE",    21.3},  // Large distance high grey level emphasis
+    {"GLDZM_GLNU",      1.41},  // Grey level non-uniformity
+    {"GLDZM_GLNUN",     0.323}, // Normalised grey level non-uniformity
+    {"GLDZM_ZDNU",      3.79},  // Zone distance non-uniformity
+    {"GLDZM_ZDNUN",     0.898}, // Normalised zone distance non-uniformity
+    {"GLDZM_ZP",        0.24},  // Zone percentage
+    // IBSI defines GLM and ZDM for GLDZM. Keep them in the reference table;
+    // external V&V also reconciles them through MIRP-owned MatrixDZM
+    // primitives because MIRP does not expose direct feature columns for them.
+    {"GLDZM_GLM",       3.476190476190476}, // Grey level mean
+    {"GLDZM_GLV",       3.97},  // Grey level variance
+    {"GLDZM_ZDM",       1.1071428571428572}, // Zone distance mean
+    {"GLDZM_ZDV",       0.0816326530612245}, // Zone distance variance
+    {"GLDZM_ZDE",       1.73}   // Zone distance entropy
+};
+
+void assert_gldzm_matrix_ibsi()
+{
+    // featue settings for this particular test
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
+
+    // Load a test image
+    LR roidata;
+    load_masked_test_roi_data (roidata, ibsi_fig3_17a_gldzm_sample_image_int, ibsi_fig3_17a_gldzm_sample_image_mask, sizeof(ibsi_fig3_17a_gldzm_sample_image_mask) / sizeof(NyxusPixel));
+
+    // In this test, we only calculate and examine the GLDZ-matrix without calculating features
+    GLDZMFeature f;
+
+    // Have the feature object to create the GLDZM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and GLDZM's dimensions)
+    std::vector<PixIntens> greysLUT;
+    SimpleMatrix<unsigned int> GLDZM;
+    int Ng,	// number of grey levels
+        Nd;	// maximum number of non-zero dependencies
+    ASSERT_NO_THROW(f.prepare_GLDZM_matrix_kit (GLDZM, Ng, Nd, greysLUT, roidata, STNGS_NGREYS(s), STNGS_IBSI(s)));
+
+    // Count discrepancies
+    int n_mismatches = 0;
+    for (int g = 0; g < Ng; g++)
+        for (int d = 0; d < Nd; d++)
+        {
+            auto ibsi_reference_matrix_value = ibsi_fig3_17c_gldzm_reference_matrix [g * Nd + d];
+            auto actual = GLDZM.yx (g,d);
+            if (ibsi_reference_matrix_value != actual)
+            {
+                n_mismatches++;
+                std::cout << "GLDZ-matrix mismatch! Expecting [g=" << g << ", d=" << d << "] = " << ibsi_reference_matrix_value << " not " << actual << "\n";
+            }
+        }
+
+    ASSERT_TRUE(n_mismatches == 0);
+}
+
+void assert_gldzm_feature_against_golden_values_ibsi(
+    const Feature2D& feature_,
+    const std::string& feature_name,
+    const std::unordered_map<std::string, double>& feature_golden_values)
+{
+    // featue settings for this particular test
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 128;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = true;   // activate the IBSI compliance mode
+
+    int feature = int(feature_);
+
+    ASSERT_TRUE (feature_golden_values.count(feature_name) > 0);
+
+    double total = 0;
+
+    //==== image 1
+
+    // Load data (slice #1)
+    LR roidata1;
+    load_masked_test_roi_data (roidata1, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask, sizeof(ibsi_phantom_z1_intensity) / sizeof(NyxusPixel));
+
+    // Calculate features
+    GLDZMFeature f1;
+    ASSERT_NO_THROW(f1.calculate(roidata1, s));
+
+    // Initialize per-ROI feature value buffer with zeros
+    roidata1.initialize_fvals();
+
+    // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
+    f1.save_value(roidata1.fvals);
+
+    total += roidata1.fvals[feature][0];
+
+    //==== image 2
+
+    // Load data (slice #2)
+    LR roidata2;
+    load_masked_test_roi_data (roidata2, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask, sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
+
+    // Calculate features
+    GLDZMFeature f2;
+    ASSERT_NO_THROW(f2.calculate(roidata2, s));
+
+    // Initialize per-ROI feature value buffer with zeros
+    roidata2.initialize_fvals();
+
+    // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
+    f2.save_value(roidata2.fvals);
+
+    total += roidata2.fvals[feature][0];
+
+    //==== image 3
+
+    // Load data (slice #3)
+    LR roidata3;
+    load_masked_test_roi_data(roidata3, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask, sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
+
+    // Calculate features
+    GLDZMFeature f3;
+    ASSERT_NO_THROW(f3.calculate(roidata3, s));
+
+    // Initialize per-ROI feature value buffer with zeros
+    roidata3.initialize_fvals();
+
+    // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
+    f3.save_value(roidata3.fvals);
+
+    total += roidata3.fvals[feature][0];
+
+    //==== image 4
+
+    // Load data (slice #4)
+    LR roidata4;
+    load_masked_test_roi_data(roidata4, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask, sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
+
+    // Calculate features
+    GLDZMFeature f4;
+    ASSERT_NO_THROW(f4.calculate(roidata4, s));
+
+    // Initialize per-ROI feature value buffer with zeros
+    roidata4.initialize_fvals();
+
+    // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
+    f4.save_value(roidata4.fvals);
+
+    total += roidata4.fvals[feature][0];
+
+    // Verdict
+    double aveTotal = total / 4.0;
+    ASSERT_TRUE (agrees_gt(aveTotal, feature_golden_values.at(feature_name), 2.));
+}
+
+void assert_gldzm_feature_ibsi (const Feature2D& feature_, const std::string& feature_name)
+{
+    SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
+    assert_gldzm_feature_against_golden_values_ibsi(feature_, feature_name, ibsi_reference_gldzm_feature_golden_values);
+}
+
+void test_2d_gldzm_matrix_correctness_ibsi()
+{
+    assert_gldzm_matrix_ibsi();
+}
+
+void test_2d_gldzm_sde_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_SDE, "GLDZM_SDE");
+}
+
+void test_2d_gldzm_lde_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_LDE, "GLDZM_LDE");
+}
+
+void test_2d_gldzm_lglze_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_LGLZE, "GLDZM_LGLZE");
+}
+
+void test_2d_gldzm_hglze_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_HGLZE, "GLDZM_HGLZE");
+}
+
+void test_2d_gldzm_sdlgle_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_SDLGLE, "GLDZM_SDLGLE");
+}
+
+void test_2d_gldzm_sdhgle_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_SDHGLE, "GLDZM_SDHGLE");
+}
+
+void test_2d_gldzm_ldlgle_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_LDLGLE, "GLDZM_LDLGLE");
+}
+
+void test_2d_gldzm_ldhgle_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_LDHGLE, "GLDZM_LDHGLE");
+}
+
+void test_2d_gldzm_glnu_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_GLNU, "GLDZM_GLNU");
+}
+
+void test_2d_gldzm_glnun_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_GLNUN, "GLDZM_GLNUN");
+}
+
+void test_2d_gldzm_zdnu_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_ZDNU, "GLDZM_ZDNU");
+}
+
+void test_2d_gldzm_zdnun_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_ZDNUN, "GLDZM_ZDNUN");
+}
+
+void test_2d_gldzm_zp_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_ZP, "GLDZM_ZP");
+}
+
+void test_2d_gldzm_glm_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_GLM, "GLDZM_GLM");
+}
+
+void test_2d_gldzm_glv_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_GLV, "GLDZM_GLV");
+}
+
+void test_2d_gldzm_zdm_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_ZDM, "GLDZM_ZDM");
+}
+
+void test_2d_gldzm_zdv_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_ZDV, "GLDZM_ZDV");
+}
+
+void test_2d_gldzm_zde_ibsi()
+{
+    assert_gldzm_feature_ibsi(Nyxus::Feature2D::GLDZM_ZDE, "GLDZM_ZDE");
+}
+

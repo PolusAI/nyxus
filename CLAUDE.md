@@ -216,9 +216,13 @@ governing documents are:
   dependencies**.
 - `tests/vetting/check_coverage.py` validates the registry and regenerates
   `coverage_report.md` (stdlib only). Naming: test files are
-  `test_<family>_<kind-or-oracle>.{h,py}` (e.g. `test_glcm_pyradiomics.py`,
-  `test_glcm_regression.h`, `test_glcm_mechanics.h`); functions carry the oracle
-  suffix so vetting status is self-evident.
+  `test_<dim>_<family>_<kind-or-oracle>.{h,py}` (e.g. `test_2d_glcm_pyradiomics.py`,
+  `test_3d_glcm_regression.h`, `test_2d_glcm_mechanics.h`); functions repeat the
+  same `test_<dim>_<family>…_<kind>` shape, so which implementation an assertion
+  covers and whether it establishes vetting are both evident from the name. The
+  `2d`/`3d` token is mandatory — a file with no image dimensionality (Arrow, env
+  init, ROI blacklist) must be listed in `check_test_names.py`'s `DIM_AGNOSTIC`
+  with its reason. `tests/vetting/check_test_names.py` enforces all of this in CI.
 
 When you change a feature's math, re-vet it against its oracle at the recipe's
 config and update the registry row — don't just re-baseline a snapshot. A
