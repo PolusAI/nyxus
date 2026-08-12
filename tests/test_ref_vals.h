@@ -13,9 +13,14 @@
 // spelled ref_vals_map<double> is a reference table whatever it is called, so the 6.3.1 name check
 // applies to the complete set instead of a self-selected one.
 //
-// The value type is the one the assertion compares. agrees_gt() takes double, so double is the
-// default; float appears only where a table predates that and is worth revisiting rather than
-// copying.
+// The value type is the one the assertion compares, and it is double throughout: agrees_gt() and
+// ASSERT_NEAR both take double, so a float table only round-tripped its literals through a narrower
+// type before widening them again at the comparison. The five 3D texture tables that predated the
+// aliases were the last float ones and are now double like the rest.
+//
+// Declaring the table through an alias is itself the rule, not a style preference -- a bare
+// std::unordered_map is invisible to the type-based detection above, so check_test_names.py rejects
+// a reference table spelled that way.
 
 // Keyed by feature name -- the common shape.
 //   ref_vals_map<double> glcm_2d_ibsi_ref_vals { {"GLCM_ASM", 0.368}, ... };

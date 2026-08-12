@@ -27,11 +27,12 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 #include "test_2d_firstorder_common.h"
+#include "test_ref_vals.h"
 
 using namespace Nyxus;
 
 // Pinned PyRadiomics firstorder goldens (all 18 mapped features agreed; 0 flags).
-static const std::unordered_map<std::string, double> firstorder_2d_pyradiomics_ref_vals = {
+static const ref_vals_map<double> firstorder_2d_pyradiomics_ref_vals = {
     {"MEAN", 32566.38961038961},
     {"MEDIAN", 29803.5},
     {"MIN", 11079.0},
@@ -60,7 +61,7 @@ static const std::unordered_map<std::string, double> firstorder_2d_pyradiomics_r
 // Per-feature agrees_gt frac_tolerance: exact=1e6 (rel<=1e-6), definitional=100 (rel<=1e-2),
 // approx=20 (rel<=5%). A band wider than the divergence it exists to absorb hides drift (SPEC 7),
 // so VARIANCE sits at the tier its known Bessel gap of 6.54e-03 needs, not at the generic approx one.
-static const std::unordered_map<std::string, double> firstorder_2d_pyradiomics_ref_tols = {
+static const ref_vals_map<double> firstorder_2d_pyradiomics_ref_tols = {
     {"MEAN", 1e6}, {"MEDIAN", 1e6}, {"MIN", 1e6}, {"MAX", 1e6}, {"RANGE", 1e6},
     {"VARIANCE_BIASED", 1e6}, {"VARIANCE", 100.0}, {"SKEWNESS", 1e6}, {"KURTOSIS", 1e6}, {"ENERGY", 1e6},
     {"ROOT_MEAN_SQUARED", 1e6}, {"MEAN_ABSOLUTE_DEVIATION", 1e6},

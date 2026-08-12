@@ -10,7 +10,7 @@
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
 // (100 grey levels, offset 1, and asymmetric cooc matrix)
-static ref_vals_map<float> glcm_3d_regression_ref_vals
+static ref_vals_map<double> glcm_3d_regression_ref_vals
 {
     {"3GLCM_ACOR", 8686.0},
     {"3GLCM_ASM", 0.87},

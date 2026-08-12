@@ -9,7 +9,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static ref_vals_map<float> glszm_3d_regression_ref_vals{
+static ref_vals_map<double> glszm_3d_regression_ref_vals{
     {"3GLSZM_SAE",  0.6},
     {"3GLSZM_LAE",  1377.1},
     {"3GLSZM_LGLZE",    0.0005},

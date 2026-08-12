@@ -373,8 +373,13 @@ name, and the fix is to split it, not to pick the majority.
 a §6.3.1 alias or reached through an accessor returning a function-local static — a set that
 deliberately includes the conforming suffixes, so a table cannot drift back to an old name without
 tripping the check. It rejects a missing suffix, a missing dim token, an `<oracle>` segment that is
-not a §4 token (`glcm_2d_mahotas_ref_vals` fails, since the registry does not accept mahotas), and a
-reference table declared in a `_common.h`. Tables that do not conform yet live in `TABLE_EXCEPTIONS`
+not a §4 token (`glcm_2d_mahotas_ref_vals` fails, since the registry does not accept mahotas), a
+reference table declared in a `_common.h`, and a reference table declared as a raw
+`std::unordered_map` rather than through an alias. That last one is what keeps the set closed: a
+table identified only by the words in its name is one rename away from being invisible to the check,
+whereas `ref_vals_map<double>` says what it is regardless. One value type, `double`, for the same
+reason — `agrees_gt`/`ASSERT_NEAR` compare in double, so a `float` table narrowed its literals only
+to widen them again at the assertion. Tables that do not conform yet live in `TABLE_EXCEPTIONS`
 with the reason, the same way `KIND_EXCEPTIONS` and `DIM_AGNOSTIC` carry theirs; an entry there is a
 piece of tracked work, not a permanent waiver.
 
