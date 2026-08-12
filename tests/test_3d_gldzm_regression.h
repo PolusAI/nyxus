@@ -59,44 +59,6 @@ static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void assert_3d_gldzm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
-#if 0
-	// get segment info
-	auto [ipath, mpath, label] = get_3d_segmented_phantom();
-	ASSERT_TRUE(fs::exists(ipath));
-	ASSERT_TRUE(fs::exists(mpath));
-
-	// mock the 3D workflow
-	Environment e;
-	clear_slide_rois (e.uniqueLabels, e.roiData);
-	ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
-	std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-	ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
-	ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
-
-	// make it find the feature code by name
-	int fcode = -1;
-	ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
-	// ... and that it's the feature we expect
-	ASSERT_TRUE((int)expecting_fcode == fcode);
-
-	// set feature's state
-	Environment::ibsi_compliance = false;
-
-	// extract the feature
-	LR& r = e.roiData[label];
-	ASSERT_NO_THROW(r.initialize_fvals());
-	D3_GLDZM_feature f;
-	Fsettings s;
-	ASSERT_NO_THROW(f.calculate(r, s));
-	f.save_value(r.fvals);
-
-	// aggregate all the angles
-	double atot = r.fvals[fcode][0];
-
-	// verdict
-	ASSERT_TRUE(agrees_gt(atot, gldzm_3d_regression_ref_vals[fname], 10.));
-#endif
-
 	// get segment info
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();
 	ASSERT_TRUE(fs::exists(ipath));

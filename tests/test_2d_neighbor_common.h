@@ -9,9 +9,8 @@
 // including test_2d_neighbor_regression.h -- an oracle file including a regression file to borrow
 // scaffolding, which put a snapshot table in scope of every assertion that did so.
 
-#include <gtest/gtest.h>
-
-#include <string>
+// No <gtest/gtest.h>: this header asserts nothing, it only builds ROIs. The two oracle files that
+// include it bring gtest in themselves for their own assertions.
 #include <unordered_map>
 #include <unordered_set>
 
