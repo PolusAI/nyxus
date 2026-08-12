@@ -7,21 +7,14 @@
 #include "../src/nyx/features/3d_surface.h"
 #include "test_ref_vals.h"
 
-static ref_vals_map<double> morphology_3d_regression_ref_vals{
-    { "3AREA",  58457 },
-    { "3AREA_2_VOLUME", 0.21 },
-    { "3COMPACTNESS1",  0.011 },
-    { "3COMPACTNESS2",  0.043 },
-    { "3MESH_VOLUME",   478516 },
-    { "3SPHERICAL_DISPROPORTION",   2.9 },
-    { "3SPHERICITY",    0.35 },
-    { "3VOLUME_CONVEXHULL", 478516 },
-    { "3VOXEL_VOLUME",  274431 }
-};
-
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-void assert_3d_morphology_feature (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
+// Fixture only (SPEC 6.3.1): loads the segmented phantom, runs D3_SurfaceFeature and hands the value
+// back. Judging it belongs to whichever file owns the reference table, so the goldens and their
+// tolerances now live in test_3d_morphology_regression.h and test_3d_morphology_matlab.h. This header
+// used to hold one snapshot table that both of those files asserted against, which is how
+// test_3d_morphology_mesh_volume_matlab ended up pinned to Nyxus output instead of to MATLAB's.
+void calculate_3d_morphology_feature_value (const std::string& fname, const Nyxus::Feature3D& expecting_fcode, double& out)
 {
 #if 0
 
@@ -58,8 +51,8 @@ void assert_3d_morphology_feature (const std::string& fname, const Nyxus::Featur
     // aggregate all the angles
     double atot = r.fvals[fcode][0];
 
-    // verdict
-    ASSERT_TRUE(agrees_gt(atot, morphology_3d_regression_ref_vals[fname], 10.));
+    // verdict (the caller's table supplies the golden)
+    out = atot;
 
     *********************************
 #endif
@@ -120,8 +113,7 @@ void assert_3d_morphology_feature (const std::string& fname, const Nyxus::Featur
     // we don't expect subfeatures so using subfeature [0]
     double atot = r.fvals[fcode][0];
 
-    // verdict
-    ASSERT_TRUE(agrees_gt(atot, morphology_3d_regression_ref_vals[fname], 10.));
+    out = atot;
 }
 
 // The ten test functions that used to live here have been distributed to their taxonomy homes

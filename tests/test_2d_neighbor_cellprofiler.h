@@ -14,7 +14,7 @@
 
 #include <gtest/gtest.h>
 
-#include "test_2d_neighbor_regression.h"  // shared fixture builder calculate_neighbor_feature_values
+#include "test_2d_neighbor_common.h"  // fixture only: calculate_neighbor_feature_values
 #include "test_ref_vals.h"
 
 static ref_vals_map_by_label<double> neighbor_2d_cellprofiler_ref_vals_by_label{

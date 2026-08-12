@@ -2,6 +2,13 @@
 
 #include "test_2d_morphology_common.h"
 
+#include "test_ref_vals.h"
+
+static ref_vals_map<double> morphology_2d_fraclac_ref_vals{
+	{"FRACT_DIM_BOXCOUNT", 1.8706},   // vetted by ImageJ/FracLac: an independent implementation of the same box-count method
+	{"FRACT_DIM_PERIMETER", 1.0493},  // vetted by ImageJ/FracLac edge box-count: cross-method vs Nyxus' divider
+};
+
 void test_2d_morphology_fractal_dimension_blob512_fraclac()
 {
 	std::vector<std::vector<double>> fvals;

@@ -12,6 +12,7 @@
 #include "../src/nyx/features/neighbors.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
+#include "test_2d_neighbor_common.h"   // fixture: make_neighbors2d_settings + calculate_neighbor_feature_values
 #include "test_ref_vals.h"
 
 static ref_vals_map_by_label<double> neighbor_2d_regression_ref_vals_by_label{
@@ -53,62 +54,6 @@ static ref_vals_map_by_label<double> neighbor_2d_regression_ref_vals_by_label{
 // second-closest distance likewise. This regression file keeps only the fixture
 // builder + the PERCENT_TOUCHING snapshot (the one feature with no promotable oracle).
 
-static Fsettings make_neighbors2d_settings()
-{
-	Fsettings s;
-	s.resize(static_cast<int>(NyxSetting::__COUNT__));
-	s[static_cast<int>(NyxSetting::SOFTNAN)].rval = 0.0;
-	s[static_cast<int>(NyxSetting::TINY)].rval = 0.0;
-	s[static_cast<int>(NyxSetting::SINGLEROI)].bval = false;
-	s[static_cast<int>(NyxSetting::GREYDEPTH)].ival = 128;
-	s[static_cast<int>(NyxSetting::PIXELSIZEUM)].rval = 1.0;
-	s[static_cast<int>(NyxSetting::XYRES)].rval = 1.0;
-	s[static_cast<int>(NyxSetting::PIXELDISTANCE)].ival = 1;
-	s[static_cast<int>(NyxSetting::USEGPU)].bval = false;
-	s[static_cast<int>(NyxSetting::VERBOSLVL)].ival = 0;
-	s[static_cast<int>(NyxSetting::IBSI)].bval = false;
-	return s;
-}
-
-static void calculate_neighbor_feature_values(std::unordered_map<int, LR>& roiData)
-{
-	Fsettings s = make_neighbors2d_settings();
-	std::unordered_set<int> uniqueLabels;
-
-	for (const auto& px : neighborhood2d_scene_labels)
-	{
-		int label = static_cast<int>(px.intensity);
-		uniqueLabels.insert(label);
-
-		auto [it, inserted] = roiData.try_emplace(label, label);
-		LR& roi = it->second;
-
-		if (inserted)
-			init_label_record_3(roi, static_cast<int>(px.x), static_cast<int>(px.y), 1);
-		else
-			update_label_record_3(roi, static_cast<int>(px.x), static_cast<int>(px.y), 1);
-
-		roi.raw_pixels.push_back(Pixel2(static_cast<size_t>(px.x), static_cast<size_t>(px.y), static_cast<PixIntens>(1)));
-	}
-
-	BasicMorphologyFeatures basic;
-	ContourFeature contour;
-	for (auto& item : roiData)
-	{
-		LR& roi = item.second;
-		roi.make_nonanisotropic_aabb();
-		roi.aux_image_matrix = ImageMatrix(roi.raw_pixels);
-		roi.initialize_fvals();
-
-		basic.calculate(roi, s);
-		basic.save_value(roi.fvals);
-
-		contour.calculate(roi, s);
-		contour.save_value(roi.fvals);
-	}
-
-	NeighborsFeature::manual_reduce(roiData, s, uniqueLabels);
-}
 
 static void assert_neighbor2d_feature(
 	const std::unordered_map<int, LR>& roiData,

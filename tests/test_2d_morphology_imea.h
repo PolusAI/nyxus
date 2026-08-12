@@ -3,6 +3,17 @@
 #include "test_2d_morphology_common.h"
 #include "test_2d_remaining_common.h"   // morphology_2d_imea_ref_vals + assert_caliper_close_to_imea
 
+#include "test_ref_vals.h"
+
+static ref_vals_map<double> morphology_2d_imea_geodetic_ref_vals{
+	{"DIAMETER_EQUAL_PERIMETER", 8.57365809435587},
+	// Real-valued rectangle-model roots after the geo_len_thickness.cpp perimeter-truncation fix
+	// (were the integer-truncated 10.0 / 3.0). Now vetted against imea's geodeticlength_and_thickness
+	// in test_2d_morphology_imea.h.
+	{"GEODETIC_LENGTH", 11.13182483477333},
+	{"THICKNESS", 2.3356458070362205},
+};
+
 // DIAMETER_EQUAL_PERIMETER vetted vs imea (tests/vetting/oracles/gen_morphology_imea.py).
 //
 // imea.measure_2d.macro.perimeter_equal_diameter(perimeter) is a third-party implementation of the

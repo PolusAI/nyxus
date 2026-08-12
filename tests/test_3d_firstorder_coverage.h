@@ -19,3 +19,32 @@ INSTANTIATE_TEST_SUITE_P(
 	Test3DFeature_UNVETTED_LOCAL_REGRESSION,
 	testing::ValuesIn(feature_3d_cases_for_family("firstorder", false)),
 	sanitize_3d_feature_test_name);
+
+// Regression baselines for this family's slice of the sweep: pinned Nyxus output for the public 3D
+// firstorder features that no third-party oracle backs yet. They establish no vetting (SPEC 1), and they
+// live here rather than in the shared harness so the table sits with the assertions that read it.
+static ref_vals_map<std::vector<double>> firstorder_3d_regression_coverage_ref_vals
+{
+	{ "3COV", { 0.29486207043456802 } },
+	{ "3COVERED_IMAGE_INTENSITY_RANGE", { 1.0002043207290587 } },
+	{ "3EXCESS_KURTOSIS", { -1.2127631603215119 } },
+	{ "3HYPERFLATNESS", { 3.8027657005973312 } },
+	{ "3HYPERSKEWNESS", { 0.32001332615517414 } },
+	{ "3INTEGRATED_INTENSITY", { 544286216 } },
+	{ "3MEDIAN_ABSOLUTE_DEVIATION", { 507.12380480410445 } },
+	{ "3MODE", { 1279 } },
+	{ "3P01", { 1039.3829596412556 } },
+	{ "3P25", { 1469.7943925233644 } },
+	{ "3P75", { 2487.9072847682119 } },
+	{ "3P99", { 3002.3047021943576 } },
+	{ "3QCOD", { 0.25724851827174233 } },
+	{ "3ROBUST_MEAN", { 1977.5189642596645 } },  // FIX: baseline was pinning the bug value 0; 3ROBUST_MEAN is now computed (mean of voxels in [P10,P90]) ~ 3MEAN 1983.32, trimmed
+	{ "3STANDARD_DEVIATION", { 584.80556406962933 } },
+	{ "3STANDARD_DEVIATION_BIASED", { 584.80449858510713 } },
+	{ "3STANDARD_ERROR", { 1.116333919044723 } },
+	{ "3UNIFORMITY_PIU", { 50.59288537549407 } },
+	{ "3VARIANCE_BIASED", { 341996.3015653785 } },
+};
+
+static const bool firstorder_3d_coverage_baseline_registered =
+	register_coverage_baseline("firstorder", &firstorder_3d_regression_coverage_ref_vals);
