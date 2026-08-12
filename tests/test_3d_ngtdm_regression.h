@@ -9,7 +9,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at grey scalefactlr 100
-static ref_vals_map<float> ngtdm_3d_regression_ref_vals {
+static ref_vals_map<double> ngtdm_3d_regression_ref_vals {
     {"3NGTDM_COARSENESS",   0.00004},
     {"3NGTDM_CONTRAST",     0.66},
     {"3NGTDM_BUSYNESS",     46.0},

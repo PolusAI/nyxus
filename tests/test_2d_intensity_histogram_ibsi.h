@@ -8,6 +8,7 @@
 #include "test_data.h"
 #include "test_main_nyxus.h"
 #include "test_2d_intensity_histogram_regression.h"
+#include "test_ref_vals.h"
 
 // Provenance: IBSI (Zwanenburg et al. 2020, arXiv:1612.07003) §3.4 digital-phantom
 // intensity-histogram consensus values. Discretisation config: FBN (fixed bin number)
@@ -15,7 +16,7 @@
 // 1-based grey-level convention, matching IBSI directly (no offset). Recorded in
 // design doc §6.4. Values sourced in Task 1.
 static const int IH_PHANTOM_NBINS = 6;
-static const std::unordered_map<std::string,double> intensity_histogram_2d_ibsi_ref_vals = {
+static const ref_vals_map<double> intensity_histogram_2d_ibsi_ref_vals = {
     {"VARIANCE_IDX", 3.05},
     {"SKEWNESS_IDX", 1.08},
     {"EXCESS_KURTOSIS_IDX", -0.355},

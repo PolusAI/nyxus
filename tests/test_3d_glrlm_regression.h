@@ -9,7 +9,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static ref_vals_map<float> glrlm_3d_regression_ref_vals{
+static ref_vals_map<double> glrlm_3d_regression_ref_vals{
     {"3GLRLM_SRE", 0.84},
     {"3GLRLM_LRE", 40.8},
     {"3GLRLM_LGLRE", 0.072},

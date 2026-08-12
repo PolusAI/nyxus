@@ -351,6 +351,14 @@ def check(root):
                 errors.append(f"{p.name}: golden table {name} is declared in a _common.h; move it "
                               f"to the file whose assertions read it (SPEC 6.3.1)")
                 continue
+            # 6.3.1: one spelling for one thing. A table written as a bare std::unordered_map is
+            # reference data that only the name markers can see, so it is one rename away from being
+            # invisible to this check entirely - which is the circularity the aliases removed.
+            if not by_type:
+                errors.append(f"{p.name}: golden table {name} is declared as a raw container; "
+                              f"declare it through a test_ref_vals.h alias "
+                              f"({' / '.join(TABLE_ALIASES)}) so it is identifiable by type "
+                              f"(SPEC 6.3.1)")
             why = table_violation(name)
             if why:
                 errors.append(f"{p.name}: golden table {name} {why}")
