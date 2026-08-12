@@ -346,11 +346,22 @@ Three qualifiers, used only when needed:
 | Per-feature tolerances beside the values | `_ref_tols` | `firstorder_2d_pyradiomics_ref_tols` |
 | Values keyed by ROI label, not feature | `_ref_vals_by_label` | `neighbor_2d_cellprofiler_ref_vals_by_label` |
 
-**The oracle in the name is the table's own, not its file's.** A table in a `_common.h` shared
-header takes the oracle of the assertions that read it — `morphology_2d_fraclac_ref_vals` lives in
-`test_2d_morphology_common.h` because `test_2d_morphology_fraclac.h` is what consumes it. A name
-claiming an oracle the numbers do not come from is the same defect as a `_<oracle>` test function
-asserting a snapshot (§6.2.1).
+**A table lives in the file whose assertions read it.** Its `<family>_<dim>_<oracle>` must therefore
+match that file's own `<family>_<dim>_<kind-or-oracle>` (§6.1) — the table and its file make the same
+claim, or one of them is wrong. `morphology_2d_fraclac_ref_vals` belongs in
+`test_2d_morphology_fraclac.h`, beside the assertions that read it.
+
+**`_common.h` headers hold fixtures, never values.** Settings builders, ROI loaders, feature-calculation
+scaffolding — anything a test needs in order to *produce* a number — are shared freely. Reference data
+and the assertions that compare against it are not, because a shared table is read by callers the table
+cannot see. That is not hypothetical: one shared lookup spanning four tables let `_matlab` and
+`_skimage` functions resolve their "oracle" values out of a `_regression` snapshot, which is precisely
+the §6.2.1 defect, reached through file layout instead of through naming. Keeping values next to their
+assertions makes the mismatch visible in one file rather than inferable across three.
+
+An assertion helper is bound to the table it reads, so it moves with it. A helper serving several
+oracle files is the shape to look for: it means one table is answering to several `<oracle>` claims,
+and the fix is to split the helper per oracle, not to relocate the table.
 
 A table's name is a claim, so `_regression` in it means the numbers are pinned Nyxus output and
 establish no vetting, exactly as for test functions (§1). It follows that **one table holds one
@@ -358,12 +369,14 @@ oracle**: a table mixing imea-vetted keys with snapshot keys has no honest `<ora
 name, and the fix is to split it, not to pick the majority.
 
 **Enforced.** `check_test_names.py` applies this to every file-scope table whose name contains
-`golden`, `oracle`, `reference`, `_gt`, `ref_vals` or `ref_tols` — a set that deliberately includes
-the conforming suffixes, so a table cannot drift back to an old name without tripping the check.
-It rejects a missing suffix, a missing dim token, and an `<oracle>` segment that is not a §4 token
-(`glcm_2d_mahotas_ref_vals` fails, since the registry does not accept mahotas). Tables that do not
-conform yet live in `TABLE_EXCEPTIONS` with the reason, the same way `KIND_EXCEPTIONS` and
-`DIM_AGNOSTIC` carry theirs; an entry there is a piece of tracked work, not a permanent waiver.
+`golden`, `oracle`, `reference`, `_gt`, `ref_vals` or `ref_tols`, and to every table declared through
+a §6.3.1 alias or reached through an accessor returning a function-local static — a set that
+deliberately includes the conforming suffixes, so a table cannot drift back to an old name without
+tripping the check. It rejects a missing suffix, a missing dim token, an `<oracle>` segment that is
+not a §4 token (`glcm_2d_mahotas_ref_vals` fails, since the registry does not accept mahotas), and a
+reference table declared in a `_common.h`. Tables that do not conform yet live in `TABLE_EXCEPTIONS`
+with the reason, the same way `KIND_EXCEPTIONS` and `DIM_AGNOSTIC` carry theirs; an entry there is a
+piece of tracked work, not a permanent waiver.
 
 ### 6.4 Golden provenance (mandatory)
 Every pinned oracle golden must record, at its definition site: **tool + version + exact config +

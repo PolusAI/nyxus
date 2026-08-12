@@ -1,17 +1,78 @@
 #pragma once
 
 #include "test_3d_morphology_common.h"
+#include "test_ref_vals.h"
 
 // ---------------------------------------------------------------------------------------------------
 // Migrated from test_3d_shape.h (Wave 8). MATLAB-oracle'd 3D morphology:
-//  - 3MESH_VOLUME (registry: matlab / vetted).
+//  - 3MESH_VOLUME / 3VOLUME_CONVEXHULL / 3VOXEL_VOLUME (registry: matlab / vetted).
 //  - the covariance-matrix + eigenvalue math (Pixel3::calc_cov_matrix / Nyxus::calc_eigvals) whose
 //    ground truth is produced by MATLAB cov()/eig() - the linear-algebra core behind 3D shape.
 // Shared fixture lives in test_3d_morphology_common.h.
 // ---------------------------------------------------------------------------------------------------
 
+// ORACLE goldens -- MATLAB regionprops3 shape built-ins.
+//
+// Provenance (SPEC 6.4):
+//   tool         = MATLAB R2025b, Image Processing Toolbox regionprops3
+//   properties   = Volume -> 3VOXEL_VOLUME; ConvexVolume -> 3VOLUME_CONVEXHULL and 3MESH_VOLUME
+//   fixture      = tests/data/nifti/phantoms/ut_inten.nii + ut_mask57.nii, label 57
+//   generated    = offline; no in-repo generator, so the numbers cannot be regenerated from here.
+//                  That gap is the one SPEC 6.4 requirement still open on this table, tracked in
+//                  tests/vetting/not_covered.md section C.
+//
+// 3AREA is deliberately absent: regionprops3 SurfaceArea disagrees by more than 10%, so pinning it
+// here would assert an agreement that does not hold.
+//
+// This table is also read by the 3D coverage sweep (test_3d_coverage_common.h), the same way that
+// header already reads the per-family *_3d_pyradiomics_ref_vals tables from their own oracle files.
+static ref_vals_map<double> morphology_3d_matlab_ref_vals
+{
+	{ "3MESH_VOLUME", 497824.0 },
+	{ "3VOXEL_VOLUME", 274432.0 },
+	{ "3VOLUME_CONVEXHULL", 497824.0 }
+};
+
+// Per-feature agreement bands, as the percent that relative_absdiff_pct() may reach. Measured, not
+// assumed: a single 10% band used to cover all three, which is wide enough to pass a value four
+// times worse than the real disagreement on two of them and forty thousand times worse on the third
+// (SPEC 7 -- a tolerance looser than the divergence it absorbs hides drift).
+static ref_vals_map<double> morphology_3d_matlab_ref_tols
+{
+	// Same definition on both sides (count of voxels x voxel volume); measured 2.3e-04%. SPEC 7
+	// same-definition tier.
+	{ "3VOXEL_VOLUME", 0.1 },
+	// Convex-hull convention difference: Nyxus builds a discrete voxel hull, regionprops3
+	// ConvexVolume triangulates. Measured 3.58%, stated band 5% (SPEC 7 known-method-divergence).
+	{ "3VOLUME_CONVEXHULL", 5.0 },
+	// Nyxus aliases 3MESH_VOLUME to the convex-hull volume rather than integrating the surface mesh,
+	// so it inherits the hull convention and the same measured 3.58%. The alias is why one golden
+	// serves two keys; if 3MESH_VOLUME ever becomes a real mesh integral this band must be revisited.
+	{ "3MESH_VOLUME", 5.0 }
+};
+
+// Compares against MATLAB's number. Until now this called the shared helper in _common.h, which
+// judged against the Nyxus snapshot table -- so the one assertion carrying the matlab claim for
+// 3MESH_VOLUME never touched a MATLAB value.
+static void assert_3d_morphology_feature_matlab (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
+{
+    SCOPED_TRACE(std::string("MATLAB_ORACLE__") + fname);
+    ASSERT_TRUE(morphology_3d_matlab_ref_vals.count(fname) > 0) << fname;
+    ASSERT_TRUE(morphology_3d_matlab_ref_tols.count(fname) > 0) << fname << " has a golden but no stated band";
+
+    double actual = 0.0;
+    calculate_3d_morphology_feature_value (fname, expecting_fcode, actual);
+
+    const double expected = morphology_3d_matlab_ref_vals[fname];
+    const double pct = std::abs(expected) == 0.0 ? (actual == expected ? 0.0 : 100.0)
+                                                 : 100.0 * std::abs(actual - expected) / std::abs(expected);
+    ASSERT_LE(pct, morphology_3d_matlab_ref_tols[fname])
+        << fname << " actual=" << actual << " MATLAB regionprops3=" << expected
+        << " band=" << morphology_3d_matlab_ref_tols[fname] << "%";
+}
+
 void test_3d_morphology_mesh_volume_matlab() {
-    assert_3d_morphology_feature ("3MESH_VOLUME", Feature3D::MESH_VOLUME);
+    assert_3d_morphology_feature_matlab ("3MESH_VOLUME", Feature3D::MESH_VOLUME);
 }
 
 void test_3d_morphology_covmatrix_and_eigenvals_matlab() {
