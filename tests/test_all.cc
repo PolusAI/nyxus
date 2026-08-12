@@ -8,6 +8,7 @@
 #include "test_2d_firstorder_regression.h"
 #include "test_2d_firstorder_matlab.h"
 #include "test_2d_intensity_histogram_regression.h"
+#include "test_2d_radial_regression.h"
 #include "test_2d_intensity_histogram_mechanics.h"
 #include "test_2d_intensity_histogram_ibsi.h"
 #include "test_2d_intensity_histogram_analytic.h"
@@ -956,6 +957,11 @@ TEST(TEST_NYXUS, TEST_2D_MOMENTS_INTENSITY_REGRESSION)
 TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_EROSION_COMPLEMENT_REGRESSION)
 {
 	ASSERT_NO_THROW(test_2d_morphology_erosion_complement_regression());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_CALIPER_STATS_IMEA)
+{
+	ASSERT_NO_THROW(test_2d_morphology_caliper_stats_imea());
 }
 
 TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_CALIPER_REGRESSION)

@@ -6,7 +6,7 @@
 #include "../src/nyx/dataset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/intensity_histogram.h"
-#include "test_2d_remaining_common.h"
+#include "test_2d_remaining_common.h"   // fixture: calculate_remaining2d_shape_feature_values
 #include "../src/nyx/features/pixel.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
@@ -258,19 +258,3 @@ void test_2d_intensity_histogram_float_domain_preserve_hu_fpactive_regression()
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_BIN_SIZE), 2.0));
 }
 
-// ---------------------------------------------------------------------------------------------------
-// Migrated from test_2d_remaining_features.h (Wave 6): radial intensity distribution (FRAC_AT_D,
-// MEAN_FRAC, RADIAL_CV). Registry target_test = test_2d_intensity_histogram_regression.h; oracle is
-// cellprofiler MeasureObjectIntensityDistribution (RadialDistribution_*), still regression-snapshot
-// pending wiring. Shared fixture/oracle-data lives in test_2d_remaining_common.h.
-// ---------------------------------------------------------------------------------------------------
-
-void test_2d_radial_distribution_regression()
-{
-	std::vector<std::vector<double>> fvals;
-	calculate_remaining2d_shape_feature_values(fvals);
-
-	assert_unvetted_no_direct_oracle_remaining2d_vector_feature(fvals, Nyxus::Feature2D::FRAC_AT_D, "FRAC_AT_D");
-	assert_unvetted_no_direct_oracle_remaining2d_vector_feature(fvals, Nyxus::Feature2D::MEAN_FRAC, "MEAN_FRAC");
-	assert_unvetted_no_direct_oracle_remaining2d_vector_feature(fvals, Nyxus::Feature2D::RADIAL_CV, "RADIAL_CV");
-}

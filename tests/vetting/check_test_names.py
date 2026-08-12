@@ -344,6 +344,13 @@ def check(root):
                 continue                      # a fixture/helper, not reference data
             if name in TABLE_EXCEPTIONS:
                 continue
+            # 6.3.1: a table belongs with the assertions that read it. A shared header is read by
+            # callers it cannot see, which is how _matlab / _skimage / _cellprofiler functions ended
+            # up judging themselves against snapshot tables. _common.h carries fixtures, not values.
+            if p.stem.endswith("_common"):
+                errors.append(f"{p.name}: golden table {name} is declared in a _common.h; move it "
+                              f"to the file whose assertions read it (SPEC 6.3.1)")
+                continue
             why = table_violation(name)
             if why:
                 errors.append(f"{p.name}: golden table {name} {why}")

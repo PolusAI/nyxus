@@ -5,14 +5,128 @@
 
 #include "test_ref_vals.h"
 
-static ref_vals_map<double> morphology_2d_imea_geodetic_ref_vals{
+// imea goldens, one table per benchmark. They cannot be one table: the same features are measured on
+// two fixtures and every shared key differs by roughly 5x (STAT_FERET_DIAM_MIN is 4.473 on the
+// shape2d mask and 21.0 on the a=20/b=10 ellipse), so merging would collide 12 keys and drop one
+// fixture's numbers. SPEC 6.3.1 covers this with the _<subject> qualifier.
+//
+// The shape2d table also absorbs the three geodetic keys, which share its fixture and overlap nothing.
+static ref_vals_map<double> morphology_2d_imea_shape2d_ref_vals{
+	{"STAT_FERET_DIAM_MIN", 4.47301},
+	{"STAT_FERET_DIAM_MAX", 6.3222},
+	{"STAT_FERET_DIAM_MEAN", 5.40848},
+	{"STAT_FERET_DIAM_MEDIAN", 5.19615},
+	{"STAT_FERET_DIAM_STDDEV", 0.550668},
+	{"STAT_FERET_DIAM_MODE", 5.0},
+	// FIXED (caliper reimpl): Martin is now the area-bisecting chord and Nassenstein the bottom-tangent
+	// vertical chord (one diameter per angle), not the old min+max of a Y-grid of horizontal chords.
+	// The old goldens pinned the bug (Martin min 0.8, Nassenstein min/mode 0.0 — impossible for a solid
+	// shape). These are the corrected values on the 8x8 fixture; the diameters are vetted vs imea on a
+	// clean ellipse in TEST_2D_MORPHOLOGY_CALIPER_MARTIN_NASSENSTEIN_IMEA.
+	// FIX (caliper float-precision): re-pinned again after the float-precision hull rotation removed the inward
+	// integer-truncation bias (MODE unchanged).
+	{"STAT_MARTIN_DIAM_MIN", 4.25885},
+	{"STAT_MARTIN_DIAM_MAX", 6.12801},
+	{"STAT_MARTIN_DIAM_MEAN", 5.01762},
+	{"STAT_MARTIN_DIAM_MEDIAN", 4.97511},
+	{"STAT_MARTIN_DIAM_STDDEV", 0.553162},
+	{"STAT_MARTIN_DIAM_MODE", 4.0},
+	{"STAT_NASSENSTEIN_DIAM_MIN", 1.67316},
+	{"STAT_NASSENSTEIN_DIAM_MAX", 6.24165},
+	{"STAT_NASSENSTEIN_DIAM_MEAN", 4.77746},
+	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 5.03857},
+	{"STAT_NASSENSTEIN_DIAM_STDDEV", 1.09628},
+	{"STAT_NASSENSTEIN_DIAM_MODE", 4.0},
+	{"ALLCHORDS_MIN", 1.0},
 	{"DIAMETER_EQUAL_PERIMETER", 8.57365809435587},
-	// Real-valued rectangle-model roots after the geo_len_thickness.cpp perimeter-truncation fix
-	// (were the integer-truncated 10.0 / 3.0). Now vetted against imea's geodeticlength_and_thickness
-	// in test_2d_morphology_imea.h.
 	{"GEODETIC_LENGTH", 11.13182483477333},
-	{"THICKNESS", 2.3356458070362205},
+	{"THICKNESS", 2.3356458070362205}
 };
+
+static ref_vals_map<double> morphology_2d_imea_ellipse_ref_vals{
+	{"STAT_MARTIN_DIAM_MIN", 19.0},
+	{"STAT_MARTIN_DIAM_MAX", 41.0},
+	{"STAT_MARTIN_DIAM_MEAN", 27.61},
+	{"STAT_MARTIN_DIAM_MEDIAN", 25.5},
+	{"STAT_NASSENSTEIN_DIAM_MIN", 16.0},
+	{"STAT_NASSENSTEIN_DIAM_MAX", 41.0},
+	{"STAT_NASSENSTEIN_DIAM_MEAN", 25.17},
+	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 21.5},
+	// Feret is a correct rotating-calipers implementation (unlike the Martin/Nassenstein bug); it
+	// agrees with imea within the same ~1-2px hull-vs-raster convention gap. Reference from imea
+	// (imea.measure_2d.statistical_length feret_diameters, dalpha=10) on the same ellipse.
+	{"STAT_FERET_DIAM_MIN", 21.0},
+	{"STAT_FERET_DIAM_MAX", 41.0},
+	{"STAT_FERET_DIAM_MEAN", 31.72},
+	{"STAT_FERET_DIAM_MEDIAN", 32.5},
+	// Minimum enclosing circle (Welzl / cv2.minEnclosingCircle) is centroid-independent and matches
+	// imea/OpenCV exactly: for the ellipse a=20 its diameter = the major axis = 2a = 40. (The circle
+	// fixture's value 30 is asserted inline.) NOTE: DIAMETER_CIRCUMSCRIBING_CIRCLE and
+	// DIAMETER_INSCRIBING_CIRCLE are NOT here — they are imea's crude max/min centroid-to-contour
+	// distance approximation (not a true geometric circle), sensitive to Nyxus's contour convention +
+	// the centroid-1 offset (a symmetric circle yields 35.6/23.3, not ~30/~30), so they stay regression.
+	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 40.0},
+};
+
+static void assert_caliper_imea(const std::vector<std::vector<double>>& fvals,
+	Nyxus::Feature2D feature, const std::string& feature_name, double frac_tolerance = 1000.0)
+{
+	SCOPED_TRACE(std::string("IMEA_ORACLE__") + feature_name);
+	ASSERT_TRUE(morphology_2d_imea_shape2d_ref_vals.count(feature_name) > 0) << feature_name;
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_imea_shape2d_ref_vals[feature_name], frac_tolerance));
+}
+
+// The 19 caliper/chord statistics whose registry rows read status=vetted, oracle=imea,
+// target_test=test_2d_morphology_imea.h. They were asserted from test_2d_morphology_regression.h
+// through remaining2d_caliper_ref_val(), a lookup spanning an imea table and a regression table -- so
+// a _regression function was resolving imea-vetted values, and the rows' target_test was never met.
+void test_2d_morphology_caliper_stats_imea()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_remaining2d_shape_feature_values(fvals);
+
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MIN, "STAT_FERET_DIAM_MIN");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MAX, "STAT_FERET_DIAM_MAX");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEAN, "STAT_FERET_DIAM_MEAN");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN, "STAT_FERET_DIAM_MEDIAN");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_STDDEV, "STAT_FERET_DIAM_STDDEV");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MODE, "STAT_FERET_DIAM_MODE");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN, "STAT_MARTIN_DIAM_MIN");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MAX, "STAT_MARTIN_DIAM_MAX");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEAN, "STAT_MARTIN_DIAM_MEAN");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEDIAN, "STAT_MARTIN_DIAM_MEDIAN");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_STDDEV, "STAT_MARTIN_DIAM_STDDEV");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MODE, "STAT_MARTIN_DIAM_MODE");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN, "STAT_NASSENSTEIN_DIAM_MIN");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MAX, "STAT_NASSENSTEIN_DIAM_MAX");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEAN, "STAT_NASSENSTEIN_DIAM_MEAN");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN, "STAT_NASSENSTEIN_DIAM_MEDIAN");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_STDDEV, "STAT_NASSENSTEIN_DIAM_STDDEV");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MODE, "STAT_NASSENSTEIN_DIAM_MODE");
+	assert_caliper_imea(fvals, Nyxus::Feature2D::ALLCHORDS_MIN, "ALLCHORDS_MIN");
+}
+
+static void assert_caliper_close_to_imea(
+	const std::vector<std::vector<double>>& fvals,
+	Nyxus::Feature2D feature,
+	const std::string& feature_name,
+	// FIX (caliper float-precision): tightened 0.15 -> 0.10 after the float-precision hull rotation removed the
+	// integer-truncation inward bias. Measured residuals on the a=20,b=10 ellipse: Martin 1.8-4.6%,
+	// Feret 1.4-4.8%, Nassenstein 2.4-3.7% except its bottom-tangent MIN (8.9%) and MEDIAN (6.0%). The
+	// floor is the Nassenstein MIN: a near-apex vertical tangent chord measured on the convex hull vs
+	// imea's raster - a definitional hull-vs-raster gap, not a precision loss, so 0.10 is the honest bound.
+	double reltol = 0.10)
+{
+	SCOPED_TRACE(std::string("CALIPER_VS_IMEA__") + feature_name);
+	ASSERT_TRUE(morphology_2d_imea_ellipse_ref_vals.count(feature_name) > 0);
+	const double imea_ref = morphology_2d_imea_ellipse_ref_vals[feature_name];
+	const double actual = fvals[static_cast<int>(feature)][0];
+	const double denom = std::max(std::abs(imea_ref), 1e-9);
+	ASSERT_LE(std::abs(actual - imea_ref) / denom, reltol)
+		<< feature_name << " nyxus=" << actual << " imea=" << imea_ref;
+}
+
+
 
 // DIAMETER_EQUAL_PERIMETER vetted vs imea (tests/vetting/oracles/gen_morphology_imea.py).
 //

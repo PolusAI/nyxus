@@ -78,7 +78,7 @@ def test_vetting_tree_names_conform_to_spec_mechanics():
 
 def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     """The checker must actually fail on each defect class - a lint that cannot fail is not a lint.
-    Plants one of each and requires all ten to be reported. Each planted file isolates a single
+    Plants one of each and requires all eleven to be reported. Each planted file isolates a single
     defect, so an assertion failing here names the rule that stopped being enforced."""
     (tmp_path / "tests" / "python").mkdir(parents=True)
     # a TEST body with two callees: case = UPPER(function) has no single function to mirror
@@ -123,6 +123,12 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
         '\treturn gt;\n}\n'
         'void test_2d_glszm_sae_matlab() {}', encoding="utf-8")
 
+    # a reference table left in a shared header (SPEC 6.3.1: _common.h holds fixtures, not values).
+    # The name conforms, so only the file it sits in makes it a defect.
+    (tmp_path / "tests" / "test_2d_gldzm_common.h").write_text(
+        'static ref_vals_map<double> gldzm_2d_ibsi_ref_vals\n'
+        '{\n    {"GLDZM_SDE", 1.0},\n};\n', encoding="utf-8")
+
     errs = ctn.check(tmp_path)
     assert any("test_2d_glcm.h" in e and "SPEC 6.1" in e for e in errs)       # file, no kind
     assert any("test_glcm_regression.h" in e and "dim token" in e for e in errs)  # file, no dim
@@ -138,3 +144,5 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
                for e in errs)                                                # ... declared as "name = {"
     assert any("matlab_glszm_shape_gt" in e and "SPEC 6.3.1" in e
                for e in errs)                                                # ... reached via an accessor
+    assert any("gldzm_2d_ibsi_ref_vals" in e and "_common.h" in e
+               for e in errs)                                                # conforming name, wrong file
