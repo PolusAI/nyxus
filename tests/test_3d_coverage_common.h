@@ -26,6 +26,8 @@
 #include "../src/nyx/features/3d_ngtdm.h"
 #include "../src/nyx/features/3d_surface.h"
 
+#include "test_ref_vals.h"
+
 namespace
 {
 struct Feature3DCoverageCase
@@ -263,7 +265,49 @@ static std::set<Nyxus::Feature3D> implemented_3d_feature_codes()
 	return out;
 }
 
-static const std::set<std::string>& embedded_3p_gt_feature_names()
+// ORACLE goldens -- MATLAB regionprops3 shape built-ins.
+//
+// Provenance (SPEC 6.4):
+//   tool         = MATLAB R2025b, Image Processing Toolbox regionprops3
+//   properties   = Volume -> 3VOXEL_VOLUME; ConvexVolume -> 3VOLUME_CONVEXHULL and 3MESH_VOLUME
+//   fixture      = tests/data/nifti/phantoms/ut_inten.nii + ut_mask57.nii, label 57
+//   recipe       = the coverage-sweep settings in make_3d_coverage_settings()
+//   generated    = offline; no in-repo generator, so the numbers cannot be regenerated from here.
+//                  That gap is the one SPEC 6.4 requirement still open on this table, tracked in
+//                  tests/vetting/not_covered.md section C.
+//
+// 3AREA is deliberately absent: regionprops3 SurfaceArea disagrees by more than 10%, so pinning it
+// here would assert an agreement that does not hold.
+static ref_vals_map<double> morphology_3d_matlab_ref_vals
+{
+	{ "3MESH_VOLUME", 497824.0 },
+	{ "3VOXEL_VOLUME", 274432.0 },
+	{ "3VOLUME_CONVEXHULL", 497824.0 }
+};
+
+// Per-feature agreement bands, as the percent that relative_absdiff_pct() may reach. Measured, not
+// assumed: a single 10% band used to cover all three, which is wide enough to pass a value four
+// times worse than the real disagreement on two of them and forty thousand times worse on the third
+// (SPEC 7 -- a tolerance looser than the divergence it absorbs hides drift).
+static ref_vals_map<double> morphology_3d_matlab_ref_tols
+{
+	// Same definition on both sides (count of voxels x voxel volume); measured 2.3e-04%. SPEC 7
+	// same-definition tier.
+	{ "3VOXEL_VOLUME", 0.1 },
+	// Convex-hull convention difference: Nyxus builds a discrete voxel hull, regionprops3
+	// ConvexVolume triangulates. Measured 3.58%, stated band 5% (SPEC 7 known-method-divergence).
+	{ "3VOLUME_CONVEXHULL", 5.0 },
+	// Nyxus aliases 3MESH_VOLUME to the convex-hull volume rather than integrating the surface mesh,
+	// so it inherits the hull convention and the same measured 3.58%. The alias is why one golden
+	// serves two keys; if 3MESH_VOLUME ever becomes a real mesh integral this band must be revisited.
+	{ "3MESH_VOLUME", 5.0 }
+};
+
+// Which features an external reference actually backs. Derived wholly from the reference tables below and in the
+// per-family oracle headers -- it holds no values of its own, so it is an index rather than a
+// reference table (it used to hard-code the three MATLAB keys, which made it a quiet third place
+// where a golden could be declared).
+static const std::set<std::string>& externally_vetted_3d_feature_names()
 {
 	static const std::set<std::string> names = [] {
 		std::set<std::string> out;
@@ -277,151 +321,186 @@ static const std::set<std::string>& embedded_3p_gt_feature_names()
 		add_keys(glrlm_3d_pyradiomics_ref_vals);
 		add_keys(glszm_3d_pyradiomics_ref_vals);
 		add_keys(ngtdm_3d_pyradiomics_ref_vals);
-		// MATLAB R2025b regionprops3 built-ins are embedded here as vetted status.
-		// 3AREA is intentionally excluded: regionprops3 SurfaceArea differs by >10%.
-		// Nyxus currently aliases 3MESH_VOLUME to the convex-hull volume.
-		out.insert("3MESH_VOLUME");
-		out.insert("3VOXEL_VOLUME");
-		out.insert("3VOLUME_CONVEXHULL");
+		add_keys(morphology_3d_matlab_ref_vals);
 		return out;
 	}();
 	return names;
 }
 
-static const std::map<std::string, double>& matlab_regionprops3_shape_gt()
+
+// Coverage-sweep regression baselines: the 119 public 3D features that no third-party oracle backs
+// yet. Snapshots of current Nyxus output on the coverage phantom -- they establish no vetting (SPEC 1).
+// Split by family because 6.3.1 puts the family in the name and one table spanning glcm, glrlm, gldzm,
+// ngldm, morphology and firstorder at once has no honest <family> token to carry. The `_coverage`
+// subject distinguishes them from the family regression tables that already exist elsewhere in the
+// tree (e.g. glcm_3d_regression_ref_vals in test_3d_glcm_regression.h), which pin a different recipe.
+// Lookup is dispatched through the family the sweep already assigns, so a key filed under the wrong
+// family fails to resolve instead of being found anyway.
+
+static ref_vals_map<std::vector<double>> glcm_3d_regression_coverage_ref_vals
 {
-	static const std::map<std::string, double> gt = {
-		{ "3MESH_VOLUME", 497824.0 },
-		{ "3VOXEL_VOLUME", 274432.0 },
-		{ "3VOLUME_CONVEXHULL", 497824.0 }
-	};
-	return gt;
+	{ "3GLCM_ACOR_AVE", { 896.29490954682888 } },
+	{ "3GLCM_ASM_AVE", { 0.21714923037245615 } },
+	{ "3GLCM_CLUPROM_AVE", { 5319702.1464416385 } },
+	{ "3GLCM_CLUSHADE_AVE", { 25300.544725496744 } },
+	{ "3GLCM_CLUTEND_AVE", { 1830.7699876860852 } },
+	{ "3GLCM_CONTRAST_AVE", { 190.39105377069197 } },
+	{ "3GLCM_CORRELATION_AVE", { 0.81160543314537192 } },
+	{ "3GLCM_DIFAVE_AVE", { 4.4826978263468851 } },
+	{ "3GLCM_DIFENTRO_AVE", { 2.5804645841819687 } },
+	{ "3GLCM_DIFVAR_AVE", { 168.82038645655439 } },
+	{ "3GLCM_DIS", { 5.5662607942292563, 5.2865125777406536, 5.5662607942292563, 3.5205463112065347, 3.2058935920047036, 3.5205463112065347, 5.5662607942292563, 5.2865125777406536, 5.5662607942292563, 4.6920801473460996, 4.4260407115349301, 4.6920801473460996, 1.379816189466244 } },
+	{ "3GLCM_DIS_AVE", { 4.4826978263468824 } },
+	{ "3GLCM_ENERGY", { 0.20619709037207257, 0.21210950671886142, 0.20619709037207257, 0.22347189327232553, 0.229768029906674, 0.22347189327232553, 0.20619709037207257, 0.21210950671886142, 0.20619709037207257, 0.21657166507454639, 0.22249608735556295, 0.21657166507454639, 0.2415813859599367 } },
+	{ "3GLCM_ENERGY_AVE", { 0.21714923037245615 } },
+	{ "3GLCM_ENTROPY", { 6.1375193094015223, 6.0251268596431471, 6.1375193094015223, 5.6356261936885357, 5.5229037686481623, 5.6356261936885357, 6.1375193094015223, 6.0251268596431471, 6.1375193094015223, 5.9202631504971848, 5.8126798565436344, 5.9202631504971848, 4.8177837873733909 } },  // FIX: were buggy unnormalized ~-6.8e6; post /sum_p fix (3d_glcm.cpp)
+	{ "3GLCM_ENTROPY_AVE", { 5.8358059275253087 } },  // FIX: was buggy unnormalized -7.09e6; post /sum_p fix
+	{ "3GLCM_HOM1", { 0.63159286085358357, 0.67511464571418467, 0.63159286085358357, 0.675209797165082, 0.7178512712427948, 0.675209797165082, 0.63159286085358357, 0.67511464571418467, 0.63159286085358357, 0.65283716836970751, 0.69041197263012255, 0.65283716836970751, 0.77822827662266392 } },
+	{ "3GLCM_HOM1_AVE", { 0.67070662972368189 } },
+	{ "3GLCM_HOM2", { 0.59196175760722125, 0.64232872280698583, 0.59196175760722125, 0.63506326531940249, 0.68470533035896952, 0.63506326531940249, 0.59196175760722125, 0.64232872280698583, 0.59196175760722125, 0.61310667832992871, 0.65700403974706201, 0.61310667832992871, 0.75964624124070679 } },  // FIX: were buggy unnormalized ~3.1e5; post /sum_p fix (homogeneity now in [0,1])
+	{ "3GLCM_IDMN_AVE", { 0.97393106857854816 } },
+	{ "3GLCM_IDM_AVE", { 0.63463076728371071 } },
+	{ "3GLCM_IDN_AVE", { 0.95491658377679667 } },
+	{ "3GLCM_ID_AVE", { 0.67070662972368211 } },
+	{ "3GLCM_INFOMEAS1_AVE", { -0.44521529228752316 } },
+	{ "3GLCM_INFOMEAS2_AVE", { 0.97909293489987548 } },
+	{ "3GLCM_IV_AVE", { 0.15630830580149896 } },
+	{ "3GLCM_JAVE_AVE", { 22.049501181077645 } },
+	{ "3GLCM_JE_AVE", { 5.83580592757035 } },
+	{ "3GLCM_JMAX_AVE", { 0.46494916987187934 } },
+	{ "3GLCM_JVAR_AVE", { 505.29026036419413 } },
+	{ "3GLCM_SUMAVERAGE_AVE", { 44.099002362155289 } },
+	{ "3GLCM_SUMENTROPY_AVE", { 4.3772246057690438 } },
+	{ "3GLCM_SUMVARIANCE", { 1783.3177119109412, 1796.9249632904919, 1783.3177119109412, 1872.6626392475214, 1887.8346987420691, 1872.6626392475214, 1783.3177119109412, 1796.9249632904919, 1783.3177119109412, 1820.9267907064923, 1833.7216725021183, 1820.9267907064923, 1964.1538345421473 } },
+	{ "3GLCM_SUMVARIANCE_AVE", { 1830.7699876860852 } },
+	{ "3GLCM_VARIANCE", { 504.75832684863678, 506.44120833399279, 504.75832684863678, 504.89933309869377, 506.49086530867982, 504.89933309869377, 504.75832684863678, 506.44120833399279, 504.75832684863678, 504.73432274406343, 506.30964057188811, 504.73432274406343, 504.78984310590351 } },
+	{ "3GLCM_VARIANCE_AVE", { 505.29026036419378 } },
+};
+
+static ref_vals_map<std::vector<double>> firstorder_3d_regression_coverage_ref_vals
+{
+	{ "3COV", { 0.29486207043456802 } },
+	{ "3COVERED_IMAGE_INTENSITY_RANGE", { 1.0002043207290587 } },
+	{ "3EXCESS_KURTOSIS", { -1.2127631603215119 } },
+	{ "3HYPERFLATNESS", { 3.8027657005973312 } },
+	{ "3HYPERSKEWNESS", { 0.32001332615517414 } },
+	{ "3INTEGRATED_INTENSITY", { 544286216 } },
+	{ "3MEDIAN_ABSOLUTE_DEVIATION", { 507.12380480410445 } },
+	{ "3MODE", { 1279 } },
+	{ "3P01", { 1039.3829596412556 } },
+	{ "3P25", { 1469.7943925233644 } },
+	{ "3P75", { 2487.9072847682119 } },
+	{ "3P99", { 3002.3047021943576 } },
+	{ "3QCOD", { 0.25724851827174233 } },
+	{ "3ROBUST_MEAN", { 1977.5189642596645 } },  // FIX: baseline was pinning the bug value 0; 3ROBUST_MEAN is now computed (mean of voxels in [P10,P90]) ~ 3MEAN 1983.32, trimmed
+	{ "3STANDARD_DEVIATION", { 584.80556406962933 } },
+	{ "3STANDARD_DEVIATION_BIASED", { 584.80449858510713 } },
+	{ "3STANDARD_ERROR", { 1.116333919044723 } },
+	{ "3UNIFORMITY_PIU", { 50.59288537549407 } },
+	{ "3VARIANCE_BIASED", { 341996.3015653785 } },
+};
+
+static ref_vals_map<std::vector<double>> ngldm_3d_regression_coverage_ref_vals
+{
+	{ "3NGLDM_DCENE", { 0.14348407632898436 } },
+	{ "3NGLDM_DCENT", { 5.2277449211654039 } },
+	{ "3NGLDM_DCM", { 13.485998122653307 } },
+	{ "3NGLDM_DCNU", { 85056.840050062572 } },   // dependence-count (column) marginal; distinct from GLNU's grey-level marginal
+	{ "3NGLDM_DCNUN", { 0.16633455892143026 } },
+	{ "3NGLDM_DCP", { 1 } },
+	{ "3NGLDM_DCV", { 86.17064428912758 } },
+	{ "3NGLDM_GLM", { 16.955115769712151 } },
+	{ "3NGLDM_GLNU", { 115443.18172715895 } },
+	{ "3NGLDM_GLNUN", { 0.22575716076180957 } },
+	{ "3NGLDM_GLV", { 190.08150972702501 } },
+	{ "3NGLDM_HDE", { 261.01822590738425 } },
+	{ "3NGLDM_HDHGLE", { 20099.770197121401 } },
+	{ "3NGLDM_HDLGLE", { 0.025201544837470152 } },
+	{ "3NGLDM_HGLCE", { 740.43602941176471 } },
+	{ "3NGLDM_LDE", { 0.10159976999534079 } },
+	{ "3NGLDM_LDHGLE", { 73.919882197712482 } },
+	{ "3NGLDM_LDLGLE", { 5.8337460459982142e-05 } },
+	{ "3NGLDM_LGLCE", { 0.00035968375469422158 } },
+};
+
+static ref_vals_map<std::vector<double>> gldzm_3d_regression_coverage_ref_vals
+{
+	{ "3GLDZM_GLM", { 47.230300235279401 } },
+	{ "3GLDZM_GLNU", { 3435.1800942680934 } },
+	{ "3GLDZM_GLNUN", { 0.026851399515903585 } },
+	{ "3GLDZM_GLV", { 111.77220626552923 } },
+	{ "3GLDZM_HGLZE", { 2342.4734665801629 } },
+	{ "3GLDZM_LDE", { 314.01248309662088 } },
+	{ "3GLDZM_LDHGLE", { 734618.35720259824 } },
+	{ "3GLDZM_LDLGLE", { 0.16729167507144088 } },
+	{ "3GLDZM_LGLZE", { 0.0005581993242951194 } },
+	{ "3GLDZM_SDE", { 0.022387420258025731 } },
+	{ "3GLDZM_SDHGLE", { 61.230746106573264 } },
+	{ "3GLDZM_SDLGLE", { 1.8362515436029654e-05 } },
+	{ "3GLDZM_ZDE", { 10.230312642315168 } },
+	{ "3GLDZM_ZDM", { 15.306504185784746 } },
+	{ "3GLDZM_ZDNU", { 4330.2817177741472 } },
+	{ "3GLDZM_ZDNUN", { 0.033848043255251946 } },
+	{ "3GLDZM_ZDV", { 79.723412707174901 } },
+	{ "3GLDZM_ZP", { 0.46617376982276121 } },
+};
+
+static ref_vals_map<std::vector<double>> glrlm_3d_regression_coverage_ref_vals
+{
+	{ "3GLRLM_GLNN_AVE", { 0.030276986604527156 } },
+	{ "3GLRLM_GLN_AVE", { 7866.1651094407043 } },
+	{ "3GLRLM_GLV_AVE", { 295.15266194934725 } },
+	{ "3GLRLM_HGLRE_AVE", { 1843.919606614327 } },
+	{ "3GLRLM_LGLRE_AVE", { 0.10312612492203123 } },
+	{ "3GLRLM_LRE_AVE", { 26.969695007835824 } },
+	{ "3GLRLM_LRHGLE_AVE", { 3615.1714395919889 } },
+	{ "3GLRLM_LRLGLE_AVE", { 24.851889404429883 } },
+	{ "3GLRLM_RE_AVE", { 6.2830967278091743 } },
+	{ "3GLRLM_RLNN_AVE", { 0.6876088115538187 } },
+	{ "3GLRLM_RLN_AVE", { 177698.02943612196 } },
+	{ "3GLRLM_RP_AVE", { 0.94009893441446613 } },
+	{ "3GLRLM_RV_AVE", { 22.305382605370092 } },
+	{ "3GLRLM_SRE_AVE", { 0.84624689639030182 } },
+	{ "3GLRLM_SRHGLE_AVE", { 1740.5351176831964 } },
+	{ "3GLRLM_SRLGLE_AVE", { 0.019094835618041379 } },
+};
+
+static ref_vals_map<std::vector<double>> morphology_3d_regression_coverage_ref_vals
+{
+	{ "3AREA", { 59992 } },
+	{ "3AREA_2_VOLUME", { 0.21860475559470999 } },
+	{ "3COMPACTNESS1", { 0.010537043861899255 } },
+	{ "3COMPACTNESS2", { 0.039449347281835329 } },
+	{ "3ELONGATION", { 0.84332105599389762 } },  // FIX(axis mislabel): was 0.8099; now = MIRP morph_pca_elongation
+	{ "3FLATNESS", { 0.68299758045903847 } },  // FIX(axis mislabel): was 1.186 (>1, impossible); now = MIRP morph_pca_flatness
+	{ "3LEAST_AXIS_LEN", { 71.514499741981993 } },  // FIX(axis mislabel): was 104.7 (>MAJOR, impossible); now = MIRP morph_pca_least_axis
+	{ "3MAJOR_AXIS_LEN", { 104.70681271508683 } },  // FIX(axis mislabel): was 88.3; now = MIRP morph_pca_maj_axis (largest)
+	{ "3MINOR_AXIS_LEN", { 88.301459868642283 } },  // FIX(axis mislabel): was 71.5; now = MIRP morph_pca_min_axis
+	{ "3SPHERICAL_DISPROPORTION", { 2.9375598657539634 } },
+	{ "3SPHERICITY", { 0.34041859424142729 } },
+};
+
+static const ref_vals_map<std::vector<double>>* regression_coverage_table_for_family(const std::string& family)
+{
+	if (family == "glcm") return &glcm_3d_regression_coverage_ref_vals;
+	if (family == "firstorder") return &firstorder_3d_regression_coverage_ref_vals;
+	if (family == "ngldm") return &ngldm_3d_regression_coverage_ref_vals;
+	if (family == "gldzm") return &gldzm_3d_regression_coverage_ref_vals;
+	if (family == "glrlm") return &glrlm_3d_regression_coverage_ref_vals;
+	if (family == "morphology") return &morphology_3d_regression_coverage_ref_vals;
+	return nullptr;
 }
 
-static const std::map<std::string, std::vector<double>>& unvetted_3d_local_regression_gt()
+static std::size_t regression_coverage_ref_vals_total()
 {
-	static const std::map<std::string, std::vector<double>> gt = {
-		{ "3AREA", { 59992 } },
-		{ "3AREA_2_VOLUME", { 0.21860475559470999 } },
-		{ "3COMPACTNESS1", { 0.010537043861899255 } },
-		{ "3COMPACTNESS2", { 0.039449347281835329 } },
-		{ "3COV", { 0.29486207043456802 } },
-		{ "3COVERED_IMAGE_INTENSITY_RANGE", { 1.0002043207290587 } },
-		{ "3ELONGATION", { 0.84332105599389762 } },  // FIX(axis mislabel): was 0.8099; now = MIRP morph_pca_elongation
-		{ "3EXCESS_KURTOSIS", { -1.2127631603215119 } },
-		{ "3FLATNESS", { 0.68299758045903847 } },  // FIX(axis mislabel): was 1.186 (>1, impossible); now = MIRP morph_pca_flatness
-		{ "3GLCM_ACOR_AVE", { 896.29490954682888 } },
-		{ "3GLCM_ASM_AVE", { 0.21714923037245615 } },
-		{ "3GLCM_CLUPROM_AVE", { 5319702.1464416385 } },
-		{ "3GLCM_CLUSHADE_AVE", { 25300.544725496744 } },
-		{ "3GLCM_CLUTEND_AVE", { 1830.7699876860852 } },
-		{ "3GLCM_CONTRAST_AVE", { 190.39105377069197 } },
-		{ "3GLCM_CORRELATION_AVE", { 0.81160543314537192 } },
-		{ "3GLCM_DIFAVE_AVE", { 4.4826978263468851 } },
-		{ "3GLCM_DIFENTRO_AVE", { 2.5804645841819687 } },
-		{ "3GLCM_DIFVAR_AVE", { 168.82038645655439 } },
-		{ "3GLCM_DIS", { 5.5662607942292563, 5.2865125777406536, 5.5662607942292563, 3.5205463112065347, 3.2058935920047036, 3.5205463112065347, 5.5662607942292563, 5.2865125777406536, 5.5662607942292563, 4.6920801473460996, 4.4260407115349301, 4.6920801473460996, 1.379816189466244 } },
-		{ "3GLCM_DIS_AVE", { 4.4826978263468824 } },
-		{ "3GLCM_ENERGY", { 0.20619709037207257, 0.21210950671886142, 0.20619709037207257, 0.22347189327232553, 0.229768029906674, 0.22347189327232553, 0.20619709037207257, 0.21210950671886142, 0.20619709037207257, 0.21657166507454639, 0.22249608735556295, 0.21657166507454639, 0.2415813859599367 } },
-		{ "3GLCM_ENERGY_AVE", { 0.21714923037245615 } },
-		{ "3GLCM_ENTROPY", { 6.1375193094015223, 6.0251268596431471, 6.1375193094015223, 5.6356261936885357, 5.5229037686481623, 5.6356261936885357, 6.1375193094015223, 6.0251268596431471, 6.1375193094015223, 5.9202631504971848, 5.8126798565436344, 5.9202631504971848, 4.8177837873733909 } },  // FIX: were buggy unnormalized ~-6.8e6; post /sum_p fix (3d_glcm.cpp)
-		{ "3GLCM_ENTROPY_AVE", { 5.8358059275253087 } },  // FIX: was buggy unnormalized -7.09e6; post /sum_p fix
-		{ "3GLCM_HOM1", { 0.63159286085358357, 0.67511464571418467, 0.63159286085358357, 0.675209797165082, 0.7178512712427948, 0.675209797165082, 0.63159286085358357, 0.67511464571418467, 0.63159286085358357, 0.65283716836970751, 0.69041197263012255, 0.65283716836970751, 0.77822827662266392 } },
-		{ "3GLCM_HOM1_AVE", { 0.67070662972368189 } },
-		{ "3GLCM_HOM2", { 0.59196175760722125, 0.64232872280698583, 0.59196175760722125, 0.63506326531940249, 0.68470533035896952, 0.63506326531940249, 0.59196175760722125, 0.64232872280698583, 0.59196175760722125, 0.61310667832992871, 0.65700403974706201, 0.61310667832992871, 0.75964624124070679 } },  // FIX: were buggy unnormalized ~3.1e5; post /sum_p fix (homogeneity now in [0,1])
-		{ "3GLCM_IDMN_AVE", { 0.97393106857854816 } },
-		{ "3GLCM_IDM_AVE", { 0.63463076728371071 } },
-		{ "3GLCM_IDN_AVE", { 0.95491658377679667 } },
-		{ "3GLCM_ID_AVE", { 0.67070662972368211 } },
-		{ "3GLCM_INFOMEAS1_AVE", { -0.44521529228752316 } },
-		{ "3GLCM_INFOMEAS2_AVE", { 0.97909293489987548 } },
-		{ "3GLCM_IV_AVE", { 0.15630830580149896 } },
-		{ "3GLCM_JAVE_AVE", { 22.049501181077645 } },
-		{ "3GLCM_JE_AVE", { 5.83580592757035 } },
-		{ "3GLCM_JMAX_AVE", { 0.46494916987187934 } },
-		{ "3GLCM_JVAR_AVE", { 505.29026036419413 } },
-		{ "3GLCM_SUMAVERAGE_AVE", { 44.099002362155289 } },
-		{ "3GLCM_SUMENTROPY_AVE", { 4.3772246057690438 } },
-		{ "3GLCM_SUMVARIANCE", { 1783.3177119109412, 1796.9249632904919, 1783.3177119109412, 1872.6626392475214, 1887.8346987420691, 1872.6626392475214, 1783.3177119109412, 1796.9249632904919, 1783.3177119109412, 1820.9267907064923, 1833.7216725021183, 1820.9267907064923, 1964.1538345421473 } },
-		{ "3GLCM_SUMVARIANCE_AVE", { 1830.7699876860852 } },
-		{ "3GLCM_VARIANCE", { 504.75832684863678, 506.44120833399279, 504.75832684863678, 504.89933309869377, 506.49086530867982, 504.89933309869377, 504.75832684863678, 506.44120833399279, 504.75832684863678, 504.73432274406343, 506.30964057188811, 504.73432274406343, 504.78984310590351 } },
-		{ "3GLCM_VARIANCE_AVE", { 505.29026036419378 } },
-		{ "3GLDZM_GLM", { 47.230300235279401 } },
-		{ "3GLDZM_GLNU", { 3435.1800942680934 } },
-		{ "3GLDZM_GLNUN", { 0.026851399515903585 } },
-		{ "3GLDZM_GLV", { 111.77220626552923 } },
-		{ "3GLDZM_HGLZE", { 2342.4734665801629 } },
-		{ "3GLDZM_LDE", { 314.01248309662088 } },
-		{ "3GLDZM_LDHGLE", { 734618.35720259824 } },
-		{ "3GLDZM_LDLGLE", { 0.16729167507144088 } },
-		{ "3GLDZM_LGLZE", { 0.0005581993242951194 } },
-		{ "3GLDZM_SDE", { 0.022387420258025731 } },
-		{ "3GLDZM_SDHGLE", { 61.230746106573264 } },
-		{ "3GLDZM_SDLGLE", { 1.8362515436029654e-05 } },
-		{ "3GLDZM_ZDE", { 10.230312642315168 } },
-		{ "3GLDZM_ZDM", { 15.306504185784746 } },
-		{ "3GLDZM_ZDNU", { 4330.2817177741472 } },
-		{ "3GLDZM_ZDNUN", { 0.033848043255251946 } },
-		{ "3GLDZM_ZDV", { 79.723412707174901 } },
-		{ "3GLDZM_ZP", { 0.46617376982276121 } },
-		{ "3GLRLM_GLNN_AVE", { 0.030276986604527156 } },
-		{ "3GLRLM_GLN_AVE", { 7866.1651094407043 } },
-		{ "3GLRLM_GLV_AVE", { 295.15266194934725 } },
-		{ "3GLRLM_HGLRE_AVE", { 1843.919606614327 } },
-		{ "3GLRLM_LGLRE_AVE", { 0.10312612492203123 } },
-		{ "3GLRLM_LRE_AVE", { 26.969695007835824 } },
-		{ "3GLRLM_LRHGLE_AVE", { 3615.1714395919889 } },
-		{ "3GLRLM_LRLGLE_AVE", { 24.851889404429883 } },
-		{ "3GLRLM_RE_AVE", { 6.2830967278091743 } },
-		{ "3GLRLM_RLNN_AVE", { 0.6876088115538187 } },
-		{ "3GLRLM_RLN_AVE", { 177698.02943612196 } },
-		{ "3GLRLM_RP_AVE", { 0.94009893441446613 } },
-		{ "3GLRLM_RV_AVE", { 22.305382605370092 } },
-		{ "3GLRLM_SRE_AVE", { 0.84624689639030182 } },
-		{ "3GLRLM_SRHGLE_AVE", { 1740.5351176831964 } },
-		{ "3GLRLM_SRLGLE_AVE", { 0.019094835618041379 } },
-		{ "3HYPERFLATNESS", { 3.8027657005973312 } },
-		{ "3HYPERSKEWNESS", { 0.32001332615517414 } },
-		{ "3INTEGRATED_INTENSITY", { 544286216 } },
-		{ "3LEAST_AXIS_LEN", { 71.514499741981993 } },  // FIX(axis mislabel): was 104.7 (>MAJOR, impossible); now = MIRP morph_pca_least_axis
-		{ "3MAJOR_AXIS_LEN", { 104.70681271508683 } },  // FIX(axis mislabel): was 88.3; now = MIRP morph_pca_maj_axis (largest)
-		{ "3MEDIAN_ABSOLUTE_DEVIATION", { 507.12380480410445 } },
-		{ "3MINOR_AXIS_LEN", { 88.301459868642283 } },  // FIX(axis mislabel): was 71.5; now = MIRP morph_pca_min_axis
-		{ "3MODE", { 1279 } },
-		{ "3NGLDM_DCENE", { 0.14348407632898436 } },
-		{ "3NGLDM_DCENT", { 5.2277449211654039 } },
-		{ "3NGLDM_DCM", { 13.485998122653307 } },
-		{ "3NGLDM_DCNU", { 85056.840050062572 } },   // dependence-count (column) marginal; distinct from GLNU's grey-level marginal
-		{ "3NGLDM_DCNUN", { 0.16633455892143026 } },
-		{ "3NGLDM_DCP", { 1 } },
-		{ "3NGLDM_DCV", { 86.17064428912758 } },
-		{ "3NGLDM_GLM", { 16.955115769712151 } },
-		{ "3NGLDM_GLNU", { 115443.18172715895 } },
-		{ "3NGLDM_GLNUN", { 0.22575716076180957 } },
-		{ "3NGLDM_GLV", { 190.08150972702501 } },
-		{ "3NGLDM_HDE", { 261.01822590738425 } },
-		{ "3NGLDM_HDHGLE", { 20099.770197121401 } },
-		{ "3NGLDM_HDLGLE", { 0.025201544837470152 } },
-		{ "3NGLDM_HGLCE", { 740.43602941176471 } },
-		{ "3NGLDM_LDE", { 0.10159976999534079 } },
-		{ "3NGLDM_LDHGLE", { 73.919882197712482 } },
-		{ "3NGLDM_LDLGLE", { 5.8337460459982142e-05 } },
-		{ "3NGLDM_LGLCE", { 0.00035968375469422158 } },
-		{ "3P01", { 1039.3829596412556 } },
-		{ "3P25", { 1469.7943925233644 } },
-		{ "3P75", { 2487.9072847682119 } },
-		{ "3P99", { 3002.3047021943576 } },
-		{ "3QCOD", { 0.25724851827174233 } },
-		{ "3ROBUST_MEAN", { 1977.5189642596645 } },  // FIX: baseline was pinning the bug value 0; 3ROBUST_MEAN is now computed (mean of voxels in [P10,P90]) ~ 3MEAN 1983.32, trimmed
-		{ "3SPHERICAL_DISPROPORTION", { 2.9375598657539634 } },
-		{ "3SPHERICITY", { 0.34041859424142729 } },
-		{ "3STANDARD_DEVIATION", { 584.80556406962933 } },
-		{ "3STANDARD_DEVIATION_BIASED", { 584.80449858510713 } },
-		{ "3STANDARD_ERROR", { 1.116333919044723 } },
-		{ "3UNIFORMITY_PIU", { 50.59288537549407 } },
-		{ "3VARIANCE_BIASED", { 341996.3015653785 } }
-	};
-	return gt;
+	std::size_t n = 0;
+	n += glcm_3d_regression_coverage_ref_vals.size();
+	n += firstorder_3d_regression_coverage_ref_vals.size();
+	n += ngldm_3d_regression_coverage_ref_vals.size();
+	n += gldzm_3d_regression_coverage_ref_vals.size();
+	n += glrlm_3d_regression_coverage_ref_vals.size();
+	n += morphology_3d_regression_coverage_ref_vals.size();
+	return n;
 }
 
 static double relative_absdiff_pct(double actual, double expected)
@@ -434,9 +513,10 @@ static double relative_absdiff_pct(double actual, double expected)
 
 static void assert_matlab_regionprops3_shape_agreement(const Feature3DCoverageCase& c)
 {
-	const auto& gt = matlab_regionprops3_shape_gt();
-	auto it = gt.find(c.name);
-	ASSERT_TRUE(it != gt.end()) << c.name;
+	auto it = morphology_3d_matlab_ref_vals.find(c.name);
+	ASSERT_TRUE(it != morphology_3d_matlab_ref_vals.end()) << c.name;
+	auto tol = morphology_3d_matlab_ref_tols.find(c.name);
+	ASSERT_TRUE(tol != morphology_3d_matlab_ref_tols.end()) << c.name << " has a golden but no stated band";
 
 	const auto& computed = computed_3d_feature_values();
 	ASSERT_TRUE(computed.setup_error.empty()) << computed.setup_error;
@@ -446,10 +526,10 @@ static void assert_matlab_regionprops3_shape_agreement(const Feature3DCoverageCa
 	const double actual = computed.values[fcode_index][0];
 	const double expected = it->second;
 	ASSERT_TRUE(std::isfinite(actual)) << c.name;
-	ASSERT_LE(relative_absdiff_pct(actual, expected), 10.0) << c.name << " actual=" << actual << " MATLAB regionprops3=" << expected;
+	ASSERT_LE(relative_absdiff_pct(actual, expected), tol->second) << c.name << " actual=" << actual << " MATLAB regionprops3=" << expected << " band=" << tol->second << "%";
 }
 
-static void assert_embedded_3p_oracle_agreement(const Feature3DCoverageCase& c)
+static void assert_oracle_backed_agreement(const Feature3DCoverageCase& c)
 {
 	if (firstorder_3d_pyradiomics_ref_vals.find(c.name) != firstorder_3d_pyradiomics_ref_vals.end())
 		assert_3d_firstorder_feature_pyradiomics(c.code, c.name);
@@ -463,20 +543,20 @@ static void assert_embedded_3p_oracle_agreement(const Feature3DCoverageCase& c)
 		assert_3d_glszm_feature_pyradiomics(c.code, c.name);
 	else if (ngtdm_3d_pyradiomics_ref_vals.find(c.name) != ngtdm_3d_pyradiomics_ref_vals.end())
 		assert_3d_ngtdm_feature_pyradiomics(c.code, c.name);
-	else if (matlab_regionprops3_shape_gt().find(c.name) != matlab_regionprops3_shape_gt().end())
+	else if (morphology_3d_matlab_ref_vals.find(c.name) != morphology_3d_matlab_ref_vals.end())
 		assert_matlab_regionprops3_shape_agreement(c);
 	else
 		FAIL() << c.name << " is marked WITH_3P_EMBEDDED_GT but no embedded oracle helper was found";
 }
 
-static std::vector<Feature3DCoverageCase> feature_3d_cases(bool require_embedded_3p_gt)
+static std::vector<Feature3DCoverageCase> feature_3d_cases(bool require_oracle_backed)
 {
 	std::vector<Feature3DCoverageCase> out;
-	const auto& embedded = embedded_3p_gt_feature_names();
+	const auto& embedded = externally_vetted_3d_feature_names();
 	for (const auto& kv : Nyxus::UserFacing_3D_featureNames)
 	{
-		const bool has_embedded_gt = embedded.find(kv.first) != embedded.end();
-		if (has_embedded_gt == require_embedded_3p_gt)
+		const bool is_oracle_backed = embedded.find(kv.first) != embedded.end();
+		if (is_oracle_backed == require_oracle_backed)
 			out.push_back({ kv.first, kv.second });
 	}
 	return out;
@@ -515,10 +595,10 @@ static std::string family_of_3d_feature(Nyxus::Feature3D code)
 	return "unknown";
 }
 
-static std::vector<Feature3DCoverageCase> feature_3d_cases_for_family(const std::string& family, bool require_embedded_3p_gt)
+static std::vector<Feature3DCoverageCase> feature_3d_cases_for_family(const std::string& family, bool require_oracle_backed)
 {
 	std::vector<Feature3DCoverageCase> out;
-	for (const auto& c : feature_3d_cases(require_embedded_3p_gt))
+	for (const auto& c : feature_3d_cases(require_oracle_backed))
 		if (family_of_3d_feature(c.code) == family)
 			out.push_back(c);
 	return out;
@@ -551,9 +631,11 @@ static double local_regression_tolerance(double expected)
 
 static void assert_unvetted_local_regression_agreement(const Feature3DCoverageCase& c)
 {
-	const auto& gt = unvetted_3d_local_regression_gt();
-	auto it = gt.find(c.name);
-	ASSERT_TRUE(it != gt.end()) << c.name << " has no embedded local-regression baseline";
+	const std::string family = family_of_3d_feature(c.code);
+	const auto* gt = regression_coverage_table_for_family(family);
+	ASSERT_TRUE(gt != nullptr) << c.name << " belongs to family '" << family << "', which has no coverage baseline table";
+	auto it = gt->find(c.name);
+	ASSERT_TRUE(it != gt->end()) << c.name << " has no coverage baseline in " << family << "_3d_regression_coverage_ref_vals";
 
 	const auto& computed = computed_3d_feature_values();
 	ASSERT_TRUE(computed.setup_error.empty()) << computed.setup_error;
@@ -578,9 +660,9 @@ class Test3DFeature_WITH_3P_EMBEDDED_GT : public testing::TestWithParam<Feature3
 TEST_P(Test3DFeature_WITH_3P_EMBEDDED_GT, PublicFeatureIsComputableAndHasEmbeddedOracle)
 {
 	const auto& c = GetParam();
-	ASSERT_TRUE(embedded_3p_gt_feature_names().find(c.name) != embedded_3p_gt_feature_names().end()) << c.name;
+	ASSERT_TRUE(externally_vetted_3d_feature_names().find(c.name) != externally_vetted_3d_feature_names().end()) << c.name;
 	assert_3d_feature_is_registered_and_computable(c);
-	assert_embedded_3p_oracle_agreement(c);
+	assert_oracle_backed_agreement(c);
 }
 
 // INSTANTIATE_TEST_SUITE_P for this fixture now lives in the per-family test_3d_<family>_coverage.h
@@ -591,7 +673,7 @@ class Test3DFeature_UNVETTED_LOCAL_REGRESSION : public testing::TestWithParam<Fe
 TEST_P(Test3DFeature_UNVETTED_LOCAL_REGRESSION, PublicFeatureIsComputableButHasNoEmbeddedOracleYet)
 {
 	const auto& c = GetParam();
-	ASSERT_TRUE(embedded_3p_gt_feature_names().find(c.name) == embedded_3p_gt_feature_names().end()) << c.name;
+	ASSERT_TRUE(externally_vetted_3d_feature_names().find(c.name) == externally_vetted_3d_feature_names().end()) << c.name;
 	assert_3d_feature_is_registered_and_computable(c);
 	assert_unvetted_local_regression_agreement(c);
 }
@@ -604,8 +686,13 @@ TEST(TEST_NYXUS, TEST_3D_FEATURE_COVERAGE_COUNTS)
 	EXPECT_EQ(94u, feature_3d_cases(true).size());
 	EXPECT_EQ(119u, feature_3d_cases(false).size());
 	EXPECT_EQ(Nyxus::UserFacing_3D_featureNames.size(), feature_3d_cases(true).size() + feature_3d_cases(false).size());
-	EXPECT_EQ(119u, unvetted_3d_local_regression_gt().size());
+	EXPECT_EQ(119u, regression_coverage_ref_vals_total());
 	for (const auto& c : feature_3d_cases(false))
-		EXPECT_TRUE(unvetted_3d_local_regression_gt().find(c.name) != unvetted_3d_local_regression_gt().end()) << c.name;
+	{
+		const std::string family = family_of_3d_feature(c.code);
+		const auto* gt = regression_coverage_table_for_family(family);
+		ASSERT_TRUE(gt != nullptr) << c.name << " family=" << family;
+		EXPECT_TRUE(gt->find(c.name) != gt->end()) << c.name << " missing from " << family << "_3d_regression_coverage_ref_vals";
+	}
 }
 }

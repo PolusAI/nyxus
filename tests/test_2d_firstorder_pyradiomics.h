@@ -11,8 +11,9 @@
 //
 // Each golden is the PyRadiomics value; the test recomputes Nyxus live under the matching recipe and
 // asserts agreement within the tier tolerance (agrees_gt frac_tolerance = 1/rel_bar):
-//   exact  (rel <= 1e-6)  -> frac_tolerance 1e6
-//   approx (rel <= 5e-2)  -> frac_tolerance 20   [definitional convention deltas, see notes]
+//   exact       (rel <= 1e-6)  -> frac_tolerance 1e6
+//   definitional(rel <= 1e-2)  -> frac_tolerance 100  [SPEC 7 cross-tool tier; the delta is derived]
+//   approx      (rel <= 5e-2)  -> frac_tolerance 20   [convention deltas without a closed form]
 // The regression file (test_2d_firstorder_regression.h) is untouched; it remains the exact change-detector.
 
 #include <gtest/gtest.h>
@@ -29,14 +30,20 @@
 
 using namespace Nyxus;
 
-// Pinned PyRadiomics firstorder goldens (all 17 mapped features agreed; 0 flags).
+// Pinned PyRadiomics firstorder goldens (all 18 mapped features agreed; 0 flags).
 static const std::unordered_map<std::string, double> firstorder_2d_pyradiomics_ref_vals = {
     {"MEAN", 32566.38961038961},
     {"MEDIAN", 29803.5},
     {"MIN", 11079.0},
     {"MAX", 64090.0},
     {"RANGE", 53011.0},
-    {"VARIANCE", 215592327.38067126},                 // approx: pyradiomics population variance (/N) vs Nyxus (/N-1)
+    // PyRadiomics Variance is the population variance (/N). Nyxus computes both denominators, so the
+    // one PyRadiomics number is the reference for two features: VARIANCE_BIASED is var/N, the same
+    // definition, and matches exactly; VARIANCE is the sample variance var/(N-1) and stands off by
+    // the Bessel factor 1/(N-1), which on this 154-pixel fixture is 6.54e-03 -- the divergence the
+    // registry already records for the row.
+    {"VARIANCE_BIASED", 215592327.38067126},
+    {"VARIANCE", 215592327.38067126},
     {"SKEWNESS", 0.45025675970449414},
     {"KURTOSIS", 1.9278887207100905},                 // pyradiomics Kurtosis is non-excess (includes +3)
     {"ENERGY", 196528957184.0},
@@ -50,10 +57,12 @@ static const std::unordered_map<std::string, double> firstorder_2d_pyradiomics_r
     {"UNIFORMITY", 0.0252993759487266},
 };
 
-// Per-feature agrees_gt frac_tolerance: exact=1e6 (rel<=1e-6), approx=20 (rel<=5%).
+// Per-feature agrees_gt frac_tolerance: exact=1e6 (rel<=1e-6), definitional=100 (rel<=1e-2),
+// approx=20 (rel<=5%). A band wider than the divergence it exists to absorb hides drift (SPEC 7),
+// so VARIANCE sits at the tier its known Bessel gap of 6.54e-03 needs, not at the generic approx one.
 static const std::unordered_map<std::string, double> firstorder_2d_pyradiomics_ref_tols = {
     {"MEAN", 1e6}, {"MEDIAN", 1e6}, {"MIN", 1e6}, {"MAX", 1e6}, {"RANGE", 1e6},
-    {"VARIANCE", 20.0}, {"SKEWNESS", 1e6}, {"KURTOSIS", 1e6}, {"ENERGY", 1e6},
+    {"VARIANCE_BIASED", 1e6}, {"VARIANCE", 100.0}, {"SKEWNESS", 1e6}, {"KURTOSIS", 1e6}, {"ENERGY", 1e6},
     {"ROOT_MEAN_SQUARED", 1e6}, {"MEAN_ABSOLUTE_DEVIATION", 1e6},
     {"ROBUST_MEAN_ABSOLUTE_DEVIATION", 1e6}, {"INTERQUARTILE_RANGE", 20.0},
     {"P10", 20.0}, {"P90", 20.0}, {"ENTROPY", 1e6}, {"UNIFORMITY", 1e6},
@@ -102,6 +111,8 @@ void test_2d_firstorder_pyradiomics()
     assert_fo_pyradiomics(fvals, Nyxus::Feature2D::MIN, "MIN");
     assert_fo_pyradiomics(fvals, Nyxus::Feature2D::MAX, "MAX");
     assert_fo_pyradiomics(fvals, Nyxus::Feature2D::RANGE, "RANGE");
+    // Both denominators against the one PyRadiomics number: var/N exactly, var/(N-1) within Bessel.
+    assert_fo_pyradiomics(fvals, Nyxus::Feature2D::VARIANCE_BIASED, "VARIANCE_BIASED");
     assert_fo_pyradiomics(fvals, Nyxus::Feature2D::VARIANCE, "VARIANCE");
     assert_fo_pyradiomics(fvals, Nyxus::Feature2D::SKEWNESS, "SKEWNESS");
     assert_fo_pyradiomics(fvals, Nyxus::Feature2D::KURTOSIS, "KURTOSIS");

@@ -23,95 +23,74 @@
 // (which contain masked-out pixels) yield corrected snapshot values. CORRELATION/INFOMEAS1 are
 // softNAN(=0)-guarded on the degenerate (single-grey-marginal) phantom directions.
 //
-// ORACLE-VETTED 2026-07 (corrected 2026-07-09): the 10 keys below were run against a third-party
-// symmetric-matrix oracle (PyRadiomics v3.0.1) on the *same* per-slice matlab-binned phantom images,
-// aggregated the same way (mean over 4 slices x 4 angles). Nine of them depend only on the grey-level
-// DIFFERENCE p_{x-y} / |i-j| (CONTRAST/DIFAVE/DIS/DIFENTRO/DIFVAR/ID/HOM1/IDM/IV); SUMENTROPY is the
-// dimensionless entropy of the SUM distribution p_{x+y}. Both kinds are invariant to matrix
-// symmetrization and to a level RELABELING (origin shift) -- and this phantom's binning relabels
-// levels without RESCALING them, so they coincide with the symmetric-matrix oracle -> PyRadiomics
-// agrees within the test's 1% tolerance. (Difference-based features are NOT invariant to level
-// *scaling*; that only holds here because the binning does not rescale.) These are VETTED against an
-// external definition, not merely pinned.
-// CORRECTION (2026-07-09, PR #356 review): ACOR/IDN/IDMN/SUMAVERAGE were previously listed here as
-// oracle-vetted -- that was WRONG for this ibsi=False / matlab-binning config. They depend on the
-// absolute grey-level values / Ng, which matlab binning re-maps, so under this config they diverge
-// from PyRadiomics by up to ~43% (ACOR; measured on a dense 8-level phantom: Nyxus ibsi=False ACOR
-// 29.25 vs oracle 20.51). They were therefore MOVED to the unvetted snapshot below. They ARE
-// genuinely third-party-vetted on the IBSI path (symmetric matrix, identity binning), where Nyxus
-// ibsi=True == PyRadiomics exactly (ACOR 20.512755, SUMAVERAGE 9.020408, IDN 0.779479, IDMN
-// 0.887342) -- covered by the dense-phantom oracle test in tests/python/test_glcm_oracle.py.
-static ref_vals_map<double> glcm_2d_regression_vetted_convention_ref_vals
+// These are snapshots and establish no vetting (SPEC 1) -- which is why they are one table. The file
+// previously split them in two, "vetted convention" and "unvetted convention", by whether a key also
+// happened to agree with PyRadiomics under this config. That split drove nothing: both halves fed the
+// one lookup below and the one 1% assertion at the bottom of assert_glcm_feature_regression, so it
+// was documentation wearing a data structure. It had also gone stale as documentation -- every 2D GLCM
+// row in oracle_coverage.csv now reads status=vetted, ACOR/ENTROPY/HOM2/JVAR among them, so a table
+// named "unvetted" contradicted the registry. Vetting is a property of a (feature x config x oracle)
+// assertion and lives in the registry and the oracle files, not in a boundary between two snapshot
+// tables. The per-key notes that split carried are kept below, where they describe a key rather than
+// a group.
+//
+// Which keys coincide with a symmetric-matrix oracle under THIS config, and why, is still worth
+// knowing, so it is recorded per key as "sym-invariant":
+//   Marked keys depend only on the grey-level DIFFERENCE p_{x-y} / |i-j| (CONTRAST, DIFAVE, DIS,
+//   DIFENTRO, DIFVAR, ID, HOM1, IDM, IV) or on the SUM distribution p_{x+y} (SUMENTROPY). Both kinds
+//   are invariant to matrix symmetrization and to a level RELABELING, and this phantom's binning
+//   relabels levels without RESCALING them, so they land within 1% of PyRadiomics v3.0.1 run on the
+//   same per-slice matlab-binned images with the same mean-over-4-slices-x-4-angles aggregation.
+//   (They are NOT invariant to level *scaling*; that only holds here because the binning does not
+//   rescale.) Unmarked keys are transpose-sensitive -- they read individual matrix entries or the
+//   grey-tone marginal means mu_x/mu_y -- and diverge from any symmetric oracle by >1% as configured
+//   (measured: ASM/ENERGY 3.7%, CLUSHADE 46%, CLUTEND/SUMVARIANCE 3.2%, JE 9.3%, JVAR/VARIANCE ~10%).
+//   CLUTEND/SUMVARIANCE are among them because Nyxus computes them from the single row-marginal mean
+//   by_row_mean. Rerunning with symmetric_glcm=true (or the radiomics/IBSI path) is what would let
+//   that group be compared to a symmetric oracle at all.
+static ref_vals_map<double> glcm_2d_regression_ref_vals
 {
-    {"GLCM_CONTRAST", 1.4448130208333334e+03},
-    {"GLCM_DIFAVE", 23.6493},
-    {"GLCM_DIFENTRO", 1.44004},
-    {"GLCM_DIFVAR", 801.208},
-    {"GLCM_DIS", 23.6493},
-    {"GLCM_HOM1", 0.580526},
-    {"GLCM_ID", 0.580526},
-    {"GLCM_IDM", 0.572168},
-    {"GLCM_IV", 0.000206466},
-    {"GLCM_SUMENTROPY", 1.61957}
-};
-
-// These keys are NOT oracle-matched under this config, for one of two reasons.
-// (a) Transpose-sensitive: they depend on individual matrix entries or on the grey-tone marginal
-//     means (mu_x/mu_y), which differ between the asymmetric matrix used here and a symmetric one.
-//     As configured (symmetric_glcm=false) they diverge from any symmetric oracle by >1% (verified:
-//     ASM/ENERGY 3.7%, CLUSHADE 46%, CLUTEND/SUMVARIANCE 3.2%, JE 9.3%, JVAR/VARIANCE ~10%, ...), and
-//     ENTROPY/HOM2 are computed from raw counts (un-normalized), so they have no probability-
-//     normalized oracle counterpart.
-// (b) Absolute-level / Ng-dependent (ACOR/IDN/IDMN/SUMAVERAGE, moved here from the vetted map on
-//     2026-07-09 per PR #356 review): matlab binning re-maps the absolute grey levels and Ng, so on
-//     this ibsi=False config they diverge from PyRadiomics (up to ~43% for ACOR). They ARE genuinely
-//     oracle-vetted on the IBSI path (symmetric matrix, identity binning) -- see the dense-phantom
-//     test in tests/python/test_glcm_oracle.py, which pins them tightly against PyRadiomics.
-// All of the above remain UNVETTED snapshots on this config; the transpose-sensitive group could be
-// vetted by rerunning with symmetric_glcm=true (or the radiomics/IBSI path). (Note: CLUTEND/
-// SUMVARIANCE are NOT symmetrization-invariant in Nyxus because they use the single row-marginal mean
-// by_row_mean; the earlier comment listing them as invariant was inaccurate.)
-static ref_vals_map<double> glcm_2d_regression_unvetted_convention_ref_vals
-{
-    {"GLCM_ACOR", 1437.33},                 // moved from vetted 2026-07-09: absolute-level-dependent, ibsi=False != oracle (IBSI-path vetted)
-    {"GLCM_IDMN", 9.0029152005531590e-01},  // moved from vetted 2026-07-09: Ng-dependent, ibsi=False != oracle (IBSI-path vetted)
-    {"GLCM_IDN", 8.4432100308124380e-01},   // moved from vetted 2026-07-09: Ng-dependent, ibsi=False != oracle (IBSI-path vetted)
-    {"GLCM_SUMAVERAGE", 72.0369},           // moved from vetted 2026-07-09: absolute-level-dependent, ibsi=False != oracle (IBSI-path vetted)
+    {"GLCM_ACOR", 1437.33},                 // absolute-level-dependent: matlab binning re-maps levels, so ibsi=False diverges from a symmetric oracle by ~43% (2026-07-09, PR #356 review). Vetted instead on the IBSI path -- see below.
     {"GLCM_ASM", 0.381801},
     {"GLCM_CLUPROM", 6.1972e+06},
     {"GLCM_CLUSHADE", 21905.3},
     {"GLCM_CLUTEND", 1.5639042057291665e+03},
+    {"GLCM_CONTRAST", 1.4448130208333334e+03},   // sym-invariant
     {"GLCM_CORRELATION", 0.000690135},
+    {"GLCM_DIFAVE", 23.6493},                    // sym-invariant
+    {"GLCM_DIFENTRO", 1.44004},                  // sym-invariant
+    {"GLCM_DIFVAR", 801.208},                    // sym-invariant
+    {"GLCM_DIS", 23.6493},                       // sym-invariant
     {"GLCM_ENERGY", 0.381801},
-    {"GLCM_ENTROPY", 1.87602},   // FIX: was buggy unnormalized -20.1735; post /sum_p fix == GLCM_JE (joint entropy)
-    {"GLCM_HOM2", 0.572168},     // FIX: was buggy unnormalized 6.81505; post /sum_p fix == GLCM_IDM (homogeneity in [0,1])
+    {"GLCM_ENTROPY", 1.87602},   // was buggy unnormalized -20.1735; post /sum_p fix == GLCM_JE (joint entropy)
+    {"GLCM_HOM1", 0.580526},                     // sym-invariant
+    {"GLCM_HOM2", 0.572168},     // was buggy unnormalized 6.81505; post /sum_p fix == GLCM_IDM (homogeneity in [0,1])
+    {"GLCM_ID", 0.580526},                       // sym-invariant
+    {"GLCM_IDM", 0.572168},                      // sym-invariant
+    {"GLCM_IDMN", 9.0029152005531590e-01},  // Ng-dependent, same story as ACOR (2026-07-09, PR #356 review)
+    {"GLCM_IDN", 8.4432100308124380e-01},   // Ng-dependent, same story as ACOR (2026-07-09, PR #356 review)
     {"GLCM_INFOMEAS1", -0.184406},
     {"GLCM_INFOMEAS2", 0.495817},
+    {"GLCM_IV", 0.000206466},                    // sym-invariant
     {"GLCM_JAVE", 35.5215},
     {"GLCM_JE", 1.87602},
     {"GLCM_JMAX", 0.527914},
     {"GLCM_JVAR", 828.383},
+    {"GLCM_SUMAVERAGE", 72.0369},           // absolute-level-dependent, same story as ACOR (2026-07-09, PR #356 review)
+    {"GLCM_SUMENTROPY", 1.61957},                // sym-invariant
     {"GLCM_SUMVARIANCE", 1.5639042057291665e+03},
     {"GLCM_VARIANCE", 674.871}
 };
+// ACOR/IDN/IDMN/SUMAVERAGE are genuinely third-party-vetted on the IBSI path (symmetric matrix,
+// identity binning), where Nyxus ibsi=True == PyRadiomics exactly (ACOR 20.512755, SUMAVERAGE
+// 9.020408, IDN 0.779479, IDMN 0.887342). That evidence lives in the dense-phantom oracle test
+// tests/python/test_glcm_oracle.py, not here.
 
-// A GLCM golden value now lives in exactly one of the two snapshots above. Look it up wherever it is.
 static double glcm_golden_value(const std::string& golden_key, bool& found)
 {
-    auto itv = glcm_2d_regression_vetted_convention_ref_vals.find(golden_key);
-    if (itv != glcm_2d_regression_vetted_convention_ref_vals.end())
-    {
-        found = true;
-        return itv->second;
-    }
-    auto itu = glcm_2d_regression_unvetted_convention_ref_vals.find(golden_key);
-    if (itu != glcm_2d_regression_unvetted_convention_ref_vals.end())
-    {
-        found = true;
-        return itu->second;
-    }
-    found = false;
-    return 0.0;
+    auto it = glcm_2d_regression_ref_vals.find(golden_key);
+    found = it != glcm_2d_regression_ref_vals.end();
+    return found ? it->second : 0.0;
 }
 
 static std::string glcm_golden_key(const std::string& feature_name)
@@ -148,7 +127,7 @@ void assert_glcm_feature_regression(const Feature2D& feature_, const std::string
 
     int feature = int(feature_);
     const std::string golden_key = glcm_golden_key(feature_name);
-    // Golden lives in either the vetted or the (remaining) unvetted snapshot; require it in one.
+    // Every asserted feature must be pinned; an unpinned key is a silently unguarded assertion.
     bool golden_found = false;
     const double golden = glcm_golden_value(golden_key, golden_found);
     ASSERT_TRUE(golden_found);
@@ -500,4 +479,64 @@ void test_2d_glcm_sum_entropy_ave_regression()
 void test_2d_glcm_sum_variance_ave_regression()
 {
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_SUMVARIANCE_AVE, "GLCM_SUMVARIANCE_AVE");
+}
+
+// ASM/CONTRAST/CORRELATION/ENERGY/HOM1 and their _AVE twins, moved back here from
+// test_2d_glcm_matlab.h. That file was named for an oracle it never ran: its ten functions called
+// this file's assert_glcm_feature_regression, on this file's fixture, against this file's snapshot
+// table, at this file's 1% tolerance -- the only thing distinguishing them from a regression
+// assertion was the word "matlab" in their names. The values cannot be MATLAB's: the table pins
+// Nyxus output and was refreshed in 2026-06 to follow a Nyxus bug fix, which no external golden
+// could survive. Three of the five (ASM, ENERGY, CORRELATION) are in the transpose-sensitive group
+// documented above, measured to diverge from a symmetric-matrix tool by 3.7% and more.
+// The registry rows now read status=regression to match. Vetting these against MATLAB graycoprops
+// remains open work; it needs goldens generated from graycoprops itself (SPEC 6.4), not a rename.
+void test_2d_glcm_asm_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_ASM, "GLCM_ASM");
+}
+
+void test_2d_glcm_contrast_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_CONTRAST, "GLCM_CONTRAST");
+}
+
+void test_2d_glcm_correlation_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_CORRELATION, "GLCM_CORRELATION");
+}
+
+void test_2d_glcm_energy_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_ENERGY, "GLCM_ENERGY");
+}
+
+void test_2d_glcm_hom1_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_HOM1, "GLCM_HOM1");
+}
+
+void test_2d_glcm_asm_ave_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_ASM_AVE, "GLCM_ASM_AVE");
+}
+
+void test_2d_glcm_contrast_ave_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_CONTRAST_AVE, "GLCM_CONTRAST_AVE");
+}
+
+void test_2d_glcm_correlation_ave_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_CORRELATION_AVE, "GLCM_CORRELATION_AVE");
+}
+
+void test_2d_glcm_energy_ave_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_ENERGY_AVE, "GLCM_ENERGY_AVE");
+}
+
+void test_2d_glcm_hom1_ave_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_HOM1_AVE, "GLCM_HOM1_AVE");
 }
