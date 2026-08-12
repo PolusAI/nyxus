@@ -21,134 +21,23 @@
 #include "../src/nyx/features/zernike.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
-#include "test_ref_vals.h"
 
 // The 19 caliper statistics below are vetted against imea (registry: status=vetted,
 // oracle=imea). They shared a table with 14 status=regression keys until SPEC 6.3.1 required
 // a table to name one oracle; the snapshot half now lives in morphology_2d_regression_caliper_chords_ref_vals.
-static ref_vals_map<double> morphology_2d_imea_caliper_ref_vals{
-	{"STAT_FERET_DIAM_MIN", 4.47301},
-	{"STAT_FERET_DIAM_MAX", 6.3222},
-	{"STAT_FERET_DIAM_MEAN", 5.40848},
-	{"STAT_FERET_DIAM_MEDIAN", 5.19615},
-	{"STAT_FERET_DIAM_STDDEV", 0.550668},
-	{"STAT_FERET_DIAM_MODE", 5.0},
-	// FIXED (caliper reimpl): Martin is now the area-bisecting chord and Nassenstein the bottom-tangent
-	// vertical chord (one diameter per angle), not the old min+max of a Y-grid of horizontal chords.
-	// The old goldens pinned the bug (Martin min 0.8, Nassenstein min/mode 0.0 — impossible for a solid
-	// shape). These are the corrected values on the 8x8 fixture; the diameters are vetted vs imea on a
-	// clean ellipse in TEST_2D_MORPHOLOGY_CALIPER_MARTIN_NASSENSTEIN_IMEA.
-	// FIX (caliper float-precision): re-pinned again after the float-precision hull rotation removed the inward
-	// integer-truncation bias (MODE unchanged).
-	{"STAT_MARTIN_DIAM_MIN", 4.25885},
-	{"STAT_MARTIN_DIAM_MAX", 6.12801},
-	{"STAT_MARTIN_DIAM_MEAN", 5.01762},
-	{"STAT_MARTIN_DIAM_MEDIAN", 4.97511},
-	{"STAT_MARTIN_DIAM_STDDEV", 0.553162},
-	{"STAT_MARTIN_DIAM_MODE", 4.0},
-	{"STAT_NASSENSTEIN_DIAM_MIN", 1.67316},
-	{"STAT_NASSENSTEIN_DIAM_MAX", 6.24165},
-	{"STAT_NASSENSTEIN_DIAM_MEAN", 4.77746},
-	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 5.03857},
-	{"STAT_NASSENSTEIN_DIAM_STDDEV", 1.09628},
-	{"STAT_NASSENSTEIN_DIAM_MODE", 4.0},
-	{"ALLCHORDS_MIN", 1.0},
-};
 
 // Pinned Nyxus output: erosion complement, Feret angles and chord statistics. No third-party
 // oracle backs these, so the name says regression rather than borrowing the imea claim of the
 // caliper table above.
-static ref_vals_map<double> morphology_2d_regression_caliper_chords_ref_vals{
-	{"EROSIONS_2_VANISH_COMPLEMENT", 0.0},
-	{"MIN_FERET_ANGLE", 40.0},
-	// FIX (caliper float-precision): re-pinned to the float-precision hull-rotation values (see rotation.cpp
-	// rotate_around_center_fp). The old integer-Pixel2 rotation truncated every rotated vertex inward,
-	// so these 8x8-fixture goldens shifted when the truncation was removed. MAX_FERET_ANGLE moved 0->110
-	// because the per-angle Feret ties differently once the diameters are no longer integer-quantized
-	// (the Feret angle is a regression-only Nyxus-frame convention, not oracle-vetted). MODE values are
-	// unchanged. The diameters themselves are vetted vs imea (<=10%) on the ellipse oracle below.
-	{"MAX_FERET_ANGLE", 110.0},
-	{"MAXCHORDS_MAX", 6.0},
-	{"MAXCHORDS_MIN", 3.0},
-	{"MAXCHORDS_MEDIAN", 4.0},
-	{"MAXCHORDS_MEAN", 4.5500000000000007},
-	{"MAXCHORDS_MODE", 4.0},
-	{"MAXCHORDS_STDDEV", 0.94451324138833304},
-	{"ALLCHORDS_MAX", 6.0},
-	// FIXED (chords.cpp histo built from MC): all-chords median/mode now computed over ALL chords, not max-chords
-	{"ALLCHORDS_MEDIAN", 3.0},
-	{"ALLCHORDS_MEAN", 2.9134615384615379},
-	{"ALLCHORDS_MODE", 3.0},
-	{"ALLCHORDS_STDDEV", 1.3446086298393252},
-};
-
-// Both halves came from one table, so one lookup keeps the call site unchanged.
-static bool remaining2d_caliper_ref_val (const std::string& key, double& out)
-{
-    for (const auto* t : { &morphology_2d_imea_caliper_ref_vals, &morphology_2d_regression_caliper_chords_ref_vals })
-    {
-        auto it = t->find(key);
-        if (it != t->end()) { out = it->second; return true; }
-    }
-    return false;
-}
 
 
-static ref_vals_map<double> morphology_2d_regression_polygonality_chords_ref_vals{
-	// POLYGONALITY_AVE depends only on neighbors/area/perimeter, so the Pick's-theorem
-	// convex-hull-area fix (convex_hull_nontriv.cpp) leaves it unchanged. HEXAGONALITY_AVE and
-	// HEXAGONALITY_STDDEV read CONVEX_HULL_AREA (via area_hull in hexagonality_polygonality.cpp),
-	// so the fix (bare shoelace 4 -> Pick's pixel-count 9 for the 3x3 label-1 ROI) shifted them:
-	// HEXAGONALITY_AVE 6.4263 -> 6.8823, HEXAGONALITY_STDDEV 0.3144 -> 0.1850. This shift is
-	// correct: the Polus reference computes area_hull = area/solidity = skimage convex_area (a
-	// pixel count), which is exactly what Pick's theorem produces. These are Polus-specific scores
-	// with no external oracle, so the goldens are self-referential regression snapshots; the
-	// assertions below now value-compare against them (agrees_gt) so any future drift is caught.
-	{"POLYGONALITY_AVE", 2.0833333333333357},
-	{"HEXAGONALITY_AVE", 6.8823312738837217},
-	// FIX (caliper float-precision): HEXAGONALITY_STDDEV re-pinned (depends on STAT_FERET_DIAM_MIN/MAX, which
-	// shifted with the float-precision hull rotation); the AVE scores stayed within tolerance.
-	{"HEXAGONALITY_STDDEV", 0.188079},
-	// FIXED (chords.cpp idxmax used iteMin): max-angle now indexes the longest chord (angle 0), not the min
-	{"MAXCHORDS_MAX_ANG", 0.0},
-	{"MAXCHORDS_MIN_ANG", 0.94247779607693793},
-	{"ALLCHORDS_MAX_ANG", 0.0},
-	{"ALLCHORDS_MIN_ANG", 0.15707963267948966},
-};
 
-static ref_vals_map<std::vector<double>> radial_2d_regression_ref_vals{
-	{"FRAC_AT_D", {
-		0.038461538460059175, 0.0, 0.11538461538017751, 0.1538461538402367,
-		0.3076923076804734, 0.0, 0.11538461538017751, 0.26923076922041422,
-	}},
-	{"MEAN_FRAC", {
-		50.999999948999999, 0.0, 53.333333315555556, 50.749999987312499,
-		47.374999994078124, 0.0, 33.666666655444445, 21.999999996857142,
-	}},
-	{"RADIAL_CV", {
-		2.6457513106495707, 0.0, 1.298797520721114, 1.024429214739045,
-		0.64750329537582818, 0.0, 1.3575192606324717, 1.3284260624865412,
-	}},
-};
+
 
 // ZERNIKE2D golden vector. Named for what it is: a pinned Nyxus snapshot, not a third-party
 // oracle. The registry (MIGRATION 6.1) does not accept mahotas, the only tool that computes
 // Zernike moments, so ZERNIKE2D is regression-only and this table and its assert are named to
 // match. Sole key: ZERNIKE2D.
-static ref_vals_map<std::vector<double>> zernike_2d_regression_ref_vals{
-	{"ZERNIKE2D", {
-		0.02049738595695693, 0.035831084484416686, 0.073953766599300461,
-		0.035435050265597692, 0.092323797445497555, 0.011030627605166297,
-		0.13199834370886107, 0.13453286019693309, 0.00788523106321295,
-		0.082424064819857396, 0.049062071772591059, 0.0040585552756590825,
-		0.14488178557089382, 0.23625456011991602, 0.038032570269059741,
-		0.0011694758904577424, 0.016507094944884948, 0.10703041567067684,
-		0.021302528534918392, 0.00061791897183974015, 0.10313303720229962,
-		0.23275354391334316, 0.08692094259111556, 0.0063362223871874139,
-		0.00016460740533666494, 0.085700825034398798, 0.15183975656312645,
-		0.052012830525298454, 0.0045112452293896111, 0.00015124210515210458,
-	}},
-};
 
 // ---------------------------------------------------------------------------------------------------
 // Martin / Nassenstein caliper vetting vs imea (external oracle).
@@ -162,30 +51,6 @@ static ref_vals_map<std::vector<double>> zernike_2d_regression_ref_vals{
 // accepted for Feret) — hence a 10% relative tolerance on the robust stats. The point that this pins
 // is that the diameters are now the *correct* quantities (min > 0), not the old min+max-chord bug
 // that produced physically-impossible 0-length Nassenstein diameters.
-static ref_vals_map<double> morphology_2d_imea_ref_vals{
-	{"STAT_MARTIN_DIAM_MIN", 19.0},
-	{"STAT_MARTIN_DIAM_MAX", 41.0},
-	{"STAT_MARTIN_DIAM_MEAN", 27.61},
-	{"STAT_MARTIN_DIAM_MEDIAN", 25.5},
-	{"STAT_NASSENSTEIN_DIAM_MIN", 16.0},
-	{"STAT_NASSENSTEIN_DIAM_MAX", 41.0},
-	{"STAT_NASSENSTEIN_DIAM_MEAN", 25.17},
-	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 21.5},
-	// Feret is a correct rotating-calipers implementation (unlike the Martin/Nassenstein bug); it
-	// agrees with imea within the same ~1-2px hull-vs-raster convention gap. Reference from imea
-	// (imea.measure_2d.statistical_length feret_diameters, dalpha=10) on the same ellipse.
-	{"STAT_FERET_DIAM_MIN", 21.0},
-	{"STAT_FERET_DIAM_MAX", 41.0},
-	{"STAT_FERET_DIAM_MEAN", 31.72},
-	{"STAT_FERET_DIAM_MEDIAN", 32.5},
-	// Minimum enclosing circle (Welzl / cv2.minEnclosingCircle) is centroid-independent and matches
-	// imea/OpenCV exactly: for the ellipse a=20 its diameter = the major axis = 2a = 40. (The circle
-	// fixture's value 30 is asserted inline.) NOTE: DIAMETER_CIRCUMSCRIBING_CIRCLE and
-	// DIAMETER_INSCRIBING_CIRCLE are NOT here — they are imea's crude max/min centroid-to-contour
-	// distance approximation (not a true geometric circle), sensitive to Nyxus's contour convention +
-	// the centroid-1 offset (a symmetric circle yields 35.6/23.3, not ~30/~30), so they stay regression.
-	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 40.0},
-};
 
 static Fsettings make_remaining2d_settings()
 {
@@ -414,116 +279,20 @@ static void calculate_circle_shape_values(std::vector<std::vector<double>>& fval
 }
 
 // Assert a caliper stat agrees with imea within a relative tolerance (hull-vs-raster convention gap).
-static void assert_caliper_close_to_imea(
-	const std::vector<std::vector<double>>& fvals,
-	Nyxus::Feature2D feature,
-	const std::string& feature_name,
-	// FIX (caliper float-precision): tightened 0.15 -> 0.10 after the float-precision hull rotation removed the
-	// integer-truncation inward bias. Measured residuals on the a=20,b=10 ellipse: Martin 1.8-4.6%,
-	// Feret 1.4-4.8%, Nassenstein 2.4-3.7% except its bottom-tangent MIN (8.9%) and MEDIAN (6.0%). The
-	// floor is the Nassenstein MIN: a near-apex vertical tangent chord measured on the convex hull vs
-	// imea's raster - a definitional hull-vs-raster gap, not a precision loss, so 0.10 is the honest bound.
-	double reltol = 0.10)
-{
-	SCOPED_TRACE(std::string("CALIPER_VS_IMEA__") + feature_name);
-	ASSERT_TRUE(morphology_2d_imea_ref_vals.count(feature_name) > 0);
-	const double imea_ref = morphology_2d_imea_ref_vals[feature_name];
-	const double actual = fvals[static_cast<int>(feature)][0];
-	const double denom = std::max(std::abs(imea_ref), 1e-9);
-	ASSERT_LE(std::abs(actual - imea_ref) / denom, reltol)
-		<< feature_name << " nyxus=" << actual << " imea=" << imea_ref;
-}
 
-static void assert_unvetted_no_direct_oracle_remaining2d_feature(
-	const std::vector<std::vector<double>>& fvals,
-	Nyxus::Feature2D feature,
-	const std::string& feature_name,
-	double frac_tolerance = 1000.0)
-{
-	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-	ASSERT_TRUE(morphology_2d_regression_polygonality_chords_ref_vals.count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_polygonality_chords_ref_vals[feature_name], frac_tolerance));
-}
 
-static void assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(
-	const std::vector<std::vector<double>>& fvals,
-	Nyxus::Feature2D feature,
-	const std::string& feature_name,
-	double frac_tolerance = 1000.0)
-{
-	SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
-	double ref_val{};
-	ASSERT_TRUE(remaining2d_caliper_ref_val(feature_name, ref_val));
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], ref_val, frac_tolerance));
-}
 
-static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(
-	const std::unordered_map<int, LR>& roiData,
-	Nyxus::Feature2D feature,
-	const std::string& feature_name,
-	double frac_tolerance = 1000.0)
-{
-	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-	// Value-compare against the regression golden so any drift (e.g. a change in the shared
-	// CONVEX_HULL_AREA that feeds area_hull) is caught, instead of the old bounds-only check that
-	// left the golden values on this map never actually compared.
-	ASSERT_TRUE(morphology_2d_regression_polygonality_chords_ref_vals.count(feature_name) > 0);
-	const double actual = roiData.at(1).fvals[static_cast<int>(feature)][0];
-	ASSERT_GT(actual, 0.0);
-	ASSERT_TRUE(agrees_gt(actual, morphology_2d_regression_polygonality_chords_ref_vals[feature_name], frac_tolerance));
-}
 
-static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_score(
-	const std::unordered_map<int, LR>& roiData,
-	Nyxus::Feature2D feature,
-	const std::string& feature_name,
-	double frac_tolerance = 1000.0)
-{
-	assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(roiData, feature, feature_name, frac_tolerance);
-	// The polygonality/hexagonality scores are bounded above by 10 by construction - keep this as
-	// a cheap semantic invariant on top of the value comparison.
-	ASSERT_LE(roiData.at(1).fvals[static_cast<int>(feature)][0], 10.0);
-}
 
-static void assert_remaining2d_polygonality_no_value_for_sparse_neighbors(
-	const std::unordered_map<int, LR>& roiData,
-	Nyxus::Feature2D feature)
-{
-	for (int label : {2, 3, 4, 5})
-		ASSERT_EQ(roiData.at(label).fvals[static_cast<int>(feature)][0], -1.0);
-}
 
-static void assert_unvetted_no_direct_oracle_remaining2d_vector_feature(
-	const std::vector<std::vector<double>>& fvals,
-	Nyxus::Feature2D feature,
-	const std::string& feature_name,
-	double abs_tolerance = 1e-9)
-{
-	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
-	ASSERT_TRUE(radial_2d_regression_ref_vals.count(feature_name) > 0);
-	const auto& actual = fvals[static_cast<int>(feature)];
-	const auto& golden_values = radial_2d_regression_ref_vals[feature_name];
-	ASSERT_EQ(actual.size(), golden_values.size());
-	for (size_t i = 0; i < golden_values.size(); ++i)
-		ASSERT_NEAR(actual[i], golden_values[i], abs_tolerance) << feature_name << "[" << i << "]";
-}
 
-static void assert_zernike_vector_feature_regression(
-	const std::vector<std::vector<double>>& fvals,
-	Nyxus::Feature2D feature,
-	const std::string& feature_name,
-	double abs_tolerance = 1e-9)
-{
-	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
-	ASSERT_TRUE(zernike_2d_regression_ref_vals.count(feature_name) > 0);
-	const auto& actual = fvals[static_cast<int>(feature)];
-	const auto& golden_values = zernike_2d_regression_ref_vals[feature_name];
-	ASSERT_EQ(actual.size(), golden_values.size());
-	for (size_t i = 0; i < golden_values.size(); ++i)
-		ASSERT_NEAR(actual[i], golden_values[i], abs_tolerance) << feature_name << "[" << i << "]";
-}
 
 // The seven test functions that used to live here have been distributed to their taxonomy homes
 // (registry target_test): erosion/caliper/chords/chord-angle/polygonality -> test_2d_morphology_regression.h,
 // radial distribution -> test_2d_intensity_histogram_regression.h, zernike2d -> test_2d_zernike_regression.h.
 // This header now carries only the shared fixture/oracle-data those files include.
+
+// Fixtures only, no reference data and no assertions (SPEC 6.3.1). The six tables that lived here are
+// now beside the assertions that read them; remaining2d_caliper_ref_val() went with them, since it
+// searched an imea table and a regression table in one pass and let a _regression function resolve
+// imea-vetted values without saying so.

@@ -8,29 +8,29 @@
 #include "test_2d_ngldm_ibsi.h"   // shared fixture: assert_ngldm_feature_ibsi and the phantom loader
 #include "test_ref_vals.h"
 
-// GLM and DCM are Nyxus mean-style rows that are not defined in the IBSI
-// NGLDM table, so only those two remain local regression references here.
-static ref_vals_map<double> ngldm_2d_regression_ref_vals
-{
-	{"NGLDM_GLM",		2.1178319573443410e+00},
-	{"NGLDM_DCM",		3.9832043343653250e+00}
+// GLM and DCM are Nyxus mean-style rows that are not defined in the IBSI
+// NGLDM table, so only those two remain local regression references here.
+static ref_vals_map<double> ngldm_2d_regression_ref_vals
+{
+	{"NGLDM_GLM",		2.1178319573443410e+00},
+	{"NGLDM_DCM",		3.9832043343653250e+00}
 };
 
-void assert_ngldm_feature_regression(const Feature2D& feature_, const std::string& feature_name)
-{
-	assert_ngldm_feature_against_golden_values(
-		feature_,
-		feature_name,
-		ngldm_2d_regression_ref_vals,
-		"UNVETTED_NO_DIRECT_ORACLE__");
+void assert_ngldm_feature_regression(const Feature2D& feature_, const std::string& feature_name)
+{
+	assert_ngldm_feature_against_golden_values(
+		feature_,
+		feature_name,
+		ngldm_2d_regression_ref_vals,
+		"UNVETTED_NO_DIRECT_ORACLE__");
 }
 
-void test_2d_ngldm_glm_regression()
-{
-	assert_ngldm_feature_regression(Nyxus::Feature2D::NGLDM_GLM, "NGLDM_GLM");
+void test_2d_ngldm_glm_regression()
+{
+	assert_ngldm_feature_regression(Nyxus::Feature2D::NGLDM_GLM, "NGLDM_GLM");
 }
 
-void test_2d_ngldm_dcm_regression()
-{
-	assert_ngldm_feature_regression(Nyxus::Feature2D::NGLDM_DCM, "NGLDM_DCM");
+void test_2d_ngldm_dcm_regression()
+{
+	assert_ngldm_feature_regression(Nyxus::Feature2D::NGLDM_DCM, "NGLDM_DCM");
 }
