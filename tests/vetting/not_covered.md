@@ -62,22 +62,22 @@ state in `notes` that the HU / loader configs are deliberately out of the per-fe
 ### A.3 The mirror image — registry references to files that do not exist
 
 `target_test` is the reorg destination, so a dangling entry is **backlog, not error**: it names where
-an assertion is to be written or moved. **204 refs across 14 filenames** (was 256 across 17; the gldm
-and firstorder waves closed `test_3d_gldm_regression.h`, `test_2d_firstorder_matlab.h` and
-`test_3d_firstorder_matlab.h`).
+an assertion is to be written or moved. **107 refs across 9 filenames** (was 204 across 14, itself
+down from 256 across 17). The table below is recomputed from the registry rather than carried
+forward, because the previous one had gone stale in both directions: it listed files that meanwhile
+came into existence (`test_3d_glcm_regression.h`, `test_2d_intensity_histogram_analytic.h`,
+`test_3d_gldzm_regression.h`, `test_2d_morphology_cellprofiler.h`) and counted `.py` targets as
+missing because it looked only in `tests/`, not `tests/python/`. `test_2d_glcm_matlab.h` left the
+list a third way — the ten rows that named it were demoted to `regression` and repointed at
+`test_2d_glcm_regression.h` (see section C).
 
 | target file named by the registry | rows waiting | family |
 |---|---:|---|
-| `test_2d_glcm_pyradiomics.h` | 34 | glcm |
-| `test_3d_glcm_regression.h` | 31 | glcm (3D) |
-| `test_2d_intensity_histogram_analytic.h` | 26 | intensity_histogram |
+| `test_2d_glcm_pyradiomics.h` | 28 | glcm |
 | `test_2d_glrlm_pyradiomics.h` | 20 | glrlm |
 | `test_2d_ngldm_mirp.h` | 19 | ngldm |
 | `test_2d_gldzm_mirp.h` | 17 | gldzm |
-| `test_3d_gldzm_regression.h` | 18 | gldzm (3D) |
-| `test_2d_glcm_matlab.h` | 10 | glcm |
 | `test_2d_glszm_pyradiomics.h` | 10 | glszm |
-| `test_2d_morphology_cellprofiler.h` | 6 | morphology |
 | `test_2d_ngtdm_pyradiomics.h` | 5 | ngtdm |
 | `test_3d_glcm_mirp.h` | 5 | glcm (3D) |
 | `test_3d_glrlm_mirp.h` | 2 | glrlm (3D) |
@@ -211,6 +211,26 @@ Surfaced by Wave 12 and not yet satisfied:
 Closing these means writing tool + version + config + generator down at each assertion site, ideally
 by regenerating through the Octave harness so the values become reproducible. The values themselves are
 MATLAB's — it is their reproduction recipe that is absent.
+
+**`test_2d_glcm_matlab.h` was a different case, and is now closed by demotion.** Its own header
+declared its provenance gap tracked here, but this section never listed it, and the gap was not the
+missing kind. The other entries hold MATLAB values with no recipe; that file held **no MATLAB values
+at all**. Its ten functions called `assert_glcm_feature_regression` on the regression file's fixture,
+against the regression file's snapshot table, at the regression file's 1% tolerance — nothing but the
+names separated them from a regression assertion. The table cannot be MATLAB's, because it pins Nyxus
+output and was refreshed in 2026-06 to follow a Nyxus bug fix; and three of the five features
+(`ASM`, `ENERGY`, `CORRELATION`) sit in the transpose-sensitive group measured to diverge from a
+symmetric-matrix tool by 3.7% and more. The rows read `source=tracker` with no recipe and no
+tolerance, so the claim was inherited from a spreadsheet, never executed. The ten assertions moved
+into `test_2d_glcm_regression.h` as `_regression` (no coverage lost — no other file asserted them)
+and the ten rows now read `status=regression`, `candidate_oracle=matlab (graycoprops)`,
+`flag=unproven-reference`.
+
+Re-vetting them needs goldens from `graycoprops` itself — the five map onto its four properties
+(Contrast, Correlation, Energy, Homogeneity). Note for whoever picks it up: the Octave harness cannot
+do it as it stands. Octave's `image` package ships `graycomatrix` but **not** `graycoprops`, so this
+one needs real MATLAB, or a checked-in reimplementation of the four published formulas recorded
+honestly as `oracle=analytic` rather than as `matlab`.
 
 ## D. Registry rows that contradict themselves
 

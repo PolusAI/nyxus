@@ -78,7 +78,7 @@ def test_vetting_tree_names_conform_to_spec_mechanics():
 
 def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     """The checker must actually fail on each defect class - a lint that cannot fail is not a lint.
-    Plants one of each and requires all seven to be reported. Each planted file isolates a single
+    Plants one of each and requires all ten to be reported. Each planted file isolates a single
     defect, so an assertion failing here names the rule that stopped being enforced."""
     (tmp_path / "tests" / "python").mkdir(parents=True)
     # a TEST body with two callees: case = UPPER(function) has no single function to mirror
@@ -100,11 +100,28 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
         "void test_3d_ngldm_sde_ibsi() {}", encoding="utf-8")
     (tmp_path / "tests" / "test_2d_ngtdm_regression.h").write_text(
         "void test_helper(int x) {}", encoding="utf-8")
-    # a golden table under the pre-6.3.1 naming
+    # a golden table under the pre-6.3.1 naming, brace on the next line
     (tmp_path / "tests" / "test_2d_glrlm_regression.h").write_text(
         'static std::unordered_map<std::string, double> ibsi_reference_glrlm_golden_values\n'
         '{\n    {"GLRLM_SRE", 1.0},\n};\n'
         'void test_2d_glrlm_sre_regression() {}', encoding="utf-8")
+    # the same defect written "name = {" on one line. Planted separately because the two spellings
+    # reach the detector by different paths: the declaration regex once accepted "=" or "{" but not
+    # both, so a table opened this way was never inspected and any name passed.
+    (tmp_path / "tests" / "test_2d_ngtdm_ibsi.h").write_text(
+        'static const std::unordered_map<std::string, double> oracle_3p_ngtdm_values = {\n'
+        '    {"NGTDM_COARSENESS", 1.0},\n};\n'
+        'void test_2d_ngtdm_coarseness_ibsi() {}', encoding="utf-8")
+    # a table reached through an accessor wrapping a function-local static. Its name never appears
+    # in a variable declaration, so the declaration regex cannot see it however it is spelled.
+    (tmp_path / "tests" / "test_2d_glszm_matlab.h").write_text(
+        'static const std::map<std::string, double>& matlab_glszm_shape_gt()\n'
+        '{\n'
+        '\tstatic const std::map<std::string, double> gt = {\n'
+        '\t\t{ "GLSZM_SAE", 1.0 }\n'
+        '\t};\n'
+        '\treturn gt;\n}\n'
+        'void test_2d_glszm_sae_matlab() {}', encoding="utf-8")
 
     errs = ctn.check(tmp_path)
     assert any("test_2d_glcm.h" in e and "SPEC 6.1" in e for e in errs)       # file, no kind
@@ -117,3 +134,7 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
                for e in errs)                                                # case mirrors no single fn
     assert any("ibsi_reference_glrlm_golden_values" in e and "SPEC 6.3.1" in e
                for e in errs)                                                # golden table off-convention
+    assert any("oracle_3p_ngtdm_values" in e and "SPEC 6.3.1" in e
+               for e in errs)                                                # ... declared as "name = {"
+    assert any("matlab_glszm_shape_gt" in e and "SPEC 6.3.1" in e
+               for e in errs)                                                # ... reached via an accessor

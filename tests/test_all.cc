@@ -39,7 +39,6 @@
 #include "test_2d_ngldm_regression.h"
 #include "test_2d_ngtdm_ibsi.h"
 #include "test_2d_glcm_regression.h"
-#include "test_2d_glcm_matlab.h"
 #include "test_2d_gldm_regression.h"
 #include "test_2d_gldm_mechanics.h"
 #include "test_2d_glrlm_regression.h"
@@ -1227,9 +1226,9 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_ACOR_REGRESSION)
 	ASSERT_NO_THROW(test_2d_glcm_acor_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_ASM_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_ASM_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_asm_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_asm_regression());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_CLUPROM_REGRESSION)
@@ -1247,14 +1246,14 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_CLUTEND_REGRESSION)
 	ASSERT_NO_THROW(test_2d_glcm_clutend_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_CONTRAST_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_CONTRAST_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_contrast_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_contrast_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_CORRELATION_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_CORRELATION_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_correlation_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_correlation_regression());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_DIFFERENCE_AVERAGE_REGRESSION)
@@ -1277,9 +1276,9 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_DIS_REGRESSION)
 	ASSERT_NO_THROW(test_2d_glcm_dis_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_ENERGY_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_ENERGY_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_energy_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_energy_regression());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_ENTROPY_REGRESSION)
@@ -1287,9 +1286,9 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_ENTROPY_REGRESSION)
 	ASSERT_NO_THROW(test_2d_glcm_entropy_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_HOM1_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_HOM1_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_hom1_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_hom1_regression());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_HOM2_REGRESSION)
@@ -1372,9 +1371,9 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_VARIANCE_REGRESSION)
 	ASSERT_NO_THROW(test_2d_glcm_variance_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_ASM_AVE_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_ASM_AVE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_asm_ave_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_asm_ave_regression());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_ACOR_AVE_REGRESSION)
@@ -1397,14 +1396,14 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_CLUTEND_AVE_REGRESSION)
 	ASSERT_NO_THROW(test_2d_glcm_clutend_ave_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_CONTRAST_AVE_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_CONTRAST_AVE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_contrast_ave_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_contrast_ave_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_CORRELATION_AVE_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_CORRELATION_AVE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_correlation_ave_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_correlation_ave_regression());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_DIFFERENCE_AVERAGE_AVE_REGRESSION)
@@ -1427,9 +1426,9 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_DIS_AVE_REGRESSION)
 	ASSERT_NO_THROW(test_2d_glcm_dis_ave_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_ENERGY_AVE_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_ENERGY_AVE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_energy_ave_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_energy_ave_regression());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_ENTROPY_AVE_REGRESSION)
@@ -1437,9 +1436,9 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_ENTROPY_AVE_REGRESSION)
 	ASSERT_NO_THROW(test_2d_glcm_entropy_ave_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_HOM1_AVE_MATLAB)
+TEST(TEST_NYXUS, TEST_2D_GLCM_HOM1_AVE_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_glcm_hom1_ave_matlab());
+	ASSERT_NO_THROW(test_2d_glcm_hom1_ave_regression());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_ID_AVE_REGRESSION)

@@ -128,12 +128,25 @@ TABLE_EXCEPTIONS = {}
 TABLE_ALIASES = ("ref_vals_map_by_label", "ref_vals_map", "ref_vals_list")
 
 # file-scope declaration (column 0; function locals are always indented in this tree). The brace
-# often sits on the next line, so the initialiser is checked by the caller.
+# often sits on the next line, so the initialiser is checked by the caller. The tail accepts the
+# three ways a table opens -- bare, "{", "=", and "= {" -- as separately optional pieces rather than
+# a choice of one: written as (?:=|\{)? it matched "name =" and "name {" but not "name = {", so every
+# table declared on one line in that style was skipped and never name-checked at all.
 TABLE_DECL = re.compile(
     r"^(?:static[ \t]+)?(?:const[ \t]+)?(?:inline[ \t]+)?"
     r"(?:(?:" + "|".join(TABLE_ALIASES) + r")[ \t]*<.*>"
     r"|std::(?:unordered_)?(?:map|multimap|vector|array|set)[ \t]*<.*>|auto)"
-    r"[ \t]+([A-Za-z_]\w*)[ \t]*(?:=|\{)?[ \t]*$")
+    r"[ \t]+([A-Za-z_]\w*)[ \t]*(?:=[ \t]*)?\{?[ \t]*$")
+
+# The other way a table reaches file scope: an accessor returning a function-local static, where the
+# accessor's name is the table's public name. TABLE_DECL cannot see it -- it matches a *variable*
+# declaration, and here the line ends in "& name()". Three tables hid in this form, one of them a set
+# of MATLAB goldens with a vetting claim in its comment, so the shape is checked rather than trusted.
+TABLE_ACCESSOR = re.compile(
+    r"^(?:static[ \t]+)?(?:const[ \t]+)?(?:inline[ \t]+)?"
+    r"(?:(?:" + "|".join(TABLE_ALIASES) + r")[ \t]*<.*>"
+    r"|std::(?:unordered_)?(?:map|multimap|vector|array|set)[ \t]*<.*>)"
+    r"[ \t]*&[ \t]*([A-Za-z_]\w*)[ \t]*\([ \t]*\)[ \t]*$")
 
 CPP_DEF = re.compile(
     r"^[ \t]*(?:static[ \t]+)?(?:inline[ \t]+)?void[ \t]+(test_[A-Za-z0-9_]*)[ \t]*\(([^)]*)\)", re.M)
@@ -309,11 +322,19 @@ def check(root):
             if not line or line[0] in " \t/#":
                 continue                      # indented -> function local; / or # -> comment
             m = TABLE_DECL.match(line.rstrip())
-            if not m:
-                continue
-            nxt = next((l.strip() for l in lines[i + 1:i + 3] if l.strip()), "")
-            if not (line.rstrip().endswith(("=", "{")) or nxt.startswith(("{", "="))):
-                continue                      # a declaration, not a table with an initialiser
+            if m:
+                nxt = next((l.strip() for l in lines[i + 1:i + 3] if l.strip()), "")
+                if not (line.rstrip().endswith(("=", "{")) or nxt.startswith(("{", "="))):
+                    continue                  # a declaration, not a table with an initialiser
+            else:
+                # an accessor wrapping a function-local static: the body holds the initialiser, so
+                # what is checked is that a static of the same type is declared inside it.
+                m = TABLE_ACCESSOR.match(line.rstrip())
+                if not m:
+                    continue
+                body = "\n".join(lines[i + 1:i + 4])
+                if "static" not in body:
+                    continue                  # returns a reference to something built elsewhere
             name = m.group(1)
             # A table declares itself either by TYPE (one of the 6.3.1 aliases - authoritative,
             # a badly named table cannot hide from it) or, for anything not yet converted, by
