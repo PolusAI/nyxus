@@ -88,6 +88,12 @@ report (`tests/vetting/coverage_report.md`) shows, per family and overall:
 `tests/vetting/check_coverage.py` (later) both generates this report and flags drift between the
 registry and the test tree (e.g. an `outcome=vetted, oracle=pyradiomics` row with no matching test).
 
+The report is **generated, never hand-edited**, and `--check` enforces that: it re-renders the
+registry and fails when the committed text differs. A stale report is not a formatting problem — it
+publishes a coverage figure the registry does not support, which is how `glcm` read 118/118 vetted
+for a stretch after #422 demoted ten of its rows to `regression`. Any change to the registry has to
+bring `--write` with it.
+
 The north star: every real (implemented) feature has ≥1 `vetted` row.
 
 ---
