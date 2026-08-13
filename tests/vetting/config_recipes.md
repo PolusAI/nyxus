@@ -204,8 +204,10 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `make_shape2d_settings()`: `PIXELSIZEUM=2.0`, `XYRES=1.0`, `GREYDEPTH=128`, `IBSI=false`, single
   ROI, no anisotropy. Oracles: MATLAB R2026a (`regionprops`, `bweuler`), `skimage`
   (`regionprops`), `imea`
-  (the two DIN ISO 9276-6 macro transforms), `cellprofiler`, `analytic`. Used by:
-  `test_2d_morphology_{matlab,skimage,imea,cellprofiler,analytic}.h`.
+  (the two DIN ISO 9276-6 macro transforms), `analytic`. Used by:
+  `test_2d_morphology_{matlab,skimage,imea,analytic}.h`.
+- The CellProfiler edge-intensity comparison needs oracle-side settings this recipe does not carry
+  (intensity rescaling, background padding), so it has its own id below rather than sharing this one.
 - Coordinate frames differ per property and the conversion is part of the recipe: MATLAB centroids
   are 1-based pixel centres (subtract 1); its `BoundingBox` corner is at min-0.5 in 1-based coords
   (so the 0-based min index is `BoundingBox(1) - 0.5`); skimage `orientation` is measured from the
@@ -215,6 +217,23 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   against `skimage`, which omits it and differs ~1.4%.
 - `PERIMETER` is **not** comparable on this fixture (Nyxus chain-code walk 26.935 vs skimage 12.657
   on a 26-pixel object with a hole); it is vetted at `morphology.perimeter_circles` instead.
+
+## morphology.cellprofiler_edge_intensity
+- CellProfiler `MeasureObjectIntensity` on the same `shape2d_morphology_{mask,intensity}` fixture,
+  one image and one object set, all module settings at their defaults. Oracle: `cellprofiler`.
+  Benchmark: `bench_shape8_concave_holed`. Used by: `test_2d_morphology_cellprofiler.h`. Generator:
+  `oracles/gen_morphology_cellprofiler.py`.
+- The edge is `skimage.segmentation.find_boundaries(mode="inner")` (connectivity=1): an object pixel
+  is an edge pixel unless all four of its N/S/E/W neighbours share its label. On this ROI that is 18
+  of the 26 pixels, summing to 753 against the ROI's 1048 - the same set Nyxus walks, which is what
+  makes the comparison exact rather than approximate.
+- Feed the image as `raw/255` and multiply the four scale-carrying results back by 255: CellProfiler
+  measures on [0,1] and stores the image as float32, which is the whole of the 5.2e-8 residual.
+  `MASS_DISPLACEMENT` is a pixel distance and takes no rescaling. Pad the fixture with background so
+  that "outside is background" does not depend on either tool's array-border handling.
+- Caveat: `EDGE_STDDEV_INTENSITY` is **not** comparable at this recipe. Over the identical 18 pixels
+  CellProfiler divides the variance by n and Nyxus by n-1, so the two differ by exactly
+  `sqrt(n/(n-1))` = 1.0289915 at n=18. Its row stays `regression`.
 
 ## morphology.perimeter_circles
 - The `roiDataForPerimeterTest` fixture (`test_data.h`), a single 14309-pixel object, `PIXELSIZEUM=100`,

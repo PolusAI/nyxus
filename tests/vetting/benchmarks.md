@@ -302,7 +302,7 @@ structural zero. Shrinking the scene or moving one block off label 1 costs both 
 | Why it exists | a compact 2D shape that is neither convex nor simply connected, so contour tracing has to return two contours and every shape descriptor computed from them is non-degenerate |
 
 Recipes: `radial.shape2d_native`, `morphology.shape2d_native`, `radial.cellprofiler_8bin`,
-`zernike.shape2d_native`.
+`morphology.cellprofiler_edge_intensity`, `zernike.shape2d_native`.
 
 Tests reaching it today: `test_2d_radial_{regression,invariant,mechanics}.h` (through
 `test_2d_radial_common.h`), `test_2d_morphology_common.h` and the morphology files that include it,
