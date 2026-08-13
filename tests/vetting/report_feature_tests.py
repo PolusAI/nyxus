@@ -73,8 +73,17 @@ CPP_SKIP = re.compile(r'"(?:\\.|[^"\\])*"' r"|'(?:\\.|[^'\\])*'"
 PY_SKIP = re.compile(r'"""(?:\\.|(?!""").)*"""' r"|'''(?:\\.|(?!''').)*'''"
                      r'|"(?:\\.|[^"\\\n])*"' r"|'(?:\\.|[^'\\\n])*'" r"|(#[^\n]*)", re.S)
 
-REPORT_COLUMNS = ["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
-                  "Regression", "Reg_Test_Name", "Notes"]
+# the narrow columns come first so a spreadsheet shows every yes/no signal before the free text,
+# and the two test-name columns sit side by side because reading them against each other - oracle
+# assertion vs self-snapshot - is the whole point of the report
+REPORT_COLUMNS = ["#", "Vetted", "Dim", "Family", "FeatureName", "List_of_Oracles", "Regression",
+                  "Test_Names", "Reg_Test_Name", "Notes"]
+
+DIM_ORDER = {"2D": 0, "3D": 1, "IMQ": 2}
+
+# marks a name in Test_Names that is standing in for a missing oracle assertion - the test is a
+# regression test, listed so the column is never blank while a test does exist
+STAND_IN = "*"
 
 
 # ------------------------------------------------------------------- parsing ---
@@ -374,11 +383,16 @@ def build_rows(rows, hits, helper_only, included, case_of_fn, called_fns):
         if reg_tests and all(("ORPHANED" in t or "NOT RUN" in t) for t in reg_tests):
             notes.append("its only regression coverage is in a test that never executes")
 
+        # the column names a test whenever one exists: with nothing asserting the feature against
+        # an oracle the regression tests stand in, starred, so an empty cell means no test at all
+        # rather than "only a self-snapshot" - the two read identically otherwise
+        shown = oracle_tests + other_tests or [STAND_IN + t for t in reg_tests]
+
         listed = sorted(oracles | ({claimed_oracle} if claimed_oracle else set()))
         out.append({
             "Dim": r["dim"], "Family": r["family"], "FeatureName": name,
             "List_of_Oracles": ", ".join(listed) if listed else "-",
-            "Test_Names": " | ".join(oracle_tests + other_tests) or "-",
+            "Test_Names": " | ".join(shown) or "-",
             "Regression": "Yes" if reg_tests else "No",
             "Reg_Test_Name": " | ".join(reg_tests) or "-",
             "Notes": " | ".join(notes),
@@ -389,6 +403,23 @@ def build_rows(rows, hits, helper_only, included, case_of_fn, called_fns):
             "n_reg_tests": len(reg_tests),
             "n_other_tests": len(other_tests),
         })
+    return number_rows(out)
+
+
+def number_rows(out):
+    """Order the rows the way the report reads them and number them there, so the report, its CSV
+    twin and anything built from either agree row for row. `Vetted` advances only on a row the
+    registry calls vetted, so its last value is the vetted total and a blank marks a row that
+    carries no vetted verdict at all."""
+    out.sort(key=lambda r: (DIM_ORDER.get(r["Dim"], 9), r["Family"], r["FeatureName"]))
+    vetted = 0
+    for i, r in enumerate(out, 1):
+        r["#"] = i
+        if r["registry_status"] == "vetted":
+            vetted += 1
+            r["Vetted"] = vetted
+        else:
+            r["Vetted"] = ""
     return out
 
 
@@ -445,7 +476,9 @@ def render_report(out_rows):
         for cell in (r["Test_Names"], r["Reg_Test_Name"]):
             for part in cell.split(" | "):
                 if "ORPHANED" in part or "NOT RUN" in part:
-                    key = part.split("::")[0] + (" [NOT RUN]" if "NOT RUN" in part else "")
+                    # a starred stand-in names the same file as the regression column: same key
+                    key = (part.lstrip(STAND_IN).split("::")[0]
+                           + (" [NOT RUN]" if "NOT RUN" in part else ""))
                     dead_files[key].add(r["FeatureName"])
     if dead_files:
         L += ["## Tests credited to features that never execute", "",
@@ -459,15 +492,22 @@ def render_report(out_rows):
         L += [""]
 
     L += ["## Full table", "",
-          "`Notes` carries only what the scan found. The registry's own note for a feature stays"
-          " in `oracle_coverage.csv`; `feature_test_report.csv` (`--csv`) joins the two.", "",
-          "| Dim | Family | FeatureName | List_of_Oracles | Test_Names | Regression |"
-          " Reg_Test_Name | Notes |", "|---|---|---|---|---|---|---|---|"]
-    order = {"2D": 0, "3D": 1, "IMQ": 2}
-    for r in sorted(out_rows, key=lambda r: (order.get(r["Dim"], 9), r["Family"], r["FeatureName"])):
-        L += ["| %s | %s | `%s` | %s | %s | %s | %s | %s |"
-              % (r["Dim"], r["Family"], r["FeatureName"], esc(r["List_of_Oracles"]),
-                 esc(r["Test_Names"]), r["Regression"], esc(r["Reg_Test_Name"]), esc(r["Notes"]))]
+          "`#` numbers every row; `Vetted` is the running count of the rows the registry calls"
+          " vetted, so it is blank on a row that carries no vetted verdict and its last value is"
+          " the vetted total. `Test_Names` lists the oracle-kind tests, plus any invariant/mechanics"
+          " test that touches the feature; where nothing asserts the feature against an oracle it"
+          " falls back to the regression test, prefixed `*`. So a `*` means the only thing checking"
+          " this value is a self-snapshot of a past Nyxus run, and a `-` means no test names the"
+          " feature at all. `Notes` carries only what the scan found. The registry's own note for a"
+          " feature stays in `oracle_coverage.csv`; `feature_test_report.csv` (`--csv`) joins the"
+          " two.", "",
+          "| # | Vetted | Dim | Family | FeatureName | List_of_Oracles | Regression | Test_Names |"
+          " Reg_Test_Name | Notes |", "|---:|---:|---|---|---|---|---|---|---|---|"]
+    for r in out_rows:
+        L += ["| %d | %s | %s | %s | `%s` | %s | %s | %s | %s | %s |"
+              % (r["#"], r["Vetted"], r["Dim"], r["Family"], r["FeatureName"],
+                 esc(r["List_of_Oracles"]), r["Regression"], esc(r["Test_Names"]),
+                 esc(r["Reg_Test_Name"]), esc(r["Notes"]))]
     return "\n".join(L) + "\n"
 
 

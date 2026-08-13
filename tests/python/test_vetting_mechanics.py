@@ -243,11 +243,34 @@ def test_vetting_report_flags_claims_and_tests_that_never_run_mechanics(tmp_path
             'void test_3d_glcm_dis_regression() { assert_g("3GLCM_DIS"); }\n',
     })
     by = {r["FeatureName"]: r for r in out}
-    assert by["AREA_UM2"]["Test_Names"] == "-"          # regression only, no oracle assertion
+    # regression only, so the regression test stands in, starred - the column names a test whenever
+    # one exists, and the star is what keeps that from reading as an oracle assertion
+    assert (by["AREA_UM2"]["Test_Names"]
+            == "*test_2d_morphology_regression.h::TEST_2D_MORPHOLOGY_BASIC_REGRESSION")
+    assert by["AREA_UM2"]["n_oracle_tests"] == 0
     assert "no in-tree oracle test asserts it" in by["AREA_UM2"]["Notes"]
     assert "target_test=test_2d_morphology_matlab.h" in by["AREA_UM2"]["Notes"]
     assert "ORPHANED" in by["3GLCM_DIS"]["Reg_Test_Name"]
     assert "never executes" in by["3GLCM_DIS"]["Notes"]
+
+
+def test_vetting_report_numbers_rows_and_counts_vetted_ones_mechanics(tmp_path):
+    """`#` and `Vetted` are what make the report countable by eye. `#` has to run 1..n over the
+    order the report prints, and `Vetted` has to advance only on a vetted row - a counter that
+    also ticked on a regression row would read as a vetted total that the registry never claims."""
+    rows, out = _plant_tree(tmp_path, [
+        {"dim": "3D", "feature": "3GLCM_DIS", "family": "glcm", "status": "regression"},
+        {"dim": "2D", "feature": "ROUNDNESS", "family": "morphology", "status": "regression"},
+        {"dim": "2D", "feature": "GLDM_SDE", "family": "gldm", "status": "vetted", "oracle": "ibsi"},
+        {"dim": "2D", "feature": "AREA_UM2", "family": "morphology", "status": "vetted",
+         "oracle": "matlab"},
+    ], {"test_all.cc": "\n"})
+    assert [(r["#"], r["Vetted"], r["FeatureName"]) for r in out] == [
+        (1, 1, "GLDM_SDE"),         # 2D sorts before 3D, gldm before morphology
+        (2, 2, "AREA_UM2"),
+        (3, "", "ROUNDNESS"),       # regression: no verdict to count
+        (4, "", "3GLCM_DIS"),
+    ]
 
 
 def test_vetting_report_on_disk_is_current_mechanics():

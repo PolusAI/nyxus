@@ -40,8 +40,12 @@ Regenerable byproducts (git-ignored, rebuilt by the pipeline): `features.csv`, `
 ## `feature_test_report.md` — registry claim vs. tree
 
 `oracle_coverage.csv` records the verdict a feature *carries*; the report records the assertions the
-tree *contains*, one row per feature: `Dim, Family, FeatureName, List_of_Oracles, Test_Names,
-Regression, Reg_Test_Name, Notes`. The two are not the same and are not meant to be — a row can be
+tree *contains*, one row per feature: `#, Vetted, Dim, Family, FeatureName, List_of_Oracles,
+Regression, Test_Names, Reg_Test_Name, Notes`. `#` numbers every row and `Vetted` counts only the
+rows the registry calls vetted, so a blank there is a row with no vetted verdict and the last value
+is the vetted total. `Test_Names` names a test whenever one exists: with no oracle assertion in the
+tree it falls back to the regression test prefixed `*`, so a `*` reads as "self-snapshot only" and a
+`-` as "no test names this feature". The two are not the same and are not meant to be — a row can be
 vetted from an offline harness run (`source=tracker`) whose assertion has not been migrated into the
 tree yet, and its `target_test` names where that assertion belongs. Only the dim/family/feature
 columns come from the registry; everything else is scanned, so the report is what shows the gap.
