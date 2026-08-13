@@ -1,13 +1,6 @@
 #pragma once
 
-#include <gtest/gtest.h>
-
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/intensity.h"
-#include "../src/nyx/features/pixel.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
-
+#include "test_2d_firstorder_common.h"
 #include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features

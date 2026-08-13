@@ -1,31 +1,18 @@
 #pragma once
 // ORACLE TEST — Nyxus 2D firstorder vs PyRadiomics.
 //
-// Provenance (goldens pinned below):
-//   tool         = pyradiomics
-//   version      = v3.0.1.post2+g9ccbec1
-//   image_digest = radiomics/pyradiomics@sha256:eea20621c9e77afd049871e1a4e7308844a57d399343b087f6a4e86c3dab1923
-//   recipe       = firstorder.pyradiomics_default (binCount=64, single 2D slice, spacing 1, label 1)
-//   fixture      = pixelIntensityFeaturesTestData (tests/test_data.h)
-//   generated    = 2026-07-14, offline, by a scratch generator (gen_firstorder_pyradiomics.py; not in-repo per design)
+// Provenance: pyradiomics v3.0.1.post2+g9ccbec1,
+// radiomics/pyradiomics@sha256:eea20621c9e77afd049871e1a4e7308844a57d399343b087f6a4e86c3dab1923,
+// recipe firstorder.pyradiomics_default (binCount=64, 2D, spacing 1, label 1),
+// fixture pixelIntensityFeaturesTestData (tests/test_data.h).
+// Full vetting history: tests/vetting/audit/firstorder_2d_pyradiomics_vetting_report.md.
 //
-// Each golden is the PyRadiomics value; the test recomputes Nyxus live under the matching recipe and
-// asserts agreement within the tier tolerance (agrees_gt frac_tolerance = 1/rel_bar):
-//   exact       (rel <= 1e-6)  -> frac_tolerance 1e6
-//   definitional(rel <= 1e-2)  -> frac_tolerance 100  [SPEC 7 cross-tool tier; the delta is derived]
-//   approx      (rel <= 5e-2)  -> frac_tolerance 20   [convention deltas without a closed form]
-// The regression file (test_2d_firstorder_regression.h) is untouched; it remains the exact change-detector.
+// Tolerance tiers (agrees_gt frac_tolerance = 1/rel_bar): exact rel<=1e-6 -> 1e6,
+// definitional rel<=1e-2 -> 100, approx rel<=5e-2 -> 20.
 
-#include <gtest/gtest.h>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
-#include "../src/nyx/dataset.h"
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/intensity.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
 #include "test_2d_firstorder_common.h"
 #include "test_ref_vals.h"
 
@@ -38,11 +25,8 @@ static const ref_vals_map<double> firstorder_2d_pyradiomics_ref_vals = {
     {"MIN", 11079.0},
     {"MAX", 64090.0},
     {"RANGE", 53011.0},
-    // PyRadiomics Variance is the population variance (/N). Nyxus computes both denominators, so the
-    // one PyRadiomics number is the reference for two features: VARIANCE_BIASED is var/N, the same
-    // definition, and matches exactly; VARIANCE is the sample variance var/(N-1) and stands off by
-    // the Bessel factor 1/(N-1), which on this 154-pixel fixture is 6.54e-03 -- the divergence the
-    // registry already records for the row.
+    // PyRadiomics Variance is population (/N) = Nyxus VARIANCE_BIASED exactly; Nyxus VARIANCE (/(N-1))
+    // differs by the Bessel factor (~6.54e-03 on this fixture).
     {"VARIANCE_BIASED", 215592327.38067126},
     {"VARIANCE", 215592327.38067126},
     {"SKEWNESS", 0.45025675970449414},
@@ -58,9 +42,7 @@ static const ref_vals_map<double> firstorder_2d_pyradiomics_ref_vals = {
     {"UNIFORMITY", 0.0252993759487266},
 };
 
-// Per-feature agrees_gt frac_tolerance: exact=1e6 (rel<=1e-6), definitional=100 (rel<=1e-2),
-// approx=20 (rel<=5%). A band wider than the divergence it exists to absorb hides drift (SPEC 7),
-// so VARIANCE sits at the tier its known Bessel gap of 6.54e-03 needs, not at the generic approx one.
+// Per-feature agrees_gt frac_tolerance (see tier definitions above).
 static const ref_vals_map<double> firstorder_2d_pyradiomics_ref_tols = {
     {"MEAN", 1e6}, {"MEDIAN", 1e6}, {"MIN", 1e6}, {"MAX", 1e6}, {"RANGE", 1e6},
     {"VARIANCE_BIASED", 1e6}, {"VARIANCE", 100.0}, {"SKEWNESS", 1e6}, {"KURTOSIS", 1e6}, {"ENERGY", 1e6},

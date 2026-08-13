@@ -1,15 +1,12 @@
 #pragma once
 
-// Shared fixture for the 2D first-order families. Holds no assertions of its own, so it carries no
-// kind (SPEC 6.1): the kind belongs to the files that include it - test_2d_firstorder_matlab.h,
-// test_2d_firstorder_pyradiomics.h, test_2d_firstorder_ibsi.h and test_2d_firstorder_regression.h.
+// Shared fixture for the 2D first-order families; holds no assertions of its own.
 
 #include <gtest/gtest.h>
 
 #include "../src/nyx/dataset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/intensity.h"
-#include "../src/nyx/features/pixel.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
 
