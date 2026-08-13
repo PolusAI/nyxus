@@ -33,6 +33,8 @@
 #include "test_2d_glcm_ibsi.h"
 #include "test_2d_gldm_ibsi.h"
 #include "test_2d_glrlm_ibsi.h"
+#include "test_2d_glrlm_pyradiomics.h"
+#include "test_2d_glrlm_mirp.h"
 #include "test_2d_gldzm_ibsi.h"
 #include "test_2d_glszm_ibsi.h"
 #include "test_2d_firstorder_ibsi.h"
@@ -1670,12 +1672,95 @@ TEST(TEST_NYXUS, TEST_2D_GLRLM_LRHGLE_IBSI)
 	ASSERT_NO_THROW(test_2d_glrlm_lrhgle_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLRLM_LGLRE_AVE_IBSI)  { ASSERT_NO_THROW(test_2d_glrlm_lglre_ave_ibsi()); }
-TEST(TEST_NYXUS, TEST_2D_GLRLM_HGLRE_AVE_IBSI)  { ASSERT_NO_THROW(test_2d_glrlm_hglre_ave_ibsi()); }
-TEST(TEST_NYXUS, TEST_2D_GLRLM_SRLGLE_AVE_IBSI) { ASSERT_NO_THROW(test_2d_glrlm_srlgle_ave_ibsi()); }
-TEST(TEST_NYXUS, TEST_2D_GLRLM_SRHGLE_AVE_IBSI) { ASSERT_NO_THROW(test_2d_glrlm_srhgle_ave_ibsi()); }
-TEST(TEST_NYXUS, TEST_2D_GLRLM_LRLGLE_AVE_IBSI) { ASSERT_NO_THROW(test_2d_glrlm_lrlgle_ave_ibsi()); }
-TEST(TEST_NYXUS, TEST_2D_GLRLM_LRHGLE_AVE_IBSI) { ASSERT_NO_THROW(test_2d_glrlm_lrhgle_ave_ibsi()); }
+TEST(TEST_NYXUS, TEST_2D_GLRLM_LGLRE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_lglre_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_HGLRE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_hglre_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_SRLGLE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_srlgle_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_SRHGLE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_srhgle_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_LRLGLE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_lrlgle_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_LRHGLE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_lrhgle_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_SRE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_sre_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_LRE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_lre_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_GLN_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_gln_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_GLNN_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_glnn_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_RLN_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_rln_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_RLNN_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_rlnn_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_RP_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_rp_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_GLV_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_glv_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_RV_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_rv_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_RE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_re_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_FAMILY_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_family_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_FAMILY_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_family_mirp());
+}
 
 TEST(TEST_NYXUS, TEST_2D_GLRLM_GLN_IBSI)
 {

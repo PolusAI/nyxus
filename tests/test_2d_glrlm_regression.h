@@ -2,14 +2,15 @@
 
 #include <gtest/gtest.h>
 
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/glrlm.h"
-#include "../src/nyx/features/pixel.h"
-#include "../src/nyx/environment.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
+#include <string>
 
-#include "test_ref_vals.h"
+#include "../src/nyx/feature_settings.h"   // Fsettings, NyxSetting
+#include "../src/nyx/featureset.h"         // Feature2D
+#include "../src/nyx/features/glrlm.h"     // GLRLMFeature
+#include "../src/nyx/roi_cache.h"          // LR
+#include "test_data.h"                     // the IBSI phantom slices
+#include "test_main_nyxus.h"               // agrees_gt, load_masked_test_roi_data
+#include "test_ref_vals.h"                 // ref_vals_map
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
