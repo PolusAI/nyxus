@@ -20,6 +20,34 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | `pydicom` | 3.0.2 | **venv** `pip install pydicom` (pure-Python) | high | DICOM decode + `Rescale*` → HU; offline fixture/golden gen for `--preserve-hu` (CT) |
 | `octave` | 10.3.0 | **conda** `conda install -c conda-forge octave octave-statistics` (no Docker, no license) | high | license-free MATLAB substitute (MIGRATION 5.13); `mean`/`median`/`std`/`var`/`skewness`/`kurtosis`/`prctile`/`quantile` all present |
 
+## conda route (verified 2026-08, 2D GLCM vetting)
+
+Both texture oracles resolve from conda-forge, which is less setup than Docker and puts the tool a
+`conda run` away from the repo. Used to generate every golden in `test_2d_glcm_{pyradiomics,mirp}.h`.
+
+```bash
+conda create -n nyxus_oracle -c conda-forge python=3.9  pyradiomics simpleitk numpy   # -> v3.0.1
+conda create -n nyxus_mirp   -c conda-forge python=3.11 mirp numpy                    # -> 2.6.0
+
+conda run -n nyxus_oracle python tests/vetting/oracles/gen_glcm_pyradiomics.py
+conda run -n nyxus_mirp   python tests/vetting/oracles/gen_glcm_mirp.py
+```
+
+Gotchas hit while doing it:
+
+- **pyradiomics needs Python <= 3.9** on conda-forge (the pip-on-3.11 block noted in the matrix is
+  the same wall); ask for the interpreter explicitly or the solver picks a newer one and fails.
+- **mirp exposes no `__version__`.** Pin it with `importlib.metadata.version("mirp")` - a
+  `getattr(mirp, "__version__", ...)` fallback silently writes "unknown" into the provenance line.
+- **mirp logs at INFO onto stdout**, interleaving progress lines with the golden table it prints.
+  `logging.disable(logging.INFO)` before the call; setting a level on the root logger does not work
+  because mirp configures its own logger during the run.
+- **pyradiomics prints a warning per run** ("GLCM is symmetrical, therefore Sum Average = 2 x Joint
+  Average") on stderr - expected, not an error.
+- Feeding either tool a numpy array is enough - no file on disk. PyRadiomics wants
+  `sitk.GetImageFromArray` with an explicit `SetSpacing`; MIRP takes `image=`/`mask=` arrays
+  directly, shaped `(z, y, x)`.
+
 ## Corrections / notable findings
 
 - **`radiomicsj` 2.1.2 is a phantom version** — no GitHub releases/tags; Maven Central publishes
