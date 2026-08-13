@@ -215,7 +215,10 @@ governing documents are:
   pinned with full provenance — **reference tools are never CI runtime
   dependencies**.
 - `tests/vetting/check_coverage.py` validates the registry and regenerates
-  `coverage_report.md` (stdlib only). Naming: test files are
+  `coverage_report.md` (stdlib only). `tests/vetting/report_feature_tests.py`
+  regenerates `feature_test_report.md` — one row per feature naming the test
+  that actually asserts it, scanned from the tree rather than from the registry,
+  so a `vetted` verdict with no in-tree assertion is visible. Naming: test files are
   `test_<dim>_<family>_<kind-or-oracle>.{h,py}` (e.g. `test_2d_glcm_pyradiomics.py`,
   `test_3d_glcm_regression.h`, `test_2d_glcm_mechanics.h`); functions repeat the
   same `test_<dim>_<family>…_<kind>` shape, so which implementation an assertion

@@ -9,6 +9,10 @@ _nspec = importlib.util.spec_from_file_location("check_test_names", _NAMES)
 ctn = importlib.util.module_from_spec(_nspec); _nspec.loader.exec_module(ctn)
 _REPO = _HERE.parents[1]
 
+_REPORT = _HERE.parent / "vetting" / "report_feature_tests.py"
+_rspec = importlib.util.spec_from_file_location("report_feature_tests", _REPORT)
+rft = importlib.util.module_from_spec(_rspec); _rspec.loader.exec_module(rft)
+
 def _write(tmp_path, rows):
     p = tmp_path / "reg.csv"
     cols = ["dim","feature","family","status","oracle","agreement","config_recipe",
@@ -155,3 +159,102 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
                for e in errs)                                                # conforming name, wrong file
     assert any("ngldm_2d_regression_ref_vals" in e and "raw container" in e
                for e in errs)                                                # conforming name, raw type
+
+
+# ---- the feature x test report (tests/vetting/report_feature_tests.py) ----
+
+def _plant_tree(tmp_path, registry_rows, files):
+    (tmp_path / "tests" / "python").mkdir(parents=True)
+    for name, text in files.items():
+        (tmp_path / "tests" / name).write_text(text, encoding="utf-8")
+    (tmp_path / "tests" / "vetting").mkdir(exist_ok=True)
+    path = _write(tmp_path, registry_rows)
+    rows = rft.load_registry(path)
+    return rows, rft.build_rows(rows, *rft.scan(tmp_path / "tests", rows))
+
+
+def test_vetting_report_finds_each_attribution_shape_mechanics(tmp_path):
+    """The three shapes the tree actually uses. Matching only literal feature names in a test body
+    misses two of them: the moments oracle tests name a table and no feature, and the 3D coverage
+    sweeps build their cases from the featureset at run time. Both must land as coverage."""
+    rows, out = _plant_tree(tmp_path, [
+        {"dim": "2D", "feature": "GLDM_SDE", "family": "gldm", "status": "vetted", "oracle": "ibsi"},
+        {"dim": "2D", "feature": "HU_M1", "family": "moments", "status": "vetted", "oracle": "skimage"},
+        {"dim": "3D", "feature": "3GLCM_ENERGY_AVE", "family": "glcm", "status": "regression"},
+    ], {
+        "test_all.cc":
+            "TEST(TEST_NYXUS, TEST_2D_GLDM_SDE_IBSI) { test_2d_gldm_sde_ibsi(); }\n"
+            "TEST(TEST_NYXUS, TEST_2D_MOMENTS_SHAPE_SKIMAGE) { test_2d_moments_shape_skimage(); }\n"
+            '#include "test_2d_gldm_ibsi.h"\n#include "test_2d_moments_skimage.h"\n'
+            '#include "test_3d_glcm_coverage.h"\n',
+        # literal: the test names the feature
+        "test_2d_gldm_ibsi.h": 'void test_2d_gldm_sde_ibsi() { assert_x("GLDM_SDE"); }\n',
+        # table: the test names a golden table and no feature
+        "test_2d_moments_skimage.h":
+            'static ref_vals_list<G> moments_2d_skimage_shape_ref_vals\n'
+            '{\n\t{Feature2D::HU_M1, "HU_M1", 1.0},\n};\n'
+            'void test_2d_moments_shape_skimage() { assert_g(moments_2d_skimage_shape_ref_vals); }\n',
+        # sweep: nothing names the feature; the suite enumerates it at run time
+        "test_3d_glcm_coverage.h":
+            "INSTANTIATE_TEST_SUITE_P(\n\tGLCM_UNVETTED_LOCAL_REGRESSION,\n"
+            "\tTest3DFeature_UNVETTED_LOCAL_REGRESSION,\n\ttesting::ValuesIn(x), y);\n"
+            'static ref_vals_map<std::vector<double>> glcm_3d_regression_coverage_ref_vals\n'
+            '{\n\t{ "3GLCM_ENERGY_AVE", { 0.217 } },\n};\n',
+    })
+    by = {r["FeatureName"]: r for r in out}
+    assert by["GLDM_SDE"]["Test_Names"] == "test_2d_gldm_ibsi.h::TEST_2D_GLDM_SDE_IBSI"
+    assert by["HU_M1"]["Test_Names"] == "test_2d_moments_skimage.h::TEST_2D_MOMENTS_SHAPE_SKIMAGE"
+    assert by["3GLCM_ENERGY_AVE"]["Regression"] == "Yes"
+    assert rft.SWEEP_REGRESSION in by["3GLCM_ENERGY_AVE"]["Reg_Test_Name"]
+
+
+def test_vetting_report_propagates_helper_assertions_to_callers_mechanics(tmp_path):
+    """SPEC 6.2 keeps assertions in assert_* helpers, so the test that runs one may name no
+    feature at all - TEST_2D_GABOR_SKIMAGE just calls assert_2d_gabor_skimage(). Without
+    helper -> caller propagation an entire oracle file reads as uncovered."""
+    rows, out = _plant_tree(tmp_path, [
+        {"dim": "2D", "feature": "GABOR", "family": "gabor", "status": "vetted", "oracle": "skimage"},
+    ], {
+        "test_all.cc": "TEST(TEST_NYXUS, TEST_2D_GABOR_SKIMAGE) { assert_2d_gabor_skimage(false); }\n"
+                       '#include "test_2d_gabor_skimage.h"\n',
+        "test_2d_gabor_skimage.h":
+            "void assert_2d_gabor_skimage() { check(fvals[(int)Feature2D::GABOR]); }\n",
+    })
+    r = out[0]
+    assert r["Test_Names"] == "test_all.cc::TEST_2D_GABOR_SKIMAGE"
+    assert r["List_of_Oracles"] == "skimage" and r["Notes"] == ""
+
+
+def test_vetting_report_flags_claims_and_tests_that_never_run_mechanics(tmp_path):
+    """The two disagreements the report exists to surface: a vetted verdict no in-tree assertion
+    backs, and coverage credited to a header test_all.cc never includes, so it never compiled."""
+    rows, out = _plant_tree(tmp_path, [
+        {"dim": "2D", "feature": "AREA_UM2", "family": "morphology", "status": "vetted",
+         "oracle": "matlab", "source": "tracker", "target_test": "test_2d_morphology_matlab.h"},
+        {"dim": "3D", "feature": "3GLCM_DIS", "family": "glcm", "status": "regression"},
+    ], {
+        "test_all.cc": "TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_BASIC_REGRESSION)"
+                       " { test_2d_morphology_basic_regression(); }\n"
+                       '#include "test_2d_morphology_regression.h"\n',
+        "test_2d_morphology_regression.h":
+            'void test_2d_morphology_basic_regression() { assert_m("AREA_UM2"); }\n',
+        # never included from test_all.cc -> compiled into nothing
+        "test_3d_glcm_regression.h":
+            'void test_3d_glcm_dis_regression() { assert_g("3GLCM_DIS"); }\n',
+    })
+    by = {r["FeatureName"]: r for r in out}
+    assert by["AREA_UM2"]["Test_Names"] == "-"          # regression only, no oracle assertion
+    assert "no in-tree oracle test asserts it" in by["AREA_UM2"]["Notes"]
+    assert "target_test=test_2d_morphology_matlab.h" in by["AREA_UM2"]["Notes"]
+    assert "ORPHANED" in by["3GLCM_DIS"]["Reg_Test_Name"]
+    assert "never executes" in by["3GLCM_DIS"]["Notes"]
+
+
+def test_vetting_report_on_disk_is_current_mechanics():
+    """A generated file that drifts from its source is worse than none - it is read as current.
+    Regenerate with: python tests/vetting/report_feature_tests.py --write"""
+    rc = rft.main(["--check",
+                   "--registry", str(_HERE.parent / "vetting" / "oracle_coverage.csv"),
+                   "--tests", str(_HERE.parent),
+                   "--report", str(_HERE.parent / "vetting" / "feature_test_report.md")])
+    assert rc == 0, "tests/vetting/feature_test_report.md is stale - run --write"
