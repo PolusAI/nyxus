@@ -5,7 +5,15 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 
 ## glcm.ibsi_identity
 - `ibsi=True`, grey levels = distinct levels (identity binning), symmetric matrix, all directions.
-- Oracle: `ibsi` reference tables / `mirp`. Used by: `test_2d_glcm_ibsi.h`.
+- Oracle: `ibsi` reference tables / `mirp` / `pyradiomics`. Used by: `test_2d_glcm_ibsi.h`,
+  `test_2d_glcm_pyradiomics.h`, `test_2d_glcm_mirp.h`.
+- PyRadiomics reaches this configuration with `binWidth=1` on an integer image (identity binning),
+  `symmetricalGLCM=True`, `distances=[1]`, `force2D=True`, `weightingNorm=None`; MIRP with
+  `base_discretisation_method="none"`, `glcm_distance=1`, `by_slice=True`. Both report one value per
+  feature over the angle set, which is the Nyxus `*_AVE` aggregation.
+- Two fixtures are pinned at this recipe and both were run against both tools: the IBSI digital
+  phantom (`test_2d_glcm_ibsi.h`, in-mask levels {1,3,4,6}) and a dense 8x8 phantom where every
+  level 1..8 and every level pair occurs (`test_2d_glcm_common.h`).
 
 ## glcm.pyradiomics_symmetric
 - `ibsi=False`, fixed bin count, symmetric GLCM averaged over directions, distance 1.
