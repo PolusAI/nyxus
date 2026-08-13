@@ -2,52 +2,30 @@
 
 #include <gtest/gtest.h>
 
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/glcm.h"
-#include "../src/nyx/features/pixel.h"
-#include "../src/nyx/environment.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
+#include <string>
 
-#include "test_ref_vals.h"
+#include "../src/nyx/feature_settings.h"   // Fsettings, NyxSetting
+#include "../src/nyx/featureset.h"         // Feature2D
+#include "../src/nyx/features/glcm.h"      // GLCMFeature
+#include "../src/nyx/roi_cache.h"          // LR
+#include "test_data.h"                     // the IBSI phantom slices
+#include "test_main_nyxus.h"               // agrees_gt, load_masked_test_roi_data
+#include "test_ref_vals.h"                 // ref_vals_map
 
-// Nyxus-convention GLCM regression snapshot. These values pin current Nyxus output to catch
-// drift. Calculated at 100 grey levels, offset 1, via the MATLAB-binning path with
-// symmetric_glcm=false, i.e. on an *asymmetric* cooc matrix. That is a configuration choice, NOT
-// an inherent limitation: nyxus symmetrizes on the IBSI and radiomics paths (matching PyRadiomics'
-// symmetricalGLCM=True). As configured here the matrix increments only (a,b), so the
-// convention-sensitive Haralick family is transpose-sensitive and diverges from a symmetric-matrix
-// tool, while the symmetrization-invariant keys coincide with one.
-// REFRESHED 2026-06 after the GLCM background-pollution fix: the non-IBSI (MATLAB binning) path now
-// excludes out-of-ROI background pixels (matching the IBSI path), so the phantom slices z2-z4
-// (which contain masked-out pixels) yield corrected snapshot values. CORRELATION/INFOMEAS1 are
-// softNAN(=0)-guarded on the degenerate (single-grey-marginal) phantom directions.
+// Nyxus-convention GLCM regression snapshot: these values pin current Nyxus output to catch drift
+// and establish no vetting (SPEC 1). The family's oracle assertions live in test_2d_glcm_ibsi.h,
+// test_2d_glcm_pyradiomics.h and test_2d_glcm_mirp.h.
 //
-// These are snapshots and establish no vetting (SPEC 1) -- which is why they are one table. The file
-// previously split them in two, "vetted convention" and "unvetted convention", by whether a key also
-// happened to agree with PyRadiomics under this config. That split drove nothing: both halves fed the
-// one lookup below and the one 1% assertion at the bottom of assert_glcm_feature_regression, so it
-// was documentation wearing a data structure. It had also gone stale as documentation -- every 2D GLCM
-// row in oracle_coverage.csv now reads status=vetted, ACOR/ENTROPY/HOM2/JVAR among them, so a table
-// named "unvetted" contradicted the registry. Vetting is a property of a (feature x config x oracle)
-// assertion and lives in the registry and the oracle files, not in a boundary between two snapshot
-// tables. The per-key notes that split carried are kept below, where they describe a key rather than
-// a group.
+// The recipe here is deliberately the other one: 100 grey levels, offset 1, MATLAB binning,
+// symmetric_glcm=false - an *asymmetric* co-occurrence matrix, where the oracle tests run the IBSI
+// path (symmetric, identity binning). So most keys below cannot be compared to a symmetric-matrix
+// tool at all: the transpose-sensitive ones diverge by up to ~46%, while the keys that depend only
+// on the grey-level difference p_{x-y} or the sum distribution p_{x+y} are invariant to
+// symmetrization and land on a tool anyway. Which key is which, and the measured divergences, are
+// in tests/vetting/audit/glcm_2d_pyradiomics_vetting_report.md.
 //
-// Which keys coincide with a symmetric-matrix oracle under THIS config, and why, is still worth
-// knowing, so it is recorded per key as "sym-invariant":
-//   Marked keys depend only on the grey-level DIFFERENCE p_{x-y} / |i-j| (CONTRAST, DIFAVE, DIS,
-//   DIFENTRO, DIFVAR, ID, HOM1, IDM, IV) or on the SUM distribution p_{x+y} (SUMENTROPY). Both kinds
-//   are invariant to matrix symmetrization and to a level RELABELING, and this phantom's binning
-//   relabels levels without RESCALING them, so they land within 1% of PyRadiomics v3.0.1 run on the
-//   same per-slice matlab-binned images with the same mean-over-4-slices-x-4-angles aggregation.
-//   (They are NOT invariant to level *scaling*; that only holds here because the binning does not
-//   rescale.) Unmarked keys are transpose-sensitive -- they read individual matrix entries or the
-//   grey-tone marginal means mu_x/mu_y -- and diverge from any symmetric oracle by >1% as configured
-//   (measured: ASM/ENERGY 3.7%, CLUSHADE 46%, CLUTEND/SUMVARIANCE 3.2%, JE 9.3%, JVAR/VARIANCE ~10%).
-//   CLUTEND/SUMVARIANCE are among them because Nyxus computes them from the single row-marginal mean
-//   by_row_mean. Rerunning with symmetric_glcm=true (or the radiomics/IBSI path) is what would let
-//   that group be compared to a symmetric oracle at all.
+// CORRELATION/INFOMEAS1 are softNAN(=0)-guarded on the degenerate (single-grey-marginal) phantom
+// directions. An _AVE key shares its base feature's golden: it is the mean of the same 4 angles.
 static ref_vals_map<double> glcm_2d_regression_ref_vals
 {
     {"GLCM_ACOR", 1437.33},                 // absolute-level-dependent: matlab binning re-maps levels, so ibsi=False diverges from a symmetric oracle by ~43% (2026-07-09, PR #356 review). Vetted instead on the IBSI path -- see below.
