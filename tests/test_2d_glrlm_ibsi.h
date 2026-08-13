@@ -2,15 +2,16 @@
 
 #include <gtest/gtest.h>
 
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/glrlm.h"
-#include "../src/nyx/features/pixel.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
+#include <string>
 
-#include "test_ref_vals.h"
+#include "test_2d_glrlm_common.h"   // the phantom fixture and calc_2d_glrlm_phantom_feature
+#include "test_main_nyxus.h"        // agrees_gt
+#include "test_ref_vals.h"          // ref_vals_map
 
-// dig. phantom values for intensity based features
+// IBSI digital phantom, 2D direction- and slice-averaged consensus values.
+// (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. Dataset: dig phantom.)
+// Verified against fresh PyRadiomics and MIRP runs on the phantom pixels checked into test_data.h -
+// see tests/vetting/audit/glrlm_2d_ibsi_vetting_report.md.
 static ref_vals_map<double> glrlm_2d_ibsi_ref_vals {
     {"GLRLM_SRE", 0.641},
     {"GLRLM_LRE", 3.78},
@@ -23,237 +24,194 @@ static ref_vals_map<double> glrlm_2d_ibsi_ref_vals {
     {"GLRLM_GLN", 5.2},
     {"GLRLM_GLNN", 0.46},
     {"GLRLM_RLN", 6.12},
-    {"GLRLM_RLNN", 0.492}, 
-    {"GLRLM_RP", 0.627}, 
+    {"GLRLM_RLNN", 0.492},
+    {"GLRLM_RP", 0.627},
     {"GLRLM_GLV", 3.35},
     {"GLRLM_RV", 0.761},
     {"GLRLM_RE", 2.17}
 };
 
-void assert_glrlm_feature_ibsi(const Feature2D& feature_, const std::string& feature_name) 
+// A base feature and its _AVE twin are the same quantity aggregated at different points, so they
+// read the same golden; the table is keyed by the base name.
+static std::string glrlm_ibsi_golden_key (const std::string& feature_name)
 {
-    // featue settings for this particular test
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 128;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = true;
-    //
+    static const std::string ave_suffix = "_AVE";
+    return is_2d_glrlm_ave_feature (feature_name)
+        ? feature_name.substr (0, feature_name.size() - ave_suffix.size())
+        : feature_name;
+}
 
-    int feature = int(feature_);
+void assert_glrlm_feature_ibsi (const std::string& feature_name)
+{
+    // A key absent from the table would otherwise be default-inserted as 0, and agrees_gt turns a
+    // ground truth of 0 into a tolerance of 0 - an assertion that passes only on an exact 0.
+    auto golden_it = glrlm_2d_ibsi_ref_vals.find (glrlm_ibsi_golden_key (feature_name));
+    ASSERT_TRUE (golden_it != glrlm_2d_ibsi_ref_vals.end()) << feature_name;
 
-    double total = 0;
-    
-    // image 1
-    LR roidata;
-    GLRLMFeature f;
-
-    load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
-    ASSERT_NO_THROW(f.calculate(roidata, s));
-
-    // Initialize per-ROI feature value buffer with zeros
-    roidata.initialize_fvals();
-
-    // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
-    f.save_value(roidata.fvals);
-
-    total += roidata.fvals[feature][0];
-    total += roidata.fvals[feature][1];
-    total += roidata.fvals[feature][2];
-    total += roidata.fvals[feature][3];
-    
-    // image 2
-    LR roidata1;
-    GLRLMFeature f1;
-
-    load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
-
-    ASSERT_NO_THROW(f1.calculate(roidata1, s));
-
-    // Initialize per-ROI feature value buffer with zeros
-    roidata1.initialize_fvals();
-
-    // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
-    f1.save_value(roidata1.fvals);
-
-    total += roidata1.fvals[feature][0];
-    total += roidata1.fvals[feature][1];
-    total += roidata1.fvals[feature][2];
-    total += roidata1.fvals[feature][3];
-    
-    // image 3
-    LR roidata2;
-    GLRLMFeature f2;
-
-    load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
-
-    ASSERT_NO_THROW(f2.calculate(roidata2, s));
-
-    // Initialize per-ROI feature value buffer with zeros
-    roidata2.initialize_fvals();
-
-    // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
-    f2.save_value(roidata2.fvals);
-
-    total += roidata2.fvals[feature][0];
-    total += roidata2.fvals[feature][1];
-    total += roidata2.fvals[feature][2];
-    total += roidata2.fvals[feature][3];
-    
-    // image 4
-    LR roidata3;
-    GLRLMFeature f3;
-
-    load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
-
-    ASSERT_NO_THROW(f3.calculate(roidata3, s));
-
-    // Initialize per-ROI feature value buffer with zeros
-    roidata3.initialize_fvals();
-
-    // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
-    f3.save_value(roidata3.fvals);
-
-    // Check the feature values vs ground truth
-    total += roidata3.fvals[feature][0];
-    total += roidata3.fvals[feature][1];
-    total += roidata3.fvals[feature][2];
-    total += roidata3.fvals[feature][3];
-
-    // Verdict
-    ASSERT_TRUE(agrees_gt(total/16, glrlm_2d_ibsi_ref_vals[feature_name], 100.));
+    double value = 0;
+    ASSERT_TRUE (calc_2d_glrlm_phantom_feature (feature_name, value)) << feature_name;
+    ASSERT_TRUE (agrees_gt (value, golden_it->second, 100.)) << feature_name;
 }
 
 void test_2d_glrlm_sre_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_SRE, "GLRLM_SRE");
+    assert_glrlm_feature_ibsi ("GLRLM_SRE");
 }
 
 void test_2d_glrlm_lre_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_LRE, "GLRLM_LRE");
+    assert_glrlm_feature_ibsi ("GLRLM_LRE");
 }
 
 void test_2d_glrlm_lglre_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_LGLRE, "GLRLM_LGLRE");
+    assert_glrlm_feature_ibsi ("GLRLM_LGLRE");
 }
 
 void test_2d_glrlm_hglre_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_HGLRE, "GLRLM_HGLRE");
-}   
+    assert_glrlm_feature_ibsi ("GLRLM_HGLRE");
+}
 
 void test_2d_glrlm_srlgle_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_SRLGLE, "GLRLM_SRLGLE");
+    assert_glrlm_feature_ibsi ("GLRLM_SRLGLE");
 }
 
 void test_2d_glrlm_srhgle_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_SRHGLE, "GLRLM_SRHGLE");
+    assert_glrlm_feature_ibsi ("GLRLM_SRHGLE");
 }
 
 void test_2d_glrlm_lrlgle_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_LRLGLE, "GLRLM_LRLGLE");
+    assert_glrlm_feature_ibsi ("GLRLM_LRLGLE");
 }
 
 void test_2d_glrlm_lrhgle_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_LRHGLE, "GLRLM_LRHGLE");
+    assert_glrlm_feature_ibsi ("GLRLM_LRHGLE");
 }
 
 void test_2d_glrlm_gln_ibsi()
-{   
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_GLN, "GLRLM_GLN");
+{
+    assert_glrlm_feature_ibsi ("GLRLM_GLN");
 }
 
 void test_2d_glrlm_glnn_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_GLNN, "GLRLM_GLNN");
+    assert_glrlm_feature_ibsi ("GLRLM_GLNN");
 }
 
 void test_2d_glrlm_rln_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RLN, "GLRLM_RLN");
+    assert_glrlm_feature_ibsi ("GLRLM_RLN");
 }
 
 void test_2d_glrlm_rlnn_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RLNN, "GLRLM_RLNN");
+    assert_glrlm_feature_ibsi ("GLRLM_RLNN");
 }
 
 void test_2d_glrlm_rp_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RP, "GLRLM_RP");
+    assert_glrlm_feature_ibsi ("GLRLM_RP");
 }
 
 void test_2d_glrlm_glv_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_GLV, "GLRLM_GLV");
+    assert_glrlm_feature_ibsi ("GLRLM_GLV");
 }
 
 void test_2d_glrlm_rv_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RV, "GLRLM_RV");
+    assert_glrlm_feature_ibsi ("GLRLM_RV");
 }
 
 void test_2d_glrlm_re_ibsi()
 {
-    assert_glrlm_feature_ibsi(Nyxus::Feature2D::GLRLM_RE, "GLRLM_RE");
+    assert_glrlm_feature_ibsi ("GLRLM_RE");
 }
 
-// IBSI oracle for the angle-averaged (_AVE) joint gray-level x run-length emphasis features. Nyxus
-// stores the mean over the 4 directions in slot [0] of each _AVE feature; averaging that over the 4
-// phantom slices reproduces the IBSI 2D direction+slice-averaged consensus (the same grand mean the
-// base-feature test pins as total/16). ibsi_key indexes the shared reference table.
-void assert_glrlm_ave_feature_ibsi(const Feature2D& feature_, const std::string& ibsi_key)
+// The _AVE features are what Nyxus reports for the direction-averaged aggregation the IBSI values
+// are quoted at. Without these the averaging step itself is asserted nowhere: the checks above read
+// the 4 directional values and average them in the test, never touching the aggregated value.
+void test_2d_glrlm_sre_ave_ibsi()
 {
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 128;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = true;
-
-    int feature = int(feature_);
-    double total = 0;
-
-    const NyxusPixel* intens[4] = { ibsi_phantom_z1_intensity, ibsi_phantom_z2_intensity, ibsi_phantom_z3_intensity, ibsi_phantom_z4_intensity };
-    const NyxusPixel* masks[4] = { ibsi_phantom_z1_mask, ibsi_phantom_z2_mask, ibsi_phantom_z3_mask, ibsi_phantom_z4_mask };
-    const size_t counts[4] = {
-        sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel), sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel),
-        sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel), sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel) };
-
-    for (int i = 0; i < 4; i++)
-    {
-        LR roidata;
-        GLRLMFeature f;
-        load_masked_test_roi_data(roidata, intens[i], masks[i], counts[i]);
-        ASSERT_NO_THROW(f.calculate(roidata, s));
-        roidata.initialize_fvals();
-        f.save_value(roidata.fvals);
-        total += roidata.fvals[feature][0];   // _AVE stores the direction-mean in slot [0]
-    }
-
-    ASSERT_TRUE(agrees_gt(total / 4, glrlm_2d_ibsi_ref_vals[ibsi_key], 100.));
+    assert_glrlm_feature_ibsi ("GLRLM_SRE_AVE");
 }
 
-void test_2d_glrlm_lglre_ave_ibsi()  { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_LGLRE_AVE,  "GLRLM_LGLRE"); }
-void test_2d_glrlm_hglre_ave_ibsi()  { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_HGLRE_AVE,  "GLRLM_HGLRE"); }
-void test_2d_glrlm_srlgle_ave_ibsi() { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_SRLGLE_AVE, "GLRLM_SRLGLE"); }
-void test_2d_glrlm_srhgle_ave_ibsi() { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_SRHGLE_AVE, "GLRLM_SRHGLE"); }
-void test_2d_glrlm_lrlgle_ave_ibsi() { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_LRLGLE_AVE, "GLRLM_LRLGLE"); }
-void test_2d_glrlm_lrhgle_ave_ibsi() { assert_glrlm_ave_feature_ibsi(Nyxus::Feature2D::GLRLM_LRHGLE_AVE, "GLRLM_LRHGLE"); }
+void test_2d_glrlm_lre_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_LRE_AVE");
+}
+
+void test_2d_glrlm_lglre_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_LGLRE_AVE");
+}
+
+void test_2d_glrlm_hglre_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_HGLRE_AVE");
+}
+
+void test_2d_glrlm_srlgle_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_SRLGLE_AVE");
+}
+
+void test_2d_glrlm_srhgle_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_SRHGLE_AVE");
+}
+
+void test_2d_glrlm_lrlgle_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_LRLGLE_AVE");
+}
+
+void test_2d_glrlm_lrhgle_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_LRHGLE_AVE");
+}
+
+void test_2d_glrlm_gln_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_GLN_AVE");
+}
+
+void test_2d_glrlm_glnn_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_GLNN_AVE");
+}
+
+void test_2d_glrlm_rln_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_RLN_AVE");
+}
+
+void test_2d_glrlm_rlnn_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_RLNN_AVE");
+}
+
+void test_2d_glrlm_rp_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_RP_AVE");
+}
+
+void test_2d_glrlm_glv_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_GLV_AVE");
+}
+
+void test_2d_glrlm_rv_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_RV_AVE");
+}
+
+void test_2d_glrlm_re_ave_ibsi()
+{
+    assert_glrlm_feature_ibsi ("GLRLM_RE_AVE");
+}
