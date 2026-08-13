@@ -32,6 +32,8 @@
 #include "test_2d_neighbor_analytic.h"
 #include "test_initialization_mechanics.h"
 #include "test_2d_glcm_ibsi.h"
+#include "test_2d_glcm_pyradiomics.h"
+#include "test_2d_glcm_mirp.h"
 #include "test_2d_gldm_ibsi.h"
 #include "test_2d_glrlm_ibsi.h"
 #include "test_2d_glrlm_pyradiomics.h"
@@ -1218,11 +1220,6 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_INFOMEAS2_IBSI)
 	ASSERT_NO_THROW(test_2d_glcm_infomeas2_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLCM_INVERSED_DIFFERENCE_MOMENT_IBSI)
-{
-	ASSERT_NO_THROW(test_2d_glcm_inversed_difference_moment_ibsi());
-}
-
 TEST(TEST_NYXUS, TEST_2D_GLCM_IV_IBSI)
 {
 	ASSERT_NO_THROW(test_2d_glcm_iv_ibsi());
@@ -1273,8 +1270,161 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_SUM_ENTROPY_IBSI)
 	ASSERT_NO_THROW(test_2d_glcm_sum_entropy_ibsi());
 }
 
+TEST(TEST_NYXUS, TEST_2D_GLCM_ACOR_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_acor_ave_ibsi());
+}
 
-//***** 2D GLCM regression ***** 
+TEST(TEST_NYXUS, TEST_2D_GLCM_ASM_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_asm_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_CONTRAST_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_contrast_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_CORRELATION_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_correlation_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_IDMN_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_idmn_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_IDN_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_idn_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_SUM_AVERAGE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_sum_average_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_CLUPROM_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_cluprom_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_CLUSHADE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_clushade_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_CLUTEND_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_clutend_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_DIFFERENCE_AVERAGE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_difference_average_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_DIFFERENCE_ENTROPY_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_difference_entropy_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_DIFFERENCE_VARIANCE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_difference_variance_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_DIS_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_dis_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_ENTROPY_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_entropy_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_ID_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_id_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_IDM_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_idm_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_INFOMEAS1_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_infomeas1_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_INFOMEAS2_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_infomeas2_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_IV_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_iv_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_JAVE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_jave_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_JE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_je_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_JMAX_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_jmax_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_JVAR_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_jvar_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_SUM_ENTROPY_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_sum_entropy_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_SUM_VARIANCE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_sum_variance_ave_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_VARIANCE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_variance_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_VARIANCE_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_variance_ave_ibsi());
+}
+
+
+//***** 2D GLCM vs the third-party tools *****
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_FAMILY_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_glcm_family_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_FAMILY_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_glcm_family_mirp());
+}
+
+
+//***** 2D GLCM regression *****
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_ACOR_REGRESSION)
 {

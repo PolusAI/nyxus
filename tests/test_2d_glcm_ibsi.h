@@ -2,14 +2,15 @@
 
 #include <gtest/gtest.h>
 
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/glcm.h"
-#include "../src/nyx/features/pixel.h"
-#include "../src/nyx/environment.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
+#include <string>
 
-#include "test_ref_vals.h"
+#include "../src/nyx/feature_settings.h"   // Fsettings, NyxSetting
+#include "../src/nyx/featureset.h"         // Feature2D
+#include "../src/nyx/features/glcm.h"      // GLCMFeature
+#include "../src/nyx/roi_cache.h"          // LR
+#include "test_data.h"                     // the IBSI phantom slices
+#include "test_main_nyxus.h"               // agrees_gt, load_masked_test_roi_data
+#include "test_ref_vals.h"                 // ref_vals_map
 
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. Dataset: dig phantom. Aggr. method: 2D, averaged)
@@ -40,10 +41,38 @@ static ref_vals_map<double> glcm_2d_ibsi_ref_vals {
     {"GLCM_JVAR", 2.69},    // p. 63, consensus: very strong
     {"GLCM_SUMAVERAGE", 4.28},  // p. 66, consensus: very strong
     {"GLCM_SUMENTROPY", 1.6},   // p. 67, consensus: very strong
-    {"GLCM_SUMVARIANCE", 5.47}  // p. 67, consensus: very strong
+    {"GLCM_SUMVARIANCE", 5.47},  // p. 67, consensus: very strong
+    {"GLCM_VARIANCE", 2.69}     // = IBSI JVAR (UR99, p.63): IBSI has no separate "variance", and Nyxus
+                                // computes GLCM_VARIANCE as the joint variance about the grey-level
+                                // marginal mean - a different routine from GLCM_JVAR reaching the same
+                                // quantity (measured: both 2.687695905 here)
 };
 
-void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feature_name) 
+// An _AVE feature is the mean of its base feature over the 4 angles, and the IBSI consensus values
+// above are themselves reported for the "2D, averaged" aggregation, so an _AVE feature and its base
+// are checked against the same golden - the base by averaging the 4 angled values here, the _AVE by
+// reading the single value the feature itself aggregated.
+static double glcm_ibsi_roi_total(const LR& roidata, int feature, bool is_ave_feature)
+{
+    // The _AVE feature has already averaged the angles, so it occupies a single slot
+    if (is_ave_feature)
+        return roidata.fvals[feature][0];
+
+    return roidata.fvals[feature][0] + roidata.fvals[feature][1] +
+        roidata.fvals[feature][2] + roidata.fvals[feature][3];
+}
+
+static std::string glcm_ibsi_golden_key(const std::string& feature_name)
+{
+    static const std::string ave_suffix = "_AVE";
+    if (feature_name.size() > ave_suffix.size() &&
+        feature_name.compare(feature_name.size() - ave_suffix.size(), ave_suffix.size(), ave_suffix) == 0)
+        return feature_name.substr(0, feature_name.size() - ave_suffix.size());
+
+    return feature_name;
+}
+
+void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feature_name)
 {
     // featue settings for this particular test
     Fsettings s;
@@ -65,8 +94,16 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     
     int feature = int(feature_);
 
+    // A key absent from the table would otherwise be default-inserted as 0, and agrees_gt turns a
+    // ground truth of 0 into a tolerance of 0 - an assertion that passes only on an exact 0.
+    const std::string golden_key = glcm_ibsi_golden_key(feature_name);
+    auto golden_it = glcm_2d_ibsi_ref_vals.find(golden_key);
+    ASSERT_TRUE(golden_it != glcm_2d_ibsi_ref_vals.end());
+    const double golden = golden_it->second;
+    const bool is_ave_feature = golden_key != feature_name;
+
     double total = 0;
-    
+
     // image 1
     LR roidata;
     GLCMFeature f;
@@ -79,11 +116,8 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
 
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f.save_value(roidata.fvals);
- 
-    total += roidata.fvals[feature][0];
-    total += roidata.fvals[feature][1];
-    total += roidata.fvals[feature][2];
-    total += roidata.fvals[feature][3];
+
+    total += glcm_ibsi_roi_total(roidata, feature, is_ave_feature);
 
     // image 2
 
@@ -101,11 +135,8 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f1.save_value(roidata1.fvals);
 
-    total += roidata1.fvals[feature][0];
-    total += roidata1.fvals[feature][1];
-    total += roidata1.fvals[feature][2];
-    total += roidata1.fvals[feature][3];
-    
+    total += glcm_ibsi_roi_total(roidata1, feature, is_ave_feature);
+
     // image 3
 
     LR roidata2;
@@ -121,11 +152,8 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     // Retrieve values of the features implemented by class 'PixelIntensityFeatures' into ROI's feature buffer
     f2.save_value(roidata2.fvals);
 
-    total += roidata2.fvals[feature][0];
-    total += roidata2.fvals[feature][1];
-    total += roidata2.fvals[feature][2];
-    total += roidata2.fvals[feature][3];
-    
+    total += glcm_ibsi_roi_total(roidata2, feature, is_ave_feature);
+
     // image 4
     
     LR roidata3;
@@ -142,13 +170,11 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     f3.save_value(roidata3.fvals);
 
     // Check the feature values vs ground truth
-    total += roidata3.fvals[feature][0];
-    total += roidata3.fvals[feature][1];
-    total += roidata3.fvals[feature][2];
-    total += roidata3.fvals[feature][3];
+    total += glcm_ibsi_roi_total(roidata3, feature, is_ave_feature);
 
-    // Verdict
-    ASSERT_TRUE(agrees_gt(total / 16, glcm_2d_ibsi_ref_vals[feature_name], 100.));
+    // Verdict: 4 slices x 4 angles for a base feature, 4 slices for an already-averaged _AVE one
+    const double divisor = is_ave_feature ? 4. : 16.;
+    ASSERT_TRUE(agrees_gt(total / divisor, golden, 100.));
 }
 
 void test_2d_glcm_acor_ibsi()
@@ -271,10 +297,6 @@ void test_2d_glcm_jvar_ibsi()
     assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_JVAR, "GLCM_JVAR");
 }
 
-void test_2d_glcm_inversed_difference_moment_ibsi() {
-    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_IDM, "GLCM_IDM");
-}
-
 void test_2d_glcm_sum_average_ibsi()
 {
     assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_SUMAVERAGE, "GLCM_SUMAVERAGE");
@@ -283,6 +305,151 @@ void test_2d_glcm_sum_average_ibsi()
 void test_2d_glcm_sum_entropy_ibsi()
 {
    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_SUMENTROPY, "GLCM_SUMENTROPY");
+}
+
+// The _AVE features below are what Nyxus reports for the "2D, averaged" aggregation the IBSI
+// consensus values are quoted at, so each is checked against its base feature's golden. Without
+// these the angle-averaging step itself is asserted nowhere: the checks above read the 4 angled
+// values and average them in the test, never touching the value the feature aggregated.
+
+void test_2d_glcm_acor_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_ACOR_AVE, "GLCM_ACOR_AVE");
+}
+
+void test_2d_glcm_asm_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_ASM_AVE, "GLCM_ASM_AVE");
+}
+
+void test_2d_glcm_contrast_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_CONTRAST_AVE, "GLCM_CONTRAST_AVE");
+}
+
+void test_2d_glcm_correlation_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_CORRELATION_AVE, "GLCM_CORRELATION_AVE");
+}
+
+void test_2d_glcm_idmn_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_IDMN_AVE, "GLCM_IDMN_AVE");
+}
+
+void test_2d_glcm_idn_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_IDN_AVE, "GLCM_IDN_AVE");
+}
+
+void test_2d_glcm_sum_average_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_SUMAVERAGE_AVE, "GLCM_SUMAVERAGE_AVE");
+}
+
+void test_2d_glcm_cluprom_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_CLUPROM_AVE, "GLCM_CLUPROM_AVE");
+}
+
+void test_2d_glcm_clushade_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_CLUSHADE_AVE, "GLCM_CLUSHADE_AVE");
+}
+
+void test_2d_glcm_clutend_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_CLUTEND_AVE, "GLCM_CLUTEND_AVE");
+}
+
+void test_2d_glcm_difference_average_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_DIFAVE_AVE, "GLCM_DIFAVE_AVE");
+}
+
+void test_2d_glcm_difference_entropy_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_DIFENTRO_AVE, "GLCM_DIFENTRO_AVE");
+}
+
+void test_2d_glcm_difference_variance_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_DIFVAR_AVE, "GLCM_DIFVAR_AVE");
+}
+
+void test_2d_glcm_dis_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_DIS_AVE, "GLCM_DIS_AVE");
+}
+
+void test_2d_glcm_entropy_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_ENTROPY_AVE, "GLCM_ENTROPY_AVE");
+}
+
+void test_2d_glcm_id_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_ID_AVE, "GLCM_ID_AVE");
+}
+
+void test_2d_glcm_idm_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_IDM_AVE, "GLCM_IDM_AVE");
+}
+
+void test_2d_glcm_infomeas1_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_INFOMEAS1_AVE, "GLCM_INFOMEAS1_AVE");
+}
+
+void test_2d_glcm_infomeas2_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_INFOMEAS2_AVE, "GLCM_INFOMEAS2_AVE");
+}
+
+void test_2d_glcm_iv_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_IV_AVE, "GLCM_IV_AVE");
+}
+
+void test_2d_glcm_jave_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_JAVE_AVE, "GLCM_JAVE_AVE");
+}
+
+void test_2d_glcm_je_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_JE_AVE, "GLCM_JE_AVE");
+}
+
+void test_2d_glcm_jmax_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_JMAX_AVE, "GLCM_JMAX_AVE");
+}
+
+void test_2d_glcm_jvar_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_JVAR_AVE, "GLCM_JVAR_AVE");
+}
+
+void test_2d_glcm_sum_entropy_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_SUMENTROPY_AVE, "GLCM_SUMENTROPY_AVE");
+}
+
+void test_2d_glcm_sum_variance_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_SUMVARIANCE_AVE, "GLCM_SUMVARIANCE_AVE");
+}
+
+void test_2d_glcm_variance_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_VARIANCE, "GLCM_VARIANCE");
+}
+
+void test_2d_glcm_variance_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_VARIANCE_AVE, "GLCM_VARIANCE_AVE");
 }
 
 void test_2d_glcm_sum_variance_ibsi()
