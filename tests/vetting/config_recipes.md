@@ -42,3 +42,14 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 
 ## radial.cellprofiler_8bin
 - CellProfiler `MeasureObjectIntensityDistribution`, 8 radial bins/slices. Oracle: `cellprofiler`.
+
+## morphology.cellprofiler_edge_intensity
+- CellProfiler `MeasureObjectIntensity`, one image and one object set, all settings at their
+  defaults. Oracle: `cellprofiler`. The edge is `skimage.segmentation.find_boundaries(mode="inner")`
+  (connectivity=1): an object pixel is an edge pixel unless all four of its N/S/E/W neighbours share
+  its label. Feed the image as raw/255 and multiply the four scale-carrying results back by 255 --
+  CellProfiler measures on [0,1] and stores the image as float32, which is the whole of the 5.2e-8
+  residual. `MASS_DISPLACEMENT` is a pixel distance and takes no rescaling. Pad the fixture with
+  background so "outside is background" does not depend on either tool's array-border handling.
+  Caveat: `EDGE_STDDEV_INTENSITY` is NOT comparable at this recipe -- CellProfiler divides the
+  variance by n, Nyxus by n-1. Used by: `test_2d_morphology_cellprofiler.h`.
