@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+#include <iostream>
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/globals.h"
 #include "test_dsb2018_data.h"

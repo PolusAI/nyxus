@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include "../src/nyx/constants.h"
+#include "../src/nyx/output_writers.h"   // FTABLE_RECORD macro, used below - was only ever compiling via a caller's transitive include
 
 struct NyxusPixel
 {

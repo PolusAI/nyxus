@@ -18,6 +18,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | `fraclac` | — | ImageJ plugin (GUI) **+ headless-macro reimpl** | med-high* | plugin is GUI-only, but its shifting-grid method runs headless via our macro (*see reconciliation) |
 | `mitk` | 2023.04 | **build-once Docker** (`ClassificationCmdApps` config) | med | no prebuilt image; ~2–3 h one-time CLI-only build → reusable pinned image |
 | `pydicom` | 3.0.2 | **venv** `pip install pydicom` (pure-Python) | high | DICOM decode + `Rescale*` → HU; offline fixture/golden gen for `--preserve-hu` (CT) |
+| `octave` | 10.3.0 | **conda** `conda install -c conda-forge octave octave-statistics` (no Docker, no license) | high | license-free MATLAB substitute (MIGRATION 5.13); `mean`/`median`/`std`/`var`/`skewness`/`kurtosis`/`prctile`/`quantile` all present |
 
 ## Corrections / notable findings
 
@@ -59,6 +60,41 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 - **Reproducibility rule** (all tools): pin the exact version *and* record the resolved dependency
   set (Docker `@sha256`, `pip freeze`, `mvn dependency:tree`) alongside each golden, plus the
   discretisation/aggregation config used.
+- **`octave` (license-free MATLAB substitute — no Docker needed).** A conda env with GNU Octave +
+  the `statistics` package is a near-drop-in replacement for `matlab-ind/`'s stats-toolbox calls
+  (`regionprops`, `graycomatrix`, `mean`/`median`/`std`/`var`/`skewness`/`kurtosis`/`prctile`/
+  `quantile` all match within a few %; the one real gap is `graycoprops`, absent in Octave, needing
+  a ~15-line reimplementation from the normalized GLCM — not relevant to firstorder).
+
+  **Setup** (one-time):
+  ```
+  conda create -n octave_verify -c conda-forge octave octave-statistics
+  ```
+  (`octave-io` is not a real conda-forge package name despite showing up in some notes — don't try
+  to install it; core Octave already reads flat files via `dlmread`/`csvread`, which is all a
+  first-order vetting script needs.)
+
+  **Use** (headless, one-shot eval):
+  ```
+  source <conda-base>/bin/activate octave_verify
+  octave-cli -q --eval "pkg load statistics; x = dlmread('intensities.csv'); disp(prctile(x, 10))"
+  ```
+  or point `octave-cli -q` at a `.m` script for a multi-statistic dump (`printf('P10=%.15g\n',
+  prctile(x,10));` etc. — see `tests/vetting/audit/firstorder_2d_golden_regen.md` for a fuller
+  example script).
+
+  **Known gotcha, found the hard way (see `tests/vetting/audit/firstorder_2d_matlab_vetting_report.md`):**
+  Octave's default `skewness()`/`kurtosis()` use the same biased/population moment convention Nyxus
+  does, so those two land close enough to look "MATLAB-vetted" even when they were never checked
+  against a real MATLAB/Octave run. But `prctile()`/`quantile()` use standard order-statistic
+  interpolation, which is a **different algorithm** from Nyxus's own percentile method (a fixed
+  100-bin histogram with linear interpolation *within* the containing bin —
+  `TrivialHistogram::calc_percentiles` in `src/nyx/features/histogram.h`). The two converge only
+  when bins are densely populated; on a 150-pixel fixture they diverged by 1–2.5%. Conclusion: don't
+  assume a percentile-derived Nyxus feature (`P*`, `INTERQUARTILE_RANGE`, `QCOD`, `ROBUST_MEAN*`) is
+  oracle-vetted just because its golden matches Nyxus's own output — always cross-check against a
+  real `prctile()`/`quantile()` call on the same fixture before trusting a `matlab`-labeled golden
+  for these.
 
 ## Coverage by Nyxus family → which oracles (the "≥1 oracle" picture)
 

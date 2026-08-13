@@ -2,25 +2,7 @@
 
 // First-order features vetted against MATLAB on the canonical ROI
 // (tests/test_data.h : pixelIntensityFeaturesTestData), at default settings.
-//
-// oracle_coverage.csv places these here: the 33 2D firstorder rows with oracle=matlab name
-// test_2d_firstorder_matlab.h in target_test. Same shape as test_2d_firstorder_ibsi.h - one keyed golden
-// map, one assert_ helper, one one-line test per feature - so a reader can see at a glance which
-// reference each value comes from and every feature has its own reportable case.
-//
-// All 34 values below are MATLAB reference values - that is what oracle=matlab in the registry
-// records. The pre-rename constant names said so directly: oracle_3p_matlab_* named the tool, and
-// oracle_3p_builtin_* meant MATLAB's built-in statistics functions.
-//
-// WHAT IS MISSING is the SPEC 6.4 record, not the origin: no MATLAB version, no exact config and no
-// generator script path is written down at these goldens - only the numbers. Adding that record (the
-// Octave harness of MIGRATION 5.13 reproduces MATLAB for first-order) is tracked in not_covered.md
-// section C, so a future reader can regenerate the values rather than trust them.
-//
-// REGISTRY CONFLICT, deliberately not propagated: the UNIFORMITY row reads oracle=pyradiomics with
-// target_test=test_2d_firstorder_regression.h, yet the value below is MATLAB's. Moving it into a file
-// named _regression would restate the mislabelling this wave removed, so the assertion stays here
-// under its true name and the row is flagged for correction in not_covered.md.
+// Provenance and vetting history: tests/vetting/audit/firstorder_2d_matlab_vetting_report.md.
 
 #include "test_2d_firstorder_common.h"
 #include "test_ref_vals.h"
@@ -31,7 +13,6 @@ static ref_vals_map<double> firstorder_2d_matlab_ref_vals {
     {"UNIFORMITY",                    0.0647664},
     {"UNIFORMITY_PIU",                29.477577192725725},
     {"COVERED_IMAGE_INTENSITY_RANGE", 8.088960097657740e-01},
-    {"ROBUST_MEAN",                   3.142136800000000e+04},
     {"INTEGRATED_INTENSITY",          5015224},
     {"MIN",                           11079},
     {"MAX",                           64090},
@@ -47,16 +28,11 @@ static ref_vals_map<double> firstorder_2d_matlab_ref_vals {
     {"STANDARD_ERROR",                1.187055255225567e+03},
     {"ROOT_MEAN_SQUARED",             3.572341052638121e+04},
     {"ENERGY",                        1.965289571840000e+11},
-    {"P01",                           1.189536940000000e+04},
     {"P10",                           1.610747200000000e+04},
-    {"P25",                           1.907482583333333e+04},
-    {"P75",                           4.580120500000000e+04},
     {"P90",                           5.338177800000000e+04},
-    {"P99",                           6.341676030000000e+04},
     {"INTERQUARTILE_RANGE",           2.672637916666667e+04},
     {"COV",                           4.523365498399634e-01},
     {"MEDIAN_ABSOLUTE_DEVIATION",     1.269384415584416e+04},
-    {"QCOD",                          4.119607630640470e-01},
     {"STANDARD_DEVIATION_BIASED",     1.468306260221863e+04},
     {"VARIANCE",                      2.170014275596299e+08},
     {"VARIANCE_BIASED",               2.155923273806713e+08},
@@ -107,10 +83,6 @@ void test_2d_firstorder_covered_image_intensity_range_matlab()
 {
     assert_firstorder_feature_matlab(Nyxus::Feature2D::COVERED_IMAGE_INTENSITY_RANGE,
                                      "COVERED_IMAGE_INTENSITY_RANGE", 1000., Fsettings(), 0, 0.0, 65535.0);
-}
-void test_2d_firstorder_robust_mean_matlab()
-{
-    assert_firstorder_feature_matlab(Nyxus::Feature2D::ROBUST_MEAN, "ROBUST_MEAN");
 }
 void test_2d_firstorder_integrated_intensity_matlab()
 {
@@ -172,29 +144,13 @@ void test_2d_firstorder_energy_matlab()
 {
     assert_firstorder_feature_matlab(Nyxus::Feature2D::ENERGY, "ENERGY");
 }
-void test_2d_firstorder_p01_matlab()
-{
-    assert_firstorder_feature_matlab(Nyxus::Feature2D::P01, "P01");
-}
 void test_2d_firstorder_p10_matlab()
 {
     assert_firstorder_feature_matlab(Nyxus::Feature2D::P10, "P10");
 }
-void test_2d_firstorder_p25_matlab()
-{
-    assert_firstorder_feature_matlab(Nyxus::Feature2D::P25, "P25");
-}
-void test_2d_firstorder_p75_matlab()
-{
-    assert_firstorder_feature_matlab(Nyxus::Feature2D::P75, "P75");
-}
 void test_2d_firstorder_p90_matlab()
 {
     assert_firstorder_feature_matlab(Nyxus::Feature2D::P90, "P90");
-}
-void test_2d_firstorder_p99_matlab()
-{
-    assert_firstorder_feature_matlab(Nyxus::Feature2D::P99, "P99");
 }
 void test_2d_firstorder_interquartile_range_matlab()
 {
@@ -207,10 +163,6 @@ void test_2d_firstorder_cov_matlab()
 void test_2d_firstorder_median_absolute_deviation_matlab()
 {
     assert_firstorder_feature_matlab(Nyxus::Feature2D::MEDIAN_ABSOLUTE_DEVIATION, "MEDIAN_ABSOLUTE_DEVIATION");
-}
-void test_2d_firstorder_qcod_matlab()
-{
-    assert_firstorder_feature_matlab(Nyxus::Feature2D::QCOD, "QCOD");
 }
 void test_2d_firstorder_standard_deviation_biased_matlab()
 {
