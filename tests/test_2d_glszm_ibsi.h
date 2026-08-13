@@ -11,7 +11,7 @@
 #include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
-static ref_vals_map<double> glszm_2d_ibsi_ref_vals {
+static const ref_vals_map<double> glszm_2d_ibsi_ref_vals {
     {"GLSZM_SAE", 0.363},
     {"GLSZM_LAE", 43.9},
     {"GLSZM_LGLZE", 0.371},
@@ -114,7 +114,7 @@ void assert_glszm_feature_ibsi(const Feature2D& feature_, const std::string& fea
     total += roidata3.fvals[feature][0];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/4, glszm_2d_ibsi_ref_vals[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/4, glszm_2d_ibsi_ref_vals.at(feature_name), 100.));
 }
 
 void test_2d_glszm_sae_ibsi()

@@ -16,7 +16,7 @@
 #include "test_2d_remaining_common.h"   // fixture: calculate_remaining2d_shape_feature_values
 #include "test_ref_vals.h"
 
-static ref_vals_map<std::vector<double>> radial_2d_regression_ref_vals{
+static const ref_vals_map<std::vector<double>> radial_2d_regression_ref_vals{
 	{"FRAC_AT_D", {
 		0.038461538460059175, 0.0, 0.11538461538017751, 0.1538461538402367,
 		0.3076923076804734, 0.0, 0.11538461538017751, 0.26923076922041422,
@@ -40,7 +40,7 @@ static void assert_unvetted_no_direct_oracle_remaining2d_vector_feature(
 	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
 	ASSERT_TRUE(radial_2d_regression_ref_vals.count(feature_name) > 0);
 	const auto& actual = fvals[static_cast<int>(feature)];
-	const auto& golden_values = radial_2d_regression_ref_vals[feature_name];
+	const auto& golden_values = radial_2d_regression_ref_vals.at(feature_name);
 	ASSERT_EQ(actual.size(), golden_values.size());
 	for (size_t i = 0; i < golden_values.size(); ++i)
 		ASSERT_NEAR(actual[i], golden_values[i], abs_tolerance) << feature_name << "[" << i << "]";

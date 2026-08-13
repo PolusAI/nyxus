@@ -44,7 +44,7 @@
 // Also note 3NGLDM_GLM (grey level mean) and 3NGLDM_DCM (dependence count mean) have no counterpart
 // anywhere: MIRP's NGLDM emits no gl_mean / dc_mean column, and the 2D table in test_2d_ngldm_ibsi.h
 // explicitly marks GLM "--not in IBSI--". No external oracle exists for those two.
-static ref_vals_map<double> ngldm_3d_regression_ref_vals{
+static const ref_vals_map<double> ngldm_3d_regression_ref_vals{
 		{ "3NGLDM_LDE",	0.1 },
 		{ "3NGLDM_HDE",	261.0 },
 		{ "3NGLDM_LGLCE",	0.00036 },
@@ -105,7 +105,7 @@ void assert_3d_ngldm_feature_regression (const std::string& fname, const Nyxus::
 	double atot = r.fvals[fcode][0];
 
 	// verdict
-	ASSERT_TRUE(agrees_gt(atot, ngldm_3d_regression_ref_vals[fname], 10.));
+	ASSERT_TRUE(agrees_gt(atot, ngldm_3d_regression_ref_vals.at(fname), 10.));
 #endif
 
 	// get segment info
@@ -165,7 +165,7 @@ void assert_3d_ngldm_feature_regression (const std::string& fname, const Nyxus::
 	double atot = r.fvals[fcode][0];
 
 	// verdict
-	ASSERT_TRUE(agrees_gt(atot, ngldm_3d_regression_ref_vals[fname], 10.));
+	ASSERT_TRUE(agrees_gt(atot, ngldm_3d_regression_ref_vals.at(fname), 10.));
 
 }
 

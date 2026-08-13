@@ -32,7 +32,7 @@
 //      gldm:
 //
 
-static ref_vals_map<double> gldm_3d_pyradiomics_ref_vals
+static const ref_vals_map<double> gldm_3d_pyradiomics_ref_vals
 {
     {"3GLDM_DE", 6.60487318745419},         // Case - 1_original_gldm_DependenceEntropy
     {"3GLDM_DN", 620.2816666666666},        // Case - 1_original_gldm_DependenceNonUniformity
@@ -124,7 +124,7 @@ void assert_3d_gldm_feature_pyradiomics (const Nyxus::Feature3D & expecting_fcod
     double atot = f.calc_ave(r.fvals[fcode]);
 
     // (7) verdict
-    ASSERT_TRUE(agrees_gt(atot, gldm_3d_pyradiomics_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, gldm_3d_pyradiomics_ref_vals.at(fname), 10.));
 }
 
 void test_3d_gldm_de_pyradiomics() { 

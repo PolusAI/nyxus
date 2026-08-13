@@ -4,7 +4,7 @@
 
 #include "test_ref_vals.h"
 
-static ref_vals_map<double> morphology_2d_skimage_hull_ref_vals{
+static const ref_vals_map<double> morphology_2d_skimage_hull_ref_vals{
 	// CONVEX_HULL_AREA / SOLIDITY are cross-checked against scikit-image on this exact ROI. Nyxus
 	// computes a Pick's-theorem pixel-count hull area (convex_hull_nontriv.cpp) = 27, solidity
 	// 26/27 = 0.9629630. Because Nyxus hulls through pixel CENTRES, this reproduces skimage's
@@ -27,7 +27,7 @@ static void assert_morphology_hull_skimage(const std::vector<std::vector<double>
 {
 	SCOPED_TRACE(std::string("SKIMAGE_ORACLE__") + feature_name);
 	ASSERT_TRUE(morphology_2d_skimage_hull_ref_vals.count(feature_name) > 0) << feature_name;
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_skimage_hull_ref_vals[feature_name], frac_tolerance));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_skimage_hull_ref_vals.at(feature_name), frac_tolerance));
 }
 
 void test_2d_morphology_convex_hull_skimage()

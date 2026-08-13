@@ -55,7 +55,7 @@
 //        - 'SumSquares'
 //
 
-static ref_vals_map<double> glcm_3d_pyradiomics_ref_vals
+static const ref_vals_map<double> glcm_3d_pyradiomics_ref_vals
 {
     {"3GLCM_ACOR", 122.14708306342365},         // Case-1_original_glcm_Autocorrelation
     {"3GLCM_ASM", 0.0143339715631298},          // Case-1_original_glcm_JointEnergy
@@ -197,7 +197,7 @@ void assert_3d_glcm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode
     double atot = f.calc_ave (r.fvals[fcode]);
 
     // (8) verdict
-    ASSERT_TRUE(agrees_gt(atot, glcm_3d_pyradiomics_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glcm_3d_pyradiomics_ref_vals.at(fname), 10.));
 }
 
 // Deep-dive: verify the 7 config-sensitive 3D GLCM features equal their already-vetted twins

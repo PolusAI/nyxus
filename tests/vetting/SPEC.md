@@ -363,6 +363,15 @@ An assertion helper is bound to the table it reads, so it moves with it. A helpe
 oracle files is the shape to look for: it means one table is answering to several `<oracle>` claims,
 and the fix is to split the helper per oracle, not to relocate the table.
 
+**A table is `const`.** Reference data is read-only by definition, and here `const` does more than
+document that: without it `operator[]` compiles, and on a key the table does not hold it
+*default-inserts* 0 instead of failing. The assertion then compares against a golden that does not
+exist and passes whenever the computed value is also 0 — which is exactly the case a golden table is
+there to catch, a feature that silently produced nothing. The phantom key also survives for the rest
+of the run, so a later `.count()` guard on it succeeds. `const` makes `operator[]` a compile error
+and forces `.at()`, which throws naming the key it could not find. Read a table with `.at()`; use
+`.count()` first only where a clearer message is wanted.
+
 A table's name is a claim, so `_regression` in it means the numbers are pinned Nyxus output and
 establish no vetting, exactly as for test functions (§1). It follows that **one table holds one
 oracle**: a table mixing imea-vetted keys with snapshot keys has no honest `<oracle>` to put in its
@@ -374,8 +383,8 @@ a §6.3.1 alias or reached through an accessor returning a function-local static
 deliberately includes the conforming suffixes, so a table cannot drift back to an old name without
 tripping the check. It rejects a missing suffix, a missing dim token, an `<oracle>` segment that is
 not a §4 token (`glcm_2d_mahotas_ref_vals` fails, since the registry does not accept mahotas), a
-reference table declared in a `_common.h`, and a reference table declared as a raw
-`std::unordered_map` rather than through an alias. That last one is what keeps the set closed: a
+reference table declared in a `_common.h`, a reference table declared as a raw
+`std::unordered_map` rather than through an alias, and a reference table declared without `const`. That last one is what keeps the set closed: a
 table identified only by the words in its name is one rename away from being invisible to the check,
 whereas `ref_vals_map<double>` says what it is regardless. One value type, `double`, for the same
 reason — `agrees_gt`/`ASSERT_NEAR` compare in double, so a `float` table narrowed its literals only

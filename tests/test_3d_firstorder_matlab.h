@@ -17,7 +17,7 @@
 // NOT WIRED IN: test_all.cc does not #include this file, so none of these assertions run
 // (not_covered.md section B.1). The map also covers 17 features whose rows are oracle=pyradiomics
 // and 1 that is regression-only; per SPEC 3 those would need a second (matlab) row each.
-static ref_vals_map<double> firstorder_3d_matlab_ref_vals {
+static const ref_vals_map<double> firstorder_3d_matlab_ref_vals {
 		{ "3COV",	0.3 },
 		{ "3COVERED_IMAGE_INTENSITY_RANGE",	1.0 },
 		{ "3ENERGY",		1173350000000.0 },
@@ -106,7 +106,7 @@ void assert_3d_firstorder_feature_matlab (const std::string& fname, const Nyxus:
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, firstorder_3d_matlab_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, firstorder_3d_matlab_ref_vals.at(fname), 10.));
 }
 
 void test_3d_firstorder_cov_matlab() { 

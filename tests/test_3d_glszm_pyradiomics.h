@@ -31,7 +31,7 @@
 //      glszm:
 //
 
-static ref_vals_map<double> glszm_3d_pyradiomics_ref_vals
+static const ref_vals_map<double> glszm_3d_pyradiomics_ref_vals
 {
     {"3GLSZM_GLN", 61.77441860465116},  // Case-1_original_glszm_GrayLevelNonUniformity
     {"3GLSZM_GLNN", 0.07183071930773391},  // Case-1_original_glszm_GrayLevelNonUniformityNormalized
@@ -125,7 +125,7 @@ void assert_3d_glszm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcod
     double atot = f.calc_ave(r.fvals[fcode]);
 
     // (7) verdict
-    ASSERT_TRUE (agrees_gt(atot, glszm_3d_pyradiomics_ref_vals[fname], 10.));
+    ASSERT_TRUE (agrees_gt(atot, glszm_3d_pyradiomics_ref_vals.at(fname), 10.));
 }
 
 void test_3d_glszm_matrix_correctness_pyradiomics()

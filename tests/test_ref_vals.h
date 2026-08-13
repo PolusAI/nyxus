@@ -21,6 +21,14 @@
 // Declaring the table through an alias is itself the rule, not a style preference -- a bare
 // std::unordered_map is invisible to the type-based detection above, so check_test_names.py rejects
 // a reference table spelled that way.
+//
+// Declare every table const, and read it with .at(). On a non-const map operator[] compiles, and a
+// key the table does not hold is default-inserted as 0 rather than failing: the assertion then
+// compares against a golden that does not exist, and passes whenever the computed value is also 0 --
+// a feature that silently produced nothing, which is the case the table is here to catch. The
+// inserted key then persists, so a later .count() guard on it succeeds too. const turns operator[]
+// into a compile error and .at() throws naming the missing key. check_test_names.py rejects a
+// reference table declared without const.
 
 // Keyed by feature name -- the common shape.
 //   ref_vals_map<double> glcm_2d_ibsi_ref_vals { {"GLCM_ASM", 0.368}, ... };

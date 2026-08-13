@@ -31,7 +31,7 @@
 //      glrlm:
 //
 
-static ref_vals_map<double> glrlm_3d_pyradiomics_ref_vals
+static const ref_vals_map<double> glrlm_3d_pyradiomics_ref_vals
 {
     {"3GLRLM_GLN", 406.68709120394277},     // Case-1_original_glrlm_GrayLevelNonUniformity
     {"3GLRLM_GLNN", 0.09722976558135092},   // Case-1_original_glrlm_GrayLevelNonUniformityNormalized
@@ -209,7 +209,7 @@ void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode
     double atot = f.calc_ave (r.fvals[fcode]);
 
     // (8) verdict
-    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_pyradiomics_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_pyradiomics_ref_vals.at(fname), 10.));
 }
 
 // Vet the direction-averaged (_AVE) 3D GLRLM features vs PyRadiomics. save_value stores
@@ -267,8 +267,8 @@ void test_3d_glrlm_ave_pyradiomics()
     for (auto& a : aves)
     {
         double v = r.fvals[(int)a.ave][0];
-        ASSERT_TRUE(agrees_gt(v, glrlm_3d_pyradiomics_ref_vals[a.gt], 10.)) << a.gt << "_AVE = " << v
-            << " vs pyradiomics " << glrlm_3d_pyradiomics_ref_vals[a.gt];
+        ASSERT_TRUE(agrees_gt(v, glrlm_3d_pyradiomics_ref_vals.at(a.gt), 10.)) << a.gt << "_AVE = " << v
+            << " vs pyradiomics " << glrlm_3d_pyradiomics_ref_vals.at(a.gt);
     }
 }
 

@@ -1,8 +1,16 @@
 #pragma once
 
-#include <gtest/gtest.h>
+// Shared fixtures for the 2D features that have no family header of their own: the settings recipe
+// and the ROI builders behind the caliper, chord, erosion, hexagonality/polygonality, radial and
+// Zernike assertions.
+//
+// Fixtures only, no reference data (SPEC 6.3.1). The tables this header used to carry moved out to
+// the files whose assertions read them: morphology_2d_imea_{ellipse,shape2d}_ref_vals to
+// test_2d_morphology_imea.h, the caliper/chord snapshots to test_2d_morphology_regression.h, the
+// radial vector to test_2d_radial_regression.h and the Zernike vector to test_2d_zernike_regression.h.
 
-#include <string>
+// No <gtest/gtest.h>: this header asserts nothing, it only builds ROIs. The five files that include
+// it bring gtest in themselves for their own assertions.
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -21,36 +29,6 @@
 #include "../src/nyx/features/zernike.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
-
-// The 19 caliper statistics below are vetted against imea (registry: status=vetted,
-// oracle=imea). They shared a table with 14 status=regression keys until SPEC 6.3.1 required
-// a table to name one oracle; the snapshot half now lives in morphology_2d_regression_caliper_chords_ref_vals.
-
-// Pinned Nyxus output: erosion complement, Feret angles and chord statistics. No third-party
-// oracle backs these, so the name says regression rather than borrowing the imea claim of the
-// caliper table above.
-
-
-
-
-
-// ZERNIKE2D golden vector. Named for what it is: a pinned Nyxus snapshot, not a third-party
-// oracle. The registry (MIGRATION 6.1) does not accept mahotas, the only tool that computes
-// Zernike moments, so ZERNIKE2D is regression-only and this table and its assert are named to
-// match. Sole key: ZERNIKE2D.
-
-// ---------------------------------------------------------------------------------------------------
-// Martin / Nassenstein caliper vetting vs imea (external oracle).
-//
-// The 8x8 shape2d fixture above is too small/aliased to serve as a tight caliper oracle, so the
-// corrected Martin (area-bisecting chord) and Nassenstein (bottom-tangent vertical chord) diameters
-// are vetted on a clean, larger convex fixture: a filled ellipse a=20, b=10 (same rasterization as
-// morph_oracle/caliper_proto.py). imea (imea.measure_2d.statistical_length, dalpha=10) is the
-// reference. Nyxus rotates the convex hull and measures analytically while imea rotates the filled
-// raster, so the two agree only up to a ~1-2px hull-vs-raster convention gap (same gap already
-// accepted for Feret) — hence a 10% relative tolerance on the robust stats. The point that this pins
-// is that the diameters are now the *correct* quantities (min > 0), not the old min+max-chord bug
-// that produced physically-impossible 0-length Nassenstein diameters.
 
 static Fsettings make_remaining2d_settings()
 {
@@ -181,7 +159,12 @@ static void calculate_remaining2d_polygonality_feature_values(std::unordered_map
 }
 
 // Build a filled ellipse (a=20, b=10) ROI and compute its caliper features. Mirrors the
-// rasterization in morph_oracle/caliper_proto.py so the imea reference values above line up.
+// rasterization in morph_oracle/caliper_proto.py so the imea reference values line up (they live
+// with their assertions in test_2d_morphology_imea.h).
+//
+// A second, larger fixture exists because the 8x8 shape2d mask is too small and aliased to serve as
+// a tight caliper oracle: the corrected Martin (area-bisecting chord) and Nassenstein
+// (bottom-tangent vertical chord) diameters need a clean convex shape to be measurable at all.
 static void calculate_ellipse_caliper_values(std::vector<std::vector<double>>& fvals)
 {
 	Fsettings s = make_remaining2d_settings();
