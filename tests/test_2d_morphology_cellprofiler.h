@@ -22,7 +22,7 @@
 // whether these numbers came from CellProfiler or from Nyxus cannot be told from the tree. The split
 // preserves the registry's claim and makes the gap local instead of hiding it behind a shared table;
 // closing it means a gen_morphology_cellprofiler.py run. Tracked in not_covered.md section C.
-static ref_vals_map<double> morphology_2d_cellprofiler_ref_vals
+static const ref_vals_map<double> morphology_2d_cellprofiler_ref_vals
 {
 	{"MASS_DISPLACEMENT", 0.634476074243407},
 	{"EDGE_MEAN_INTENSITY", 41.8333333333333},
@@ -39,7 +39,7 @@ static void assert_morphology_feature_cellprofiler(
 {
 	SCOPED_TRACE(std::string("CELLPROFILER__") + feature_name);
 	ASSERT_TRUE(morphology_2d_cellprofiler_ref_vals.count(feature_name) > 0) << feature_name;
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_cellprofiler_ref_vals[feature_name], 1000.0));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_cellprofiler_ref_vals.at(feature_name), 1000.0));
 }
 
 void test_2d_morphology_edge_intensity_cellprofiler()

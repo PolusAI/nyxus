@@ -49,7 +49,7 @@ static std::tuple<std::string, std::string, int> get_3d_compat_ngtdm_phantom()
     return { ipath, mpath, 57 };
 }
 
-static ref_vals_map<double> ngtdm_3d_pyradiomics_ref_vals
+static const ref_vals_map<double> ngtdm_3d_pyradiomics_ref_vals
 {
     {"3NGTDM_BUSYNESS", 4.553401556426767},         // Case-1_original_ngtdm_Busyness
     {"3NGTDM_COARSENESS", 0.030118770647251797},    // Case-1_original_ngtdm_Coarseness
@@ -131,7 +131,7 @@ void assert_3d_ngtdm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcod
 
     // (7) verdict
     auto x1 = r.fvals[fcode];
-    auto x2 = ngtdm_3d_pyradiomics_ref_vals[fname];
+    auto x2 = ngtdm_3d_pyradiomics_ref_vals.at(fname);
     ASSERT_TRUE (agrees_gt(x1[0], x2, 10.));
 }
 

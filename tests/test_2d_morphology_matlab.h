@@ -4,7 +4,7 @@
 
 #include "test_ref_vals.h"
 
-static ref_vals_map<double> morphology_2d_matlab_extrema_ref_vals{
+static const ref_vals_map<double> morphology_2d_matlab_extrema_ref_vals{
 	// EXTREMA P1..P8 (X,Y) match MATLAB/Octave regionprops('Extrema') EXACTLY under the documented
 	// coordinate convention: MATLAB returns 1-based sub-pixel *corner* coords, Nyxus returns 0-based
 	// pixel *centers*. The corner is direction-specific -> the offset is per-point: left/top coords
@@ -36,7 +36,7 @@ static void assert_morphology_extrema_matlab(const std::vector<std::vector<doubl
 {
 	SCOPED_TRACE(std::string("MATLAB_ORACLE__") + feature_name);
 	ASSERT_TRUE(morphology_2d_matlab_extrema_ref_vals.count(feature_name) > 0) << feature_name;
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_matlab_extrema_ref_vals[feature_name], frac_tolerance));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_matlab_extrema_ref_vals.at(feature_name), frac_tolerance));
 }
 
 void test_2d_morphology_extrema_matlab()

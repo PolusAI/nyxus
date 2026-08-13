@@ -12,7 +12,7 @@
 #include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
-static ref_vals_map<double> ngtdm_2d_ibsi_ref_vals {
+static const ref_vals_map<double> ngtdm_2d_ibsi_ref_vals {
     {"NGTDM_COARSENESS", 0.121},
     {"NGTDM_CONTRAST", 0.925},
     {"NGTDM_BUSYNESS", 2.99},
@@ -110,7 +110,7 @@ void assert_ngtdm_feature_ibsi (const Feature2D& feature_, const std::string& fe
 
     // Verdict
     double ave = total / 4;
-    ASSERT_TRUE(agrees_gt(ave, ngtdm_2d_ibsi_ref_vals[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(ave, ngtdm_2d_ibsi_ref_vals.at(feature_name), 100.));
 }
 
 void test_2d_ngtdm_coarseness_ibsi()

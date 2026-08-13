@@ -5,7 +5,7 @@
 
 #include "test_ref_vals.h"
 
-static ref_vals_map<double> morphology_2d_regression_caliper_chords_ref_vals{
+static const ref_vals_map<double> morphology_2d_regression_caliper_chords_ref_vals{
 	{"EROSIONS_2_VANISH_COMPLEMENT", 0.0},
 	{"MIN_FERET_ANGLE", 40.0},
 	// FIX (caliper float-precision): re-pinned to the float-precision hull-rotation values (see rotation.cpp
@@ -29,7 +29,7 @@ static ref_vals_map<double> morphology_2d_regression_caliper_chords_ref_vals{
 	{"ALLCHORDS_STDDEV", 1.3446086298393252},
 };
 
-static ref_vals_map<double> morphology_2d_regression_polygonality_chords_ref_vals{
+static const ref_vals_map<double> morphology_2d_regression_polygonality_chords_ref_vals{
 	// POLYGONALITY_AVE depends only on neighbors/area/perimeter, so the Pick's-theorem
 	// convex-hull-area fix (convex_hull_nontriv.cpp) leaves it unchanged. HEXAGONALITY_AVE and
 	// HEXAGONALITY_STDDEV read CONVEX_HULL_AREA (via area_hull in hexagonality_polygonality.cpp),
@@ -59,7 +59,7 @@ static void assert_unvetted_no_direct_oracle_remaining2d_feature(
 {
 	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
 	ASSERT_TRUE(morphology_2d_regression_polygonality_chords_ref_vals.count(feature_name) > 0);
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_polygonality_chords_ref_vals[feature_name], frac_tolerance));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_polygonality_chords_ref_vals.at(feature_name), frac_tolerance));
 }
 
 static void assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(
@@ -70,7 +70,7 @@ static void assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(
 {
 	SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
 	ASSERT_TRUE(morphology_2d_regression_caliper_chords_ref_vals.count(feature_name) > 0) << feature_name;
-	const double ref_val = morphology_2d_regression_caliper_chords_ref_vals[feature_name];
+	const double ref_val = morphology_2d_regression_caliper_chords_ref_vals.at(feature_name);
 	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], ref_val, frac_tolerance));
 }
 
@@ -87,7 +87,7 @@ static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(
 	ASSERT_TRUE(morphology_2d_regression_polygonality_chords_ref_vals.count(feature_name) > 0);
 	const double actual = roiData.at(1).fvals[static_cast<int>(feature)][0];
 	ASSERT_GT(actual, 0.0);
-	ASSERT_TRUE(agrees_gt(actual, morphology_2d_regression_polygonality_chords_ref_vals[feature_name], frac_tolerance));
+	ASSERT_TRUE(agrees_gt(actual, morphology_2d_regression_polygonality_chords_ref_vals.at(feature_name), frac_tolerance));
 }
 
 static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_score(
@@ -113,7 +113,7 @@ static void assert_remaining2d_polygonality_no_value_for_sparse_neighbors(
 
 // Pinned Nyxus output for the shape-2D features with no external reference. Establishes no vetting
 // (SPEC 1), which is why nothing outside this file compares against it any more.
-static ref_vals_map<double> morphology_2d_regression_ref_vals
+static const ref_vals_map<double> morphology_2d_regression_ref_vals
 {
 	{"AREA_PIXELS_COUNT", 26.0},
 	{"AREA_UM2", 104.0},
@@ -144,7 +144,7 @@ static ref_vals_map<double> morphology_2d_regression_ref_vals
 	{"ROI_RADIUS_MEDIAN", 1.0}
 };
 
-static ref_vals_map<double> morphology_2d_regression_diameters_ref_vals{
+static const ref_vals_map<double> morphology_2d_regression_diameters_ref_vals{
 	{"DIAMETER_CIRCUMSCRIBING_CIRCLE", 12.3317073399088},
 	{"DIAMETER_INSCRIBING_CIRCLE", 0.828486893405308},
 };
@@ -154,7 +154,7 @@ static void assert_morphology_feature_regression(const std::vector<std::vector<d
 {
 	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
 	ASSERT_TRUE(morphology_2d_regression_ref_vals.count(feature_name) > 0) << feature_name;
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_ref_vals[feature_name], frac_tolerance));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_ref_vals.at(feature_name), frac_tolerance));
 }
 
 static void assert_morphology_diameter_regression(const std::vector<std::vector<double>>& fvals,
@@ -162,7 +162,7 @@ static void assert_morphology_diameter_regression(const std::vector<std::vector<
 {
 	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
 	ASSERT_TRUE(morphology_2d_regression_diameters_ref_vals.count(feature_name) > 0) << feature_name;
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_diameters_ref_vals[feature_name], frac_tolerance));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_diameters_ref_vals.at(feature_name), frac_tolerance));
 }
 
 void test_2d_morphology_basic_regression()

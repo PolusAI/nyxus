@@ -26,7 +26,7 @@
 //
 // This table is also read by the 3D coverage sweep (test_3d_coverage_common.h), the same way that
 // header already reads the per-family *_3d_pyradiomics_ref_vals tables from their own oracle files.
-static ref_vals_map<double> morphology_3d_matlab_ref_vals
+static const ref_vals_map<double> morphology_3d_matlab_ref_vals
 {
 	{ "3MESH_VOLUME", 497824.0 },
 	{ "3VOXEL_VOLUME", 274432.0 },
@@ -37,7 +37,7 @@ static ref_vals_map<double> morphology_3d_matlab_ref_vals
 // assumed: a single 10% band used to cover all three, which is wide enough to pass a value four
 // times worse than the real disagreement on two of them and forty thousand times worse on the third
 // (SPEC 7 -- a tolerance looser than the divergence it absorbs hides drift).
-static ref_vals_map<double> morphology_3d_matlab_ref_tols
+static const ref_vals_map<double> morphology_3d_matlab_ref_tols
 {
 	// Same definition on both sides (count of voxels x voxel volume); measured 2.3e-04%. SPEC 7
 	// same-definition tier.
@@ -63,12 +63,12 @@ static void assert_3d_morphology_feature_matlab (const std::string& fname, const
     double actual = 0.0;
     calculate_3d_morphology_feature_value (fname, expecting_fcode, actual);
 
-    const double expected = morphology_3d_matlab_ref_vals[fname];
+    const double expected = morphology_3d_matlab_ref_vals.at(fname);
     const double pct = std::abs(expected) == 0.0 ? (actual == expected ? 0.0 : 100.0)
                                                  : 100.0 * std::abs(actual - expected) / std::abs(expected);
-    ASSERT_LE(pct, morphology_3d_matlab_ref_tols[fname])
+    ASSERT_LE(pct, morphology_3d_matlab_ref_tols.at(fname))
         << fname << " actual=" << actual << " MATLAB regionprops3=" << expected
-        << " band=" << morphology_3d_matlab_ref_tols[fname] << "%";
+        << " band=" << morphology_3d_matlab_ref_tols.at(fname) << "%";
 }
 
 void test_3d_morphology_mesh_volume_matlab() {

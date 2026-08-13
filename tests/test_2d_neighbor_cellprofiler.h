@@ -17,7 +17,7 @@
 #include "test_2d_neighbor_common.h"  // fixture only: calculate_neighbor_feature_values
 #include "test_ref_vals.h"
 
-static ref_vals_map_by_label<double> neighbor_2d_cellprofiler_ref_vals_by_label{
+static const ref_vals_map_by_label<double> neighbor_2d_cellprofiler_ref_vals_by_label{
 	{1, {{"NUM_NEIGHBORS", 4.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5}}},
 	{2, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.54950975679639}}},
 	{3, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.54950975679639}}},
@@ -32,9 +32,12 @@ static void assert_neighbor2d_cellprofiler(
 	const std::string& feature_name)
 {
 	SCOPED_TRACE(std::string("CELLPROFILER__") + feature_name + "__L" + std::to_string(label));
-	ASSERT_TRUE(neighbor_2d_cellprofiler_ref_vals_by_label[label].count(feature_name) > 0);
+	// Guard the label before indexing it, so an absent label reports the label instead of throwing
+	// out of .at() with no context.
+	ASSERT_TRUE(neighbor_2d_cellprofiler_ref_vals_by_label.count(label) > 0) << label;
+	ASSERT_TRUE(neighbor_2d_cellprofiler_ref_vals_by_label.at(label).count(feature_name) > 0) << feature_name;
 	ASSERT_NEAR(roiData.at(label).fvals[static_cast<int>(feature)][0],
-		neighbor_2d_cellprofiler_ref_vals_by_label[label][feature_name], 1e-4);
+		neighbor_2d_cellprofiler_ref_vals_by_label.at(label).at(feature_name), 1e-4);
 }
 
 void test_2d_neighbor_counts_and_first_distance_cellprofiler()

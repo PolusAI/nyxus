@@ -10,7 +10,7 @@
 
 // Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
 // (100 grey levels, offset 1, and asymmetric cooc matrix)
-static ref_vals_map<double> glcm_3d_regression_ref_vals
+static const ref_vals_map<double> glcm_3d_regression_ref_vals
 {
     {"3GLCM_ACOR", 8686.0},
     {"3GLCM_ASM", 0.87},
@@ -136,7 +136,7 @@ void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     double atot = f.calc_ave(r.fvals[fcode]);
 
     // (7) verdict
-    ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals.at(fname), 10.));
 }
 
 void test_3d_glcm_acor_regression()

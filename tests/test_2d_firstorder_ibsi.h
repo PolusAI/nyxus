@@ -11,7 +11,7 @@
 #include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
-static ref_vals_map<double> firstorder_2d_ibsi_ref_vals {
+static const ref_vals_map<double> firstorder_2d_ibsi_ref_vals {
     {"MEAN", 2.15},
     {"VARIANCE", 3.05},
     {"SKEWNESS", 1.08},
@@ -81,7 +81,7 @@ void assert_firstorder_feature_ibsi(const Feature2D& feature, const std::string&
 
     if (round) total = std::round(total);
 
-    ASSERT_TRUE(agrees_gt(total, firstorder_2d_ibsi_ref_vals[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total, firstorder_2d_ibsi_ref_vals.at(feature_name), 100.));
 }
 
 void test_2d_firstorder_mean_ibsi()

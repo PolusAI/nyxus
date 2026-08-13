@@ -48,7 +48,7 @@
 //   CLUTEND/SUMVARIANCE are among them because Nyxus computes them from the single row-marginal mean
 //   by_row_mean. Rerunning with symmetric_glcm=true (or the radiomics/IBSI path) is what would let
 //   that group be compared to a symmetric oracle at all.
-static ref_vals_map<double> glcm_2d_regression_ref_vals
+static const ref_vals_map<double> glcm_2d_regression_ref_vals
 {
     {"GLCM_ACOR", 1437.33},                 // absolute-level-dependent: matlab binning re-maps levels, so ibsi=False diverges from a symmetric oracle by ~43% (2026-07-09, PR #356 review). Vetted instead on the IBSI path -- see below.
     {"GLCM_ASM", 0.381801},

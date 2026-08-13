@@ -25,7 +25,7 @@
 #include "test_2d_firstorder_common.h"
 #include "test_ref_vals.h"
 
-static ref_vals_map<double> firstorder_2d_matlab_ref_vals {
+static const ref_vals_map<double> firstorder_2d_matlab_ref_vals {
     {"HYPERSKEWNESS",                 1.978293086605381},
     {"HYPERFLATNESS",                 5.126659243028459},
     {"UNIFORMITY",                    0.0647664},
@@ -73,7 +73,7 @@ void assert_firstorder_feature_matlab(const Feature2D& feature, const std::strin
     calculate_pixel_intensity_feature_values(fvals, s, slide_idx, slide_min, slide_max);
 
     ASSERT_TRUE(agrees_gt(fvals[(int)feature][0],
-                          firstorder_2d_matlab_ref_vals[feature_name],
+                          firstorder_2d_matlab_ref_vals.at(feature_name),
                           frac_tolerance));
 }
 
