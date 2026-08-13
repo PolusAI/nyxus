@@ -225,7 +225,6 @@ Surfaced by Wave 12 and not yet satisfied:
 | site | assertions | what is missing |
 |---|---:|---|
 | `test_2d_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
-| `test_2d_morphology_cellprofiler.h` | 6 | the 5 `EDGE_*` + `MASS_DISPLACEMENT` now have their own `morphology_2d_cellprofiler_ref_vals`, split out of the shared snapshot map they used to be asserted against. That fixes the *name*, not the *evidence*: no CellProfiler version, config or generator is recorded, so nothing in the tree distinguishes a CellProfiler number from a Nyxus one. The registry's `vetted` verdict rests on the tracker alone. Closing it means a `gen_morphology_cellprofiler.py` run; if that is not going to happen, the honest alternative is demotion to `regression`, as the ten GLCM `matlab` rows took |
 
 Closing these means writing tool + version + config + generator down at each assertion site, ideally
 by regenerating through the harness so the values become reproducible.
@@ -234,11 +233,30 @@ The 3D first-order provenance gap is closed: its 29 MATLAB goldens now have an R
 `3MEDIAN_ABSOLUTE_DEVIATION` and `3ROBUST_MEAN` remain regression-only because MATLAB uses different
 definitions; `3COVERED_IMAGE_INTENSITY_RANGE` is separately pinned as current Nyxus behavior.
 
-Two grades of gap remain in that table, and they are not equally serious. For the 2D MATLAB rows the values
-*are* the oracle's — only the reproduction recipe is absent. For `test_2d_morphology_cellprofiler.h`
-even that much is unestablished: nothing in the tree shows the numbers ever came from CellProfiler,
-so the entry records an unproven claim rather than an unreproducible one. Do not treat the two the
-same way when closing them.
+**`test_2d_morphology_cellprofiler.h`'s six assertions are closed by running the tool, and one of
+them did not survive it.** Two grades of gap sat in this section and they were never equally
+serious: for the MATLAB rows the values *are* the oracle's and only the reproduction recipe is
+absent, whereas here even that much was unestablished — nothing in the tree showed the numbers had
+ever come from CellProfiler, so the entry recorded an unproven claim rather than an unreproducible
+one. That is what made it worth running first. `gen_morphology_cellprofiler.py` drives CellProfiler
+4.2.8 `MeasureObjectIntensity` on the shape2d fixture; five of the six reproduce to 5.2e-8 relative
+(the residual is CellProfiler's float32 image storage, nothing else) and now carry tool, version,
+module, config recipe and generator. The sixth, `EDGE_STDDEV_INTENSITY`, does **not** reproduce and
+is demoted to `regression`. What is left in the table above is the MATLAB kind of gap only.
+
+**`EDGE_STDDEV_INTENSITY`: the one that did not survive.** Both tools take the same 18 edge pixels —
+that much is exact, and the integrated sum agrees to the digit. They then use different estimators:
+Nyxus divides the variance by n-1 (`Moments4::std()` returns `sqrt(M2/(n-1))`), CellProfiler by n. So
+the two answers differ by exactly `sqrt(n/(n-1))` = 1.0289915 at n=18 — 16.769194 against
+16.296728. That is a definitional gap, not a tolerance one, and no band that admits it would be
+honest. The row is now `regression` with `candidate_oracle=cellprofiler (MeasureObjectIntensity)`
+and `flag=estimator-divergence`.
+
+Worth a decision outside the test tree: `Moments4::std()` is shared across features, so Nyxus is
+reporting the sample estimator wherever that helper is used, while the tools it is vetted against
+generally report the population one. Whether that is intended is a `src/nyx` question, not a
+test-side one — the generator pins the relationship as an identity so the answer cannot drift
+unnoticed either way.
 
 **`test_2d_glcm_matlab.h` was a different case, and is now closed by demotion.** Its own header
 declared its provenance gap tracked here, but this section never listed it, and the gap was not the
