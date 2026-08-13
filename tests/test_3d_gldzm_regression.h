@@ -34,7 +34,7 @@
 // IBSI's GLDZM set has no zone-distance mean and MIRP emits only dzm_zd_var / dzm_zd_entr. Its 222
 // below is additionally self-inconsistent (the same distribution's variance is 79.7 => std ~8.9, so a
 // mean of 222 is impossible; Nyxus computes 15.31).
-static ref_vals_map<double> gldzm_3d_regression_ref_vals{
+static const ref_vals_map<double> gldzm_3d_regression_ref_vals{
 	{"3GLDZM_SDE",		0.0224},
 	{"3GLDZM_LDE",       314.0},
 	{"3GLDZM_LGLZE",     0.0006},
@@ -116,7 +116,7 @@ void assert_3d_gldzm_feature_regression (const Nyxus::Feature3D& expecting_fcode
 	double atot = r.fvals[fcode][0];
 
 	// verdict
-	ASSERT_TRUE(agrees_gt(atot, gldzm_3d_regression_ref_vals[fname], 10.));
+	ASSERT_TRUE(agrees_gt(atot, gldzm_3d_regression_ref_vals.at(fname), 10.));
 
 }
 

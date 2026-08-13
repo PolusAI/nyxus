@@ -13,7 +13,7 @@
 
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. Dataset: dig phantom. Aggr. method: 2D, averaged)
-static ref_vals_map<double> glcm_2d_ibsi_ref_vals {
+static const ref_vals_map<double> glcm_2d_ibsi_ref_vals {
     {"GLCM_ACOR", 5.09},    // p. 76, consensus: very strong
     {"GLCM_ASM", 0.368},    // p. 68, consensus: very strong
     {"GLCM_CLUPROM", 79.1}, // p. 79, consensus: very strong
@@ -148,7 +148,7 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     total += roidata3.fvals[feature][3];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total / 16, glcm_2d_ibsi_ref_vals[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total / 16, glcm_2d_ibsi_ref_vals.at(feature_name), 100.));
 }
 
 void test_2d_glcm_acor_ibsi()

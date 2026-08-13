@@ -23,7 +23,7 @@ INSTANTIATE_TEST_SUITE_P(
 // Regression baselines for this family's slice of the sweep: pinned Nyxus output for the public 3D
 // gldzm features that no third-party oracle backs yet. They establish no vetting (SPEC 1), and they
 // live here rather than in the shared harness so the table sits with the assertions that read it.
-static ref_vals_map<std::vector<double>> gldzm_3d_regression_coverage_ref_vals
+static const ref_vals_map<std::vector<double>> gldzm_3d_regression_coverage_ref_vals
 {
 	{ "3GLDZM_GLM", { 47.230300235279401 } },
 	{ "3GLDZM_GLNU", { 3435.1800942680934 } },

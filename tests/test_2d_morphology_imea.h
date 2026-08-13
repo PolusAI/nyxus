@@ -11,7 +11,7 @@
 // fixture's numbers. SPEC 6.3.1 covers this with the _<subject> qualifier.
 //
 // The shape2d table also absorbs the three geodetic keys, which share its fixture and overlap nothing.
-static ref_vals_map<double> morphology_2d_imea_shape2d_ref_vals{
+static const ref_vals_map<double> morphology_2d_imea_shape2d_ref_vals{
 	{"STAT_FERET_DIAM_MIN", 4.47301},
 	{"STAT_FERET_DIAM_MAX", 6.3222},
 	{"STAT_FERET_DIAM_MEAN", 5.40848},
@@ -43,7 +43,7 @@ static ref_vals_map<double> morphology_2d_imea_shape2d_ref_vals{
 	{"THICKNESS", 2.3356458070362205}
 };
 
-static ref_vals_map<double> morphology_2d_imea_ellipse_ref_vals{
+static const ref_vals_map<double> morphology_2d_imea_ellipse_ref_vals{
 	{"STAT_MARTIN_DIAM_MIN", 19.0},
 	{"STAT_MARTIN_DIAM_MAX", 41.0},
 	{"STAT_MARTIN_DIAM_MEAN", 27.61},
@@ -73,7 +73,7 @@ static void assert_caliper_imea(const std::vector<std::vector<double>>& fvals,
 {
 	SCOPED_TRACE(std::string("IMEA_ORACLE__") + feature_name);
 	ASSERT_TRUE(morphology_2d_imea_shape2d_ref_vals.count(feature_name) > 0) << feature_name;
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_imea_shape2d_ref_vals[feature_name], frac_tolerance));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_imea_shape2d_ref_vals.at(feature_name), frac_tolerance));
 }
 
 // The 19 caliper/chord statistics whose registry rows read status=vetted, oracle=imea,
@@ -119,7 +119,7 @@ static void assert_caliper_close_to_imea(
 {
 	SCOPED_TRACE(std::string("CALIPER_VS_IMEA__") + feature_name);
 	ASSERT_TRUE(morphology_2d_imea_ellipse_ref_vals.count(feature_name) > 0);
-	const double imea_ref = morphology_2d_imea_ellipse_ref_vals[feature_name];
+	const double imea_ref = morphology_2d_imea_ellipse_ref_vals.at(feature_name);
 	const double actual = fvals[static_cast<int>(feature)][0];
 	const double denom = std::max(std::abs(imea_ref), 1e-9);
 	ASSERT_LE(std::abs(actual - imea_ref) / denom, reltol)

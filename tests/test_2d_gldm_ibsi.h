@@ -12,7 +12,7 @@
 #include "test_ref_vals.h"
 
 // dig. phantom values for intensity based features
-static ref_vals_map<double> gldm_2d_ibsi_ref_vals {
+static const ref_vals_map<double> gldm_2d_ibsi_ref_vals {
     {"GLDM_SDE", 0.158},
     {"GLDM_LDE", 19.2},
     {"GLDM_LGLE", 0.702},
@@ -116,7 +116,7 @@ void assert_gldm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     total += roidata3.fvals[feature][0];
 
     // Verdict
-    ASSERT_TRUE(agrees_gt(total/4, gldm_2d_ibsi_ref_vals[feature_name], 100.));
+    ASSERT_TRUE(agrees_gt(total/4, gldm_2d_ibsi_ref_vals.at(feature_name), 100.));
 }
 
 void test_2d_gldm_sde_ibsi()

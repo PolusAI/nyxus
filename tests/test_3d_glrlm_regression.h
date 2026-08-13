@@ -9,7 +9,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static ref_vals_map<double> glrlm_3d_regression_ref_vals{
+static const ref_vals_map<double> glrlm_3d_regression_ref_vals{
     {"3GLRLM_SRE", 0.84},
     {"3GLRLM_LRE", 40.8},
     {"3GLRLM_LGLRE", 0.072},
@@ -68,7 +68,7 @@ void assert_3d_glrlm_feature_regression (const Nyxus::Feature3D& expecting_fcode
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_regression_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_regression_ref_vals.at(fname), 10.));
 #endif
 
     // get segment info
@@ -128,7 +128,7 @@ void assert_3d_glrlm_feature_regression (const Nyxus::Feature3D& expecting_fcode
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_regression_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_regression_ref_vals.at(fname), 10.));
 
 }
 

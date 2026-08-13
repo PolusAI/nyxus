@@ -6,7 +6,7 @@
 #include "test_2d_firstorder_common.h"
 #include "test_ref_vals.h"
 
-static ref_vals_map<double> firstorder_2d_regression_ref_vals {
+static const ref_vals_map<double> firstorder_2d_regression_ref_vals {
     {"ENTROPY",     4.12733},
     {"P01",         1.189536940000000e+04},
     {"P25",         1.907482583333333e+04},
@@ -25,7 +25,7 @@ void assert_firstorder_feature_regression(const Feature2D& feature, const std::s
     calculate_pixel_intensity_feature_values(fvals, s);
 
     ASSERT_TRUE(agrees_gt(fvals[(int)feature][0],
-                          firstorder_2d_regression_ref_vals[feature_name],
+                          firstorder_2d_regression_ref_vals.at(feature_name),
                           frac_tolerance));
 }
 

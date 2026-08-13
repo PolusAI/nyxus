@@ -2,7 +2,7 @@
 
 #include "test_2d_remaining_common.h"
 
-static ref_vals_map<std::vector<double>> zernike_2d_regression_ref_vals{
+static const ref_vals_map<std::vector<double>> zernike_2d_regression_ref_vals{
 	{"ZERNIKE2D", {
 		0.02049738595695693, 0.035831084484416686, 0.073953766599300461,
 		0.035435050265597692, 0.092323797445497555, 0.011030627605166297,
@@ -26,7 +26,7 @@ static void assert_zernike_vector_feature_regression(
 	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
 	ASSERT_TRUE(zernike_2d_regression_ref_vals.count(feature_name) > 0);
 	const auto& actual = fvals[static_cast<int>(feature)];
-	const auto& golden_values = zernike_2d_regression_ref_vals[feature_name];
+	const auto& golden_values = zernike_2d_regression_ref_vals.at(feature_name);
 	ASSERT_EQ(actual.size(), golden_values.size());
 	for (size_t i = 0; i < golden_values.size(); ++i)
 		ASSERT_NEAR(actual[i], golden_values[i], abs_tolerance) << feature_name << "[" << i << "]";

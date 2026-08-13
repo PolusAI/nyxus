@@ -12,7 +12,7 @@
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. Dataset: dig phantom.)
 // Verified against fresh PyRadiomics and MIRP runs on the phantom pixels checked into test_data.h -
 // see tests/vetting/audit/glrlm_2d_ibsi_vetting_report.md.
-static ref_vals_map<double> glrlm_2d_ibsi_ref_vals {
+static const ref_vals_map<double> glrlm_2d_ibsi_ref_vals {
     {"GLRLM_SRE", 0.641},
     {"GLRLM_LRE", 3.78},
     {"GLRLM_LGLRE", 0.604},
@@ -43,8 +43,8 @@ static std::string glrlm_ibsi_golden_key (const std::string& feature_name)
 
 void assert_glrlm_feature_ibsi (const std::string& feature_name)
 {
-    // A key absent from the table would otherwise be default-inserted as 0, and agrees_gt turns a
-    // ground truth of 0 into a tolerance of 0 - an assertion that passes only on an exact 0.
+    // The table is const, so a missing key cannot be default-inserted as 0; looking it up first
+    // reports the absent feature by name instead of letting .at() throw out of the assertion.
     auto golden_it = glrlm_2d_ibsi_ref_vals.find (glrlm_ibsi_golden_key (feature_name));
     ASSERT_TRUE (golden_it != glrlm_2d_ibsi_ref_vals.end()) << feature_name;
 

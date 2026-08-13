@@ -9,7 +9,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at grey scalefactlr 100
-static ref_vals_map<double> ngtdm_3d_regression_ref_vals {
+static const ref_vals_map<double> ngtdm_3d_regression_ref_vals {
     {"3NGTDM_COARSENESS",   0.00004},
     {"3NGTDM_CONTRAST",     0.66},
     {"3NGTDM_BUSYNESS",     46.0},
@@ -56,7 +56,7 @@ void assert_3d_ngtdm_feature_regression(const Nyxus::Feature3D& expecting_fcode,
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, ngtdm_3d_regression_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, ngtdm_3d_regression_ref_vals.at(fname), 10.));
 #endif
 
     // get segment info
@@ -116,7 +116,7 @@ void assert_3d_ngtdm_feature_regression(const Nyxus::Feature3D& expecting_fcode,
     double atot = r.fvals[fcode][0];
 
     // verdict
-    ASSERT_TRUE(agrees_gt(atot, ngtdm_3d_regression_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, ngtdm_3d_regression_ref_vals.at(fname), 10.));
 
 }
 

@@ -15,7 +15,7 @@
 // MATLAB-vetted values -- two different claims about the same feature, which SPEC 3 treats as two
 // assertions, not a contradiction. The numbers differ (478516 here vs MATLAB's 497824) precisely
 // because one is Nyxus and the other is not.
-static ref_vals_map<double> morphology_3d_regression_ref_vals{
+static const ref_vals_map<double> morphology_3d_regression_ref_vals{
     { "3AREA",  58457 },
     { "3AREA_2_VOLUME", 0.21 },
     { "3COMPACTNESS1",  0.011 },
@@ -33,7 +33,7 @@ static void assert_3d_morphology_feature_regression (const std::string& fname, c
     double actual = 0.0;
     calculate_3d_morphology_feature_value (fname, expecting_fcode, actual);
     ASSERT_TRUE(morphology_3d_regression_ref_vals.count(fname) > 0) << fname;
-    ASSERT_TRUE(agrees_gt(actual, morphology_3d_regression_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(actual, morphology_3d_regression_ref_vals.at(fname), 10.));
 }
 
 void test_3d_morphology_area_regression() {

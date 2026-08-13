@@ -23,7 +23,7 @@ INSTANTIATE_TEST_SUITE_P(
 // Regression baselines for this family's slice of the sweep: pinned Nyxus output for the public 3D
 // glrlm features that no third-party oracle backs yet. They establish no vetting (SPEC 1), and they
 // live here rather than in the shared harness so the table sits with the assertions that read it.
-static ref_vals_map<std::vector<double>> glrlm_3d_regression_coverage_ref_vals
+static const ref_vals_map<std::vector<double>> glrlm_3d_regression_coverage_ref_vals
 {
 	{ "3GLRLM_GLNN_AVE", { 0.030276986604527156 } },
 	{ "3GLRLM_GLN_AVE", { 7866.1651094407043 } },

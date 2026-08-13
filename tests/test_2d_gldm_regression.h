@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include <gtest/gtest.h>
 
@@ -19,7 +19,7 @@
 // the features and returned without comparing anything, so these 14 numbers sat unused and all 14
 // cases passed as long as calculate() did not throw. Re-derived from current output when the
 // comparison was added, so the table now states what Nyxus actually produces.
-static ref_vals_map<double> gldm_2d_regression_ref_vals {
+static const ref_vals_map<double> gldm_2d_regression_ref_vals {
     {"GLDM_SDE", 0.43899590049484488},
     {"GLDM_LDE", 24.932266009852217},
     {"GLDM_LGLE", 0.01175642780523556},

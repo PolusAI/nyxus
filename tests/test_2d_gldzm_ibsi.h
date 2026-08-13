@@ -11,7 +11,7 @@
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. https://ibsi.readthedocs.io/en/latest/03_Image_features.html
 // Dataset: dig phantom. Aggr. method: 2D, averaged)
-static ref_vals_map<double> gldzm_2d_ibsi_ref_vals
+static const ref_vals_map<double> gldzm_2d_ibsi_ref_vals
 {
     {"GLDZM_SDE",		0.946}, // Small distance emphasis
     {"GLDZM_LDE",       1.21},  // Large distance emphasis

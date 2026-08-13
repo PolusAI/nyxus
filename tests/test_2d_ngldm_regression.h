@@ -10,7 +10,7 @@
 
 // GLM and DCM are Nyxus mean-style rows that are not defined in the IBSI
 // NGLDM table, so only those two remain local regression references here.
-static ref_vals_map<double> ngldm_2d_regression_ref_vals
+static const ref_vals_map<double> ngldm_2d_regression_ref_vals
 {
 	{"NGLDM_GLM",		2.1178319573443410e+00},
 	{"NGLDM_DCM",		3.9832043343653250e+00}
