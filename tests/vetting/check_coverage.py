@@ -167,6 +167,20 @@ def drift_warnings(rows, tests_dir):
             warns.append(f"{r.get('feature', '')}: target_test {tgt} not found in {tests_dir}")
     return warns
 
+def report_staleness(rows, report_path):
+    """[] if coverage_report.md matches what the registry renders to, one error if it does not.
+    A missing report is not an error -- --check runs against ad-hoc registries in the self-tests,
+    which have no report beside them."""
+    if not os.path.exists(report_path):
+        return []
+    with open(report_path, newline="") as fh:
+        on_disk = fh.read()
+    if on_disk.replace("\r\n", "\n") == render_report(rows).replace("\r\n", "\n"):
+        return []
+    return [f"{report_path} is stale: it does not match what {len(rows)} registry rows render to. "
+            f"Regenerate it with --write (it is generated, not hand-edited)."]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--registry", default="tests/vetting/oracle_coverage.csv")
@@ -183,6 +197,14 @@ def main(argv=None):
     errs += validate_test_names(rows, os.path.join(
         os.path.dirname(os.path.dirname(a.registry)) or ".", "test_all.cc"))
     if a.check:
+        # The report is generated from the registry and says so in its own header, but until now
+        # nothing checked that it still matched, so "re-run --write after editing the registry"
+        # was remembered rather than enforced. It has been forgotten before: the ten GLCM matlab
+        # rows demoted in #422 left the committed report claiming 118/118 glcm vetted against the
+        # registry's 108, and the published headline overstated coverage by ten features until
+        # someone happened to regenerate. Comparing the rendered text to the file on disk closes
+        # that for good; every registry edit after this one has to bring its report with it.
+        errs += report_staleness(rows, a.report)
         for e in errs: print("ERROR:", e)
         return 1 if errs else 0
     if a.write:
