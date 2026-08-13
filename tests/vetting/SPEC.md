@@ -73,6 +73,7 @@ Columns:
 | `tolerance` | `exact` / `rel=1e-3` / `rel=1e-2` / … |
 | `test_file`, `test_name` | where the assertion lives (empty if not yet written) |
 | `benchmark` | benchmark-data id (see §6) |
+| `source` | where the verdict comes from: `in-tree` (a test in this repo makes the assertion) / `tracker` (an offline harness run not migrated in — `target_test` names where it belongs) / `audit` |
 | `notes` | provenance, caveats |
 
 ### 3.1 The headline metric — "vetted by ≥1 oracle"
