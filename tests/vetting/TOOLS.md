@@ -8,7 +8,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | token | version | setup | feasibility | one-line |
 |-------|---------|-------|:-----------:|----------|
 | `pyradiomics` | 3.0.1 | **Docker** `radiomics/pyradiomics:latest` (pin by `@sha256`) | high | already in use; pip blocked on Py3.11 |
-| `mirp` | 2.6.0 | **venv** `pip install mirp==2.6.0` (Py3.11, pure-Python) | high | no Docker needed; full IBSI incl. NGLDM/GLDZM |
+| `mirp` | 2.6.0 | **conda** `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy` (venv/pip also works) | high | no Docker needed; full IBSI incl. NGLDM/GLDZM |
 | `imea` | 0.3.3 | **venv** `pip install imea==0.3.3` + `numpy<1.24` | high (2D only) | 2D morphology; **3D is heightmap, not voxel — unusable for Nyxus 3D** |
 | `feature2djava` | 1.5.0 | **Docker** `wipp/wipp-feature2djava-plugin:1.5.0` (125 MB, exists) | high | NIST/WIPP sibling; intensity + basic shape + Haralick |
 | `radiomicsj` | **2.1.3 / 2.1.18** | **Docker/jar** (Maven → shaded uber-jar; Java 11) | high | **2.1.2 does not exist**; Maven Central only; full IBSI + fractal |
@@ -22,6 +22,20 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 
 ## Corrections / notable findings
 
+- **`mirp` runs fine from conda-forge**, which is simpler than a venv on Windows because it brings
+  its own Python: `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy`. Two gotchas
+  when scripting it, both hit while vetting the 2D intensity histogram:
+  - MIRP logs at INFO **onto stdout**, interleaving progress lines with whatever your generator
+    prints. `logging.basicConfig(level=...)` is not enough — MIRP configures its own logger during
+    the run — so call `logging.disable(logging.INFO)` *before* `import mirp`.
+  - `extract_features()` returns **every** family in one frame, and every column is suffixed with
+    the discretisation it was computed at (`ih_mean_fbn_n6`, `cm_contrast_d1_3d_v_mrg_fbn_n6`).
+    Filter on the suffix and map by name, so changing the bin count cannot silently read a column
+    computed at the old one.
+- **Octave `quantile()` takes a method number 1..9** (`quantile(v, p, m)`), and `prctile()` is
+  method 5 — useful when checking whether a Nyxus percentile matches a tool's *native* percentile
+  rather than a reimplementation of Nyxus' own. See
+  `audit/intensity_histogram_2d_analytic_vetting_report.md` for why that distinction matters.
 - **`radiomicsj` 2.1.2 is a phantom version** — no GitHub releases/tags; Maven Central publishes
   2.1.3 … 2.1.18 (no 2.1.0/2.1.1/2.1.2). Pin **2.1.3** (earliest, nearest the requested tag) or
   **2.1.18** (latest). Ships a thin jar → must shade an uber-jar; has a built-in commons-cli `main()`

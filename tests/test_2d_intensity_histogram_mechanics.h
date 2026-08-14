@@ -5,7 +5,13 @@
 // predicate reports what the family needs. Mechanics per SPEC 2, so they live here rather than in
 // test_2d_intensity_histogram_regression.h, whose assertions are pinned feature values.
 
-#include "test_2d_intensity_histogram_regression.h"   // shared fixture: run_intensity_histogram_fixture
+#include <gtest/gtest.h>
+
+#include <vector>
+
+#include "../src/nyx/featureset.h"                     // FeatureSet
+#include "../src/nyx/features/intensity_histogram.h"   // IntensityHistogramFeatures
+#include "test_2d_intensity_histogram_regression.h"    // run_intensity_histogram_fixture, ih_make_settings
 
 // 3) IBSI gate: with IBSI off the family returns the soft-NaN sentinel for all 46.
 void test_2d_intensity_histogram_gate_off_returns_nan_mechanics()

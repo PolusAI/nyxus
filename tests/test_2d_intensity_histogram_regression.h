@@ -1,15 +1,18 @@
 #pragma once
 
-#include <cmath>
 #include <gtest/gtest.h>
 
-#include "../src/nyx/dataset.h"
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/intensity_histogram.h"
-#include "test_2d_remaining_common.h"   // fixture: calculate_remaining2d_shape_feature_values
-#include "../src/nyx/features/pixel.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
+#include <vector>
+
+#include "../src/nyx/dataset.h"                       // Dataset, SlideProps
+#include "../src/nyx/feature_settings.h"              // Fsettings, NyxSetting
+#include "../src/nyx/featureset.h"                    // Feature2D
+#include "../src/nyx/features/intensity_histogram.h"  // IntensityHistogramFeatures
+#include "../src/nyx/features/pixel.h"                // NyxusPixel
+#include "../src/nyx/roi_cache.h"                     // LR
+#include "test_2d_intensity_histogram_common.h"       // the IBSI phantom fixture at recipe ih.ibsi_fbn
+#include "test_main_nyxus.h"                          // agrees_gt, load_test_roi_data
+#include "test_ref_vals.h"                            // ref_vals_map
 
 using namespace Nyxus;
 
@@ -238,9 +241,9 @@ void test_2d_intensity_histogram_float_domain_preserve_hu_regression()
 //     scanned slide min, so float_domain_map must IGNORE FPIMG_MIN. Here FPIMG is
 //     active with a misleading FPIMG_MIN=0 (the value --fpimgmin defaults to), yet
 //     the reconstruction must still recover absolute HU from slide_min=-1024:
-//       IH_MINIMUM = -1024 + 1 = -1023 (NOT 0 + 1 = 1, the pre-fix clamp).
-//     Before the fix, poffset=floor(FPIMG_MIN=0)=0 shifted every value up by 1024
-//     and every negative HU was mis-mapped / clamped to 0 at load time.
+//       IH_MINIMUM = -1024 + 1 = -1023.
+//     Taking poffset from FPIMG_MIN instead would give 0 + 1 = 1, shifting every
+//     value up by 1024 and clamping negative HU to 0 at load time.
 void test_2d_intensity_histogram_float_domain_preserve_hu_fpactive_regression()
 {
     Fsettings s = ih_make_settings(3, true);
@@ -256,5 +259,66 @@ void test_2d_intensity_histogram_float_domain_preserve_hu_fpactive_regression()
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MAXIMUM_VAL), -1017.0));
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_RANGE_VAL), 6.0));
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_BIN_SIZE), 2.0));
+}
+
+// ---------------------------------------------------------------------------
+// 5) Drift guards for the percentile-domain _VAL features, which claim no oracle.
+//
+// IH_P10_VAL, IH_P90_VAL and the IQR/QCoD built from P25/P75 use the grouped-data percentile
+// L + binWidth*(n*p - F)/f, over the bin the CDF crosses. No reference implementation reproduces
+// it: on the IBSI phantom at 6 bins Nyxus reports P90_VAL = 4.3125, while all nine of numpy's and
+// all nine of Octave's native percentile methods answer between 4.0 and 5.0 - and their default,
+// 4.0, is what the _IDX half and MIRP report. The values below are therefore pinned to catch
+// drift, not to claim agreement with anything. Measurements:
+// tests/vetting/audit/intensity_histogram_2d_analytic_vetting_report.md.
+static const ref_vals_map<double> intensity_histogram_2d_regression_ref_vals
+{
+    {"IH_P10_VAL", 1.1233333333333333},
+    {"IH_P90_VAL", 4.3125},
+    {"IH_INTERQUANTILE_RANGE_VAL", 2.4260416666666664},
+    {"IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL", 0.48109894649865725},
+};
+
+void test_2d_intensity_histogram_phantom_percentile_regression()
+{
+    std::vector<std::vector<double>> fvals;
+    calc_2d_intensity_histogram_phantom(fvals);
+
+    for (const auto& [feature_name, golden] : intensity_histogram_2d_regression_ref_vals)
+    {
+        double value = 0;
+        ASSERT_TRUE(read_2d_intensity_histogram_feature(fvals, feature_name, value)) << feature_name;
+        ASSERT_TRUE(agrees_gt(value, golden, 1.e9)) << feature_name;
+    }
+}
+
+// The tail-trimming fixture: 17 px over [0,40] at 5 bins, counts {1,5,6,4,1}, so binWidth=8 and
+// the [P10,P90] window is bins 2..4 - both tail bins strictly trimmed, which the phantom does not
+// do at the low end. Its robust-mean statistics are vetted analytically in
+// test_2d_intensity_histogram_analytic.h; the two percentile values below are drift guards for the
+// same reason as the phantom set above.
+static const NyxusPixel intensityHistogramRobustData[] = {
+    {0,0,0},
+    {1,0,10},{2,0,10},{3,0,10},{4,0,10},{5,0,10},
+    {6,0,20},{7,0,20},{8,0,20},{9,0,20},{10,0,20},{11,0,20},
+    {12,0,30},{13,0,30},{14,0,30},{15,0,30},
+    {16,0,40}
+};
+
+void test_2d_intensity_histogram_dispersion_percentile_regression()
+{
+    Fsettings s = ih_make_settings(5, /*ibsi*/ true);
+    Dataset ds; ds.dataset_props.push_back(SlideProps("", ""));
+    LR roidata(100); roidata.slide_idx = -1;
+    load_test_roi_data(roidata, intensityHistogramRobustData,
+                       sizeof(intensityHistogramRobustData) / sizeof(NyxusPixel));
+    roidata.make_nonanisotropic_aabb();
+    IntensityHistogramFeatures f;
+    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
+    roidata.initialize_fvals(); f.save_value(roidata.fvals);
+    auto& fv = roidata.fvals;
+
+    ASSERT_TRUE(agrees_gt(fv[(int)Feature2D::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL][0], 0.3178294574, 1e4));
+    ASSERT_TRUE(agrees_gt(fv[(int)Feature2D::IH_INTERQUANTILE_RANGE_VAL][0], 12.3, 1e4));
 }
 
