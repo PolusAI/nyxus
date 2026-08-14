@@ -100,9 +100,20 @@ against a value neither tool disputes.
 `GLCM_DIFENTRO`, `GLCM_JE`/`GLCM_ENTROPY`, `GLCM_SUMENTROPY`, `GLCM_INFOMEAS1` and `GLCM_INFOMEAS2`
 are the five whose sums run over logarithms. Nyxus evaluates them with `fast_log10` plus an
 `EPSILON` guard against `log(0)` (`src/nyx/features/glcm.cpp`), where both reference tools use the
-library `log`. That is the whole of the difference: it shows up on both fixtures, against both
-tools, at the same magnitude, and only in those five. It is an accuracy choice in Nyxus, not a
-definitional disagreement, so those features are asserted at `rel=5e-3` and the rest at `rel=1e-9`.
+library `log`.
+
+`fast_log10` (`src/nyx/helpers/helpers.h`) is not a rounding-level approximation: it casts the
+double argument **down to float**, then approximates `log2` with the two-term polynomial
+`a*(x-1)^2 + b*(x-1)` over a reduced range of [0.75, 1.5). A relative error of order 1e-3 is what
+that construction costs, which is the size of the miss observed - so the explanation is
+quantitative, not merely plausible. It shows up on both fixtures, against both tools, at the same
+magnitude, and only in those five.
+
+It is an accuracy choice in Nyxus, not a definitional disagreement, so those features are asserted
+at `rel=5e-3` and the rest at `rel=1e-9`. Worth recording that the deviation is **avoidable**:
+evaluating those sums with the library `log` would put all five on the tools to double precision.
+That is a behaviour change to shipped features, so it is noted here rather than made in a vetting
+PR.
 
 ## What this report does and does not establish
 

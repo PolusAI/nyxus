@@ -98,7 +98,7 @@ void assert_2d_glcm_feature_mirp (const std::string& feature_name, double golden
 {
     double value = 0;
     ASSERT_TRUE (calc_2d_glcm_dense_feature (feature_name, value)) << feature_name;
-    ASSERT_TRUE (agrees_gt (value, golden, glcm_2d_mirp_frac_tolerance (feature_name)))
+    ASSERT_TRUE (Nyxus::agrees_gt (value, golden, glcm_2d_mirp_frac_tolerance (feature_name)))
         << feature_name;
 }
 

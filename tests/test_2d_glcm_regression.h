@@ -28,7 +28,7 @@
 // directions. An _AVE key shares its base feature's golden: it is the mean of the same 4 angles.
 static ref_vals_map<double> glcm_2d_regression_ref_vals
 {
-    {"GLCM_ACOR", 1437.33},                 // absolute-level-dependent: matlab binning re-maps levels, so ibsi=False diverges from a symmetric oracle by ~43% (2026-07-09, PR #356 review). Vetted instead on the IBSI path -- see below.
+    {"GLCM_ACOR", 1437.33},                 // absolute-level-dependent: matlab binning re-maps levels, so ibsi=False diverges from a symmetric oracle by ~43%. Vetted on the IBSI path instead -- see below.
     {"GLCM_ASM", 0.381801},
     {"GLCM_CLUPROM", 6.1972e+06},
     {"GLCM_CLUSHADE", 21905.3},
@@ -40,13 +40,13 @@ static ref_vals_map<double> glcm_2d_regression_ref_vals
     {"GLCM_DIFVAR", 801.208},                    // sym-invariant
     {"GLCM_DIS", 23.6493},                       // sym-invariant
     {"GLCM_ENERGY", 0.381801},
-    {"GLCM_ENTROPY", 1.87602},   // was buggy unnormalized -20.1735; post /sum_p fix == GLCM_JE (joint entropy)
+    {"GLCM_ENTROPY", 1.87602},   // == GLCM_JE: both sum the sum_p-normalized matrix, so entropy is the joint entropy
     {"GLCM_HOM1", 0.580526},                     // sym-invariant
-    {"GLCM_HOM2", 0.572168},     // was buggy unnormalized 6.81505; post /sum_p fix == GLCM_IDM (homogeneity in [0,1])
+    {"GLCM_HOM2", 0.572168},     // == GLCM_IDM: normalized by sum_p, so homogeneity lands in [0,1]
     {"GLCM_ID", 0.580526},                       // sym-invariant
     {"GLCM_IDM", 0.572168},                      // sym-invariant
-    {"GLCM_IDMN", 9.0029152005531590e-01},  // Ng-dependent, same story as ACOR (2026-07-09, PR #356 review)
-    {"GLCM_IDN", 8.4432100308124380e-01},   // Ng-dependent, same story as ACOR (2026-07-09, PR #356 review)
+    {"GLCM_IDMN", 9.0029152005531590e-01},  // Ng-dependent, same story as ACOR
+    {"GLCM_IDN", 8.4432100308124380e-01},   // Ng-dependent, same story as ACOR
     {"GLCM_INFOMEAS1", -0.184406},
     {"GLCM_INFOMEAS2", 0.495817},
     {"GLCM_IV", 0.000206466},                    // sym-invariant
@@ -54,7 +54,7 @@ static ref_vals_map<double> glcm_2d_regression_ref_vals
     {"GLCM_JE", 1.87602},
     {"GLCM_JMAX", 0.527914},
     {"GLCM_JVAR", 828.383},
-    {"GLCM_SUMAVERAGE", 72.0369},           // absolute-level-dependent, same story as ACOR (2026-07-09, PR #356 review)
+    {"GLCM_SUMAVERAGE", 72.0369},           // absolute-level-dependent, same story as ACOR
     {"GLCM_SUMENTROPY", 1.61957},                // sym-invariant
     {"GLCM_SUMVARIANCE", 1.5639042057291665e+03},
     {"GLCM_VARIANCE", 674.871}
@@ -81,7 +81,7 @@ static std::string glcm_golden_key(const std::string& feature_name)
     return feature_name;
 }
 
-void assert_glcm_feature_regression(const Feature2D& feature_, const std::string& feature_name) 
+void assert_glcm_feature_regression(const Nyxus::Feature2D& feature_, const std::string& feature_name)
 {
     // featue settings for this particular test
     Fsettings s;
@@ -117,7 +117,7 @@ void assert_glcm_feature_regression(const Feature2D& feature_, const std::string
 
      LR roidata;
     GLCMFeature f;   
-    load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
     ASSERT_NO_THROW(f.calculate(roidata, s));
 
     // Initialize per-ROI feature value buffer with zeros
@@ -140,7 +140,7 @@ void assert_glcm_feature_regression(const Feature2D& feature_, const std::string
 
     LR roidata1;
     GLCMFeature f1;
-    load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f1.calculate(roidata1, s));
 
@@ -164,7 +164,7 @@ void assert_glcm_feature_regression(const Feature2D& feature_, const std::string
 
     LR roidata2;
     GLCMFeature f2;
-    load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f2.calculate(roidata2, s));
 
@@ -188,7 +188,7 @@ void assert_glcm_feature_regression(const Feature2D& feature_, const std::string
     
     LR roidata3;
     GLCMFeature f3;
-    load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f3.calculate(roidata3, s));
 
@@ -211,7 +211,7 @@ void assert_glcm_feature_regression(const Feature2D& feature_, const std::string
 
     // Verdict
     const double divisor = is_ave_feature ? 4.0 : 16.0;
-    ASSERT_TRUE(agrees_gt(total / divisor, golden, 100.));
+    ASSERT_TRUE(Nyxus::agrees_gt (total / divisor, golden, 100.));
 }
 
 void test_2d_glcm_acor_regression()
@@ -459,16 +459,15 @@ void test_2d_glcm_sum_variance_ave_regression()
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_SUMVARIANCE_AVE, "GLCM_SUMVARIANCE_AVE");
 }
 
-// ASM/CONTRAST/CORRELATION/ENERGY/HOM1 and their _AVE twins, moved back here from
-// test_2d_glcm_matlab.h. That file was named for an oracle it never ran: its ten functions called
-// this file's assert_glcm_feature_regression, on this file's fixture, against this file's snapshot
-// table, at this file's 1% tolerance -- the only thing distinguishing them from a regression
-// assertion was the word "matlab" in their names. The values cannot be MATLAB's: the table pins
-// Nyxus output and was refreshed in 2026-06 to follow a Nyxus bug fix, which no external golden
-// could survive. Three of the five (ASM, ENERGY, CORRELATION) are in the transpose-sensitive group
-// documented above, measured to diverge from a symmetric-matrix tool by 3.7% and more.
-// The registry rows now read status=regression to match. Vetting these against MATLAB graycoprops
-// remains open work; it needs goldens generated from graycoprops itself (SPEC 6.4), not a rename.
+// ASM/CONTRAST/CORRELATION/ENERGY/HOM1 and their _AVE twins. These are regression assertions, not
+// MATLAB ones: they run this file's fixture against this file's snapshot table at its 1% tolerance,
+// and the table pins Nyxus output. Three of the five (ASM, ENERGY, CORRELATION) are in the
+// transpose-sensitive group documented above, measured to diverge from a symmetric-matrix tool by
+// 3.7% and more, which is why this recipe cannot be compared to one.
+//
+// What vets these ten features is test_2d_glcm_{pyradiomics,mirp}.h on the IBSI path, not anything
+// here; the registry rows name pyradiomics accordingly. Vetting them against MATLAB graycoprops
+// specifically is open work and needs goldens generated from graycoprops itself (SPEC 6.4).
 void test_2d_glcm_asm_regression()
 {
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_ASM, "GLCM_ASM");
