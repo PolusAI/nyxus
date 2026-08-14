@@ -233,6 +233,11 @@ static void calculate_ellipse_caliper_values(std::vector<std::vector<double>>& f
 	nassenstein.calculate(roi, s);
 	nassenstein.save_value(roi.fvals);
 
+	// ALLCHORDS_MIN is vetted against imea on this clean fixture, not on the 8x8 raster
+	ChordsFeature chords;
+	chords.calculate(roi, s);
+	chords.save_value(roi.fvals);
+
 	EnclosingInscribingCircumscribingCircleFeature circle;
 	circle.calculate(roi, s);
 	circle.save_value(roi.fvals);

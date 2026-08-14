@@ -72,3 +72,50 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 
 ## radial.cellprofiler_8bin
 - CellProfiler `MeasureObjectIntensityDistribution`, 8 radial bins/slices. Oracle: `cellprofiler`.
+
+## morphology.shape2d_native
+- The 8x8 `shape2d_morphology_{mask,intensity}` fixture (`test_data.h`) at
+  `make_shape2d_settings()`: `PIXELSIZEUM=2.0`, `XYRES=1.0`, `GREYDEPTH=128`, `IBSI=false`, single
+  ROI, no anisotropy. Oracles: `matlab` (Octave `regionprops`), `skimage` (`regionprops`), `imea`
+  (the two DIN ISO 9276-6 macro transforms), `cellprofiler`, `analytic`. Used by:
+  `test_2d_morphology_{matlab,skimage,imea,cellprofiler,analytic}.h`.
+- Coordinate frames differ per property and the conversion is part of the recipe: MATLAB centroids
+  are 1-based pixel centres (subtract 1); its `BoundingBox` corner is at min-0.5 in 1-based coords
+  (so the 0-based min index is `BoundingBox(1) - 0.5`); skimage `orientation` is measured from the
+  row axis (Nyxus is `90 - degrees(...)`).
+- MATLAB and Nyxus both apply the +1/12 pixel finite-size correction to the second central moments,
+  so `MAJOR_AXIS_LENGTH` / `MINOR_AXIS_LENGTH` / `ECCENTRICITY` vet against `matlab` and *not*
+  against `skimage`, which omits it and differs ~1.4%.
+- `PERIMETER` is **not** comparable on this fixture (Nyxus chain-code walk 26.935 vs skimage 12.657
+  on a 26-pixel object with a hole); it is vetted at `morphology.perimeter_circles` instead.
+
+## morphology.perimeter_circles
+- The `roiDataForPerimeterTest` fixture (`test_data.h`), a single 14309-pixel object, `PIXELSIZEUM=100`,
+  `PIXELDISTANCE=5`, `IBSI=false`. Oracle: `skimage` `measure.perimeter` (the 4-neighbourhood
+  boundary walk that `regionprops.perimeter` uses). Used by: `test_2d_morphology_skimage.h`.
+- On an object this size the chain-code walk and the 4-neighbourhood walk are the same algorithm and
+  agree to 3.8e-15. Note `nnz(bwperim(...))` counts perimeter *pixels* (846 here) and MATLAB's
+  `regionprops('Perimeter')` returns 952.848 - neither is this quantity.
+
+## morphology.caliper_ellipse
+- The filled ellipse a=20, b=10 built by `calculate_ellipse_caliper_values()`
+  (`test_2d_remaining_common.h`), at `make_remaining2d_settings()`. Oracle: `imea`
+  `shape_measurements_2d(mask, spatial_resolution_xy=1.0, dalpha=10)`. Used by:
+  `test_2d_morphology_imea.h`.
+- `dalpha=10` matches Nyxus' own caliper sweep (`rot_angle_increment = 10` degrees, `caliper.h`), so
+  both sample the same angles. Worst residual across the 17 pinned goldens is 4.99%; the assertions
+  use `reltol=0.06` for the definitional hull-vs-raster gap.
+- The `_MODE` statistics are **excluded**: imea's own mode ranges over 19..24 as `dalpha` goes 5 to
+  30, further than the Nyxus-imea gap, so no tolerance distinguishes agreement from sampling noise.
+  They stay `regression`. The caliper statistics on the coarse 8x8 raster are excluded for the same
+  class of reason - there imea's own values differ from Nyxus by 3.9-79.3%.
+
+## morphology.fractal_blob512
+- The 512x512 mask `tests/data/fractal_blob512_seg.ome.tif`, loaded by
+  `calculate_fractal_blob512_feature_values()` (`test_2d_morphology_common.h`) as a single ROI.
+  Oracle: `fraclac` (ImageJ FracLac box counting). Used by: `test_2d_morphology_fraclac.h`,
+  `tests/python/test_2d_morphology_fraclac.py`.
+- Generators: `oracles/fraclac/shiftgrid_boxcount.ijm` (the headless ImageJ macro) and
+  `oracles/fraclac/ref_boxcount.py`. `FRACT_DIM_BOXCOUNT` is same-method (1% tolerance);
+  `FRACT_DIM_PERIMETER` is cross-method — Nyxus uses a divider walk against FracLac's edge box
+  count — so it carries a stated ~3% band, per SPEC 7's "known method divergence" row.

@@ -10,6 +10,9 @@
 // config or generator. The registry is the authority on WHAT vets these features; the map name and
 // the missing provenance record are tracked separately in not_covered.md section C.
 
+#include <string>
+#include <vector>
+
 #include "test_2d_morphology_common.h"
 
 #include "test_ref_vals.h"

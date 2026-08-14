@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cmath>
+#include <vector>
+
 #include "test_2d_morphology_common.h"
 
 // Documented-formula conformance (oracle=analytic, SPEC 4). These features have a recognized closed

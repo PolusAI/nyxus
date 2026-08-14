@@ -1,9 +1,14 @@
 #pragma once
 
+#include <vector>
+
 #include "test_2d_morphology_common.h"
 
 #include "test_ref_vals.h"
 
+// Provenance (SPEC 6.4): tool=ImageJ FracLac (box counting); recipe=morphology.fractal_blob512,
+// i.e. the 512x512 mask tests/data/fractal_blob512_seg.ome.tif as a single ROI;
+// generators=tests/vetting/oracles/fraclac/{shiftgrid_boxcount.ijm,ref_boxcount.py}.
 static ref_vals_map<double> morphology_2d_fraclac_ref_vals{
 	{"FRACT_DIM_BOXCOUNT", 1.8706},   // vetted by ImageJ/FracLac: an independent implementation of the same box-count method
 	{"FRACT_DIM_PERIMETER", 1.0493},  // vetted by ImageJ/FracLac edge box-count: cross-method vs Nyxus' divider

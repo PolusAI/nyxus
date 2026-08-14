@@ -18,7 +18,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | `fraclac` | — | ImageJ plugin (GUI) **+ headless-macro reimpl** | med-high* | plugin is GUI-only, but its shifting-grid method runs headless via our macro (*see reconciliation) |
 | `mitk` | 2023.04 | **build-once Docker** (`ClassificationCmdApps` config) | med | no prebuilt image; ~2–3 h one-time CLI-only build → reusable pinned image |
 | `pydicom` | 3.0.2 | **venv** `pip install pydicom` (pure-Python) | high | DICOM decode + `Rescale*` → HU; offline fixture/golden gen for `--preserve-hu` (CT) |
-| `octave` | 10.3.0 | **conda** `conda install -c conda-forge octave octave-statistics` (no Docker, no license) | high | license-free MATLAB substitute (MIGRATION 5.13); `mean`/`median`/`std`/`var`/`skewness`/`kurtosis`/`prctile`/`quantile` all present |
+| `octave` | 10.3.0 / 11.3.0 | **conda** `conda install -c conda-forge octave octave-statistics` (no Docker, no license) | high | license-free MATLAB substitute (MIGRATION 5.13); `mean`/`median`/`std`/`var`/`skewness`/`kurtosis`/`prctile`/`quantile` all present. Add `octave-image` for `regionprops`/`bweuler` (2D morphology) |
 
 ## conda route (verified 2026-08, 2D GLCM vetting)
 
@@ -137,6 +137,25 @@ Gotchas hit while doing it:
   oracle-vetted just because its golden matches Nyxus's own output — always cross-check against a
   real `prctile()`/`quantile()` call on the same fixture before trusting a `matlab`-labeled golden
   for these.
+
+  **`regionprops` (2D morphology).** Needs the `image` package on top of `statistics`:
+  ```
+  conda create -n octave_verify -c conda-forge octave octave-statistics octave-image
+  octave tests/vetting/oracles/gen_morphology_matlab.m      # from the repository root
+  ```
+  `pkg load image` gives `regionprops`, `bweuler` and `bwperim`. Three conventions bite, all
+  recorded in `audit/morphology_2d_golden_regen.md`: centroids are 1-based pixel centres (Nyxus is
+  0-based), `BoundingBox` puts its corner at min−0.5, and `Extrema` returns sub-pixel *corners* in a
+  fixed 8-point order whose offset back to pixel centres is direction-specific (−0.5 for a left/top
+  coordinate, −1.5 for a right/bottom one) — a uniform −0.5 is wrong.
+
+  Watch the perimeter vocabulary in particular: `nnz(bwperim(BW))` counts perimeter **pixels**,
+  `regionprops('Perimeter')` returns a boundary **length**, and neither equals scikit-image's
+  `measure.perimeter`. A golden labelled `matlab` in this family turned out to be scikit-image's
+  (`audit/morphology_2d_matlab_vetting_report.md`).
+
+  Octave's own `containers.Map` supports only `()` indexing — `m{k}` is an error — which matters
+  when a generator merges several pinned-golden tables.
 
 ## Coverage by Nyxus family → which oracles (the "≥1 oracle" picture)
 
