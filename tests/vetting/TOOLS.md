@@ -83,6 +83,16 @@ Gotchas hit while doing it:
     the discretisation it was computed at (`ih_mean_fbn_n6`, `cm_contrast_d1_3d_v_mrg_fbn_n6`).
     Filter on the suffix and map by name, so changing the bin count cannot silently read a column
     computed at the old one.
+  - The env has **no NIfTI reader** — neither SimpleITK nor nibabel — so a 3D generator that loads a
+    `.nii` phantom appears to need two envs and an intermediate `.npy`. It does not: the phantoms
+    under `tests/data/nifti/phantoms/` are uncompressed single-file NIfTI-1 (`magic == b"n+1"`), and
+    the header is 20 lines of `numpy.frombuffer` against a frozen on-disk format — `dim[8]` at offset
+    40, `datatype` at 70, `pixdim[8]` at 76, `vox_offset` at 108, voxels x-fastest so reshape to
+    `(z,y,x)`. `oracles/gen_morphology3d_mirp.py` does exactly that and stays single-env. Worth
+    copying for any other MIRP generator on a 3D phantom.
+  - For a **morphology** run, pass `base_discretisation_method="none"`: the family is computed from
+    mask geometry, so a bin count would be meaningless, and MIRP then leaves the `morph_*` columns
+    unsuffixed.
 - **Octave `quantile()` takes a method number 1..9** (`quantile(v, p, m)`), and `prctile()` is
   method 5 — useful when checking whether a Nyxus percentile matches a tool's *native* percentile
   rather than a reimplementation of Nyxus' own. See
