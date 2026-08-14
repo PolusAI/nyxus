@@ -5,7 +5,9 @@
 // test_2d_ngldm_ibsi.h next to the genuine IBSI consensus values; SPEC 2 keeps one kind per file, so
 // they move here with the snapshot table and helper they use.
 
-#include "test_2d_ngldm_ibsi.h"   // shared fixture: assert_ngldm_feature_ibsi and the phantom loader
+#include <string>
+
+#include "test_2d_ngldm_ibsi.h"   // shared fixture: assert_ngldm_feature_against_golden_values
 #include "test_ref_vals.h"
 
 // GLM and DCM are Nyxus mean-style rows that are not defined in the IBSI
@@ -16,13 +18,16 @@ static ref_vals_map<double> ngldm_2d_regression_ref_vals
 	{"NGLDM_DCM",		3.9832043343653250e+00}
 };
 
+// frac_tolerance = 1e9, i.e. rel=1e-9. These are Nyxus' own output pinned to full precision, so a
+// drift guard should catch any change at all; the shared helper's old 50% band could not.
 void assert_ngldm_feature_regression(const Feature2D& feature_, const std::string& feature_name)
 {
 	assert_ngldm_feature_against_golden_values(
 		feature_,
 		feature_name,
 		ngldm_2d_regression_ref_vals,
-		"UNVETTED_NO_DIRECT_ORACLE__");
+		"UNVETTED_NO_DIRECT_ORACLE__",
+		1e9);
 }
 
 void test_2d_ngldm_glm_regression()

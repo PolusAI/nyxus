@@ -47,6 +47,15 @@ Gotchas hit while doing it:
 - Feeding either tool a numpy array is enough - no file on disk. PyRadiomics wants
   `sitk.GetImageFromArray` with an explicit `SetSpacing`; MIRP takes `image=`/`mask=` arrays
   directly, shaped `(z, y, x)`.
+- **mirp's per-family numeric settings must be floats.** `ngldm_distance=1` raises
+  `TypeError: The ngldm_distance parameter is expected to contain floating point values of 1.0 or
+  greater`; pass `1.0`. Same for `ngldm_difference_level`. The message names the parameter, so the
+  failure is at least self-explanatory - but it happens during settings construction, before any
+  image is read, which makes it look like an import or environment problem.
+- **mirp's NGLDM column names do not track the Nyxus abbreviations.** It writes `lge`/`hge` where
+  Nyxus writes `LGLE`/`HGLE`, and `perc`/`entr`/`energy` where Nyxus writes `P`/`ENT`/`ENE`
+  (`ngl_ldlge` = `NGLDM_LDLGLE`, `ngl_dc_perc` = `NGLDM_DCP`). Map by meaning, not by string
+  similarity - the full table is in `audit/ngldm_2d_golden_regen.md`.
 
 ## Corrections / notable findings
 

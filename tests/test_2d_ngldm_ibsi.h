@@ -1,7 +1,9 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <string>
 #include <unordered_map>
+#include <vector>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/features/ngldm.h"
 #include "test_data.h"
@@ -11,6 +13,13 @@
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. https://ibsi.readthedocs.io/en/latest/03_Image_features.html
 // Dataset: dig phantom. Aggr. method: 2D, averaged)
+//
+// 17 of the family's 19 features. NGLDM_GLM (grey level mean) and NGLDM_DCM (dependence count mean)
+// have no entry in the IBSI NGLDM table and no mirp column either, so they cannot be oracle-vetted;
+// they are drift-pinned in test_2d_ngldm_regression.h.
+//
+// These are published to three significant figures, which is what sets this file's rel=1e-2
+// tolerance. The full-precision digits are pinned against mirp in test_2d_ngldm_mirp.h.
 static ref_vals_map<double> ngldm_2d_ibsi_ref_vals
 {
 	{"NGLDM_LDE",		0.158},	// Low dependence emphasis, p.120, consensus - strong
@@ -25,9 +34,7 @@ static ref_vals_map<double> ngldm_2d_ibsi_ref_vals
 	{"NGLDM_GLNUN",		0.562},	// Normalised grey level non-uniformity, p. 125
 	{"NGLDM_DCNU",		3.96},	// Dependence count non-uniformity, p. 125
 	{"NGLDM_DCNUN",		0.212},	// Normalised dependence count non-uniformity
-	//--not in IBSI-- {"NGLDM_GLM",		-1},    // Grey level mean
 	{"NGLDM_GLV",		2.7},	// Grey level variance, p. 127
-	//--not in IBSI-- {"NGLDM_DCM",		-1},    // Dependency count mean
 	{"NGLDM_DCP", 1.0},	    // Dependence count percentage, p. 126
 	{"NGLDM_DCV",		2.73},	// Dependence count variance, p. 127
 	{"NGLDM_DCENT",		2.71},	// Dependence count entropy, p. 128
@@ -138,7 +145,8 @@ void assert_ngldm_feature_against_golden_values(
     const Feature2D& feature_,
     const std::string& feature_name,
     const std::unordered_map<std::string, double>& feature_reference_values,
-    const std::string& review_prefix)
+    const std::string& review_prefix,
+    double frac_tolerance)
 {
     // featue settings for this particular test
     Fsettings s;
@@ -234,16 +242,21 @@ void assert_ngldm_feature_against_golden_values(
 
     // Verdict
     double aveTotal = total / 4.0;
-    ASSERT_TRUE(agrees_gt(aveTotal, feature_reference_values.at(feature_name), 2.));
+    ASSERT_TRUE(agrees_gt(aveTotal, feature_reference_values.at(feature_name), frac_tolerance));
 }
 
+// frac_tolerance = 100, i.e. rel=1e-2. The goldens above are the published IBSI consensus values,
+// quoted to three significant figures, so the residual is dominated by that rounding: the measured
+// worst case is 0.45% (NGLDM_GLNU, 10.2 published vs 10.2464 computed) and every other feature is
+// under 0.2%. The exact digits are pinned separately against mirp in test_2d_ngldm_mirp.h.
 void assert_ngldm_feature_ibsi(const Feature2D& feature_, const std::string& feature_name)
 {
 	assert_ngldm_feature_against_golden_values(
 		feature_,
 		feature_name,
 		ngldm_2d_ibsi_ref_vals,
-		"VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+		"IBSI_ORACLE__",
+		100.);
 }
 
 void test_2d_ngldm_matrix_correctness_ibsi()
