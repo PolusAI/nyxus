@@ -1,19 +1,82 @@
 #pragma once
 
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include "test_2d_morphology_common.h"
 #include "test_2d_remaining_common.h"
 
 #include "test_ref_vals.h"
 
+// The caliper/chord statistics on the 8x8 shape2d raster. These are Nyxus snapshots and claim
+// nothing: imea's own values on this fixture differ by 3.9-79.3% (the 8x8 raster is too coarse for the
+// hull-vs-raster conventions to converge), so they lived in an imea-named table under an
+// assert_caliper_imea() helper without ever having been compared to imea. The diameters themselves
+// are vetted against imea on the clean ellipse in test_2d_morphology_imea.h.
+static ref_vals_map<double> morphology_2d_regression_caliper_shape2d_ref_vals{
+	{"STAT_FERET_DIAM_MIN", 4.47301},
+	{"STAT_FERET_DIAM_MAX", 6.3222},
+	{"STAT_FERET_DIAM_MEAN", 5.40848},
+	{"STAT_FERET_DIAM_MEDIAN", 5.19615},
+	{"STAT_FERET_DIAM_STDDEV", 0.550668},
+	{"STAT_FERET_DIAM_MODE", 5.0},
+	{"STAT_MARTIN_DIAM_MIN", 4.25885},
+	{"STAT_MARTIN_DIAM_MAX", 6.12801},
+	{"STAT_MARTIN_DIAM_MEAN", 5.01762},
+	{"STAT_MARTIN_DIAM_MEDIAN", 4.97511},
+	{"STAT_MARTIN_DIAM_STDDEV", 0.553162},
+	{"STAT_MARTIN_DIAM_MODE", 4.0},
+	{"STAT_NASSENSTEIN_DIAM_MIN", 1.67316},
+	{"STAT_NASSENSTEIN_DIAM_MAX", 6.24165},
+	{"STAT_NASSENSTEIN_DIAM_MEAN", 4.77746},
+	{"STAT_NASSENSTEIN_DIAM_MEDIAN", 5.03857},
+	{"STAT_NASSENSTEIN_DIAM_STDDEV", 1.09628},
+	{"STAT_NASSENSTEIN_DIAM_MODE", 4.0},
+	{"ALLCHORDS_MIN", 1.0},
+};
+
+static void assert_morphology_caliper_shape2d_regression(const std::vector<std::vector<double>>& fvals,
+	Nyxus::Feature2D feature, const std::string& feature_name, double frac_tolerance = 1000.0)
+{
+	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
+	ASSERT_TRUE(morphology_2d_regression_caliper_shape2d_ref_vals.count(feature_name) > 0) << feature_name;
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_caliper_shape2d_ref_vals[feature_name], frac_tolerance));
+}
+
+void test_2d_morphology_caliper_shape2d_regression()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_remaining2d_shape_feature_values(fvals);
+
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MIN, "STAT_FERET_DIAM_MIN");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MAX, "STAT_FERET_DIAM_MAX");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEAN, "STAT_FERET_DIAM_MEAN");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MEDIAN, "STAT_FERET_DIAM_MEDIAN");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_STDDEV, "STAT_FERET_DIAM_STDDEV");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MODE, "STAT_FERET_DIAM_MODE");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MIN, "STAT_MARTIN_DIAM_MIN");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MAX, "STAT_MARTIN_DIAM_MAX");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEAN, "STAT_MARTIN_DIAM_MEAN");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MEDIAN, "STAT_MARTIN_DIAM_MEDIAN");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_STDDEV, "STAT_MARTIN_DIAM_STDDEV");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_MARTIN_DIAM_MODE, "STAT_MARTIN_DIAM_MODE");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MIN, "STAT_NASSENSTEIN_DIAM_MIN");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MAX, "STAT_NASSENSTEIN_DIAM_MAX");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEAN, "STAT_NASSENSTEIN_DIAM_MEAN");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MEDIAN, "STAT_NASSENSTEIN_DIAM_MEDIAN");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_STDDEV, "STAT_NASSENSTEIN_DIAM_STDDEV");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_NASSENSTEIN_DIAM_MODE, "STAT_NASSENSTEIN_DIAM_MODE");
+	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::ALLCHORDS_MIN, "ALLCHORDS_MIN");
+}
+
 static ref_vals_map<double> morphology_2d_regression_caliper_chords_ref_vals{
 	{"EROSIONS_2_VANISH_COMPLEMENT", 0.0},
 	{"MIN_FERET_ANGLE", 40.0},
-	// FIX (caliper float-precision): re-pinned to the float-precision hull-rotation values (see rotation.cpp
-	// rotate_around_center_fp). The old integer-Pixel2 rotation truncated every rotated vertex inward,
-	// so these 8x8-fixture goldens shifted when the truncation was removed. MAX_FERET_ANGLE moved 0->110
-	// because the per-angle Feret ties differently once the diameters are no longer integer-quantized
-	// (the Feret angle is a regression-only Nyxus-frame convention, not oracle-vetted). MODE values are
-	// unchanged. The diameters themselves are vetted vs imea (<=10%) on the ellipse oracle below.
+	// The Feret angles are a Nyxus-frame convention with no comparable imea output, so they are
+	// drift guards only. They tie between near-equal per-angle diameters, which makes them sensitive
+	// to the float-precision hull rotation (rotation.cpp rotate_around_center_fp); the diameters
+	// themselves are vetted against imea on the ellipse in test_2d_morphology_imea.h.
 	{"MAX_FERET_ANGLE", 110.0},
 	{"MAXCHORDS_MAX", 6.0},
 	{"MAXCHORDS_MIN", 3.0},
@@ -22,7 +85,7 @@ static ref_vals_map<double> morphology_2d_regression_caliper_chords_ref_vals{
 	{"MAXCHORDS_MODE", 4.0},
 	{"MAXCHORDS_STDDEV", 0.94451324138833304},
 	{"ALLCHORDS_MAX", 6.0},
-	// FIXED (chords.cpp histo built from MC): all-chords median/mode now computed over ALL chords, not max-chords
+	// the ALLCHORDS_* statistics range over every chord, not only the per-angle maxima
 	{"ALLCHORDS_MEDIAN", 3.0},
 	{"ALLCHORDS_MEAN", 2.9134615384615379},
 	{"ALLCHORDS_MODE", 3.0},
@@ -30,21 +93,16 @@ static ref_vals_map<double> morphology_2d_regression_caliper_chords_ref_vals{
 };
 
 static ref_vals_map<double> morphology_2d_regression_polygonality_chords_ref_vals{
-	// POLYGONALITY_AVE depends only on neighbors/area/perimeter, so the Pick's-theorem
-	// convex-hull-area fix (convex_hull_nontriv.cpp) leaves it unchanged. HEXAGONALITY_AVE and
-	// HEXAGONALITY_STDDEV read CONVEX_HULL_AREA (via area_hull in hexagonality_polygonality.cpp),
-	// so the fix (bare shoelace 4 -> Pick's pixel-count 9 for the 3x3 label-1 ROI) shifted them:
-	// HEXAGONALITY_AVE 6.4263 -> 6.8823, HEXAGONALITY_STDDEV 0.3144 -> 0.1850. This shift is
-	// correct: the Polus reference computes area_hull = area/solidity = skimage convex_area (a
-	// pixel count), which is exactly what Pick's theorem produces. These are Polus-specific scores
-	// with no external oracle, so the goldens are self-referential regression snapshots; the
-	// assertions below now value-compare against them (agrees_gt) so any future drift is caught.
+	// Polus-specific scores with no external oracle, so these are self-referential snapshots.
+	// POLYGONALITY_AVE depends only on neighbors/area/perimeter. HEXAGONALITY_AVE and
+	// HEXAGONALITY_STDDEV read CONVEX_HULL_AREA through area_hull (hexagonality_polygonality.cpp),
+	// which is a Pick's-theorem pixel count -- the same quantity the Polus reference gets from
+	// area/solidity, and skimage from convex_area. HEXAGONALITY_STDDEV additionally tracks
+	// STAT_FERET_DIAM_MIN/MAX, so it moves with the caliper hull rotation.
 	{"POLYGONALITY_AVE", 2.0833333333333357},
 	{"HEXAGONALITY_AVE", 6.8823312738837217},
-	// FIX (caliper float-precision): HEXAGONALITY_STDDEV re-pinned (depends on STAT_FERET_DIAM_MIN/MAX, which
-	// shifted with the float-precision hull rotation); the AVE scores stayed within tolerance.
 	{"HEXAGONALITY_STDDEV", 0.188079},
-	// FIXED (chords.cpp idxmax used iteMin): max-angle now indexes the longest chord (angle 0), not the min
+	// the max-angle indexes the longest chord, which on this fixture lies at angle 0
 	{"MAXCHORDS_MAX_ANG", 0.0},
 	{"MAXCHORDS_MIN_ANG", 0.94247779607693793},
 	{"ALLCHORDS_MAX_ANG", 0.0},
