@@ -65,6 +65,7 @@
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
 #include "test_3d_glcm_pyradiomics.h"
+#include "test_3d_glcm_regression.h"
 #include "test_3d_gldm_pyradiomics.h"
 #include "test_3d_ngtdm_pyradiomics.h"
 #include "test_3d_glrlm_pyradiomics.h"
@@ -2898,3 +2899,65 @@ int main(int argc, char **argv)
   int ret = RUN_ALL_TESTS();
   return ret;
 }
+
+// 3D GLCM drift guards on the ut_ segmented phantom. This file was unreachable until now:
+// it carried its own definition of get_3d_segmented_phantom(), which redefines the one in
+// test_3d_glcm_pyradiomics.h inside the single test_all.cc translation unit.
+
+TEST(TEST_NYXUS, TEST_3D_GLCM_ACOR_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_acor_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_ASM_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_asm_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CLUPROM_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_cluprom_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CLUSHADE_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_clushade_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CLUTEND_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_clutend_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CONTRAST_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_contrast_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CORRELATION_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_correlation_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_DIFFERENCE_AVERAGE_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_difference_average_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_DIFFERENCE_ENTROPY_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_difference_entropy_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_DIFFERENCE_VARIANCE_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_difference_variance_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_DIS_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_dis_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_ID_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_id_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_IDN_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_idn_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_IDM_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_idm_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_IDMN_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_idmn_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_INFOMEAS1_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_infomeas1_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_INFOMEAS2_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_infomeas2_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_IV_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_iv_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_JAVE_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_jave_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_JE_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_je_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_JMAX_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_jmax_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_JVAR_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_jvar_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_SUM_AVERAGE_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_sum_average_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_SUM_ENTROPY_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_sum_entropy_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_SUM_VARIANCE_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_sum_variance_regression()); }
+
+TEST(TEST_NYXUS, TEST_3D_GLCM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_dump_regression()); }
+
+// 3D GLCM _AVE features: the aggregation PyRadiomics actually reports
+TEST(TEST_NYXUS, TEST_3D_GLCM_ACOR_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_acor_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_ASM_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_asm_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CLUPROM_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_cluprom_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CLUSHADE_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_clushade_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CLUTEND_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_clutend_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CONTRAST_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_contrast_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_CORRELATION_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_correlation_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_DIFAVE_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_difave_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_DIFENTRO_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_difentro_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_DIFVAR_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_difvar_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_ID_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_id_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_IDM_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_idm_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_IDMN_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_idmn_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_IDN_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_idn_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_INFOMEAS1_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_infomeas1_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_INFOMEAS2_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_infomeas2_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_IV_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_iv_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_JAVE_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_jave_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_JE_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_je_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_JMAX_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_jmax_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_JVAR_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_jvar_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_SUMAVERAGE_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_sumaverage_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_SUMENTROPY_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_sumentropy_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_AVE_EQUIVALENCE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_ave_equivalence_pyradiomics()); }
+
+
+// JVAR had a complete assertion that no TEST() ever called (not_covered.md B.2)
+TEST(TEST_NYXUS, TEST_3D_GLCM_JVAR_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_jvar_pyradiomics()); }

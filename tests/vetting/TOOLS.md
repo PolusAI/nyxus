@@ -44,6 +44,20 @@ Gotchas hit while doing it:
   because mirp configures its own logger during the run.
 - **pyradiomics prints a warning per run** ("GLCM is symmetrical, therefore Sum Average = 2 x Joint
   Average") on stderr - expected, not an error.
+- **pyradiomics GLCM names do not line up with the Nyxus ones, and three actively mislead**:
+  `3GLCM_ASM` is PyRadiomics' **JointEnergy** (not `Energy`), `3GLCM_JVAR` is its **SumSquares** (not
+  a variance-named feature), and `3GLCM_JMAX` is **MaximumProbability**. Map by definition, not by
+  name. `MCC` has no Nyxus counterpart; `Dissimilarity` is deprecated as equivalent to
+  `DifferenceAverage`.
+- **PyRadiomics reports one value per feature over its whole direction set.** For 3D that is the
+  Nyxus `*_AVE` aggregation over the 13 angles, not a per-angle value - so a PyRadiomics golden is
+  the reference for the `*_AVE` feature, and only reaches the per-angle base feature through
+  `calc_ave`.
+- **The inverse-difference family is version-sensitive.** Re-running pyradiomics 3.0.1 against 3D
+  GLCM goldens that had been pinned by an earlier version reproduced 19 of 23 bit-for-bit but moved
+  `Id` 5.5%, `Idm` 7.8%, `Idn` 7.7% and `Correlation` 0.6%. If a golden in that group disagrees by a
+  few percent, suspect the tool version before suspecting Nyxus - and record the version, which is
+  why `gen_glcm3d_pyradiomics.py` prints `radiomics.__version__` into the table header.
 - Feeding either tool a numpy array is enough - no file on disk. PyRadiomics wants
   `sitk.GetImageFromArray` with an explicit `SetSpacing`; MIRP takes `image=`/`mask=` arrays
   directly, shaped `(z, y, x)`.
