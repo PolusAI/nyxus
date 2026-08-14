@@ -87,7 +87,7 @@ static bool calc_2d_glcm_dense_feature (const std::string& feature_name, double&
     LR roidata;
     GLCMFeature f;
     GLCMFeature::angles = {0, 45, 90, 135};
-    load_masked_test_roi_data (roidata, intensity.data(), mask.data(), intensity.size());
+    Nyxus::load_masked_test_roi_data (roidata, intensity.data(), mask.data(), intensity.size());
     f.calculate (roidata, s);
     roidata.initialize_fvals();
     f.save_value (roidata.fvals);

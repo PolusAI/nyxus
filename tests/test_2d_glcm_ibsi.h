@@ -72,7 +72,7 @@ static std::string glcm_ibsi_golden_key(const std::string& feature_name)
     return feature_name;
 }
 
-void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feature_name)
+void assert_glcm_feature_ibsi(const Nyxus::Feature2D& feature_, const std::string& feature_name)
 {
     // featue settings for this particular test
     Fsettings s;
@@ -108,7 +108,7 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     LR roidata;
     GLCMFeature f;
     GLCMFeature::angles = { 0, 45, 90, 135 };
-    load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
     ASSERT_NO_THROW(f.calculate(roidata, s));
 
     // Initialize per-ROI feature value buffer with zeros
@@ -125,7 +125,7 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     GLCMFeature f1;
     GLCMFeature::angles = {0, 45, 90, 135};
 
-    load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f1.calculate(roidata1, s));
 
@@ -142,7 +142,7 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     LR roidata2;
     GLCMFeature f2;
     GLCMFeature::angles = {0, 45, 90, 135};
-    load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f2.calculate(roidata2, s));
 
@@ -159,7 +159,7 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
     LR roidata3;
     GLCMFeature f3;
     GLCMFeature::angles = {0, 45, 90, 135};
-    load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f3.calculate(roidata3, s));
 
@@ -174,7 +174,7 @@ void assert_glcm_feature_ibsi(const Feature2D& feature_, const std::string& feat
 
     // Verdict: 4 slices x 4 angles for a base feature, 4 slices for an already-averaged _AVE one
     const double divisor = is_ave_feature ? 4. : 16.;
-    ASSERT_TRUE(agrees_gt(total / divisor, golden, 100.));
+    ASSERT_TRUE(Nyxus::agrees_gt (total / divisor, golden, 100.));
 }
 
 void test_2d_glcm_acor_ibsi()
