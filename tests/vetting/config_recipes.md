@@ -23,17 +23,39 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   INTEGRATED_INTENSITY features. Oracle: `pydicom` (RescaleSlope/Intercept → HU on a real CT slice).
   Used by: `test_2d_hu_ct_small_pydicom.py`.
 
-## ih.mirp_fbn
-- Fixed-bin-number discretised intensity histogram (IBSI IH family). Oracle: `mirp`.
-- Vet `IH_*_IDX` (bin-index domain); `IH_*_VAL` (bin-center value) is analytic vs Nyxus definition.
-
 ## ih.ibsi_fbn
-- Fixed-bin discretised intensity histogram (IBSI IH family 3.4) on the IBSI digital phantom,
-  GREYDEPTH = <IH_PHANTOM_NBINS>, IBSI=true. Oracle: `ibsi`. Used by: `test_2d_intensity_histogram_ibsi.h`.
-- `IH_*_IDX` vet directly against IBSI IH consensus (index/grey-level domain). `IH_*_VAL` are the
-  same statistics over bin centers = affine transform of the IDX distribution (VAL = binWidth·IDX
-  for spreads; +minVal offset for locations), so they are anchored to the IBSI-vetted IDX values.
-  `ROBUST_MEAN_*` have no IBSI feature -> analytic (see test_ih_dispersion_robust_analytic).
+- Fixed-bin-number discretised intensity histogram (IBSI IH family 3.4) on the IBSI digital
+  phantom, GREYDEPTH = <IH_PHANTOM_NBINS>, IBSI=true, all four slices as one ROI. Oracles: `ibsi`
+  (published consensus), `mirp` (fixed_bin_number, n_bins matching, `by_slice=False`), `analytic`.
+  Used by: `test_2d_intensity_histogram_{ibsi,mirp,analytic}.h`, which share one fixture in
+  `test_2d_intensity_histogram_common.h`.
+- `IH_*_IDX` are the statistics over 1-based bin indices and vet against MIRP to double precision;
+  12 of them also carry an IBSI consensus value. `IH_ROBUST_MEAN_IDX` is the exception - no tool and
+  no IBSI feature reports it - so it is `analytic`.
+- `IH_*_VAL` are the same statistics carried into the intensity domain, and **five conventions do
+  that**; there is no single transform from `_IDX`. Measured in
+  `audit/intensity_histogram_2d_analytic_vetting_report.md`:
+
+  | convention | map | features |
+  |---|---|---|
+  | bin centre, location | `VAL = lo + (IDX-0.5)·binWidth` | MEAN, MEDIAN, MODE, ROBUST_MEAN |
+  | bin centre, scale | `VAL = binWidth·IDX` | MAD, MEDAD, RMAD |
+  | bin centre, squared scale | `VAL = binWidth²·IDX` | VARIANCE |
+  | domain-invariant | `VAL = IDX` | SKEWNESS, EXCESS_KURTOSIS, ENTROPY, UNIFORMITY |
+  | no map | — | P10, P90, IQR, QCoD, MIN, MAX, RANGE, COV |
+
+  The last row is three separate things: MIN/MAX/RANGE are raw voxel values; P10/P90/IQR/QCoD are
+  the grouped-data percentile `L + binWidth·(n·p - F)/f` where the `_IDX` half is the discrete
+  grey-level percentile; and COV is a ratio of two differently-scaled quantities. Only the first two
+  rows may be anchored to an `_IDX` value, which is what `test_2d_intensity_histogram_ibsi.h` does
+  for the three deviation measures.
+- **The four percentile `_VAL` features are `regression`, not `vetted`.** No reference
+  implementation reproduces the grouped-data percentile - numpy's nine methods and Octave's nine
+  all answer the sample percentile, which is what the `_IDX` half reports - so `IH_P10_VAL`,
+  `IH_P90_VAL`, `IH_INTERQUANTILE_RANGE_VAL` and `IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL` are
+  pinned as drift guards in `test_2d_intensity_histogram_regression.h` and claim no oracle. Every
+  other `_VAL` feature is pinned against the closed forms in
+  `oracles/gen_intensity_histogram_analytic.py`.
 
 ## moments.skimage_regionprops
 - scikit-image `regionprops` moments. Caveats: skimage transposes row/col indices (skimage m[i,j] =

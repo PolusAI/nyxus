@@ -1,21 +1,21 @@
 #pragma once
 #include <gtest/gtest.h>
+
 #include <cmath>
-#include <unordered_map>
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/intensity_histogram.h"
-#include "../src/nyx/features/intensity.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
-#include "test_2d_intensity_histogram_regression.h"
-#include "test_ref_vals.h"
+#include <vector>
+
+#include "../src/nyx/featureset.h"                   // Feature2D
+#include "test_2d_intensity_histogram_common.h"      // the phantom fixture at recipe ih.ibsi_fbn
+#include "test_2d_intensity_histogram_regression.h"  // ih_get
+#include "test_main_nyxus.h"                         // agrees_gt
+#include "test_ref_vals.h"                           // ref_vals_map
 
 // Provenance: IBSI (Zwanenburg et al. 2020, arXiv:1612.07003) §3.4 digital-phantom
-// intensity-histogram consensus values. Discretisation config: FBN (fixed bin number)
-// with GREYDEPTH=6, IBSI mode on. Index base: Nyxus reports IDX features in the
-// 1-based grey-level convention, matching IBSI directly (no offset). Recorded in
-// design doc §6.4. Values sourced in Task 1.
-static const int IH_PHANTOM_NBINS = 6;
+// intensity-histogram consensus values, quoted to 3 significant figures. Discretisation config:
+// FBN (fixed bin number) with GREYDEPTH=6, IBSI mode on. Index base: Nyxus reports IDX features in
+// the 1-based grey-level convention, matching IBSI directly (no offset). That these are the
+// published values and not Nyxus output relabelled is checked in
+// tests/vetting/audit/intensity_histogram_2d_ibsi_vetting_report.md.
 static const ref_vals_map<double> intensity_histogram_2d_ibsi_ref_vals = {
     {"VARIANCE_IDX", 3.05},
     {"SKEWNESS_IDX", 1.08},
@@ -31,23 +31,10 @@ static const ref_vals_map<double> intensity_histogram_2d_ibsi_ref_vals = {
     {"UNIFORMITY_IDX", 0.512},
 };
 
+// The fixture lives in test_2d_intensity_histogram_common.h, so the IBSI consensus, the MIRP
+// goldens and the analytic closed forms are all read off the same computation.
 static void run_intensity_histogram_ibsi_fixture(std::vector<std::vector<double>>& fvals, int nbins) {
-    std::vector<NyxusPixel> img, msk;
-    for (auto* z : {ibsi_phantom_z1_intensity, ibsi_phantom_z2_intensity,
-                    ibsi_phantom_z3_intensity, ibsi_phantom_z4_intensity})
-        for (size_t i = 0; i < 20; i++) img.push_back(z[i]);
-    for (auto* z : {ibsi_phantom_z1_mask, ibsi_phantom_z2_mask,
-                    ibsi_phantom_z3_mask, ibsi_phantom_z4_mask})
-        for (size_t i = 0; i < 20; i++) msk.push_back(z[i]);
-    Dataset ds; ds.dataset_props.push_back(SlideProps("",""));
-    LR roidata(1);
-    Fsettings s = ih_make_settings(nbins, /*ibsi*/ true);
-    load_masked_test_roi_data(roidata, img.data(), msk.data(), img.size());
-    roidata.make_nonanisotropic_aabb();
-    IntensityHistogramFeatures f;
-    ASSERT_NO_THROW(f.calculate(roidata, s, ds));
-    roidata.initialize_fvals(); f.save_value(roidata.fvals);
-    fvals = roidata.fvals;
+    calc_2d_intensity_histogram_phantom(fvals, nbins);
 }
 
 // IDX dispersion/index features vs IBSI intensity-histogram consensus (12 with IBSI values).
@@ -72,19 +59,15 @@ void test_2d_intensity_histogram_dispersion_ibsi() {
     chk("QUANTILE_COEFFICIENT_OF_DISPERSION_IDX",F::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_IDX);
     chk("ENTROPY_IDX",                           F::IH_ENTROPY_IDX);
     chk("UNIFORMITY_IDX",                        F::IH_UNIFORMITY_IDX);
-    // ROBUST_MEAN_IDX has no IBSI feature -> covered analytically in Task 4.
+    // ROBUST_MEAN_IDX has no IBSI feature; it is covered in test_2d_intensity_histogram_analytic.h.
 
-    // ---- VAL anchored to the IBSI-vetted IDX values (design §5) ----
+    // ---- the four _VAL features an IBSI-vetted _IDX can anchor ----
+    // Only these four: the three deviation measures are pure-scale statistics, where the centre
+    // map's offset cancels in the difference and only binWidth survives, and CoV rebuilds the ratio
+    // from VARIANCE_IDX rather than from COEFFICIENT_OF_VARIATION_IDX. The rest of the _VAL family
+    // is not an image of its _IDX partner at all - five conventions coexist, set out in
+    // tests/vetting/audit/intensity_histogram_2d_analytic_vetting_report.md.
     double b = ih_get(fv, F::IH_BIN_SIZE);                 // binWidth
-    // NOTE: IH_INTERQUANTILE_RANGE_VAL is intentionally NOT anchored here, and this is
-    // BY DESIGN, not a bug. The IQR/QCoD _IDX variants use the IBSI *discrete* grey-level
-    // percentile (getIndexOf picks the CDF-crossing bin: P25=1, P75=4 -> IQR_IDX=3, which
-    // matches the IBSI reference; IBSI names the discrete P90=4 as reference and the
-    // interpolated 4.2 as a non-reference variant). _VAL interpolates within the bin -- a
-    // Nyxus continuous extension with no IBSI counterpart. A discrete percentile is a step
-    // function of the CDF, so VAL != b*IDX inherently (forcing IDX continuous would give
-    // ~2.91 and break the IBSI oracle of 3). IQR_VAL is vetted analytically instead.
-    // pure-scale spreads: VAL = b * IDX
     ASSERT_TRUE(agrees_gt(ih_get(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_VAL),
                           b*ih_get(fv,F::IH_MEAN_ABSOLUTE_DEVIATION_IDX), 1e4));
     ASSERT_TRUE(agrees_gt(ih_get(fv,F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL),

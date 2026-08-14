@@ -285,7 +285,7 @@ void IntensityHistogramFeatures::compute (const Pixelcloud& pixels, double minVa
 		maximumGradientIndex,
 		minimumGradientValue,
 		minimumGradientIndex,
-		robustMeanIndex,
+		robustMeanIndex + 1,	// 1-based, like every other bin index this function emits
 		double(N),
 		binWidth
 	};

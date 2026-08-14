@@ -11,6 +11,7 @@
 #include "test_2d_radial_regression.h"
 #include "test_2d_intensity_histogram_mechanics.h"
 #include "test_2d_intensity_histogram_ibsi.h"
+#include "test_2d_intensity_histogram_mirp.h"
 #include "test_2d_intensity_histogram_analytic.h"
 #include "test_hu_analytic.h"
 #include "test_2d_hu_mechanics.h"
@@ -805,6 +806,26 @@ TEST(TEST_NYXUS, TEST_2D_INTENSITY_HISTOGRAM_DISPERSION_ROBUST_ANALYTIC)
 TEST(TEST_NYXUS, TEST_2D_INTENSITY_HISTOGRAM_BIN_COUNTS_ANALYTIC)
 {
 	ASSERT_NO_THROW(test_2d_intensity_histogram_bin_counts_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_HISTOGRAM_PHANTOM_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_intensity_histogram_phantom_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_HISTOGRAM_FAMILY_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_intensity_histogram_family_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_HISTOGRAM_PHANTOM_PERCENTILE_REGRESSION)
+{
+	ASSERT_NO_THROW(test_2d_intensity_histogram_phantom_percentile_regression());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_HISTOGRAM_DISPERSION_PERCENTILE_REGRESSION)
+{
+	ASSERT_NO_THROW(test_2d_intensity_histogram_dispersion_percentile_regression());
 }
 
 TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_NORMALIZATION_CT_RANGE_ANALYTIC)
