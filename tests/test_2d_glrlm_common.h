@@ -68,12 +68,15 @@ static bool calc_2d_glrlm_phantom_feature (const std::string& feature_name, doub
     {
         LR roidata;
         GLRLMFeature f;
-        load_masked_test_roi_data (roidata, intensities[i], masks[i], counts[i]);
+        Nyxus::load_masked_test_roi_data (roidata, intensities[i], masks[i], counts[i]);
         f.calculate (roidata, s);
         roidata.initialize_fvals();
         f.save_value (roidata.fvals);
 
+        // the base features are per-angle vectors, the _AVE ones the scalar mean over those angles
         const auto& fv = roidata.fvals[code];
+        if (fv.size() != (is_ave ? 1u : 4u))
+            return false;
         total += is_ave ? fv[0] : (fv[0] + fv[1] + fv[2] + fv[3]) / 4.;
     }
 

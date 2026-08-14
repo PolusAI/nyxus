@@ -43,7 +43,7 @@ static std::string unvetted_nyxus_regression_glrlm_feature_golden_key(const std:
     return feature_name;
 }
 
-void assert_glrlm_feature_regression(const Feature2D& feature_, const std::string& feature_name) 
+void assert_glrlm_feature_regression(const Nyxus::Feature2D& feature_, const std::string& feature_name) 
 {
     // featue settings for this particular test
     Fsettings s;
@@ -71,7 +71,7 @@ void assert_glrlm_feature_regression(const Feature2D& feature_, const std::strin
     // image 1
     LR roidata;
     GLRLMFeature f;
-    load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata, ibsi_phantom_z1_intensity, ibsi_phantom_z1_mask,  sizeof(ibsi_phantom_z1_mask) / sizeof(NyxusPixel));
     ASSERT_NO_THROW(f.calculate(roidata, s));
 
     // Initialize per-ROI feature value buffer with zeros
@@ -93,7 +93,7 @@ void assert_glrlm_feature_regression(const Feature2D& feature_, const std::strin
     // image 2
     LR roidata1;
     GLRLMFeature f1;
-    load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata1, ibsi_phantom_z2_intensity, ibsi_phantom_z2_mask,  sizeof(ibsi_phantom_z2_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f1.calculate(roidata1, s));
 
@@ -117,7 +117,7 @@ void assert_glrlm_feature_regression(const Feature2D& feature_, const std::strin
 
     LR roidata2;
     GLRLMFeature f2;
-    load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata2, ibsi_phantom_z3_intensity, ibsi_phantom_z3_mask,  sizeof(ibsi_phantom_z3_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f2.calculate(roidata2, s));
 
@@ -141,7 +141,7 @@ void assert_glrlm_feature_regression(const Feature2D& feature_, const std::strin
     
     LR roidata3;
     GLRLMFeature f3;
-    load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
+    Nyxus::load_masked_test_roi_data (roidata3, ibsi_phantom_z4_intensity, ibsi_phantom_z4_mask,  sizeof(ibsi_phantom_z4_intensity) / sizeof(NyxusPixel));
 
     ASSERT_NO_THROW(f3.calculate(roidata3, s));
 
@@ -164,7 +164,7 @@ void assert_glrlm_feature_regression(const Feature2D& feature_, const std::strin
 
     // Verdict
     const double divisor = is_ave_feature ? 4.0 : 16.0;
-    ASSERT_TRUE(agrees_gt(total / divisor, glrlm_2d_regression_ref_vals[truth_key], 100.));
+    ASSERT_TRUE(Nyxus::agrees_gt(total / divisor, glrlm_2d_regression_ref_vals[truth_key], 100.));
 }
 
 void test_2d_glrlm_sre_regression()
