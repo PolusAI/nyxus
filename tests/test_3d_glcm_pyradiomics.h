@@ -5,13 +5,12 @@
 #include <cmath>
 #include <iostream>
 #include <string>
+#include <tuple>
 #include <vector>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glcm.h"
-#include "../src/nyx/raw_nifti.h"
-
 #include "../src/nyx/helpers/fsystem.h"
 #include "test_ref_vals.h"
 
@@ -86,9 +85,7 @@ static ref_vals_map<double> glcm_3d_pyradiomics_ref_vals
     {"3GLCM_DIFENTRO", 2.645537347146111},      // Case-1_original_glcm_DifferenceEntropy
     {"3GLCM_DIFVAR", 3.4395235149928194},       // Case-1_original_glcm_DifferenceVariance
     // No 3GLCM_DIS entry: PyRadiomics deprecates Dissimilarity as equivalent to DifferenceAverage
-    // and does not report it, so it is vetted through the DIS == DIFAVE identity instead. (The value
-    // that used to sit here commented out, 27.5, was not a PyRadiomics number at all -- it is the
-    // stale ut_-phantom regression pin, at a different bin count.)
+    // and does not report it, so it is vetted through the DIS == DIFAVE identity instead.
     {"3GLCM_ID", 0.4459415317170447},          // Case-1_original_glcm_Id
     {"3GLCM_IDN", 0.9067759330416398},          // Case-1_original_glcm_Idn
     {"3GLCM_IDM", 0.3726945904589868},          // Case-1_original_glcm_Idm

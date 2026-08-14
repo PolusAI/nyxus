@@ -41,6 +41,7 @@ SWEEP = "test_3d_glcm_coverage.h"
 SOURCES = [
     "test_3d_glcm_pyradiomics.h",
     "test_3d_glcm_regression.h",
+    os.path.join("python", "test_nyxus.py"),
 ]
 # A golden table whose keys are never named in the asserting function's body. Empty for this family:
 # every morphology assertion names its feature on the assertion line. Kept so the mechanism is here
@@ -156,19 +157,26 @@ def registry_rows():
                 if r["dim"] == "3D" and r["family"] == "glcm"]
 
 
-def render(rows, asserted, oracles, regression):
+def render(rows, asserted, oracles, regression, other):
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
     w.writerow(["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
                 "Regression", "Reg_Test_Name", "Notes"])
     for r in rows:
         f = r["feature"]
+        # A function whose name-suffix is neither an oracle nor `regression` contributes coverage but
+        # no oracle token, so it would otherwise be invisible here. Naming it keeps the duplication
+        # legible: test_3d_glcm_compatibility asserts the same _AVE features against the same
+        # PyRadiomics goldens through the Python API, so the two move together.
+        notes = ([NOTE[f]] if f in NOTE else []) + [
+            f"also asserted by {fn} (kind is neither oracle nor regression)"
+            for fn in sorted(other.get(f, ()))]
         w.writerow(["3D", "glcm", f,
                     ";".join(sorted(oracles.get(f, ()))),
                     ";".join(sorted(asserted.get(f, ()))),
                     "Y" if f in regression else "N",
                     ";".join(sorted(regression.get(f, ()))),
-                    NOTE.get(f, "")])
+                    " | ".join(notes)])
     return buf.getvalue()
 
 
@@ -211,7 +219,7 @@ def main(argv=None):
     rows = registry_rows()
     feat_re = feature_re(feature_names())
     asserted, oracles, regression, other, where = collect(feat_re)
-    text = render(rows, asserted, oracles, regression)
+    text = render(rows, asserted, oracles, regression, other)
     problems = disagreements(rows, asserted, oracles, regression, other, where)
     problems += [f"{fn}: defined but no TEST() in test_all.cc calls it, so it never runs"
                  for fn in unregistered_tests(where)]
