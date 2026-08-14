@@ -4,6 +4,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <tuple>
 #include <vector>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
@@ -19,12 +20,10 @@
 //
 // Regenerate with test_3d_glcm_dump_regression() below.
 //
-// The previous goldens were coarse two- and three-digit numbers that no longer matched: this file
-// was unreachable from test_all.cc (see the get_3d_segmented_phantom note below), so nothing ever
-// ran them. They were not merely stale, they were impossible - ID, IDM, IDN, IDMN and JMAX are all
-// bounded in [0,1] by construction and were pinned at 2.5, 2.4, 3.8, 3.9 and 1.86 - and they broke
-// the SUMVARIANCE == CLUTEND identity the family asserts elsewhere (18057.4 against 18057.0). The
-// values below hold that identity exactly and DIS == DIFAVE to 3.6e-15.
+// Two properties any regenerated set must keep, both checkable by eye: ID, IDM, IDN, IDMN and JMAX
+// are bounded in [0,1] by construction, and SUMVARIANCE == CLUTEND / DIS == DIFAVE hold exactly (to
+// ~1e-15). Why these values replaced the ones this file used to carry:
+// tests/vetting/audit/glcm_3d_pyradiomics_vetting_report.md.
 static ref_vals_map<double> glcm_3d_regression_ref_vals
 {
     {"3GLCM_ACOR", 2864.4036927337511},

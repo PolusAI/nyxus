@@ -129,11 +129,28 @@ hand transcription.
 
 ## Note for the remaining 3D families
 
-Five sibling files are in the same unreachable state — `test_3d_{gldm,glrlm,glszm,ngtdm}_regression.h`
-and `test_3d_firstorder_matlab.h` — each carrying its own definition of `get_3d_segmented_phantom()`.
-Unlike the GLCM one, the four `_regression` files have their assertion bodies wrapped in `#if 0`, so
-wiring them in yields tests that assert nothing; the body has to be restored first. Worth knowing
-before PRs 8-10 repeat this exercise.
+Five sibling files never execute — `test_3d_{gldm,glrlm,glszm,ngtdm}_regression.h` and
+`test_3d_firstorder_matlab.h`. Measured on this commit by counting `#include`s, `TEST()`
+registrations, and whether an `ASSERT_TRUE(agrees_gt` appears after the `#endif`:
 
-`test_3d_ngldm_regression.h` is a third variant: it *is* included and its 19 tests *do* run, but its
-assert body is `#if 0` too — so those 19 have been passing without checking anything.
+| file | `#include`d | `TEST()`s registered | assert body | phantom accessor |
+|---|---|---|---|---|
+| `test_3d_glrlm_regression.h` | no | 0 of 16 | live | forward-declared |
+| `test_3d_gldm_regression.h` | no | 0 of 14 | live | forward-declared |
+| `test_3d_glszm_regression.h` | no | 0 of 16 | live | forward-declared |
+| `test_3d_ngtdm_regression.h` | no | 0 of 5 | live | forward-declared |
+| `test_3d_firstorder_matlab.h` | no | 0 of 35 | live (no `#if 0`) | forward-declared |
+| `test_3d_ngldm_regression.h` | **yes** | **19 of 19** | **live — it does assert** | forward-declared |
+
+Two things worth stating precisely, because both make the remaining work smaller than the GLCM case:
+
+- **The redefinition problem was specific to this file.** Every sibling forward-declares
+  `get_3d_segmented_phantom()` rather than defining it, so wiring one in is an `#include` plus
+  `TEST()` registrations, not the surgery this file needed.
+- **Their `#if 0` blocks are not dead assertion bodies.** Each holds a disabled *old* body followed
+  by a live one, so the assertions are real as soon as the file is reached.
+
+`test_3d_ngldm_regression.h` is not an exception to that: it is included, all 19 are registered, and
+its live `agrees_gt` fires — verified by negative control (perturbing `3NGLDM_DCENE` from 0.14 to 0.99
+makes `TEST_3D_NGLDM_DCENE_REGRESSION` fail at the assertion). Its open item is that its pinned values
+disagree with MIRP by up to an order of magnitude, which its own family's audit records.
