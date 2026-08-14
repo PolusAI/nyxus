@@ -1,0 +1,181 @@
+Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
+2D,moments,SPAT_MOMENT_00,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_01,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_02,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_03,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_10,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_11,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_12,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_13,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_20,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_21,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_22,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_23,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,SPAT_MOMENT_30,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_00,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_01,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_02,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_03,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_10,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_11,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_12,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_13,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_20,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_21,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_22,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_23,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_30,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_31,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_32,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,CENTRAL_MOMENT_33,skimage,test_2d_moments_shape_skimage,N,,
+2D,moments,NORM_SPAT_MOMENT_00,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_01,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_02,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_03,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_10,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_11,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_12,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_13,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_20,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_21,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_22,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_23,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_30,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_31,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_32,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_SPAT_MOMENT_33,skimage,test_2d_moments_normraw_shape_skimage,Y,test_2d_moments_shape_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,NORM_CENTRAL_MOMENT_02,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,NORM_CENTRAL_MOMENT_03,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,NORM_CENTRAL_MOMENT_11,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,NORM_CENTRAL_MOMENT_12,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,NORM_CENTRAL_MOMENT_20,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,NORM_CENTRAL_MOMENT_21,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,NORM_CENTRAL_MOMENT_30,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,HU_M1,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,HU_M2,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,HU_M3,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,HU_M4,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,HU_M5,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,HU_M6,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,HU_M7,skimage,test_2d_moments_hu_wedge_skimage;test_2d_moments_shape_skimage,N,,
+2D,moments,WEIGHTED_SPAT_MOMENT_00,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_SPAT_MOMENT_01,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_SPAT_MOMENT_02,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_SPAT_MOMENT_03,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_SPAT_MOMENT_10,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_SPAT_MOMENT_11,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_SPAT_MOMENT_12,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_SPAT_MOMENT_20,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_SPAT_MOMENT_21,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_SPAT_MOMENT_30,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_CENTRAL_MOMENT_02,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_CENTRAL_MOMENT_03,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_CENTRAL_MOMENT_11,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_CENTRAL_MOMENT_12,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_CENTRAL_MOMENT_20,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_CENTRAL_MOMENT_21,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_CENTRAL_MOMENT_30,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WT_NORM_CTR_MOM_02,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WT_NORM_CTR_MOM_03,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WT_NORM_CTR_MOM_11,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WT_NORM_CTR_MOM_12,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WT_NORM_CTR_MOM_20,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WT_NORM_CTR_MOM_21,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WT_NORM_CTR_MOM_30,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_HU_M1,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_HU_M2,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_HU_M3,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_HU_M4,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_HU_M5,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_HU_M6,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,WEIGHTED_HU_M7,,,Y,test_2d_moments_shape_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_RM_00,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_01,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_02,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_03,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_10,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_11,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_12,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_13,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_20,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_21,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_22,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_23,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_RM_30,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_00,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_01,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_02,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_03,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_10,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_11,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_12,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_13,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_20,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_21,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_22,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_23,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_30,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_31,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_32,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_CM_33,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_NRM_00,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_01,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_02,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_03,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_10,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_11,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_12,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_13,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_20,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_21,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_22,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_23,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_30,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_31,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_32,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NRM_33,skimage,test_2d_moments_normraw_intensity_skimage,Y,test_2d_moments_intensity_regression,normalized raw moment; skimage has no native function - moments_normalized() is the central-moment quantity
+2D,moments,IMOM_NCM_02,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_NCM_03,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_NCM_11,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_NCM_12,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_NCM_20,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_NCM_21,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_NCM_30,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_HU1,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_HU2,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_HU3,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_HU4,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_HU5,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_HU6,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_HU7,skimage,test_2d_moments_intensity_skimage,N,,
+2D,moments,IMOM_WRM_00,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WRM_01,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WRM_02,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WRM_03,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WRM_10,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WRM_11,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WRM_12,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WRM_20,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WRM_21,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WRM_30,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WCM_02,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WCM_03,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WCM_11,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WCM_12,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WCM_20,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WCM_21,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WCM_30,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WNCM_02,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WNCM_03,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WNCM_11,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WNCM_12,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WNCM_20,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WNCM_21,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WNCM_30,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WHU1,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WHU2,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WHU3,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WHU4,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WHU5,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WHU6,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"
+2D,moments,IMOM_WHU7,,,Y,test_2d_moments_intensity_regression,"distance-to-contour weighted; dist comes from the approximate min_sqdist, measured 1.372x over the exact distance, so no tool reproduces it"

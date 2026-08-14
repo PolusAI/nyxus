@@ -4,7 +4,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -53,9 +52,9 @@ static void load_geomoment_fixture(LR& roidata)
 		{
 			const auto intensity = static_cast<PixIntens>(geomoment_fixture_intensity(x, y));
 			if (roidata.aux_area == 0)
-				init_label_record_3(roidata, x, y, intensity);
+				Nyxus::init_label_record_3(roidata, x, y, intensity);
 			else
-				update_label_record_3(roidata, x, y, intensity);
+				Nyxus::update_label_record_3(roidata, x, y, intensity);
 		}
 	}
 
@@ -100,7 +99,7 @@ static void calculate_2d_geomoment_feature_values(std::vector<std::vector<double
 
 // Thin right wedge: pixels (x,y) with 0<=x<40, 0<=y<8, 5*y <= x. Elongated AND skewed, so the
 // odd-order normalized central moments are large (eta30 ~ -0.23) and the Hu invariants h5/h6
-// discriminate the fixed calcHu_imp formulas from the historic defective ones by ~440x / ~1900x
+// discriminate a correct h5/h6 from the two classic formula slips by ~440x / ~1900x
 // the assertion tolerance -- the symmetric 48x40 rectangle fixture above cannot catch an h5/h6
 // regression at all (its odd etas vanish). Goldens: tests/vetting/oracles/gen_moments_skimage.py.
 static void load_wedge_fixture(LR& roidata)
@@ -114,9 +113,9 @@ static void load_wedge_fixture(LR& roidata)
 			if (5 * y > x)
 				continue;
 			if (roidata.aux_area == 0)
-				init_label_record_3(roidata, x, y, 1);
+				Nyxus::init_label_record_3(roidata, x, y, 1);
 			else
-				update_label_record_3(roidata, x, y, 1);
+				Nyxus::update_label_record_3(roidata, x, y, 1);
 		}
 
 	for (int y = 0; y < height; y++)

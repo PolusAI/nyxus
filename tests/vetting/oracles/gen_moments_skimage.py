@@ -23,6 +23,10 @@ This generator:
      enough that the buggy h5/h6 formulas fail the gtest tolerance -- the regression-proof
      test the symmetric rectangle cannot provide -- and proves discriminance by printing
      |buggy - correct| against the gtest tolerance.
+  D. Emits the normalized RAW moments (NORM_SPAT_MOMENT_pq, IMOM_NRM_pq), for which skimage has
+     no native function, and guards that they are distinct from moments_normalized().
+  E. Re-verifies EVERY golden pinned in test_2d_moments_skimage.h against this run - all 142,
+     both fixtures - rather than a hand-picked subset that silently stops covering new entries.
 
 Provenance: tool=scikit-image, version=0.26.0; numpy 2.4.6; env=nyxus_mirp (conda);
 generator=tests/vetting/oracles/gen_moments_skimage.py. Run offline; CI never invokes it.
@@ -30,6 +34,9 @@ generator=tests/vetting/oracles/gen_moments_skimage.py. Run offline; CI never in
 Coordinate convention: Nyxus m_pq has p on x, q on y. Arrays here are indexed A[x, y] so
 skimage's moments(A)[i, j] lands on i==p, j==q with no transposition (and no h7 sign flip).
 """
+
+import os
+import re
 
 import numpy as np
 from skimage.measure import moments, moments_central, moments_normalized, moments_hu
@@ -105,6 +112,101 @@ def full_stack(a):
     nu = moments_normalized(mu, order=3)
     hu = hu_correct(np.nan_to_num(nu))
     return m, mu, nu, hu
+
+
+def norm_raw(m, p, q):
+    """Nyxus normRawMom: m_pq / m_00^((p+q)/2 + 1).
+
+    The exponent is skimage's own normalization exponent - moments_normalized() applies exactly
+    this to the CENTRAL moments - so the only thing added on top of skimage here is which moment
+    matrix it is applied to. Do NOT substitute moments_normalized(): that is a different quantity
+    (Nyxus exposes it separately as NORM_CENTRAL_MOMENT_pq / IMOM_NCM_pq).
+    """
+    return m[p, q] / (m[0, 0] ** ((p + q) / 2.0 + 1.0))
+
+
+def oracle_value(name, stack_shape, stack_inten):
+    """Map a Nyxus feature name to its scikit-image value, or None if this family has no oracle.
+
+    Used to re-verify EVERY pinned golden against a fresh run rather than a hand-picked subset:
+    a hand list silently stops covering whatever is added to the tables later.
+    """
+    m_s, mu_s, nu_s, hu_s = stack_shape
+    m_i, mu_i, nu_i, hu_i = stack_inten
+
+    mm = re.fullmatch(r"(HU_M|IMOM_HU)([1-7])", name)
+    if mm:
+        return (hu_s if mm.group(1) == "HU_M" else hu_i)[int(mm.group(2)) - 1]
+
+    mm = re.fullmatch(r"([A-Z_]+?)_(\d)(\d)", name)
+    if not mm:
+        return None
+    fam, p, q = mm.group(1), int(mm.group(2)), int(mm.group(3))
+    table = {
+        "SPAT_MOMENT": lambda: m_s[p, q],
+        "CENTRAL_MOMENT": lambda: mu_s[p, q],
+        "NORM_CENTRAL_MOMENT": lambda: nu_s[p, q],
+        "NORM_SPAT_MOMENT": lambda: norm_raw(m_s, p, q),
+        "IMOM_RM": lambda: m_i[p, q],
+        "IMOM_CM": lambda: mu_i[p, q],
+        "IMOM_NCM": lambda: nu_i[p, q],
+        "IMOM_NRM": lambda: norm_raw(m_i, p, q),
+    }.get(fam)
+    return None if table is None else table()
+
+
+VERIFY_ORDER = 6   # the tables pin moments up to p+q = 6 (CENTRAL_MOMENT_33, IMOM_CM_33, ...)
+
+
+def high_order_stack(a):
+    """Same quantities as full_stack, but to VERIFY_ORDER.
+
+    moments_central(order=N) leaves every entry with p+q > N at zero, so verifying a golden like
+    CENTRAL_MOMENT_22 against an order-3 matrix compares it to 0 and "fails" for no reason. Hu is
+    still taken from the 4x4 eta block, which is all moments_hu reads.
+    """
+    m = moments(a, order=VERIFY_ORDER)
+    mu = moments_central(a, order=VERIFY_ORDER)
+    nu = moments_normalized(mu, order=VERIFY_ORDER)
+    hu = hu_correct(np.nan_to_num(nu[:4, :4]))
+    return m, mu, nu, hu
+
+
+def verify_every_pinned_golden(path, shape_arr, inten_arr, wedge_arr, tol=1e-6):
+    """Compare every golden pinned in `path` against a fresh oracle value.
+
+    Every table is covered: the ones on the rectangle fixture and the wedge one, which is simply
+    the same shape families computed on the other fixture. Families with no skimage counterpart are
+    counted and reported, so the coverage is explicit rather than implied.
+    """
+    stack_shape = high_order_stack(shape_arr)
+    stack_inten = high_order_stack(inten_arr)
+    stack_wedge = high_order_stack(wedge_arr)
+    text = open(path, encoding="utf-8").read()
+    text = re.sub(r"//[^\n]*", "", text)
+    ok = True
+    checked = skipped_fixture = no_oracle = 0
+    for tbl, body in re.findall(r"ref_vals_list<GeomomentGoldenValue>\s+(\w+)\s*\{(.*?)\n\};",
+                                text, re.S):
+        wedge = "wedge" in tbl
+        for name, pinned in re.findall(r'\{\s*Nyxus::Feature2D::(\w+)\s*,\s*"\w+"\s*,\s*([-0-9.e+]+)\s*\}',
+                                       body):
+            skipped_fixture += wedge
+            got = (oracle_value(name, stack_wedge, stack_wedge) if wedge
+                   else oracle_value(name, stack_shape, stack_inten))
+            if got is None:
+                no_oracle += 1
+                continue
+            got = float(np.nan_to_num(got))
+            scale = max(1.0, abs(float(pinned)), abs(got))
+            if abs(got - float(pinned)) > tol * scale:
+                print(f"  FAIL {tbl}:{name}: oracle={got!r} pinned={pinned}")
+                ok = False
+            checked += 1
+    print(f"  verified {checked} pinned goldens against this run "
+          f"({skipped_fixture} of them on the wedge fixture); "
+          f"{no_oracle} with no skimage counterpart")
+    return ok
 
 
 def check(name, got, pinned, tol=REL_TOL):
@@ -251,6 +353,35 @@ def main():
         verdict = "DISCRIMINATES" if disc > 10 * tol else "TOO WEAK"
         print(f"  {name}: correct={correct!r} buggy={buggy!r} |diff|={disc:.3e} tol={tol:.3e} -> {verdict}")
         all_ok &= disc > 10 * tol
+
+    # ------------------------------------------------- D. normalized RAW moments (rectangle)
+    print("\n=== D. normalized raw moments: NORM_SPAT_MOMENT_pq / IMOM_NRM_pq ===")
+    print("-- paste into moments_2d_skimage_normraw_shape_ref_vals --")
+    for p in range(4):
+        for q in range(4):
+            print('\t{Nyxus::Feature2D::NORM_SPAT_MOMENT_%d%d, "NORM_SPAT_MOMENT_%d%d", %r},'
+                  % (p, q, p, q, float(norm_raw(m_s, p, q))))
+    print("-- paste into moments_2d_skimage_normraw_intensity_ref_vals --")
+    for p in range(4):
+        for q in range(4):
+            print('\t{Nyxus::Feature2D::IMOM_NRM_%d%d, "IMOM_NRM_%d%d", %r},'
+                  % (p, q, p, q, float(norm_raw(m_i, p, q))))
+
+    # the normalization must reproduce the pinned raw moments it is built from, and must NOT be
+    # confused with skimage's moments_normalized() - which answers the central-moment question
+    print("-- guard: normalized raw != skimage moments_normalized (they are different quantities) --")
+    for p, q in [(2, 0), (0, 2)]:
+        nr, nc = float(norm_raw(m_s, p, q)), float(nu_s[p, q])
+        distinct = abs(nr - nc) > 1e-9 * max(1.0, abs(nc))
+        print(f"  p={p} q={q}: norm_raw={nr!r} moments_normalized={nc!r} -> "
+              f"{'DISTINCT' if distinct else 'IDENTICAL -- investigate'}")
+        all_ok &= distinct
+
+    # ---------------------------------- E. every pinned golden, not a hand-picked subset
+    print("\n=== E. re-verify EVERY pinned golden in test_2d_moments_skimage.h ===")
+    hdr = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..",
+                       "test_2d_moments_skimage.h")
+    all_ok &= verify_every_pinned_golden(hdr, shp, inten, wedge_shape())
 
     print(f"\n{'ALL CHECKS PASSED' if all_ok else 'SOME CHECKS FAILED -- do not paste goldens'}")
     return 0 if all_ok else 1
