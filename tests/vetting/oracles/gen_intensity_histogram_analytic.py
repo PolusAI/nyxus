@@ -30,6 +30,8 @@ to bin centre (the first two) or depend only on the bin counts (the last two), s
 `_IDX` values coincide exactly and MIRP vets both; they are not repeated here.
 """
 import json
+import os
+import re
 
 import numpy as np
 
@@ -107,6 +109,32 @@ def run():
     }
 
 
+def verify_pins(header, table, computed, tol=1e-9):
+    """Compare EVERY golden pinned in `table` against this run.
+
+    Checking a hand-picked subset is the failure mode this exists to avoid: it silently stops
+    covering whatever is added to the table later. Anything the generator cannot produce is
+    reported rather than skipped quietly.
+    """
+    text = re.sub(r"//[^\n]*", "", open(header, encoding="utf-8").read())
+    body = text.split(table, 1)[1].split("{", 1)[1].split("};", 1)[0]
+    ok, checked, unknown = True, 0, []
+    for name, pinned in re.findall(r'\{\s*"(\w+)"\s*,\s*([-0-9.e+]+)\s*\}', body):
+        if name not in computed:
+            unknown.append(name)
+            continue
+        got, want = computed[name], float(pinned)
+        if abs(got - want) > tol * max(1.0, abs(want), abs(got)):
+            print("  FAIL %s: oracle=%r pinned=%s" % (name, got, pinned))
+            ok = False
+        checked += 1
+    print("  %s: verified %d pinned goldens against this run" % (table, checked))
+    if unknown:
+        print("  not produced by this generator: %s" % ", ".join(sorted(unknown)))
+        ok = False
+    return ok
+
+
 def main():
     values = run()
     print("// analytic closed forms on the IBSI digital phantom, fixed bin number, %d bins" % NBINS)
@@ -115,6 +143,18 @@ def main():
         print('    {"%s", %.17g},' % (feature, values[feature]))
     print("\n// raw:", json.dumps(values, sort_keys=True))
 
+    # Both tables this generator feeds. The robust-window tables in those same files come from the
+    # 17-px tail-trimming fixture, not this one, so they are deliberately not listed here.
+    print("\n=== re-verify every pinned golden this generator produces ===")
+    here = os.path.dirname(os.path.abspath(__file__))
+    tests = os.path.join(here, "..", "..")
+    ok = verify_pins(os.path.join(tests, "test_2d_intensity_histogram_analytic.h"),
+                     "intensity_histogram_2d_analytic_phantom_ref_vals", values)
+    ok &= verify_pins(os.path.join(tests, "test_2d_intensity_histogram_regression.h"),
+                      "intensity_histogram_2d_regression_ref_vals", values)
+    print("\n%s" % ("ALL CHECKS PASSED" if ok else "SOME CHECKS FAILED -- do not paste goldens"))
+    return 0 if ok else 1
+
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
