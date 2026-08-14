@@ -1,0 +1,33 @@
+Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
+3D,glrlm,3GLRLM_SRE,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_sre_pyradiomics,Y,test_3d_glrlm_sre_regression,
+3D,glrlm,3GLRLM_LRE,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_lre_pyradiomics,Y,test_3d_glrlm_lre_regression,
+3D,glrlm,3GLRLM_GLN,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_gln_pyradiomics,Y,test_3d_glrlm_gln_regression,
+3D,glrlm,3GLRLM_GLNN,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_glnn_pyradiomics,Y,test_3d_glrlm_glnn_regression,
+3D,glrlm,3GLRLM_RLN,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_rln_pyradiomics,Y,test_3d_glrlm_rln_regression,
+3D,glrlm,3GLRLM_RLNN,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_rlnn_pyradiomics,Y,test_3d_glrlm_rlnn_regression,
+3D,glrlm,3GLRLM_RP,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_rp_pyradiomics,Y,test_3d_glrlm_rp_regression,exceeds its mathematical bound of 1 at positive GLRLM_GREYDEPTH values; in range at the binCount binning both tests use
+3D,glrlm,3GLRLM_GLV,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_glv_pyradiomics,Y,test_3d_glrlm_glv_regression,
+3D,glrlm,3GLRLM_RV,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_rv_pyradiomics,Y,test_3d_glrlm_rv_regression,
+3D,glrlm,3GLRLM_RE,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_re_pyradiomics,Y,test_3d_glrlm_re_regression,"the family's only sum over logarithms; fast_log10 puts it 3.9e-4 from PyRadiomics, so it is asserted at rel=5e-3 where the rest are at rel=1e-9"
+3D,glrlm,3GLRLM_LGLRE,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_lglre_pyradiomics,Y,test_3d_glrlm_lglre_regression,
+3D,glrlm,3GLRLM_HGLRE,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_hglre_pyradiomics,Y,test_3d_glrlm_hglre_regression,
+3D,glrlm,3GLRLM_SRLGLE,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_srlgle_pyradiomics,Y,test_3d_glrlm_srlgle_regression,
+3D,glrlm,3GLRLM_SRHGLE,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_srhgle_pyradiomics,Y,test_3d_glrlm_srhgle_regression,
+3D,glrlm,3GLRLM_LRLGLE,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_lrlgle_pyradiomics,Y,test_3d_glrlm_lrlgle_regression,
+3D,glrlm,3GLRLM_LRHGLE,pyradiomics,test_3d_glrlm_ave_pyradiomics;test_3d_glrlm_lrhgle_pyradiomics,Y,test_3d_glrlm_lrhgle_regression,
+3D,glrlm,3GLRLM_SRE_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_LRE_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_GLN_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_GLNN_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_RLN_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_RLNN_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_RP_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,registry read oracle=mirp while the base row read oracle=pyradiomics for the same quantity; no mirp run for 3D GLRLM has ever existed in the tree | also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_GLV_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_RV_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_RE_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,"same mirp mislabel as 3GLRLM_RP_AVE, and the same log tolerance as 3GLRLM_RE | also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)"
+3D,glrlm,3GLRLM_LGLRE_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_HGLRE_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_SRLGLE_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_SRHGLE_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_LRLGLE_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)
+3D,glrlm,3GLRLM_LRHGLE_AVE,pyradiomics,test_3d_glrlm_ave_pyradiomics,N,,also asserted by test_3d_glrlm_compatibility (kind is neither oracle nor regression)

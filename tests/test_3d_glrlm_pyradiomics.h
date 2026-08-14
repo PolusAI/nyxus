@@ -1,35 +1,28 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <string>
+#include <tuple>
+#include <unordered_set>
+#include <vector>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glrlm.h"
-#include "../src/nyx/raw_nifti.h"
 #include "../src/nyx/helpers/fsystem.h"
 #include "test_ref_vals.h"
 
-// Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
-// (100 grey levels, offset 1, and asymmetric cooc matrix)
+// PyRadiomics 3.0.1 on the compat phantom (compat_int/compat_int_mri.nii +
+// compat_seg/compat_seg_liver.nii, label 1) at binCount 20, recipe glrlm3d.pyradiomics_bincount20.
+// Nyxus side: GREYDEPTH=100, IBSI=false, GLRLM_GREYDEPTH=-20 (negative activates radiomics
+// binCount-based binning, so the magnitude is the bin count).
 //
-// Getting Pyradiomics ground truth values:
-//      pyradiomics mri.nii.gz liver.nii.gz --param settings1.yaml
-// 
-// where file "settings1.yaml" is:
-// 
-//  setting:
-//  #disabled - binWidth: 25
-//  binCount : 20
-//  label : 1
-//  interpolator : 'sitkBSpline'
-//  resampledPixelSpacing :
-//  weightingNorm: 
+// PyRadiomics reports one value per feature over its whole direction set, i.e. the Nyxus *_AVE
+// aggregation over the 13 3D angles -- so each golden below is the reference for both the per-angle
+// base feature (through calc_ave) and the stored *_AVE feature.
 //
-//  imageType :
-//        Original : {} 
-//  featureClass :
-//      glrlm:
-//
+// Regenerate with tests/vetting/oracles/gen_glrlm3d_pyradiomics.py, which also re-verifies every
+// pin. See tests/vetting/audit/glrlm_3d_golden_regen.md.
 
 static ref_vals_map<double> glrlm_3d_pyradiomics_ref_vals
 {
@@ -50,6 +43,16 @@ static ref_vals_map<double> glrlm_3d_pyradiomics_ref_vals
     {"3GLRLM_SRHGLE", 117.56903884692184},  // Case-1_original_glrlm_ShortRunHighGrayLevelEmphasis
     {"3GLRLM_SRLGLE", 0.011465297979291003} // Case-1_original_glrlm_ShortRunLowGrayLevelEmphasis
 };
+
+// Nyxus reproduces this tool to double precision on 15 of the 16 quantities. The exception is run
+// entropy, the family's only sum over logarithms, which Nyxus evaluates through fast_log10 with an
+// EPSILON guard: measured 3.9e-4 away, so it is held to 5e-3 and everything else to 1e-9. Same shape
+// and same cause as the 2D family. See tests/vetting/audit/glrlm_3d_pyradiomics_vetting_report.md.
+static double glrlm_3d_pyradiomics_frac_tolerance (const std::string& feature_name)
+{
+    static const std::unordered_set<std::string> log_based { "3GLRLM_RE" };
+    return log_based.count (feature_name) ? 200. : 1.e9;
+}
 
 void test_3d_glrlm_matrix_correctness_pyradiomics()
 {
@@ -183,7 +186,7 @@ void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
     s[(int)NyxSetting::IBSI].bval = false;
 
-    // (4) NGTDM-specific feature settings mocking default pyRadiomics settings
+    // (4) GLRLM-specific feature settings mocking the pyRadiomics recipe above
 
     s[(int)NyxSetting::GLRLM_GREYDEPTH].ival = -20;  // intentionally negative to activate radiomics binCount-based grey-binning
 
@@ -209,14 +212,15 @@ void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode
     double atot = f.calc_ave (r.fvals[fcode]);
 
     // (8) verdict
-    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_pyradiomics_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_pyradiomics_ref_vals[fname],
+                          glrlm_3d_pyradiomics_frac_tolerance(fname)));
 }
 
 // Vet the direction-averaged (_AVE) 3D GLRLM features vs PyRadiomics. save_value stores
 // fvals[X_AVE][0] = calc_ave(angled_X) -- exactly the quantity the base test asserts == PyRadiomics
 // (assert_3d_glrlm_feature_pyradiomics: atot = calc_ave(fvals[X])). So reading the _AVE slot directly and
 // comparing to the same GT table is a direct PyRadiomics assertion on the _AVE feature. One workflow
-// run covers all 14 (RE_AVE / RP_AVE already vetted elsewhere).
+// run covers all 16.
 void test_3d_glrlm_ave_pyradiomics()
 {
     auto [ipath, mpath, label] = get_3d_compat_phantom();
@@ -263,11 +267,36 @@ void test_3d_glrlm_ave_pyradiomics()
         {F::GLRLM_RLN_AVE, "3GLRLM_RLN"},     {F::GLRLM_RLNN_AVE, "3GLRLM_RLNN"},
         {F::GLRLM_RV_AVE, "3GLRLM_RV"},       {F::GLRLM_SRE_AVE, "3GLRLM_SRE"},
         {F::GLRLM_SRHGLE_AVE, "3GLRLM_SRHGLE"}, {F::GLRLM_SRLGLE_AVE, "3GLRLM_SRLGLE"},
+        // RP is only in its mathematical bound [0,1] at this recipe's binCount binning; it exceeds 1
+        // at positive GLRLM_GREYDEPTH values (see the audit report), so this row vets it here and
+        // says nothing about other configs.
+        {F::GLRLM_RP_AVE, "3GLRLM_RP"},       {F::GLRLM_RE_AVE, "3GLRLM_RE"},
     };
+
+    // Every 3D GLRLM feature the build exposes has to be asserted here -- the per-angle ones through
+    // the golden table, the aggregated ones through the list above. Without this, a feature added to
+    // the family later is vetted by nothing while this test still passes over the entries it has.
+    std::unordered_set<int> covered_aves;
+    for (const auto& a : aves)
+        covered_aves.insert((int)a.ave);
+    for (const auto& [name, code] : Nyxus::UserFacing_3D_featureNames)
+    {
+        if (name.rfind("3GLRLM_", 0) != 0)
+            continue;
+        const std::string suffix = "_AVE";
+        bool is_ave = name.size() > suffix.size() &&
+            name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
+        if (is_ave)
+            ASSERT_TRUE(covered_aves.count((int)code)) << name << " is not asserted by this test";
+        else
+            ASSERT_TRUE(glrlm_3d_pyradiomics_ref_vals.count(name)) << name << " has no pyradiomics golden";
+    }
+
     for (auto& a : aves)
     {
         double v = r.fvals[(int)a.ave][0];
-        ASSERT_TRUE(agrees_gt(v, glrlm_3d_pyradiomics_ref_vals[a.gt], 10.)) << a.gt << "_AVE = " << v
+        ASSERT_TRUE(agrees_gt(v, glrlm_3d_pyradiomics_ref_vals[a.gt],
+                              glrlm_3d_pyradiomics_frac_tolerance(a.gt))) << a.gt << "_AVE = " << v
             << " vs pyradiomics " << glrlm_3d_pyradiomics_ref_vals[a.gt];
     }
 }
