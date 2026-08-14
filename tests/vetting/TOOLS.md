@@ -91,6 +91,11 @@ Gotchas hit while doing it:
     the discretisation it was computed at (`ih_mean_fbn_n6`, `cm_contrast_d1_3d_v_mrg_fbn_n6`).
     Filter on the suffix and map by name, so changing the bin count cannot silently read a column
     computed at the old one.
+  - **The suffix encodes the neighbourhood too, not only the discretisation.** NGLDM columns come
+    back as `ngl_<feature>_d1_a0.0_3d_fbn_n64` — `d1` is the distance and `a0.0` the difference
+    level (alpha), i.e. the IBSI coarseness parameters, ahead of the `_3d_fbn_n64` part. Match on
+    the stem and assert the full suffix separately (`gen_ngldm3d_mirp.py` does), or a generator that
+    "found its column" may be reading a different neighbourhood than the one it configured.
   - The env has **no NIfTI reader** — neither SimpleITK nor nibabel — so a 3D generator that loads a
     `.nii` phantom appears to need two envs and an intermediate `.npy`. It does not: the phantoms
     under `tests/data/nifti/phantoms/` are uncompressed single-file NIfTI-1 (`magic == b"n+1"`), and
