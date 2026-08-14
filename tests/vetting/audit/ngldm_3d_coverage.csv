@@ -1,0 +1,20 @@
+Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
+3D,ngldm,3NGLDM_LDE,,,Y,test_3d_ngldm_lde_regression,
+3D,ngldm,3NGLDM_HDE,,,Y,test_3d_ngldm_hde_regression,9.3x from MIRP -- background voxels each see ~24 identical neighbours
+3D,ngldm,3NGLDM_LGLCE,,,Y,test_3d_ngldm_lglce_regression,
+3D,ngldm,3NGLDM_HGLCE,,,Y,test_3d_ngldm_hglce_regression,
+3D,ngldm,3NGLDM_LDLGLE,,,Y,test_3d_ngldm_ldlgle_regression,
+3D,ngldm,3NGLDM_LDHGLE,,,Y,test_3d_ngldm_ldhgle_regression,
+3D,ngldm,3NGLDM_HDLGLE,,,Y,test_3d_ngldm_hdlgle_regression,
+3D,ngldm,3NGLDM_HDHGLE,,,Y,test_3d_ngldm_hdhgle_regression,
+3D,ngldm,3NGLDM_GLNU,,,Y,test_3d_ngldm_glnu_regression,26.5x from MIRP -- consistent with background voxels piling into one grey row
+3D,ngldm,3NGLDM_GLNUN,,,Y,test_3d_ngldm_glnun_regression,
+3D,ngldm,3NGLDM_DCNU,,,Y,test_3d_ngldm_dcnu_regression,
+3D,ngldm,3NGLDM_DCNUN,,,Y,test_3d_ngldm_dcnun_regression,
+3D,ngldm,3NGLDM_DCP,,,Y,test_3d_ngldm_dcp_regression,"was status=vetted/oracle=mirp from an offline run; demoted -- it agrees with MIRP only at the degenerate value 1.0, while every other comparable feature diverges"
+3D,ngldm,3NGLDM_GLM,,,Y,test_3d_ngldm_glm_regression,no counterpart in any tool (MIRP's NGLDM emits no gl_mean column)
+3D,ngldm,3NGLDM_GLV,,,Y,test_3d_ngldm_glv_regression,
+3D,ngldm,3NGLDM_DCM,,,Y,test_3d_ngldm_dcm_regression,no counterpart in any tool (MIRP's NGLDM emits no dc_mean column)
+3D,ngldm,3NGLDM_DCV,,,Y,test_3d_ngldm_dcv_regression,
+3D,ngldm,3NGLDM_DCENT,,,Y,test_3d_ngldm_dcent_regression,
+3D,ngldm,3NGLDM_DCENE,,,Y,test_3d_ngldm_dcene_regression,"49.9x from MIRP, the family's widest measured divergence"
