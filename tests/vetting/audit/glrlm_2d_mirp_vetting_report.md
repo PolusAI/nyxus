@@ -47,12 +47,22 @@ opinions are one result reached twice and the Nyxus comparison is against a valu
 
 ## Why run entropy is not exact
 
-`GLRLM_RE` is the family's only sum over logarithms. Nyxus evaluates it with `fast_log10` plus an
-`EPSILON` guard against `log(0)` (`src/nyx/features/glrlm.cpp`), where both reference tools use the
-library `log`. That is the whole of the difference: it is the only feature of the sixteen that
-misses, it misses against both tools by the same 1.1e-3, and the same signature appears in the GLCM
-family's entropy features. It is an accuracy choice in Nyxus, not a definitional disagreement, so it
-is asserted at `rel=5e-3` and the other fifteen at `rel=1e-9`.
+`GLRLM_RE` is the family's only sum over logarithms - `glrlm.cpp` contains exactly one `log` call,
+at the run-entropy accumulation - and Nyxus evaluates it with `fast_log10` plus an `EPSILON` guard
+against `log(0)`, where both reference tools use the library `log`.
+
+`fast_log10` (`src/nyx/helpers/helpers.h`) is not a rounding-level approximation: it casts the
+double argument **down to float**, then approximates `log2` with the two-term polynomial
+`a*(x-1)^2 + b*(x-1)` over a reduced range of [0.75, 1.5). A relative error of order 1e-3 is what
+that construction costs, which is the size of the miss observed. So the explanation is quantitative,
+not just plausible: it is the only feature of the sixteen that misses, it misses against both tools
+by the same 1.1e-3, and the same signature appears in the GLCM family's entropy features.
+
+It is an accuracy choice in Nyxus, not a definitional disagreement, so it is asserted at `rel=5e-3`
+- about 4.5x the measured deviation - and the other fifteen at `rel=1e-9`. Worth recording that the
+deviation is **avoidable**: this is one line, and evaluating it with the library `log` would put
+`GLRLM_RE` on the tools to double precision like its fifteen siblings. That is a behaviour change to
+a shipped feature, so it is noted here rather than made in a vetting PR.
 
 ## What this report does and does not establish
 

@@ -50,7 +50,7 @@ void assert_glrlm_feature_ibsi (const std::string& feature_name)
 
     double value = 0;
     ASSERT_TRUE (calc_2d_glrlm_phantom_feature (feature_name, value)) << feature_name;
-    ASSERT_TRUE (agrees_gt (value, golden_it->second, 100.)) << feature_name;
+    ASSERT_TRUE (Nyxus::agrees_gt (value, golden_it->second, 100.)) << feature_name;
 }
 
 void test_2d_glrlm_sre_ibsi()
