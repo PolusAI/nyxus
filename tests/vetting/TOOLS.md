@@ -60,6 +60,14 @@ Gotchas hit while doing it:
     the discretisation it was computed at (`ih_mean_fbn_n6`, `cm_contrast_d1_3d_v_mrg_fbn_n6`).
     Filter on the suffix and map by name, so changing the bin count cannot silently read a column
     computed at the old one.
+  - **The suffix encodes the neighbourhood too, not only the discretisation.** NGLDM columns come
+    back as `ngl_<feature>_d1_a0.0_3d_fbn_n64` — `d1` is the distance and `a0.0` the difference
+    level (alpha), i.e. the IBSI coarseness parameters, ahead of the `_3d_fbn_n64` part. Match on
+    the stem and assert the full suffix separately (`gen_ngldm3d_mirp.py` does), or a generator that
+    "found its column" may be reading a different neighbourhood than the one it configured.
+  - `base_discretisation_method="none"` is the right setting for a **morphology** run — that family
+    is computed from mask geometry, so a bin count is meaningless and MIRP then leaves the `morph_*`
+    columns unsuffixed.
 - **Octave `quantile()` takes a method number 1..9** (`quantile(v, p, m)`), and `prctile()` is
   method 5 — useful when checking whether a Nyxus percentile matches a tool's *native* percentile
   rather than a reimplementation of Nyxus' own. See
