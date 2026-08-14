@@ -158,3 +158,31 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   `test_3d_glcm_dump_regression()`.
 - A different binCount from `glcm3d.pyradiomics_bincount20`, so the two benchmarks are not
   comparable to each other by construction.
+
+## morphology3d.mirp_ibsi
+- The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at its native
+  1×1×1 spacing, through `D3_SurfaceFeature` with `IBSI=true`, `GREYDEPTH=128`, `PIXELSIZEUM=100`.
+  Oracle: `mirp` 2.6.0 (`by_slice=False`, `base_feature_families="morphology"`,
+  `base_discretisation_method="none"`). Used by: `test_3d_morphology_mirp.h`.
+- Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
+  `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
+- Covers the five PCA axis features only (`morph_pca_*`). The rest of MIRP's `morph_*` block is not
+  comparable: `morph_area_mesh` is a marching-cubes mesh area where Nyxus' `3AREA` counts exposed
+  voxel faces, so `3AREA` and the five features derived from it stay on
+  `morphology3d.regression_ut_phantom`.
+
+## morphology3d.matlab_regionprops3
+- The same segmented phantom, same Nyxus settings. Oracle: `matlab` R2025b Image Processing Toolbox
+  `regionprops3` (`Volume` → `3VOXEL_VOLUME`; `ConvexVolume` → `3VOLUME_CONVEXHULL` and, through the
+  Nyxus alias, `3MESH_VOLUME`). Used by: `test_3d_morphology_matlab.h`.
+- Per-feature bands, measured rather than assumed, live in `morphology_3d_matlab_ref_tols`:
+  `3VOXEL_VOLUME` 0.1% (same definition), the two hull volumes 5% (Nyxus builds a discrete voxel
+  hull, regionprops3 triangulates).
+- No in-repo generator: MATLAB cannot be run here. `oracles/gen_morphology3d_mirp.py` prints the
+  corresponding MIRP quantities as a cross-check instead.
+
+## morphology3d.regression_ut_phantom
+- The same phantom and settings, **no oracle** — pinned Nyxus output as drift guards in
+  `test_3d_morphology_regression.h` and in the coverage sweep's baseline table.
+- Carries `3AREA` and everything derived from it. The reason is a convention difference, not a
+  numerical one: 59992 exposed voxel faces against MIRP's 46739 mesh area, ~28%.

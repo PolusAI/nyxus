@@ -1,10 +1,15 @@
 #pragma once
 
+#include <cmath>
+#include <string>
+#include <vector>
+#include "../src/nyx/features/pixel.h"
+#include "../src/nyx/helpers/helpers.h"
 #include "test_3d_morphology_common.h"
 #include "test_ref_vals.h"
 
 // ---------------------------------------------------------------------------------------------------
-// Migrated from test_3d_shape.h (Wave 8). MATLAB-oracle'd 3D morphology:
+// MATLAB-oracle'd 3D morphology:
 //  - 3MESH_VOLUME / 3VOLUME_CONVEXHULL / 3VOXEL_VOLUME (registry: matlab / vetted).
 //  - the covariance-matrix + eigenvalue math (Pixel3::calc_cov_matrix / Nyxus::calc_eigvals) whose
 //    ground truth is produced by MATLAB cov()/eig() - the linear-algebra core behind 3D shape.
@@ -73,6 +78,18 @@ static void assert_3d_morphology_feature_matlab (const std::string& fname, const
 
 void test_3d_morphology_mesh_volume_matlab() {
     assert_3d_morphology_feature_matlab ("3MESH_VOLUME", Feature3D::MESH_VOLUME);
+}
+
+// The other two goldens in the table above. They had a MATLAB value and a stated band but no
+// assertion of their own: the only thing comparing them against MATLAB was the parameterized sweep in
+// test_3d_morphology_coverage.h, whose case names carry no oracle token, so the registry's
+// oracle=matlab claim rested on a test that does not say so (SPEC 6.2).
+void test_3d_morphology_voxel_volume_matlab() {
+    assert_3d_morphology_feature_matlab ("3VOXEL_VOLUME", Feature3D::VOXEL_VOLUME);
+}
+
+void test_3d_morphology_volume_convex_hull_matlab() {
+    assert_3d_morphology_feature_matlab ("3VOLUME_CONVEXHULL", Feature3D::VOLUME_CONVEXHULL);
 }
 
 void test_3d_morphology_covmatrix_and_eigenvals_matlab() {

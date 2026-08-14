@@ -62,6 +62,7 @@
 #include "test_3d_morphology_common.h"
 #include "test_3d_morphology_regression.h"
 #include "test_3d_morphology_matlab.h"
+#include "test_3d_morphology_mirp.h"
 #include "test_3d_gldzm_regression.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
@@ -530,6 +531,37 @@ TEST(TEST_NYXUS, TEST_ARROW_PARQUET_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MESH_VOLUME_MATLAB) {
 	ASSERT_NO_THROW(test_3d_morphology_mesh_volume_matlab());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_MATLAB) {
+	ASSERT_NO_THROW(test_3d_morphology_voxel_volume_matlab());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOLUME_CONVEX_HULL_MATLAB) {
+	ASSERT_NO_THROW(test_3d_morphology_volume_convex_hull_matlab());
+}
+
+// The five PCA axis features vs MIRP. The registry called them mirp-vetted from an offline run;
+// nothing in the tree compared them against MIRP until now.
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MAJOR_AXIS_LEN_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_major_axis_len_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MINOR_AXIS_LEN_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_minor_axis_len_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_LEAST_AXIS_LEN_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_least_axis_len_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_ELONGATION_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_elongation_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_FLATNESS_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_flatness_mirp());
 }
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_AREA_REGRESSION) {

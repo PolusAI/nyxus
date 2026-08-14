@@ -1,13 +1,14 @@
 #pragma once
 
+#include <string>
 #include "test_3d_morphology_common.h"
 #include "test_ref_vals.h"
 
 // ---------------------------------------------------------------------------------------------------
-// Migrated from test_3d_shape.h (Wave 8). The eight 3D shape features whose GT is a self-referential
-// snapshot. The fixture that produces the values is shared (test_3d_morphology_common.h); the goldens
-// and the 10% band are this file's own, because they establish no vetting and nothing outside a
-// _regression file should be comparing against them.
+// The eight 3D shape features whose GT is a self-referential snapshot. The fixture that produces the
+// values is shared (test_3d_morphology_common.h); the goldens and the 10% band are this file's own,
+// because they establish no vetting and nothing outside a _regression file should be comparing
+// against them.
 // ---------------------------------------------------------------------------------------------------
 
 // Pinned Nyxus output at the IBSI-path recipe the fixture sets (GREYDEPTH=128, ibsi=true). Note
