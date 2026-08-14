@@ -33,6 +33,19 @@ Same definition on both sides — 4·√ of the mask covariance eigenvalues, and
 agreement is exact to double precision and the assertions are held at `rel=1e-9`, far tighter than
 SPEC §7's `rel=1e-3` same-definition tier. A band wider than the divergence it absorbs hides drift.
 
+**The Nyxus column is also the pre-existing hardcoded value.** These five features were already pinned
+in `morphology_3d_regression_coverage_ref_vals` (`test_3d_morphology_coverage.h`) to 17 digits — as
+Nyxus snapshots, with no oracle claim. Those pins are byte-identical to the Nyxus column above, so
+what this PR changes is not the numbers but whether anything compares them to a tool.
+
+**And that is the circularity check `revet` §3 asks for.** A golden that reproduces Nyxus' own
+algorithm to 15 digits proves nothing on its own — it is exactly the trap the 2D first-order
+percentile rows fell into. Here the MIRP column comes from a fresh `mirp.extract_features` run
+performed for this PR, not from the snapshot and not from the 2026-07 harness notes; it independently
+lands on the same values. The two are therefore genuinely concordant rather than one copied from the
+other. (The fresh run does reproduce the July harness's numbers exactly, which is corroboration of
+that harness, not the source of these goldens.)
+
 ## The generator re-checks the identities that the old defect broke
 
 This family carried an eigenvalue-ordering defect: `calc_eigvals` returns eigenvalues **descending**,

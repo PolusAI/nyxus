@@ -38,10 +38,9 @@ static ref_vals_map<double> morphology_3d_matlab_ref_vals
 	{ "3VOLUME_CONVEXHULL", 497824.0 }
 };
 
-// Per-feature agreement bands, as the percent that relative_absdiff_pct() may reach. Measured, not
-// assumed: a single 10% band used to cover all three, which is wide enough to pass a value four
-// times worse than the real disagreement on two of them and forty thousand times worse on the third
-// (SPEC 7 -- a tolerance looser than the divergence it absorbs hides drift).
+// Per-feature agreement bands, as the percent that relative_absdiff_pct() may reach. Measured per
+// feature rather than shared, because a band looser than the divergence it absorbs hides drift
+// (SPEC 7).
 static ref_vals_map<double> morphology_3d_matlab_ref_tols
 {
 	// Same definition on both sides (count of voxels x voxel volume); measured 2.3e-04%. SPEC 7
@@ -56,9 +55,8 @@ static ref_vals_map<double> morphology_3d_matlab_ref_tols
 	{ "3MESH_VOLUME", 5.0 }
 };
 
-// Compares against MATLAB's number. Until now this called the shared helper in _common.h, which
-// judged against the Nyxus snapshot table -- so the one assertion carrying the matlab claim for
-// 3MESH_VOLUME never touched a MATLAB value.
+// Judges against MATLAB's number and this file's own band -- never against the snapshot table in
+// test_3d_morphology_regression.h, which pins Nyxus output for the same features.
 static void assert_3d_morphology_feature_matlab (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {
     SCOPED_TRACE(std::string("MATLAB_ORACLE__") + fname);
