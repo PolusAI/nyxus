@@ -28,8 +28,15 @@
 // IDX is the mean of their 1-based bin indices, (2*5+3*6+4*4)/15 = 44/15; VAL is the mean of their
 // bin centres, (12*5+20*6+28*4)/15 = 292/15 - the same number through the family's centre map,
 // VAL = lo + (IDX - 0.5) * binWidth.
+static const ref_vals_map<double> intensity_histogram_2d_analytic_robust_ref_vals
+{
+    {"IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX", 0.6222222222},
+    {"IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL", 4.977777778},
+    {"IH_ROBUST_MEAN_IDX", 2.933333333},
+    {"IH_ROBUST_MEAN_VAL", 19.46666667},
+};
+
 void test_2d_intensity_histogram_dispersion_robust_analytic() {
-    using F = Nyxus::Feature2D;
     Fsettings s = ih_make_settings(5, /*ibsi*/ true);
     Dataset ds; ds.dataset_props.push_back(SlideProps("",""));
     LR roidata(100); roidata.slide_idx = -1;
@@ -38,11 +45,13 @@ void test_2d_intensity_histogram_dispersion_robust_analytic() {
     roidata.make_nonanisotropic_aabb();
     IntensityHistogramFeatures f; ASSERT_NO_THROW(f.calculate(roidata, s, ds));
     roidata.initialize_fvals(); f.save_value(roidata.fvals);
-    auto& fv = roidata.fvals;
-    ASSERT_TRUE(agrees_gt(fv[(int)F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL][0], 4.977777778, 1e4));
-    ASSERT_TRUE(agrees_gt(fv[(int)F::IH_ROBUST_MEAN_VAL][0], 19.46666667, 1e4));
-    ASSERT_TRUE(agrees_gt(fv[(int)F::IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX][0], 0.6222222222, 1e4));
-    ASSERT_TRUE(agrees_gt(fv[(int)F::IH_ROBUST_MEAN_IDX][0], 2.933333333, 1e4));
+
+    for (const auto& [feature_name, golden] : intensity_histogram_2d_analytic_robust_ref_vals)
+    {
+        double value = 0;
+        ASSERT_TRUE(read_2d_intensity_histogram_feature(roidata.fvals, feature_name, value)) << feature_name;
+        ASSERT_TRUE(agrees_gt(value, golden, 1e4)) << feature_name;
+    }
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -105,6 +114,8 @@ void test_2d_intensity_histogram_bin_counts_analytic()
     const auto& hist = roidata.fvals[(int)F::HISTOGRAM];
     ASSERT_EQ(hist.size(), (size_t)N);
 
+    // a plain array rather than a ref_vals_map: HISTOGRAM is multi-valued, so there is no one
+    // scalar to key by feature name - the golden is the per-bin vector itself
     static const double expected[N] = { 2.0, 1.0, 2.0 };
     for (int k = 0; k < N; k++)
         ASSERT_TRUE(agrees_gt(hist[k], expected[k], 1e4)) << "bin " << k;

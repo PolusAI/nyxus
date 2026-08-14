@@ -305,6 +305,12 @@ static const NyxusPixel intensityHistogramRobustData[] = {
     {16,0,40}
 };
 
+static const ref_vals_map<double> intensity_histogram_2d_regression_robust_ref_vals
+{
+    {"IH_INTERQUANTILE_RANGE_VAL", 12.3},
+    {"IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL", 0.3178294574},
+};
+
 void test_2d_intensity_histogram_dispersion_percentile_regression()
 {
     Fsettings s = ih_make_settings(5, /*ibsi*/ true);
@@ -316,9 +322,12 @@ void test_2d_intensity_histogram_dispersion_percentile_regression()
     IntensityHistogramFeatures f;
     ASSERT_NO_THROW(f.calculate(roidata, s, ds));
     roidata.initialize_fvals(); f.save_value(roidata.fvals);
-    auto& fv = roidata.fvals;
 
-    ASSERT_TRUE(agrees_gt(fv[(int)Feature2D::IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL][0], 0.3178294574, 1e4));
-    ASSERT_TRUE(agrees_gt(fv[(int)Feature2D::IH_INTERQUANTILE_RANGE_VAL][0], 12.3, 1e4));
+    for (const auto& [feature_name, golden] : intensity_histogram_2d_regression_robust_ref_vals)
+    {
+        double value = 0;
+        ASSERT_TRUE(read_2d_intensity_histogram_feature(roidata.fvals, feature_name, value)) << feature_name;
+        ASSERT_TRUE(agrees_gt(value, golden, 1e4)) << feature_name;
+    }
 }
 
