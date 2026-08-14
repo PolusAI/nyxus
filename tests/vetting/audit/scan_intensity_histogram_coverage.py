@@ -44,6 +44,10 @@ TABLE_OWNER = {
         "test_2d_intensity_histogram_phantom_analytic",
     "intensity_histogram_2d_ibsi_ref_vals":
         "test_2d_intensity_histogram_dispersion_ibsi",
+    "intensity_histogram_2d_analytic_robust_ref_vals":
+        "test_2d_intensity_histogram_dispersion_robust_analytic",
+    "intensity_histogram_2d_regression_robust_ref_vals":
+        "test_2d_intensity_histogram_dispersion_percentile_regression",
 }
 ORACLE_SUFFIX = {"analytic": "analytic", "mirp": "mirp", "ibsi": "ibsi",
                  "pyradiomics": "pyradiomics", "skimage": "skimage"}
