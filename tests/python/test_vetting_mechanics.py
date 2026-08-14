@@ -67,6 +67,26 @@ def test_vetting_main_check_fails_on_bad_row_mechanics(tmp_path):
     path = _write(tmp_path, [{"dim":"2D","feature":"A","family":"x","status":"bad","oracle":""}])
     assert cc.main(["--check", "--registry", path]) == 1
 
+def test_vetting_check_fails_on_stale_report_mechanics(tmp_path):
+    """coverage_report.md is generated from the registry, so --check must reject one that no longer
+    matches it. Without this the report can overstate coverage indefinitely: the ten GLCM matlab
+    rows demoted in #422 left the committed report claiming 118/118 glcm vetted against 108."""
+    path = _write(tmp_path, [
+        {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"pyradiomics"},
+    ])
+    report = tmp_path / "coverage_report.md"
+    assert cc.main(["--write", "--registry", path, "--report", str(report)]) == 0
+    # freshly written -> clean
+    assert cc.main(["--check", "--registry", path, "--report", str(report)]) == 0
+    # registry moves on, report does not -> caught
+    path2 = _write(tmp_path, [
+        {"dim":"2D","feature":"A","family":"glcm","status":"regression","oracle":""},
+    ])
+    assert cc.main(["--check", "--registry", path2, "--report", str(report)]) == 1
+    # a registry with no report beside it is not an error (the other self-tests rely on this)
+    assert cc.main(["--check", "--registry", path2,
+                    "--report", str(tmp_path / "absent.md")]) == 0
+
 # ---- SPEC 6.1/6.2 test-naming conventions (tests/vetting/check_test_names.py) ----
 
 def test_vetting_tree_names_conform_to_spec_mechanics():

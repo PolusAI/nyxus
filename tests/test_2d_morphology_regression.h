@@ -141,7 +141,15 @@ static ref_vals_map<double> morphology_2d_regression_ref_vals
 	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 6.32475519180298},
 	{"ROI_RADIUS_MEAN", 1.07692307692308},
 	{"ROI_RADIUS_MAX", 4.0},
-	{"ROI_RADIUS_MEDIAN", 1.0}
+	{"ROI_RADIUS_MEDIAN", 1.0},
+	// Its five siblings are vetted against CellProfiler in test_2d_morphology_cellprofiler.h; this
+	// one cannot be. Both tools take the same 18 edge pixels, then Nyxus divides the variance by
+	// n-1 and CellProfiler by n, so the two answers differ by exactly sqrt(18/17) = 1.0289915:
+	// CellProfiler reports 16.296727687892847 for the same input. Neither estimator is wrong, but
+	// only one of them is what a cellprofiler row would be claiming, so this stays a snapshot.
+	// Nyxus' n-1 comes from Moments4::std(), shared across features -- changing it is not a
+	// test-side decision. gen_morphology_cellprofiler.py checks the ratio as an identity.
+	{"EDGE_STDDEV_INTENSITY", 16.7691944455582}
 };
 
 static ref_vals_map<double> morphology_2d_regression_diameters_ref_vals{
@@ -206,6 +214,9 @@ void test_2d_morphology_contour_regression()
 	calculate_shape2d_feature_values(fvals);
 
 	assert_morphology_feature_regression(fvals, Nyxus::Feature2D::PERIMETER, "PERIMETER");
+	// Edge-intensity sibling of the five asserted in test_2d_morphology_cellprofiler.h. It is here
+	// rather than there because CellProfiler computes the other estimator; see the table comment.
+	assert_morphology_feature_regression(fvals, Nyxus::Feature2D::EDGE_STDDEV_INTENSITY, "EDGE_STDDEV_INTENSITY");
 }
 
 void test_2d_morphology_misc_regression()
