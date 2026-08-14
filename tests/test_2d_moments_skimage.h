@@ -44,7 +44,7 @@ static const ref_vals_list<GeomomentGoldenValue> moments_2d_skimage_shape_ref_va
 	{Nyxus::Feature2D::HU_M2, "HU_M2", 0.0009336419753086421},
 	{Nyxus::Feature2D::HU_M3, "HU_M3", 0},
 	{Nyxus::Feature2D::HU_M4, "HU_M4", 0},
-	{Nyxus::Feature2D::HU_M5, "HU_M5", 0},	// FIX(h5): oracle-exact 0 on this symmetric fixture (odd etas vanish); the old pin 4.598e-10 was summation noise of the defective h5 formula (gen_moments_skimage.py)
+	{Nyxus::Feature2D::HU_M5, "HU_M5", 0},	// exactly 0: the odd etas vanish on this symmetric fixture
 	{Nyxus::Feature2D::HU_M6, "HU_M6", 0},
 	{Nyxus::Feature2D::HU_M7, "HU_M7", -2.3604559630908652e-10},
 };
@@ -90,8 +90,8 @@ static const ref_vals_list<GeomomentGoldenValue> moments_2d_skimage_intensity_re
 	{Nyxus::Feature2D::IMOM_HU2, "IMOM_HU2", 3.7112807351259333e-08},
 	{Nyxus::Feature2D::IMOM_HU3, "IMOM_HU3", 2.6788774435431954e-11},
 	{Nyxus::Feature2D::IMOM_HU4, "IMOM_HU4", 2.8991603200922661e-12},
-	{Nyxus::Feature2D::IMOM_HU5, "IMOM_HU5", -1.9898126265836865e-22},	// FIX(h5): skimage-oracle value after the calcHu_imp h5 fix; old pin encoded the 9x-bracket defect (gen_moments_skimage.py)
-	{Nyxus::Feature2D::IMOM_HU6, "IMOM_HU6", -6.66827346717698e-17},	// FIX(h6): skimage-oracle value after the calcHu_imp h6 fix; old pin -2.3976723312959013e-06 == IMOM_NCM_03, i.e. the stray "+eta03" of the precedence bug (gen_moments_skimage.py)
+	{Nyxus::Feature2D::IMOM_HU5, "IMOM_HU5", -1.9898126265836865e-22},
+	{Nyxus::Feature2D::IMOM_HU6, "IMOM_HU6", -6.66827346717698e-17},	// distinct from IMOM_NCM_03; a value equal to it means h6 lost the (eta21+eta03) grouping
 	{Nyxus::Feature2D::IMOM_HU7, "IMOM_HU7", 2.3835594243218353e-23},
 };
 
@@ -121,13 +121,15 @@ static const ref_vals_list<GeomomentGoldenValue> moments_2d_skimage_wedge_hu_ref
 	{Nyxus::Feature2D::HU_M2, "HU_M2", 0.2921768785246152},
 	{Nyxus::Feature2D::HU_M3, "HU_M3", 0.06341348298776381},
 	{Nyxus::Feature2D::HU_M4, "HU_M4", 0.05042335332144146},
-	{Nyxus::Feature2D::HU_M5, "HU_M5", 0.002851264767850148},	// defective h5 gives 0.0032935269006466807 (442x tolerance away)
-	{Nyxus::Feature2D::HU_M6, "HU_M6", 0.027252861297278195},	// defective h6 gives 0.02916606310377036 (1913x tolerance away)
+	{Nyxus::Feature2D::HU_M5, "HU_M5", 0.002851264767850148},	// a 3*(eta30+eta12)^2 -> (3*(eta30+eta12))^2 slip gives 0.0032935269006466807, 442x the tolerance
+	{Nyxus::Feature2D::HU_M6, "HU_M6", 0.027252861297278195},	// dropping the (eta21+eta03) grouping gives 0.02916606310377036, 1913x the tolerance
 	{Nyxus::Feature2D::HU_M7, "HU_M7", 5.616461607732461e-06},
 };
 
-// Vets Hu h5/h6 (and the full moment chain) against scikit-image on an asymmetric fixture --
-// the historic calcHu_imp h5 9x-bracket / h6 "+eta03"-precedence defects fail this assertion.
+// Vets Hu h5/h6 (and the full moment chain) against scikit-image on an asymmetric fixture, where
+// the odd-order etas are large enough that a mis-bracketed h5 or an h6 missing the (eta21+eta03)
+// grouping misses by hundreds of times the tolerance. The symmetric rectangle cannot: its odd etas
+// vanish, so both formulas agree there.
 void test_2d_moments_hu_wedge_skimage()
 {
 	std::vector<std::vector<double>> fvals;
@@ -147,4 +149,63 @@ void test_2d_moments_intensity_skimage()
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
 	assert_2d_geomoment_features(fvals, moments_2d_skimage_intensity_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+}
+
+// Normalized RAW moments: NORM_SPAT_MOMENT_pq = m_pq / m_00^((p+q)/2 + 1), and IMOM_NRM_pq the
+// same over the intensity-weighted raw moments. skimage has no native function for this - its
+// moments_normalized() applies that exponent to the CENTRAL moments, which is a different
+// quantity Nyxus exposes separately as NORM_CENTRAL_MOMENT_pq / IMOM_NCM_pq. So the oracle here
+// is skimage's raw moments carried through skimage's own normalization exponent; the generator
+// asserts the two are distinct so a future edit cannot quietly swap one for the other.
+// Goldens: tests/vetting/oracles/gen_moments_skimage.py section D.
+static const ref_vals_list<GeomomentGoldenValue> moments_2d_skimage_normraw_shape_ref_vals{
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_00, "NORM_SPAT_MOMENT_00", 1.0},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_01, "NORM_SPAT_MOMENT_01", 0.4450245779729475},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_02, "NORM_SPAT_MOMENT_02", 0.2674479166666667},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_03, "NORM_SPAT_MOMENT_03", 0.1807912348015099},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_10, "NORM_SPAT_MOMENT_10", 0.5363116708904752},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_11, "NORM_SPAT_MOMENT_11", 0.238671875},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_12, "NORM_SPAT_MOMENT_12", 0.14343543906367653},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_13, "NORM_SPAT_MOMENT_13", 0.09696044921875},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_20, "NORM_SPAT_MOMENT_20", 0.3875868055555556},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_21, "NORM_SPAT_MOMENT_21", 0.17248565457024395},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_22, "NORM_SPAT_MOMENT_22", 0.10365928367332176},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_23, "NORM_SPAT_MOMENT_23", 0.07007229716916162},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_30, "NORM_SPAT_MOMENT_30", 0.31508310664815414},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_31, "NORM_SPAT_MOMENT_31", 0.1402197265625},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_32, "NORM_SPAT_MOMENT_32", 0.08426832044990999},
+	{Nyxus::Feature2D::NORM_SPAT_MOMENT_33, "NORM_SPAT_MOMENT_33", 0.056964263916015626},
+};
+
+static const ref_vals_list<GeomomentGoldenValue> moments_2d_skimage_normraw_intensity_ref_vals{
+	{Nyxus::Feature2D::IMOM_NRM_00, "IMOM_NRM_00", 1.0},
+	{Nyxus::Feature2D::IMOM_NRM_01, "IMOM_NRM_01", 0.039397166363954135},
+	{Nyxus::Feature2D::IMOM_NRM_02, "IMOM_NRM_02", 0.001897046009773198},
+	{Nyxus::Feature2D::IMOM_NRM_03, "IMOM_NRM_03", 9.951746245055554e-05},
+	{Nyxus::Feature2D::IMOM_NRM_10, "IMOM_NRM_10", 0.04534163016617505},
+	{Nyxus::Feature2D::IMOM_NRM_11, "IMOM_NRM_11", 0.0017522720110346945},
+	{Nyxus::Feature2D::IMOM_NRM_12, "IMOM_NRM_12", 8.375967849944927e-05},
+	{Nyxus::Feature2D::IMOM_NRM_13, "IMOM_NRM_13", 4.3766925283775395e-06},
+	{Nyxus::Feature2D::IMOM_NRM_20, "IMOM_NRM_20", 0.002579984204506706},
+	{Nyxus::Feature2D::IMOM_NRM_21, "IMOM_NRM_21", 9.892567767206171e-05},
+	{Nyxus::Feature2D::IMOM_NRM_22, "IMOM_NRM_22", 4.7143264687233126e-06},
+	{Nyxus::Feature2D::IMOM_NRM_23, "IMOM_NRM_23", 2.459309328437938e-07},
+	{Nyxus::Feature2D::IMOM_NRM_30, "IMOM_NRM_30", 0.0001612294112519097},
+	{Nyxus::Feature2D::IMOM_NRM_31, "IMOM_NRM_31", 6.155292790140729e-06},
+	{Nyxus::Feature2D::IMOM_NRM_32, "IMOM_NRM_32", 2.928338360295916e-07},
+	{Nyxus::Feature2D::IMOM_NRM_33, "IMOM_NRM_33", 1.5262053460086997e-08},
+};
+
+void test_2d_moments_normraw_shape_skimage()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_2d_geomoment_feature_values(fvals);
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_normraw_shape_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+}
+
+void test_2d_moments_normraw_intensity_skimage()
+{
+	std::vector<std::vector<double>> fvals;
+	calculate_2d_geomoment_feature_values(fvals);
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_normraw_intensity_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
 }

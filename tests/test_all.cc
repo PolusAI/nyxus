@@ -992,6 +992,16 @@ TEST(TEST_NYXUS, TEST_2D_MOMENTS_SHAPE_REGRESSION)
 	ASSERT_NO_THROW(test_2d_moments_shape_regression());
 }
 
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_NORMRAW_SHAPE_SKIMAGE)
+{
+	ASSERT_NO_THROW(test_2d_moments_normraw_shape_skimage());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_NORMRAW_INTENSITY_SKIMAGE)
+{
+	ASSERT_NO_THROW(test_2d_moments_normraw_intensity_skimage());
+}
+
 TEST(TEST_NYXUS, TEST_2D_MOMENTS_INTENSITY_SKIMAGE)
 {
 	ASSERT_NO_THROW(test_2d_moments_intensity_skimage());

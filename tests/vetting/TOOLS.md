@@ -36,6 +36,13 @@ research pass per tool; see per-tool detail below and the setup matrix first.
   method 5 — useful when checking whether a Nyxus percentile matches a tool's *native* percentile
   rather than a reimplementation of Nyxus' own. See
   `audit/intensity_histogram_2d_analytic_vetting_report.md` for why that distinction matters.
+- **`skimage.measure.moments_normalized` answers the CENTRAL-moment question only.** Nyxus also
+  exposes normalized *raw* moments (`NORM_SPAT_MOMENT_pq`, `IMOM_NRM_pq`) = `m_pq /
+  m_00^((p+q)/2+1)`, for which skimage has no native function. Do not vet one against the other:
+  on the 48x40 moments fixture they are 0.3876 vs 0.0999 at p=2,q=0. Build the normalized raw value
+  from `moments()` and skimage's own exponent instead; see
+  `audit/moments_2d_skimage_vetting_report.md`. Related trap: Nyxus `m_pq` has p on x and q on y, so
+  index arrays `A[x, y]` and skimage's `moments(A)[i,j]` maps to `i==p, j==q` with no transpose.
 - **`radiomicsj` 2.1.2 is a phantom version** — no GitHub releases/tags; Maven Central publishes
   2.1.3 … 2.1.18 (no 2.1.0/2.1.1/2.1.2). Pin **2.1.3** (earliest, nearest the requested tag) or
   **2.1.18** (latest). Ships a thin jar → must shade an uber-jar; has a built-in commons-cli `main()`
