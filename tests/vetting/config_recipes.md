@@ -119,3 +119,19 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   `oracles/fraclac/ref_boxcount.py`. `FRACT_DIM_BOXCOUNT` is same-method (1% tolerance);
   `FRACT_DIM_PERIMETER` is cross-method — Nyxus uses a divider walk against FracLac's edge box
   count — so it carries a stated ~3% band, per SPEC 7's "known method divergence" row.
+
+## ngldm.ibsi_phantom_2d
+- The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
+  its own with `IBSI=true` and `GREYDEPTH=128`, and the per-feature values averaged over the four.
+  Oracles: `ibsi` (published consensus) and `mirp`. Used by: `test_2d_ngldm_ibsi.h`,
+  `test_2d_ngldm_mirp.h`.
+- mirp reaches this configuration with `by_slice=True`, `base_discretisation_method="none"` (the
+  phantom is already discrete 1..6), `ngldm_distance=1` and `ngldm_difference_level=0` — the
+  alpha=0, d=1 coarseness the IBSI NGLDM definition uses. Generator:
+  `oracles/gen_ngldm_mirp.py`.
+- The two oracles are complementary rather than redundant. The IBSI consensus values are quoted to
+  three significant figures, so that file asserts at `rel=1e-2` (measured worst case 0.45%, on
+  `NGLDM_GLNU`: 10.2 published against 10.2464 computed). mirp reproduces Nyxus to **2.9e-16**, so
+  the mirp file asserts at `rel=1e-9`: IBSI fixes the definition, mirp fixes the digits.
+- `NGLDM_GLM` and `NGLDM_DCM` are outside this recipe: they are Nyxus mean-style rows with no IBSI
+  NGLDM counterpart and no mirp column, so they stay `regression` in `test_2d_ngldm_regression.h`.
