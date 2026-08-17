@@ -19,6 +19,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | `mitk` | 2023.04 | **build-once Docker** (`ClassificationCmdApps` config) | med | no prebuilt image; ~2–3 h one-time CLI-only build → reusable pinned image |
 | `pydicom` | 3.0.2 | **venv** `pip install pydicom` (pure-Python) | high | DICOM decode + `Rescale*` → HU; offline fixture/golden gen for `--preserve-hu` (CT) |
 | `octave` | 10.3.0 / 11.3.0 | **conda** `conda install -c conda-forge octave octave-statistics` (no Docker, no license) | high | license-free MATLAB substitute (MIGRATION 5.13); `mean`/`median`/`std`/`var`/`skewness`/`kurtosis`/`prctile`/`quantile` all present. Add `octave-image` for `regionprops`/`bweuler` (2D morphology) |
+| `skimage` | 0.26.0 | **conda** — already present in `nyxus_mirp` (mirp pulls scikit-image, scipy, numpy) | high | no separate env needed; `gabor_kernel` + `regionprops` + `moments*`; see the skimage note below |
 
 ## conda route (verified 2026-08, 2D GLCM vetting)
 
@@ -89,6 +90,31 @@ Gotchas hit while doing it:
   intensities and are silently off by orders of magnitude, not by a few percent. A grey-level
   emphasis feature far above what the bin count allows (3D GLRLM `HGLRE` at 4.3e6 against a ~4e3
   ceiling) is the symptom.
+
+## skimage — no env of its own (verified 2026-08, 2D GABOR vetting)
+
+`scikit-image` needs no setup step: `nyxus_mirp` already carries it (0.26.0, with scipy 1.17.1 and
+numpy 2.4.6) because mirp depends on it, so `conda run -n nyxus_mirp python …` runs any skimage
+generator. Check the version before pinning goldens — it is a transitive dependency, so it moves
+when mirp is updated, and the version belongs in the provenance line either way.
+
+Gotchas hit while vetting GABOR against it:
+
+- **`gabor_kernel(frequency=0)` is undefined.** It sizes its own support from the frequency, so a
+  zero-frequency filter has to be supplied in closed form (at f0 = 0 the envelope and the carrier
+  are both identically 1, i.e. a flat window).
+- **`gabor_kernel` and `skimage.filters.gabor()` are not interchangeable as oracles — measured.**
+  The kernel function gives you the filter and lets you convolve it the way the feature under test
+  does; `gabor()` additionally imposes skimage's own border handling (`mode="reflect"`) and its
+  untruncated kernel support. Scoring Nyxus' GABOR off `gabor()` instead moves values by up to
+  **1.0**, the whole range of the feature, because an aspect ratio like Nyxus' `gamma=0.1` makes the
+  analytic kernel hundreds of pixels wide (369×113 at the lowest frequency) while the feature crops
+  it to 16×16 — only 7.9% of the kernel's L1 mass survives there. Run both legs before describing a
+  filter feature as "vetted against skimage": which convolution the goldens assume is the claim.
+- **A count-based feature hides small kernel differences.** GABOR scores a pixel count over a
+  threshold, so it only moves in steps of `1/baseline_count`. Print that step (generator part C)
+  before believing that an exact match proves the filters agree to machine precision — it does not,
+  and the honest claim is the one the tolerance can support.
 
 ## Corrections / notable findings
 

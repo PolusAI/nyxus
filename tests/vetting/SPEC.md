@@ -281,7 +281,10 @@ checked rather than assumed (see the checker's `DIM_AGNOSTIC` list, each entry w
 Two families sit outside the `2d`/`3d` split: `imq` (image quality) carries `IMQ` in the
 registry's `dim` column, and it names its own dimension, so `test_imq_opencv.h` takes no
 token. Fixtures, data tables and the gtest translation unit are named by §6.3, not by this
-rule — `test_data.h`, `test_gabor_truth.h`, `test_all.cc`.
+rule — `test_data.h`, `test_dsb2018_data.h`, `test_all.cc`. That exemption covers *fixtures*, not
+goldens: a table of oracle values in an exempt file is outside both this rule and §6.3.1, which is
+how `gabor_truth` sat unchecked in `test_gabor_truth.h` until the GABOR re-vetting moved it next to
+its assertions.
 
 ### 6.2 Test functions / gtest cases
 `test_<dim>_<family>[_<subject>]_<oracle>` — the dim token says which implementation, the
