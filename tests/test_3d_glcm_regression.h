@@ -59,6 +59,22 @@ static ref_vals_map<double> glcm_3d_regression_ref_vals
 // build (and with it, the 25 assertions below).
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
+// frac_tolerance = 1e9, i.e. rel=1e-9: these are Nyxus' own values pinned to full precision, so a
+// drift guard should catch any change at all. The previous 10% band would have passed a value off
+// by a factor of 1.1.
+//
+// The two information measures get rel=1e-6 instead. Both are a difference of two entropies of
+// similar size (INFOMEAS1 is (HXY-HXY1)/HX), and the entropies come out of fast_log10, whose core
+// is a float-precision polynomial -- its last bits depend on how the compiler rounds and contracts
+// that float arithmetic, and the cancellation amplifies the difference into the result. The table
+// was dumped on MSVC; Apple clang reproduces INFOMEAS1 to rel 1.9e-9, which the 1e-9 band failed.
+// 1e-6 keeps ~500x of headroom over that and still catches any change to the math, which moves
+// these values by percent or more.
+static double glcm_3d_regression_frac_tolerance (const std::string& feature_name)
+{
+    return (feature_name == "3GLCM_INFOMEAS1" || feature_name == "3GLCM_INFOMEAS2") ? 1.e6 : 1.e9;
+}
+
 void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
     // (1) prepare
@@ -134,10 +150,9 @@ void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     // aggregate angled subfeatures (13 angles for 3D)
     double atot = f.calc_ave(r.fvals[fcode]);
 
-    // (7) verdict. frac_tolerance = 1e9, i.e. rel=1e-9: these are Nyxus' own values pinned to full
-    // precision, so a drift guard should catch any change at all. The previous 10% band would have
-    // passed a value off by a factor of 1.1.
-    ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals[fname], 1e9));
+    // (7) verdict, at the per-feature drift band
+    ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals[fname], glcm_3d_regression_frac_tolerance (fname)))
+        << fname;
 }
 
 // Regenerates every golden in glcm_3d_regression_ref_vals at full precision, in the exact shape the
