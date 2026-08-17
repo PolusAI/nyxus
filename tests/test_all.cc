@@ -727,6 +727,10 @@ TEST(TEST_NYXUS, TEST_2D_GABOR_SKIMAGE){
     #endif
 }
 
+TEST(TEST_NYXUS, TEST_2D_GABOR_DOCUMENTED_DEFAULTS_SKIMAGE){
+    assert_2d_gabor_documented_defaults_skimage();
+}
+
 
 //***** helper functionality ***** 
 

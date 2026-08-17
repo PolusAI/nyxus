@@ -56,7 +56,7 @@ KINDS = ORACLES | {"regression", "invariant", "mechanics"}
 # SPEC 6.3: pure fixtures / harness / framework entry points - out of the taxonomy
 FIXTURES = {
     "test_all.cc",              # the gtest translation unit
-    "test_data.h", "test_main_nyxus.h", "test_dsb2018_data.h", "test_gabor_truth.h",
+    "test_data.h", "test_main_nyxus.h", "test_dsb2018_data.h",
     "test_data.py", "test_tissuenet_data.py",
     "test_ref_vals.h",          # the SPEC 6.3.1 table aliases; declares types, asserts nothing
 }

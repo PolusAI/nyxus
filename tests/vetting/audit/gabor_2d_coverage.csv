@@ -1,0 +1,2 @@
+Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
+2D,gabor,GABOR,skimage,test_2d_gabor_skimage;test_2d_gabor_documented_defaults_skimage,N,,"the family's only feature. Two config points, both oracle-asserted: gabor.cpp_static_defaults (assert_2d_gabor_skimage) and gabor.documented_defaults (assert_2d_gabor_documented_defaults_skimage). No regression file exists and none is needed - every pinned value carries an oracle claim."
