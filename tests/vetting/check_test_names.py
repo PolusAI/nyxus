@@ -24,6 +24,14 @@ Non-assertion files are recognized by suffix and carry no kind:
   *_coverage.h      parameterized completeness sweep (per-feature oracle varies by row)
 Pure fixtures/harness are listed in FIXTURES.
 
+  6.3.1 includes   a test_<dim>_<family>_* header is that family's, and only that family's
+                   files may include it
+
+A fixture two families need is not a reason for one of them to include the other's header: that
+puts a family's file in the include graph of assertions it knows nothing about, and it is how a
+shared table reached callers it could not see. The neutral home is test_main_nyxus.h; a header
+that genuinely belongs to no family is listed in FAMILY_NEUTRAL with the reason.
+
 Helpers are NOT tests and must not use the test_ prefix (the tree convention is assert_*),
 so every test_* function found here is treated as a test.
 
@@ -78,6 +86,18 @@ DIM_AGNOSTIC = {
     "test_imq_cellprofiler.h": "dim=IMQ in the registry",
     "test_imq_regression.h": "dim=IMQ in the registry",
 }
+
+# Headers that belong to no family, so any file may include them. Everything else named
+# test_<dim>_<family>_* is that family's and is included only from that family (SPEC 6.3.1); a
+# fixture more than one family needs goes to test_main_nyxus.h instead. Membership here is the
+# positive claim "this header names a kind or a harness, not a family".
+FAMILY_NEUTRAL = {
+    "test_3d_coverage_common.h": "named for the _coverage kind: one parameterized sweep per family",
+    "test_feature_calculation_common.h": "the assert_feature template, used from both dims",
+}
+
+# the gtest translation unit: it includes every assertion header by definition
+TRANSLATION_UNIT = "test_all.cc"
 
 # functions whose assertion kind differs from their file's kind, kept in place until the
 # file is split (each needs the shared fixture extracted first)
@@ -148,6 +168,8 @@ TABLE_ACCESSOR = re.compile(
     r"|std::(?:unordered_)?(?:map|multimap|vector|array|set)[ \t]*<.*>)"
     r"[ \t]*&[ \t]*([A-Za-z_]\w*)[ \t]*\([ \t]*\)[ \t]*$")
 
+INCLUDE = re.compile(r'^[ 	]*#include[ 	]+"(test_[^"]+)"', re.M)
+
 CPP_DEF = re.compile(
     r"^[ \t]*(?:static[ \t]+)?(?:inline[ \t]+)?void[ \t]+(test_[A-Za-z0-9_]*)[ \t]*\(([^)]*)\)", re.M)
 PY_DEF = re.compile(r"^[ \t]*def[ \t]+(test_[A-Za-z0-9_]*)[ \t]*\(", re.M)
@@ -184,6 +206,25 @@ def file_kind(name):
     if len(parts) < 3 or parts[0] != "test" or parts[-1] not in KINDS:
         return None, "BAD"
     return parts[-1], "ok"
+
+
+def file_family(name):
+    """-> the family a test file belongs to, or None if it belongs to none.
+
+    The family is what sits between the dim token and the kind, so it may itself contain
+    underscores (intensity_histogram). imq carries no dim token and is still a family.
+    """
+    if name in FIXTURES or name in GRANDFATHERED or name in FAMILY_NEUTRAL:
+        return None
+    parts = name.rsplit(".", 1)[0].split("_")
+    if len(parts) < 3 or parts[0] != "test":
+        return None
+    parts = parts[1:]
+    if parts[0] in DIMS:
+        parts = parts[1:]
+    if len(parts) < 2:
+        return None
+    return "_".join(parts[:-1])
 
 
 def fn_dim(fn):
@@ -237,6 +278,23 @@ def check(root):
         if dwhy == "BAD":
             errors.append(f"{p.name}: file name carries no 2d/3d dim token - add one, or list "
                           f"it in DIM_AGNOSTIC with the reason it needs none (SPEC 6.1)")
+
+    # ---- 6.3.1 a family's header is included only from that family ----
+    # A fixture two families need belongs in test_main_nyxus.h. Reaching it through the other
+    # family's _common.h drags that family's whole include graph -- and, before the tables were
+    # split out, its reference data -- into assertions it has nothing to do with.
+    for p in files:
+        if p.suffix == ".py" or p.name == TRANSLATION_UNIT:
+            continue
+        mine = file_family(p.name)
+        for m in INCLUDE.finditer(read(p)):
+            theirs = file_family(m.group(1))
+            if theirs and theirs != mine:
+                whose = f"the {mine} family" if mine else "no family"
+                errors.append(f"{p.name}: belongs to {whose} but includes {m.group(1)}, which is "
+                              f"the {theirs} family's - move the shared fixture to "
+                              f"test_main_nyxus.h, or list the header in FAMILY_NEUTRAL with the "
+                              f"reason it belongs to no family (SPEC 6.3.1)")
 
     # ---- 6.2 function names ----
     for p in files:

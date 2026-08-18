@@ -1,6 +1,12 @@
 #pragma once
 
-#include "test_2d_morphology_common.h"
+#include <gtest/gtest.h>
+
+#include "../src/nyx/roi_cache.h"
+#include "../src/nyx/features/zernike.h"
+#include "test_data.h"
+#include "test_main_nyxus.h"   // shared config: make_shape2d_settings
+#include "test_ref_vals.h"
 
 static ref_vals_map<std::vector<double>> zernike_2d_regression_ref_vals{
 	{"ZERNIKE2D", {
@@ -33,16 +39,39 @@ static void assert_zernike_vector_feature_regression(
 }
 
 
+// The ROI ZERNIKE2D is measured on: the 8x8 shape2d fixture under the shared shape config.
+// ZernikeFeature reads the ROI image matrix and nothing any other feature produces, so the loader
+// is the whole prerequisite -- this file builds its own ROI rather than borrowing the morphology
+// fixture (SPEC 6.3.1).
+static void calculate_zernike_moment_values(std::vector<std::vector<double>>& fvals)
+{
+	Fsettings s = make_shape2d_settings();
+
+	LR roidata(101);
+	load_masked_test_roi_data(
+		roidata,
+		shape2d_morphology_intensity,
+		shape2d_morphology_mask,
+		sizeof(shape2d_morphology_mask) / sizeof(NyxusPixel));
+	roidata.initialize_fvals();
+
+	ZernikeFeature zernike;
+	zernike.calculate(roidata, s);
+	zernike.save_value(roidata.fvals);
+
+	fvals = roidata.fvals;
+}
+
 // ---------------------------------------------------------------------------------------------------
 // Migrated from test_2d_remaining_features.h (Wave 6): ZERNIKE2D. Per registry decision (§6.1) mahotas
 // is not an accepted oracle, so ZERNIKE2D stays analytic/regression -> test_2d_zernike_regression.h.
-// Shared fixture/oracle-data lives in test_2d_morphology_common.h.
+// The ROI it measures is built above; the shared config is in test_main_nyxus.h.
 // ---------------------------------------------------------------------------------------------------
 
 void test_2d_zernike_moments_regression()
 {
 	std::vector<std::vector<double>> fvals;
-	calculate_shape2d_feature_values(fvals);
+	calculate_zernike_moment_values(fvals);
 
 	assert_zernike_vector_feature_regression(fvals, Nyxus::Feature2D::ZERNIKE2D, "ZERNIKE2D");
 }

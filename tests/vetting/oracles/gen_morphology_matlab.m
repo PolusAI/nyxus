@@ -10,7 +10,7 @@
 % is added later.
 %
 % Provenance: tool=GNU Octave 11.3.0 + image package 2.20.0, used as the license-free MATLAB
-% stand-in (tests/vetting/TOOLS.md); config=make_shape2d_settings() in test_2d_morphology_common.h,
+% stand-in (tests/vetting/TOOLS.md); config=make_shape2d_settings() in tests/test_main_nyxus.h,
 % i.e. PIXELSIZEUM=2.0, IBSI=false, single ROI. The fixture is read out of tests/test_data.h so the
 % generator and the C++ tests share one copy of the pixels -- same discipline as
 % tests/vetting/oracles/ibsi_phantom.py. CI never invokes this script.

@@ -99,7 +99,7 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 
 ## morphology.caliper_ellipse
 - The filled ellipse a=20, b=10 built by `calculate_ellipse_caliper_values()`
-  (`test_2d_morphology_common.h`), at `make_shape2d_settings()`. Oracle: `imea`
+  (`test_2d_morphology_common.h`), at `make_shape2d_settings()` (`test_main_nyxus.h`). Oracle: `imea`
   `shape_measurements_2d(mask, spatial_resolution_xy=1.0, dalpha=10)`. Used by:
   `test_2d_morphology_imea.h`.
 - `dalpha=10` matches Nyxus' own caliper sweep (`rot_angle_increment = 10` degrees, `caliper.h`), so

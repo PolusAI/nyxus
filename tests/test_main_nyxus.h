@@ -123,3 +123,24 @@ namespace Nyxus
     }
 
 }
+
+// The config every 2D shape assertion is measured under -- 2 um pixels, 128 grey levels, IBSI off.
+// It sits here rather than in one family's header because morphology, radial and zernike all pin
+// goldens to it: one copy is what keeps the three families measuring the same thing (SPEC 6.3.1).
+
+static Fsettings make_shape2d_settings()
+{
+	Fsettings s;
+	s.resize(static_cast<int>(NyxSetting::__COUNT__));
+	s[static_cast<int>(NyxSetting::SOFTNAN)].rval = 0.0;
+	s[static_cast<int>(NyxSetting::TINY)].rval = 0.0;
+	s[static_cast<int>(NyxSetting::SINGLEROI)].bval = false;
+	s[static_cast<int>(NyxSetting::GREYDEPTH)].ival = 128;
+	s[static_cast<int>(NyxSetting::PIXELSIZEUM)].rval = 2.0;
+	s[static_cast<int>(NyxSetting::XYRES)].rval = 1.0;
+	s[static_cast<int>(NyxSetting::PIXELDISTANCE)].ival = 1;
+	s[static_cast<int>(NyxSetting::USEGPU)].bval = false;
+	s[static_cast<int>(NyxSetting::VERBOSLVL)].ival = 0;
+	s[static_cast<int>(NyxSetting::IBSI)].bval = false;
+	return s;
+}
