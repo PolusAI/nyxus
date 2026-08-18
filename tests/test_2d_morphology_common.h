@@ -15,45 +15,27 @@
 #include "../src/nyx/features/extrema.h"
 #include "../src/nyx/features/roi_radius.h"
 #include "../src/nyx/features/euler_number.h"
-#include "../src/nyx/features/fractal_dim.h"
-#include "../src/nyx/features/circle.h"
 #include "../src/nyx/features/geodetic_len_thickness.h"
 #include "../src/nyx/features/erosion.h"
+#include "../src/nyx/features/fractal_dim.h"
+#include "../src/nyx/features/circle.h"
 #include "../src/nyx/features/caliper.h"
 #include "../src/nyx/features/chords.h"
 #include "../src/nyx/features/hexagonality_polygonality.h"
 #include "../src/nyx/features/neighbors.h"
-#include "../src/nyx/features/radial_distribution.h"
-#include "../src/nyx/features/zernike.h"
 #include "test_data.h"
-#include "test_main_nyxus.h"
+#include "test_main_nyxus.h"   // shared config: make_shape2d_settings
 
 #include <filesystem>
 #include <memory>
 #include "../src/nyx/grayscale_tiff.h"
 
-static Fsettings make_shape2d_settings()
-{
-	Fsettings s;
-	s.resize(static_cast<int>(NyxSetting::__COUNT__));
-	s[static_cast<int>(NyxSetting::SOFTNAN)].rval = 0.0;
-	s[static_cast<int>(NyxSetting::TINY)].rval = 0.0;
-	s[static_cast<int>(NyxSetting::SINGLEROI)].bval = false;
-	s[static_cast<int>(NyxSetting::GREYDEPTH)].ival = 128;
-	s[static_cast<int>(NyxSetting::PIXELSIZEUM)].rval = 2.0;
-	s[static_cast<int>(NyxSetting::XYRES)].rval = 1.0;
-	s[static_cast<int>(NyxSetting::PIXELDISTANCE)].ival = 1;
-	s[static_cast<int>(NyxSetting::USEGPU)].bval = false;
-	s[static_cast<int>(NyxSetting::VERBOSLVL)].ival = 0;
-	s[static_cast<int>(NyxSetting::IBSI)].bval = false;
-	return s;
-}
-
-// Every 2D shape feature the tests read off the 8x8 shape2d fixture: basic morphology, contour,
-// hull, ellipse fit, extrema, radii, Euler number, fractal dimension, circles, geodetic length,
-// calipers, chords, erosions, radial distribution and Zernike moments. One ROI, one pass -- the
-// feature classes are independent, so a caller that reads only a few of them still gets the same
-// numbers it would from a narrower fixture.
+// The 2D shape features the morphology assertions read off the 8x8 shape2d fixture: basic
+// morphology, contour, hull, ellipse fit, extrema, radii, Euler number, fractal dimension,
+// circles, geodetic length, calipers, chords and erosions. One ROI, one pass -- the feature
+// classes are independent, so a caller that reads only a few of them still gets the same numbers
+// it would from a narrower fixture. Radial distribution and Zernike are not here: they are other
+// families' features, and each builds the ROI it measures in its own file (SPEC 6.3.1).
 static void calculate_shape2d_feature_values(std::vector<std::vector<double>>& fvals)
 {
 	Fsettings s = make_shape2d_settings();
@@ -125,14 +107,6 @@ static void calculate_shape2d_feature_values(std::vector<std::vector<double>>& f
 	ErosionPixelsFeature erosion;
 	erosion.calculate(roidata, s);
 	erosion.save_value(roidata.fvals);
-
-	RadialDistributionFeature radial;
-	radial.calculate(roidata, s);
-	radial.save_value(roidata.fvals);
-
-	ZernikeFeature zernike;
-	zernike.calculate(roidata, s);
-	zernike.save_value(roidata.fvals);
 
 	fvals = roidata.fvals;
 }
@@ -353,6 +327,10 @@ static void calculate_fractal_blob512_feature_values(std::vector<std::vector<dou
 // judged _skimage and _cellprofiler functions against morphology_2d_regression_ref_vals -- the SPEC
 // 6.2.1 defect, reached through file layout rather than through naming.
 //
-// This is the only shared 2D shape fixture header. The zernike and radial regression files include it
-// too: their features are measured on the shape2d ROI built here, and SPEC 6.3.1 shares fixtures
-// across families freely -- it is reference data that may not be shared.
+// These fixtures are morphology's own, read only from a test_2d_morphology_*.h file: the shape2d ROI
+// the morphology assertions measure, the polygonality scene, the imea ellipse and circle rasters and
+// the 512x512 fractal blob. Radial and zernike measure the same shape2d pixels but build their ROI in
+// their own file, each running only the features it asserts -- a family reaches what it needs through
+// the harness header, never by including another family's (SPEC 6.3.1). What the three genuinely
+// share is the config, make_shape2d_settings() in test_main_nyxus.h, so every golden pinned on this
+// ROI answers to one definition of it.

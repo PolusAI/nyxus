@@ -78,7 +78,7 @@ def test_vetting_tree_names_conform_to_spec_mechanics():
 
 def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     """The checker must actually fail on each defect class - a lint that cannot fail is not a lint.
-    Plants one of each and requires all twelve to be reported. Each planted file isolates a single
+    Plants one of each and requires all thirteen to be reported. Each planted file isolates a single
     defect, so an assertion failing here names the rule that stopped being enforced."""
     (tmp_path / "tests" / "python").mkdir(parents=True)
     # a TEST body with two callees: case = UPPER(function) has no single function to mirror
@@ -136,6 +136,14 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
         '    {"NGLDM_LDE", 1.0},\n};\n'
         'void test_2d_ngldm_lde_regression() {}', encoding="utf-8")
 
+    # one family reaching into another family's fixture header. Both file names conform and the
+    # header holds no values, so only the include makes it a defect (SPEC 6.3.1).
+    (tmp_path / "tests" / "test_2d_glszm_common.h").write_text(
+        "static void calculate_glszm_fixture() {}\n", encoding="utf-8")
+    (tmp_path / "tests" / "test_2d_gldzm_regression.h").write_text(
+        '#include "test_2d_glszm_common.h"\n'
+        'void test_2d_gldzm_sde_regression() {}', encoding="utf-8")
+
     errs = ctn.check(tmp_path)
     assert any("test_2d_glcm.h" in e and "SPEC 6.1" in e for e in errs)       # file, no kind
     assert any("test_glcm_regression.h" in e and "dim token" in e for e in errs)  # file, no dim
@@ -155,3 +163,5 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
                for e in errs)                                                # conforming name, wrong file
     assert any("ngldm_2d_regression_ref_vals" in e and "raw container" in e
                for e in errs)                                                # conforming name, raw type
+    assert any("test_2d_gldzm_regression.h" in e and "test_2d_glszm_common.h" in e
+               and "SPEC 6.3.1" in e for e in errs)                          # includes another family

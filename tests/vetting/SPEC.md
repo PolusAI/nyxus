@@ -372,6 +372,28 @@ cannot see. That is not hypothetical: one shared lookup spanning four tables let
 the §6.2.1 defect, reached through file layout instead of through naming. Keeping values next to their
 assertions makes the mismatch visible in one file rather than inferable across three.
 
+**A family's header is included only from that family.** `test_<dim>_<family>_common.h` holds that
+family's fixtures. Including it from a second family is not free: it puts a family's file in the
+include graph of assertions that never name it, so a fixture edit lands on tests its own family
+cannot see, and reaching one ROI builder drags in every feature header its neighbours needed. It is
+also the road back to the defect above, since a header read from two families is exactly the scope
+in which a shared table stops being readable in one place.
+
+Two families wanting the same fixture is usually a fixture doing too much, so narrow it first: a
+family's fixture computes what that family asserts, and the prerequisites those features actually
+read. Radial needs the contour before `RadialDistributionFeature`; Zernike needs nothing but the
+loaded ROI. Each builds it in its own file, in a few lines, and pins the same goldens as the
+fifteen-feature pass they used to borrow. What survives narrowing is usually configuration rather
+than computation — here `make_shape2d_settings()`, the config every 2D shape golden is measured
+under — and that goes to `test_main_nyxus.h`, the harness header every test already includes, so it
+keeps one definition. A header that belongs to no family — `test_3d_coverage_common.h`, named for
+the `_coverage` kind, or `test_feature_calculation_common.h`, used from both dims — is listed in
+`FAMILY_NEUTRAL` with its reason, the way `DIM_AGNOSTIC` carries "this file has no dimension".
+
+**Enforced.** `check_test_names.py` rejects any `#include "test_…"` naming a family other than the
+including file's. `test_all.cc` is the one exemption: it is the translation unit, so including every
+assertion header is its job.
+
 An assertion helper is bound to the table it reads, so it moves with it. A helper serving several
 oracle files is the shape to look for: it means one table is answering to several `<oracle>` claims,
 and the fix is to split the helper per oracle, not to relocate the table.

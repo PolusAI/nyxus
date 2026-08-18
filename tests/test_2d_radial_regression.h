@@ -11,9 +11,10 @@
 #include <gtest/gtest.h>
 
 #include "../src/nyx/roi_cache.h"
+#include "../src/nyx/features/contour.h"
+#include "../src/nyx/features/radial_distribution.h"
 #include "test_data.h"
-#include "test_main_nyxus.h"
-#include "test_2d_morphology_common.h"   // fixture: calculate_shape2d_feature_values
+#include "test_main_nyxus.h"   // shared config: make_shape2d_settings
 #include "test_ref_vals.h"
 
 static ref_vals_map<std::vector<double>> radial_2d_regression_ref_vals{
@@ -46,17 +47,44 @@ static void assert_radial_vector_feature_regression(
 		ASSERT_NEAR(actual[i], golden_values[i], abs_tolerance) << feature_name << "[" << i << "]";
 }
 
+// The ROI these three features are measured on: the 8x8 shape2d fixture under the shared shape
+// config. RadialDistributionFeature reads the ROI contour, so ContourFeature runs first; nothing
+// else in the shape set feeds it, which is why this file builds its own ROI instead of borrowing
+// the morphology fixture (SPEC 6.3.1).
+static void calculate_radial_distribution_values(std::vector<std::vector<double>>& fvals)
+{
+	Fsettings s = make_shape2d_settings();
+
+	LR roidata(101);
+	load_masked_test_roi_data(
+		roidata,
+		shape2d_morphology_intensity,
+		shape2d_morphology_mask,
+		sizeof(shape2d_morphology_mask) / sizeof(NyxusPixel));
+	roidata.initialize_fvals();
+
+	ContourFeature contour;
+	contour.calculate(roidata, s);
+	contour.save_value(roidata.fvals);
+
+	RadialDistributionFeature radial;
+	radial.calculate(roidata, s);
+	radial.save_value(roidata.fvals);
+
+	fvals = roidata.fvals;
+}
+
 // ---------------------------------------------------------------------------------------------------
 // Migrated from test_2d_remaining_features.h (Wave 6): radial intensity distribution (FRAC_AT_D,
 // MEAN_FRAC, RADIAL_CV). Registry target_test = test_2d_intensity_histogram_regression.h; oracle is
 // cellprofiler MeasureObjectIntensityDistribution (RadialDistribution_*), still regression-snapshot
-// pending wiring. Shared fixture/oracle-data lives in test_2d_morphology_common.h.
+// pending wiring. The ROI it measures is built above; the shared config is in test_main_nyxus.h.
 // ---------------------------------------------------------------------------------------------------
 
 void test_2d_radial_distribution_regression()
 {
 	std::vector<std::vector<double>> fvals;
-	calculate_shape2d_feature_values(fvals);
+	calculate_radial_distribution_values(fvals);
 
 	assert_radial_vector_feature_regression(fvals, Nyxus::Feature2D::FRAC_AT_D, "FRAC_AT_D");
 	assert_radial_vector_feature_regression(fvals, Nyxus::Feature2D::MEAN_FRAC, "MEAN_FRAC");
