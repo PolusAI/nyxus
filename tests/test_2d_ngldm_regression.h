@@ -27,7 +27,7 @@ void assert_ngldm_feature_regression(const Feature2D& feature_, const std::strin
 		feature_,
 		feature_name,
 		ngldm_2d_regression_ref_vals,
-		"UNVETTED_NO_DIRECT_ORACLE__",
+		"REGRESSION__",
 		1e9);
 }
 
