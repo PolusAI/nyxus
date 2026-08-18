@@ -39,8 +39,8 @@ SOURCES = [
     "test_2d_ngldm_regression.h",
 ]
 # A golden table whose keys are never named in the asserting function's body. Empty for this family:
-# every morphology assertion names its feature on the assertion line. Kept so the mechanism is here
-# if a later table-driven loop is added.
+# every NGLDM assertion names its feature on the assertion line. Kept so the mechanism is here if a
+# later table-driven loop is added.
 TABLE_OWNER = {}
 
 ORACLE_SUFFIX = {"mirp": "mirp", "ibsi": "ibsi"}

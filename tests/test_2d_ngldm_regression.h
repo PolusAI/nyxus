@@ -3,11 +3,12 @@
 // NGLDM_GLM and NGLDM_DCM are Nyxus mean-style rows with no counterpart in the IBSI NGLDM table, so
 // they cannot be IBSI-vetted and their goldens are pinned Nyxus output. They lived in
 // test_2d_ngldm_ibsi.h next to the genuine IBSI consensus values; SPEC 2 keeps one kind per file, so
-// they move here with the snapshot table and helper they use.
+// they moved here with the snapshot table they read. The fixture they run on is shared through
+// test_2d_ngldm_common.h, so this file no longer reaches it by including an oracle file.
 
 #include <string>
 
-#include "test_2d_ngldm_ibsi.h"   // shared fixture: assert_ngldm_feature_against_golden_values
+#include "test_2d_ngldm_common.h"   // fixture: assert_ngldm_feature_against_golden_values
 #include "test_ref_vals.h"
 
 // GLM and DCM are Nyxus mean-style rows that are not defined in the IBSI
