@@ -2,7 +2,11 @@
 import csv, os, sys, argparse
 
 COLUMNS = ["dim","feature","family","status","oracle","agreement","config_recipe",
-           "tolerance","current_test","target_test","candidate_oracle","flag","source","notes"]
+           "tolerance","current_test","target_test","candidate_oracle","flag","source","notes",
+           # SPEC 3: the assertion a row records is identified by the exact gtest case it runs
+           # as and the benchmark it runs on. A row naming neither says a feature is covered
+           # without saying by what, which is what the 3D NGLDM review asked to close.
+           "test_name","benchmark"]
 ALLOWED_STATUS = {"vetted","regression","untested"}
 ALLOWED_ORACLES = {"pyradiomics","radiomicsj","mirp","matlab","cellprofiler","mitk",
                    "feature2djava","wndcharm","imea","imagej","fraclac","ibsi","analytic","skimage",
@@ -11,6 +15,30 @@ ALLOWED_ORACLES = {"pyradiomics","radiomicsj","mirp","matlab","cellprofiler","mi
 def load_registry(path):
     with open(path, newline="") as fh:
         return list(csv.DictReader(fh))
+
+def benchmark_ids(path):
+    """-> the ids defined in benchmarks.md, i.e. every '## `bench...`' or '## `name`' heading."""
+    import re
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        return set(re.findall(r"^##\s+`([^`]+)`", fh.read(), re.M))
+
+
+def validate_benchmarks(rows, benchmarks_md):
+    """A benchmark id that is not defined is a pointer to nothing (SPEC 6.3)."""
+    defined = benchmark_ids(benchmarks_md)
+    if defined is None:
+        return [f"{benchmarks_md} is missing; SPEC 6.3 requires it once any row names a benchmark"] \
+            if any((r.get("benchmark") or "").strip() for r in rows) else []
+    errs = []
+    for r in rows:
+        b = (r.get("benchmark") or "").strip()
+        if b and b not in defined:
+            errs.append(f"{r.get('feature','')}: benchmark {b!r} is not defined in "
+                        f"{os.path.basename(benchmarks_md)}")
+    return errs
+
 
 def validate_rows(rows):
     errs = []
@@ -73,6 +101,8 @@ def main(argv=None):
     a = ap.parse_args(argv)
     rows = load_registry(a.registry)
     errs = validate_rows(rows)
+    errs += validate_benchmarks(rows, os.path.join(os.path.dirname(a.registry) or ".",
+                                                   "benchmarks.md"))
     if a.check:
         for e in errs: print("ERROR:", e)
         return 1 if errs else 0

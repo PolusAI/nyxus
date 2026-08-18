@@ -11,8 +11,9 @@ _REPO = _HERE.parents[1]
 
 def _write(tmp_path, rows):
     p = tmp_path / "reg.csv"
-    cols = ["dim","feature","family","status","oracle","agreement","config_recipe",
-            "tolerance","current_test","target_test","candidate_oracle","flag","source","notes"]
+    # the schema comes from check_coverage itself: a hardcoded copy here silently fails every
+    # validate_rows() call the moment a column is added, which is what adding test_name/benchmark did
+    cols = list(cc.COLUMNS)
     with open(p, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=cols); w.writeheader()
         for r in rows:
@@ -66,6 +67,19 @@ def test_vetting_drift_and_main_write_mechanics(tmp_path):
 def test_vetting_main_check_fails_on_bad_row_mechanics(tmp_path):
     path = _write(tmp_path, [{"dim":"2D","feature":"A","family":"x","status":"bad","oracle":""}])
     assert cc.main(["--check", "--registry", path]) == 1
+
+def test_vetting_undefined_benchmark_flagged_mechanics(tmp_path):
+    """A benchmark id is a pointer; an id benchmarks.md does not define points at nothing (SPEC 6.3).
+    The registry gained the column so a row can say which fixture backs it - unchecked, the column
+    would let a row name a fixture that never existed."""
+    md = tmp_path / "benchmarks.md"
+    md.write_text("# Benchmark registry\n\n## `bench_real_one`\n\nsomething\n", encoding="utf-8")
+    rows = [{"feature": "A", "benchmark": "bench_real_one"},
+            {"feature": "B", "benchmark": "bench_typo"}]
+    errs = cc.validate_benchmarks(rows, str(md))
+    assert len(errs) == 1 and "bench_typo" in errs[0], errs
+    assert cc.benchmark_ids(str(md)) == {"bench_real_one"}
+
 
 # ---- SPEC 6.1/6.2 test-naming conventions (tests/vetting/check_test_names.py) ----
 
