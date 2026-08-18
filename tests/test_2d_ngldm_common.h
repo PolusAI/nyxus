@@ -48,14 +48,14 @@ void assert_ngldm_feature_against_golden_values(
     const Feature2D& feature_,
     const std::string& feature_name,
     const std::unordered_map<std::string, double>& feature_reference_values,
-    const std::string& review_prefix,
+    const std::string& trace_prefix,
     double frac_tolerance)
 {
     Fsettings s = make_ngldm2d_settings(true);
 
     int feature = int(feature_);
 
-    SCOPED_TRACE(review_prefix + feature_name);
+    SCOPED_TRACE(trace_prefix + feature_name);
     ASSERT_TRUE(feature_reference_values.count(feature_name) > 0);
 
     double total = 0;
