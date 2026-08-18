@@ -155,16 +155,16 @@ static void calculate_2d_wedge_geomoment_feature_values(std::vector<std::vector<
 static void assert_2d_geomoment_features(
 	const std::vector<std::vector<double>>& fvals,
 	const std::vector<GeomomentGoldenValue>& golden_values,
-	const std::string& review_prefix)
+	const std::string& trace_prefix)
 {
 	for (const auto& item : golden_values)
 	{
 		const double actual = fvals[static_cast<int>(item.feature)][0];
 		const double scale = std::max({1.0, std::abs(item.golden_value), std::abs(actual)});
 		const double tolerance = 1e-6 * scale;
-		const std::string review_name = review_prefix + item.name;
-		SCOPED_TRACE(review_name);
-		ASSERT_TRUE(std::isfinite(actual)) << review_name << " returned a non-finite value";
-		ASSERT_NEAR(actual, item.golden_value, tolerance) << review_name;
+		const std::string trace_name = trace_prefix + item.name;
+		SCOPED_TRACE(trace_name);
+		ASSERT_TRUE(std::isfinite(actual)) << trace_name << " returned a non-finite value";
+		ASSERT_NEAR(actual, item.golden_value, tolerance) << trace_name;
 	}
 }
