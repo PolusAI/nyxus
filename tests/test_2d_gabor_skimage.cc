@@ -129,7 +129,9 @@ static void assert_2d_gabor_scores_skimage (const ref_vals_list<std::vector<doub
 
         f.save_value (roidata.fvals);
 
-        ASSERT_TRUE(ref_vals[i].size() == roidata.fvals[(int)Nyxus::Feature2D::GABOR].size());
+        ASSERT_TRUE(ref_vals[i].size() == roidata.fvals[(int)Nyxus::Feature2D::GABOR].size())
+            << "ROI " << i << ": " << roidata.fvals[(int)Nyxus::Feature2D::GABOR].size()
+            << " filter scores against " << ref_vals[i].size() << " goldens";
 
         // The skimage-vetted goldens are compared against the in-RAM (CPU) path. The GPU path
         // (calculate_gpu, FFT-based convolution) diverges from the direct-convolution CPU path on
@@ -137,7 +139,12 @@ static void assert_2d_gabor_scores_skimage (const ref_vals_list<std::vector<doub
         if (!gpu)
             for (size_t j = 0; j < ref_vals[i].size(); ++j)
             {
-                ASSERT_TRUE(agrees_gt(ref_vals[i][j], roidata.fvals[(int)Nyxus::Feature2D::GABOR][j], GABOR_ORACLE_FRAC_TOL));
+                // the Nyxus value first: agrees_gt takes its band from the second argument, so the
+                // golden is what the tolerance is a fraction of
+                const double actual = roidata.fvals[(int)Nyxus::Feature2D::GABOR][j];
+                ASSERT_TRUE(agrees_gt(actual, ref_vals[i][j], GABOR_ORACLE_FRAC_TOL))
+                    << "ROI " << i << " filter " << j << ": actual=" << actual
+                    << " skimage=" << ref_vals[i][j];
             }
     }
 }
