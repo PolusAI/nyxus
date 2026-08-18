@@ -78,7 +78,7 @@ static double glrlm_3d_pyradiomics_frac_tolerance (const std::string& feature_na
 // every direction. The exception is run entropy, the family's only sum over logarithms, which Nyxus
 // evaluates through fast_log10 (helpers.h) -- a float-precision approximation of log2 -- against
 // PyRadiomics' double numpy.log2: measured 6.2e-4 worst per direction, held to 2e-3 below.
-static ref_vals_map_by_angle<double> glrlm_3d_pyradiomics_ref_vals_by_angle
+static const ref_vals_map_by_angle<double> glrlm_3d_pyradiomics_ref_vals_by_angle
 {
 	{0, {   // AngleShift dz=1 dy=1 dx=1
 		{"3GLRLM_GLN", 431.5570076611086},

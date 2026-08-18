@@ -266,16 +266,18 @@ def main():
     pins_ang = parse_pins_by_angle(txt_h, "glrlm_3d_pyradiomics_ref_vals_by_angle")
     npin = sum(len(v) for v in pins_ang.values())
     print(f"\n# verifying {npin} pinned per-direction goldens against this run")
-    nbad = 0
+    # a counter of its own: nbad already holds check_bounds()'s verdict, and reusing the name here
+    # would drop an out-of-range feature out of the exit test below
+    nang = 0
     for k in sorted(pins_ang):
         for name, want in sorted(pins_ang[k].items()):
             have = ang[name][k]
             rel = abs(have - want) / max(abs(want), 1e-12)
             if rel > 1e-12:
                 print(f"  FAIL angle {k} {name}: pyradiomics={have!r} pinned={want!r} rel={rel:.3g}")
-                nbad += 1
-    print("  all per-direction pins reproduce" if not nbad
-          else f"  {nbad} per-direction mismatches")
+                nang += 1
+    print("  all per-direction pins reproduce" if not nang
+          else f"  {nang} per-direction mismatches")
 
     pins = parse_pins(txt_h, "glrlm_3d_pyradiomics_ref_vals")
     print(f"\n# verifying {len(pins)} pinned goldens against this run")
@@ -299,9 +301,9 @@ def main():
     for name in missing_pin:
         print(f"  UNPINNED {name}: PyRadiomics reports {got[name]!r} and nothing pins it")
 
-    print(f"\n{nok} verified, {nfail} failed, {nmiss} unproducible, "
-          f"{nbad} per-direction mismatch(es)")
-    if nfail or nmiss or nbad:
+    print(f"\n{nok} verified, {nfail} failed, {nmiss} unproducible, {len(missing_pin)} unpinned, "
+          f"{nbad} out of range, {nang} per-direction mismatch(es)")
+    if nfail or nmiss or nbad or nang:
         print("SOME CHECKS FAILED -- do not promote")
         return 1
     print("ALL CHECKS PASSED")
