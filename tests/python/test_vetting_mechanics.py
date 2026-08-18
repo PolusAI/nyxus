@@ -37,6 +37,20 @@ def test_vetting_bad_status_and_token_flagged_mechanics(tmp_path):
     assert len(errs) == 4
     assert any("maybe" in e for e in errs) and any("mahotas" in e for e in errs)
 
+def test_vetting_unquoted_comma_row_flagged_mechanics(tmp_path):
+    """A row carrying an unquoted comma has more fields than the header: every field after the
+    comma shifts left by one and the last one falls off the end entirely. 3ROBUST_MEAN sat that
+    way with a "[P10,P90]" candidate_oracle, so its notes had become its source."""
+    cols = ",".join(cc.COLUMNS)
+    p = tmp_path / "reg.csv"
+    with open(p, "w", newline="") as fh:
+        fh.write(cols + "\n")
+        fh.write("3D,3X,firstorder,vetted,matlab,agreed,,,t.h,t.h,"
+                 "octave (mean of [P10,P90]),,tracker,note\n")
+    errs = cc.validate_rows(cc.load_registry(str(p)))
+    assert any("past the last column" in e for e in errs), errs
+
+
 def test_vetting_coverage_stats_and_report_mechanics(tmp_path):
     path = _write(tmp_path, [
         {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"pyradiomics"},

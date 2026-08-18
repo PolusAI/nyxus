@@ -129,7 +129,7 @@ KIND_EXCEPTIONS = {
 }
 
 # SPEC 6.3.1 golden reference tables: <family>_<dim>_<oracle>[_<subject>]_ref_vals
-TABLE_SUFFIXES = ("_ref_vals_by_label", "_ref_tols", "_ref_vals")
+TABLE_SUFFIXES = ("_ref_vals_by_label", "_ref_vals_by_angle", "_ref_tols", "_ref_vals")
 
 # A file-scope table holding reference data announces itself with one of these in its name. Any
 # such table must satisfy 6.3.1 - which also means a conforming table cannot quietly drift back
@@ -145,7 +145,7 @@ TABLE_EXCEPTIONS = {}
 # The SPEC 6.3.1 aliases from test_ref_vals.h. A declaration spelled with one of these IS a
 # reference table whatever it is named, which is what makes the name rule below apply to the
 # complete set rather than only to tables that already sound like one.
-TABLE_ALIASES = ("ref_vals_map_by_label", "ref_vals_map", "ref_vals_list")
+TABLE_ALIASES = ("ref_vals_map_by_label", "ref_vals_map_by_angle", "ref_vals_map", "ref_vals_list")
 
 # file-scope declaration (column 0; function locals are always indented in this tree). The brace
 # often sits on the next line, so the initialiser is checked by the caller. The tail accepts the

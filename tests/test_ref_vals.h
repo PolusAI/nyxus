@@ -32,6 +32,14 @@ using ref_vals_map = std::unordered_map<std::string, T>;
 template <typename T>
 using ref_vals_map_by_label = std::unordered_map<int, ref_vals_map<T>>;
 
+// Keyed by direction index, each direction holding its own per-feature table. The 3D texture
+// families compute one value per direction and only then average, so a reference that is one scalar
+// per feature can vet the average and nothing else: per-direction errors that cancel leave the mean
+// intact. A table of this shape is what lets an assertion check every direction.
+//   ref_vals_map_by_angle<double> glcm_3d_pyradiomics_ref_vals_by_angle { {0, {...}}, ... };
+template <typename T>
+using ref_vals_map_by_angle = std::unordered_map<int, ref_vals_map<T>>;
+
 // An ordered list of records rather than a keyed lookup: the geometric-moment tables carry
 // {enum, name, value} triples and are iterated in order, so there is no string key to map from.
 template <typename T>
