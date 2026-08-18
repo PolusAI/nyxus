@@ -91,7 +91,7 @@ def parse_pins(txt, table):
 
 
 def ellipse_mask():
-    """The fixture calculate_ellipse_caliper_values() builds in test_2d_remaining_common.h."""
+    """The fixture calculate_ellipse_caliper_values() builds in test_2d_morphology_common.h."""
     a, b, cx, cy = 20.0, 10.0, 26.0, 16.0
     yy, xx = np.mgrid[0:33, 0:53]
     return (((xx - cx) / a) ** 2 + ((yy - cy) / b) ** 2) <= 1.0

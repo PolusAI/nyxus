@@ -16,7 +16,7 @@ Fixtures are **not** copied into the generators. All three parse `tests/test_dat
 `{x, y, value}` pixel arrays, so the generator and the C++ tests share one copy of the pixels — the
 same discipline as `oracles/ibsi_phantom.py`. The ellipse benchmark is the one exception: it is
 generated arithmetically from `a=20, b=10, cx=26, cy=16`, mirroring
-`calculate_ellipse_caliper_values()` in `test_2d_remaining_common.h`.
+`calculate_ellipse_caliper_values()` in `test_2d_morphology_common.h`.
 
 ## MATLAB / Octave — `test_2d_morphology_matlab.h`
 
