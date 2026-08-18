@@ -107,12 +107,12 @@ void test_2d_moments_shape_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, moments_2d_regression_shape_ref_vals, "UNVETTED_NO_DIRECT_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_regression_shape_ref_vals, "REGRESSION__");
 }
 
 void test_2d_moments_intensity_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, moments_2d_regression_intensity_ref_vals, "UNVETTED_NO_DIRECT_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_regression_intensity_ref_vals, "REGRESSION__");
 }

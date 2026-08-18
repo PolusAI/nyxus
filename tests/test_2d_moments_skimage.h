@@ -134,21 +134,21 @@ void test_2d_moments_hu_wedge_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_wedge_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, moments_2d_skimage_wedge_hu_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_wedge_hu_ref_vals, "SKIMAGE_ORACLE__");
 }
 
 void test_2d_moments_shape_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, moments_2d_skimage_shape_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_shape_ref_vals, "SKIMAGE_ORACLE__");
 }
 
 void test_2d_moments_intensity_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, moments_2d_skimage_intensity_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_intensity_ref_vals, "SKIMAGE_ORACLE__");
 }
 
 // Normalized RAW moments: NORM_SPAT_MOMENT_pq = m_pq / m_00^((p+q)/2 + 1), and IMOM_NRM_pq the
@@ -200,12 +200,12 @@ void test_2d_moments_normraw_shape_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, moments_2d_skimage_normraw_shape_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_normraw_shape_ref_vals, "SKIMAGE_ORACLE__");
 }
 
 void test_2d_moments_normraw_intensity_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_2d_geomoment_feature_values(fvals);
-	assert_2d_geomoment_features(fvals, moments_2d_skimage_normraw_intensity_ref_vals, "VERIFIABLE_WITH_3P_BUILTIN_ORACLE__");
+	assert_2d_geomoment_features(fvals, moments_2d_skimage_normraw_intensity_ref_vals, "SKIMAGE_ORACLE__");
 }
