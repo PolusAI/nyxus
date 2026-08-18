@@ -2,7 +2,7 @@
 
 #include <string>
 
-#include "test_2d_ngldm_ibsi.h"   // shared fixture: assert_ngldm_feature_against_golden_values
+#include "test_2d_ngldm_common.h"   // fixture: assert_ngldm_feature_against_golden_values
 #include "test_ref_vals.h"
 
 // mirp goldens for the 2D NGLDM family (SPEC 6.4 provenance).
@@ -11,6 +11,10 @@
 // by_slice=True, base_discretisation_method="none" (the phantom is already discrete 1..6),
 // ngldm_distance=1 and ngldm_difference_level=0 (the alpha=0, d=1 coarseness the IBSI NGLDM
 // definition uses); generator=tests/vetting/oracles/gen_ngldm_mirp.py.
+//
+// The fixture -- the settings recipe and the four-slice averaging -- is shared through
+// test_2d_ngldm_common.h, so this file borrows no scaffolding from the IBSI oracle file and the
+// two tables stay out of each other's scope (SPEC 6.3.1).
 //
 // mirp and Nyxus implement the same definition over the same neighbourhood and agree to 2.9e-16
 // worst case, so these are asserted at the SPEC 7 "exact" tier. test_2d_ngldm_ibsi.h pins the same

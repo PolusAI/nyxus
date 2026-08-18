@@ -6,7 +6,7 @@ Prints the paste-ready goldens AND re-verifies every golden pinned in test_2d_ng
 non-zero on any mismatch or on any pin this generator cannot produce.
 
 Recipe `ngldm.ibsi_phantom_2d`: the four IBSI digital-phantom slices, each featurised on its own and
-the per-feature values averaged over the four, which is what test_2d_ngldm_ibsi.h's helper does.
+the per-feature values averaged over the four, which is what test_2d_ngldm_common.h's fixture does.
 mirp runs `by_slice=True` with `base_discretisation_method="none"` (the phantom is already discrete
 1..6), `ngldm_distance=1` and `ngldm_difference_level=0` -- the alpha=0, d=1 coarseness the IBSI
 NGLDM definition uses, and what Nyxus computes in IBSI mode.
