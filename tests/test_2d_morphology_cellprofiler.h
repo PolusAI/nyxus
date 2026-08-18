@@ -5,10 +5,10 @@
 // statistics and MASS_DISPLACEMENT. They were asserted inside two mixed-kind functions in
 // test_2d_morphology_regression.h; SPEC 2 keeps one kind per file, so they are split out here.
 //
-// PROVENANCE RECORD MISSING (SPEC 6.4): the values come from the shared golden map in
-// test_2d_morphology_common.h, which is still named for a snapshot and carries no CellProfiler version,
-// config or generator. The registry is the authority on WHAT vets these features; the map name and
-// the missing provenance record are tracked separately in not_covered.md section C.
+// PROVENANCE RECORD MISSING (SPEC 6.4): the goldens below carry no CellProfiler version, config or
+// generator -- they were split out of a snapshot map, and nothing in the tree records where they were
+// measured. The registry is the authority on WHAT vets these features; the missing provenance record
+// is tracked separately in not_covered.md section C.
 
 #include <string>
 #include <vector>

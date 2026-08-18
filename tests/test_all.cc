@@ -24,7 +24,6 @@
 #include "test_2d_morphology_fraclac.h"
 #include "test_2d_moments_skimage.h"
 #include "test_2d_moments_regression.h"
-#include "test_2d_remaining_common.h"
 #include "test_2d_zernike_regression.h"
 #include "test_2d_neighbor_common.h"
 #include "test_2d_neighbor_regression.h"

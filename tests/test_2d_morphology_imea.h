@@ -5,8 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "test_2d_morphology_common.h"
-#include "test_2d_remaining_common.h"   // calculate_{ellipse_caliper,remaining2d_shape}_values
+#include "test_2d_morphology_common.h"   // calculate_{shape2d_feature,ellipse_caliper,circle_shape}_values
 
 #include "test_ref_vals.h"
 
@@ -162,7 +161,7 @@ void test_2d_morphology_geodetic_length_thickness_imea()
 
 // Vets the reimplemented Martin (area-bisecting chord) and Nassenstein (bottom-tangent vertical
 // chord) diameters against imea on a clean filled ellipse (a=20, b=10). See the oracle block in
-// test_2d_remaining_common.h. Robust stats (min/max/mean/median) agree with imea within the
+// test_2d_morphology_common.h. Robust stats (min/max/mean/median) agree with imea within the
 // hull-vs-raster convention tolerance; the >0 lower bound pins that the old min+max-chord bug
 // (0-length Nassenstein diameters) is gone.
 void test_2d_morphology_caliper_martin_nassenstein_imea()

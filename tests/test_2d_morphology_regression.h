@@ -5,14 +5,13 @@
 #include <vector>
 
 #include "test_2d_morphology_common.h"
-#include "test_2d_remaining_common.h"
 
 #include "test_ref_vals.h"
 
 // The caliper/chord statistics on the 8x8 shape2d raster. These are Nyxus snapshots and claim
 // nothing: imea's own values on this fixture differ by 3.9-79.3% (the 8x8 raster is too coarse for the
-// hull-vs-raster conventions to converge), so they lived in an imea-named table under an
-// assert_caliper_imea() helper without ever having been compared to imea. The diameters themselves
+// hull-vs-raster conventions to converge), so they lived in an imea-named table read by an
+// imea-named helper without ever having been compared to imea. The diameters themselves
 // are vetted against imea on the clean ellipse in test_2d_morphology_imea.h.
 static ref_vals_map<double> morphology_2d_regression_caliper_shape2d_ref_vals{
 	{"STAT_FERET_DIAM_MIN", 4.47301},
@@ -47,7 +46,7 @@ static void assert_morphology_caliper_shape2d_regression(const std::vector<std::
 void test_2d_morphology_caliper_shape2d_regression()
 {
 	std::vector<std::vector<double>> fvals;
-	calculate_remaining2d_shape_feature_values(fvals);
+	calculate_shape2d_feature_values(fvals);
 
 	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MIN, "STAT_FERET_DIAM_MIN");
 	assert_morphology_caliper_shape2d_regression(fvals, Nyxus::Feature2D::STAT_FERET_DIAM_MAX, "STAT_FERET_DIAM_MAX");
@@ -109,36 +108,36 @@ static ref_vals_map<double> morphology_2d_regression_polygonality_chords_ref_val
 	{"ALLCHORDS_MIN_ANG", 0.15707963267948966},
 };
 
-static void assert_unvetted_no_direct_oracle_remaining2d_feature(
+static void assert_morphology_polygonality_chords_regression(
 	const std::vector<std::vector<double>>& fvals,
 	Nyxus::Feature2D feature,
 	const std::string& feature_name,
 	double frac_tolerance = 1000.0)
 {
-	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
+	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
 	ASSERT_TRUE(morphology_2d_regression_polygonality_chords_ref_vals.count(feature_name) > 0);
 	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_regression_polygonality_chords_ref_vals[feature_name], frac_tolerance));
 }
 
-static void assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(
+static void assert_morphology_caliper_chords_regression(
 	const std::vector<std::vector<double>>& fvals,
 	Nyxus::Feature2D feature,
 	const std::string& feature_name,
 	double frac_tolerance = 1000.0)
 {
-	SCOPED_TRACE(std::string("VERIFIABLE_WITH_3P_BUILTIN_ORACLE__") + feature_name);
+	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
 	ASSERT_TRUE(morphology_2d_regression_caliper_chords_ref_vals.count(feature_name) > 0) << feature_name;
 	const double ref_val = morphology_2d_regression_caliper_chords_ref_vals[feature_name];
 	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], ref_val, frac_tolerance));
 }
 
-static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(
+static void assert_morphology_polygonality_regression(
 	const std::unordered_map<int, LR>& roiData,
 	Nyxus::Feature2D feature,
 	const std::string& feature_name,
 	double frac_tolerance = 1000.0)
 {
-	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
+	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
 	// Value-compare against the regression golden so any drift (e.g. a change in the shared
 	// CONVEX_HULL_AREA that feeds area_hull) is caught, instead of the old bounds-only check that
 	// left the golden values on this map never actually compared.
@@ -148,19 +147,19 @@ static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(
 	ASSERT_TRUE(agrees_gt(actual, morphology_2d_regression_polygonality_chords_ref_vals[feature_name], frac_tolerance));
 }
 
-static void assert_unvetted_no_direct_oracle_remaining2d_polygonality_score(
+static void assert_morphology_polygonality_score_regression(
 	const std::unordered_map<int, LR>& roiData,
 	Nyxus::Feature2D feature,
 	const std::string& feature_name,
 	double frac_tolerance = 1000.0)
 {
-	assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(roiData, feature, feature_name, frac_tolerance);
+	assert_morphology_polygonality_regression(roiData, feature, feature_name, frac_tolerance);
 	// The polygonality/hexagonality scores are bounded above by 10 by construction - keep this as
 	// a cheap semantic invariant on top of the value comparison.
 	ASSERT_LE(roiData.at(1).fvals[static_cast<int>(feature)][0], 10.0);
 }
 
-static void assert_remaining2d_polygonality_no_value_for_sparse_neighbors(
+static void assert_morphology_polygonality_no_value_for_sparse_neighbors(
 	const std::unordered_map<int, LR>& roiData,
 	Nyxus::Feature2D feature)
 {
@@ -311,15 +310,15 @@ void test_2d_morphology_fractal_circle_regression()
 // Migrated from test_2d_remaining_features.h (Wave 6): erosion-complement, caliper (feret/martin/
 // nassenstein), chord stats and chord angles, and polygonality/hexagonality. All map to
 // test_2d_morphology_regression.h per the registry target_test. Shared fixture/oracle-data lives in
-// test_2d_remaining_common.h.
+// test_2d_morphology_common.h.
 // ---------------------------------------------------------------------------------------------------
 
 void test_2d_morphology_erosion_complement_regression()
 {
 	std::vector<std::vector<double>> fvals;
-	calculate_remaining2d_shape_feature_values(fvals);
+	calculate_shape2d_feature_values(fvals);
 
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT, "EROSIONS_2_VANISH_COMPLEMENT");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT, "EROSIONS_2_VANISH_COMPLEMENT");
 }
 
 // The 18 STAT_* caliper statistics and ALLCHORDS_MIN moved to test_2d_morphology_imea.h: their
@@ -328,52 +327,52 @@ void test_2d_morphology_erosion_complement_regression()
 void test_2d_morphology_caliper_regression()
 {
 	std::vector<std::vector<double>> fvals;
-	calculate_remaining2d_shape_feature_values(fvals);
+	calculate_shape2d_feature_values(fvals);
 
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MIN_FERET_ANGLE, "MIN_FERET_ANGLE");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MAX_FERET_ANGLE, "MAX_FERET_ANGLE");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::MIN_FERET_ANGLE, "MIN_FERET_ANGLE");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::MAX_FERET_ANGLE, "MAX_FERET_ANGLE");
 }
 
 void test_2d_morphology_chord_stat_regression()
 {
 	std::vector<std::vector<double>> fvals;
-	calculate_remaining2d_shape_feature_values(fvals);
+	calculate_shape2d_feature_values(fvals);
 
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MAXCHORDS_MAX, "MAXCHORDS_MAX");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MAXCHORDS_MIN, "MAXCHORDS_MIN");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MAXCHORDS_MEDIAN, "MAXCHORDS_MEDIAN");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MAXCHORDS_MEAN, "MAXCHORDS_MEAN");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MAXCHORDS_MODE, "MAXCHORDS_MODE");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MAXCHORDS_STDDEV, "MAXCHORDS_STDDEV");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::ALLCHORDS_MAX, "ALLCHORDS_MAX");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::ALLCHORDS_MEDIAN, "ALLCHORDS_MEDIAN");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::ALLCHORDS_MEAN, "ALLCHORDS_MEAN");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::ALLCHORDS_MODE, "ALLCHORDS_MODE");
-	assert_verifiable_with_3p_builtin_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::ALLCHORDS_STDDEV, "ALLCHORDS_STDDEV");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::MAXCHORDS_MAX, "MAXCHORDS_MAX");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::MAXCHORDS_MIN, "MAXCHORDS_MIN");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::MAXCHORDS_MEDIAN, "MAXCHORDS_MEDIAN");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::MAXCHORDS_MEAN, "MAXCHORDS_MEAN");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::MAXCHORDS_MODE, "MAXCHORDS_MODE");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::MAXCHORDS_STDDEV, "MAXCHORDS_STDDEV");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::ALLCHORDS_MAX, "ALLCHORDS_MAX");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::ALLCHORDS_MEDIAN, "ALLCHORDS_MEDIAN");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::ALLCHORDS_MEAN, "ALLCHORDS_MEAN");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::ALLCHORDS_MODE, "ALLCHORDS_MODE");
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::ALLCHORDS_STDDEV, "ALLCHORDS_STDDEV");
 }
 
 void test_2d_morphology_chord_angle_regression()
 {
 	std::vector<std::vector<double>> fvals;
-	calculate_remaining2d_shape_feature_values(fvals);
+	calculate_shape2d_feature_values(fvals);
 
-	assert_unvetted_no_direct_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MAXCHORDS_MAX_ANG, "MAXCHORDS_MAX_ANG");
-	assert_unvetted_no_direct_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::MAXCHORDS_MIN_ANG, "MAXCHORDS_MIN_ANG");
-	assert_unvetted_no_direct_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::ALLCHORDS_MAX_ANG, "ALLCHORDS_MAX_ANG");
-	assert_unvetted_no_direct_oracle_remaining2d_feature(fvals, Nyxus::Feature2D::ALLCHORDS_MIN_ANG, "ALLCHORDS_MIN_ANG");
+	assert_morphology_polygonality_chords_regression(fvals, Nyxus::Feature2D::MAXCHORDS_MAX_ANG, "MAXCHORDS_MAX_ANG");
+	assert_morphology_polygonality_chords_regression(fvals, Nyxus::Feature2D::MAXCHORDS_MIN_ANG, "MAXCHORDS_MIN_ANG");
+	assert_morphology_polygonality_chords_regression(fvals, Nyxus::Feature2D::ALLCHORDS_MAX_ANG, "ALLCHORDS_MAX_ANG");
+	assert_morphology_polygonality_chords_regression(fvals, Nyxus::Feature2D::ALLCHORDS_MIN_ANG, "ALLCHORDS_MIN_ANG");
 }
 
 void test_2d_morphology_polygonality_hexagonality_regression()
 {
 	std::unordered_map<int, LR> roiData;
-	calculate_remaining2d_polygonality_feature_values(roiData);
+	calculate_polygonality_scene_feature_values(roiData);
 
 	ASSERT_EQ(roiData.at(1).fvals[static_cast<int>(Nyxus::Feature2D::NUM_NEIGHBORS)][0], 4.0);
-	assert_unvetted_no_direct_oracle_remaining2d_polygonality_score(roiData, Nyxus::Feature2D::POLYGONALITY_AVE, "POLYGONALITY_AVE");
-	assert_unvetted_no_direct_oracle_remaining2d_polygonality_score(roiData, Nyxus::Feature2D::HEXAGONALITY_AVE, "HEXAGONALITY_AVE");
-	assert_unvetted_no_direct_oracle_remaining2d_polygonality_feature(roiData, Nyxus::Feature2D::HEXAGONALITY_STDDEV, "HEXAGONALITY_STDDEV");
+	assert_morphology_polygonality_score_regression(roiData, Nyxus::Feature2D::POLYGONALITY_AVE, "POLYGONALITY_AVE");
+	assert_morphology_polygonality_score_regression(roiData, Nyxus::Feature2D::HEXAGONALITY_AVE, "HEXAGONALITY_AVE");
+	assert_morphology_polygonality_regression(roiData, Nyxus::Feature2D::HEXAGONALITY_STDDEV, "HEXAGONALITY_STDDEV");
 
-	assert_remaining2d_polygonality_no_value_for_sparse_neighbors(roiData, Nyxus::Feature2D::POLYGONALITY_AVE);
-	assert_remaining2d_polygonality_no_value_for_sparse_neighbors(roiData, Nyxus::Feature2D::HEXAGONALITY_AVE);
-	assert_remaining2d_polygonality_no_value_for_sparse_neighbors(roiData, Nyxus::Feature2D::HEXAGONALITY_STDDEV);
+	assert_morphology_polygonality_no_value_for_sparse_neighbors(roiData, Nyxus::Feature2D::POLYGONALITY_AVE);
+	assert_morphology_polygonality_no_value_for_sparse_neighbors(roiData, Nyxus::Feature2D::HEXAGONALITY_AVE);
+	assert_morphology_polygonality_no_value_for_sparse_neighbors(roiData, Nyxus::Feature2D::HEXAGONALITY_STDDEV);
 }

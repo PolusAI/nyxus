@@ -13,7 +13,7 @@
 #include "../src/nyx/roi_cache.h"
 #include "test_data.h"
 #include "test_main_nyxus.h"
-#include "test_2d_remaining_common.h"   // fixture: calculate_remaining2d_shape_feature_values
+#include "test_2d_morphology_common.h"   // fixture: calculate_shape2d_feature_values
 #include "test_ref_vals.h"
 
 static ref_vals_map<std::vector<double>> radial_2d_regression_ref_vals{
@@ -31,13 +31,13 @@ static ref_vals_map<std::vector<double>> radial_2d_regression_ref_vals{
 	}},
 };
 
-static void assert_unvetted_no_direct_oracle_remaining2d_vector_feature(
+static void assert_radial_vector_feature_regression(
 	const std::vector<std::vector<double>>& fvals,
 	Nyxus::Feature2D feature,
 	const std::string& feature_name,
 	double abs_tolerance = 1e-9)
 {
-	SCOPED_TRACE(std::string("UNVETTED_NO_DIRECT_ORACLE__") + feature_name);
+	SCOPED_TRACE(std::string("REGRESSION__") + feature_name);
 	ASSERT_TRUE(radial_2d_regression_ref_vals.count(feature_name) > 0);
 	const auto& actual = fvals[static_cast<int>(feature)];
 	const auto& golden_values = radial_2d_regression_ref_vals[feature_name];
@@ -50,15 +50,15 @@ static void assert_unvetted_no_direct_oracle_remaining2d_vector_feature(
 // Migrated from test_2d_remaining_features.h (Wave 6): radial intensity distribution (FRAC_AT_D,
 // MEAN_FRAC, RADIAL_CV). Registry target_test = test_2d_intensity_histogram_regression.h; oracle is
 // cellprofiler MeasureObjectIntensityDistribution (RadialDistribution_*), still regression-snapshot
-// pending wiring. Shared fixture/oracle-data lives in test_2d_remaining_common.h.
+// pending wiring. Shared fixture/oracle-data lives in test_2d_morphology_common.h.
 // ---------------------------------------------------------------------------------------------------
 
 void test_2d_radial_distribution_regression()
 {
 	std::vector<std::vector<double>> fvals;
-	calculate_remaining2d_shape_feature_values(fvals);
+	calculate_shape2d_feature_values(fvals);
 
-	assert_unvetted_no_direct_oracle_remaining2d_vector_feature(fvals, Nyxus::Feature2D::FRAC_AT_D, "FRAC_AT_D");
-	assert_unvetted_no_direct_oracle_remaining2d_vector_feature(fvals, Nyxus::Feature2D::MEAN_FRAC, "MEAN_FRAC");
-	assert_unvetted_no_direct_oracle_remaining2d_vector_feature(fvals, Nyxus::Feature2D::RADIAL_CV, "RADIAL_CV");
+	assert_radial_vector_feature_regression(fvals, Nyxus::Feature2D::FRAC_AT_D, "FRAC_AT_D");
+	assert_radial_vector_feature_regression(fvals, Nyxus::Feature2D::MEAN_FRAC, "MEAN_FRAC");
+	assert_radial_vector_feature_regression(fvals, Nyxus::Feature2D::RADIAL_CV, "RADIAL_CV");
 }
