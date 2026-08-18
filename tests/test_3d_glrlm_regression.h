@@ -115,9 +115,24 @@ void assert_3d_glrlm_feature_regression (const Nyxus::Feature3D& expecting_fcode
     // reading element 0 would pin one direction and let the other twelve drift unguarded.
     double atot = f.calc_ave(r.fvals[fcode]);
 
-    // (8) verdict. frac_tolerance = 1e9, i.e. rel=1e-9: these are Nyxus' own values pinned to full
-    // precision, so a drift guard should catch any change at all.
-    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_regression_ref_vals[fname], 1e9));
+    // (8) verdict, at the band this feature's arithmetic can hold across platforms.
+    //
+    // rel=1e-9 for the fifteen features computed in double: Windows/MSVC and Linux/gcc reproduce
+    // these values to <= 1.8e-16 of each other, so the guard has eight orders of magnitude of
+    // headroom and still fails on any real change.
+    //
+    // 3GLRLM_RE is the exception, and not by measurement here -- it agrees exactly on those two
+    // platforms too -- but by construction: it is the family's only sum over logarithms, and Nyxus
+    // evaluates it through Nyxus::fast_log10 (helpers.h), which computes in FLOAT. A float carries
+    // ~7 significant digits, so the last bits of RE depend on how each platform's compiler
+    // evaluates that approximation, which is what a CI run on another architecture reported while
+    // x86 stayed green. Its band is therefore set from that precision (rel=1e-6), still four
+    // orders of magnitude tighter than the 5e-3 the oracle assertion needs and far tighter than
+    // any change of definition would survive. The permanent fix is item 11 on the follow-up list:
+    // compute the information measures in double, after which this can go back to 1e-9.
+    const double frac = (fname == "3GLRLM_RE") ? 1e6 : 1e9;
+    ASSERT_TRUE(agrees_gt(atot, glrlm_3d_regression_ref_vals[fname], frac))
+        << fname << " actual=" << atot << " pinned=" << glrlm_3d_regression_ref_vals[fname];
 }
 
 // Regenerates every golden in glrlm_3d_regression_ref_vals at full precision, in the exact shape the

@@ -11,10 +11,41 @@ binCount=20, no resampling, weightingNorm=None, imageType=Original -- the settin
 provenance block records. On the Nyxus side that is GREYDEPTH=100, IBSI=false, GLRLM_GREYDEPTH=-20
 (negative activates radiomics binCount-based binning, so the magnitude is the bin count).
 
-THE CONVENTION THAT MATTERS: PyRadiomics reports ONE value per feature over its whole direction set.
-That is the Nyxus *_AVE aggregation over the 13 3D angles, not a per-angle value -- so each golden
-below is the reference for both the per-angle base feature (through calc_ave) and the stored *_AVE
-feature.
+TWO REFERENCES, NOT ONE. PyRadiomics' public API reports one value per feature over its whole
+direction set, which is the Nyxus *_AVE aggregation over the 13 3D angles. That scalar cannot vet
+the 13 directional values of the unsuffixed base feature: per-direction errors that cancel leave the
+mean untouched. So this generator emits BOTH tables --
+
+  glrlm_3d_pyradiomics_ref_vals            the direction-set scalar, reference for the *_AVE features
+  glrlm_3d_pyradiomics_ref_vals_by_angle   one value per direction, reference for the base features
+
+The per-direction values come from PyRadiomics' own feature formulas: RadiomicsGLRLM computes each
+feature per angle and only then averages (`numpy.nanmean(x, 1)` as the last line of every feature
+method), so intercepting that average yields the per-angle vector with nothing reimplemented.
+
+ANGLE ORDER: SLOT k HERE IS SLOT k IN PYRADIOMICS. That is not the obvious answer, and it is the
+opposite of the 3D GLCM family, so it is worth stating why.
+
+PyRadiomics returns its angle rows as (dz, dy, dx) -- verified by construction, not assumed: on a
+volume that is constant along numpy axis 2 only, the single slot carrying full-length runs is the
+one whose row reads (0, 0, 1).
+
+Nyxus' `shifts13` in 3d_glrlm.cpp is written `{1, 1, 1}, {1, 1, 0}, ...`, the same 13 triples in the
+same order, and it looks like the GLCM table -- but it is typed `AngleShift`, declared in
+texture_feature.h as
+
+    struct AngleShift { int dz, dy, dx; };
+
+while 3D GLCM's identical-looking table is typed `ShiftToNeighbor { int dx, dy, dz; }`. The same
+brace initialiser therefore lands in reversed fields: GLRLM's slot 4 `{1,0,0}` means dz=1 (the z
+direction) where GLCM's slot 4 means dx=1 (the x direction). Because PyRadiomics also orders its
+rows (dz, dy, dx), GLRLM's slots line up with PyRadiomics' one-to-one, and GLCM's need reversing.
+
+The two families therefore label the SAME slot index with different directions. Nothing is missing
+from either -- the 13 offsets are a complete set on both sides, which is why the averages agree to
+1e-16 and this went unnoticed -- but a caller reading the per-angle vector of a GLCM feature and of
+a GLRLM feature is reading two different directions at the same index. That is filed as a defect;
+this generator pins what Nyxus actually emits, and says which direction that is.
 
 All 16 public Nyxus 3D GLRLM features have a PyRadiomics counterpart, so this table is complete: the
 family has no identity-vetted leftovers the way 3D GLCM does.
@@ -27,9 +58,10 @@ import os
 import re
 import sys
 
+import numpy
 import SimpleITK as sitk
 import radiomics
-from radiomics import featureextractor
+from radiomics import featureextractor, glrlm, imageoperations
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(os.path.dirname(HERE))
@@ -74,6 +106,89 @@ BOUNDS = {
     "3GLRLM_GLNN": (0.0, 1.0),
     "3GLRLM_RLNN": (0.0, 1.0),
 }
+
+
+# The 13 offsets each tool walks, in ITS OWN slot order, both as (dz, dy, dx): Nyxus' `shifts13`
+# (3d_glrlm.cpp) because AngleShift declares its fields in that order, PyRadiomics' `angles` array
+# because that is what cMatrices returns.
+NYXUS_SHIFTS = [(1, 1, 1), (1, 1, 0), (1, 1, -1), (1, 0, 1), (1, 0, 0), (1, 0, -1),
+                (1, -1, 1), (1, -1, 0), (1, -1, -1), (0, 1, 1), (0, 1, 0), (0, 1, -1), (0, 0, 1)]
+PYRAD_ANGLES = [(1, 1, 1), (1, 1, 0), (1, 1, -1), (1, 0, 1), (1, 0, 0), (1, 0, -1),
+                (1, -1, 1), (1, -1, 0), (1, -1, -1), (0, 1, 1), (0, 1, 0), (0, 1, -1), (0, 0, 1)]
+
+
+def nyxus_to_pyrad():
+    """-> for each Nyxus GLRLM angle slot, the PyRadiomics slot holding the same direction.
+
+    Both are (dz, dy, dx) -- see the module docstring for why GLRLM's AngleShift is that way and
+    GLCM's ShiftToNeighbor is not -- so the mapping is the identity. It is still computed rather
+    than written down, so that a change to either table is caught here instead of silently
+    re-labelling 208 goldens.
+    """
+    perm = []
+    for dz, dy, dx in NYXUS_SHIFTS:              # AngleShift field order: dz, dy, dx
+        want = (dz, dy, dx)
+        neg = tuple(-c for c in want)
+        hit = [k for k, a in enumerate(PYRAD_ANGLES) if a == want or a == neg]
+        if len(hit) != 1:
+            raise RuntimeError(f"offset {(dz, dy, dx)} maps to {hit}, expected exactly one slot")
+        perm.append(hit[0])
+    if sorted(perm) != list(range(13)):
+        raise RuntimeError(f"angle mapping is not a permutation: {perm}")
+    return perm
+
+
+def per_angle():
+    """-> {nyxus feature: [13 PyRadiomics values, in NYXUS angle order]}."""
+    img = sitk.ReadImage(INTEN)
+    msk = sitk.ReadImage(MASK)
+    bb, _ = imageoperations.checkMask(img, msk, label=LABEL)
+    img, msk = imageoperations.cropToTumorMask(img, msk, bb)
+
+    f = glrlm.RadiomicsGLRLM(img, msk, binCount=BINCOUNT, label=LABEL, weightingNorm=None,
+                             interpolator=sitk.sitkBSpline, resampledPixelSpacing=None,
+                             force2D=False)
+    f._initCalculation()
+    if f.P_glrlm.shape[-1] != 13:
+        raise RuntimeError(f"expected 13 angles, got {f.P_glrlm.shape}")
+
+    real_nanmean = numpy.nanmean
+
+    def keep_angles(a, axis=None, **kw):
+        a = numpy.asarray(a)
+        if axis == 1 or axis == (1, 2, 3):     # the angle-averaging step inside a feature method
+            return a.reshape(a.shape[0], -1)
+        return real_nanmean(a, axis=axis, **kw)
+
+    perm = nyxus_to_pyrad()
+    out = {}
+    numpy.nanmean = keep_angles
+    try:
+        for nyx, pyr in PYRAD.items():
+            v = numpy.asarray(getattr(f, f"get{pyr}FeatureValue")()).ravel()
+            if v.size != 13:
+                raise RuntimeError(f"{pyr}: got {v.size} value(s) per feature, expected 13")
+            out[nyx] = [float(v[k]) for k in perm]
+    finally:
+        numpy.nanmean = real_nanmean
+    return out
+
+
+def parse_pins_by_angle(txt, table):
+    """-> {angle index: {feature: value}} out of a ref_vals_map_by_angle literal."""
+    m = re.search(re.escape(table) + r"\s*\{", txt)
+    if not m:
+        raise RuntimeError(f"table {table} not found")
+    body = txt[m.end():]
+    out = {}
+    for blk in re.finditer(r"\{\s*(\d+)\s*,\s*\{(.*?)\}\s*\}", body, re.S):
+        inner = re.sub(r"//[^\n]*", "", blk.group(2))
+        out[int(blk.group(1))] = {
+            n: float(v) for n, v in
+            re.findall(r'\{\s*"(3GLRLM_[A-Z0-9_]+)"\s*,\s*([-0-9.eE+]+)\s*\}', inner)}
+        if len(out) == 13:
+            break
+    return out
 
 
 def parse_pins(txt, table):
@@ -137,8 +252,32 @@ def main():
     print()
     nbad = check_bounds(got)
 
-    pins = parse_pins(open(TEST_H, encoding="utf-8", errors="replace").read(),
-                      "glrlm_3d_pyradiomics_ref_vals")
+    ang = per_angle()
+    print("")
+    print("# paste-ready per-direction goldens, in NYXUS angle order (identity; see nyxus_to_pyrad)")
+    for k in range(13):
+        dz, dy, dx = NYXUS_SHIFTS[k]
+        print(f"\t{{{k}, {{   // AngleShift dz={dz} dy={dy} dx={dx}")
+        for name in sorted(ang):
+            print(f'\t\t{{"{name}", {ang[name][k]!r}}},')
+        print("\t}},")
+
+    txt_h = open(TEST_H, encoding="utf-8", errors="replace").read()
+    pins_ang = parse_pins_by_angle(txt_h, "glrlm_3d_pyradiomics_ref_vals_by_angle")
+    npin = sum(len(v) for v in pins_ang.values())
+    print(f"\n# verifying {npin} pinned per-direction goldens against this run")
+    nbad = 0
+    for k in sorted(pins_ang):
+        for name, want in sorted(pins_ang[k].items()):
+            have = ang[name][k]
+            rel = abs(have - want) / max(abs(want), 1e-12)
+            if rel > 1e-12:
+                print(f"  FAIL angle {k} {name}: pyradiomics={have!r} pinned={want!r} rel={rel:.3g}")
+                nbad += 1
+    print("  all per-direction pins reproduce" if not nbad
+          else f"  {nbad} per-direction mismatches")
+
+    pins = parse_pins(txt_h, "glrlm_3d_pyradiomics_ref_vals")
     print(f"\n# verifying {len(pins)} pinned goldens against this run")
     nok = nfail = nmiss = 0
     for name in sorted(pins):
@@ -160,7 +299,8 @@ def main():
     for name in missing_pin:
         print(f"  UNPINNED {name}: PyRadiomics reports {got[name]!r} and nothing pins it")
 
-    print(f"\n{nok} verified, {nfail} failed, {nmiss} unproducible, {len(missing_pin)} unpinned")
+    print(f"\n{nok} verified, {nfail} failed, {nmiss} unproducible, "
+          f"{nbad} per-direction mismatch(es)")
     if nfail or nmiss or nbad:
         print("SOME CHECKS FAILED -- do not promote")
         return 1
