@@ -1,23 +1,23 @@
 Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
-2D,morphology,AREA_PIXELS_COUNT,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,AREA_UM2,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,CENTROID_X,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,CENTROID_Y,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,WEIGHTED_CENTROID_Y,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,WEIGHTED_CENTROID_X,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,
+2D,morphology,AREA_PIXELS_COUNT,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,AREA_UM2,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,CENTROID_X,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,CENTROID_Y,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,WEIGHTED_CENTROID_Y,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,WEIGHTED_CENTROID_X,matlab,test_2d_morphology_basic_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
 2D,morphology,MASS_DISPLACEMENT,cellprofiler,test_2d_morphology_edge_intensity_cellprofiler,N,,
 2D,morphology,COMPACTNESS,,,Y,test_2d_morphology_basic_regression,
-2D,morphology,BBOX_YMIN,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,BBOX_XMIN,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,BBOX_HEIGHT,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,BBOX_WIDTH,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,
+2D,morphology,BBOX_YMIN,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,BBOX_XMIN,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,BBOX_HEIGHT,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,BBOX_WIDTH,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
 2D,morphology,DIAMETER_EQUAL_AREA,skimage,test_2d_morphology_diameter_equal_area_skimage,Y,test_2d_morphology_basic_regression,
-2D,morphology,EXTENT,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,ASPECT_RATIO,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,
-2D,morphology,MAJOR_AXIS_LENGTH,matlab,test_2d_morphology_ellipse_matlab,Y,test_2d_morphology_ellipse_regression,
-2D,morphology,MINOR_AXIS_LENGTH,matlab,test_2d_morphology_ellipse_matlab,Y,test_2d_morphology_ellipse_regression,
-2D,morphology,ELONGATION,matlab,test_2d_morphology_ellipse_matlab,Y,test_2d_morphology_ellipse_regression,
-2D,morphology,ECCENTRICITY,matlab,test_2d_morphology_ellipse_matlab,Y,test_2d_morphology_ellipse_regression,
+2D,morphology,EXTENT,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,ASPECT_RATIO,matlab,test_2d_morphology_bbox_matlab,Y,test_2d_morphology_basic_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,MAJOR_AXIS_LENGTH,matlab,test_2d_morphology_ellipse_matlab,Y,test_2d_morphology_ellipse_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,MINOR_AXIS_LENGTH,matlab,test_2d_morphology_ellipse_matlab,Y,test_2d_morphology_ellipse_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,ELONGATION,matlab,test_2d_morphology_ellipse_matlab,Y,test_2d_morphology_ellipse_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,ECCENTRICITY,matlab,test_2d_morphology_ellipse_matlab,Y,test_2d_morphology_ellipse_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
 2D,morphology,ORIENTATION,skimage,test_2d_morphology_orientation_and_erosions_skimage,N,,
 2D,morphology,ROUNDNESS,analytic,test_2d_morphology_documented_formula_conformance_analytic,Y,test_2d_morphology_ellipse_regression,
 2D,morphology,PERIMETER,skimage,test_2d_morphology_perimeter_skimage,Y,test_2d_morphology_contour_regression,
@@ -70,23 +70,23 @@ Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
 2D,morphology,ALLCHORDS_MEAN,,,Y,test_2d_morphology_chord_stat_regression,
 2D,morphology,ALLCHORDS_MODE,,,Y,test_2d_morphology_chord_stat_regression,
 2D,morphology,ALLCHORDS_STDDEV,,,Y,test_2d_morphology_chord_stat_regression,
-2D,morphology,EULER_NUMBER,matlab,test_2d_morphology_euler_matlab,Y,test_2d_morphology_misc_regression,
-2D,morphology,EXTREMA_P1_X,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P1_Y,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P2_X,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P2_Y,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P3_X,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P3_Y,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P4_X,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P4_Y,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P5_X,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P5_Y,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P6_X,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P6_Y,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P7_X,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P7_Y,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P8_X,matlab,test_2d_morphology_extrema_matlab,N,,
-2D,morphology,EXTREMA_P8_Y,matlab,test_2d_morphology_extrema_matlab,N,,
+2D,morphology,EULER_NUMBER,matlab,test_2d_morphology_euler_matlab,Y,test_2d_morphology_misc_regression,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P1_X,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P1_Y,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P2_X,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P2_Y,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P3_X,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P3_Y,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P4_X,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P4_Y,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P5_X,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P5_Y,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P6_X,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P6_Y,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P7_X,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P7_Y,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P8_X,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
+2D,morphology,EXTREMA_P8_Y,matlab,test_2d_morphology_extrema_matlab,N,,"matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free MATLAB stand-in (gen_morphology_matlab.m); see morphology_2d_matlab_vetting_report.md"
 2D,morphology,POLYGONALITY_AVE,,,Y,test_2d_morphology_polygonality_hexagonality_regression,
 2D,morphology,HEXAGONALITY_AVE,,,Y,test_2d_morphology_polygonality_hexagonality_regression,
 2D,morphology,HEXAGONALITY_STDDEV,,,Y,test_2d_morphology_polygonality_hexagonality_regression,

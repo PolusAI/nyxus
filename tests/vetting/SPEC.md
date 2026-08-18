@@ -103,7 +103,7 @@ churn names).
 | `pyradiomics` | PyRadiomics 3.0.1 | GLCM/GLRLM/GLSZM/GLDM/NGTDM, first-order, shape | Python / Docker |
 | `radiomicsj` | RadiomicsJ 2.1.2 | texture, first-order, shape (IBSI-compliant) | Java |
 | `skimage` | scikit-image 0.24+ | moments, shape descriptors | Python |
-| `matlab` | MATLAB R2024a Image Processing Toolbox | GLCM (graycomatrix/graycoprops), regionprops (morphology), moments | MATLAB |
+| `matlab` | MATLAB Image Processing Toolbox semantics, run as GNU Octave + `image` (see note) | GLCM (graycomatrix/graycoprops), regionprops (morphology), moments | Octave CLI |
 | `cellprofiler` | CellProfiler 4.2.1 | MeasureTexture (Haralick), MeasureObjectSizeShape, intensity, **MeasureObjectNeighbors** (neighbor count / percent-touching / closest-distance) | pipeline |
 | `mitk` | MITK 2023.04 | texture, first-order, shape | C++ CLI |
 | `feature2djava` | NIST Feature2DJava 1.5.0 (WIPP plugin) | 2D features — sibling implementation, many features 1:1 | Java |
@@ -141,6 +141,18 @@ Notes:
   `CT_small.dcm` slice are pinned from pydicom, not recomputed from the Nyxus offset formula, so the
   assertion is a genuine oracle rather than a self-consistency snapshot (§5.2). Offline generator
   only; never a CI runtime dependency (the derived TIFF fixture is committed).
+- **`matlab` names the reference semantics, not the vendor product that ran them.** The goldens
+  under this token are produced by **GNU Octave + the `image` package**, standing in for MATLAB
+  license-free (TOOLS.md; MIGRATION 5.13) — Octave's `regionprops` matches MATLAB's definitions
+  on what we vet, including the +1/12 pixel finite-size second-moment correction that decides
+  the ellipse triple. So `oracle=matlab` means an Octave run unless a table's provenance header
+  says otherwise, and every artifact presenting the token — registry `notes`, the audit
+  coverage CSVs, the vetting reports — repeats which tool produced the numbers rather than
+  leaving `matlab` to imply a licensed run. Two legacy 3D tables predate this and say so at
+  their definition site: `test_3d_morphology_matlab.h` (licensed MATLAB R2025b `regionprops3`)
+  and `test_3d_firstorder_matlab.h` (no provenance recorded — `not_covered.md` §C).
+  `graycoprops` is the one gap: Octave's `image` has no equivalent, so GLCM has no Octave path
+  and is vetted against `pyradiomics` / `ibsi` instead.
 - Flag any family no listed tool covers as we go.
 
 **Rule: reference tools are never CI runtime dependencies.** Goldens are generated *offline* by a
