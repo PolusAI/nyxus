@@ -12,7 +12,7 @@ restores 26 assertions that existed in the tree but never executed.
 | Fixture | the compat phantom, `compat_int/compat_int_mri.nii` + `compat_seg/compat_seg_liver.nii` |
 | Nyxus config | `GREYDEPTH=100`, `IBSI=false`, `GLCM_GREYDEPTH=-20` (binCount binning), `GLCM_OFFSET=1`, `GLCM_SPARSEINTENS=true` |
 | Test | `test_3d_glcm_pyradiomics.h` |
-| Tolerance | `rel=1e-1`, matching the existing per-angle assertions on the same goldens |
+| Tolerance | measured per feature: `rel=1e-9` on 18 of 23, five entropy-family bands from `rel=1e-3` to `rel=4e-2` (see below) |
 
 ## The gap was an attribution problem, not a missing measurement
 
@@ -61,11 +61,60 @@ band absorbed 7.7% of it. The other four sit in the inverse-difference family, w
 version-sensitive, so they are consistent with the table having been pinned by an earlier
 PyRadiomics.
 
-All five are re-pinned to the fresh run, and Nyxus still agrees with the corrected values inside the
-same band. That band is not slack — it covers Nyxus' asymmetric offset-1 cooc matrix against
-PyRadiomics' symmetric default — but this is a concrete demonstration that a 10% band cannot
-distinguish a convention gap from a bad golden. Worth measuring the true per-feature residuals and
-tightening in a follow-up.
+All five are re-pinned to the fresh run. The 10% band that let a pasted-in-the-wrong-slot golden
+survive is now gone; what replaced it is below.
+
+## There was no convention gap, and the band was measuring nothing
+
+The band was justified by "Nyxus' asymmetric offset-1 cooc matrix against PyRadiomics' symmetric
+default". That premise is wrong. Nyxus symmetrises the matrix whenever radiomics grey binning is
+active:
+
+```cpp
+(GLCM.xy(a, b))++;
+// Radiomics GLCM is symmetric, Matlab one is not
+if (D3_GLCM_feature::symmetric_glcm || radiomics_grey_binning(greyInfo) || ibsi_grey_binning(greyInfo))
+    (GLCM.xy(b, a))++;                                              // 3d_glcm.cpp
+```
+
+and `radiomics_grey_binning` is `greybinning_info < 0`, which `GLCM_GREYDEPTH = -20` — the setting
+this recipe uses — selects. Both sides are symmetric here, so there is nothing for a band to cover.
+
+Measuring the residual per feature, per direction, on this fixture:
+
+| residual | features |
+|---|---|
+| exactly 0 | ASM, DIFAVE, ID, IDM, IDMN, IDN, IV, JMAX, SUMAVERAGE |
+| ≤ 1.2e-15 | ACOR, CLUPROM, CLUTEND, CONTRAST, CORRELATION, DIFVAR, JAVE, JVAR |
+| 8.7e-13 | CLUSHADE (a difference of large cancelling terms) |
+| 1.7e-2 / 7.7e-3 / 1.2e-3 / 7.6e-4 / 4.1e-4 | INFOMEAS1, INFOMEAS2, DIFENTRO, SUMENTROPY, JE |
+
+The 18 exact ones are now asserted at `rel=1e-9`. The last five are the entropy family, and the
+cause is on the Nyxus side rather than in a convention: every `log2` in the GLCM code is
+`Nyxus::fast_log10` (`helpers/helpers.h`), a **float-precision quadratic approximation** of log2,
+against PyRadiomics' double `numpy.log2`. Their bands are twice the measured worst per-direction
+residual, and each is a statement about that approximation — tightening them means computing the
+information measures in double.
+
+## The direction-set scalar cannot vet 13 directions
+
+`assert_3d_glcm_feature_pyradiomics()` used to end in `calc_ave(r.fvals[fcode])` compared against
+PyRadiomics' one scalar. That validates the average and only the average: per-direction errors that
+cancel leave it unchanged, so the 13 directional values of the unsuffixed base feature were carried
+by an assertion that could not see them.
+
+PyRadiomics computes every GLCM feature per angle and averages as its final step, so intercepting
+that step yields its own per-angle numbers without reimplementing a formula. The two tools walk the
+same 13 offsets in the same order — PyRadiomics as `(dz,dy,dx)`, Nyxus as `(dx,dy,dz)` in `shifts`
+(`3d_glcm.cpp`) — so a Nyxus triple reversed is a PyRadiomics row, up to a sign that denotes the
+same unordered pixel pair and hence the same symmetric matrix. `gen_glcm3d_pyradiomics.py` derives
+that mapping from the two offset lists rather than guessing it.
+
+The result is `glcm_3d_pyradiomics_ref_vals_by_angle`: 23 features × 13 directions = **299 pinned
+per-direction goldens**, all reproduced by the generator. The base assertions now compare every
+direction; the `*_AVE` assertions keep the direction-set scalar, read out of the stored feature. A
+7.8e-5 error planted in a single direction of a single feature fails the base assertion and names
+the angle — under the old 10% band it passed silently.
 
 ## Six features vetted through an identity
 

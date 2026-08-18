@@ -21,6 +21,15 @@ def validate_rows(rows):
             return errs
     for r in rows:
         f = (r.get("feature") or ""); st = (r.get("status") or "").strip(); ora = (r.get("oracle") or "").strip()
+        # A row with more fields than the header means an unquoted comma inside one of them: csv
+        # collects the overflow under the None key, every field after the comma is shifted, and the
+        # last one silently drops out of the table. 3ROBUST_MEAN sat like that with a
+        # "[P10,P90]" candidate_oracle -- its notes had become its source and its notes were gone.
+        if None in r:
+            errs.append(f"{f}: {len(r[None])} field(s) past the last column - an unquoted comma "
+                        f"shifts every field after it; quote the field")
+        if any(v is None for v in r.values()):
+            errs.append(f"{f}: fewer fields than columns - the row is truncated")
         if st not in ALLOWED_STATUS:
             errs.append(f"{f}: bad status {st!r}")
         if ora and ora not in ALLOWED_ORACLES:

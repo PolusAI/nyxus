@@ -23,12 +23,28 @@
 // every assertion below uses. (The ut_ phantom named in the older version of this comment belongs to
 // test_3d_glcm_regression.h, at a different bin count; the two benchmarks are not comparable.)
 //
-// Nyxus side: 100 grey levels, GLCM offset 1, asymmetric cooc matrix. PyRadiomics' GLCM is symmetric
-// by default, which is the convention gap the 10% band covers.
+// Nyxus side: 100 grey levels, GLCM offset 1. BOTH SIDES ARE SYMMETRIC here: Nyxus symmetrises the
+// cooccurrence matrix whenever radiomics grey binning is active -- 3d_glcm.cpp,
+// `if (symmetric_glcm || radiomics_grey_binning(greyInfo) || ibsi_grey_binning(...)) GLCM.xy(b,a)++`
+// -- and GLCM_GREYDEPTH=-20 is that path. An earlier version of this comment claimed Nyxus was
+// asymmetric here and justified a 10% band with it; there is no such convention gap, and the
+// measured residuals below are what the tolerances are now set from.
 //
-// PyRadiomics reports ONE value per feature over its whole direction set, i.e. the Nyxus *_AVE
-// aggregation over the 13 3D angles -- not a per-angle value. Each golden below is therefore the
-// reference for both the per-angle base feature (through calc_ave) and the stored *_AVE feature.
+// TWO REFERENCES, because one scalar cannot vet 13 directions:
+//
+//   glcm_3d_pyradiomics_ref_vals            PyRadiomics' direction-set value -> the *_AVE features
+//   glcm_3d_pyradiomics_ref_vals_by_angle   one value per direction         -> the base features
+//
+// The base (unsuffixed) features hold one value per 3D angle. Comparing their average against the
+// direction-set scalar validates the average and nothing more: per-direction errors that cancel
+// leave the mean untouched. The per-direction goldens come from PyRadiomics' own feature formulas
+// (RadiomicsGLCM computes each feature per angle and averages last, so intercepting that average
+// yields the per-angle vector), which is what makes the base assertions genuine.
+//
+// ANGLE ORDER: both tools walk the same 13 offsets in the same order, PyRadiomics as (dz,dy,dx) and
+// Nyxus as (dx,dy,dz) (`shifts`, 3d_glcm.cpp), so a Nyxus triple reversed is a PyRadiomics row, up
+// to a sign that is the same unordered pixel pair. The per-direction table below is stored in NYXUS
+// slot order; gen_glcm3d_pyradiomics.py derives that mapping from the two offset lists.
 //
 // Getting Pyradiomics ground truth values (the generator does exactly this):
 //      pyradiomics <intensity>.nii <mask>.nii --param settings1.yaml
@@ -100,6 +116,369 @@ static ref_vals_map<double> glcm_3d_pyradiomics_ref_vals
     {"3GLCM_JVAR", 7.968835877570637},          // Case-1_original_glcm_SumSquares
     {"3GLCM_SUMAVERAGE", 21.776214166476173},   // Case-1_original_glcm_SumAverage
     {"3GLCM_SUMENTROPY", 4.27263829307018}      // Case-1_original_glcm_SumEntropy
+};
+
+// Per-feature tolerances, measured rather than assumed (SPEC 7). On this fixture and config Nyxus
+// and PyRadiomics agree to <= 1.2e-15 per direction on 18 of the 23 features -- they compute the
+// same quantity from the same symmetric matrix -- so the default band is rel=1e-9, tight enough
+// that any change of definition or of the neighbourhood walk fails it.
+//
+// The five entropy-family features are the exception, and the cause is in Nyxus, not in a
+// convention: every log2 in the GLCM code goes through Nyxus::fast_log10 (helpers/helpers.h), a
+// float-precision quadratic approximation of log2, while PyRadiomics uses numpy.log2 in double.
+// The bands below are twice the measured worst per-direction residual of that approximation:
+//
+//   3GLCM_INFOMEAS1   1.7e-2      3GLCM_DIFENTRO    1.2e-3      3GLCM_JE          4.1e-4
+//   3GLCM_INFOMEAS2   7.7e-3      3GLCM_SUMENTROPY  7.6e-4
+//
+// A band this wide is a statement about fast_log10's accuracy, not slack: tightening it means
+// computing the information measures in double.
+static const double GLCM_3D_PYRADIOMICS_DEFAULT_TOL = 1e-9;
+
+static ref_vals_map<double> glcm_3d_pyradiomics_ref_tols
+{
+    {"3GLCM_INFOMEAS1", 4e-2},
+    {"3GLCM_INFOMEAS2", 2e-2},
+    {"3GLCM_DIFENTRO", 3e-3},
+    {"3GLCM_SUMENTROPY", 2e-3},
+    {"3GLCM_JE", 1e-3}
+};
+
+static double glcm_3d_pyradiomics_tol (const std::string& fname)
+{
+    auto it = glcm_3d_pyradiomics_ref_tols.find(fname);
+    return it == glcm_3d_pyradiomics_ref_tols.end() ? GLCM_3D_PYRADIOMICS_DEFAULT_TOL : it->second;
+}
+
+// One PyRadiomics value per 3D direction, in Nyxus angle-slot order. Regenerate with
+// tests/vetting/oracles/gen_glcm3d_pyradiomics.py, which also re-verifies every entry here.
+static ref_vals_map_by_angle<double> glcm_3d_pyradiomics_ref_vals_by_angle
+{
+	{0, {   // Nyxus shift (1,1,1)
+		{"3GLCM_ACOR", 118.99236641221376},
+		{"3GLCM_ASM", 0.012430284698005887},
+		{"3GLCM_CLUPROM", 1128.9114525251982},
+		{"3GLCM_CLUSHADE", 11.979938582809126},
+		{"3GLCM_CLUTEND", 18.501572251323292},
+		{"3GLCM_CONTRAST", 11.159958362248435},
+		{"3GLCM_CORRELATION", 0.24751298187274456},
+		{"3GLCM_DIFAVE", 2.6096460791117284},
+		{"3GLCM_DIFENTRO", 2.9080832111187984},
+		{"3GLCM_DIFVAR", 4.349705704025224},
+		{"3GLCM_ID", 0.3971436208944884},
+		{"3GLCM_IDM", 0.31289232350671703},
+		{"3GLCM_IDMN", 0.9742455423861098},
+		{"3GLCM_IDN", 0.8916188345125778},
+		{"3GLCM_INFOMEAS1", -0.028849320703047295},
+		{"3GLCM_INFOMEAS2", 0.42649326176558594},
+		{"3GLCM_IV", 0.32099033289502626},
+		{"3GLCM_JAVE", 10.82390700902151},
+		{"3GLCM_JE", 6.858755520111761},
+		{"3GLCM_JMAX", 0.029840388619014575},
+		{"3GLCM_JVAR", 7.415382653392931},
+		{"3GLCM_SUMAVERAGE", 21.64781401804303},
+		{"3GLCM_SUMENTROPY", 4.136853807670587},
+	}},
+	{1, {   // Nyxus shift (1,1,0)
+		{"3GLCM_ACOR", 128.74671419024276},
+		{"3GLCM_ASM", 0.017683730845544542},
+		{"3GLCM_CLUPROM", 3320.925740996756},
+		{"3GLCM_CLUSHADE", -1.3639074343548505},
+		{"3GLCM_CLUTEND", 31.757448928027397},
+		{"3GLCM_CONTRAST", 3.2143016261973685},
+		{"3GLCM_CORRELATION", 0.8161772530538037},
+		{"3GLCM_DIFAVE", 1.3746936957006015},
+		{"3GLCM_DIFENTRO", 2.1053341438825215},
+		{"3GLCM_DIFVAR", 1.3245188691983933},
+		{"3GLCM_ID", 0.5329975919973693},
+		{"3GLCM_IDM", 0.48140499271375853},
+		{"3GLCM_IDMN", 0.9921750252094438},
+		{"3GLCM_IDN", 0.9382765544881969},
+		{"3GLCM_INFOMEAS1", -0.2273211435397601},
+		{"3GLCM_INFOMEAS2", 0.8971732961849341},
+		{"3GLCM_IV", 0.47393810314073054},
+		{"3GLCM_JAVE", 11.027734462018268},
+		{"3GLCM_JE", 6.3724144970612056},
+		{"3GLCM_JMAX", 0.04633548674537759},
+		{"3GLCM_JVAR", 8.742937638556189},
+		{"3GLCM_SUMAVERAGE", 22.05546892403654},
+		{"3GLCM_SUMENTROPY", 4.513791865105922},
+	}},
+	{2, {   // Nyxus shift (1,1,-1)
+		{"3GLCM_ACOR", 120.04542326221619},
+		{"3GLCM_ASM", 0.011706266409436495},
+		{"3GLCM_CLUPROM", 1256.2668919774499},
+		{"3GLCM_CLUSHADE", 10.01414042456447},
+		{"3GLCM_CLUTEND", 19.89623196945447},
+		{"3GLCM_CONTRAST", 11.587749483826569},
+		{"3GLCM_CORRELATION", 0.2638955463100125},
+		{"3GLCM_DIFAVE", 2.684101858224363},
+		{"3GLCM_DIFENTRO", 2.931806609921414},
+		{"3GLCM_DIFVAR", 4.383346698503086},
+		{"3GLCM_ID", 0.388027945710327},
+		{"3GLCM_IDM", 0.300244009664749},
+		{"3GLCM_IDMN", 0.9732688884804859},
+		{"3GLCM_IDN", 0.8887228796769687},
+		{"3GLCM_INFOMEAS1", -0.02876182285260025},
+		{"3GLCM_INFOMEAS2", 0.42817383315822377},
+		{"3GLCM_IV", 0.30311238914289446},
+		{"3GLCM_JAVE", 10.861321403991738},
+		{"3GLCM_JE", 6.940143392817866},
+		{"3GLCM_JMAX", 0.030282174810736407},
+		{"3GLCM_JVAR", 7.870995363320259},
+		{"3GLCM_SUMAVERAGE", 21.72264280798348},
+		{"3GLCM_SUMENTROPY", 4.192880744021509},
+	}},
+	{3, {   // Nyxus shift (1,0,1)
+		{"3GLCM_ACOR", 119.53260123541529},
+		{"3GLCM_ASM", 0.012314465136239069},
+		{"3GLCM_CLUPROM", 1119.7693580230175},
+		{"3GLCM_CLUSHADE", 11.611060729655609},
+		{"3GLCM_CLUTEND", 18.340187290758795},
+		{"3GLCM_CONTRAST", 11.415579958819498},
+		{"3GLCM_CORRELATION", 0.23271479689495947},
+		{"3GLCM_DIFAVE", 2.6427590940288264},
+		{"3GLCM_DIFENTRO", 2.924951721169867},
+		{"3GLCM_DIFVAR", 4.431404329747429},
+		{"3GLCM_ID", 0.39463557776014874},
+		{"3GLCM_IDM", 0.3090358906014264},
+		{"3GLCM_IDMN", 0.9737125274467848},
+		{"3GLCM_IDN", 0.8904166916854648},
+		{"3GLCM_INFOMEAS1", -0.026212275164827277},
+		{"3GLCM_INFOMEAS2", 0.40843164469526927},
+		{"3GLCM_IV", 0.3114347734347124},
+		{"3GLCM_JAVE", 10.85363761153054},
+		{"3GLCM_JE", 6.871184405464778},
+		{"3GLCM_JMAX", 0.03088538091969801},
+		{"3GLCM_JVAR", 7.438941812394575},
+		{"3GLCM_SUMAVERAGE", 21.70727522306108},
+		{"3GLCM_SUMENTROPY", 4.12707201790672},
+	}},
+	{4, {   // Nyxus shift (1,0,0)
+		{"3GLCM_ACOR", 129.03225806451604},
+		{"3GLCM_ASM", 0.02261722372372403},
+		{"3GLCM_CLUPROM", 3567.623107907319},
+		{"3GLCM_CLUSHADE", 4.755237375422198},
+		{"3GLCM_CLUTEND", 33.038378542086775},
+		{"3GLCM_CONTRAST", 1.9014582412726462},
+		{"3GLCM_CORRELATION", 0.8911581497611208},
+		{"3GLCM_DIFAVE", 1.0238621299160406},
+		{"3GLCM_DIFENTRO", 1.8180811437621478},
+		{"3GLCM_DIFVAR", 0.8531645801964356},
+		{"3GLCM_ID", 0.6076210466510952},
+		{"3GLCM_IDM", 0.5729550260365678},
+		{"3GLCM_IDMN", 0.9953212690906778},
+		{"3GLCM_IDN", 0.9530756741577313},
+		{"3GLCM_INFOMEAS1", -0.3201181494470871},
+		{"3GLCM_INFOMEAS2", 0.948580009637562},
+		{"3GLCM_IV", 0.4882026071586389},
+		{"3GLCM_JAVE", 11.011268228015899},
+		{"3GLCM_JE", 6.036493321822255},
+		{"3GLCM_JMAX", 0.05965532479010163},
+		{"3GLCM_JVAR", 8.734959195839856},
+		{"3GLCM_SUMAVERAGE", 22.02253645603182},
+		{"3GLCM_SUMENTROPY", 4.5461042373680085},
+	}},
+	{5, {   // Nyxus shift (1,0,-1)
+		{"3GLCM_ACOR", 119.10603980782429},
+		{"3GLCM_ASM", 0.01189692484015583},
+		{"3GLCM_CLUPROM", 1267.2565622498596},
+		{"3GLCM_CLUSHADE", 11.54507375573305},
+		{"3GLCM_CLUTEND", 19.87450367407197},
+		{"3GLCM_CONTRAST", 11.4732326698696},
+		{"3GLCM_CORRELATION", 0.2680024775002947},
+		{"3GLCM_DIFAVE", 2.641386410432396},
+		{"3GLCM_DIFENTRO", 2.9320375010138857},
+		{"3GLCM_DIFVAR", 4.496310500652661},
+		{"3GLCM_ID", 0.39809433588603105},
+		{"3GLCM_IDM", 0.3134385203019809},
+		{"3GLCM_IDMN", 0.9735822034505024},
+		{"3GLCM_IDN", 0.8905868076720418},
+		{"3GLCM_INFOMEAS1", -0.03128785862327127},
+		{"3GLCM_INFOMEAS2", 0.44454724467597184},
+		{"3GLCM_IV", 0.31019409436018264},
+		{"3GLCM_JAVE", 10.81691832532601},
+		{"3GLCM_JE", 6.927011650081292},
+		{"3GLCM_JMAX", 0.03088538091969801},
+		{"3GLCM_JVAR", 7.836934085985395},
+		{"3GLCM_SUMAVERAGE", 21.63383665065203},
+		{"3GLCM_SUMENTROPY", 4.191217325511744},
+	}},
+	{6, {   // Nyxus shift (1,-1,1)
+		{"3GLCM_ACOR", 120.29666212534062},
+		{"3GLCM_ASM", 0.012383736793650544},
+		{"3GLCM_CLUPROM", 1121.8044475123918},
+		{"3GLCM_CLUSHADE", 12.33640576632569},
+		{"3GLCM_CLUTEND", 18.404854771919002},
+		{"3GLCM_CONTRAST", 11.511239782016334},
+		{"3GLCM_CORRELATION", 0.23043164867239763},
+		{"3GLCM_DIFAVE", 2.6563351498637595},
+		{"3GLCM_DIFENTRO", 2.937294937401924},
+		{"3GLCM_DIFVAR", 4.455123353614623},
+		{"3GLCM_ID", 0.39531874706431924},
+		{"3GLCM_IDM", 0.30877967668591055},
+		{"3GLCM_IDMN", 0.9734950888162255},
+		{"3GLCM_IDN", 0.8899246548271258},
+		{"3GLCM_INFOMEAS1", -0.025916567960102308},
+		{"3GLCM_INFOMEAS2", 0.4064821828019596},
+		{"3GLCM_IV", 0.30010139694815186},
+		{"3GLCM_JAVE", 10.88913487738419},
+		{"3GLCM_JE", 6.878076797274805},
+		{"3GLCM_JMAX", 0.03201634877384196},
+		{"3GLCM_JVAR", 7.479023638483842},
+		{"3GLCM_SUMAVERAGE", 21.778269754768388},
+		{"3GLCM_SUMENTROPY", 4.131444086915954},
+	}},
+	{7, {   // Nyxus shift (1,-1,0)
+		{"3GLCM_ACOR", 128.0048683337021},
+		{"3GLCM_ASM", 0.017119353602338256},
+		{"3GLCM_CLUPROM", 3255.0254538040913},
+		{"3GLCM_CLUSHADE", 3.602028371929358},
+		{"3GLCM_CLUTEND", 31.26705609875856},
+		{"3GLCM_CONTRAST", 3.5202478424430206},
+		{"3GLCM_CORRELATION", 0.797613068929226},
+		{"3GLCM_DIFAVE", 1.4330604115954864},
+		{"3GLCM_DIFENTRO", 2.174072501219632},
+		{"3GLCM_DIFVAR", 1.4665856991607957},
+		{"3GLCM_ID", 0.5275581583227081},
+		{"3GLCM_IDM", 0.4727813620655608},
+		{"3GLCM_IDMN", 0.9914481443728197},
+		{"3GLCM_IDN", 0.9359807113446338},
+		{"3GLCM_INFOMEAS1", -0.208018057562316},
+		{"3GLCM_INFOMEAS2", 0.8805432786108223},
+		{"3GLCM_IV", 0.4519936138872456},
+		{"3GLCM_JAVE", 11.003098030537734},
+		{"3GLCM_JE", 6.431797093249814},
+		{"3GLCM_JMAX", 0.044478867005974775},
+		{"3GLCM_JVAR", 8.696825985300391},
+		{"3GLCM_SUMAVERAGE", 22.00619606107546},
+		{"3GLCM_SUMENTROPY", 4.504430519540905},
+	}},
+	{8, {   // Nyxus shift (1,-1,-1)
+		{"3GLCM_ACOR", 118.25583791208791},
+		{"3GLCM_ASM", 0.011943638864569475},
+		{"3GLCM_CLUPROM", 1265.322254604925},
+		{"3GLCM_CLUSHADE", 12.977028251800995},
+		{"3GLCM_CLUTEND", 19.85394228882383},
+		{"3GLCM_CONTRAST", 11.239010989010989},
+		{"3GLCM_CORRELATION", 0.2770702166125256},
+		{"3GLCM_DIFAVE", 2.6092032967032965},
+		{"3GLCM_DIFENTRO", 2.9193407059481435},
+		{"3GLCM_DIFVAR", 4.431069145483637},
+		{"3GLCM_ID", 0.399216998470089},
+		{"3GLCM_IDM", 0.31422037508803685},
+		{"3GLCM_IDMN", 0.9741449485358443},
+		{"3GLCM_IDN", 0.8917326930119162},
+		{"3GLCM_INFOMEAS1", -0.03287868464291647},
+		{"3GLCM_INFOMEAS2", 0.4541443706042446},
+		{"3GLCM_IV", 0.3118106502479268},
+		{"3GLCM_JAVE", 10.775068681318684},
+		{"3GLCM_JE", 6.909822562831936},
+		{"3GLCM_JMAX", 0.027472527472527472},
+		{"3GLCM_JVAR", 7.773238319458705},
+		{"3GLCM_SUMAVERAGE", 21.55013736263736},
+		{"3GLCM_SUMENTROPY", 4.189279425622912},
+	}},
+	{9, {   // Nyxus shift (0,1,1)
+		{"3GLCM_ACOR", 118.22840755735497},
+		{"3GLCM_ASM", 0.012308407138473188},
+		{"3GLCM_CLUPROM", 1191.3239192283063},
+		{"3GLCM_CLUSHADE", 12.95736634370189},
+		{"3GLCM_CLUTEND", 19.113462312482135},
+		{"3GLCM_CONTRAST", 11.268556005398107},
+		{"3GLCM_CORRELATION", 0.2582088597605505},
+		{"3GLCM_DIFAVE", 2.607287449392712},
+		{"3GLCM_DIFENTRO", 2.9151033437820915},
+		{"3GLCM_DIFVAR", 4.4706081616373545},
+		{"3GLCM_ID", 0.39920055109832436},
+		{"3GLCM_IDM", 0.31571843881920364},
+		{"3GLCM_IDMN", 0.9740680365556306},
+		{"3GLCM_IDN", 0.8918773652150931},
+		{"3GLCM_INFOMEAS1", -0.031794260469524764},
+		{"3GLCM_INFOMEAS2", 0.4465142775575717},
+		{"3GLCM_IV", 0.32318938597428376},
+		{"3GLCM_JAVE", 10.782726045883939},
+		{"3GLCM_JE", 6.882615788647874},
+		{"3GLCM_JMAX", 0.029183535762483132},
+		{"3GLCM_JVAR", 7.595504579470061},
+		{"3GLCM_SUMAVERAGE", 21.56545209176788},
+		{"3GLCM_SUMENTROPY", 4.160050102012882},
+	}},
+	{10, {   // Nyxus shift (0,1,0)
+		{"3GLCM_ACOR", 128.84674493062977},
+		{"3GLCM_ASM", 0.019856896997502163},
+		{"3GLCM_CLUPROM", 3463.8066371424316},
+		{"3GLCM_CLUSHADE", 1.1127236962313753},
+		{"3GLCM_CLUTEND", 32.310208948151924},
+		{"3GLCM_CONTRAST", 2.4552828175026695},
+		{"3GLCM_CORRELATION", 0.8587517280610836},
+		{"3GLCM_DIFAVE", 1.1848452508004272},
+		{"3GLCM_DIFENTRO", 1.9545933925411618},
+		{"3GLCM_DIFVAR", 1.0514245491583416},
+		{"3GLCM_ID", 0.5702421608985111},
+		{"3GLCM_IDM", 0.5272674452341727},
+		{"3GLCM_IDMN", 0.99398784072338},
+		{"3GLCM_IDN", 0.9461953369113131},
+		{"3GLCM_INFOMEAS1", -0.27249533254181346},
+		{"3GLCM_INFOMEAS2", 0.9266447847591984},
+		{"3GLCM_IV", 0.4855162735318248},
+		{"3GLCM_JAVE", 11.01739594450373},
+		{"3GLCM_JE", 6.202201857024506},
+		{"3GLCM_JMAX", 0.05208110992529349},
+		{"3GLCM_JVAR", 8.691372941413647},
+		{"3GLCM_SUMAVERAGE", 22.034791889007465},
+		{"3GLCM_SUMENTROPY", 4.530197152507132},
+	}},
+	{11, {   // Nyxus shift (0,1,-1)
+		{"3GLCM_ACOR", 119.95337135189536},
+		{"3GLCM_ASM", 0.012060054728814192},
+		{"3GLCM_CLUPROM", 1184.9709138201597},
+		{"3GLCM_CLUSHADE", 11.169096901611988},
+		{"3GLCM_CLUTEND", 19.092893030116606},
+		{"3GLCM_CONTRAST", 11.587051325058695},
+		{"3GLCM_CORRELATION", 0.24464978222138645},
+		{"3GLCM_DIFAVE", 2.6712512579671253},
+		{"3GLCM_DIFENTRO", 2.934302401701605},
+		{"3GLCM_DIFVAR", 4.451468041867758},
+		{"3GLCM_ID", 0.39073881595686355},
+		{"3GLCM_IDM", 0.3042950881500287},
+		{"3GLCM_IDMN", 0.9733212995379383},
+		{"3GLCM_IDN", 0.8893204818623451},
+		{"3GLCM_INFOMEAS1", -0.027639069043303904},
+		{"3GLCM_INFOMEAS2", 0.4195159556697236},
+		{"3GLCM_IV", 0.3090051265444866},
+		{"3GLCM_JAVE", 10.866320026836627},
+		{"3GLCM_JE", 6.906957769892934},
+		{"3GLCM_JMAX", 0.030526668903052667},
+		{"3GLCM_JVAR", 7.669986088793828},
+		{"3GLCM_SUMAVERAGE", 21.73264005367327},
+		{"3GLCM_SUMENTROPY", 4.161333070316757},
+	}},
+	{12, {   // Nyxus shift (0,0,1)
+		{"3GLCM_ACOR", 118.87078464106844},
+		{"3GLCM_ASM", 0.012020646542233717},
+		{"3GLCM_CLUPROM", 1176.9869056254038},
+		{"3GLCM_CLUSHADE", 11.121963385167216},
+		{"3GLCM_CLUTEND", 19.030114854752362},
+		{"3GLCM_CONTRAST", 11.564941569282128},
+		{"3GLCM_CORRELATION", 0.2439993305456308},
+		{"3GLCM_DIFAVE", 2.6487479131886476},
+		{"3GLCM_DIFENTRO", 2.9369838994362514},
+		{"3GLCM_DIFVAR", 4.549076061660921},
+		{"3GLCM_ID", 0.3964443616113065},
+		{"3GLCM_IDM", 0.31199652709871534},
+		{"3GLCM_IDMN", 0.9734141487308566},
+		{"3GLCM_IDN", 0.8903584441759088},
+		{"3GLCM_INFOMEAS1", -0.02894236461435402},
+		{"3GLCM_INFOMEAS2", 0.42832330927658696},
+		{"3GLCM_IV", 0.31450045791240805},
+		{"3GLCM_JAVE", 10.8168614357262},
+		{"3GLCM_JE", 6.901557813262764},
+		{"3GLCM_JMAX", 0.028380634390651086},
+		{"3GLCM_JVAR", 7.648764106008619},
+		{"3GLCM_SUMAVERAGE", 21.633722871452427},
+		{"3GLCM_SUMENTROPY", 4.159643455411318},
+	}},
 };
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom()
@@ -211,11 +590,25 @@ void assert_3d_glcm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode
 
     f.save_value(r.fvals);
 
-    // (7) aggregate angled subfeatures
-    double atot = f.calc_ave (r.fvals[fcode]);
+    // (7) verdict, one direction at a time
+    //
+    // The base feature holds one value per 3D angle, so every angle is compared against its own
+    // PyRadiomics value. The averaged quantity is asserted separately, on the stored *_AVE feature
+    // (assert_3d_glcm_ave_feature_pyradiomics below) -- averaging here instead would let
+    // per-direction errors cancel and pass.
+    const std::vector<double>& per_angle = r.fvals[fcode];
+    ASSERT_EQ(per_angle.size(), glcm_3d_pyradiomics_ref_vals_by_angle.size());
 
-    // (8) verdict
-    ASSERT_TRUE(agrees_gt(atot, glcm_3d_pyradiomics_ref_vals[fname], 10.));
+    const double tol = glcm_3d_pyradiomics_tol(fname);
+    for (int k = 0; k < (int)per_angle.size(); k++)
+    {
+        SCOPED_TRACE(std::string("PYRADIOMICS_ORACLE__") + fname + "__angle" + std::to_string(k));
+        auto ang = glcm_3d_pyradiomics_ref_vals_by_angle.find(k);
+        ASSERT_TRUE(ang != glcm_3d_pyradiomics_ref_vals_by_angle.end());
+        auto golden = ang->second.find(fname);
+        ASSERT_TRUE(golden != ang->second.end());
+        ASSERT_NEAR(per_angle[k], golden->second, std::abs(golden->second) * tol + 1e-12);
+    }
 }
 
 // Deep-dive: verify the 7 config-sensitive 3D GLCM features equal their already-vetted twins
@@ -282,6 +675,7 @@ void test_3d_glcm_equivalence_dump_pyradiomics()
         EXPECT_NEAR(va, vb, std::abs(vb) * 1e-6 + 1e-9) << p.a << " != " << p.b;
     }
 }
+
 
 void test_3d_glcm_acor_pyradiomics()
 {
@@ -455,7 +849,9 @@ void assert_3d_glcm_ave_feature_pyradiomics (const Nyxus::Feature3D& ave_fcode,
     f.save_value(r.fvals);
 
     SCOPED_TRACE(std::string("PYRADIOMICS_ORACLE__") + base_fname + "_AVE");
-    ASSERT_TRUE(agrees_gt(r.fvals[(int)ave_fcode][0], glcm_3d_pyradiomics_ref_vals[base_fname], 10.));
+    const double want = glcm_3d_pyradiomics_ref_vals[base_fname];
+    const double tol = glcm_3d_pyradiomics_tol(base_fname);
+    ASSERT_NEAR(r.fvals[(int)ave_fcode][0], want, std::abs(want) * tol + 1e-12);
 }
 
 void test_3d_glcm_acor_ave_pyradiomics()

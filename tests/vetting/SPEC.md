@@ -358,6 +358,7 @@ Three qualifiers, used only when needed:
 | Several tables share one family/dim/oracle | `_<subject>` before `_ref_vals` | `moments_2d_skimage_shape_ref_vals` |
 | Per-feature tolerances beside the values | `_ref_tols` | `firstorder_2d_pyradiomics_ref_tols` |
 | Values keyed by ROI label, not feature | `_ref_vals_by_label` | `neighbor_2d_cellprofiler_ref_vals_by_label` |
+| One value per direction, not one per feature | `_ref_vals_by_angle` | `glcm_3d_pyradiomics_ref_vals_by_angle` |
 
 **A table lives in the file whose assertions read it.** Its `<family>_<dim>_<oracle>` must therefore
 match that file's own `<family>_<dim>_<kind-or-oracle>` (§6.1) — the table and its file make the same
