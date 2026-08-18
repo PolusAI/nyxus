@@ -126,7 +126,8 @@ static ref_vals_map<double> glcm_3d_pyradiomics_ref_vals
 // The five entropy-family features are the exception, and the cause is in Nyxus, not in a
 // convention: every log2 in the GLCM code goes through Nyxus::fast_log10 (helpers/helpers.h), a
 // float-precision quadratic approximation of log2, while PyRadiomics uses numpy.log2 in double.
-// The bands below are twice the measured worst per-direction residual of that approximation:
+// The bands below are the measured worst per-direction residual of that approximation, doubled and
+// then rounded up to one significant figure, so each band sits 2.4x to 2.6x its measurement:
 //
 //   3GLCM_INFOMEAS1   1.7e-2      3GLCM_DIFENTRO    1.2e-3      3GLCM_JE          4.1e-4
 //   3GLCM_INFOMEAS2   7.7e-3      3GLCM_SUMENTROPY  7.6e-4
@@ -135,7 +136,7 @@ static ref_vals_map<double> glcm_3d_pyradiomics_ref_vals
 // computing the information measures in double.
 static const double GLCM_3D_PYRADIOMICS_DEFAULT_TOL = 1e-9;
 
-static ref_vals_map<double> glcm_3d_pyradiomics_ref_tols
+static const ref_vals_map<double> glcm_3d_pyradiomics_ref_tols
 {
     {"3GLCM_INFOMEAS1", 4e-2},
     {"3GLCM_INFOMEAS2", 2e-2},
@@ -152,7 +153,7 @@ static double glcm_3d_pyradiomics_tol (const std::string& fname)
 
 // One PyRadiomics value per 3D direction, in Nyxus angle-slot order. Regenerate with
 // tests/vetting/oracles/gen_glcm3d_pyradiomics.py, which also re-verifies every entry here.
-static ref_vals_map_by_angle<double> glcm_3d_pyradiomics_ref_vals_by_angle
+static const ref_vals_map_by_angle<double> glcm_3d_pyradiomics_ref_vals_by_angle
 {
 	{0, {   // Nyxus shift (1,1,1)
 		{"3GLCM_ACOR", 118.99236641221376},
