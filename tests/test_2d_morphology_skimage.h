@@ -27,7 +27,8 @@ static ref_vals_map<double> morphology_2d_skimage_shape2d_ref_vals{
 	// same ellipse from the X axis, so NYXUS == 90 - degrees(skimage.orientation). The angle is
 	// invariant to the +1/12 pixel finite-size second-moment correction (it shifts mu20 and mu02
 	// equally, leaving mu20-mu02 and mu11 unchanged), which is why ORIENTATION vets here while the
-	// AXIS LENGTHS do not -- those differ ~1.4% and are vetted against MATLAB instead.
+	// AXIS LENGTHS do not -- those differ ~1.4% and are vetted against the matlab oracle instead
+	// (run as Octave regionprops, SPEC 4).
 	{"ORIENTATION", 70.417394498420663},
 	// regionprops.equivalent_diameter_area = sqrt(4*Area/pi); no convention gap
 	{"DIAMETER_EQUAL_AREA", 5.7536273917515919},

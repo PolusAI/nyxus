@@ -75,6 +75,16 @@ NOTE = {
     "PERCENT_TOUCHING": "neighbor family convention; documented divergence from CellProfiler",
 }
 
+# The SPEC 4 token names the reference semantics (MATLAB regionprops), not the vendor product that
+# ran them: every golden under it in this family came from GNU Octave standing in for MATLAB. A row
+# that presents the oracle says which tool produced the numbers, so "matlab" is not read as a
+# licensed run.
+ORACLE_NOTE = {
+    "matlab": ("matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free "
+               "MATLAB stand-in (gen_morphology_matlab.m); see "
+               "morphology_2d_matlab_vetting_report.md"),
+}
+
 
 def feature_names():
     """The family's feature names, longest first so MAXCHORDS_MAX_ANG wins over MAXCHORDS_MAX."""
@@ -162,12 +172,14 @@ def render(rows, asserted, oracles, regression):
                 "Regression", "Reg_Test_Name", "Notes"])
     for r in rows:
         f = r["feature"]
+        notes = [NOTE[f]] if f in NOTE else []
+        notes += [ORACLE_NOTE[o] for o in sorted(oracles.get(f, ())) if o in ORACLE_NOTE]
         w.writerow(["2D", "morphology", f,
                     ";".join(sorted(oracles.get(f, ()))),
                     ";".join(sorted(asserted.get(f, ()))),
                     "Y" if f in regression else "N",
                     ";".join(sorted(regression.get(f, ()))),
-                    NOTE.get(f, "")])
+                    "; ".join(notes)])
     return buf.getvalue()
 
 
