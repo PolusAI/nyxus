@@ -69,7 +69,7 @@ voxel volume and 0.17% on the hull volume.
 than 10%, for the same reason MIRP does (see below).
 
 **Per-feature bands** live in `morphology_3d_matlab_ref_tols`, measured rather than assumed —
-`3VOXEL_VOLUME` 0.1% (same definition, measured 2.3e-4%), the two hull volumes 5% (measured 3.58%).
+`3VOXEL_VOLUME` 0.1% (same definition, measured 2.3e-4%), the two hull volumes 5% (measured 3.88%).
 
 ## Regression drift guards — `test_3d_morphology_regression.h`
 

@@ -53,15 +53,17 @@ static ref_vals_map<double> morphology_3d_matlab_ref_tols
 	// same-definition tier.
 	{ "3VOXEL_VOLUME", 0.1 },
 	// Convex-hull convention difference: Nyxus builds a discrete voxel hull, regionprops3
-	// ConvexVolume triangulates. Measured 3.58%, stated band 5% (SPEC 7 known-method-divergence).
+	// ConvexVolume triangulates. Measured 3.88% -- relative_absdiff_pct of Nyxus 478516 against the
+	// 497824 pinned below -- stated band 5% (SPEC 7 known-method-divergence).
 	// Citation for the band, now from two tools rather than one: MIRP's convex-hull volume for this
 	// fixture, backed out of IBSI's volume density (convex hull) = V_mesh / V_convex, is 496958.3
 	// against regionprops3's 497824 -- two independent triangulated hulls agreeing to 0.17%, with
-	// Nyxus 3.7% below both. The divergence is voxelised-vs-triangulated hull, not tool noise; see
+	// Nyxus 3.88% below regionprops3 and 3.71% below MIRP, the 0.17% between the two tools being the
+	// whole spread. The divergence is voxelised-vs-triangulated hull, not tool noise; see
 	// test_3d_morphology_mirp.h and audit/morphology_3d_mirp_vetting_report.md.
 	{ "3VOLUME_CONVEXHULL", 5.0 },
 	// Nyxus aliases 3MESH_VOLUME to the convex-hull volume rather than integrating the surface mesh,
-	// so it inherits the hull convention and the same measured 3.58%. The alias is why one golden
+	// so it inherits the hull convention and the same measured 3.88%. The alias is why one golden
 	// serves two keys; if 3MESH_VOLUME ever becomes a real mesh integral this band must be revisited.
 	// It is not one today: IBSI's volume (mesh) for this fixture, MIRP morph_volume, is 274338.34,
 	// and 3MESH_VOLUME reads 74% above it. This band judges the alias against the quantity the alias

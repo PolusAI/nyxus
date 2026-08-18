@@ -100,8 +100,8 @@ them on every run. The MATLAB session cannot be repeated, but the *values* it pr
 reproducible from the tree by a second tool — which is what SPEC §6.4 is protecting, and the two
 registry rows accordingly read `oracle=mirp` with the MATLAB assertion kept as the second opinion.
 
-That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 478516, which is 3.6% from
-MATLAB and 3.7% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
+That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 478516, which is 3.88% from
+MATLAB and 3.71% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
 a **discrete voxel hull against two independently triangulated ones** — and that sentence is the
 citation SPEC §7 asks for behind the 5% band: a definitional difference between a voxelised and a
 triangulated hull, measured against two tools rather than asserted.
