@@ -6,8 +6,8 @@ Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
 3D,morphology,3MESH_VOLUME,matlab,test_3d_morphology_mesh_volume_matlab,N,,"Nyxus aliases this to the convex-hull volume rather than integrating the mesh, so it shares 3VOLUME_CONVEXHULL's golden and its 5% band"
 3D,morphology,3SPHERICAL_DISPROPORTION,,,Y,test_3d_morphology_spherical_disproportion_regression,inherits the 3AREA surface-area convention difference
 3D,morphology,3SPHERICITY,,,Y,test_3d_morphology_sphericity_regression,inherits the 3AREA surface-area convention difference
-3D,morphology,3VOLUME_CONVEXHULL,matlab,test_3d_morphology_volume_convex_hull_matlab,Y,test_3d_morphology_volume_convex_hull_regression,discrete voxel hull vs MATLAB's triangulated ConvexVolume; MIRP's derived hull volume 496958 corroborates MATLAB's 497824 to 0.17%
-3D,morphology,3VOXEL_VOLUME,matlab,test_3d_morphology_voxel_volume_matlab,Y,test_3d_morphology_voxel_volume_regression,"MIRP morph_vol_approx reproduces MATLAB's 274432 exactly, so two independent tools agree on this golden"
+3D,morphology,3VOLUME_CONVEXHULL,matlab;mirp,test_3d_morphology_volume_convex_hull_matlab;test_3d_morphology_volume_convex_hull_mirp,Y,test_3d_morphology_volume_convex_hull_regression,discrete voxel hull vs MATLAB's triangulated ConvexVolume; MIRP's derived hull volume 496958 corroborates MATLAB's 497824 to 0.17%
+3D,morphology,3VOXEL_VOLUME,matlab;mirp,test_3d_morphology_voxel_volume_matlab;test_3d_morphology_voxel_volume_mirp,Y,test_3d_morphology_voxel_volume_regression,"MIRP morph_vol_approx reproduces MATLAB's 274432 exactly, so two independent tools agree on this golden"
 3D,morphology,3MAJOR_AXIS_LEN,mirp,test_3d_morphology_major_axis_len_mirp,N,,the eigenvalue-order defect that once made LEAST>MAJOR is guarded by the MIRP pins and by the generator's identity check
 3D,morphology,3MINOR_AXIS_LEN,mirp,test_3d_morphology_minor_axis_len_mirp,N,,
 3D,morphology,3LEAST_AXIS_LEN,mirp,test_3d_morphology_least_axis_len_mirp,N,,"was >3MAJOR_AXIS_LEN before the eigenvalue-order fix, structurally impossible"

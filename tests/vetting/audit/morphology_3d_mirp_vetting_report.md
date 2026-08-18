@@ -1,7 +1,8 @@
 # 3D morphology vs MIRP — vetting report
 
 Closes the five `3*_AXIS_LEN` / `3ELONGATION` / `3FLATNESS` rows that read `status=vetted,
-oracle=mirp` with no in-tree oracle assertion, and closes two more the plan did not count.
+oracle=mirp` with no in-tree oracle assertion, closes two more the plan did not count, and gives the
+two volume rows a reference that can actually be re-run from this tree.
 
 ## Tool and configuration
 
@@ -14,7 +15,7 @@ oracle=mirp` with no in-tree oracle assertion, and closes two more the plan did 
 | Nyxus config | `D3_SurfaceFeature`, `IBSI=true`, `GREYDEPTH=128`, `PIXELSIZEUM=100` (what `test_3d_morphology_common.h` sets) |
 | Generator | `tests/vetting/oracles/gen_morphology3d_mirp.py` |
 | Test | `test_3d_morphology_mirp.h` |
-| Tolerance | `rel=1e-9` |
+| Tolerance | axes `rel=1e-9`; volumes measured per feature — `3VOXEL_VOLUME` 0.1% band on a 0 residual, `3VOLUME_CONVEXHULL` 5% band on a measured 3.71% |
 
 Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
 `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
@@ -85,18 +86,44 @@ is not possible here: there is no MATLAB licence, and Octave's `image` package h
 The goldens have no in-repo generator either, which is the SPEC §6.4 gap already tracked in
 `not_covered.md` §C.
 
-What is possible is a second opinion from a tool that computes the same quantities. The generator
-prints these without pinning them:
+What is possible is a reference from a tool that computes the same quantities and *is* runnable
+from the tree. Those two are now pinned and asserted, not merely printed:
 
 | quantity | MIRP | MATLAB golden | agreement |
 |---|---|---|---|
 | voxel volume (`morph_vol_approx`) | 274432.0 | 274432.0 | **exact** |
 | convex-hull volume (`morph_volume` / `morph_vol_dens_conv_hull`) | 496958.32 | 497824.0 | 0.17% |
 
-So both MATLAB goldens are independently corroborated. That also relocates the disagreement: Nyxus'
-`3VOLUME_CONVEXHULL` is 478516, which is 3.6% from MATLAB and 3.7% from MIRP, while the two tools sit
-0.17% apart. The difference is on the Nyxus side — a discrete voxel hull against two triangulated
-ones — which is what the existing 5% band already documents, now with a second measurement behind it.
+`morphology_3d_mirp_volume_ref_vals` holds both, `test_3d_morphology_voxel_volume_mirp` and
+`test_3d_morphology_volume_convex_hull_mirp` assert them, and `gen_morphology3d_mirp.py` re-derives
+them on every run. The MATLAB session cannot be repeated, but the *values* it produced are now
+reproducible from the tree by a second tool — which is what SPEC §6.4 is protecting, and the two
+registry rows accordingly read `oracle=mirp` with the MATLAB assertion kept as the second opinion.
+
+That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 478516, which is 3.6% from
+MATLAB and 3.7% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
+a **discrete voxel hull against two independently triangulated ones** — and that sentence is the
+citation SPEC §7 asks for behind the 5% band: a definitional difference between a voxelised and a
+triangulated hull, measured against two tools rather than asserted.
+
+### `3MESH_VOLUME` is not a mesh volume
+
+The same run says something the MATLAB comparison alone could not. MIRP reports IBSI's volume (mesh)
+as `morph_volume` = **274338.34** — a surface-mesh integral, necessarily close to the voxel volume
+274432 for a solid ROI. Nyxus' `3MESH_VOLUME` reports **478516**, the convex-hull volume, because the
+implementation aliases the two:
+
+| quantity | value | vs Nyxus `3MESH_VOLUME` |
+|---|---|---|
+| IBSI volume (mesh), MIRP `morph_volume` | 274338.34 | **74% low** |
+| convex-hull volume, MIRP | 496958.32 | 3.7% |
+| Nyxus `3MESH_VOLUME` | 478516 | — |
+
+So the feature is measuring a hull, under a name that says mesh, and its MATLAB pin (`ConvexVolume`,
+497824) is consistent only because the same alias was applied when the golden was chosen. The
+assertion is left judging the alias against the quantity the alias computes — deliberately, because
+pinning it against `morph_volume` would encode a 74% miss as agreement. The naming/definition gap is
+filed as a defect for its own branch.
 
 ## The surface-area convention gap stays open
 
