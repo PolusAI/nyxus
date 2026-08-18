@@ -14,7 +14,7 @@ and regenerates a regression table that no configuration reproduced.
 | Nyxus config | `GREYDEPTH=100`, `IBSI=false`, `GLRLM_GREYDEPTH=-20` (negative activates binCount binning) |
 | Generator | `tests/vetting/oracles/gen_glrlm3d_pyradiomics.py` |
 | Tests | `test_3d_glrlm_pyradiomics.h`, `tests/python/test_nyxus.py::test_3d_glrlm_compatibility` |
-| Tolerance | `rel=1e-9`, and `rel=5e-3` for `3GLRLM_RE` / `3GLRLM_RE_AVE` |
+| Tolerance | per direction `rel=1e-9`, and `rel=2e-3` for `3GLRLM_RE`; the `*_AVE` assertions keep `rel=1e-9` / `rel=5e-3` |
 
 ## The goldens reproduce bit-for-bit
 
@@ -144,6 +144,51 @@ value, no need to aggregate subfeatures"*, but `save_value` writes the full per-
 slot — so the guard pinned one direction and let the other twelve drift unwatched. It now uses
 `calc_ave` over the 13 angles, matching the GLCM regression file and the quantity the pins' names
 imply.
+
+## The direction-set scalar cannot vet 13 directions — and here it hid a real defect
+
+`assert_3d_glrlm_feature_pyradiomics()` ended in `calc_ave(r.fvals[fcode])` compared against
+PyRadiomics' single scalar. That validates the average and only the average, and this family is the
+demonstration of why that matters: PyRadiomics computes each feature per angle and averages last, so
+intercepting that step yields its own per-angle numbers, and comparing them one by one gives
+
+| assumed angle mapping | worst per-direction error |
+|---|---|
+| the mapping 3D GLCM uses (triple reversed) | **554%** (`3GLRLM_RV`), 106% (`LRE`, `LRHGLE`, `LRLGLE`), 30% (`GLN`) |
+| the identity | ≤ 5.5e-16 on 15 features, 6.2e-4 on `3GLRLM_RE` |
+
+**while the mean of the same 13 numbers agrees to 1e-16 either way.** An averaged assertion cannot
+tell those two apart; a per-direction one cannot miss.
+
+### Why the mapping differs from 3D GLCM — a real defect
+
+Both families walk the same 13 offsets, written as the same 13 brace-initialised triples in the same
+order. The structs they initialise are not the same:
+
+```cpp
+struct AngleShift      { int dz, dy, dx; };   // texture_feature.h -> 3D GLRLM's shifts13
+struct ShiftToNeighbor { int dx, dy, dz; };   // 3d_glcm.cpp       -> 3D GLCM's shifts
+```
+
+`{1, 0, 0}` at slot 4 is therefore **dx=1 (x)** in GLCM and **dz=1 (z)** in GLRLM. PyRadiomics
+orders its rows `(dz, dy, dx)` — verified by construction rather than assumed: on a volume constant
+along numpy axis 2 only, the one slot carrying full-length runs is the one whose row reads
+`(0, 0, 1)`. So GLRLM's slots line up with PyRadiomics one-to-one and GLCM's need reversing, which
+is exactly what both generators derive.
+
+Neither family loses a direction — 13 offsets is a complete set under either reading, which is why
+the `*_AVE` values are right and this went unnoticed. But the same index means different geometry in
+each family, and Nyxus publishes those base features as per-angle vectors, so it is user-visible.
+Filed as a defect; this PR pins what Nyxus emits, in Nyxus' own slot order, and says which direction
+that is.
+
+### What is pinned
+
+`glrlm_3d_pyradiomics_ref_vals_by_angle` — 16 features x 13 directions = **208 per-direction
+goldens**, all reproduced by the generator, which now verifies both tables and fails on either. The
+base assertions compare every direction; the `*_AVE` assertions keep the direction-set scalar and
+still read the stored feature. Planted-defect check: a 1e-5 relative error in a single direction of a
+single feature fails the base assertion, where the averaged form passed it.
 
 ## `3GLRLM_RP` leaves its mathematical bound — filed, not fixed here
 
