@@ -41,13 +41,18 @@ def test_vetting_bad_status_and_token_flagged_mechanics(tmp_path):
 def test_vetting_unquoted_comma_row_flagged_mechanics(tmp_path):
     """A row carrying an unquoted comma has more fields than the header: every field after the
     comma shifts left by one and the last one falls off the end entirely. 3ROBUST_MEAN sat that
-    way with a "[P10,P90]" candidate_oracle, so its notes had become its source."""
-    cols = ",".join(cc.COLUMNS)
+    way with a "[P10,P90]" candidate_oracle, so its notes had become its source.
+
+    Written field by field off cc.COLUMNS rather than as a row literal: a literal stops having one
+    field too many the moment the schema grows, and then asserts nothing."""
+    row = {c: "" for c in cc.COLUMNS}
+    row.update(dim="3D", feature="3X", family="firstorder", status="vetted", oracle="matlab",
+               agreement="agreed", current_test="t.h", target_test="t.h",
+               candidate_oracle="octave (mean of [P10,P90])", source="tracker", notes="note")
     p = tmp_path / "reg.csv"
     with open(p, "w", newline="") as fh:
-        fh.write(cols + "\n")
-        fh.write("3D,3X,firstorder,vetted,matlab,agreed,,,t.h,t.h,"
-                 "octave (mean of [P10,P90]),,tracker,note\n")
+        fh.write(",".join(cc.COLUMNS) + "\n")
+        fh.write(",".join(row[c] for c in cc.COLUMNS) + "\n")
     errs = cc.validate_rows(cc.load_registry(str(p)))
     assert any("past the last column" in e for e in errs), errs
 
@@ -94,6 +99,18 @@ def test_vetting_undefined_benchmark_flagged_mechanics(tmp_path):
     errs = cc.validate_benchmarks(rows, str(md))
     assert len(errs) == 1 and "bench_typo" in errs[0], errs
     assert cc.benchmark_ids(str(md)) == {"bench_real_one"}
+
+def test_vetting_unresolvable_test_name_flagged_mechanics(tmp_path):
+    """A test_name is a pointer too: SPEC 3 identifies an assertion by the gtest case it runs as,
+    so a name no case answers to says a feature is covered by a test nobody runs."""
+    cc_file = tmp_path / "test_all.cc"
+    cc_file.write_text("TEST(TEST_NYXUS, TEST_3D_NGLDM_LDE_REGRESSION) {\n}\n", encoding="utf-8")
+    rows = [{"feature": "A", "test_name": "TEST_NYXUS.TEST_3D_NGLDM_LDE_REGRESSION"},
+            {"feature": "B", "test_name": "TEST_NYXUS.TEST_THAT_NEVER_EXISTED"},
+            {"feature": "C", "test_name": ""}]
+    errs = cc.validate_test_names(rows, str(cc_file))
+    assert len(errs) == 1 and "TEST_THAT_NEVER_EXISTED" in errs[0], errs
+    assert cc.gtest_case_names(str(cc_file)) == {"TEST_NYXUS.TEST_3D_NGLDM_LDE_REGRESSION"}
 
 
 # ---- SPEC 6.1/6.2 test-naming conventions (tests/vetting/check_test_names.py) ----

@@ -1,5 +1,5 @@
 """Validate tests/vetting/oracle_coverage.csv and regenerate coverage_report.md. Stdlib only."""
-import csv, os, sys, argparse
+import csv, os, re, sys, argparse
 
 COLUMNS = ["dim","feature","family","status","oracle","agreement","config_recipe",
            "tolerance","current_test","target_test","candidate_oracle","flag","source","notes",
@@ -18,7 +18,6 @@ def load_registry(path):
 
 def benchmark_ids(path):
     """-> the ids defined in benchmarks.md, i.e. every '## `bench...`' or '## `name`' heading."""
-    import re
     if not os.path.exists(path):
         return None
     with open(path, encoding="utf-8", errors="replace") as fh:
@@ -37,6 +36,35 @@ def validate_benchmarks(rows, benchmarks_md):
         if b and b not in defined:
             errs.append(f"{r.get('feature','')}: benchmark {b!r} is not defined in "
                         f"{os.path.basename(benchmarks_md)}")
+    return errs
+
+
+def gtest_case_names(test_all_cc):
+    """-> the "SUITE.CASE" names the gtest translation unit defines, or None if it is unreadable."""
+    if not os.path.exists(test_all_cc):
+        return None
+    with open(test_all_cc, encoding="utf-8", errors="replace") as fh:
+        return {f"{s}.{c}" for s, c in
+                re.findall(r"^\s*TEST(?:_[PF])?\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)", fh.read(), re.M)}
+
+
+def validate_test_names(rows, test_all_cc):
+    """A test_name that no gtest case answers to names a test nobody runs (SPEC 3).
+
+    Same rule as validate_benchmarks: the column exists so a row can say which assertion covers it,
+    and a name that resolves to nothing says it without saying anything. Several names separated by
+    ";" are allowed, matching how current_test lists more than one file."""
+    defined = gtest_case_names(test_all_cc)
+    named = [r for r in rows if (r.get("test_name") or "").strip()]
+    if defined is None:
+        return [f"{test_all_cc} is missing; a test_name cannot be resolved without it"] if named else []
+    errs = []
+    for r in named:
+        for t in (r.get("test_name") or "").split(";"):
+            t = t.strip()
+            if t and t not in defined:
+                errs.append(f"{r.get('feature','')}: test_name {t!r} is not a gtest case in "
+                            f"{os.path.basename(test_all_cc)} - name it SUITE.CASE as declared there")
     return errs
 
 
@@ -121,6 +149,8 @@ def main(argv=None):
     errs = validate_rows(rows)
     errs += validate_benchmarks(rows, os.path.join(os.path.dirname(a.registry) or ".",
                                                    "benchmarks.md"))
+    errs += validate_test_names(rows, os.path.join(
+        os.path.dirname(os.path.dirname(a.registry)) or ".", "test_all.cc"))
     if a.check:
         for e in errs: print("ERROR:", e)
         return 1 if errs else 0
