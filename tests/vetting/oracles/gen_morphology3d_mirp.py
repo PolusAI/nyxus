@@ -56,10 +56,41 @@ MIRP = {
     "3FLATNESS": "morph_pca_flatness",
 }
 
+# The volume quantities, pinned in test_3d_morphology_mirp.h beside the axes. These close the SPEC
+# 6.4 provenance gap on two of the three `matlab` rows: MATLAB cannot be re-run from this tree (no
+# licence, and Octave's image package has no regionprops3), but MIRP computes the same two
+# quantities and IS runnable here, so the numbers stop resting on an offline session.
+#
+#   3VOXEL_VOLUME       <- morph_vol_approx, IBSI "volume (voxel counting)": count x voxel volume.
+#                          Nyxus reproduces it exactly.
+#   3VOLUME_CONVEXHULL  <- morph_volume / morph_vol_dens_conv_hull. IBSI defines volume density
+#                          (convex hull) as V_mesh / V_convex, so the hull volume is the mesh volume
+#                          divided by that density. MIRP's hull is triangulated (qhull), Nyxus'
+#                          is the discrete voxel hull, which is the measured ~3.7% divergence.
+#
+# 3MESH_VOLUME is deliberately NOT pinned against morph_volume: Nyxus aliases 3MESH_VOLUME to the
+# convex-hull volume rather than integrating the ROI surface mesh, so it sits 74% above IBSI's
+# volume (mesh). Asserting the two against each other would encode that as agreement.
+MIRP_VOLUME_SOURCES = ("morph_vol_approx", "morph_volume", "morph_vol_dens_conv_hull")
+
+
+def volume_pins(extra):
+    """-> {nyxus feature: MIRP value} for the two volume features, from the raw morph_* columns."""
+    missing = [c for c in MIRP_VOLUME_SOURCES if c not in extra]
+    if missing:
+        raise RuntimeError(f"MIRP produced no {missing}")
+    dens = extra["morph_vol_dens_conv_hull"]
+    if not dens > 0:
+        raise RuntimeError(f"morph_vol_dens_conv_hull={dens}, cannot back out the hull volume")
+    return {
+        "3VOXEL_VOLUME": extra["morph_vol_approx"],
+        "3VOLUME_CONVEXHULL": extra["morph_volume"] / dens,
+    }
+
+
 # Reported but NOT pinned: the MIRP quantities that correspond to the family's other features. They
-# are a second opinion on the three rows whose registry oracle is `matlab` -- MATLAB itself cannot be
-# re-run here (no licence, and Octave's image package has no regionprops3) -- and they are the
-# measurement behind the area-convention gap that keeps five features regression-only.
+# are the measurement behind the area-convention gap that keeps five features regression-only, and
+# the mesh volume that shows what 3MESH_VOLUME is not.
 CROSSCHECK = [
     ("morph_vol_approx", "3VOXEL_VOLUME, and MATLAB regionprops3 Volume"),
     ("morph_volume", "mesh volume; Nyxus 3MESH_VOLUME is aliased to the convex-hull volume instead"),
@@ -175,6 +206,13 @@ def main():
     for name in sorted(got):
         print(f'\t{{"{name}", {got[name]!r}}},'.ljust(56) + f"// {MIRP[name]}")
 
+    vols = volume_pins(extra)
+    print("# paste-ready volume goldens (second table)")
+    print(f'\t{{"3VOXEL_VOLUME", {vols["3VOXEL_VOLUME"]!r}}},'.ljust(56)
+          + "// morph_vol_approx")
+    print(f'\t{{"3VOLUME_CONVEXHULL", {vols["3VOLUME_CONVEXHULL"]!r}}}'.ljust(56)
+          + "// morph_volume / morph_vol_dens_conv_hull")
+
     print()
     nbad = check_identities(got)
 
@@ -190,8 +228,24 @@ def main():
         print(f"\n# {os.path.basename(TEST_H)} does not exist yet -- nothing to verify")
         return 1 if nbad else 0
 
-    pins = parse_pins(open(TEST_H, encoding="utf-8", errors="replace").read(),
-                      "morphology_3d_mirp_ref_vals")
+    txt_h = open(TEST_H, encoding="utf-8", errors="replace").read()
+
+    vpins = parse_pins(txt_h, "morphology_3d_mirp_volume_ref_vals")
+    print(f"\n# verifying {len(vpins)} pinned volume goldens against this run")
+    nvbad = 0
+    for name in sorted(vpins):
+        if name not in vols:
+            print(f"  MISSING {name}: pinned but this generator produces no counterpart")
+            nvbad += 1
+            continue
+        rel = abs(vols[name] - vpins[name]) / max(abs(vpins[name]), 1e-12)
+        verdict = "OK  " if rel <= RELTOL else "FAIL"
+        print(f"  {verdict} {name}: mirp={vols[name]!r} pinned={vpins[name]!r} rel={rel:.3g}")
+        nvbad += 0 if rel <= RELTOL else 1
+    nbad += nvbad
+
+    pins = parse_pins(txt_h,
+                      "morphology_3d_mirp_pca_ref_vals")
     print(f"\n# verifying {len(pins)} pinned goldens against this run")
     nok = nfail = nmiss = 0
     for name in sorted(pins):

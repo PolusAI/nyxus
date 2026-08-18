@@ -12,16 +12,19 @@
 // ---------------------------------------------------------------------------------------------------
 
 // Pinned Nyxus output at the IBSI-path recipe the fixture sets (GREYDEPTH=128, ibsi=true). Note
-// 3MESH_VOLUME and 3VOLUME_CONVEXHULL appear here as snapshots AND in test_3d_morphology_matlab.h as
-// MATLAB-vetted values -- two different claims about the same feature, which SPEC 3 treats as two
+// 3VOLUME_CONVEXHULL appears here as a snapshot AND in test_3d_morphology_matlab.h as a
+// MATLAB-vetted value -- two different claims about the same feature, which SPEC 3 treats as two
 // assertions, not a contradiction. The numbers differ (478516 here vs MATLAB's 497824) precisely
 // because one is Nyxus and the other is not.
+//
+// 3MESH_VOLUME had a golden here that no function read: this file defines eight regression tests and
+// the table carried nine entries. A golden nothing asserts is not a drift guard, it is a number that
+// looks like one, so it is gone; the feature's only executable assertion is the MATLAB one.
 static ref_vals_map<double> morphology_3d_regression_ref_vals{
     { "3AREA",  58457 },
     { "3AREA_2_VOLUME", 0.21 },
     { "3COMPACTNESS1",  0.011 },
     { "3COMPACTNESS2",  0.043 },
-    { "3MESH_VOLUME",   478516 },
     { "3SPHERICAL_DISPROPORTION",   2.9 },
     { "3SPHERICITY",    0.35 },
     { "3VOLUME_CONVEXHULL", 478516 },

@@ -544,6 +544,14 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOLUME_CONVEX_HULL_MATLAB) {
 // The five PCA axis features vs MIRP. The registry called them mirp-vetted from an offline run;
 // nothing in the tree compared them against MIRP until now.
 
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_voxel_volume_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOLUME_CONVEX_HULL_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_volume_convex_hull_mirp());
+}
+
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MAJOR_AXIS_LEN_MIRP) {
 	ASSERT_NO_THROW(test_3d_morphology_major_axis_len_mirp());
 }
