@@ -57,7 +57,8 @@ static ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
 //   3VOLUME_CONVEXHULL   478516    496958.3    497824               3.71%
 //
 // The two independent triangulated hulls (MIRP's qhull, MATLAB's) agree with each other to 0.17%,
-// and Nyxus sits 3.7% below both -- because Nyxus builds a DISCRETE VOXEL hull and they triangulate.
+/// and Nyxus sits 3.71% below MIRP and 3.88% below regionprops3 -- because Nyxus builds a DISCRETE
+// VOXEL hull and they triangulate.
 // That is the citation behind the 5% band this file and test_3d_morphology_matlab.h both use: it is
 // a definitional difference between a voxelised and a triangulated hull, now measured against two
 // tools rather than one, not slack absorbing an unexplained gap.
