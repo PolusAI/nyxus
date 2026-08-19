@@ -2879,3 +2879,5 @@ int main(int argc, char **argv)
   int ret = RUN_ALL_TESTS();
   return ret;
 }
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_ngldm_dump_regression()); }

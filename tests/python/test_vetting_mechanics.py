@@ -11,8 +11,9 @@ _REPO = _HERE.parents[1]
 
 def _write(tmp_path, rows):
     p = tmp_path / "reg.csv"
-    cols = ["dim","feature","family","status","oracle","agreement","config_recipe",
-            "tolerance","current_test","target_test","candidate_oracle","flag","source","notes"]
+    # the schema comes from check_coverage itself: a hardcoded copy here silently fails every
+    # validate_rows() call the moment a column is added, which is what adding test_name/benchmark did
+    cols = list(cc.COLUMNS)
     with open(p, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=cols); w.writeheader()
         for r in rows:
@@ -66,6 +67,46 @@ def test_vetting_drift_and_main_write_mechanics(tmp_path):
 def test_vetting_main_check_fails_on_bad_row_mechanics(tmp_path):
     path = _write(tmp_path, [{"dim":"2D","feature":"A","family":"x","status":"bad","oracle":""}])
     assert cc.main(["--check", "--registry", path]) == 1
+
+def test_vetting_undefined_benchmark_flagged_mechanics(tmp_path):
+    """A benchmark id is a pointer; an id benchmarks.md does not define points at nothing (SPEC 6.3).
+    The registry gained the column so a row can say which fixture backs it - unchecked, the column
+    would let a row name a fixture that never existed."""
+    md = tmp_path / "benchmarks.md"
+    md.write_text("# Benchmark registry\n\n## `bench_real_one`\n\nsomething\n", encoding="utf-8")
+    rows = [{"feature": "A", "benchmark": "bench_real_one"},
+            {"feature": "B", "benchmark": "bench_typo"}]
+    errs = cc.validate_benchmarks(rows, str(md))
+    assert len(errs) == 1 and "bench_typo" in errs[0], errs
+    assert cc.benchmark_ids(str(md)) == {"bench_real_one"}
+
+def test_vetting_unresolvable_test_name_flagged_mechanics(tmp_path):
+    """A test_name is a pointer too: SPEC 3 identifies an assertion by the gtest case it runs as,
+    so a name no case answers to says a feature is covered by a test nobody runs."""
+    cc_file = tmp_path / "test_all.cc"
+    cc_file.write_text("TEST(TEST_NYXUS, TEST_3D_NGLDM_LDE_REGRESSION) {\n}\n", encoding="utf-8")
+    rows = [{"feature": "A", "test_name": "TEST_NYXUS.TEST_3D_NGLDM_LDE_REGRESSION"},
+            {"feature": "B", "test_name": "TEST_NYXUS.TEST_THAT_NEVER_EXISTED"},
+            {"feature": "C", "test_name": ""}]
+    errs = cc.validate_test_names(rows, str(cc_file))
+    assert len(errs) == 1 and "TEST_THAT_NEVER_EXISTED" in errs[0], errs
+    assert cc.gtest_case_names(str(cc_file)) == {"TEST_NYXUS.TEST_3D_NGLDM_LDE_REGRESSION"}
+
+def test_vetting_unquoted_comma_row_flagged_mechanics(tmp_path):
+    """A row carrying an unquoted comma has more fields than the header: every field after the
+    comma shifts left by one and the last one falls off the end entirely. Written raw rather than
+    through _write(), because csv quotes the field on the way out and the defect disappears."""
+    row = {c: "" for c in cc.COLUMNS}
+    row.update(dim="3D", feature="3X", family="firstorder", status="vetted", oracle="matlab",
+               agreement="agreed", current_test="t.h", target_test="t.h",
+               candidate_oracle="octave (mean of [P10,P90])", source="tracker", notes="note")
+    p = tmp_path / "reg.csv"
+    with open(p, "w", newline="") as fh:
+        fh.write(",".join(cc.COLUMNS) + "\n")
+        fh.write(",".join(row[c] for c in cc.COLUMNS) + "\n")
+    errs = cc.validate_rows(cc.load_registry(str(p)))
+    assert any("past the last column" in e for e in errs), errs
+
 
 # ---- SPEC 6.1/6.2 test-naming conventions (tests/vetting/check_test_names.py) ----
 
