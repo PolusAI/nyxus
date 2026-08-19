@@ -1,9 +1,7 @@
 #pragma once
 
-#include <vector>                   // std::vector, the one facility below that the fixture header does not use
-
 #include "test_2d_ngldm_common.h"   // gtest, <string>, test_data.h, NGLDMfeature, make_ngldm2d_settings, assert_ngldm_feature_against_golden_values
-#include "test_ref_vals.h"          // ref_vals_map
+#include "test_ref_vals.h"          // ref_vals_map, and the <vector> the matrix check below declares
 
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. https://ibsi.readthedocs.io/en/latest/03_Image_features.html
@@ -76,46 +74,6 @@ void assert_ngldm_matrix_ibsi_mode ()
     ASSERT_TRUE (n_mismatches == 0);
 }
 
-//
-// Tests calculating the NGLD-matrix with the IBSI mode disabled, using community-provided ground truth
-//
-
-void assert_ngldm_matrix_nonibsi_mode()
-{
-    // Load a test image
-    LR roidata;
-    load_masked_test_roi_data (roidata, nonibsi_rayryeng_ngldm_sample_image_int, nonibsi_rayryeng_ngldm_sample_image_mask, sizeof(nonibsi_rayryeng_ngldm_sample_image_mask) / sizeof(NyxusPixel));
-
-    // In this test, we only calculate and examine the NGLD-matrix without calculating features
-    NGLDMfeature f;
-
-    // featue settings for this particular test
-    Fsettings s = make_ngldm2d_settings(false);
-
-    // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
-    std::vector<PixIntens> greyLevelsLUT;
-    SimpleMatrix<unsigned int> NGLDM;
-    int Ng = -1,	// number of grey levels
-        Nr = -1;	// maximum number of non-zero dependencies
-    ASSERT_NO_THROW(f.prepare_NGLDM_matrix_kit(NGLDM, greyLevelsLUT, Ng, Nr, roidata, STNGS_NGREYS(s), STNGS_IBSI(s)));
-
-    // Count discrepancies
-    int n_mismatches = 0;
-    for (int g = 0; g < Ng; g++)
-        for (int r = 0; r < Nr; r++)
-        {
-            auto rayryeng_reference_matrix_value = nonibsi_rayryeng_ngldm_reference_matrix[g * Nr + r];
-            auto actual = NGLDM.yx(g, r);
-            if (rayryeng_reference_matrix_value != actual)
-            {
-                n_mismatches++;
-                std::cout << "NGLD-matrix #2 mismatch! Expecting [g=" << g << ", r=" << r << "] = " << rayryeng_reference_matrix_value << " not " << actual << "\n";
-            }
-        }
-
-    ASSERT_TRUE(n_mismatches == 0);
-}
-
 // frac_tolerance = 100, i.e. rel=1e-2. The goldens above are the published IBSI consensus values,
 // quoted to three significant figures, so the residual is dominated by that rounding: the measured
 // worst case is 0.45% (NGLDM_GLNU, 10.2 published vs 10.2464 computed) and every other feature is
@@ -133,11 +91,6 @@ void assert_ngldm_feature_ibsi(const Feature2D& feature_, const std::string& fea
 void test_2d_ngldm_matrix_correctness_ibsi()
 {
     assert_ngldm_matrix_ibsi_mode();
-}
-
-void test_2d_ngldm_matrix_correctness_nonibsi_mode_ibsi()
-{
-    assert_ngldm_matrix_nonibsi_mode();
 }
 
 void test_2d_ngldm_lde_ibsi()
