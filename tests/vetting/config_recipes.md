@@ -70,6 +70,37 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   Nyxus m_{j,i}); weighted moments center on the intensity-weighted centroid; Hu returned raw (not log),
   2D only; normalized moments NaN for order < 2. Used by: `test_2d_moments_skimage.h`.
 
+## gabor.cpp_static_defaults
+- The `(frequency, angle)` set compiled into `GaborFeature::f0_theta_pairs` (`gabor.cpp`):
+  f0 = {0, pi/4, pi/2, 3pi/4}, theta = {4, 16, 32, 64} **radians**. Every consumer of that vector
+  reads `pair.first` as the frequency and `pair.second` as the angle, so this is what a run that
+  sets no Gabor options computes — the gtest fixture, and a CLI run without
+  `--gaborfreqs`/`--gabortheta`.
+- Shared filter settings: kersize n=16, gamma=0.1, sig2lam=0.8, baseline f0LP=0.1 at theta=pi/2,
+  GRAYthr=0.025. Oracle: `skimage` (`gabor_kernel`, cropped to the 16x16 grid and L1-normalized).
+  Used by: `test_2d_gabor_skimage.cc` (`assert_2d_gabor_skimage`).
+- **The 16x16 crop and the zero-padded `full` convolution are part of the recipe, not implementation
+  detail.** `gamma=0.1` makes `sigma_y` ten times `sigma_x`, so the analytic kernel runs to 369x113
+  at the lowest frequency and only 7.9-47.6% of its L1 mass falls inside the window (100% from
+  f0 >= 16). Scoring the same feature off skimage's own filtering (`skimage.filters.gabor`,
+  untruncated support, `reflect` border) moves values by up to 1.0 — the whole range of the feature.
+  Measured in `audit/gabor_2d_skimage_vetting_report.md` §4.1; generator part D reprints it.
+- The f0=0 member is degenerate: `gabor_kernel` cannot express frequency 0, and at f0=0 the
+  envelope and the carrier are both identically 1, so that filter is the flat window in closed
+  form. It is the only kernel in either recipe not taken from skimage.
+
+## gabor.documented_defaults
+- The `(frequency, angle)` set `GaborOptions::parse_input` builds from the documented defaults
+  `gabor_freqs = [4, 16, 32, 64]`, `gabor_thetas = [0, 45, 90, 135]` degrees: f0 = {4, 16, 32, 64},
+  theta = {0, pi/4, pi/2, 3pi/4} radians. This is what the Python API runs (it always passes its
+  defaults through the parser) and what a CLI run that passes both flags runs.
+- Same filter settings and oracle as `gabor.cpp_static_defaults`. Used by:
+  `test_2d_gabor_skimage.cc` (`assert_2d_gabor_documented_defaults_skimage`).
+- **The two recipes are not variants of one configuration — they are two different frequency and
+  angle sets, and they produce values up to 0.84 apart on the same ROI.** The compiled-in default
+  stores its pairs in the opposite order from the one the parser builds and every consumer reads;
+  `audit/gabor_2d_skimage_vetting_report.md` measures both and records the defect.
+
 ## radial.cellprofiler_8bin
 - CellProfiler `MeasureObjectIntensityDistribution`, 8 radial bins/slices. Oracle: `cellprofiler`.
 
