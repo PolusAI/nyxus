@@ -1,12 +1,10 @@
 #pragma once
 
 #include <cmath>
-#include <string>
-#include <vector>
 #include "../src/nyx/features/pixel.h"
 #include "../src/nyx/helpers/helpers.h"
 #include "test_3d_morphology_common.h"
-#include "test_ref_vals.h"
+#include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 
 // ---------------------------------------------------------------------------------------------------
 // MATLAB-oracle'd 3D morphology:

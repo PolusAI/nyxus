@@ -1,8 +1,7 @@
 #pragma once
 
-#include <string>
 #include "test_3d_morphology_common.h"
-#include "test_ref_vals.h"
+#include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 
 // ---------------------------------------------------------------------------------------------------
 // The eight 3D shape features whose GT is a self-referential snapshot. The fixture that produces the

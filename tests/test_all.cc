@@ -59,7 +59,6 @@
 #include "test_imq_cellprofiler.h"
 #include "test_3d_nifti_mechanics.h"
 #include "test_2d_omezarr_mechanics.h"
-#include "test_3d_morphology_common.h"
 #include "test_3d_morphology_regression.h"
 #include "test_3d_morphology_matlab.h"
 #include "test_3d_morphology_mirp.h"
