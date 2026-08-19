@@ -265,13 +265,13 @@ static std::set<Nyxus::Feature3D> implemented_3d_feature_codes()
 	return out;
 }
 
-// The MATLAB regionprops3 goldens and their measured bands live with the assertions that own
-// them, in test_3d_morphology_matlab.h (SPEC 6.3.1) -- the same arrangement as the per-family
+// The MIRP volume goldens and their measured bands live with the assertions that own them, in
+// test_3d_morphology_mirp.h (SPEC 6.3.1) -- the same arrangement as the per-family
 // *_3d_pyradiomics_ref_vals tables this header already reads from their own oracle files.
 
 // Which features an external reference actually backs. Derived wholly from the reference tables below and in the
 // per-family oracle headers -- it holds no values of its own, so it is an index rather than a
-// reference table (it used to hard-code the three MATLAB keys, which made it a quiet third place
+// reference table (it used to hard-code the three morphology keys, which made it a quiet third place
 // where a golden could be declared).
 static const std::set<std::string>& externally_vetted_3d_feature_names()
 {
@@ -287,7 +287,7 @@ static const std::set<std::string>& externally_vetted_3d_feature_names()
 		add_keys(glrlm_3d_pyradiomics_ref_vals);
 		add_keys(glszm_3d_pyradiomics_ref_vals);
 		add_keys(ngtdm_3d_pyradiomics_ref_vals);
-		add_keys(morphology_3d_matlab_ref_vals);
+		add_keys(morphology_3d_mirp_volume_ref_vals);
 		return out;
 	}();
 	return names;
@@ -337,12 +337,12 @@ static double relative_absdiff_pct(double actual, double expected)
 	return 100.0 * std::abs(actual - expected) / denom;
 }
 
-static void assert_matlab_regionprops3_shape_agreement(const Feature3DCoverageCase& c)
+static void assert_mirp_volume_shape_agreement(const Feature3DCoverageCase& c)
 {
-	auto it = morphology_3d_matlab_ref_vals.find(c.name);
-	ASSERT_TRUE(it != morphology_3d_matlab_ref_vals.end()) << c.name;
-	auto tol = morphology_3d_matlab_ref_tols.find(c.name);
-	ASSERT_TRUE(tol != morphology_3d_matlab_ref_tols.end()) << c.name << " has a golden but no stated band";
+	auto it = morphology_3d_mirp_volume_ref_vals.find(c.name);
+	ASSERT_TRUE(it != morphology_3d_mirp_volume_ref_vals.end()) << c.name;
+	auto tol = morphology_3d_mirp_volume_ref_tols.find(c.name);
+	ASSERT_TRUE(tol != morphology_3d_mirp_volume_ref_tols.end()) << c.name << " has a golden but no stated band";
 
 	const auto& computed = computed_3d_feature_values();
 	ASSERT_TRUE(computed.setup_error.empty()) << computed.setup_error;
@@ -352,7 +352,7 @@ static void assert_matlab_regionprops3_shape_agreement(const Feature3DCoverageCa
 	const double actual = computed.values[fcode_index][0];
 	const double expected = it->second;
 	ASSERT_TRUE(std::isfinite(actual)) << c.name;
-	ASSERT_LE(relative_absdiff_pct(actual, expected), tol->second) << c.name << " actual=" << actual << " MATLAB regionprops3=" << expected << " band=" << tol->second << "%";
+	ASSERT_LE(relative_absdiff_pct(actual, expected), tol->second) << c.name << " actual=" << actual << " mirp=" << expected << " band=" << tol->second << "%";
 }
 
 static void assert_oracle_backed_agreement(const Feature3DCoverageCase& c)
@@ -369,8 +369,8 @@ static void assert_oracle_backed_agreement(const Feature3DCoverageCase& c)
 		assert_3d_glszm_feature_pyradiomics(c.code, c.name);
 	else if (ngtdm_3d_pyradiomics_ref_vals.find(c.name) != ngtdm_3d_pyradiomics_ref_vals.end())
 		assert_3d_ngtdm_feature_pyradiomics(c.code, c.name);
-	else if (morphology_3d_matlab_ref_vals.find(c.name) != morphology_3d_matlab_ref_vals.end())
-		assert_matlab_regionprops3_shape_agreement(c);
+	else if (morphology_3d_mirp_volume_ref_vals.find(c.name) != morphology_3d_mirp_volume_ref_vals.end())
+		assert_mirp_volume_shape_agreement(c);
 	else
 		FAIL() << c.name << " is marked WITH_3P_EMBEDDED_GT but no embedded oracle helper was found";
 }

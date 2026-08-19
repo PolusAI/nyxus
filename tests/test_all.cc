@@ -60,7 +60,7 @@
 #include "test_3d_nifti_mechanics.h"
 #include "test_2d_omezarr_mechanics.h"
 #include "test_3d_morphology_regression.h"
-#include "test_3d_morphology_matlab.h"
+#include "test_3d_morphology_mechanics.h"
 #include "test_3d_morphology_mirp.h"
 #include "test_3d_gldzm_regression.h"
 #include "test_3d_ngldm_regression.h"
@@ -528,20 +528,9 @@ TEST(TEST_NYXUS, TEST_ARROW_PARQUET_MECHANICS) {
 
 //***** 3D shape *****
 
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MESH_VOLUME_MATLAB) {
-	ASSERT_NO_THROW(test_3d_morphology_mesh_volume_matlab());
-}
-
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_MATLAB) {
-	ASSERT_NO_THROW(test_3d_morphology_voxel_volume_matlab());
-}
-
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOLUME_CONVEX_HULL_MATLAB) {
-	ASSERT_NO_THROW(test_3d_morphology_volume_convex_hull_matlab());
-}
-
-// The five PCA axis features vs MIRP. The registry called them mirp-vetted from an offline run;
-// nothing in the tree compared them against MIRP until now.
+// The three volume features and the five PCA axis features, all against MIRP -- the family's one
+// oracle. The registry called them vetted from offline runs; nothing in the tree compared them
+// until now.
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_MIRP) {
 	ASSERT_NO_THROW(test_3d_morphology_voxel_volume_mirp());
@@ -549,6 +538,10 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_MIRP) {
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOLUME_CONVEX_HULL_MIRP) {
 	ASSERT_NO_THROW(test_3d_morphology_volume_convex_hull_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MESH_VOLUME_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_mesh_volume_mirp());
 }
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MAJOR_AXIS_LEN_MIRP) {
@@ -603,8 +596,8 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_morphology_voxel_volume_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COVMATRIX_AND_EIGENVALS_MATLAB) {
-	ASSERT_NO_THROW(test_3d_morphology_covmatrix_and_eigenvals_matlab());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COVMATRIX_AND_EIGENVALS_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_morphology_covmatrix_and_eigenvals_mechanics());
 }
 
 

@@ -76,29 +76,32 @@ on a test that does not say what it is checking (SPEC §6.2).
 
 The report generator misses this for the same reason it missed two rows in 2D morphology: a feature
 name appearing in an oracle file counts as coverage, whether an assertion reads it or only a table
-does. `test_3d_morphology_voxel_volume_matlab()` and `test_3d_morphology_volume_convex_hull_matlab()`
-now assert them through the existing helper, goldens and bands. Both pass.
+does. Both are now asserted by name — against MIRP, in `test_3d_morphology_mirp.h`, for the reason
+the next section gives.
 
-## MATLAB cannot be re-run — so MIRP cross-checks it
+## MATLAB cannot be re-run — so MIRP replaces it
 
-Three rows claim `oracle=matlab`, and `revet` step 3 says to run every oracle the family claims. That
-is not possible here: there is no MATLAB licence, and Octave's `image` package has no `regionprops3`.
-The goldens have no in-repo generator either, which is the SPEC §6.4 gap already tracked in
+Three rows claimed `oracle=matlab`, and `revet` step 3 says to run every oracle the family claims.
+That is not possible here: there is no MATLAB licence, and Octave's `image` package has no
+`regionprops3`. The goldens had no in-repo generator either, which is the SPEC §6.4 gap tracked in
 `not_covered.md` §C.
 
-What is possible is a reference from a tool that computes the same quantities and *is* runnable
-from the tree. Those two are now pinned and asserted, not merely printed:
+What is possible is a reference from a tool that computes the same quantities and *is* runnable from
+the tree. All three volume rows now read `oracle=mirp` and are asserted in `test_3d_morphology_mirp.h`;
+`test_3d_morphology_matlab.h` is gone. Keeping both would also have left two oracles asserting one
+feature value, which SPEC §3 does not allow — one oracle per assertion — and the one to keep is the
+one the tree can re-run. The MATLAB numbers stay in the header as the corroborating measurement they
+are:
 
 | quantity | MIRP | MATLAB golden | agreement |
 |---|---|---|---|
 | voxel volume (`morph_vol_approx`) | 274432.0 | 274432.0 | **exact** |
 | convex-hull volume (`morph_volume` / `morph_vol_dens_conv_hull`) | 496958.32 | 497824.0 | 0.17% |
 
-`morphology_3d_mirp_volume_ref_vals` holds both, `test_3d_morphology_voxel_volume_mirp` and
-`test_3d_morphology_volume_convex_hull_mirp` assert them, and `gen_morphology3d_mirp.py` re-derives
-them on every run. The MATLAB session cannot be repeated, but the *values* it produced are now
-reproducible from the tree by a second tool — which is what SPEC §6.4 is protecting, and the two
-registry rows accordingly read `oracle=mirp` with the MATLAB assertion kept as the second opinion.
+`morphology_3d_mirp_volume_ref_vals` holds all three, `test_3d_morphology_{voxel_volume,
+volume_convex_hull,mesh_volume}_mirp` assert them, and `gen_morphology3d_mirp.py` re-derives them on
+every run (8 pins, all at rel=0). The MATLAB session cannot be repeated, but the *values* it produced
+are now reproducible from the tree — which is what SPEC §6.4 is protecting.
 
 That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 478516, which is 3.88% from
 MATLAB and 3.71% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
@@ -119,11 +122,12 @@ implementation aliases the two:
 | convex-hull volume, MIRP | 496958.32 | 3.7% |
 | Nyxus `3MESH_VOLUME` | 478516 | — |
 
-So the feature is measuring a hull, under a name that says mesh, and its MATLAB pin (`ConvexVolume`,
-497824) is consistent only because the same alias was applied when the golden was chosen. The
-assertion is left judging the alias against the quantity the alias computes — deliberately, because
-pinning it against `morph_volume` would encode a 74% miss as agreement. The naming/definition gap is
-filed as a defect for its own branch.
+So the feature is measuring a hull, under a name that says mesh, and the MATLAB pin it used to carry
+(`ConvexVolume`, 497824) was consistent only because the same alias was applied when the golden was
+chosen. Its MIRP golden is the hull volume for exactly that reason: the assertion judges the alias
+against the quantity the alias computes, and pinning it against `morph_volume` instead would encode a
+74% miss as agreement. The naming/definition gap is filed as a defect for its own branch, not
+absorbed by the 5% band.
 
 ## The surface-area convention gap stays open
 

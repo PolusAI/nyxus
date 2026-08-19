@@ -39,7 +39,6 @@ REGISTRY = os.path.join(VETTING, "oracle_coverage.csv")
 SWEEP = "test_3d_morphology_coverage.h"
 
 SOURCES = [
-    "test_3d_morphology_matlab.h",
     "test_3d_morphology_mirp.h",
     "test_3d_morphology_regression.h",
 ]
@@ -49,7 +48,7 @@ SOURCES = [
 # sits outside any loop.
 TABLE_OWNER = {}
 
-ORACLE_SUFFIX = {"matlab": "matlab", "mirp": "mirp"}
+ORACLE_SUFFIX = {"mirp": "mirp"}
 
 FUNC = re.compile(r"^(?:void|def)\s+(test_\w+)|^\s+def\s+(test_\w+)", re.M)
 # A module-level helper in the pytest files, e.g. `def _fd(label)`. The python tests read the
@@ -74,10 +73,11 @@ NOTE = {
     "3SPHERICAL_DISPROPORTION": "inherits the 3AREA surface-area convention difference",
     "3MESH_VOLUME": "Nyxus aliases this to the convex-hull volume rather than integrating the mesh, "
                     "so it shares 3VOLUME_CONVEXHULL's golden and its 5% band",
-    "3VOLUME_CONVEXHULL": "discrete voxel hull vs MATLAB's triangulated ConvexVolume; MIRP's derived "
-                          "hull volume 496958 corroborates MATLAB's 497824 to 0.17%",
-    "3VOXEL_VOLUME": "MIRP morph_vol_approx reproduces MATLAB's 274432 exactly, so two independent "
-                     "tools agree on this golden",
+    "3VOLUME_CONVEXHULL": "discrete voxel hull vs MIRP's triangulated qhull volume, measured 3.71%; "
+                          "MATLAB regionprops3 ConvexVolume 497824 corroborates MIRP's 496958 to "
+                          "0.17% but is no longer asserted -- one oracle per assertion",
+    "3VOXEL_VOLUME": "MIRP morph_vol_approx reproduces the voxel count exactly; MATLAB's 274432 "
+                     "agrees and is kept as a corroborating measurement, not a second assertion",
     "3MAJOR_AXIS_LEN": "the eigenvalue-order defect that once made LEAST>MAJOR is guarded by the MIRP "
                        "pins and by the generator's identity check",
     "3FLATNESS": "was >1 before the eigenvalue-order fix, which is structurally impossible",
