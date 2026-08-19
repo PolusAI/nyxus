@@ -1,9 +1,8 @@
 #pragma once
 
 #include <cmath>
-#include <string>
 #include "test_3d_morphology_common.h"
-#include "test_ref_vals.h"
+#include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 
 // ---------------------------------------------------------------------------------------------------
 // MIRP-oracle'd 3D morphology: the five PCA axis features and the two volume features (registry:
