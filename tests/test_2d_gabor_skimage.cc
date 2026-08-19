@@ -1,8 +1,7 @@
 #define _USE_MATH_DEFINES   // for M_PI_4, M_PI_2
-#include <cmath>
+#include <cmath>            // M_PI_4, M_PI_2, exposed by the define above
 #include <iostream>
 #include <utility>
-#include <vector>
 #include <gtest/gtest.h>
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/feature_settings.h"
@@ -11,7 +10,7 @@
 #include "test_2d_gabor_skimage.h"
 #include "test_dsb2018_data.h"
 #include "test_main_nyxus.h"
-#include "test_ref_vals.h"
+#include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 
 using namespace Nyxus;
 
