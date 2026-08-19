@@ -1,12 +1,9 @@
 #pragma once
 
-#include <gtest/gtest.h>
-#include <string>
-#include <vector>
-#include "../src/nyx/features/ngldm.h"
-#include "test_2d_ngldm_common.h"   // fixture: make_ngldm2d_settings + assert_ngldm_feature_against_golden_values
-#include "test_data.h"
-#include "test_ref_vals.h"
+#include <vector>                   // std::vector, the one facility below that the fixture header does not use
+
+#include "test_2d_ngldm_common.h"   // gtest, <string>, test_data.h, NGLDMfeature, make_ngldm2d_settings, assert_ngldm_feature_against_golden_values
+#include "test_ref_vals.h"          // ref_vals_map
 
 // Digital phantom values for intensity based features
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. https://ibsi.readthedocs.io/en/latest/03_Image_features.html

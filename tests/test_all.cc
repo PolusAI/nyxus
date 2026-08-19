@@ -41,7 +41,6 @@
 #include "test_2d_glszm_ibsi.h"
 #include "test_2d_firstorder_ibsi.h"
 #include "test_2d_firstorder_pyradiomics.h"
-#include "test_2d_ngldm_common.h"
 #include "test_2d_ngldm_ibsi.h"
 #include "test_2d_ngldm_mirp.h"
 #include "test_2d_ngldm_regression.h"
