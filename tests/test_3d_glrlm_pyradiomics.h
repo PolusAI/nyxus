@@ -1,16 +1,14 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <string>
 #include <tuple>
 #include <unordered_set>
-#include <vector>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glrlm.h"
 #include "../src/nyx/helpers/fsystem.h"
-#include "test_ref_vals.h"
+#include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 
 // PyRadiomics 3.0.1 on the compat phantom (compat_int/compat_int_mri.nii +
 // compat_seg/compat_seg_liver.nii, label 1) at binCount 20, recipe glrlm3d.pyradiomics_bincount20.
