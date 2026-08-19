@@ -171,15 +171,19 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   voxel faces, so `3AREA` and the five features derived from it stay on
   `morphology3d.regression_ut_phantom`.
 
-## morphology3d.matlab_regionprops3
-- The same segmented phantom, same Nyxus settings. Oracle: `matlab` R2025b Image Processing Toolbox
-  `regionprops3` (`Volume` → `3VOXEL_VOLUME`; `ConvexVolume` → `3VOLUME_CONVEXHULL` and, through the
-  Nyxus alias, `3MESH_VOLUME`). Used by: `test_3d_morphology_matlab.h`.
-- Per-feature bands, measured rather than assumed, live in `morphology_3d_matlab_ref_tols`:
-  `3VOXEL_VOLUME` 0.1% (same definition), the two hull volumes 5% (Nyxus builds a discrete voxel
-  hull, regionprops3 triangulates).
-- No in-repo generator: MATLAB cannot be run here. `oracles/gen_morphology3d_mirp.py` prints the
-  corresponding MIRP quantities as a cross-check instead.
+## morphology3d.covmatrix_numpy
+- Ten fixed voxel coordinates (`morphology_3d_covmatrix_cloud`, `test_3d_morphology_mechanics.h`),
+  no image and no feature: the sample covariance matrix and its eigenvalues, i.e. the arithmetic the
+  PCA shape features are built on. Reference: `numpy` 2.4.6 (`cov(..., ddof=1)`, `linalg.eigvalsh`) —
+  **not an oracle**: `numpy` is not a SPEC §4 oracle token and a mechanics assertion establishes no
+  vetting. Used by: `test_3d_morphology_mechanics.h`.
+  Generator: `oracles/gen_morphology3d_covmatrix_numpy.py`.
+- `Nyxus::calc_covariance` normalises by n-1, which is what both numpy `ddof=1` and MATLAB `cov`
+  compute, so the two sides are the same quantity; measured agreement is exact and the pins are
+  asserted at rel=1e-9.
+- These goldens were MATLAB `cov`/`eig` output quoted to five significant figures. They establish no
+  vetting for any registry row (mechanics, SPEC 2); the features that consume them are vetted under
+  `morphology3d.mirp_ibsi`.
 
 ## morphology3d.regression_ut_phantom
 - The same phantom and settings, **no oracle** — pinned Nyxus output as drift guards in

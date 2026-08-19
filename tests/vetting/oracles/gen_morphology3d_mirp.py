@@ -57,9 +57,10 @@ MIRP = {
 }
 
 # The volume quantities, pinned in test_3d_morphology_mirp.h beside the axes. These close the SPEC
-# 6.4 provenance gap on two of the three `matlab` rows: MATLAB cannot be re-run from this tree (no
-# licence, and Octave's image package has no regionprops3), but MIRP computes the same two
-# quantities and IS runnable here, so the numbers stop resting on an offline session.
+# 6.4 provenance gap on all three of the family's former `matlab` rows: MATLAB cannot be re-run from
+# this tree (no licence, and Octave's image package has no regionprops3), but MIRP computes the same
+# quantities and IS runnable here, so the numbers stop resting on an offline session. MIRP is now
+# the family's only oracle -- one oracle per assertion (SPEC 3), and the runnable one of the two.
 #
 #   3VOXEL_VOLUME       <- morph_vol_approx, IBSI "volume (voxel counting)": count x voxel volume.
 #                          Nyxus reproduces it exactly.
@@ -68,9 +69,13 @@ MIRP = {
 #                          divided by that density. MIRP's hull is triangulated (qhull), Nyxus'
 #                          is the discrete voxel hull, which is the measured ~3.7% divergence.
 #
-# 3MESH_VOLUME is deliberately NOT pinned against morph_volume: Nyxus aliases 3MESH_VOLUME to the
-# convex-hull volume rather than integrating the ROI surface mesh, so it sits 74% above IBSI's
-# volume (mesh). Asserting the two against each other would encode that as agreement.
+#   3MESH_VOLUME        <- the SAME derived hull volume, and deliberately NOT morph_volume. Nyxus
+#                          aliases 3MESH_VOLUME to the convex-hull volume rather than integrating
+#                          the ROI surface mesh, so against IBSI's volume (mesh) it sits 74% high.
+#                          Pinning it to morph_volume would encode that gap as agreement; pinning
+#                          it to the hull judges the alias against the quantity the alias actually
+#                          computes. The 74% is reported under CROSSCHECK and filed in
+#                          tests/vetting/not_covered.md.
 MIRP_VOLUME_SOURCES = ("morph_vol_approx", "morph_volume", "morph_vol_dens_conv_hull")
 
 
@@ -82,9 +87,12 @@ def volume_pins(extra):
     dens = extra["morph_vol_dens_conv_hull"]
     if not dens > 0:
         raise RuntimeError(f"morph_vol_dens_conv_hull={dens}, cannot back out the hull volume")
+    hull = extra["morph_volume"] / dens
     return {
         "3VOXEL_VOLUME": extra["morph_vol_approx"],
-        "3VOLUME_CONVEXHULL": extra["morph_volume"] / dens,
+        "3VOLUME_CONVEXHULL": hull,
+        # the alias computes the hull volume, so the hull is what it is judged against
+        "3MESH_VOLUME": hull,
     }
 
 
@@ -93,7 +101,8 @@ def volume_pins(extra):
 # the mesh volume that shows what 3MESH_VOLUME is not.
 CROSSCHECK = [
     ("morph_vol_approx", "3VOXEL_VOLUME, and MATLAB regionprops3 Volume"),
-    ("morph_volume", "mesh volume; Nyxus 3MESH_VOLUME is aliased to the convex-hull volume instead"),
+    ("morph_volume", "IBSI volume (mesh); Nyxus 3MESH_VOLUME is aliased to the hull volume and reads "
+                     "74% above this -- filed in not_covered.md, not absorbed by a band"),
     ("morph_vol_dens_conv_hull", "volume / convex-hull volume -> back out the hull volume"),
     ("morph_area_mesh", "3AREA, but marching-cubes mesh area vs Nyxus' exposed-voxel-face count"),
     ("morph_sphericity", "3SPHERICITY (inherits the area convention)"),
@@ -210,8 +219,10 @@ def main():
     print("# paste-ready volume goldens (second table)")
     print(f'\t{{"3VOXEL_VOLUME", {vols["3VOXEL_VOLUME"]!r}}},'.ljust(56)
           + "// morph_vol_approx")
-    print(f'\t{{"3VOLUME_CONVEXHULL", {vols["3VOLUME_CONVEXHULL"]!r}}}'.ljust(56)
+    print(f'\t{{"3VOLUME_CONVEXHULL", {vols["3VOLUME_CONVEXHULL"]!r}}},'.ljust(56)
           + "// morph_volume / morph_vol_dens_conv_hull")
+    print(f'\t{{"3MESH_VOLUME", {vols["3MESH_VOLUME"]!r}}}'.ljust(56)
+          + "// the same hull volume: Nyxus aliases MESH_VOLUME to it")
 
     print()
     nbad = check_identities(got)

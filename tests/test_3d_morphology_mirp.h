@@ -5,8 +5,14 @@
 #include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 
 // ---------------------------------------------------------------------------------------------------
-// MIRP-oracle'd 3D morphology: the five PCA axis features and the two volume features (registry:
+// MIRP-oracle'd 3D morphology: the five PCA axis features and the three volume features (registry:
 // mirp / vetted). Shared fixture lives in test_3d_morphology_common.h.
+//
+// MIRP is the family's only oracle. The three volume rows were pinned from an offline MATLAB
+// regionprops3 session until this file took them over: MATLAB agreed, but it cannot be re-run from
+// this tree -- no licence here, and Octave's image package has no regionprops3 -- so every golden
+// rested on a session nobody could repeat. Keeping both tools would also have left two oracles
+// claiming the same feature value, which SPEC 3 does not allow: one oracle per assertion.
 // ---------------------------------------------------------------------------------------------------
 
 // ORACLE goldens -- MIRP morphology (IBSI section 3.1 `morph_*`).
@@ -37,11 +43,9 @@ static ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
 
 // ORACLE goldens -- MIRP volume quantities, same run and same recipe as the axes above.
 //
-// These exist because the three `matlab` rows of this family were pinned from an offline MATLAB
-// session with no in-repo generator (SPEC 6.4), and MATLAB cannot be re-run from this tree: there is
-// no licence here and Octave's `image` package has no `regionprops3`. MIRP computes the same two
-// quantities, is runnable from the tree, and agrees with the MATLAB numbers, so the values stop
-// resting on a session nobody can repeat.
+// These replace the family's three `matlab` goldens, which had no in-repo generator (SPEC 6.4).
+// MIRP computes the same quantities, is runnable from the tree, and reproduces the MATLAB numbers,
+// so the values stop resting on a session nobody can repeat.
 //
 //   3VOXEL_VOLUME       = morph_vol_approx -- IBSI "volume (voxel counting)", the ROI voxel count
 //                         times the voxel volume. MATLAB regionprops3 Volume is the same definition.
@@ -54,22 +58,29 @@ static ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
 //   feature              Nyxus     MIRP        MATLAB regionprops3   Nyxus vs MIRP
 //   3VOXEL_VOLUME        274432    274432      274432               0
 //   3VOLUME_CONVEXHULL   478516    496958.3    497824               3.71%
+//   3MESH_VOLUME         478516    496958.3    497824               3.71%   (the same hull number --
+//                                                                            see the alias note below)
 //
 // The two independent triangulated hulls (MIRP's qhull, MATLAB's) agree with each other to 0.17%,
 /// and Nyxus sits 3.71% below MIRP and 3.88% below regionprops3 -- because Nyxus builds a DISCRETE
 // VOXEL hull and they triangulate.
-// That is the citation behind the 5% band this file and test_3d_morphology_matlab.h both use: it is
-// a definitional difference between a voxelised and a triangulated hull, now measured against two
-// tools rather than one, not slack absorbing an unexplained gap.
+// That is the citation behind this file's 5% band: it is a definitional difference between a
+// voxelised and a triangulated hull, measured against two tools rather than one, not slack absorbing
+// an unexplained gap. The MATLAB column stays in the table above as the corroborating measurement it
+// is; nothing below asserts against it.
 //
-// 3MESH_VOLUME is deliberately absent. Nyxus aliases it to the convex-hull volume instead of
-// integrating the ROI surface mesh, so against IBSI's volume (mesh) -- MIRP morph_volume,
-// 274338.34 here -- it reads 74% high. Pinning the two against each other would record that as
-// agreement; the divergence is filed as a defect instead.
+// 3MESH_VOLUME is pinned against that same convex-hull number, because the hull volume is what the
+// feature computes: Nyxus aliases MESH_VOLUME to the convex-hull volume instead of integrating the
+// ROI surface mesh. Judged against IBSI's volume (mesh) -- MIRP morph_volume, 274338.34 here -- it
+// reads 74% high, and that gap is NOT absorbed by the band below; it is filed as a defect in
+// tests/vetting/not_covered.md. So the assertion judges the alias against the quantity the alias
+// actually computes, and says nothing about the feature deserving its name. The registry row records
+// the same, and if 3MESH_VOLUME ever becomes a real mesh integral this golden must be revisited.
 static ref_vals_map<double> morphology_3d_mirp_volume_ref_vals
 {
-    { "3VOXEL_VOLUME", 274432.0 },              // morph_vol_approx
-    { "3VOLUME_CONVEXHULL", 496958.3201121965 } // morph_volume / morph_vol_dens_conv_hull
+    { "3VOXEL_VOLUME", 274432.0 },               // morph_vol_approx
+    { "3VOLUME_CONVEXHULL", 496958.3201121965 }, // morph_volume / morph_vol_dens_conv_hull
+    { "3MESH_VOLUME", 496958.3201121965 }        // the same hull volume: Nyxus aliases MESH_VOLUME to it
 };
 
 // Bands as the percent relative_absdiff may reach, measured per feature (SPEC 7).
@@ -78,7 +89,9 @@ static ref_vals_map<double> morphology_3d_mirp_volume_ref_tols
     // identical definition, exact agreement measured
     { "3VOXEL_VOLUME", 0.1 },
     // voxel hull against triangulated hull, measured 3.71%; band 5%
-    { "3VOLUME_CONVEXHULL", 5.0 }
+    { "3VOLUME_CONVEXHULL", 5.0 },
+    // the alias inherits the hull convention and the same measured 3.71%
+    { "3MESH_VOLUME", 5.0 }
 };
 
 static void assert_3d_morphology_volume_mirp (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
@@ -103,6 +116,10 @@ void test_3d_morphology_voxel_volume_mirp() {
 
 void test_3d_morphology_volume_convex_hull_mirp() {
     assert_3d_morphology_volume_mirp ("3VOLUME_CONVEXHULL", Feature3D::VOLUME_CONVEXHULL);
+}
+
+void test_3d_morphology_mesh_volume_mirp() {
+    assert_3d_morphology_volume_mirp ("3MESH_VOLUME", Feature3D::MESH_VOLUME);
 }
 
 // Same definition on both sides -- 4*sqrt of the mask covariance eigenvalues, and their ratios --
