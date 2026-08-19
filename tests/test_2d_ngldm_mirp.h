@@ -1,9 +1,7 @@
 #pragma once
 
-#include <string>
-
-#include "test_2d_ngldm_common.h"   // fixture: assert_ngldm_feature_against_golden_values
-#include "test_ref_vals.h"
+#include "test_2d_ngldm_common.h"   // gtest, <string>, assert_ngldm_feature_against_golden_values
+#include "test_ref_vals.h"          // ref_vals_map
 
 // mirp goldens for the 2D NGLDM family (SPEC 6.4 provenance).
 // tool=mirp 2.6.0; env=nyxus_mirp (conda); recipe=ngldm.ibsi_phantom_2d, i.e. the four IBSI

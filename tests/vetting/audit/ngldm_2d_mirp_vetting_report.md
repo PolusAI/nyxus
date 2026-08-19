@@ -74,7 +74,7 @@ published value, so the IBSI file now asserts at `rel=1e-2` and the mirp file at
 fixes the definition, mirp fixes the digits.** The regression assertions moved to `rel=1e-9` as well
 — they pin Nyxus' own output to 17 digits, so a drift guard should catch any change at all.
 
-Tightening 50% → 1% / 1e-9 broke nothing: the suite goes from 773 to 790 tests, all passing.
+Tightening 50% → 1% / 1e-9 broke nothing: the suite goes from 785 to 802 tests, all passing.
 
 ## NGLDM_GLM and NGLDM_DCM stay regression
 

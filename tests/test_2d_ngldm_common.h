@@ -9,12 +9,13 @@
 // assertion that did so, and made the include graph say "mirp depends on IBSI" when only the
 // fixture is shared.
 
-// No <gtest/gtest.h> guard needed here: the assertion helper below uses gtest macros, so this
-// header includes it like the test files that read it.
+// What this header includes is what the helper below spells: gtest for the assertion macros, and
+// <string> / <unordered_map> for the parameters it takes. The three files that include it read
+// their gtest macros and std::string through it and repeat none of these -- a second #include of a
+// header already in the translation unit is noise that #pragma once hides rather than justifies.
 #include <gtest/gtest.h>
 #include <string>
 #include <unordered_map>
-#include <vector>
 
 #include "../src/nyx/environment.h"
 #include "../src/nyx/features/ngldm.h"

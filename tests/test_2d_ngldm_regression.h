@@ -6,10 +6,8 @@
 // they moved here with the snapshot table they read. The fixture they run on is shared through
 // test_2d_ngldm_common.h, so this file no longer reaches it by including an oracle file.
 
-#include <string>
-
-#include "test_2d_ngldm_common.h"   // fixture: assert_ngldm_feature_against_golden_values
-#include "test_ref_vals.h"
+#include "test_2d_ngldm_common.h"   // gtest, <string>, assert_ngldm_feature_against_golden_values
+#include "test_ref_vals.h"          // ref_vals_map
 
 // GLM and DCM are Nyxus mean-style rows that are not defined in the IBSI
 // NGLDM table, so only those two remain local regression references here.
