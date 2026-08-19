@@ -3,15 +3,13 @@
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <iostream>
-#include <string>
 #include <tuple>
-#include <vector>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glcm.h"
 #include "../src/nyx/helpers/fsystem.h"
-#include "test_ref_vals.h"
+#include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 
 // Drift guards on the segmented phantom (ut_inten.nii + ut_mask57.nii, label 57), at 100 grey
 // levels, offset 1, asymmetric cooc matrix, averaged over the 13 3D angles. Nyxus' own output, so

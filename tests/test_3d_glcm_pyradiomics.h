@@ -4,15 +4,13 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-#include <string>
 #include <tuple>
-#include <vector>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glcm.h"
 #include "../src/nyx/helpers/fsystem.h"
-#include "test_ref_vals.h"
+#include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 
 // PyRadiomics goldens for the 3D GLCM family (SPEC 6.4 provenance).
 // tool=pyradiomics 3.0.1 (SimpleITK 2.3.1, Python 3.8); env=nyxus_oracle (conda, needs Python <=3.9);
