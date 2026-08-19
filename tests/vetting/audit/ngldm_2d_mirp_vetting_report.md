@@ -83,6 +83,27 @@ feature — the IBSI table has no counterpart and `test_2d_ngldm_ibsi.h` marks b
 No oracle can reproduce them, so they keep `status=regression` and their rows stop claiming
 `oracle=mirp`.
 
+## The non-IBSI matrix check was never an IBSI test
+
+`test_2d_ngldm_ibsi.h` held two NGLD-matrix checks. The first compares against IBSI's published
+Fig. 3.19 matrix and belongs there. The second does not: its ground truth is the NGLDM worked out in
+a StackOverflow answer — `test_data.h` names the URL beside the image — and it runs with IBSI mode
+**off**, which is the mode the IBSI definition does not describe. It was nonetheless called
+`test_2d_ngldm_matrix_correctness_nonibsi_mode_ibsi()`, so both the file and the `_ibsi` suffix
+claimed an oracle the assertion does not use.
+
+It moves to `test_2d_ngldm_regression.h` as
+`test_2d_ngldm_matrix_correctness_nonibsi_mode_regression()`. Regression rather than an oracle test
+because the reference cannot be regenerated from this tree: a forum post is not a tool that can be
+run, there is no version to record and no generator to write (SPEC 6.4). It still earns its place —
+it holds the non-IBSI matrix, which uses unique grey tones rather than the 0..max IBSI range, to the
+shape a second implementation arrived at, so a change in the dependence counting is caught. Turning
+it into an oracle claim means running MATLAB or Octave, pinning what that produces, and shipping the
+generator beside it.
+
+No values change and no registry row moves: the matrix checks back no feature row, and the suite
+stays at 802 tests.
+
 ## Registry corrections
 
 Beyond the status and oracle columns, every one of the 19 rows carried:

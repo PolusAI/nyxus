@@ -38,3 +38,58 @@ void test_2d_ngldm_dcm_regression()
 {
 	assert_ngldm_feature_regression(Nyxus::Feature2D::NGLDM_DCM, "NGLDM_DCM");
 }
+
+// The NGLD-matrix with IBSI mode OFF, against a third-party matrix rather than Nyxus' own output.
+//
+// This lived in test_2d_ngldm_ibsi.h as test_2d_ngldm_matrix_correctness_nonibsi_mode_ibsi(), where
+// nothing about it was IBSI: its ground truth is the NGLDM worked out in a StackOverflow answer
+// (test_data.h names the URL beside the image), and it runs the non-IBSI mode, which is the mode the
+// IBSI definition does not describe. The `_ibsi` suffix therefore claimed an oracle the assertion
+// does not use.
+//
+// It is regression rather than an oracle test because the reference cannot be regenerated here: a
+// forum post is not a tool this tree can run, there is no version to record and no generator to
+// write (SPEC 6.4). What it does do is hold the non-IBSI matrix -- unique grey tones rather than the
+// 0..max IBSI range -- to the shape a second implementation arrived at, so a change in the
+// dependence counting is caught. Making it an oracle claim means running MATLAB or Octave and
+// pinning what THAT produces, with a generator beside it.
+void assert_ngldm_matrix_nonibsi_mode()
+{
+    // Load a test image
+    LR roidata;
+    load_masked_test_roi_data (roidata, nonibsi_rayryeng_ngldm_sample_image_int, nonibsi_rayryeng_ngldm_sample_image_mask, sizeof(nonibsi_rayryeng_ngldm_sample_image_mask) / sizeof(NyxusPixel));
+
+    // In this test, we only calculate and examine the NGLD-matrix without calculating features
+    NGLDMfeature f;
+
+    // featue settings for this particular test
+    Fsettings s = make_ngldm2d_settings(false);
+
+    // Have the feature object to create the NGLDM matrix kit (matrix itself, LUT of grey tones (0-max in IBSI mode, unique otherwise), and NGLDM's dimensions)
+    std::vector<PixIntens> greyLevelsLUT;
+    SimpleMatrix<unsigned int> NGLDM;
+    int Ng = -1,	// number of grey levels
+        Nr = -1;	// maximum number of non-zero dependencies
+    ASSERT_NO_THROW(f.prepare_NGLDM_matrix_kit(NGLDM, greyLevelsLUT, Ng, Nr, roidata, STNGS_NGREYS(s), STNGS_IBSI(s)));
+
+    // Count discrepancies
+    int n_mismatches = 0;
+    for (int g = 0; g < Ng; g++)
+        for (int r = 0; r < Nr; r++)
+        {
+            auto rayryeng_reference_matrix_value = nonibsi_rayryeng_ngldm_reference_matrix[g * Nr + r];
+            auto actual = NGLDM.yx(g, r);
+            if (rayryeng_reference_matrix_value != actual)
+            {
+                n_mismatches++;
+                std::cout << "NGLD-matrix #2 mismatch! Expecting [g=" << g << ", r=" << r << "] = " << rayryeng_reference_matrix_value << " not " << actual << "\n";
+            }
+        }
+
+    ASSERT_TRUE(n_mismatches == 0);
+}
+
+void test_2d_ngldm_matrix_correctness_nonibsi_mode_regression()
+{
+    assert_ngldm_matrix_nonibsi_mode();
+}
