@@ -3,15 +3,13 @@
 #include <gtest/gtest.h>
 #include <iomanip>
 #include <iostream>
-#include <string>
 #include <tuple>
-#include <vector>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_ngldm.h"
 #include "../src/nyx/helpers/fsystem.h"
-#include "test_ref_vals.h"
+#include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 
 // Drift guards on the segmented phantom (ut_inten.nii + ut_mask57.nii, label 57) at 64 grey levels,
 // ibsi=false. Nyxus' own output, so these claim no oracle (SPEC 1) -- and unlike every other 3D
