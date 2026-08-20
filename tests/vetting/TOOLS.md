@@ -12,7 +12,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | `imea` | 0.3.3 | **venv** `pip install imea==0.3.3` + `numpy<1.24` | high (2D only) | 2D morphology; **3D is heightmap, not voxel — unusable for Nyxus 3D** |
 | `feature2djava` | 1.5.0 | **Docker** `wipp/wipp-feature2djava-plugin:1.5.0` (125 MB, exists) | high | NIST/WIPP sibling; intensity + basic shape + Haralick |
 | `radiomicsj` | **2.1.3 / 2.1.18** | **Docker/jar** (Maven → shaded uber-jar; Java 11) | high | **2.1.2 does not exist**; Maven Central only; full IBSI + fractal |
-| `cellprofiler` | 4.2.1 | **Docker** `cellprofiler/cellprofiler:4.2.1` (pin digest) | high | headless `-c -r`; maybe `xvfb-run`; feed mask as "Objects" |
+| `cellprofiler` | 4.2.8 | **conda** (see below; Docker `cellprofiler/cellprofiler:4.2.1` also works) | high | run the module in-process, headless; needs `JDK_HOME`/`JAVA_HOME` |
 | `wndcharm` | 1.60 | **Docker (custom build)** Ubuntu 18.04 + Py2.7 + swig | high | no pip/no image; Nyxus-lineage: Haralick/Tamura/Zernike/Gabor/Chebyshev/radial |
 | `imagej` | pinned tarball | **download** Fiji `ImageJ-linux64 --headless` | med-high | morphology/intensity/GLCM headless (GLCM via batch wrapper) |
 | `fraclac` | — | ImageJ plugin (GUI) **+ headless-macro reimpl** | med-high* | plugin is GUI-only, but its shifting-grid method runs headless via our macro (*see reconciliation) |
@@ -122,6 +122,29 @@ Gotchas hit while vetting GABOR against it:
   and the honest claim is the one the tolerance can support.
 
 ## Corrections / notable findings
+
+- **`cellprofiler` runs in-process from a conda env, no Docker.** Used for the 2D neighbour family
+  (`gen_neighbor_cellprofiler.py`). A full `pip install cellprofiler` is unbuildable on Windows --
+  it hard-pins `mysqlclient==1.4.6`, which has no py39 wheel and needs the MySQL C headers -- so
+  install the pieces instead:
+  ```
+  conda create -n nyxus_cellprofiler python=3.9
+  conda install -c conda-forge "openjdk=11" "numpy=1.26" cython setuptools wheel
+  pip install --no-build-isolation python-javabridge cellprofiler-core centrosome
+  pip install --no-deps "cellprofiler==4.2.8"      # the MODULE package, without the bad pins
+  ```
+  `numpy<2` is not optional: python-javabridge's C extension uses the numpy 1.x C API and fails to
+  build against 2.0. The measurement modules live in `cellprofiler`, not `cellprofiler-core`, which
+  is why the last line is needed at all.
+  Three gotchas when running it:
+  - **`JDK_HOME` and `JAVA_HOME` must point at `<env>\Library\lib\jvm`** or javabridge cannot load
+    the JVM and the process dies with a bare **exit 127** and no Python traceback -- it reads as a
+    missing interpreter, not a missing JVM.
+  - Call `cellprofiler_core.preferences.set_headless()` **before** constructing `Measurements()`,
+    or it imports wx for config and fails.
+  - `Objects().segmented` is indexed `[row=y, col=x]`, and CellProfiler treats border-touching
+    objects specially -- pad the label image (3 px is enough) or the edge ROIs measure differently.
+
 
 - **`mirp` runs fine from conda-forge**, which is simpler than a venv on Windows because it brings
   its own Python: `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy`. Two gotchas
