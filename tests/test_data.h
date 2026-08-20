@@ -256,10 +256,16 @@ const static NyxusPixel ibsi_fig3_17a_gldzm_sample_image_mask[] =
 	{1, 4, 1}, {2, 4, 1}, {3, 4, 1}, {4, 4, 1}
 };
 
+// Rows are the four grey levels, columns the two zone distances, and the table sums to 8 zones
+// over the 16-pixel ROI. Grey level 2 holds ONE zone: its five pixels are linked through the
+// (2,1)-(3,2) diagonal, and a GLDZM zone is 8-connected. mirp 2.6.0 on this fixture pins the
+// same matrix three ways over -- zone percentage 0.5 (8 zones), grey-level non-uniformity 2.25
+// (per-grey zone counts 3,1,2,2) and zone-distance non-uniformity 6.25 (7 zones at distance 1,
+// one at distance 2). See tests/vetting/audit/gldzm_2d_mirp_vetting_report.md.
 const static int ibsi_fig3_17c_gldzm_reference_matrix[] =
 {
 	3, 0,
-	2, 0,
+	1, 0,
 	2, 0,
 	1, 1
 };
