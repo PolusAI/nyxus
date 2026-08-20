@@ -506,16 +506,33 @@ TEST_P(Test3DFeature_UNVETTED_LOCAL_REGRESSION, PublicFeatureIsComputableButHasN
 
 // INSTANTIATE_TEST_SUITE_P for this fixture likewise lives in the per-family files.
 
+// Families migrated off the generic sweep: their previously-unvetted features are now individually
+// named drift-guard tests in test_3d_<family>_regression.h (e.g. the "_grey64_regression" tests for
+// glcm) instead of a table read by the parameterized Test3DFeature_UNVETTED_LOCAL_REGRESSION suite.
+// feature_3d_cases(false) still lists these families' features (their oracle-backed status hasn't
+// changed), so without this set the loop below would demand a coverage_baselines() entry that no
+// longer exists. Update this set -- and the two counts in TEST_3D_FEATURE_COVERAGE_COUNTS below --
+// every time another family is migrated; SPEC 1 still requires every public feature to be checked
+// somewhere, and this is the manual bookkeeping that keeps that true without a local table.
+static const std::set<std::string>& families_with_individually_ported_regression()
+{
+	static const std::set<std::string> families = { "glcm" };
+	return families;
+}
+
 TEST(TEST_NYXUS, TEST_3D_FEATURE_COVERAGE_COUNTS)
 {
 	EXPECT_EQ(213u, Nyxus::UserFacing_3D_featureNames.size());
 	EXPECT_EQ(94u, feature_3d_cases(true).size());
 	EXPECT_EQ(119u, feature_3d_cases(false).size());
 	EXPECT_EQ(Nyxus::UserFacing_3D_featureNames.size(), feature_3d_cases(true).size() + feature_3d_cases(false).size());
-	EXPECT_EQ(119u, regression_coverage_ref_vals_total());
+	// 119 total unvetted features minus the 36 glcm ported to named regression.h tests.
+	EXPECT_EQ(83u, regression_coverage_ref_vals_total());
 	for (const auto& c : feature_3d_cases(false))
 	{
 		const std::string family = family_of_3d_feature(c.code);
+		if (families_with_individually_ported_regression().count(family))
+			continue;
 		const auto* gt = regression_coverage_table_for_family(family);
 		ASSERT_TRUE(gt != nullptr) << c.name << " family=" << family;
 		EXPECT_TRUE(gt->find(c.name) != gt->end()) << c.name << " missing from " << family << "_3d_regression_coverage_ref_vals";
