@@ -4,22 +4,28 @@
 // turns neighborhood2d_scene_labels into a populated roiData map with basic-morphology, contour and
 // neighbour features computed.
 //
-// Fixtures only, no reference data (SPEC 6.3.1). This header exists because both oracle files
-// (test_2d_neighbor_cellprofiler.h, test_2d_neighbor_analytic.h) previously reached the builder by
-// including test_2d_neighbor_regression.h -- an oracle file including a regression file to borrow
-// scaffolding, which put a snapshot table in scope of every assertion that did so.
+// Fixtures only, no reference data (SPEC 6.3.1). Every file in the family reaches the scene builder
+// through this header, so no oracle file has to include another file's snapshot table to borrow
+// scaffolding, and no reference table is ever in scope of an assertion that does not own it.
 
-// No <gtest/gtest.h>: this header asserts nothing, it only builds ROIs. The two oracle files that
-// include it bring gtest in themselves for their own assertions.
+// No <gtest/gtest.h>: this header asserts nothing, it only builds ROIs. The files that include it
+// bring gtest in themselves for their own assertions.
+//
+// Every include below is named for the symbol this file uses directly, rather than left to arrive
+// transitively through test_main_nyxus.h: a transitive include compiles, but it makes this header
+// depend on what an unrelated file happens to pull in.
 #include <unordered_map>
 #include <unordered_set>
 
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/basic_morphology.h"
-#include "../src/nyx/features/contour.h"
-#include "../src/nyx/features/neighbors.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
+#include "../src/nyx/feature_settings.h"        // Fsettings, NyxSetting
+#include "../src/nyx/roi_cache.h"               // LR, init_label_record_3, update_label_record_3
+#include "../src/nyx/features/basic_morphology.h"  // BasicMorphologyFeatures
+#include "../src/nyx/features/contour.h"        // ContourFeature
+#include "../src/nyx/features/image_matrix.h"   // ImageMatrix
+#include "../src/nyx/features/neighbors.h"      // NeighborsFeature
+#include "../src/nyx/features/pixel.h"          // Pixel2, PixIntens
+#include "test_data.h"                          // neighborhood2d_scene_labels
+#include "test_main_nyxus.h"                    // the Nyxus namespace the loaders live in
 
 static Fsettings make_neighbors2d_settings()
 {

@@ -30,6 +30,7 @@
 #include "test_2d_neighbor_regression.h"
 #include "test_2d_neighbor_cellprofiler.h"
 #include "test_2d_neighbor_analytic.h"
+#include "test_2d_neighbor_invariant.h"
 #include "test_initialization_mechanics.h"
 #include "test_feature_manager_mechanics.h"
 #include "test_2d_glcm_ibsi.h"
@@ -1181,19 +1182,19 @@ TEST(TEST_NYXUS, TEST_2D_ZERNIKE_MOMENTS_REGRESSION)
 	ASSERT_NO_THROW(test_2d_zernike_moments_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_COUNTS_AND_TOUCHING_REGRESSION)
+TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_PERCENT_TOUCHING_REGRESSION)
 {
-	ASSERT_NO_THROW(test_2d_neighbor_counts_and_touching_regression());
+	ASSERT_NO_THROW(test_2d_neighbor_percent_touching_regression());
 }
 
-TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_PERCENT_TOUCHING_ENCLOSED_ANALYTIC)
+TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_PERCENT_TOUCHING_BOUNDED_INVARIANT)
 {
-	ASSERT_NO_THROW(test_2d_neighbor_percent_touching_enclosed_analytic());
+	ASSERT_NO_THROW(test_2d_neighbor_percent_touching_bounded_invariant());
 }
 
-TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_CLOSEST_NEIGHBORS_REGRESSION)
+TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_PERCENT_TOUCHING_ENCLOSED_INVARIANT)
 {
-	ASSERT_NO_THROW(test_2d_neighbor_closest_neighbors_regression());
+	ASSERT_NO_THROW(test_2d_neighbor_percent_touching_enclosed_invariant());
 }
 
 TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_COUNTS_AND_FIRST_DISTANCE_CELLPROFILER)
