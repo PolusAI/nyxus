@@ -120,6 +120,31 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   `FRACT_DIM_PERIMETER` is cross-method — Nyxus uses a divider walk against FracLac's edge box
   count — so it carries a stated ~3% band, per SPEC 7's "known method divergence" row.
 
+## gldm.ibsi_phantom_2d
+- The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
+  its own with `IBSI=true` and `GREYDEPTH=128`, and the per-feature values averaged over the four.
+  Oracles: `pyradiomics` (which defines GLDM) and `ibsi` (published consensus). Used by:
+  `test_2d_gldm_pyradiomics.h`, `test_2d_gldm_ibsi.h`.
+- PyRadiomics reaches this configuration with `binWidth=1` (identity binning on the integer
+  phantom, so neither tool discretises), `gldm_a=0`, `distances=[1]` and `force2D` — the alpha=0,
+  d=1 coarseness Nyxus computes in IBSI mode. Generator: `oracles/gen_gldm_pyradiomics.py`.
+- IBSI publishes these quantities under the **NGLDM** name. A GLDM dependence count is `1 +` the
+  number of 8-neighbours sharing the centre's grey level, which is IBSI's `j = k + 1` at alpha=0,
+  d=1, so the families line up one for one (`GLDM_SDE` against low-dependence emphasis, `GLDM_LDE`
+  against high-dependence emphasis, and so on). The measurement establishing the identity —
+  Nyxus GLDM bit-identical to the mirp-vetted `ngldm_2d_mirp_ref_vals` on 13 of 14 — is in
+  `audit/gldm_2d_pyradiomics_vetting_report.md`.
+- The two oracles are complementary rather than redundant. The IBSI consensus values are quoted to
+  three significant figures, so that file asserts at `rel=1e-2` (measured worst case 0.45%, on
+  `GLDM_GLN`: 10.2 published against 10.2464 computed). PyRadiomics reproduces Nyxus to **9.9e-16**,
+  so the PyRadiomics file asserts at `rel=1e-9`: IBSI fixes the definition, PyRadiomics fixes the
+  digits.
+- **Outside this recipe:** the production default (`IBSI=false`, MATLAB grey binning at
+  `coarse_gray_depth`). There Nyxus re-bins the ROI while PyRadiomics bins at `binWidth=1`, so the
+  two build their dependence matrices over different level assignments and disagree by up to 108%
+  (`GLDM_SDLGLE`). That config is drift-pinned only, in `test_2d_gldm_regression.h` and
+  `tests/python/test_2d_gldm_mechanics.py`.
+
 ## ngldm.ibsi_phantom_2d
 - The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
   its own with `IBSI=true` and `GREYDEPTH=128`, and the per-feature values averaged over the four.

@@ -1,16 +1,9 @@
 #pragma once
 
-#include <gtest/gtest.h>
-
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/gldm.h"
-#include "../src/nyx/features/pixel.h"
-#include "../src/nyx/environment.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
+#include "test_2d_gldm_common.h"   // gtest, GLDMFeature, make_gldm2d_settings, the ROI loader
 
 // Regression guard for the GLDM "background pollutes the dependence matrix" defect (bug #14b,
-// fixed 2026-06). C++ counterpart of tests/python/test_gldm_oracle.py.
+// fixed 2026-06). C++ counterpart of tests/python/test_2d_gldm_mechanics.py.
 //
 // The MATLAB grey-binning path (the production default) maps off-ROI background (original
 // intensity 0) to binned level 1, so the GLDM zone loop's old `pi == 0` guard - which tested
@@ -19,24 +12,14 @@
 // inflating Nz and every count/dependence feature. The fix skips a pixel by its ORIGINAL
 // intensity (imR == 0) and only counts a neighbour that is itself an ROI pixel.
 //
-// The existing test_gldm.h phantom cases can't catch this: they run on a fully-masked ROI
+// The digital-phantom oracle cases can't catch this: they run on a fully-masked ROI
 // (mask == intensity), so no off-ROI background ever lands inside the bounding box. This test
 // uses a concave ROI - a 3x3 ring with a background hole in the centre - so the bounding box
 // genuinely contains a background pixel, exactly the production condition.
 inline void test_2d_gldm_bug_background_excluded_mechanics()
 {
     // ---- feature settings: MATLAB grey binning (128 levels), non-IBSI - the production default
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 128;   // matlab binning (> 0)
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = false;
+    const Fsettings s = make_gldm2d_settings (false);
 
     // ---- a 3x3 ring ROI with a background hole in the centre.
     // Intensities 127 and 128 both bin to MATLAB level 128 (level = floor(128*i/128 + 1),
