@@ -57,40 +57,31 @@ static ref_vals_map<double> glcm_3d_regression_ref_vals
 // build (and with it, the 25 assertions below).
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-// frac_tolerance = 1e9, i.e. rel=1e-9: these are Nyxus' own values pinned to full precision, so a
-// drift guard should catch any change at all. The previous 10% band would have passed a value off
-// by a factor of 1.1.
-//
-// The two information measures get rel=1e-6 instead. Both are a difference of two entropies of
-// similar size (INFOMEAS1 is (HXY-HXY1)/HX), and the entropies come out of fast_log10, whose core
-// is a float-precision polynomial -- its last bits depend on how the compiler rounds and contracts
-// that float arithmetic, and the cancellation amplifies the difference into the result. The table
-// was dumped on MSVC; Apple clang reproduces INFOMEAS1 to rel 1.9e-9, which the 1e-9 band failed.
-// 1e-6 keeps ~500x of headroom over that and still catches any change to the math, which moves
-// these values by percent or more.
+// rel=1e-9 by default (full-precision drift guard on Nyxus' own values); rel=1e-6 for INFOMEAS1/2
+// and DIFENTRO, which all route through fast_log10 (3d_glcm.cpp) and lose bits to compiler-specific
+// float rounding -- measured residuals up to rel 3.6e-9 against the pinned goldens, so 1e-9 false-
+// fails on some builds. Matched by substring so both the -100 table's bare names and grey64's _AVE
+// names hit the same rule.
 static double glcm_3d_regression_frac_tolerance (const std::string& feature_name)
 {
-    return (feature_name == "3GLCM_INFOMEAS1" || feature_name == "3GLCM_INFOMEAS2") ? 1.e6 : 1.e9;
+    return (feature_name.find("INFOMEAS1") != std::string::npos ||
+            feature_name.find("INFOMEAS2") != std::string::npos ||
+            feature_name.find("DIFENTRO") != std::string::npos) ? 1.e6 : 1.e9;
 }
 
-void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+// Shared by both regression assert helpers below; only grey_depth/glcm_grey_depth differ between
+// the -100/binCount and +64/matlab_grey_binning profiles. ASSERT_* needs void return, so callers
+// must check ::testing::Test::HasFatalFailure() before touching fvals.
+static void run_3d_glcm_feature_pipeline (Environment& e, const std::string& fname,
+    const Nyxus::Feature3D& expecting_fcode, int grey_depth, int glcm_grey_depth,
+    int& label_out, int& fcode_out)
 {
-    // (1) prepare
-
-    // check that requested feature exists
-    auto iter = glcm_3d_regression_ref_vals.find(fname);
-    ASSERT_TRUE(iter != glcm_3d_regression_ref_vals.end());
-
     // get segment info
     auto [ipath, mpath, label] = get_3d_segmented_phantom();
     ASSERT_TRUE(fs::exists(ipath));
     ASSERT_TRUE(fs::exists(mpath));
 
-    // (2) mock the 3D workflow
-
-    Environment e;
-
-    // slide -> dataset -> prescan 
+    // slide -> dataset -> prescan
     e.dataset.dataset_props.reserve(1);
     SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
     ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
@@ -107,27 +98,23 @@ void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     // buffers
     ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
-    // (3) common feature extraction settings
-
+    // common feature extraction settings
     Fsettings s;
     s.resize((int)NyxSetting::__COUNT__);
     s[(int)NyxSetting::SOFTNAN].rval = 0.0;
     s[(int)NyxSetting::TINY].rval = 0.0;
     s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 100;
+    s[(int)NyxSetting::GREYDEPTH].ival = grey_depth;
     s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
     s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
     s[(int)NyxSetting::USEGPU].bval = false;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
     s[(int)NyxSetting::IBSI].bval = false;
 
-    // (4) GLCM-specific feature settings mocking default pyRadiomics settings
-
-    s[(int)NyxSetting::GLCM_GREYDEPTH].ival = -100;  // intentionally negative to activate radiomics binCount-based grey-binning
+    // GLCM-specific feature settings
+    s[(int)NyxSetting::GLCM_GREYDEPTH].ival = glcm_grey_depth;   // sign selects binCount (-) vs fixed-level (+) grey-binning
     s[(int)NyxSetting::GLCM_OFFSET].ival = 1;
     s[(int)NyxSetting::GLCM_SPARSEINTENS].bval = true;
-
-    // (5) feature extraction
 
     // make it find the feature code by name
     int fcode = -1;
@@ -140,15 +127,28 @@ void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     ASSERT_NO_THROW(r.initialize_fvals());
     D3_GLCM_feature f;
     ASSERT_NO_THROW(f.calculate(r, s));
-
-    // (6) get values
-
     f.save_value(r.fvals);
 
-    // aggregate angled subfeatures (13 angles for 3D)
-    double atot = f.calc_ave(r.fvals[fcode]);
+    label_out = label;
+    fcode_out = fcode;
+}
 
-    // (7) verdict, at the per-feature drift band
+void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+{
+    // check that requested feature exists
+    auto iter = glcm_3d_regression_ref_vals.find(fname);
+    ASSERT_TRUE(iter != glcm_3d_regression_ref_vals.end());
+
+    Environment e;
+    int label = -1, fcode = -1;
+    run_3d_glcm_feature_pipeline(e, fname, expecting_fcode, 100, -100, label, fcode);
+    if (::testing::Test::HasFatalFailure()) return;
+
+    // aggregate angled subfeatures (13 angles for 3D)
+    D3_GLCM_feature f;
+    double atot = f.calc_ave(e.roiData[label].fvals[fcode]);
+
+    // verdict, at the per-feature drift band
     ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals[fname], glcm_3d_regression_frac_tolerance (fname)))
         << fname;
 }
@@ -339,15 +339,13 @@ void test_3d_glcm_sum_variance_regression()
 // GREYDEPTH=64 with GLCM_GREYDEPTH=+64 -- a positive value, which bin_intensities_3d
 // (texture_feature.h) routes through matlab_grey_binning (a FIXED 64-level count) rather than the
 // -100 bincount profile the rest of this file uses (radiomics_grey_binning, bin count derived from
-// the ROI's own min/max). Ported verbatim from the retired Wave-9 coverage-sweep table
-// (glcm_3d_regression_coverage_ref_vals, formerly in test_3d_glcm_coverage.h): same phantom, same
-// settings, same numbers -- just asserted here as named tests instead of through the generic
-// parameterized sweep, so a failure names the feature instead of a sanitized test-param string.
+// the ROI's own min/max).
 //
 // Every one of these 36 features is independently oracle-vetted against PyRadiomics elsewhere in
 // test_3d_glcm_pyradiomics.h, under the -100 bincount profile (some directly, some by the
 // same-value identity trick documented there). This table claims no vetting of its own (SPEC 1):
 // it is a drift guard on the grey64 configuration, which nothing else in the tree exercises.
+// History: tests/vetting/audit/glcm_3d_golden_regen.md, "grey64 table and the retired Wave-9 sweep".
 static ref_vals_map<std::vector<double>> glcm_3d_regression_grey64_ref_vals
 {
 	{ "3GLCM_ACOR_AVE", { 896.29490954682888 } },
@@ -364,11 +362,11 @@ static ref_vals_map<std::vector<double>> glcm_3d_regression_grey64_ref_vals
 	{ "3GLCM_DIS_AVE", { 4.4826978263468824 } },
 	{ "3GLCM_ENERGY", { 0.20619709037207257, 0.21210950671886142, 0.20619709037207257, 0.22347189327232553, 0.229768029906674, 0.22347189327232553, 0.20619709037207257, 0.21210950671886142, 0.20619709037207257, 0.21657166507454639, 0.22249608735556295, 0.21657166507454639, 0.2415813859599367 } },
 	{ "3GLCM_ENERGY_AVE", { 0.21714923037245615 } },
-	{ "3GLCM_ENTROPY", { 6.1375193094015223, 6.0251268596431471, 6.1375193094015223, 5.6356261936885357, 5.5229037686481623, 5.6356261936885357, 6.1375193094015223, 6.0251268596431471, 6.1375193094015223, 5.9202631504971848, 5.8126798565436344, 5.9202631504971848, 4.8177837873733909 } },  // FIX: were buggy unnormalized ~-6.8e6; post /sum_p fix (3d_glcm.cpp)
-	{ "3GLCM_ENTROPY_AVE", { 5.8358059275253087 } },  // FIX: was buggy unnormalized -7.09e6; post /sum_p fix
+	{ "3GLCM_ENTROPY", { 6.1375193094015223, 6.0251268596431471, 6.1375193094015223, 5.6356261936885357, 5.5229037686481623, 5.6356261936885357, 6.1375193094015223, 6.0251268596431471, 6.1375193094015223, 5.9202631504971848, 5.8126798565436344, 5.9202631504971848, 4.8177837873733909 } },
+	{ "3GLCM_ENTROPY_AVE", { 5.8358059275253087 } },
 	{ "3GLCM_HOM1", { 0.63159286085358357, 0.67511464571418467, 0.63159286085358357, 0.675209797165082, 0.7178512712427948, 0.675209797165082, 0.63159286085358357, 0.67511464571418467, 0.63159286085358357, 0.65283716836970751, 0.69041197263012255, 0.65283716836970751, 0.77822827662266392 } },
 	{ "3GLCM_HOM1_AVE", { 0.67070662972368189 } },
-	{ "3GLCM_HOM2", { 0.59196175760722125, 0.64232872280698583, 0.59196175760722125, 0.63506326531940249, 0.68470533035896952, 0.63506326531940249, 0.59196175760722125, 0.64232872280698583, 0.59196175760722125, 0.61310667832992871, 0.65700403974706201, 0.61310667832992871, 0.75964624124070679 } },  // FIX: were buggy unnormalized ~3.1e5; post /sum_p fix (homogeneity now in [0,1])
+	{ "3GLCM_HOM2", { 0.59196175760722125, 0.64232872280698583, 0.59196175760722125, 0.63506326531940249, 0.68470533035896952, 0.63506326531940249, 0.59196175760722125, 0.64232872280698583, 0.59196175760722125, 0.61310667832992871, 0.65700403974706201, 0.61310667832992871, 0.75964624124070679 } },
 	{ "3GLCM_IDMN_AVE", { 0.97393106857854816 } },
 	{ "3GLCM_IDM_AVE", { 0.63463076728371071 } },
 	{ "3GLCM_IDN_AVE", { 0.95491658377679667 } },
@@ -388,64 +386,23 @@ static ref_vals_map<std::vector<double>> glcm_3d_regression_grey64_ref_vals
 	{ "3GLCM_VARIANCE_AVE", { 505.29026036419378 } },
 };
 
-// Full pipeline duplicated rather than shared with test_3d_coverage_common.h: this file already
-// builds its own environment/ROI/settings per assert helper (see assert_3d_glcm_feature_regression
-// above), and reusing the coverage harness would tie this file's include position in test_all.cc to
-// coming after every *_pyradiomics.h/*_matlab.h header (their tables are read, by name, inside
-// test_3d_coverage_common.h's externally_vetted_3d_feature_names()). Duplicating ~20 lines here
-// avoids that fragile ordering dependency.
+// Same shared pipeline as above; checks every angled value against the table instead of averaging.
 static void assert_3d_glcm_feature_grey64_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
     auto iter = glcm_3d_regression_grey64_ref_vals.find(fname);
     ASSERT_TRUE(iter != glcm_3d_regression_grey64_ref_vals.end()) << fname;
 
-    auto [ipath, mpath, label] = get_3d_segmented_phantom();
-    ASSERT_TRUE(fs::exists(ipath));
-    ASSERT_TRUE(fs::exists(mpath));
-
     Environment e;
-    e.dataset.dataset_props.reserve(1);
-    SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
-    e.dataset.update_dataset_props_extrema();
+    int label = -1, fcode = -1;
+    run_3d_glcm_feature_pipeline(e, fname, expecting_fcode, 64, 64, label, fcode);
+    if (::testing::Test::HasFatalFailure()) return;
 
-    clear_slide_rois(e.uniqueLabels, e.roiData);
-    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0, ipath, mpath, 0));
-
-    std::vector<int> batch = { label };
-    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0));
-    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
-
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 64;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = false;
-    s[(int)NyxSetting::GLCM_GREYDEPTH].ival = 64;   // positive: fixed 64 grey levels (matlab_grey_binning), not bin-count derived
-    s[(int)NyxSetting::GLCM_OFFSET].ival = 1;
-    s[(int)NyxSetting::GLCM_SPARSEINTENS].bval = true;
-
-    int fcode = -1;
-    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
-    ASSERT_TRUE((int)expecting_fcode == fcode);
-
-    LR& r = e.roiData[label];
-    ASSERT_NO_THROW(r.initialize_fvals());
-    D3_GLCM_feature f;
-    ASSERT_NO_THROW(f.calculate(r, s));
-    f.save_value(r.fvals);
-
-    const auto& actual = r.fvals[fcode];
+    const auto& actual = e.roiData[label].fvals[fcode];
     const auto& expected = iter->second;
     ASSERT_EQ(expected.size(), actual.size()) << fname;
     for (std::size_t i = 0; i < expected.size(); ++i)
-        EXPECT_TRUE(agrees_gt(actual[i], expected[i], 1.e6)) << fname << "[" << i << "]";
+        EXPECT_TRUE(agrees_gt(actual[i], expected[i], glcm_3d_regression_frac_tolerance(fname)))
+            << fname << "[" << i << "]";
 }
 
 void test_3d_glcm_acor_ave_grey64_regression() { assert_3d_glcm_feature_grey64_regression(Nyxus::Feature3D::GLCM_ACOR_AVE, "3GLCM_ACOR_AVE"); }

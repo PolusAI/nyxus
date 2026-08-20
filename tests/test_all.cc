@@ -2936,9 +2936,8 @@ TEST(TEST_NYXUS, TEST_3D_GLCM_SUM_VARIANCE_REGRESSION) { ASSERT_NO_THROW(test_3d
 
 TEST(TEST_NYXUS, TEST_3D_GLCM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_dump_regression()); }
 
-// 3D GLCM "grey64" drift guards, ported from the retired Wave-9 coverage sweep (formerly
-// test_3d_glcm_coverage.h's glcm_3d_regression_coverage_ref_vals + its two INSTANTIATE_TEST_SUITE_P
-// calls). Same phantom/values, named individually instead of swept via TEST_P.
+// 3D GLCM "grey64" drift guards: named individually per feature rather than swept via TEST_P.
+// History: tests/vetting/audit/glcm_3d_golden_regen.md, "grey64 table and the retired Wave-9 sweep".
 TEST(TEST_NYXUS, TEST_3D_GLCM_ACOR_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_acor_ave_grey64_regression()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_ASM_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_asm_ave_grey64_regression()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_CLUPROM_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_cluprom_ave_grey64_regression()); }

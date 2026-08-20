@@ -87,6 +87,25 @@ Sanity checks worth running on any regenerated set, both of which the pre-2026-0
 - `SUMVARIANCE == CLUTEND` and `DIS == DIFAVE` exactly (to ~1e-15). These identities hold by
   construction; if a regenerated table breaks one, the run was misconfigured.
 
+## grey64 table and the retired Wave-9 sweep
+
+`glcm_3d_regression_grey64_ref_vals` (recipe as above but `GLCM_GREYDEPTH=+64`, `matlab_grey_binning`)
+was ported verbatim from `glcm_3d_regression_coverage_ref_vals`, formerly in the now-deleted
+`test_3d_glcm_coverage.h`. That file ran a generic `TEST_P`-parameterized completeness sweep (internally
+called "Wave-9") over every 3D family's featureset; it served two purposes that are now split out:
+
+1. **Drift-guarding these 36 GLCM values** — now done by named `*_grey64_regression` tests here
+   instead of the swept table, so a failure names the feature instead of a sanitized test-param
+   string.
+2. **Checking every registered `Feature3D` code has exactly one provider** — a side effect of the
+   sweep touching the whole featureset, not something it was designed for. That responsibility now
+   belongs to `FeatureManager::check_11_correspondence()` (extended to `Feature3D`) and is exercised
+   directly, without a phantom pipeline, by `test_feature_manager_mechanics.h`.
+
+While the table was ported, `ENTROPY`, `ENTROPY_AVE`, and `HOM2` were caught pinned at buggy
+unnormalized values (entropies ~-6.8e6/-7.09e6, `HOM2` ~3.1e5) from a missing `/sum_p` normalization
+in `3d_glcm.cpp`. The current values are post-fix and satisfy the `[0,1]` bound above.
+
 ## Adding a 3D header that needs the segmented phantom
 
 `get_3d_segmented_phantom()` is **defined once**, in `test_3d_glcm_pyradiomics.h`. Every other 3D
@@ -107,8 +126,6 @@ python tests/vetting/audit/scan_glcm3d_coverage.py           # rewrite
 python tests/vetting/audit/scan_glcm3d_coverage.py --check   # drift + acceptance check
 ```
 
-Two 3D-specific wrinkles the scanner handles, both worth copying for the remaining 3D families:
-tests name features by enum (`Feature3D::GLCM_ACOR_AVE`) while the registry carries the leading
-dimension digit (`3GLCM_ACOR_AVE`), including through the `using F = Nyxus::Feature3D` alias; and
-`test_3d_glcm_coverage.h` instantiates parameterized suites over the family's featureset, so what it
-touches is decided at runtime and it is credited to the whole family rather than scanned.
+One 3D-specific wrinkle the scanner handles, worth copying for the remaining 3D families: tests
+name features by enum (`Feature3D::GLCM_ACOR_AVE`) while the registry carries the leading dimension
+digit (`3GLCM_ACOR_AVE`), including through the `using F = Nyxus::Feature3D` alias.
