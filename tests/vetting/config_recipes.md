@@ -241,6 +241,30 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - `NGLDM_GLM` and `NGLDM_DCM` are outside this recipe: they are Nyxus mean-style rows with no IBSI
   NGLDM counterpart and no mirp column, so they stay `regression` in `test_2d_ngldm_regression.h`.
 
+## glszm.ibsi_phantom_2d
+- The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
+  its own with `IBSI=true` and `GREYDEPTH=128`, and the per-feature values averaged over the four.
+  Oracles: `ibsi` (published consensus) and `mirp`. Used by: `test_2d_glszm_ibsi.h`,
+  `test_2d_glszm_mirp.h`.
+- mirp reaches this configuration with `by_slice=True` and `base_discretisation_method="none"` (the
+  phantom is already discrete 1..6). Generator: `oracles/gen_glszm_mirp.py`.
+- Both the four-slice mean and each slice on its own are asserted. The mean is the quantity IBSI
+  publishes, but it cannot vet the four values behind it: two slice errors that cancel leave it
+  unmoved and a defect confined to one slice reaches it quartered.
+- The two oracles are complementary rather than redundant. The IBSI consensus values are quoted to
+  three significant figures, so that file asserts at `rel=1e-2` (measured worst case 0.42%, on
+  `GLSZM_LAHGLE`: 113 published against 112.5214 computed). mirp reproduces Nyxus to **2.0e-16** on
+  fifteen of the sixteen features, so the mirp file asserts at `rel=1e-9`: IBSI fixes the
+  definition, mirp fixes the digits.
+- `GLSZM_ZE` is the sixteenth and asserts at `rel=4e-3`. Nyxus computes zone entropy through
+  `Nyxus::fast_log10`, a float-precision quadratic approximation of the logarithm, where mirp uses a
+  double `log2`; the measured residual is 2.5e-3 per slice and 2.0e-3 on the mean. The band states
+  that approximation and nothing else.
+- **Outside this recipe:** Nyxus' default mode (`IBSI=false`) weights the grey-level-dependent
+  features by raw intensity instead of by the grey-level index, which no reference reproduces --
+  `GLSZM_HGLZE` is 16.44 here and 1497.57 there on the same fixture. Those values are drift-pinned
+  only, in `test_2d_glszm_regression.h`, and no oracle row claims them.
+
 ## glcm3d.pyradiomics_bincount20
 - The compat phantom (`compat_int/compat_int_mri.nii` + `compat_seg/compat_seg_liver.nii`) at
   `GREYDEPTH=100`, `IBSI=false`, `GLCM_GREYDEPTH=-20` (negative activates radiomics binCount-based
