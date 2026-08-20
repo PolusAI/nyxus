@@ -53,13 +53,13 @@ void FeatureManager::apply_user_selection (FeatureSet & fset)
 	build_user_requested_set (fset);	// the result will be stored in member 'user_requested_features'
 }
 
-// This test checks every feature code 
+// This test checks every feature code
 bool FeatureManager::check_11_correspondence()
 {
 	FeatureSet fset;
 	bool success = true;
 
-	// check the 2D featureset	//xxxx what about 3D and IMQ?
+	// check the 2D featureset
 	for (int i_fcode = 0; i_fcode < (int) Nyxus::Feature2D::_COUNT_; i_fcode++)
 	{
 		int nProviders = 0;
@@ -83,6 +83,40 @@ bool FeatureManager::check_11_correspondence()
 				std::cout << "Error: feature " << fset.findFeatureNameByCode((Feature2D)i_fcode) << " (code " << i_fcode << ") is not provided by any feature method. Check constructor of class FeatureManager\n";
 			}
 	}
+
+	// check the 3D featureset. Feature3D's codes continue numerically right where Feature2D's end
+	// (Feature3D::COV = (int)Feature2D::_COUNT_, featureset.h), so this range picks up exactly
+	// where the loop above leaves off with no overlap and no gap.
+	// FeatureIMQ is not covered here yet -- tracked separately, see the TODO at its own site below.
+	for (int i_fcode = (int) Nyxus::Feature2D::_COUNT_; i_fcode < (int) Nyxus::Feature3D::_COUNT_; i_fcode++)
+	{
+		int nProviders = 0;
+		for (const auto fm : full_featureset)
+		{
+			if (fm->provides (i_fcode))
+				nProviders++;
+		}
+
+		if (nProviders == 1)
+			continue;	// OK
+		else
+			if (nProviders > 1)	// error - ambiguous provider (as a class 'XYZ_feature') of a feature (as a code)
+			{
+				success = false;
+				std::cout << "Error: ambiguous provider of feature " << fset.findFeatureNameByCode((Feature3D)i_fcode) << " (code " << i_fcode << ").  (Feature is provided by multiple feature methods.) \n";
+			}
+			else	// error - no providers
+			{
+				success = false;
+				std::cout << "Error: feature " << fset.findFeatureNameByCode((Feature3D)i_fcode) << " (code " << i_fcode << ") is not provided by any feature method. Check constructor of class FeatureManager\n";
+			}
+	}
+
+	// TODO: FeatureIMQ (focus_score, power_spectrum, saturation, sharpness) is registered through
+	// the same provide_features()/full_featureset machinery as 2D and 3D, so it has the same
+	// no-provider/ambiguous-provider exposure this function checks for -- it just isn't checked
+	// yet. Needs a FeatureSet::findFeatureNameByCode(FeatureIMQ) overload (only Feature2D and
+	// Feature3D exist today, featureset.cpp) before a third loop can report anything by name.
 
 	return success;
 }
