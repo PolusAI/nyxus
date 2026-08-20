@@ -121,6 +121,45 @@ Gotchas hit while vetting GABOR against it:
   before believing that an exact match proves the filters agree to machine precision — it does not,
   and the honest claim is the one the tolerance can support.
 
+## CellProfiler headless on Windows (verified 2026-08, 2D neighbour and 2D radial vetting)
+
+`cellprofiler` resolves from conda-forge with its own Python, so no Docker image is needed for the
+two modules this tree uses as oracles -- `MeasureObjectNeighbors` and
+`MeasureObjectIntensityDistribution`:
+
+```bash
+conda create -n nyxus_cellprofiler -c conda-forge python=3.9 cellprofiler=4.2.8
+conda run -n nyxus_cellprofiler python tests/vetting/oracles/gen_neighbor_cellprofiler.py
+conda run -n nyxus_cellprofiler python tests/vetting/oracles/gen_radial_cellprofiler.py
+```
+
+Three things stop the run before any module executes, none of them with a useful message:
+
+- **`JDK_HOME` and `JAVA_HOME` must be set to `<env>\Library\lib\jvm`.** Without them the process
+  exits **127** with no traceback at all -- CellProfiler starts a JVM through `python-javabridge`
+  during import.
+- **The working directory must be on the same drive as the installed package.** Importing any module
+  under `cellprofiler.modules` pulls in `cellprofiler.gui.help.content`, which calls
+  `os.path.relpath` between the package directory and the cwd. Across drives that raises
+  `ValueError: path is on mount 'C:', start on mount 'D:'` at import time. `cd` to any directory on
+  the package's drive and pass absolute paths to the script.
+- **`create_settings()` has already added one object group and one bin group.** Calling
+  `add_object()` / `add_bin_count()` yourself leaves a second group whose `object_name` is still
+  `"None"`, and the run dies with `KeyError: 'None'` from the object set. Configure
+  `module.objects[0]` and `module.bin_counts[0]` in place.
+
+Driving a module takes no pipeline file: build `cellprofiler_core.object.Objects` with a label
+array, an `ImageSetList().get_image_set(0)` with a `cpi.Image` in `[0, 1]`, and call
+`module.run(Workspace(...))`. `MeasureObjectIntensityDistribution`'s measurements come back as
+`RadialDistribution_<Stat>_<image>_<bin>of<n>` with 1-based bin numbers.
+
+**Its centre rule is a maximum and can tie.** The centre is the pixel of maximum distance-to-edge
+(`centrosome.cpmorphology.distance_to_edge` then `maximum_position_of_labels`, which is
+`scipy.ndimage.maximum_position` underneath). When several pixels attain that maximum -- 8 of 26 on
+the `shape2d_morphology` fixture -- which one comes back depends on the label image's shape, so
+CellProfiler's own answer changes when you change the padding around the ROI. Report the tie set from
+the generator rather than assuming the centre is well defined.
+
 ## Corrections / notable findings
 
 - **`cellprofiler` runs in-process from a conda env, no Docker.** Used for the 2D neighbour family
