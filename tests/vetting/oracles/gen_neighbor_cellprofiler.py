@@ -1,8 +1,13 @@
 """OFFLINE CellProfiler oracle for the 2D neighbor graph/distance features
 (SPEC 4, oracle=cellprofiler). Runs the real cellprofiler.modules.
 MeasureObjectNeighbors module on the gtest fixture `neighborhood2d_scene_labels`
-(test_data.h) and validates it against the goldens pinned in
-test_2d_neighbor_cellprofiler.h.
+(test_data.h) and re-verifies EVERY golden pinned in test_2d_neighbor_cellprofiler.h against that
+run, exiting non-zero on any mismatch or on any pin this generator cannot produce. The pins are
+parsed out of the header: a validation list kept here would only ever compare this script against
+itself, so a hand-edited header would go unnoticed.
+
+CellProfiler reproduces Nyxus BIT-IDENTICALLY on both vetted features across all five ROIs --
+residual exactly 0 -- which is what lets the header assert at the SPEC 7 exact tier.
 
 Result of this comparison (see the printed table):
   NUM_NEIGHBORS           -- CP == Nyxus  (VETS it)
@@ -26,6 +31,8 @@ Provenance: tool=cellprofiler, version=4.2.8 (module package) / cellprofiler-cor
 Adjacent, neighbors_are_objects=True. generator=tests/vetting/oracles/
 gen_neighbor_cellprofiler.py. Run offline.
 """
+import os
+import re
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
@@ -49,15 +56,57 @@ SCENE = [
 PAD = 3  # keep every ROI off the image border (CP border handling)
 LABELS = [1, 2, 3, 4, 5]
 
-# goldens the CP run must reproduce (pinned in test_2d_neighbor_cellprofiler.h == Nyxus)
-CP_VETS = {  # feature -> {label: value}  (features where CP == Nyxus)
-    "NUM_NEIGHBORS": {1: 4, 2: 1, 3: 1, 4: 1, 5: 1},
-    "CLOSEST_NEIGHBOR1_DIST": {1: 2.5, 2: 2.54950975679639, 3: 2.54950975679639,
-                               4: 2.5, 5: 2.54950975679639},
-}
-# Nyxus values for the features where CP disagrees (for the divergence record)
-NYXUS_PT = {1: 100.0, 2: 66.6666666666667, 3: 66.6666666666667, 4: 50.0, 5: 33.3333333333333}
-TOL = 1e-4
+HERE = os.path.dirname(os.path.abspath(__file__))
+TESTS = os.path.dirname(os.path.dirname(HERE))
+TEST_H = os.path.join(TESTS, "test_2d_neighbor_cellprofiler.h")
+TABLE = "neighbor_2d_cellprofiler_ref_vals_by_label"
+REGRESSION_H = os.path.join(TESTS, "test_2d_neighbor_regression.h")
+REGRESSION_TABLE = "neighbor_2d_regression_ref_vals_by_label"
+
+# the two features CP and Nyxus compute the same way; the header pins CP's own digits for them
+CP_VETTED = ("NUM_NEIGHBORS", "CLOSEST_NEIGHBOR1_DIST")
+
+RELTOL = 1e-9  # SPEC 7 exact tier; the measured residual is exactly 0
+
+
+def _label_blocks(body):
+    """Yields (label, block text) by matching braces, not by a non-greedy regex.
+
+    A regex that stops at the first `}}` swallows the closing brace of the block's last entry, so a
+    label block written on a single line silently loses every entry after the first. Counting braces
+    is layout-independent.
+    """
+    i = 0
+    while True:
+        m = re.compile(r"\{\s*(\d+)\s*,\s*\{").search(body, i)
+        if not m:
+            return
+        label = int(m.group(1))
+        depth = 1                      # we are just past the inner '{'
+        j = m.end()
+        while j < len(body) and depth:
+            if body[j] == "{":
+                depth += 1
+            elif body[j] == "}":
+                depth -= 1
+            j += 1
+        yield label, body[m.end():j - 1]
+        i = j
+
+
+def parse_pins(path, table):
+    """The header's own table, keyed {label: {feature: value}}."""
+    txt = open(path, encoding="utf-8", errors="replace").read()
+    m = re.search(re.escape(table) + r"\s*\{", txt)
+    if not m:
+        raise RuntimeError("table %s not found in %s" % (table, os.path.basename(path)))
+    body = txt[m.end():].split("\n};", 1)[0]
+    body = re.sub(r"//[^\n]*", "", body)          # a commented-out golden is not a pin
+    pins = {}
+    for label, block in _label_blocks(body):
+        pins[label] = {n: float(v) for n, v in
+                       re.findall(r'\{\s*"(\w+)"\s*,\s*([-0-9.eE+]+)\s*\}', block)}
+    return pins
 
 
 def build_labels():
@@ -99,28 +148,60 @@ def run_cp(method):
 
 def main():
     cp = run_cp(mon.D_ADJACENT)
-    all_ok = True
 
-    print("=== CellProfiler MeasureObjectNeighbors (Adjacent) vs Nyxus goldens ===")
-    for feat, golds in CP_VETS.items():
-        for l in LABELS:
-            got = cp[feat][l - 1]
-            exp = golds[l]
-            ok = abs(got - exp) <= TOL * max(1.0, abs(exp))
-            all_ok &= ok
-            print(f"  {'OK ' if ok else 'FAIL'} L{l} {feat}: CP={got!r} nyxus={exp!r}")
-
-    print("\n=== documented divergences (NOT vetted vs CP) ===")
-    print(f"  {'L':>2} {'PT_cp':>9} {'PT_nyxus':>9} {'D2_cp':>8} {'D2_nyxus':>9}")
+    print("# CellProfiler MeasureObjectNeighbors (Adjacent), recipe neighbor.scene2d_radius1")
+    print("# paste-ready goldens")
     for l in LABELS:
-        print(f"  {l:>2} {cp['PERCENT_TOUCHING'][l-1]:>9.4f} {NYXUS_PT[l]:>9.4f} "
-              f"{cp['CLOSEST_NEIGHBOR2_DIST'][l-1]:>8.4f} "
-              f"{'2.5495' if l==1 else '0.0000':>9}")
-    pt_div = sum(1 for l in LABELS if abs(cp['PERCENT_TOUCHING'][l-1] - NYXUS_PT[l]) > TOL)
-    print(f"  PERCENT_TOUCHING diverges on {pt_div}/5 ROIs -> stays regression (convention gap)")
+        vals = ", ".join('{"%s", %r}' % (f, float(cp[f][l - 1])) for f in CP_VETTED)
+        print("\t{%d, {%s}}," % (l, vals))
 
-    print(f"\n{'ALL CP-VET CHECKS PASSED' if all_ok else 'SOME CHECKS FAILED -- do not promote'}")
-    return 0 if all_ok else 1
+    pins = parse_pins(TEST_H, TABLE)
+    print("")
+    n = sum(len(v) for v in pins.values())
+    print("# verifying %d pinned goldens against this run" % n)
+    nok = nfail = nmiss = 0
+    for l in sorted(pins):
+        for f in sorted(pins[l]):
+            want = pins[l][f]
+            if f not in cp:
+                print("  MISSING L%d %s: pinned %r but CP produces no such column" % (l, f, want))
+                nmiss += 1
+                continue
+            have = float(cp[f][l - 1])
+            rel = abs(have - want) / max(abs(want), 1.0)
+            if rel <= RELTOL:
+                print("  OK   L%d %s: cp=%r pinned=%r rel=%.3g" % (l, f, have, want, rel))
+                nok += 1
+            else:
+                print("  FAIL L%d %s: cp=%r pinned=%r rel=%.3g" % (l, f, have, want, rel))
+                nfail += 1
+
+    # every feature CP vets must be pinned on every label, or the header quietly lost coverage
+    missing = ["L%d %s" % (l, f) for l in LABELS for f in CP_VETTED if f not in pins.get(l, {})]
+    for gap in missing:
+        print("  UNPINNED %s: CP vets it but the header pins nothing" % gap)
+
+    print("")
+    print("# documented divergences -- NOT vetted against CP, recorded so the gap stays measured")
+    reg = parse_pins(REGRESSION_H, REGRESSION_TABLE)
+    print("  %2s %9s %9s %8s" % ("L", "PT_cp", "PT_nyxus", "D2_cp"))
+    pt_div = 0
+    for l in LABELS:
+        pt_cp = float(cp["PERCENT_TOUCHING"][l - 1])
+        pt_ny = reg.get(l, {}).get("PERCENT_TOUCHING", float("nan"))
+        if abs(pt_cp - pt_ny) > 1e-9 * max(abs(pt_ny), 1.0):
+            pt_div += 1
+        print("  %2d %9.4f %9.4f %8.4f"
+              % (l, pt_cp, pt_ny, float(cp["CLOSEST_NEIGHBOR2_DIST"][l - 1])))
+    print("  PERCENT_TOUCHING diverges on %d/5 ROIs -> stays regression (convention gap)" % pt_div)
+
+    print("")
+    print("%d verified, %d failed, %d unproducible, %d unpinned" % (nok, nfail, nmiss, len(missing)))
+    if nfail or nmiss or missing:
+        print("SOME CHECKS FAILED -- do not promote")
+        return 1
+    print("ALL CHECKS PASSED")
+    return 0
 
 
 if __name__ == "__main__":
