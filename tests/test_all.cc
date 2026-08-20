@@ -73,7 +73,6 @@
 #include "test_3d_coverage_common.h"
 #include "test_3d_firstorder_coverage.h"
 #include "test_3d_morphology_coverage.h"
-#include "test_3d_glcm_coverage.h"
 #include "test_3d_gldm_coverage.h"
 #include "test_3d_gldzm_coverage.h"
 #include "test_3d_glrlm_coverage.h"
