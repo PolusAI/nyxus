@@ -237,6 +237,23 @@ do it as it stands. Octave's `image` package ships `graycomatrix` but **not** `g
 one needs real MATLAB, or a checked-in reimplementation of the four published formulas recorded
 honestly as `oracle=analytic` rather than as `matlab`.
 
+**`tests/python/test_2d_gldm_pyradiomics.py` was a third variant, and is now closed by renaming.**
+Unlike the two above, its three pinned numbers *are* PyRadiomics output and reproduce exactly. What
+it lacked was a matching configuration: it ran Nyxus at the production default (`ibsi=false`, MATLAB
+grey binning at `coarse_gray_depth=64`) against a PyRadiomics run binning at `binWidth=1`, so the two
+built their dependence matrices over different level assignments. Measured disagreement runs from
+1.3% to **108%** (`GLDM_SDLGLE`), and the file's `rel=0.15`/`rel=0.20` bands were wide enough to pass
+all three assertions anyway. Per SPEC 5 a tolerance cannot absorb a configuration mismatch, so the
+file is not an oracle test at any band. Its real subject — the bug #14b background-pollution guard on
+the production path, which the IBSI-mode oracle tests cannot reach — is a SPEC 2 mechanics test, and
+it is renamed `test_2d_gldm_mechanics.py` and re-pinned against Nyxus' own values at `rel=1e-9`. The
+family's oracle assertions live on the IBSI phantom in IBSI mode, where the two tools agree to
+9.8e-16 (`audit/gldm_2d_pyradiomics_vetting_report.md`).
+
+**The shape to look for:** an oracle-named test whose *values* are genuinely the tool's, asserted at a
+band far wider than the tool's own precision. The width is the tell — a band sized to the
+disagreement rather than to the measurement is recording a config mismatch nobody chased down.
+
 ## D. Registry rows that contradict themselves
 
 Found while placing assertions by column J. Each needs a registry decision, not a code change:

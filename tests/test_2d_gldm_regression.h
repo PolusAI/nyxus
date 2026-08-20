@@ -1,25 +1,14 @@
-﻿#pragma once
+#pragma once
 
-#include <gtest/gtest.h>
-
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/gldm.h"
-#include "../src/nyx/features/pixel.h"
-#include "../src/nyx/environment.h"
-#include "test_data.h"
-#include "test_main_nyxus.h"
-
-#include "test_ref_vals.h"
+#include "test_2d_gldm_common.h"   // gtest, <string>, make_gldm2d_settings, gldm_2d_feature_value
+#include "test_ref_vals.h"         // ref_vals_map
 
 // Pinned Nyxus output on the cat2500 fixture at the settings assert_gldm_feature_regression uses
 // (GREYDEPTH=128, PIXELDISTANCE=5, ibsi=false). SPEC 2 regression tier: a drift guard, no oracle
-// claim -- GLDM 2D is vetted against IBSI in test_2d_gldm_ibsi.h, not here.
-//
-// Originally recorded 01/18/23 after the IBSI updates, but never read: the helper below computed
-// the features and returned without comparing anything, so these 14 numbers sat unused and all 14
-// cases passed as long as calculate() did not throw. Re-derived from current output when the
-// comparison was added, so the table now states what Nyxus actually produces.
-static ref_vals_map<double> gldm_2d_regression_ref_vals {
+// claim -- GLDM 2D is vetted against PyRadiomics in test_2d_gldm_pyradiomics.h and against the IBSI
+// consensus values in test_2d_gldm_ibsi.h, both on the digital phantom in IBSI mode. This fixture
+// and this discretisation are the production default, which no oracle in the tree covers.
+static const ref_vals_map<double> gldm_2d_regression_ref_vals {
     {"GLDM_SDE", 0.43899590049484488},
     {"GLDM_LDE", 24.932266009852217},
     {"GLDM_LGLE", 0.01175642780523556},
@@ -33,119 +22,90 @@ static ref_vals_map<double> gldm_2d_regression_ref_vals {
     {"GLDM_DNN", 0.23318176854570605},
     {"GLDM_GLV", 1896.8138388307173},
     {"GLDM_DV", 8.4758547890024012},
-    {"GLDM_DE", 5.3430148357241016}
+    {"GLDM_DE", 5.3452934752754491}
 };
 
 /// @brief Pins one GLDM feature against its recorded value on the cat2500 fixture
-void assert_gldm_feature_regression(const Feature2D& feature_, const std::string& feature_name)
+void assert_gldm_feature_regression (const Feature2D& feature_, const std::string& feature_name)
 {
-    // featue settings for this particular test
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 128;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = false;
-    //
+    SCOPED_TRACE ("regression " + feature_name);
 
-    int feature = int(feature_);
+    // a missing key would otherwise be compared against a default-inserted zero
+    ASSERT_TRUE (gldm_2d_regression_ref_vals.count(feature_name) > 0) << feature_name;
 
-    // a missing key would otherwise make this case silently assert nothing
-    ASSERT_TRUE(gldm_2d_regression_ref_vals.count(feature_name) > 0) << feature_name;
-    const double ref = gldm_2d_regression_ref_vals.at(feature_name);
+    const Fsettings s = make_gldm2d_settings (false);
+    const double fval = gldm_2d_feature_value (cat2500_int, cat2500_seg,
+                                               sizeof(cat2500_seg) / sizeof(NyxusPixel), s, feature_);
 
-    LR roidata;
-
-    // Calculate features
-    GLDMFeature f;
-
-    // image pair
-    load_masked_test_roi_data(roidata, cat2500_int, cat2500_seg, sizeof(cat2500_seg) / sizeof(NyxusPixel));
-
-    ASSERT_NO_THROW(f.calculate(roidata, s));
-
-    // Initialize per-ROI feature value buffer with zeros
-    roidata.initialize_fvals();
-
-    // Retrieve values of the features implemented by class 'GLDMFeature' into ROI's feature buffer
-    f.save_value(roidata.fvals);
-
-    // Compare against the pinned value. Without this the whole file was a smoke test.
-    ASSERT_TRUE(agrees_gt(roidata.fvals[feature][0], ref)) << feature_name;
+    ASSERT_TRUE (agrees_gt (fval, gldm_2d_regression_ref_vals.at(feature_name))) << feature_name;
 }
 
 void test_2d_gldm_sde_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_SDE, "GLDM_SDE");
 }
 
 void test_2d_gldm_lde_regression()
 {
-   assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_LDE, "GLDM_LDE");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_LDE, "GLDM_LDE");
 }
 
 void test_2d_gldm_lgle_regression()
 {
-   assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_LGLE, "GLDM_LGLE");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_LGLE, "GLDM_LGLE");
 }
 
 void test_2d_gldm_hgle_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_HGLE, "GLDM_HGLE");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_HGLE, "GLDM_HGLE");
 }
 
 void test_2d_gldm_sdlgle_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_SDLGLE, "GLDM_SDLGLE");    
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_SDLGLE, "GLDM_SDLGLE");
 }
 
 void test_2d_gldm_sdhgle_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_SDHGLE, "GLDM_SDHGLE");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_SDHGLE, "GLDM_SDHGLE");
 }
 
 void test_2d_gldm_ldlgle_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_LDLGLE, "GLDM_LDLGLE");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_LDLGLE, "GLDM_LDLGLE");
 }
 
 void test_2d_gldm_ldhgle_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_LDHGLE, "GLDM_LDHGLE");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_LDHGLE, "GLDM_LDHGLE");
 }
 
 void test_2d_gldm_gln_regression()
 {
-   assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_GLN, "GLDM_GLN");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_GLN, "GLDM_GLN");
 }
 
 void test_2d_gldm_dn_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_DN, "GLDM_DN");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_DN, "GLDM_DN");
 }
 
 void test_2d_gldm_dnn_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_DNN, "GLDM_DNN");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_DNN, "GLDM_DNN");
 }
 
 void test_2d_gldm_glv_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_GLV, "GLDM_GLV");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_GLV, "GLDM_GLV");
 }
 
 void test_2d_gldm_dv_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_DV, "GLDM_DV");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_DV, "GLDM_DV");
 }
 
 void test_2d_gldm_de_regression()
 {
-    assert_gldm_feature_regression(Nyxus::Feature2D::GLDM_DE, "GLDM_DE");
+    assert_gldm_feature_regression (Nyxus::Feature2D::GLDM_DE, "GLDM_DE");
 }
-

@@ -44,6 +44,11 @@ Gotchas hit while doing it:
   because mirp configures its own logger during the run.
 - **pyradiomics prints a warning per run** ("GLCM is symmetrical, therefore Sum Average = 2 x Joint
   Average") on stderr - expected, not an error.
+- **A per-family PyRadiomics class needs `force2D=True` on a single-slice volume.** Driving one
+  feature class directly (`radiomics.gldm.RadiomicsGLDM(image, mask, ...)`) rather than the
+  extractor is the cheapest way to get one family's values, but without `force2D=True` +
+  `force2Ddimension=0` it applies its 3D kernel to a `(1, y, x)` array and reaches for neighbours
+  that are not there. The symptom is plausible-looking numbers, not an error.
 - Feeding either tool a numpy array is enough - no file on disk. PyRadiomics wants
   `sitk.GetImageFromArray` with an explicit `SetSpacing`; MIRP takes `image=`/`mask=` arrays
   directly, shaped `(z, y, x)`.
