@@ -45,6 +45,8 @@
 #include "test_2d_ngldm_mirp.h"
 #include "test_2d_ngldm_regression.h"
 #include "test_2d_ngtdm_ibsi.h"
+#include "test_2d_ngtdm_mirp.h"
+#include "test_2d_ngtdm_mechanics.h"
 #include "test_2d_glcm_regression.h"
 #include "test_2d_gldm_regression.h"
 #include "test_2d_gldm_mechanics.h"
@@ -1171,6 +1173,45 @@ TEST(TEST_NYXUS, TEST_2D_NGTDM_COMPLEXITY_IBSI)
 TEST(TEST_NYXUS, TEST_2D_NGTDM_STRENGTH_IBSI)
 {
 	ASSERT_NO_THROW(test_2d_ngtdm_strength_ibsi());
+}
+
+//***** 2D NGTDM vs mirp *****
+
+TEST(TEST_NYXUS, TEST_2D_NGTDM_COARSENESS_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_ngtdm_coarseness_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_NGTDM_CONTRAST_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_ngtdm_contrast_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_NGTDM_BUSYNESS_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_ngtdm_busyness_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_NGTDM_COMPLEXITY_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_ngtdm_complexity_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_NGTDM_STRENGTH_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_ngtdm_strength_mirp());
+}
+
+//***** 2D NGTDM mechanics *****
+
+TEST(TEST_NYXUS, TEST_2D_NGTDM_IBSI_MODE_IGNORES_N_LEVELS_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_ngtdm_ibsi_mode_ignores_n_levels_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_NGTDM_SLICE_HELPER_RESTORES_N_LEVELS_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_ngtdm_slice_helper_restores_n_levels_mechanics());
 }
 
 
