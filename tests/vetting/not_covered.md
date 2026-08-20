@@ -237,6 +237,40 @@ do it as it stands. Octave's `image` package ships `graycomatrix` but **not** `g
 one needs real MATLAB, or a checked-in reimplementation of the four published formulas recorded
 honestly as `oracle=analytic` rather than as `matlab`.
 
+**The ten 2D GLSZM rows waiting on `test_2d_glszm_pyradiomics.h` are closed, pinned against mirp
+with PyRadiomics corroborating.** That target file never existed; the ten rows had claimed
+`oracle=pyradiomics` against it since the tracker was imported, while the six other rows in the
+family claimed `ibsi` against a file that does exist. Both tools were run: mirp 2.6.0 and
+PyRadiomics 3.0.1 agree with each other to **7.0e-16** on all 80 quantities and reproduce Nyxus bit
+for bit on fifteen of the sixteen features, so all sixteen rows are now `oracle=mirp` at `rel=1e-9`,
+asserted per slice as well as on the four-slice mean, and the published-consensus file stays
+alongside at `rel=1e-2`. `GLSZM_ZE` is the sixteenth: it asserts at `rel=4e-3`, the measured cost of
+taking its logarithm through `fast_log10` rather than a double `log2`, and it misses both tools by
+the same amount so it is not a convention difference. Only mirp's values are pinned — a second table
+identical to the first to 7e-16 would be redundancy, not coverage. See
+`audit/glszm_2d_mirp_vetting_report.md`.
+
+**Do not close a dangling `target_test` by swapping the oracle without running the one that was
+claimed.** Had mirp alone been run here, the row would have moved from an unbacked `pyradiomics`
+claim to a backed `mirp` one with the question of whether the two agree never asked — and on this
+family that question is what proves the one disagreement is Nyxus' logarithm rather than a mirp
+convention.
+
+**Two further errors in the same sixteen rows, both corrected.** `current_test` listed
+`test_3d_glszm_regression.h` and `test_3d_glszm_pyradiomics.h` — **3D files on 2D rows**, neither of
+which asserts a single 2D feature. And the note recording that `test_3d_glszm_regression.h` is
+orphaned (no `#include` in `test_all.cc`, so none of it ever runs) was carried on the **2D** rows,
+where correcting them would have silently erased it; it is a 3D GLSZM problem, the 3D rows still
+carry it, and it is restated in `audit/glszm_2d_mirp_vetting_report.md` so the 3D re-vet inherits
+it.
+
+**A drift guard at ±1% had stopped guarding.** `test_2d_glszm_regression.h` pins Nyxus' default-mode
+output on the same fixture -- a config nothing vets, so a snapshot is the right kind of test for it
+-- and it asserted at ±1%. Under that band `GLSZM_SALGLE` had drifted 1.6e-3 from its pin without
+failing. The pins are re-recorded at full precision at `agrees_gt`'s `rel=1e-3` default. A
+self-recorded snapshot asserted at ±1% is not a drift guard; it is a shape check that happens to
+carry numbers.
+
 ## D. Registry rows that contradict themselves
 
 Found while placing assertions by column J. Each needs a registry decision, not a code change:
