@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <iomanip>
 #include <sstream>
@@ -440,8 +441,11 @@ double GLDMFeature::calc_DE()
 	{
 		for (int j = 1; j <= Nd; j++)
 		{
-			double entrTerm = fast_log10(P.matlab(i, j) / double(Nz) + EPS) / LOG10_2;
-			f += P.matlab(i, j) / double(Nz) * entrTerm;
+			// log2 of the exact probability: an empty cell contributes nothing, so no epsilon
+			// is needed to keep the logarithm finite
+			double pij = P.matlab(i, j) / double(Nz);
+			if (pij > 0.0)
+				f += pij * std::log(pij) / std::log(2.0);
 		}
 	}
 	double retval = -f;
