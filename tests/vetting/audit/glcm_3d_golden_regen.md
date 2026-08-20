@@ -71,14 +71,14 @@ runAllTests --gtest_filter=*3D_GLCM_DUMP_REGRESSION*
 `glcm_3d_regression_ref_vals` wants; paste it over the table. It runs the same settings the
 assertions use, so the two cannot drift apart.
 
-The guard runs at rel=1e-9 — the table is pinned at full precision, so any change to the math should
-trip it — except `INFOMEAS1` and `INFOMEAS2`, which run at rel=1e-6. Both are a difference of two
-entropies of similar size, and the entropies come out of `fast_log10`, whose core is a
-float-precision polynomial: how the compiler rounds and contracts that float arithmetic decides its
-last bits, and the cancellation amplifies the difference into the result. A table dumped on MSVC
-reproduces on Apple clang to rel 1.9e-9 for `INFOMEAS1`, which is why 1e-9 is the wrong band for
-those two and 1e-6 — still five orders tighter than any real change to the math — is the right one.
-Anything else that starts failing on one CI platform only is the same effect, not a defect.
+The guard runs at a flat rel=1e-8 for every feature — the table is pinned at full precision, so any
+real change to the math should still trip it, but `INFOMEAS1`/`INFOMEAS2` and `DIFENTRO` all come out
+of `fast_log10`, whose core is a float-precision polynomial: how the compiler rounds and contracts
+that float arithmetic decides its last bits, and cancellation amplifies the difference into the
+result. A table dumped on MSVC reproduces on Apple clang to rel 1.9e-9 for `INFOMEAS1` and this build
+to rel 3.6e-9 for `DIFENTRO_AVE`; rel=1e-8 clears both with headroom instead of carrying a growing
+per-feature exception list. Anything else that starts failing on one CI platform only is the same
+effect, not a defect.
 
 Sanity checks worth running on any regenerated set, both of which the pre-2026-08 goldens failed:
 
