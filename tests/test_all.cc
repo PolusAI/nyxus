@@ -38,6 +38,8 @@
 #include "test_2d_glrlm_pyradiomics.h"
 #include "test_2d_glrlm_mirp.h"
 #include "test_2d_gldzm_ibsi.h"
+#include "test_2d_gldzm_mirp.h"
+#include "test_2d_gldzm_regression.h"
 #include "test_2d_glszm_ibsi.h"
 #include "test_2d_firstorder_ibsi.h"
 #include "test_2d_firstorder_pyradiomics.h"
@@ -2628,6 +2630,100 @@ TEST(TEST_NYXUS, TEST_2D_GLRLM_LRHGLE_AVE_REGRESSION)
 }
 
 
+//***** mirp tests of 2D GLDZM *****
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_SDE_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_sde_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_LDE_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_lde_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_LGLZE_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_lglze_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_HGLZE_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_hglze_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_SDLGLE_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_sdlgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_SDHGLE_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_sdhgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_LDLGLE_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_ldlgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_LDHGLE_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_ldhgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_GLNU_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_glnu_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_GLNUN_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_glnun_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDNU_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_zdnu_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDNUN_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_zdnun_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_ZP_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_zp_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_GLV_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_glv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDV_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_zdv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDE_MIRP)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_zde_mirp());
+}
+
+//***** 2D GLDZM drift guards *****
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_GLM_REGRESSION)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_glm_regression());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDM_REGRESSION)
+{
+	ASSERT_NO_THROW(test_2d_gldzm_zdm_regression());
+}
+
 //***** 2D GLDZM regression ***** 
 
 TEST(TEST_NYXUS, TEST_2D_GLDZM_MATRIX_CORRECTNESS_IBSI)
@@ -2653,11 +2749,6 @@ TEST(TEST_NYXUS, TEST_2D_GLDZM_LGLZE_IBSI)
 TEST(TEST_NYXUS, TEST_2D_GLDZM_HGLZE_IBSI)
 {
 	ASSERT_NO_THROW(test_2d_gldzm_hglze_ibsi());
-}
-
-TEST(TEST_NYXUS, TEST_2D_GLDZM_SDLGLE_IBSI)
-{
-	ASSERT_NO_THROW(test_2d_gldzm_sdlgle_ibsi());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLDZM_SDHGLE_IBSI)
@@ -2700,24 +2791,9 @@ TEST(TEST_NYXUS, TEST_2D_GLDZM_ZP_IBSI)
 	ASSERT_NO_THROW(test_2d_gldzm_zp_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_2D_GLDZM_GLM_IBSI)
-{
-	ASSERT_NO_THROW(test_2d_gldzm_glm_ibsi());
-}
-
 TEST(TEST_NYXUS, TEST_2D_GLDZM_GLV_IBSI)
 {
 	ASSERT_NO_THROW(test_2d_gldzm_glv_ibsi());
-}
-
-TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDM_IBSI)
-{
-	ASSERT_NO_THROW(test_2d_gldzm_zdm_ibsi());
-}
-
-TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDV_IBSI)
-{
-	ASSERT_NO_THROW(test_2d_gldzm_zdv_ibsi());
 }
 
 TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDE_IBSI)

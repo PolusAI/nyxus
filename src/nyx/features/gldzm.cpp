@@ -210,6 +210,91 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 					continue;
 				}
 
+				// A zone is 8-connected: two same-level pixels touching only at a corner belong to one
+				// zone, which is the connectivity IBSI defines for GLDZM and the one GLSZM uses for the
+				// same notion of a zone. The four diagonal directions below carry that, and they cannot
+				// be dropped as redundant with the axial four: a diagonal link is the only path between
+				// two pixels that share no edge.
+				//==== Check if zone continues to the South-East
+				_x = x+1;
+				_y = y+1;
+				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
+				{
+					// Store the diagonal neighbour's parent pixel position
+					parentstack.push ({x,y});
+
+					// Update zone's metric
+					int dist2roi = dist2border <pixData> (D, _x, _y);
+					zoneMetric = std::min (zoneMetric, dist2roi);
+
+					// Update zone size
+					zoneSize++;
+
+					// Make the new neighborhood pixel current parent
+					x = _x;
+					y = _y;
+					continue;
+				}
+				//==== Check if zone continues to the South-West
+				_x = x-1;
+				_y = y+1;
+				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
+				{
+					// Store the diagonal neighbour's parent pixel position
+					parentstack.push ({x,y});
+
+					// Update zone's metric
+					int dist2roi = dist2border <pixData> (D, _x, _y);
+					zoneMetric = std::min (zoneMetric, dist2roi);
+
+					// Update zone size
+					zoneSize++;
+
+					// Make the new neighborhood pixel current parent
+					x = _x;
+					y = _y;
+					continue;
+				}
+				//==== Check if zone continues to the North-West
+				_x = x-1;
+				_y = y-1;
+				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
+				{
+					// Store the diagonal neighbour's parent pixel position
+					parentstack.push ({x,y});
+
+					// Update zone's metric
+					int dist2roi = dist2border <pixData> (D, _x, _y);
+					zoneMetric = std::min (zoneMetric, dist2roi);
+
+					// Update zone size
+					zoneSize++;
+
+					// Make the new neighborhood pixel current parent
+					x = _x;
+					y = _y;
+					continue;
+				}
+				//==== Check if zone continues to the North-East
+				_x = x+1;
+				_y = y-1;
+				if (D.safe(_y, _x) && D.yx(_y, _x) != VISITED && D.yx(_y, _x) == inten)
+				{
+					// Store the diagonal neighbour's parent pixel position
+					parentstack.push ({x,y});
+
+					// Update zone's metric
+					int dist2roi = dist2border <pixData> (D, _x, _y);
+					zoneMetric = std::min (zoneMetric, dist2roi);
+
+					// Update zone size
+					zoneSize++;
+
+					// Make the new neighborhood pixel current parent
+					x = _x;
+					y = _y;
+					continue;
+				}
 				// We are done exploring pixel's potential neighborhood. There might happen a zone or not (just this pixel)
 				if (parentstack.empty() == false)
 				{

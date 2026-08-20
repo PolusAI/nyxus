@@ -237,6 +237,21 @@ do it as it stands. Octave's `image` package ships `graycomatrix` but **not** `g
 one needs real MATLAB, or a checked-in reimplementation of the four published formulas recorded
 honestly as `oracle=analytic` rather than as `matlab`.
 
+**`test_2d_gldzm_ibsi.h` held four Nyxus snapshots under an `_ibsi` name, and is now split.** The
+table mixed fourteen 3-significant-figure published values with four numbers carried to sixteen
+digits -- `GLDZM_SDLGLE`, `GLDZM_GLM`, `GLDZM_ZDM`, `GLDZM_ZDV` -- each matching Nyxus' own output
+exactly. The IBSI reference manual does not publish at that precision, which is what identifies
+them; two were also simply wrong, by 5.3% and 60% against mirp. `SDLGLE` and `ZDV` are now vetted
+against mirp at the exact tier, and `GLM`/`ZDM` are drift guards in `test_2d_gldzm_regression.h`
+with their registry rows demoted to `status=regression` -- neither is an IBSI GLDZM feature and
+mirp exposes no column for either.
+
+**The digit count is the cheap tell.** A published consensus value has three significant figures. An
+entry in an `_ibsi` table carrying sixteen was pasted from a run, not transcribed from the manual,
+and the only question left is whose run. Worth grepping every `*_ibsi.h` table for long literals
+before trusting it; here it took a 60% error and a family-wide ±50% tolerance to surface one. See
+`audit/gldzm_2d_ibsi_vetting_report.md`.
+
 ## D. Registry rows that contradict themselves
 
 Found while placing assertions by column J. Each needs a registry decision, not a code change:
