@@ -158,3 +158,30 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   `test_3d_glcm_dump_regression()`.
 - A different binCount from `glcm3d.pyradiomics_bincount20`, so the two benchmarks are not
   comparable to each other by construction.
+
+## ngtdm.ibsi_phantom_2d
+- The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
+  its own with `IBSI=true` and `GREYDEPTH=128`, and the per-feature values averaged over the four.
+  Oracles: `ibsi` (published consensus) and `mirp`, with a `pyradiomics` run corroborating. Used by:
+  `test_2d_ngtdm_ibsi.h`, `test_2d_ngtdm_mirp.h`.
+- mirp reaches this configuration with `by_slice=True` and `base_discretisation_method="none"` (the
+  phantom is already discrete 1..6). PyRadiomics reaches it with `binWidth=1` -- identity binning on
+  an integer image -- plus `force2D=True`. Generator: `oracles/gen_ngtdm_mirp.py`.
+- Both the four-slice mean and each slice on its own are asserted. The mean is the quantity IBSI
+  publishes, but it cannot vet the four values behind it: two slice errors that cancel leave it
+  unmoved and a defect confined to one slice reaches it quartered.
+- **No distance parameter, on any side.** NGTDM's neighbourhood is the d=1 8-neighbourhood the IBSI
+  definition fixes, and `ngtdm.cpp` never reads `PIXELDISTANCE`. A pixel distance set in an NGTDM
+  test looks meaningful and changes nothing, so this recipe does not set one.
+- All three references agree: mirp and PyRadiomics to **1.6e-16** of each other, Nyxus to
+  **3.2e-16** of both, and the published consensus to within its own 3-significant-figure rounding
+  (worst 0.41%, on `NGTDM_COARSENESS`). The mirp file therefore asserts at `rel=1e-9` and the IBSI
+  file at `rel=1e-2`: IBSI fixes the definition, mirp fixes the digits.
+- **`NGTDMFeature::n_levels` is a static and is not part of this recipe.** In IBSI mode `ngtdm.cpp`
+  forces the grey-binning info to 0, so the static is ignored entirely -- asserted rather than
+  assumed, in `test_2d_ngtdm_mechanics.h`.
+- **Outside this recipe:** Nyxus' default mode (`IBSI=false`) bins to a fixed grey count instead of
+  using the phantom's own levels, and the value of `n_levels` then decides the result --
+  `NGTDM_CONTRAST` is 0.925 in IBSI mode, 3169.93 in default mode at 100 levels, and 6634.50 at the
+  default 0. Those values are drift-pinned only, in `test_2d_ngtdm_regression.h`, at the grey count
+  they were recorded at, and no oracle row claims them.

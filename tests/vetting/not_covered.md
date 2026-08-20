@@ -237,6 +237,28 @@ do it as it stands. Octave's `image` package ships `graycomatrix` but **not** `g
 one needs real MATLAB, or a checked-in reimplementation of the four published formulas recorded
 honestly as `oracle=analytic` rather than as `matlab`.
 
+**The five 2D NGTDM rows waiting on `test_2d_ngtdm_pyradiomics.h` are closed, pinned against mirp
+with PyRadiomics corroborating.** That target file never existed; the five rows had claimed
+`oracle=pyradiomics` against it since the tracker was imported, with an **empty tolerance column**
+and a prose sentence where the `config_recipe` id belongs. Both tools were run: mirp 2.6.0 and
+PyRadiomics 3.0.1 agree with each other to 1.6e-16 and reproduce Nyxus to 3.2e-16 on all five
+features across all four slices. All five rows are now `oracle=mirp` at `rel=1e-9`, asserted per
+slice as well as on the four-slice mean, with the published-consensus file alongside at `rel=1e-2`.
+`current_test` also listed two **3D** files on every 2D row, neither of which asserts a 2D feature.
+See `audit/ngtdm_2d_mirp_vetting_report.md`.
+
+**A static feature setting was being assigned and left, and nothing said so.**
+`NGTDMFeature::n_levels` is a `static int` shared by every test in the binary.
+`test_2d_ngtdm_regression.h` set it to 100 and never restored it, and no other NGTDM test set it at
+all. That is not a live defect -- in IBSI mode `ngtdm.cpp` forces the grey-binning info to 0, so the
+IBSI and mirp assertions are immune, which `test_2d_ngtdm_mechanics.h` now asserts bit-exactly rather
+than leaving to inspection. But outside IBSI mode the static is decisive: the same fixture gives
+`NGTDM_CONTRAST` 3169.93 at 100 levels and 6634.50 at the default 0, so any future non-IBSI NGTDM
+test placed after the regression one would silently inherit a grey count nobody chose for it. The
+shared fixture now takes the value as a parameter and restores whatever it found.
+**`GLRLMFeature::n_levels` is assigned the same way in `test_2d_glrlm_regression.h`** and should get
+the same treatment when that family is next touched.
+
 ## D. Registry rows that contradict themselves
 
 Found while placing assertions by column J. Each needs a registry decision, not a code change:
