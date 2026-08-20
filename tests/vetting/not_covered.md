@@ -237,6 +237,32 @@ do it as it stands. Octave's `image` package ships `graycomatrix` but **not** `g
 one needs real MATLAB, or a checked-in reimplementation of the four published formulas recorded
 honestly as `oracle=analytic` rather than as `matlab`.
 
+**An oracle-suffixed test asserted a feature the registry says has no oracle (2D neighbour).**
+`test_2d_neighbor_percent_touching_enclosed_analytic` lived in `test_2d_neighbor_analytic.h` and
+asserted `PERCENT_TOUCHING`, whose registry row correctly reads `status=regression` with an empty
+oracle. Every coverage scanner in this tree -- `check_test_names.py`, `report_feature_tests.py`, the
+per-family `scan_*` scripts -- attributes an oracle from the test function's **name suffix**, so a
+scan would have credited the feature with `oracle=analytic`. What the function actually asserts are
+bounds (`0 <= PT <= 100`, and exactly 100 for a fully enclosed ROI), which SPEC 4.4 classes as
+invariants, not oracle comparisons. Moved to `test_2d_neighbor_invariant.h` under `_invariant` names.
+**The name is the claim** -- when a bound assertion needs a home, an oracle file is the wrong one.
+
+**Both 2D neighbour generators validated themselves rather than the headers they feed.** Each carried
+a hardcoded copy of the goldens (`PINNED` / `CP_VETS`) and compared its fresh run against that copy,
+so editing a golden in either header would not have been caught by anything. `gen_neighbor_analytic.py`
+also named the wrong file: its comment and banner both said `test_2d_neighbor_regression.h`, which
+those goldens had already been moved out of. Both now parse the header they feed, verify every pin,
+report any feature they produce that the header fails to pin, and exit non-zero. See
+`audit/neighbor_2d_analytic_vetting_report.md`.
+
+**A helper-block boundary bug over-credited coverage in the per-family scanners.** The shared
+`helper_features()` logic bounded a python helper's body at the next *helper* rather than the next
+top-level `def`, so the last helper in a file swallowed every test function below it, absorbed every
+feature name in the file, and passed the lot to each test that called it. In the 2D neighbour family
+that credited a `PERCENT_TOUCHING`-only test with `NUM_NEIGHBORS` and `CLOSEST_NEIGHBOR1_DIST`. Fixed
+in `audit/scan_neighbor_coverage.py`; **the same logic is copied in the other per-family `scan_*`
+scripts and should be corrected there as each family is re-vetted.**
+
 ## D. Registry rows that contradict themselves
 
 Found while placing assertions by column J. Each needs a registry decision, not a code change:
