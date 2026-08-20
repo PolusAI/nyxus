@@ -128,8 +128,26 @@ A full-feature oracle for this family would be `wndcharm` (SPEC §4 names it as 
 oracle for the Nyxus-original features); it is not built in this tree, and the gap is recorded in
 `not_covered.md`.
 
+## radial.shape2d_native
+- The 8x8 `shape2d_morphology_{mask,intensity}` fixture (`test_data.h`) at `make_shape2d_settings()`,
+  one 26-pixel concave ROI with an interior hole. `RadialDistributionFeature` reads the ROI contour,
+  so `ContourFeature` runs first; nothing else in the shape set feeds it. Oracles: none - the family
+  is regression-only. Used by: `test_2d_radial_{regression,invariant,mechanics}.h`.
+- The three features are 8-entry vectors and every entry is pinned; the whole table is decided by the
+  ROI, the centre pixel and the normalising radius, which `test_2d_radial_mechanics.h` pins.
+
 ## radial.cellprofiler_8bin
-- CellProfiler `MeasureObjectIntensityDistribution`, 8 radial bins/slices. Oracle: `cellprofiler`.
+- CellProfiler `MeasureObjectIntensityDistribution` on the same fixture: `center_choice="These
+  objects"`, `bin_count=8`, `wants_scaled=True`, Zernikes off. Oracle: `cellprofiler`.
+- **Run 2026-08-20 and it does not vet the family.** Nyxus computes a different quantity under each
+  of the three `RadialDistribution_*` names, and 21 of the 24 (feature x bin) values disagree by more
+  than 1%. The recipe is kept because it is the configuration that was tried and the one to re-try
+  after the source divergences are resolved; the six of them are in
+  `tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md` and the run is
+  `tests/vetting/oracles/gen_radial_cellprofiler.py`.
+- The fixture's distance-to-edge maximum is attained by 8 of its 26 pixels, and CellProfiler's centre
+  is that maximum, so CellProfiler's own answer moves with the label image's padding. A tie-free ROI
+  is a precondition for this recipe ever vetting anything.
 
 ## morphology.shape2d_native
 - The 8x8 `shape2d_morphology_{mask,intensity}` fixture (`test_data.h`) at
