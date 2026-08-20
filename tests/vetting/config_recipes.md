@@ -266,6 +266,38 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `GLSZM_HGLZE` is 16.44 here and 1497.57 there on the same fixture. Those values are drift-pinned
   only, in `test_2d_glszm_regression.h`, and no oracle row claims them.
 
+## neighbor.scene2d_radius1
+- The `neighborhood2d_scene_labels` fixture (`test_data.h`): five labelled ROIs in one scene, built
+  into a `roiData` map with basic-morphology and contour features computed first, then
+  `NeighborsFeature::manual_reduce`. `PIXELDISTANCE=1`, `PIXELSIZEUM=1`, `XYRES=1`, `IBSI=false`.
+  Oracles: `cellprofiler` and `analytic`. Used by: `test_2d_neighbor_cellprofiler.h`,
+  `test_2d_neighbor_analytic.h`.
+- **Per ROI, never aggregated.** Each of the five ROIs carries its own value for every feature and
+  every one is asserted; there is no scene-level mean to hide behind.
+- CellProfiler reaches this configuration with `MeasureObjectNeighbors`, `distance_method=Adjacent`,
+  `neighbors_are_objects=True`, on the same label image padded by 3 px so no ROI touches the border
+  (CP treats border objects specially). It reproduces Nyxus **exactly** -- residual 0 -- on
+  `NUM_NEIGHBORS` and `CLOSEST_NEIGHBOR1_DIST`. Generator: `oracles/gen_neighbor_cellprofiler.py`.
+- The `analytic` oracle recomputes the six centroid closed forms in numpy: direction angle
+  `degrees(atan2(dy, dx))` mapped into `[0, 360)`, closest/second-closest by centroid distance with
+  ties keeping ascending-label push order, `CLOSEST_NEIGHBOR2_*` = 0 when fewer than two neighbours
+  lie within the radius, SAMPLE (n-1) standard deviation, and mode as the most frequent
+  `round(angle)` bucket with the lowest bucket winning a tie. Agreement 1.2e-16. Generator:
+  `oracles/gen_neighbor_analytic.py`.
+- **Not circular:** the closed forms are evaluated on the neighbour *graph*, and that graph is what
+  CellProfiler vets independently. The analytic oracle supplies the arithmetic, CP supplies the
+  graph.
+- **Two features CP cannot vet, for definitional reasons rather than disagreement.** CP's
+  `AngleBetweenNeighbors` is the angle SUBTENDED at an object by two neighbours, not Nyxus' absolute
+  direction angle; CP's `SecondClosestDistance` ranges over ANY object, whereas Nyxus reports the
+  second-closest neighbour *within the search radius*. Different quantities, so they go to the
+  analytic oracle.
+- **Outside this recipe:** `PERCENT_TOUCHING`. Nyxus counts distinct contour pixels 8-adjacent to a
+  neighbour over contour length; CP counts outline pixels overlapping a `disk(distance+0.5)`-dilated
+  neighbour over perimeter. No CP distance method reproduces it -- measured divergence on 3 of the 5
+  ROIs, up to 33.3 percentage points. Drift-pinned in `test_2d_neighbor_regression.h`, with its
+  construction bounds in `test_2d_neighbor_invariant.h`.
+
 ## glcm3d.pyradiomics_bincount20
 - The compat phantom (`compat_int/compat_int_mri.nii` + `compat_seg/compat_seg_liver.nii`) at
   `GREYDEPTH=100`, `IBSI=false`, `GLCM_GREYDEPTH=-20` (negative activates radiomics binCount-based
