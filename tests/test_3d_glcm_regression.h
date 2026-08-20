@@ -57,18 +57,6 @@ static ref_vals_map<double> glcm_3d_regression_ref_vals
 // build (and with it, the 25 assertions below).
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-// rel=1e-9 by default (full-precision drift guard on Nyxus' own values); rel=1e-6 for INFOMEAS1/2
-// and DIFENTRO, which all route through fast_log10 (3d_glcm.cpp) and lose bits to compiler-specific
-// float rounding -- measured residuals up to rel 3.6e-9 against the pinned goldens, so 1e-9 false-
-// fails on some builds. Matched by substring so both the -100 table's bare names and grey64's _AVE
-// names hit the same rule.
-static double glcm_3d_regression_frac_tolerance (const std::string& feature_name)
-{
-    return (feature_name.find("INFOMEAS1") != std::string::npos ||
-            feature_name.find("INFOMEAS2") != std::string::npos ||
-            feature_name.find("DIFENTRO") != std::string::npos) ? 1.e6 : 1.e9;
-}
-
 // Shared by both regression assert helpers below; only grey_depth/glcm_grey_depth differ between
 // the -100/binCount and +64/matlab_grey_binning profiles. ASSERT_* needs void return, so callers
 // must check ::testing::Test::HasFatalFailure() before touching fvals.
@@ -148,9 +136,10 @@ void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     D3_GLCM_feature f;
     double atot = f.calc_ave(e.roiData[label].fvals[fcode]);
 
-    // verdict, at the per-feature drift band
-    ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals[fname], glcm_3d_regression_frac_tolerance (fname)))
-        << fname;
+    // verdict, at rel=1e-8: a full-precision drift guard on Nyxus' own values, with headroom over
+    // the fast_log10-derived (3d_glcm.cpp) compiler-rounding residuals measured on INFOMEAS1/2 and
+    // DIFENTRO (up to rel 3.6e-9).
+    ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals[fname], 1.e8)) << fname;
 }
 
 // Regenerates every golden in glcm_3d_regression_ref_vals at full precision, in the exact shape the
@@ -401,8 +390,7 @@ static void assert_3d_glcm_feature_grey64_regression (const Nyxus::Feature3D& ex
     const auto& expected = iter->second;
     ASSERT_EQ(expected.size(), actual.size()) << fname;
     for (std::size_t i = 0; i < expected.size(); ++i)
-        EXPECT_TRUE(agrees_gt(actual[i], expected[i], glcm_3d_regression_frac_tolerance(fname)))
-            << fname << "[" << i << "]";
+        EXPECT_TRUE(agrees_gt(actual[i], expected[i], 1.e8)) << fname << "[" << i << "]";
 }
 
 void test_3d_glcm_acor_ave_grey64_regression() { assert_3d_glcm_feature_grey64_regression(Nyxus::Feature3D::GLCM_ACOR_AVE, "3GLCM_ACOR_AVE"); }
