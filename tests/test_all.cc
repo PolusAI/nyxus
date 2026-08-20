@@ -44,6 +44,7 @@
 #include "test_2d_gldzm_mirp.h"
 #include "test_2d_gldzm_regression.h"
 #include "test_2d_glszm_ibsi.h"
+#include "test_2d_glszm_mirp.h"
 #include "test_2d_firstorder_ibsi.h"
 #include "test_2d_firstorder_pyradiomics.h"
 #include "test_2d_ngldm_ibsi.h"
@@ -2211,6 +2212,72 @@ TEST(TEST_NYXUS, TEST_2D_GLSZM_ZV_IBSI) {
 
 TEST(TEST_NYXUS, TEST_2D_GLSZM_ZE_IBSI) {
 	ASSERT_NO_THROW(test_2d_glszm_ze_ibsi());
+}
+
+//***** 2D GLSZM vs mirp *****
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_SAE_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_sae_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_LAE_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_lae_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_LGLZE_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_lglze_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_HGLZE_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_hglze_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_SALGLE_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_salgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_SAHGLE_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_sahgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_LALGLE_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_lalgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_LAHGLE_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_lahgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_GLN_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_gln_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_GLNN_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_glnn_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_SZN_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_szn_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_SZNN_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_sznn_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_ZP_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_zp_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_GLV_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_glv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_ZV_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_zv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_ZE_MIRP) {
+	ASSERT_NO_THROW(test_2d_glszm_ze_mirp());
 }
 
 

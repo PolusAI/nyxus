@@ -8,7 +8,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | token | version | setup | feasibility | one-line |
 |-------|---------|-------|:-----------:|----------|
 | `pyradiomics` | 3.0.1 | **Docker** `radiomics/pyradiomics:latest` (pin by `@sha256`) | high | already in use; pip blocked on Py3.11 |
-| `mirp` | 2.6.0 | **conda** `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy` (venv/pip also works) | high | no Docker needed; full IBSI incl. NGLDM/GLDZM |
+| `mirp` | 2.6.0 | **conda** `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy` (venv/pip also works) | high | no Docker needed; full IBSI incl. NGLDM/GLDZM/GLSZM |
 | `imea` | 0.3.3 | **venv** `pip install imea==0.3.3` + `numpy<1.24` | high (2D only) | 2D morphology; **3D is heightmap, not voxel — unusable for Nyxus 3D** |
 | `feature2djava` | 1.5.0 | **Docker** `wipp/wipp-feature2djava-plugin:1.5.0` (125 MB, exists) | high | NIST/WIPP sibling; intensity + basic shape + Haralick |
 | `radiomicsj` | **2.1.3 / 2.1.18** | **Docker/jar** (Maven → shaded uber-jar; Java 11) | high | **2.1.2 does not exist**; Maven Central only; full IBSI + fractal |
@@ -82,6 +82,11 @@ Gotchas hit while doing it:
   Nyxus writes `LGLE`/`HGLE`, and `perc`/`entr`/`energy` where Nyxus writes `P`/`ENT`/`ENE`
   (`ngl_ldlge` = `NGLDM_LDLGLE`, `ngl_dc_perc` = `NGLDM_DCP`). Map by meaning, not by string
   similarity - the full table is in `audit/ngldm_2d_golden_regen.md`.
+- **The same applies to GLSZM**, under a different set of substitutions: mirp calls the family
+  `szm` and spells "zone size" as `zs` where Nyxus writes `SZN`/`ZV`/`ZE` (`szm_zsnu` =
+  `GLSZM_SZN`, `szm_zs_entr` = `GLSZM_ZE`), and abbreviates the emphases as `lge`/`hge` again
+  (`szm_szlge` = `GLSZM_SALGLE`). Under `by_slice=True` every column is suffixed `_2d`. Full table
+  in `audit/glszm_2d_golden_regen.md`.
 - **PyRadiomics' `binCount` maps to the Nyxus setting of the family being matched, not the generic
   one.** The 3D texture calculators bin on `GLCM_GREYDEPTH` / `GLRLM_GREYDEPTH` / ... and ignore
   `GREYDEPTH` entirely; a negative value activates radiomics binCount-based binning, so
