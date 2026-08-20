@@ -9,6 +9,8 @@
 #include "test_2d_firstorder_regression.h"
 #include "test_2d_firstorder_matlab.h"
 #include "test_2d_intensity_histogram_regression.h"
+#include "test_2d_radial_invariant.h"
+#include "test_2d_radial_mechanics.h"
 #include "test_2d_radial_regression.h"
 #include "test_2d_intensity_histogram_mechanics.h"
 #include "test_2d_intensity_histogram_ibsi.h"
@@ -1179,6 +1181,41 @@ TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_EDGE_INTENSITY_CELLPROFILER)
 TEST(TEST_NYXUS, TEST_2D_RADIAL_DISTRIBUTION_REGRESSION)
 {
 	ASSERT_NO_THROW(test_2d_radial_distribution_regression());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_FRAC_AT_D_IS_A_PARTITION_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_radial_frac_at_d_is_a_partition_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_MEAN_FRAC_IS_WITHIN_THE_ROI_INTENSITY_RANGE_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_radial_mean_frac_is_within_the_roi_intensity_range_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_BIN_MEANS_RECONSTRUCT_THE_ROI_INTENSITY_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_radial_bin_means_reconstruct_the_roi_intensity_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_CV_IS_WITHIN_ITS_BOUND_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_radial_cv_is_within_its_bound_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_CONTOUR_FRAME_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_radial_contour_frame_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_CENTER_AND_RADIUS_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_radial_center_and_radius_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_BIN_INDEX_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_radial_bin_index_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_2D_ZERNIKE_MOMENTS_REGRESSION)
