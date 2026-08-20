@@ -47,6 +47,12 @@ Gotchas hit while doing it:
 - Feeding either tool a numpy array is enough - no file on disk. PyRadiomics wants
   `sitk.GetImageFromArray` with an explicit `SetSpacing`; MIRP takes `image=`/`mask=` arrays
   directly, shaped `(z, y, x)`.
+- **mirp's column suffixes differ per family, so match the stem exactly.** NGLDM columns carry
+  their configuration (`ngl_lde_d1_a0.0_2d`) and have to be matched with a `startswith(stem +
+  "_d1")`; GLDZM columns carry none (`dzm_sde_2d`), because a zone distance is a property of the
+  ROI mask rather than a setting. A generator copied from the NGLDM one and left on the `_d1`
+  prefix match finds no column and raises rather than silently mispinning, but the fix is not
+  obvious from the error.
 - **mirp's per-family numeric settings must be floats.** `ngldm_distance=1` raises
   `TypeError: The ngldm_distance parameter is expected to contain floating point values of 1.0 or
   greater`; pass `1.0`. Same for `ngldm_difference_level`. The message names the parameter, so the

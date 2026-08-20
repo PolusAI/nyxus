@@ -120,6 +120,26 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   `FRACT_DIM_PERIMETER` is cross-method — Nyxus uses a divider walk against FracLac's edge box
   count — so it carries a stated ~3% band, per SPEC 7's "known method divergence" row.
 
+## gldzm.ibsi_phantom_2d
+- The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
+  its own with `IBSI=true` and `GREYDEPTH=128`. Each slice is its own ROI with its own scalar; their
+  mean is what the IBSI "2D, averaged" aggregation publishes. Oracles: `ibsi` (published consensus)
+  and `mirp`. Used by: `test_2d_gldzm_ibsi.h`, `test_2d_gldzm_mirp.h`.
+- mirp reaches this configuration with `by_slice=True` and `base_discretisation_method="none"` (the
+  phantom is already discrete 1..6). GLDZM needs no distance or coarseness parameter — the zone
+  distance is a property of the ROI mask, not a setting. Generator: `oracles/gen_gldzm_mirp.py`.
+- **Both the per-slice values and their mean are pinned.** A mean is blind to errors in two slices
+  that cancel, and on this family that is exactly what happened: the zone-connectivity defect moved
+  slice 1 and left slices 2–4 exact.
+- The two oracles are complementary rather than redundant. The IBSI consensus values are quoted to
+  three significant figures, so that file asserts at `rel=1e-2` (measured worst case 0.35%, on
+  `GLDZM_LDE`: 1.21 published against 1.2142857 computed). mirp reproduces Nyxus to **8.9e-16**, so
+  the mirp file asserts at `rel=1e-9`: IBSI fixes the definition, mirp fixes the digits.
+- `GLDZM_GLM` and `GLDZM_ZDM` are outside this recipe: they are Nyxus mean-style rows with no IBSI
+  GLDZM counterpart and no mirp column, so they stay `regression` in `test_2d_gldzm_regression.h`.
+  `GLDZM_SDLGLE` and `GLDZM_ZDV` are in the recipe but covered by mirp only — the IBSI file never
+  held a published value for either.
+
 ## ngldm.ibsi_phantom_2d
 - The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
   its own with `IBSI=true` and `GREYDEPTH=128`, and the per-feature values averaged over the four.
