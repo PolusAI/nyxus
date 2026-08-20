@@ -30,6 +30,7 @@
 #include "test_2d_neighbor_cellprofiler.h"
 #include "test_2d_neighbor_analytic.h"
 #include "test_initialization_mechanics.h"
+#include "test_feature_manager_mechanics.h"
 #include "test_2d_glcm_ibsi.h"
 #include "test_2d_glcm_pyradiomics.h"
 #include "test_2d_glcm_mirp.h"
@@ -743,6 +744,10 @@ TEST(TEST_NYXUS, TEST_2D_TIFF_LOADER_UINT32_STRIP_MECHANICS)
 
 TEST(TEST_NYXUS, TEST_INITIALIZATION_MECHANICS) {
 	test_initialization_mechanics();
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_MANAGER_MECHANICS) {
+	test_feature_manager_mechanics();
 }
 
 
