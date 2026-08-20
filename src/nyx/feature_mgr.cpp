@@ -84,11 +84,9 @@ bool FeatureManager::check_11_correspondence()
 			}
 	}
 
-	// check the 3D featureset. Feature3D's codes continue numerically right where Feature2D's end
-	// (Feature3D::COV = (int)Feature2D::_COUNT_, featureset.h), so this range picks up exactly
-	// where the loop above leaves off with no overlap and no gap.
+	// check the 3D featureset.
 	// FeatureIMQ is not covered here yet -- tracked separately, see the TODO at its own site below.
-	for (int i_fcode = (int) Nyxus::Feature2D::_COUNT_; i_fcode < (int) Nyxus::Feature3D::_COUNT_; i_fcode++)
+	for (int i_fcode = (int) Nyxus::Feature3D::_FIRST_; i_fcode < (int) Nyxus::Feature3D::_COUNT_; i_fcode++)
 	{
 		int nProviders = 0;
 		for (const auto fm : full_featureset)
