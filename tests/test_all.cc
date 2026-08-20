@@ -34,6 +34,7 @@
 #include "test_2d_glcm_pyradiomics.h"
 #include "test_2d_glcm_mirp.h"
 #include "test_2d_gldm_ibsi.h"
+#include "test_2d_gldm_pyradiomics.h"
 #include "test_2d_glrlm_ibsi.h"
 #include "test_2d_glrlm_pyradiomics.h"
 #include "test_2d_glrlm_mirp.h"
@@ -1766,6 +1767,78 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_SUM_VARIANCE_AVE_REGRESSION)
 TEST(TEST_NYXUS, TEST_2D_GLCM_BUG_OFFSET_DEFAULT_IS_ONE_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_glcm_bug_offset_default_is_one_mechanics());
+}
+
+//***** PyRadiomics tests of 2D GLDM *****
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_SDE_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_sde_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_LDE_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_lde_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_GLN_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_gln_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_DN_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_dn_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_DNN_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_dnn_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_GLV_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_glv_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_DV_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_dv_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_DE_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_de_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_LGLE_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_lgle_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_HGLE_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_hgle_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_SDLGLE_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_sdlgle_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_SDHGLE_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_sdhgle_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_LDLGLE_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_ldlgle_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDM_LDHGLE_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_gldm_ldhgle_pyradiomics());
 }
 
 //***** IBSI tests of GLDM *****
