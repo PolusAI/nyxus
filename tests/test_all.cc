@@ -70,6 +70,7 @@
 #include "test_3d_gldm_pyradiomics.h"
 #include "test_3d_ngtdm_pyradiomics.h"
 #include "test_3d_glrlm_pyradiomics.h"
+#include "test_3d_glrlm_regression.h"
 #include "test_3d_glszm_pyradiomics.h"
 #include "test_3d_coverage_common.h"
 #include "test_3d_firstorder_coverage.h"
@@ -3036,3 +3037,24 @@ TEST(TEST_NYXUS, TEST_3D_GLCM_AVE_EQUIVALENCE_PYRADIOMICS) { ASSERT_NO_THROW(tes
 
 // JVAR had a complete assertion that no TEST() ever called (not_covered.md B.2)
 TEST(TEST_NYXUS, TEST_3D_GLCM_JVAR_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_jvar_pyradiomics()); }
+// 3D GLRLM drift guards on the ut_ segmented phantom. The header forward-declares
+// get_3d_segmented_phantom() rather than defining it, which is what makes it includable here.
+
+TEST(TEST_NYXUS, TEST_3D_GLRLM_SRE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_sre_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LRE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lre_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LGLRE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lglre_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_HGLRE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_hglre_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_SRLGLE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_srlgle_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_SRHGLE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_srhgle_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LRLGLE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lrlgle_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LRHGLE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lrhgle_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_GLN_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_gln_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_GLNN_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_glnn_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RLN_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rln_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RLNN_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rlnn_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RP_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rp_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_GLV_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_glv_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RV_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rv_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_re_regression()); }
+
+TEST(TEST_NYXUS, TEST_3D_GLRLM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_dump_regression()); }
