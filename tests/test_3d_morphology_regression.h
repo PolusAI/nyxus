@@ -18,10 +18,8 @@
 //
 // Regenerate with test_3d_morphology_dump_regression() below.
 //
-// Note 3VOLUME_CONVEXHULL and 3VOXEL_VOLUME appear here as snapshots AND in
-// test_3d_morphology_mirp.h as MIRP-vetted values -- two different claims about the same feature,
-// which SPEC 3 treats as two assertions, not a contradiction. The numbers differ (479997.83 here vs
-// MIRP's 496958.32) precisely because one is Nyxus and the other is not.
+// 3VOLUME_CONVEXHULL and 3VOXEL_VOLUME appear here as snapshots and in the MATLAB and MIRP headers
+// as separate oracle assertions. SPEC 3 treats those as distinct claims, not a contradiction.
 static const ref_vals_map<double> morphology_3d_regression_ref_vals{
     { "3AREA",  59992 },
     { "3AREA_2_VOLUME", 0.21860475559470999 },

@@ -41,9 +41,18 @@ def validate_rows(rows):
     return errs
 
 def coverage_stats(rows):
+    # The registry is one row per assertion, so several oracle rows may cover one feature. Roll up
+    # by (dimension, feature) for the headline metric instead of counting assertion rows as features.
+    rank = {"untested": 0, "regression": 1, "vetted": 2}
+    features = {}
+    for r in rows:
+        key = (r["dim"], r["feature"])
+        if key not in features or rank[r["status"].strip()] > rank[features[key]["status"].strip()]:
+            features[key] = r
+
     fam = {}
     tot = dict(total=0, vetted=0, regression=0, untested=0)
-    for r in rows:
+    for r in features.values():
         st = r["status"].strip()
         tot["total"] += 1; tot[st] = tot.get(st, 0) + 1
         f = fam.setdefault(r["family"], dict(total=0, vetted=0, regression=0, untested=0))
