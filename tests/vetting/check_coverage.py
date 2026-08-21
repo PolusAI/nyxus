@@ -89,7 +89,8 @@ def main(argv=None):
         if errs:
             for e in errs: print("ERROR:", e)
             return 1
-        with open(a.report, "w") as fh: fh.write(render_report(rows))
+        # newline LF: text mode would emit CRLF on Windows, and LF is the repo standard
+        with open(a.report, "w", newline="\n") as fh: fh.write(render_report(rows))
         print(f"wrote {a.report}")
         return 0
     ap.print_help(); return 0
