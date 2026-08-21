@@ -17,7 +17,8 @@ piv = defaultdict(Counter)
 for r in rows:
     piv[r["group"]][r["vetting_status"]] += 1
 with (BASE / "vetting_pivot.csv").open("w", newline="") as f:
-    w = csv.writer(f)
+    w = csv.writer(f, lineterminator="
+")   # default is CRLF; the repo standard is LF
     w.writerow(["group"] + [SHORT[s] for s in STATUSES] + ["total"])
     for g in sorted(piv):
         c = piv[g]

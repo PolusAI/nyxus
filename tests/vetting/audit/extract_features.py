@@ -68,7 +68,8 @@ for dim, ename in [("2D", "Feature2D"), ("3D", "Feature3D"), ("IMQ", "FeatureIMQ
 
 out = Path(__file__).parent / "features.csv"
 with out.open("w", newline="") as f:
-    w = csv.writer(f)
+    w = csv.writer(f, lineterminator="
+")   # default is CRLF; the repo standard is LF
     w.writerow(["dim", "family", "feature"])
     w.writerows(rows)
 

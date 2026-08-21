@@ -136,7 +136,9 @@ for r in feats:
 out = BASE / "vetting_report.csv"
 with out.open("w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=["dim", "group", "family", "feature", "vetting_status",
-                                      "oracle_used", "test_files", "candidate_oracle", "how_to_vet"])
+                                      "oracle_used", "test_files", "candidate_oracle", "how_to_vet"],
+                       lineterminator="
+")   # default is CRLF; the repo standard is LF
     w.writeheader()
     w.writerows(rows)
 
