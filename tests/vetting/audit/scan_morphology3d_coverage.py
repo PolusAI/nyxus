@@ -33,11 +33,6 @@ TESTS = os.path.dirname(VETTING)
 OUT = os.path.join(HERE, "morphology_3d_coverage.csv")
 REGISTRY = os.path.join(VETTING, "oracle_coverage.csv")
 
-# test_3d_morphology_coverage.h instantiates two parameterized suites over the family's featureset, so
-# which features it touches is decided at runtime and cannot be read statically. It establishes no
-# vetting either way (SPEC 1), so it is credited to every feature of the family rather than scanned.
-SWEEP = "test_3d_morphology_coverage.h"
-
 SOURCES = [
     "test_3d_morphology_mirp.h",
     "test_3d_morphology_regression.h",
@@ -73,11 +68,12 @@ NOTE = {
     "3SPHERICAL_DISPROPORTION": "inherits the 3AREA surface-area convention difference",
     "3MESH_VOLUME": "Nyxus aliases this to the convex-hull volume rather than integrating the mesh, "
                     "so it shares 3VOLUME_CONVEXHULL's golden and its 5% band",
-    "3VOLUME_CONVEXHULL": "discrete voxel hull vs MIRP's triangulated qhull volume, measured 3.71%; "
-                          "MATLAB regionprops3 ConvexVolume 497824 corroborates MIRP's 496958 to "
-                          "0.17% but is no longer asserted -- one oracle per assertion",
-    "3VOXEL_VOLUME": "MIRP morph_vol_approx reproduces the voxel count exactly; MATLAB's 274432 "
-                     "agrees and is kept as a corroborating measurement, not a second assertion",
+    "3VOLUME_CONVEXHULL": "discrete voxel hull (479997.83) vs MIRP's triangulated qhull volume, "
+                          "measured 3.41%; MATLAB regionprops3 ConvexVolume 497824 corroborates "
+                          "MIRP's 496958 to 0.17% but is no longer asserted -- one oracle per assertion",
+    "3VOXEL_VOLUME": "both count the same 274432 voxels; Nyxus' ball-packing scale factor leaves "
+                     "2.3e-4%. MATLAB's 274432 agrees with MIRP and is kept as a corroborating "
+                     "measurement, not a second assertion",
     "3MAJOR_AXIS_LEN": "the eigenvalue-order defect that once made LEAST>MAJOR is guarded by the MIRP "
                        "pins and by the generator's identity check",
     "3FLATNESS": "was >1 before the eigenvalue-order fix, which is structurally impossible",
@@ -215,7 +211,7 @@ def disagreements(rows, asserted, oracles, regression, other, where):
     for r in rows:
         f = r["feature"]
         covering = asserted.get(f, set()) | regression.get(f, set()) | other.get(f, set())
-        files = {where[fn] for fn in covering} | {SWEEP}
+        files = {where[fn] for fn in covering}
         claimed = {t for t in r["current_test"].split(";") if t}
         if r["status"] == "vetted" and not asserted.get(f):
             out.append(f"{f}: status=vetted but no oracle test asserts it")

@@ -71,10 +71,10 @@ MIRP = {
 #
 #   3MESH_VOLUME        <- the SAME derived hull volume, and deliberately NOT morph_volume. Nyxus
 #                          aliases 3MESH_VOLUME to the convex-hull volume rather than integrating
-#                          the ROI surface mesh, so against IBSI's volume (mesh) it sits 74% high.
+#                          the ROI surface mesh, so against IBSI's volume (mesh) it sits 75% high.
 #                          Pinning it to morph_volume would encode that gap as agreement; pinning
 #                          it to the hull judges the alias against the quantity the alias actually
-#                          computes. The 74% is reported under CROSSCHECK and filed in
+#                          computes. The 75% is reported under CROSSCHECK and filed in
 #                          tests/vetting/not_covered.md.
 MIRP_VOLUME_SOURCES = ("morph_vol_approx", "morph_volume", "morph_vol_dens_conv_hull")
 
@@ -102,7 +102,7 @@ def volume_pins(extra):
 CROSSCHECK = [
     ("morph_vol_approx", "3VOXEL_VOLUME, and MATLAB regionprops3 Volume"),
     ("morph_volume", "IBSI volume (mesh); Nyxus 3MESH_VOLUME is aliased to the hull volume and reads "
-                     "74% above this -- filed in not_covered.md, not absorbed by a band"),
+                     "75% above this -- filed in not_covered.md, not absorbed by a band"),
     ("morph_vol_dens_conv_hull", "volume / convex-hull volume -> back out the hull volume"),
     ("morph_area_mesh", "3AREA, but marching-cubes mesh area vs Nyxus' exposed-voxel-face count"),
     ("morph_sphericity", "3SPHERICITY (inherits the area convention)"),

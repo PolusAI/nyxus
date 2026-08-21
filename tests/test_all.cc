@@ -73,7 +73,6 @@
 #include "test_3d_glszm_pyradiomics.h"
 #include "test_3d_coverage_common.h"
 #include "test_3d_firstorder_coverage.h"
-#include "test_3d_morphology_coverage.h"
 #include "test_3d_gldm_coverage.h"
 #include "test_3d_gldzm_coverage.h"
 #include "test_3d_glrlm_coverage.h"
@@ -594,6 +593,10 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOLUME_CONVEX_HULL_REGRESSION) {
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_morphology_voxel_volume_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_DUMP_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_morphology_dump_regression());
 }
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COVMATRIX_AND_EIGENVALS_MECHANICS) {

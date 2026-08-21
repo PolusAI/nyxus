@@ -15,7 +15,7 @@ two volume rows a reference that can actually be re-run from this tree.
 | Nyxus config | `D3_SurfaceFeature`, `IBSI=true`, `GREYDEPTH=128`, `PIXELSIZEUM=100` (what `test_3d_morphology_common.h` sets) |
 | Generator | `tests/vetting/oracles/gen_morphology3d_mirp.py` |
 | Test | `test_3d_morphology_mirp.h` |
-| Tolerance | axes `rel=1e-9`; volumes measured per feature — `3VOXEL_VOLUME` 0.1% band on a 0 residual, `3VOLUME_CONVEXHULL` 5% band on a measured 3.71% |
+| Tolerance | axes `rel=1e-9`; volumes measured per feature — `3VOXEL_VOLUME` 0.1% band on a measured 2.3e-4%, `3VOLUME_CONVEXHULL` 5% band on a measured 3.41% |
 
 Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
 `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
@@ -103,8 +103,8 @@ volume_convex_hull,mesh_volume}_mirp` assert them, and `gen_morphology3d_mirp.py
 every run (8 pins, all at rel=0). The MATLAB session cannot be repeated, but the *values* it produced
 are now reproducible from the tree — which is what SPEC §6.4 is protecting.
 
-That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 478516, which is 3.88% from
-MATLAB and 3.71% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
+That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 479997.83, which is 3.58% from
+MATLAB and 3.41% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
 a **discrete voxel hull against two independently triangulated ones** — and that sentence is the
 citation SPEC §7 asks for behind the 5% band: a definitional difference between a voxelised and a
 triangulated hull, measured against two tools rather than asserted.
@@ -113,20 +113,20 @@ triangulated hull, measured against two tools rather than asserted.
 
 The same run says something the MATLAB comparison alone could not. MIRP reports IBSI's volume (mesh)
 as `morph_volume` = **274338.34** — a surface-mesh integral, necessarily close to the voxel volume
-274432 for a solid ROI. Nyxus' `3MESH_VOLUME` reports **478516**, the convex-hull volume, because the
+274432 for a solid ROI. Nyxus' `3MESH_VOLUME` reports **479997.83**, the convex-hull volume, because the
 implementation aliases the two:
 
 | quantity | value | vs Nyxus `3MESH_VOLUME` |
 |---|---|---|
-| IBSI volume (mesh), MIRP `morph_volume` | 274338.34 | **74% low** |
-| convex-hull volume, MIRP | 496958.32 | 3.7% |
-| Nyxus `3MESH_VOLUME` | 478516 | — |
+| IBSI volume (mesh), MIRP `morph_volume` | 274338.34 | **75% low** |
+| convex-hull volume, MIRP | 496958.32 | 3.5% |
+| Nyxus `3MESH_VOLUME` | 479997.83 | — |
 
 So the feature is measuring a hull, under a name that says mesh, and the MATLAB pin it used to carry
 (`ConvexVolume`, 497824) was consistent only because the same alias was applied when the golden was
 chosen. Its MIRP golden is the hull volume for exactly that reason: the assertion judges the alias
 against the quantity the alias computes, and pinning it against `morph_volume` instead would encode a
-74% miss as agreement. The naming/definition gap is filed as a defect for its own branch, not
+75% miss as agreement. The naming/definition gap is filed as a defect for its own branch, not
 absorbed by the 5% band.
 
 ## The surface-area convention gap stays open
@@ -155,8 +155,9 @@ The family is four headers plus the new one. There is no pytest case for 3D morp
   `features/pixel.h` nor `helpers/helpers.h`, and used `std::abs`/`std::vector` without `<cmath>` or
   `<vector>`. All added.
 - **`test_3d_morphology_regression.h`** relied transitively on `<string>`. Added.
-- **`test_3d_morphology_coverage.h`** keeps its single include of `test_3d_coverage_common.h`, as all
-  eight 3D `_coverage.h` files do; SPEC §6.3.1 sanctions a `_common.h` for fixture scaffolding.
+- **`test_3d_morphology_coverage.h`** kept its single include of `test_3d_coverage_common.h`, as the
+  3D `_coverage.h` files do; SPEC §6.3.1 sanctions a `_common.h` for fixture scaffolding. That file
+  has since been retired — see `morphology_3d_golden_regen.md`, “The retired coverage sweep”.
 - Three headers carried "Migrated from test_3d_shape.h (Wave 8)" provenance and a paragraph on which
   functions used to live where. That is history, which `revet` step 6 puts in this report rather than
   in the test files; trimmed to current-state descriptions.

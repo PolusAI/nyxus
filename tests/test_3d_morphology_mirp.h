@@ -1,18 +1,16 @@
 #pragma once
 
-#include <cmath>
-#include "test_3d_morphology_common.h"
-#include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
+#include "test_3d_morphology_common.h"   // the fixture, and the <cmath> test_main_nyxus.h brings with it
+#include "test_ref_vals.h"               // ref_vals_map, and the <string> / <vector> it already includes
 
 // ---------------------------------------------------------------------------------------------------
 // MIRP-oracle'd 3D morphology: the five PCA axis features and the three volume features (registry:
 // mirp / vetted). Shared fixture lives in test_3d_morphology_common.h.
 //
-// MIRP is the family's only oracle. The three volume rows were pinned from an offline MATLAB
-// regionprops3 session until this file took them over: MATLAB agreed, but it cannot be re-run from
-// this tree -- no licence here, and Octave's image package has no regionprops3 -- so every golden
-// rested on a session nobody could repeat. Keeping both tools would also have left two oracles
-// claiming the same feature value, which SPEC 3 does not allow: one oracle per assertion.
+// MIRP is the family's only oracle: it is runnable from this tree (gen_morphology3d_mirp.py), and
+// SPEC 3 allows one oracle per assertion, so the MATLAB regionprops3 numbers quoted below are a
+// corroborating measurement and nothing asserts against them. Why MATLAB is not the oracle here:
+// tests/vetting/audit/morphology_3d_golden_regen.md, "Retired: the MATLAB goldens".
 // ---------------------------------------------------------------------------------------------------
 
 // ORACLE goldens -- MIRP morphology (IBSI section 3.1 `morph_*`).
@@ -32,7 +30,7 @@
 // marching-cubes mesh area while Nyxus' 3AREA counts exposed voxel faces (46739 against 59992), and
 // the area-derived features inherit that convention difference. They stay regression-only -- see
 // tests/vetting/audit/morphology_3d_mirp_vetting_report.md.
-static ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
+static const ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
 {
     { "3ELONGATION", 0.8433210559938976 },      // morph_pca_elongation
     { "3FLATNESS", 0.6829975804590384 },        // morph_pca_flatness
@@ -55,14 +53,18 @@ static ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
 //
 // Measured on this fixture:
 //
-//   feature              Nyxus     MIRP        MATLAB regionprops3   Nyxus vs MIRP
-//   3VOXEL_VOLUME        274432    274432      274432               0
-//   3VOLUME_CONVEXHULL   478516    496958.3    497824               3.71%
-//   3MESH_VOLUME         478516    496958.3    497824               3.71%   (the same hull number --
-//                                                                            see the alias note below)
+//   feature              Nyxus       MIRP        MATLAB regionprops3   Nyxus vs MIRP
+//   3VOXEL_VOLUME        274431.36   274432      274432               2.3e-4%
+//   3VOLUME_CONVEXHULL   479997.83   496958.3    497824               3.41%
+//   3MESH_VOLUME         479997.83   496958.3    497824               3.41%   (the same hull number --
+//                                                                              see the alias note below)
+//
+// Both tools count the same 274432 voxels; Nyxus' 3VOXEL_VOLUME then scales the count by
+// 4/3*pi*r^3 / 0.5236 (a cubic-lattice ball-packing correction that is 1 to within 2.3e-6), which is
+// the whole of that first residual.
 //
 // The two independent triangulated hulls (MIRP's qhull, MATLAB's) agree with each other to 0.17%,
-/// and Nyxus sits 3.71% below MIRP and 3.88% below regionprops3 -- because Nyxus builds a DISCRETE
+// and Nyxus sits 3.41% below MIRP and 3.58% below regionprops3 -- because Nyxus builds a DISCRETE
 // VOXEL hull and they triangulate.
 // That is the citation behind this file's 5% band: it is a definitional difference between a
 // voxelised and a triangulated hull, measured against two tools rather than one, not slack absorbing
@@ -72,11 +74,11 @@ static ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
 // 3MESH_VOLUME is pinned against that same convex-hull number, because the hull volume is what the
 // feature computes: Nyxus aliases MESH_VOLUME to the convex-hull volume instead of integrating the
 // ROI surface mesh. Judged against IBSI's volume (mesh) -- MIRP morph_volume, 274338.34 here -- it
-// reads 74% high, and that gap is NOT absorbed by the band below; it is filed as a defect in
+// reads 75% high, and that gap is NOT absorbed by the band below; it is filed as a defect in
 // tests/vetting/not_covered.md. So the assertion judges the alias against the quantity the alias
 // actually computes, and says nothing about the feature deserving its name. The registry row records
 // the same, and if 3MESH_VOLUME ever becomes a real mesh integral this golden must be revisited.
-static ref_vals_map<double> morphology_3d_mirp_volume_ref_vals
+static const ref_vals_map<double> morphology_3d_mirp_volume_ref_vals
 {
     { "3VOXEL_VOLUME", 274432.0 },               // morph_vol_approx
     { "3VOLUME_CONVEXHULL", 496958.3201121965 }, // morph_volume / morph_vol_dens_conv_hull
@@ -84,13 +86,13 @@ static ref_vals_map<double> morphology_3d_mirp_volume_ref_vals
 };
 
 // Bands as the percent relative_absdiff may reach, measured per feature (SPEC 7).
-static ref_vals_map<double> morphology_3d_mirp_volume_ref_tols
+static const ref_vals_map<double> morphology_3d_mirp_volume_ref_tols
 {
-    // identical definition, exact agreement measured
+    // same voxel count on both sides, 2.3e-4% left by the ball-packing scale factor; band 0.1%
     { "3VOXEL_VOLUME", 0.1 },
-    // voxel hull against triangulated hull, measured 3.71%; band 5%
+    // voxel hull against triangulated hull, measured 3.41%; band 5%
     { "3VOLUME_CONVEXHULL", 5.0 },
-    // the alias inherits the hull convention and the same measured 3.71%
+    // the alias inherits the hull convention and the same measured 3.41%
     { "3MESH_VOLUME", 5.0 }
 };
 
@@ -103,11 +105,11 @@ static void assert_3d_morphology_volume_mirp (const std::string& fname, const Ny
     double actual = 0.0;
     calculate_3d_morphology_feature_value (fname, expecting_fcode, actual);
 
-    const double expected = morphology_3d_mirp_volume_ref_vals[fname];
+    const double expected = morphology_3d_mirp_volume_ref_vals.at(fname);
     const double pct = 100.0 * std::abs(actual - expected) / std::abs(expected);
-    ASSERT_LE(pct, morphology_3d_mirp_volume_ref_tols[fname])
+    ASSERT_LE(pct, morphology_3d_mirp_volume_ref_tols.at(fname))
         << fname << " actual=" << actual << " mirp=" << expected
-        << " band=" << morphology_3d_mirp_volume_ref_tols[fname] << "%";
+        << " band=" << morphology_3d_mirp_volume_ref_tols.at(fname) << "%";
 }
 
 void test_3d_morphology_voxel_volume_mirp() {
@@ -134,8 +136,8 @@ static void assert_3d_morphology_feature_mirp (const std::string& fname, const N
     double actual = 0.0;
     calculate_3d_morphology_feature_value (fname, expecting_fcode, actual);
 
-    ASSERT_TRUE(agrees_gt(actual, morphology_3d_mirp_pca_ref_vals[fname], 1e9))
-        << fname << " actual=" << actual << " mirp=" << morphology_3d_mirp_pca_ref_vals[fname];
+    ASSERT_TRUE(agrees_gt(actual, morphology_3d_mirp_pca_ref_vals.at(fname), 1e9))
+        << fname << " actual=" << actual << " mirp=" << morphology_3d_mirp_pca_ref_vals.at(fname);
 }
 
 void test_3d_morphology_major_axis_len_mirp() {
