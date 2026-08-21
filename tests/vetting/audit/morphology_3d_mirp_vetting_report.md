@@ -15,7 +15,7 @@ two volume rows a reference that can actually be re-run from this tree.
 | Nyxus config | `D3_SurfaceFeature`, `IBSI=true`, `GREYDEPTH=128`, `PIXELSIZEUM=100` (what `test_3d_morphology_common.h` sets) |
 | Generator | `tests/vetting/oracles/gen_morphology3d_mirp.py` |
 | Test | `test_3d_morphology_mirp.h` |
-| Tolerance | axes `rel=1e-9`; volumes measured per feature — `3VOXEL_VOLUME` 0.1% band on a measured 2.3e-4%, `3VOLUME_CONVEXHULL` 5% band on a measured 3.41% |
+| Tolerance | axes `rel=1e-9`; volumes measured per feature — `3VOXEL_VOLUME` 0.1% band on a measured 2.338e-04% residual, `3VOLUME_CONVEXHULL` 5% band on a measured 3.41% |
 
 Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
 `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
@@ -74,24 +74,20 @@ comparing the other two against MATLAB was the parameterized sweep in
 `test_3d_morphology_coverage.h`, whose case names carry no oracle token, so the vetting claim rested
 on a test that does not say what it is checking (SPEC §6.2).
 
-The report generator misses this for the same reason it missed two rows in 2D morphology: a feature
+The report generator missed this for the same reason it missed two rows in 2D morphology: a feature
 name appearing in an oracle file counts as coverage, whether an assertion reads it or only a table
-does. Both are now asserted by name — against MIRP, in `test_3d_morphology_mirp.h`, for the reason
-the next section gives.
+does. Both are now asserted by name, separately against MATLAB and MIRP, in their oracle headers.
 
-## MATLAB cannot be re-run — so MIRP replaces it
+## MATLAB and MIRP provide separate oracle assertions
 
 Three rows claimed `oracle=matlab`, and `revet` step 3 says to run every oracle the family claims.
-That is not possible here: there is no MATLAB licence, and Octave's `image` package has no
-`regionprops3`. The goldens had no in-repo generator either, which is the SPEC §6.4 gap tracked in
-`not_covered.md` §C.
+MATLAB is not available in CI, and Octave's `image` package has no `regionprops3`. The checked-in
+`tests/vetting/oracles/gen_morphology3d_matlab.m` now makes the comparison reproducible with licensed
+MATLAB R2026a and Image Processing Toolbox.
 
-What is possible is a reference from a tool that computes the same quantities and *is* runnable from
-the tree. All three volume rows now read `oracle=mirp` and are asserted in `test_3d_morphology_mirp.h`;
-`test_3d_morphology_matlab.h` is gone. Keeping both would also have left two oracles asserting one
-feature value, which SPEC §3 does not allow — one oracle per assertion — and the one to keep is the
-one the tree can re-run. The MATLAB numbers stay in the header as the corroborating measurement they
-are:
+The three MATLAB values are pinned and asserted in `test_3d_morphology_matlab.h`. MIRP computes the
+same quantities and is asserted separately in `test_3d_morphology_mirp.h`. The registry therefore
+has two rows for each of these feature/config pairs, one per reference, as SPEC §3 permits:
 
 | quantity | MIRP | MATLAB golden | agreement |
 |---|---|---|---|
@@ -100,12 +96,14 @@ are:
 
 `morphology_3d_mirp_volume_ref_vals` holds all three, `test_3d_morphology_{voxel_volume,
 volume_convex_hull,mesh_volume}_mirp` assert them, and `gen_morphology3d_mirp.py` re-derives them on
-every run (8 pins, all at rel=0). The MATLAB session cannot be repeated, but the *values* it produced
-are now reproducible from the tree — which is what SPEC §6.4 is protecting.
+every run (8 pins, all at rel=0). The MATLAB generator produces its two built-in quantities
+(`Volume` and `ConvexVolume`) directly from the
+[`PolusAI/nyxus` main fixture](https://github.com/PolusAI/nyxus/blob/main/tests/data/nifti/phantoms/ut_mask57.nii),
+and the three MATLAB-named tests assert those pins against Nyxus.
 
 That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 479997.83, which is 3.58% from
 MATLAB and 3.41% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
-a **discrete voxel hull against two independently triangulated ones** — and that sentence is the
+a **discrete voxel hull against two separately triangulated ones** — and that sentence is the
 citation SPEC §7 asks for behind the 5% band: a definitional difference between a voxelised and a
 triangulated hull, measured against two tools rather than asserted.
 
@@ -143,7 +141,7 @@ which changes six public feature values and belongs on its own branch.
 
 ## Include hygiene and file-level observations
 
-The family is four headers plus the new one. There is no pytest case for 3D morphology.
+The family uses five current headers. There is no pytest case for 3D morphology.
 
 - **`test_3d_morphology_common.h` carried a dead `#if 0` block** — an entire superseded copy of the
   fixture, ending in a line of `*********************************` that is not valid C++ and only
@@ -151,9 +149,9 @@ The family is four headers plus the new one. There is no pytest case for 3D morp
   `test_ref_vals.h` while declaring no reference table (they were moved out to the per-oracle files),
   and relied transitively on `<string>`, `<tuple>`, `<vector>` and `helpers/fsystem.h` for `fs::exists`;
   the unused include is dropped and the four used ones are now direct.
-- **`test_3d_morphology_matlab.h`** names `Pixel3` and `Nyxus::calc_eigvals` but included neither
-  `features/pixel.h` nor `helpers/helpers.h`, and used `std::abs`/`std::vector` without `<cmath>` or
-  `<vector>`. All added.
+- **`test_3d_morphology_matlab.h`** now contains only the three feature assertions supported by
+  `regionprops3` (`Volume` and `ConvexVolume`). The former covariance/eigenvalue helper check lives
+  in `test_3d_morphology_mechanics.h` and is not presented as MATLAB feature vetting.
 - **`test_3d_morphology_regression.h`** relied transitively on `<string>`. Added.
 - **`test_3d_morphology_coverage.h`** kept its single include of `test_3d_coverage_common.h`, as the
   3D `_coverage.h` files do; SPEC §6.3.1 sanctions a `_common.h` for fixture scaffolding. That file

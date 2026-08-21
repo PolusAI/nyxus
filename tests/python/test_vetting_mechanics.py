@@ -54,6 +54,7 @@ def test_vetting_unquoted_comma_row_flagged_mechanics(tmp_path):
 def test_vetting_coverage_stats_and_report_mechanics(tmp_path):
     path = _write(tmp_path, [
         {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"pyradiomics"},
+        {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"matlab"},
         {"dim":"2D","feature":"B","family":"glcm","status":"regression","oracle":""},
         {"dim":"2D","feature":"C","family":"moments","status":"untested","oracle":""},
     ])

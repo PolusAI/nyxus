@@ -5,8 +5,8 @@
 The feature -> test mapping is read out of the test sources rather than written by hand, so the
 artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
 acceptance check from the family plan: every `vetted` row in oracle_coverage.csv must be asserted by
-an oracle test, that test's oracle must be the one the row names, and `current_test` must name
-exactly the files that cover the feature.
+an oracle test, that test's oracle must be the one the row names, and the union of a feature's
+`current_test` fields must name exactly the files that cover it.
 
 Coverage rule: a feature is covered by a test function when its name appears on an ASSERTION line in
 that function, or in a golden table that a function loops over while asserting. Comments are
@@ -34,6 +34,7 @@ OUT = os.path.join(HERE, "morphology_3d_coverage.csv")
 REGISTRY = os.path.join(VETTING, "oracle_coverage.csv")
 
 SOURCES = [
+    "test_3d_morphology_matlab.h",
     "test_3d_morphology_mirp.h",
     "test_3d_morphology_regression.h",
 ]
@@ -43,7 +44,7 @@ SOURCES = [
 # sits outside any loop.
 TABLE_OWNER = {}
 
-ORACLE_SUFFIX = {"mirp": "mirp"}
+ORACLE_SUFFIX = {"matlab": "matlab", "mirp": "mirp"}
 
 FUNC = re.compile(r"^(?:void|def)\s+(test_\w+)|^\s+def\s+(test_\w+)", re.M)
 # A module-level helper in the pytest files, e.g. `def _fd(label)`. The python tests read the
@@ -66,14 +67,14 @@ NOTE = {
     "3COMPACTNESS2": "inherits the 3AREA surface-area convention difference",
     "3SPHERICITY": "inherits the 3AREA surface-area convention difference",
     "3SPHERICAL_DISPROPORTION": "inherits the 3AREA surface-area convention difference",
-    "3MESH_VOLUME": "Nyxus aliases this to the convex-hull volume rather than integrating the mesh, "
-                    "so it shares 3VOLUME_CONVEXHULL's golden and its 5% band",
+    "3MESH_VOLUME": "Nyxus aliases this to the convex-hull volume rather than integrating the mesh; "
+                    "MIRP and MATLAB separately assert the hull quantity at a 5% band",
     "3VOLUME_CONVEXHULL": "discrete voxel hull (479997.83) vs MIRP's triangulated qhull volume, "
-                          "measured 3.41%; MATLAB regionprops3 ConvexVolume 497824 corroborates "
-                          "MIRP's 496958 to 0.17% but is no longer asserted -- one oracle per assertion",
-    "3VOXEL_VOLUME": "both count the same 274432 voxels; Nyxus' ball-packing scale factor leaves "
-                     "2.3e-4%. MATLAB's 274432 agrees with MIRP and is kept as a corroborating "
-                     "measurement, not a second assertion",
+                          "measured 3.41%; MATLAB regionprops3 separately asserts ConvexVolume "
+                          "497824 at 3.58%; "
+                          "the two oracles agree with each other to 0.17%",
+    "3VOXEL_VOLUME": "MIRP morph_vol_approx and MATLAB Volume both report 274432; each separately "
+                     "asserts Nyxus 274431.358260 within rel=1e-3 (2.338e-04% residual)",
     "3MAJOR_AXIS_LEN": "the eigenvalue-order defect that once made LEAST>MAJOR is guarded by the MIRP "
                        "pins and by the generator's identity check",
     "3FLATNESS": "was >1 before the eigenvalue-order fix, which is structurally impossible",
@@ -177,7 +178,12 @@ def render(rows, asserted, oracles, regression, other):
     w = csv.writer(buf, lineterminator="\n")
     w.writerow(["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
                 "Regression", "Reg_Test_Name", "Notes"])
+    # The assertion registry may carry several oracle rows for one feature; this artifact is a
+    # feature rollup, so emit the feature once with all oracle functions/tokens joined.
+    features = {}
     for r in rows:
+        features.setdefault(r["feature"], r)
+    for r in features.values():
         f = r["feature"]
         notes = [NOTE[f]] if f in NOTE else []
         # A function whose name-suffix is neither an oracle nor `regression` contributes coverage but
@@ -208,19 +214,32 @@ def unregistered_tests(where):
 
 def disagreements(rows, asserted, oracles, regression, other, where):
     out = []
+    claimed_by_feature = {}
     for r in rows:
         f = r["feature"]
         covering = asserted.get(f, set()) | regression.get(f, set()) | other.get(f, set())
         files = {where[fn] for fn in covering}
         claimed = {t for t in r["current_test"].split(";") if t}
+        claimed_by_feature.setdefault(f, set()).update(claimed)
         if r["status"] == "vetted" and not asserted.get(f):
             out.append(f"{f}: status=vetted but no oracle test asserts it")
         if r["oracle"] and r["oracle"] not in oracles.get(f, set()):
             out.append(f"{f}: registry oracle={r['oracle']!r} but the tests asserting it are "
                        f"{sorted(oracles.get(f, ())) or 'none'}")
+        if r["oracle"]:
+            oracle_files = {
+                where[fn] for fn in asserted.get(f, set())
+                if ORACLE_SUFFIX.get(fn.rsplit("_", 1)[-1]) == r["oracle"]
+            }
+            if oracle_files and not (claimed & oracle_files):
+                out.append(f"{f}: oracle={r['oracle']!r} row omits its assertion file "
+                           f"{sorted(oracle_files)}")
         for stale in sorted(claimed - files):
             out.append(f"{f}: current_test names {stale}, which covers nothing for it")
-        for gap in sorted(files - claimed):
+    for f in {r["feature"] for r in rows}:
+        covering = asserted.get(f, set()) | regression.get(f, set()) | other.get(f, set())
+        files = {where[fn] for fn in covering}
+        for gap in sorted(files - claimed_by_feature.get(f, set())):
             out.append(f"{f}: {gap} covers it but current_test omits it")
     return out
 
@@ -245,12 +264,13 @@ def main(argv=None):
                 problems.insert(0, f"{os.path.basename(OUT)} is stale; rerun without --check")
         for p in problems:
             print("ERROR:", p)
-        print(f"checked {len(rows)} rows: {'clean' if not problems else str(len(problems)) + ' problem(s)'}")
+        feature_count = len({r["feature"] for r in rows})
+        print(f"checked {feature_count} features: {'clean' if not problems else str(len(problems)) + ' problem(s)'}")
         return 1 if problems else 0
 
     with open(OUT, "w", newline="", encoding="utf-8") as fh:
         fh.write(text)
-    print(f"wrote {OUT} ({len(rows)} rows)")
+    print(f"wrote {OUT} ({len({r['feature'] for r in rows})} feature rows)")
     for p in problems:
         print("WARNING:", p)
     return 0
