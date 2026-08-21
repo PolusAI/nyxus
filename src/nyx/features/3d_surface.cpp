@@ -495,10 +495,10 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 	double L[3];
 	if (Nyxus::calc_eigvals(L, K))
 	{
-		// FIX: calc_eigvals returns L sorted DESCENDING (L[0] largest). The axis lengths were indexed
-		// wrong (MAJOR<-L[1], MINOR<-L[2], LEAST<-L[0]), producing LEAST>MAJOR and FLATNESS>1 (both
-		// structurally impossible). Correct mapping: MAJOR<-L[0] (largest), MINOR<-L[1], LEAST<-L[2];
-		// ELONGATION=MINOR/MAJOR=sqrt(L[1]/L[0]), FLATNESS=LEAST/MAJOR=sqrt(L[2]/L[0]). Matches MIRP/IBSI.
+		// calc_eigvals returns L sorted DESCENDING, so L[0] belongs to the major axis and L[2] to the
+		// least. Indexing them in that order is what makes MAJOR >= MINOR >= LEAST > 0 hold, and with
+		// it ELONGATION = MINOR/MAJOR and FLATNESS = LEAST/MAJOR in [0,1]. Same definitions as IBSI
+		// and MIRP; the pins are in tests/test_3d_morphology_mirp.h.
 		fval_MAJOR_AXIS_LEN = 4.0 * sqrt(L[0]);
 		fval_MINOR_AXIS_LEN = 4.0 * sqrt(L[1]);
 		fval_LEAST_AXIS_LEN = 4.0 * sqrt(L[2]);
