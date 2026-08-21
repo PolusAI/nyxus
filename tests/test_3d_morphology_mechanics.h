@@ -1,7 +1,9 @@
 #pragma once
 
-#include "test_3d_morphology_common.h"   // gtest, <string>, <vector>, Pixel3, calc_eigvals
-#include "test_ref_vals.h"               // ref_vals_list
+#include "../src/nyx/features/pixel.h"   // Pixel3
+#include "../src/nyx/helpers/helpers.h"   // Nyxus::calc_eigvals
+#include "test_3d_morphology_common.h"    // gtest, <string>, <vector>, agrees_gt
+#include "test_ref_vals.h"                // ref_vals_list
 
 // Kernel mechanics for the 3D shape maths: the covariance matrix of a point cloud and its
 // eigenvalues, checked directly rather than through a feature. Nothing here reads an image or names
@@ -15,17 +17,11 @@
 //   quantity  = numpy.cov(cloud.T, ddof=1) and numpy.linalg.eigvalsh, sorted descending
 //   generator = tests/vetting/oracles/gen_morphology3d_covmatrix_numpy.py (re-verifies every pin)
 //
-// These goldens were MATLAB `cov`/`eig` output quoted to five significant figures, from a session
-// that cannot be re-run from this tree. numpy computes the same two quantities -- `calc_covariance`
-// normalises by n-1, which is the sample covariance both MATLAB `cov` and numpy `ddof=1` compute --
-// so the reference is now reproducible and carries full precision instead of five digits. The
-// numbers agree with the MATLAB ones they replace at every digit MATLAB printed.
-//
-// The band matters here. The old assertions passed `frac_tolerance = 1.0` to agrees_gt(), which
-// makes the tolerance the ground truth itself: every one of the twelve comparisons accepted any
-// value within +/-100%, so a covariance off by a factor of two -- or a normalisation switched from
-// n-1 to n, which moves these entries by 10% -- would have passed. They are pinned at rel=1e-9
-// below, which is what the arithmetic actually delivers.
+// `calc_covariance` normalises by n-1, so the quantity is the sample covariance, which is what both
+// numpy `ddof=1` and MATLAB `cov` compute -- the reference is the same quantity, not a near one.
+// The twelve pins carry full precision and are asserted at rel=1e-9, which is what the arithmetic
+// delivers: a 1e-7 relative perturbation of one eigenvalue fails the test. Where this reference
+// came from: tests/vetting/audit/morphology_3d_golden_regen.md, "Covariance / eigenvalue kernel".
 
 // The point cloud under test: ten voxels, layout X, Y, Z, intensity. Intensity is uniform because
 // calc_cov_matrix is a geometric moment of the coordinates and does not read it.
