@@ -166,10 +166,22 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   `base_discretisation_method="none"`). Used by: `test_3d_morphology_mirp.h`.
 - Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
   `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
-- Covers the five PCA axis features only (`morph_pca_*`). The rest of MIRP's `morph_*` block is not
-  comparable: `morph_area_mesh` is a marching-cubes mesh area where Nyxus' `3AREA` counts exposed
-  voxel faces, so `3AREA` and the five features derived from it stay on
-  `morphology3d.regression_ut_phantom`.
+- Covers the five PCA axis features (`morph_pca_*`), `3VOXEL_VOLUME` (`morph_vol_approx`), and the
+  convex-hull quantity used by `3VOLUME_CONVEXHULL` and the current `3MESH_VOLUME` alias
+  (`morph_volume / morph_vol_dens_conv_hull`). `morph_area_mesh` is not comparable to `3AREA`:
+  MIRP integrates a marching-cubes mesh while Nyxus counts exposed voxel faces, so `3AREA` and its
+  five derived features stay on `morphology3d.regression_ut_phantom`.
+
+## morphology3d.matlab_regionprops3
+- The same segmented phantom and Nyxus settings as `morphology3d.mirp_ibsi`. MATLAB Image Processing
+  Toolbox reads `ut_mask57.nii`, selects label 57, and calls
+  `regionprops3(mask == 57, 'Volume', 'ConvexVolume')` at native 1×1×1 spacing.
+- `Volume` verifies `3VOXEL_VOLUME`; `ConvexVolume` verifies `3VOLUME_CONVEXHULL` and the current
+  `3MESH_VOLUME` alias. Pinned with MATLAB R2026a.
+- Used by: `test_3d_morphology_matlab.h`. Generator:
+  `oracles/gen_morphology3d_matlab.m`. Bands: the existing MIRP bands shared by both oracle files —
+  0.1% (`rel=1e-3`) for voxel volume and 5% for both hull aliases. The measured voxel-volume
+  residual is 2.338e-04%, so both rows agree within their declared tolerance.
 
 ## morphology3d.covmatrix_numpy
 - Ten fixed voxel coordinates (`morphology_3d_covmatrix_cloud`, `test_3d_morphology_mechanics.h`),
@@ -187,6 +199,6 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 
 ## morphology3d.regression_ut_phantom
 - The same phantom and settings, **no oracle** — pinned Nyxus output as drift guards in
-  `test_3d_morphology_regression.h` and in the coverage sweep's baseline table.
+  `test_3d_morphology_regression.h`.
 - Carries `3AREA` and everything derived from it. The reason is a convention difference, not a
   numerical one: 59992 exposed voxel faces against MIRP's 46739 mesh area, ~28%.

@@ -56,14 +56,13 @@ MIRP = {
     "3FLATNESS": "morph_pca_flatness",
 }
 
-# The volume quantities, pinned in test_3d_morphology_mirp.h beside the axes. These close the SPEC
-# 6.4 provenance gap on all three of the family's former `matlab` rows: MATLAB cannot be re-run from
-# this tree (no licence, and Octave's image package has no regionprops3), but MIRP computes the same
-# quantities and IS runnable here, so the numbers stop resting on an offline session. MIRP is now
-# the family's only oracle -- one oracle per assertion (SPEC 3), and the runnable one of the two.
+# The volume quantities pinned in test_3d_morphology_mirp.h beside the axes. MATLAB regionprops3
+# supplies separate assertions for the same three feature/config pairs; SPEC 3 permits both rows and
+# counts the feature as vetted when at least one oracle assertion covers it.
 #
 #   3VOXEL_VOLUME       <- morph_vol_approx, IBSI "volume (voxel counting)": count x voxel volume.
-#                          Nyxus reproduces it exactly.
+#                          MIRP and MATLAB both return 274432. Nyxus agrees within the shared
+#                          rel=1e-3 tier; the measured residual is 2.338e-04%.
 #   3VOLUME_CONVEXHULL  <- morph_volume / morph_vol_dens_conv_hull. IBSI defines volume density
 #                          (convex hull) as V_mesh / V_convex, so the hull volume is the mesh volume
 #                          divided by that density. MIRP's hull is triangulated (qhull), Nyxus'
@@ -74,8 +73,8 @@ MIRP = {
 #                          the ROI surface mesh, so against IBSI's volume (mesh) it sits 75% high.
 #                          Pinning it to morph_volume would encode that gap as agreement; pinning
 #                          it to the hull judges the alias against the quantity the alias actually
-#                          computes. The 75% is reported under CROSSCHECK and filed in
-#                          tests/vetting/not_covered.md.
+#                          computes. The 75% is reported under CROSSCHECK and is not absorbed by the
+#                          hull tolerance.
 MIRP_VOLUME_SOURCES = ("morph_vol_approx", "morph_volume", "morph_vol_dens_conv_hull")
 
 
@@ -102,7 +101,7 @@ def volume_pins(extra):
 CROSSCHECK = [
     ("morph_vol_approx", "3VOXEL_VOLUME, and MATLAB regionprops3 Volume"),
     ("morph_volume", "IBSI volume (mesh); Nyxus 3MESH_VOLUME is aliased to the hull volume and reads "
-                     "75% above this -- filed in not_covered.md, not absorbed by a band"),
+                     "75% above this -- reported as a semantic mismatch, not absorbed by a band"),
     ("morph_vol_dens_conv_hull", "volume / convex-hull volume -> back out the hull volume"),
     ("morph_area_mesh", "3AREA, but marching-cubes mesh area vs Nyxus' exposed-voxel-face count"),
     ("morph_sphericity", "3SPHERICITY (inherits the area convention)"),

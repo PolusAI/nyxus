@@ -6,10 +6,9 @@ Two benchmarks on **one fixture** — the segmented phantom
 kernel check that reads no image at all. Because the Nyxus side is identical for both benchmarks, the
 numbers *are* comparable to each other.
 
-MIRP is the family's only oracle. The three volume rows were `oracle=matlab` until MIRP took them
-over: MATLAB agreed, but it cannot be re-run here, and one oracle per assertion is the rule (SPEC §3).
-The MATLAB values are kept as corroborating measurements in the headers and in this document; nothing
-asserts against them.
+The three volume features have two separate oracle assertions at the shared Nyxus config: MATLAB
+`regionprops3` and MIRP. This is intentional redundancy under SPEC §3, whose registry is one row per
+feature × config recipe × oracle assertion and whose rollup asks whether at least one row is vetted.
 
 ## MIRP goldens — `test_3d_morphology_mirp.h`
 
@@ -20,9 +19,9 @@ python tests/vetting/oracles/gen_morphology3d_mirp.py
 ```
 
 The generator prints a paste-ready table, re-verifies every pin (8 of them, last run all at rel=0),
-checks the structural identities, and prints the cross-check quantities — including the MATLAB numbers
-it replaced. It exits non-zero on any mismatch, any unproducible or unpinned golden, and any identity
-violation. Needs mirp 2.6.0:
+checks the structural identities, and prints the cross-check quantities — including the MATLAB
+numbers asserted separately. It exits non-zero on any mismatch, any unproducible or unpinned golden,
+and any identity violation. Needs mirp 2.6.0:
 `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy`.
 
 **Name mapping** — MIRP names the axes by role, Nyxus by size rank:
@@ -53,25 +52,26 @@ failed them before:
 - `morph_vol_approx` must equal the ROI voxel count × voxel volume; the generator prints the voxel
   count so this is checkable by eye.
 
-## Retired: the MATLAB goldens
+## MATLAB goldens — `test_3d_morphology_matlab.h`
 
-The three volume goldens were produced by an offline MATLAB R2025b Image Processing Toolbox session:
+The three volume goldens were produced by an offline MATLAB R2026a Image Processing Toolbox session:
 
 ```matlab
-V = niftiread('ut_inten.nii');  M = niftiread('ut_mask57.nii') == 57;
+M = niftiread('ut_mask57.nii') == 57;
 s = regionprops3(M, 'Volume', 'ConvexVolume');
 ```
 
 `Volume` → `3VOXEL_VOLUME` = 274432; `ConvexVolume` → `3VOLUME_CONVEXHULL` and, through the Nyxus
 alias, `3MESH_VOLUME` = 497824.
 
-**There was no in-repo generator for these and there could not be one here** — no MATLAB licence, and
-Octave's `image` package has no `regionprops3` — which was the SPEC §6.4 gap tracked in
-`not_covered.md` §C. MIRP computes the same quantities, is runnable from the tree, and agrees (exact
-on the voxel volume, 0.17% on the hull), so the three rows moved to `oracle=mirp` and
-`test_3d_morphology_matlab.h` was deleted. The MATLAB numbers survive as the corroborating
-measurement quoted in `test_3d_morphology_mirp.h` and in the vetting report; the §6.4 gap is closed
-rather than tracked.
+The checked-in generator is `tests/vetting/oracles/gen_morphology3d_matlab.m`. It downloads the mask
+from the [`PolusAI/nyxus` main fixture](https://github.com/PolusAI/nyxus/blob/main/tests/data/nifti/phantoms/ut_mask57.nii)
+and calls MATLAB's `niftiread` and `regionprops3` built-ins directly. It
+requires licensed MATLAB R2026a with Image Processing Toolbox. Octave's `image` package has no
+`regionprops3`. The three values are pinned and asserted in
+`test_3d_morphology_matlab.h`; MIRP supplies a separate second oracle for the same feature/config
+pairs. The checked-in generator closes the SPEC §6.4 provenance gap without making MATLAB a CI
+runtime dependency.
 
 `3AREA` was deliberately absent from the MATLAB table too: `regionprops3` `SurfaceArea` disagrees by
 more than 10%, for the same reason MIRP does (see below).
