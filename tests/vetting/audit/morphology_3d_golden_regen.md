@@ -117,16 +117,67 @@ two of the eight goldens had drifted inside it unnoticed: `3AREA` read 58457 aga
 (0.31%). Both were regenerated here. The corrected hull number also moves the divergences quoted
 against MIRP and MATLAB: 3.41% and 3.58%, not 3.71% and 3.88%.
 
-`rel=1e-9` is not a guess at what two toolchains might agree on: MSVC Release and Linux gcc
-`RelWithDebInfo -O1` under `-fsanitize=address,undefined` produce all eight values **bit-for-bit
-identical**, the convex hull included. There is no float-precision approximation in this path to
-leave a compiler-rounding residual, so the band has the whole double range as headroom.
+`rel=1e-9` is not a guess at what toolchains might agree on. Seven of the eight values are
+**bit-for-bit identical** on MSVC Release, Linux gcc `RelWithDebInfo -O1` under
+`-fsanitize=address,undefined`, and Apple clang Release on `macos-14`: those seven are
+double-precision arithmetic with no approximation in the path, so the band has the whole double range
+as headroom.
+
+The eighth, `3VOLUME_CONVEXHULL`, is not, and gets `rel=1e-3`. Why is the next section.
 
 **Why these six are snapshot-only.** `3AREA` counts exposed voxel faces (59992) where MIRP and
 pyradiomics integrate a marching-cubes mesh (46739) — a 28% *convention* difference. `3AREA_2_VOLUME`,
 `3COMPACTNESS1`, `3COMPACTNESS2`, `3SPHERICITY` and `3SPHERICAL_DISPROPORTION` are all derived from
 `3AREA` and inherit it. No tolerance turns that into an agreement; settling it means choosing a
 convention, which changes six public feature values.
+
+## The convex hull is built in float
+
+`3VOLUME_CONVEXHULL` is the one value in this family that is not computed in double, and it is the
+one that does not reproduce across compilers.
+
+`D3_SurfaceFeature::build_surface` (`src/nyx/features/3d_surface.cpp`) copies the contour points into
+
+```cpp
+using Points = std::vector<std::array<float, dim>>;
+...
+const auto eps = 1e-10f;
+quick_hull<typename Points::const_iterator> qh{ dim, eps };
+```
+
+The coordinates run to ~100, where consecutive `float`s are about **7.6e-6** apart, so the
+plane-distance quantities `quick_hull` compares against `eps` carry rounding error many orders of
+magnitude larger than `eps = 1e-10f` itself. The "is this point outside the facet plane" test is
+therefore decided by float rounding noise, and *which* nearly-coplanar boundary voxels get promoted
+to hull vertices depends on how a given compiler rounds and contracts that arithmetic. A different
+facet set integrates to a slightly different volume.
+
+Measured on the segmented phantom:
+
+| toolchain | `3VOLUME_CONVEXHULL` |
+|---|---|
+| MSVC 19.44, Release, Ninja (local) | 479997.83333333186 |
+| MSVC, Release, `windows-latest` (CI) | 479997.83333333186 — job green at `rel=1e-9` |
+| gcc, Release, `ubuntu-latest` (CI) | 479997.83333333186 — job green at `rel=1e-9` |
+| gcc 13, RelWithDebInfo `-O1`, ASan+UBSan (local) | 479997.83333333186 |
+| Apple clang, Release, `macos-14` (CI) | **480308.33333333244** |
+
+Four platforms, one outlier, rel **6.5e-4** apart — five to six orders of magnitude above what double
+arithmetic on a fixed algorithm would leave, and the reason the pinned value carries `rel=1e-3` while
+its seven neighbours carry `rel=1e-9`. The three green toolchains reproduce the pin *exactly*: their
+GoogleTest jobs passed the same assertion at `rel=1e-9`, which is what makes the outlier a property
+of the code rather than an argument for loosening everything. `rel=1e-3` is the tightest band above the measured spread; it is not slack, and it
+still catches drift of the size the previous 10% band had been hiding (the stale pin was 3.1e-3 out).
+
+`3MESH_VOLUME` is aliased to the same quantity, so it inherits this. Its MIRP assertion is unaffected
+in practice — the 5% band absorbs a 6.5e-4 wobble on top of the 3.4% convention difference — but the
+divergence figures this document quotes are toolchain-dependent in their third digit: 3.41% from MIRP
+and 3.58% from MATLAB on MSVC/gcc, 3.35% and 3.52% on Apple clang.
+
+**What a fix looks like, when someone takes it:** build the hull in `double` and give `eps` a value
+derived from the coordinate magnitude rather than a hard-coded constant below the arithmetic's noise
+floor. That moves two public feature values, so it belongs on its own branch, and this band should be
+tightened back to `rel=1e-9` in the same change.
 
 ## The retired coverage sweep
 
