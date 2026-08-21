@@ -16,10 +16,22 @@
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-// Fixture only (SPEC 6.3.1): loads the segmented phantom, runs D3_SurfaceFeature and hands the value
-// back. Judging belongs to whichever file owns the reference table, so the goldens and their
-// tolerances live in test_3d_morphology_{regression,matlab,mirp}.h -- see
-// tests/vetting/audit/morphology_3d_mirp_vetting_report.md for why they are kept apart.
+// The existing MIRP volume bands, shared unchanged by the MIRP and MATLAB assertions.
+// The voxel band is SPEC 7's same-definition rel=1e-3 tier (0.1%); both oracle comparisons have
+// the same measured 2.34e-04% residual. The 5% hull band covers the documented hull convention gap.
+static constexpr double morphology_3d_voxel_volume_ref_tol_pct = 0.1;
+static constexpr double morphology_3d_hull_volume_ref_tol_pct = 5.0;
+
+static double morphology_3d_volume_ref_tol_pct (const std::string& fname)
+{
+    // Callers first require fname to exist in their three-entry volume golden table.
+    return fname == "3VOXEL_VOLUME"
+        ? morphology_3d_voxel_volume_ref_tol_pct
+        : morphology_3d_hull_volume_ref_tol_pct;
+}
+
+// Fixture (SPEC 6.3.1): loads the segmented phantom, runs D3_SurfaceFeature and hands the value
+// back. Judging and oracle goldens stay in their respective oracle/regression files.
 void calculate_3d_morphology_feature_value (const std::string& fname, const Nyxus::Feature3D& expecting_fcode, double& out)
 {
     // get segment info
@@ -80,4 +92,3 @@ void calculate_3d_morphology_feature_value (const std::string& fname, const Nyxu
 
     out = atot;
 }
-
