@@ -4,11 +4,15 @@
 #include <string>
 #include <tuple>
 #include <vector>
-#include "../src/nyx/environment.h"
-#include "../src/nyx/featureset.h"
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/3d_surface.h"
-#include "../src/nyx/helpers/fsystem.h"
+#include "../src/nyx/environment.h"           // Environment
+#include "../src/nyx/feature_settings.h"      // Fsettings, NyxSetting
+#include "../src/nyx/featureset.h"            // Nyxus::Feature3D
+#include "../src/nyx/globals.h"               // clear_slide_rois, gatherRoisMetrics_3D, scanTrivialRois_3D, allocateTrivialRoisBuffers_3D
+#include "../src/nyx/roi_cache.h"             // LR
+#include "../src/nyx/slideprops.h"            // SlideProps, scan_slide_props
+#include "../src/nyx/features/3d_surface.h"   // D3_SurfaceFeature
+#include "../src/nyx/helpers/fsystem.h"       // fs::exists
+#include "test_main_nyxus.h"                  // agrees_gt, which every judging file in this family calls
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
