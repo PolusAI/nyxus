@@ -33,18 +33,35 @@ static const ref_vals_map<double> morphology_3d_regression_ref_vals{
     { "3VOXEL_VOLUME",  274431.35826022143 }
 };
 
-// frac_tolerance = 1e9, i.e. rel=1e-9 -- the band the family's other two tables
-// (morphology_3d_mirp_pca_ref_vals, morphology_3d_mechanics_*_ref_vals) already use, and what the
-// arithmetic supports: double-precision geometry with no float-precision approximation anywhere in
-// the path, pinned to 17 digits. What a looser band lets through here, measured:
-// tests/vetting/audit/morphology_3d_golden_regen.md, "Regression drift guards".
+// frac_tolerance = 1e9, i.e. rel=1e-9, for seven of the eight -- the band the family's other two
+// tables (morphology_3d_mirp_pca_ref_vals, morphology_3d_mechanics_*_ref_vals) already use, and what
+// the arithmetic supports: double-precision geometry with no approximation in the path, pinned to 17
+// digits and reproduced bit-for-bit by MSVC, gcc and Apple clang.
+//
+// 3VOLUME_CONVEXHULL is the exception and gets rel=1e-3, because it is the one value in this table
+// that is NOT computed in double. D3_SurfaceFeature::build_surface loads the contour into
+// std::array<float,3> and runs quick_hull with eps = 1e-10f -- six orders of magnitude below the
+// ~7.6e-6 spacing of a float near the phantom's coordinate range, so the "is this point outside the
+// facet plane" test decides on float rounding noise and the facet set it produces depends on how the
+// compiler rounds. Measured: 479997.83333333186 on MSVC Release, on gcc Release and on gcc
+// RelWithDebInfo under ASan+UBSan; 480308.33333333244 on Apple clang Release. Four platforms, one
+// outlier, rel 6.5e-4. rel=1e-3 is the tightest band above that; it is not slack, and it still
+// catches the 3.1e-3 drift the previous 10% band had been hiding. The measurements and what
+// tightening it needs: tests/vetting/audit/morphology_3d_golden_regen.md, "The convex hull is built
+// in float".
+static double morphology_3d_regression_frac_tolerance (const std::string& fname)
+{
+    return fname == "3VOLUME_CONVEXHULL" ? 1.e3 : 1.e9;
+}
+
 static void assert_3d_morphology_feature_regression (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {
     SCOPED_TRACE(std::string("REGRESSION__") + fname);
     double actual = 0.0;
     calculate_3d_morphology_feature_value (fname, expecting_fcode, actual);
     ASSERT_TRUE(morphology_3d_regression_ref_vals.count(fname) > 0) << fname;
-    ASSERT_TRUE(agrees_gt(actual, morphology_3d_regression_ref_vals.at(fname), 1.e9))
+    ASSERT_TRUE(agrees_gt(actual, morphology_3d_regression_ref_vals.at(fname),
+                          morphology_3d_regression_frac_tolerance(fname)))
         << fname << " actual=" << std::setprecision(17) << actual;
 }
 

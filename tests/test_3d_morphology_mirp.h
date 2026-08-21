@@ -74,8 +74,8 @@ static const ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
 // 3MESH_VOLUME is pinned against that same convex-hull number, because the hull volume is what the
 // feature computes: Nyxus aliases MESH_VOLUME to the convex-hull volume instead of integrating the
 // ROI surface mesh. Judged against IBSI's volume (mesh) -- MIRP morph_volume, 274338.34 here -- it
-// reads 75% high, and that gap is NOT absorbed by the band below; it is filed as a defect in
-// tests/vetting/not_covered.md. So the assertion judges the alias against the quantity the alias
+// reads 75% high, and that gap is NOT absorbed by the band below; it is written up in
+// tests/vetting/audit/morphology_3d_mirp_vetting_report.md, "3MESH_VOLUME is not a mesh volume". So the assertion judges the alias against the quantity the alias
 // actually computes, and says nothing about the feature deserving its name. The registry row records
 // the same, and if 3MESH_VOLUME ever becomes a real mesh integral this golden must be revisited.
 static const ref_vals_map<double> morphology_3d_mirp_volume_ref_vals
