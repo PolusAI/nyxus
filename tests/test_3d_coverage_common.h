@@ -1,7 +1,10 @@
 #pragma once
 
+#include <algorithm>
 #include <cmath>
 #include <cctype>
+#include <cstddef>
+#include <initializer_list>
 #include <limits>
 #include <map>
 #include <set>
@@ -265,14 +268,11 @@ static std::set<Nyxus::Feature3D> implemented_3d_feature_codes()
 	return out;
 }
 
-// The MIRP volume goldens and their measured bands live with the assertions that own them, in
-// test_3d_morphology_mirp.h (SPEC 6.3.1) -- the same arrangement as the per-family
-// *_3d_pyradiomics_ref_vals tables this header already reads from their own oracle files.
-
-// Which features an external reference actually backs. Derived wholly from the reference tables below and in the
+// Which features an external reference actually backs. Derived wholly from the reference tables in the
 // per-family oracle headers -- it holds no values of its own, so it is an index rather than a
-// reference table (it used to hard-code the three morphology keys, which made it a quiet third place
-// where a golden could be declared).
+// reference table, so a golden can only be declared in the oracle header that owns it. A family that
+// has retired its instantiations below still contributes its keys: this is the partition of the
+// public featureset into oracle-backed and not, and it holds whether or not the family is swept.
 static const std::set<std::string>& externally_vetted_3d_feature_names()
 {
 	static const std::set<std::string> names = [] {
@@ -321,40 +321,6 @@ static const CoverageBaselineTable* regression_coverage_table_for_family(const s
 	return it == coverage_baselines().end() ? nullptr : it->second;
 }
 
-static std::size_t regression_coverage_ref_vals_total()
-{
-	std::size_t n = 0;
-	for (const auto& kv : coverage_baselines())
-		n += kv.second->size();
-	return n;
-}
-
-static double relative_absdiff_pct(double actual, double expected)
-{
-	double denom = std::abs(expected);
-	if (denom == 0.0)
-		return actual == expected ? 0.0 : std::numeric_limits<double>::infinity();
-	return 100.0 * std::abs(actual - expected) / denom;
-}
-
-static void assert_mirp_volume_shape_agreement(const Feature3DCoverageCase& c)
-{
-	auto it = morphology_3d_mirp_volume_ref_vals.find(c.name);
-	ASSERT_TRUE(it != morphology_3d_mirp_volume_ref_vals.end()) << c.name;
-	auto tol = morphology_3d_mirp_volume_ref_tols.find(c.name);
-	ASSERT_TRUE(tol != morphology_3d_mirp_volume_ref_tols.end()) << c.name << " has a golden but no stated band";
-
-	const auto& computed = computed_3d_feature_values();
-	ASSERT_TRUE(computed.setup_error.empty()) << computed.setup_error;
-	const std::size_t fcode_index = feature_code_index(c.code);
-	ASSERT_LT(fcode_index, computed.values.size()) << c.name;
-	ASSERT_FALSE(computed.values[fcode_index].empty()) << c.name;
-	const double actual = computed.values[fcode_index][0];
-	const double expected = it->second;
-	ASSERT_TRUE(std::isfinite(actual)) << c.name;
-	ASSERT_LE(relative_absdiff_pct(actual, expected), tol->second) << c.name << " actual=" << actual << " mirp=" << expected << " band=" << tol->second << "%";
-}
-
 static void assert_oracle_backed_agreement(const Feature3DCoverageCase& c)
 {
 	if (firstorder_3d_pyradiomics_ref_vals.find(c.name) != firstorder_3d_pyradiomics_ref_vals.end())
@@ -369,8 +335,6 @@ static void assert_oracle_backed_agreement(const Feature3DCoverageCase& c)
 		assert_3d_glszm_feature_pyradiomics(c.code, c.name);
 	else if (ngtdm_3d_pyradiomics_ref_vals.find(c.name) != ngtdm_3d_pyradiomics_ref_vals.end())
 		assert_3d_ngtdm_feature_pyradiomics(c.code, c.name);
-	else if (morphology_3d_mirp_volume_ref_vals.find(c.name) != morphology_3d_mirp_volume_ref_vals.end())
-		assert_mirp_volume_shape_agreement(c);
 	else
 		FAIL() << c.name << " is marked WITH_3P_EMBEDDED_GT but no embedded oracle helper was found";
 }
@@ -390,8 +354,9 @@ static std::vector<Feature3DCoverageCase> feature_3d_cases(bool require_oracle_b
 
 // Per-family partition of the coverage sweep. Each public 3D feature belongs to exactly one calculator
 // featureset; first match wins so every case lands in exactly one family (the 94+119 split is preserved
-// regardless of any incidental featureset overlap). The per-family test_3d_<family>_coverage.h files
-// re-instantiate the two parameterized suites below, filtered through feature_3d_cases_for_family().
+// regardless of any incidental featureset overlap). A test_3d_<family>_coverage.h file re-instantiates
+// the two parameterized suites below for its family, filtered through feature_3d_cases_for_family();
+// a family that has retired its sweep has no such file and appears here only as a partition entry.
 static const std::vector<std::pair<std::string, std::set<Nyxus::Feature3D>>>& feature_3d_family_table()
 {
 	static const std::vector<std::pair<std::string, std::set<Nyxus::Feature3D>>> table = [] {
@@ -506,18 +471,27 @@ TEST_P(Test3DFeature_UNVETTED_LOCAL_REGRESSION, PublicFeatureIsComputableButHasN
 
 // INSTANTIATE_TEST_SUITE_P for this fixture likewise lives in the per-family files.
 
-// Families migrated off the generic sweep: their previously-unvetted features are now individually
-// named drift-guard tests in test_3d_<family>_regression.h (e.g. the "_grey64_regression" tests for
-// glcm) instead of a table read by the parameterized Test3DFeature_UNVETTED_LOCAL_REGRESSION suite.
-// feature_3d_cases(false) still lists these families' features (their oracle-backed status hasn't
-// changed), so without this set the loop below would demand a coverage_baselines() entry that no
-// longer exists. Update this set -- and the two counts in TEST_3D_FEATURE_COVERAGE_COUNTS below --
-// every time another family is migrated; SPEC 1 still requires every public feature to be checked
-// somewhere, and this is the manual bookkeeping that keeps that true without a local table.
-static const std::set<std::string>& families_with_individually_ported_regression()
+// Features an individually named test pins, rather than an entry in their family's coverage baseline
+// table -- the shape a family takes once it has retired its instantiations of the two suites above
+// (glcm's "_grey64_regression" tests; morphology's "_regression" ones, plus its five PCA axis features,
+// which a MIRP oracle test pins at rel=1e-9 and so needs no snapshot of its own). Read straight off the
+// tables those tests assert against, the same way externally_vetted_3d_feature_names() is read off the
+// oracle tables, so migrating the next family is one add_keys() line and nothing has to be counted or
+// opted out by hand.
+static const std::set<std::string>& individually_pinned_3d_feature_names()
 {
-	static const std::set<std::string> families = { "glcm" };
-	return families;
+	static const std::set<std::string> names = [] {
+		std::set<std::string> out;
+		auto add_keys = [&out](const auto& m) {
+			for (const auto& kv : m)
+				out.insert(kv.first);
+		};
+		add_keys(glcm_3d_regression_grey64_ref_vals);
+		add_keys(morphology_3d_regression_ref_vals);
+		add_keys(morphology_3d_mirp_pca_ref_vals);
+		return out;
+	}();
+	return names;
 }
 
 TEST(TEST_NYXUS, TEST_3D_FEATURE_COVERAGE_COUNTS)
@@ -526,16 +500,28 @@ TEST(TEST_NYXUS, TEST_3D_FEATURE_COVERAGE_COUNTS)
 	EXPECT_EQ(94u, feature_3d_cases(true).size());
 	EXPECT_EQ(119u, feature_3d_cases(false).size());
 	EXPECT_EQ(Nyxus::UserFacing_3D_featureNames.size(), feature_3d_cases(true).size() + feature_3d_cases(false).size());
-	// 119 total unvetted features minus the 36 glcm ported to named regression.h tests.
-	EXPECT_EQ(83u, regression_coverage_ref_vals_total());
+
+	// SPEC 1: every public feature with no oracle behind it still has to be pinned somewhere -- in
+	// its family's coverage baseline table, or by a named test of its own.
+	std::set<std::string> unvetted;
 	for (const auto& c : feature_3d_cases(false))
 	{
-		const std::string family = family_of_3d_feature(c.code);
-		if (families_with_individually_ported_regression().count(family))
+		unvetted.insert(c.name);
+		if (individually_pinned_3d_feature_names().count(c.name))
 			continue;
+		const std::string family = family_of_3d_feature(c.code);
 		const auto* gt = regression_coverage_table_for_family(family);
-		ASSERT_TRUE(gt != nullptr) << c.name << " family=" << family;
-		EXPECT_TRUE(gt->find(c.name) != gt->end()) << c.name << " missing from " << family << "_3d_regression_coverage_ref_vals";
+		EXPECT_TRUE(gt != nullptr && gt->find(c.name) != gt->end())
+			<< c.name << " (family " << family << ") has no oracle and no drift guard: neither an entry in "
+			<< family << "_3d_regression_coverage_ref_vals nor a named test pinning it";
 	}
+
+	// ... and the other direction, which a bare count of the tables can only approximate: a baseline
+	// entry that does not name a public unvetted feature is a golden nothing judges.
+	for (const auto& kv : coverage_baselines())
+		for (const auto& e : *kv.second)
+			EXPECT_TRUE(unvetted.count(e.first) > 0)
+				<< e.first << " has a baseline in " << kv.first
+				<< "_3d_regression_coverage_ref_vals but is not a public unvetted 3D feature";
 }
 }

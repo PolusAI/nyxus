@@ -99,15 +99,52 @@ or a normalisation switched from n-1 to n (which moves these entries by 10%), wo
 
 ## Regression drift guards — `test_3d_morphology_regression.h`
 
-Recipe `morphology3d.regression_ut_phantom`. No oracle — Nyxus' own values, at a 10% band. There is no
-dump function; the table is small and hand-maintained. The same values are pinned a second time as the
-coverage sweep's baseline in `test_3d_morphology_coverage.h`, so a change must be applied in both.
+Recipe `morphology3d.regression_ut_phantom`. No oracle — Nyxus' own values, pinned to 17 digits and
+asserted at `rel=1e-9`, the band the family's MIRP PCA pins and covariance-kernel pins already use.
+
+```
+runAllTests --gtest_filter=*3D_MORPHOLOGY_DUMP_REGRESSION*
+```
+
+prints the whole table in paste-ready form, read out of the same fixture the assertions use.
+`D3_SurfaceFeature::calculate()` reads one setting, `SINGLEROI`, and every 3D morphology fixture sets
+it `false`, so the recipe's `GREYDEPTH`/`IBSI`/`PIXELSIZEUM` do not reach these numbers — which is why
+the retired sweep's pins, taken at a different recipe, were byte-identical to these.
+
+**Why the band moved from 10% to `rel=1e-9`.** A 10% band passes a value off by a factor of 1.1, and
+two of the eight goldens had drifted inside it unnoticed: `3AREA` read 58457 against an actual 59992
+(2.6%), and `3VOLUME_CONVEXHULL` read 478516 — a pin dating to #279 — against an actual 479997.83
+(0.31%). Both were regenerated here. The corrected hull number also moves the divergences quoted
+against MIRP and MATLAB: 3.41% and 3.58%, not 3.71% and 3.88%.
+
+`rel=1e-9` is not a guess at what two toolchains might agree on: MSVC Release and Linux gcc
+`RelWithDebInfo -O1` under `-fsanitize=address,undefined` produce all eight values **bit-for-bit
+identical**, the convex hull included. There is no float-precision approximation in this path to
+leave a compiler-rounding residual, so the band has the whole double range as headroom.
 
 **Why these six are snapshot-only.** `3AREA` counts exposed voxel faces (59992) where MIRP and
 pyradiomics integrate a marching-cubes mesh (46739) — a 28% *convention* difference. `3AREA_2_VOLUME`,
 `3COMPACTNESS1`, `3COMPACTNESS2`, `3SPHERICITY` and `3SPHERICAL_DISPROPORTION` are all derived from
 `3AREA` and inherit it. No tolerance turns that into an agreement; settling it means choosing a
 convention, which changes six public feature values.
+
+## The retired coverage sweep
+
+`test_3d_morphology_coverage.h` instantiated the two generic `TEST_P` suites of
+`test_3d_coverage_common.h` over the family's 14 features — 3 with a MIRP golden, 11 pinned in a local
+`morphology_3d_regression_coverage_ref_vals` table. It is gone, and nothing was lost with it:
+
+| what the sweep did | where it lives now |
+|---|---|
+| MIRP band check on `3VOXEL_VOLUME`, `3VOLUME_CONVEXHULL`, `3MESH_VOLUME` | `test_3d_morphology_mirp.h`, the same goldens and the same bands, through named tests |
+| full-precision pins on `3ELONGATION`, `3FLATNESS`, `3LEAST_AXIS_LEN`, `3MAJOR_AXIS_LEN`, `3MINOR_AXIS_LEN` | `test_3d_morphology_mirp.h` — vetted against MIRP at `rel=1e-9`, which is strictly stronger than a self-pin |
+| full-precision pins on `3AREA`, `3AREA_2_VOLUME`, `3COMPACTNESS1`, `3COMPACTNESS2`, `3SPHERICAL_DISPROPORTION`, `3SPHERICITY` | `morphology_3d_regression_ref_vals`, byte-identical, now at `rel=1e-9` instead of 10% |
+| “the name resolves and the feature code matches” | every named test does it: `calculate_3d_morphology_feature_value()` calls `find_3D_FeatureByString` and asserts the returned code |
+| “every registered `Feature3D` code has exactly one provider” | `FeatureManager::check_11_correspondence()`, in production since the 3D GLCM sweep was retired, and unit-tested in `test_feature_manager_mechanics.h` |
+
+The completeness guard in `test_3d_coverage_common.h` reads the retired families' pins straight off
+the tables their named tests assert against, so a family leaving the sweep is one `add_keys()` line
+and no hand-kept counts.
 
 ## Coverage artifact
 
