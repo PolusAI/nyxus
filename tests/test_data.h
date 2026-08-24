@@ -256,12 +256,31 @@ const static NyxusPixel ibsi_fig3_17a_gldzm_sample_image_mask[] =
 	{1, 4, 1}, {2, 4, 1}, {3, 4, 1}, {4, 4, 1}
 };
 
-// Rows are the four grey levels, columns the two zone distances, and the table sums to 8 zones
-// over the 16-pixel ROI. Grey level 2 holds ONE zone: its five pixels are linked through the
-// (2,1)-(3,2) diagonal, and a GLDZM zone is 8-connected. mirp 2.6.0 on this fixture pins the
-// same matrix three ways over -- zone percentage 0.5 (8 zones), grey-level non-uniformity 2.25
-// (per-grey zone counts 3,1,2,2) and zone-distance non-uniformity 6.25 (7 zones at distance 1,
-// one at distance 2). See tests/vetting/audit/gldzm_2d_mirp_vetting_report.md.
+// Rows are the four grey levels, columns the two zone distances. Every cell is fixed by enumerating
+// the zones of the 4x4 image above; the mask is all-ones, so distance-to-border is 1 on the outer
+// ring and 2 on the 2x2 interior, and a zone's distance is the smallest over its pixels.
+//
+//     grey     1 2 2 3      distance   1 1 1 1
+//     levels   1 2 3 3      to the     1 2 2 1
+//     (y=1..4) 4 2 4 1      border     1 2 2 1
+//              4 1 2 3                 1 1 1 1
+//
+// Zones, 8-connected (two pixels touching only at a corner are one zone), written as (x,y):
+//   grey 1 -> {(1,1),(1,2)} d=1 | {(4,3)} d=1 | {(2,4)} d=1                      -> row 1: 3, 0
+//   grey 2 -> {(2,1),(3,1),(2,2),(2,3),(3,4)} d=1                                -> row 2: 1, 0
+//            one zone, not two: (2,3) and (3,4) share only a corner, and that diagonal is the only
+//            link between them. 4-connected labelling splits it and yields 2 here instead of 1.
+//   grey 3 -> {(4,1),(3,2),(4,2)} d=1 | {(4,4)} d=1                              -> row 3: 2, 0
+//   grey 4 -> {(1,3),(1,4)} d=1 | {(3,3)} d=2                                    -> row 4: 1, 1
+//            (3,3) is the only interior pixel with no neighbour of its own grey level, so it is the
+//            only zone at distance 2 and the only entry in the second column.
+//
+// mirp 2.6.0 corroborates the enumeration but does not determine it: zone percentage 0.5 fixes the
+// total at 8 zones, grey-level non-uniformity 2.25 the row sums {3,1,2,2} and zone-distance
+// non-uniformity 6.25 the column sums {7,1}. Those are marginals -- they do not say which grey level
+// owns the distance-2 zone, nor which row carries which sum. The enumeration above does; mirp
+// agreeing with all three marginals is the independent check on it.
+// See tests/vetting/audit/gldzm_2d_mirp_vetting_report.md.
 const static int ibsi_fig3_17c_gldzm_reference_matrix[] =
 {
 	3, 0,

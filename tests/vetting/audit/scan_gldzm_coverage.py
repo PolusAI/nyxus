@@ -62,11 +62,11 @@ COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
 
 # The 14 published IBSI features are deliberately asserted twice, by test_2d_gldzm_ibsi.h and
 # test_2d_gldzm_mirp.h. That is not redundancy: the IBSI consensus values are published to three
-# significant figures and fix the DEFINITION (rel=1e-2), while mirp reproduces Nyxus to 8.9e-16 and
-# fixes the DIGITS (rel=1e-9). Dropping either weakens the family - see
-# audit/gldzm_2d_mirp_vetting_report.md.
+# significant figures and fix the DEFINITION (rel=1e-2), while mirp reproduces Nyxus to 1.3e-15
+# absolute and fixes the DIGITS (SPEC 7 exact tier, abs=1e-9). Dropping either weakens the family -
+# see audit/gldzm_2d_mirp_vetting_report.md.
 DUAL_ORACLE = ("asserted against both oracles by design: IBSI fixes the definition at its published "
-               "3-significant-figure precision, mirp fixes the digits at 8.9e-16")
+               "3-significant-figure precision, mirp fixes the digits at 1.3e-15 absolute")
 NOTE = {
     "GLDZM_GLM": "no IBSI GLDZM counterpart and no mirp column; regression drift guard only",
     "GLDZM_ZDM": "no IBSI GLDZM counterpart and no mirp column; regression drift guard only",
