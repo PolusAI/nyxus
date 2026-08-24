@@ -13,9 +13,10 @@ behind it -- errors in two slices that cancel leave it unmoved, and on this fami
 that mattered lived in one slice. mirp runs `by_slice=True` with `base_discretisation_method="none"`
 (the phantom is already discrete 1..6), which is what Nyxus computes in IBSI mode.
 
-Agreement is 8.9e-16 worst case: mirp and Nyxus build the same 8-connected zones over the same
-distance-to-border metric, so this is pinned at the SPEC 7 "exact" tier rather than a cross-tool
-band.
+mirp and Nyxus build the same 8-connected zones over the same distance-to-border metric, so nothing
+but float summation order separates them: worst absolute residual 1.3e-15, worst relative 7.0e-16,
+over the 80 comparisons. That is why the header pins at SPEC 7's "exact" tier -- an ABSOLUTE 1e-9
+band -- rather than at a cross-tool relative one.
 
 NOT covered here: GLDZM_GLM and GLDZM_ZDM. mirp exposes no grey-level-mean or zone-distance-mean
 column -- neither is an IBSI GLDZM feature -- so those two stay regression rows in
@@ -40,7 +41,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(os.path.dirname(HERE))
 TEST_H = os.path.join(TESTS, "test_2d_gldzm_mirp.h")
 
-RELTOL = 1e-9          # SPEC 7 exact tier; measured worst residual is 8.9e-16
+RELTOL = 1e-9          # this script's own golden-vs-mirp check, not the test tier; current run: rel = 0
 
 # Nyxus feature -> mirp column stem. mirp writes "zone" where Nyxus writes "zone level", and
 # abbreviates emphasis as lge/hge against Nyxus' LGLZE/HGLZE, so map by meaning, not by spelling.

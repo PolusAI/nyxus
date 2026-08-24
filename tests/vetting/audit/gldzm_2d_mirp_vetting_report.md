@@ -17,7 +17,7 @@ features**, by 1.3% to 60%, and the only test covering them passing anyway becau
 | Nyxus config | `IBSI=true`, `GREYDEPTH=128`, each slice featurised on its own |
 | mirp config | `by_slice=True`, `base_discretisation_method="none"` |
 | Test | `test_2d_gldzm_mirp.h` |
-| Tolerance | `rel=1e-9` (SPEC §7 exact tier) |
+| Tolerance | SPEC §7 exact tier, i.e. an **absolute** 1e-9 band (`ASSERT_NEAR`) |
 
 ```
 python tests/vetting/oracles/gen_gldzm_mirp.py
@@ -90,7 +90,8 @@ On phantom slice z1 the difference is two diagonal links, which split five true 
 | mirp | 5 | 0.25 | 1.8 |
 
 Adding the four diagonal directions makes Nyxus reproduce mirp on all 16 mirp-exposed features, on
-every slice, to a worst residual of **8.9e-16** — and match all fourteen published IBSI values.
+every slice, to a worst **absolute** residual of **1.3e-15** (`GLDZM_ZDE`, slice 2; worst relative
+7.0e-16 on the same feature, slices 3 and 4) — and match all fourteen published IBSI values.
 
 `3d_gldzm.cpp` carries the identical four-direction loop, so **3D GLDZM has the same defect**. It is
 a separate family in the re-vetting order and its own PR's business; changing it here would move
@@ -127,7 +128,8 @@ looser than the agreement now measured. It is the same defect the 2D NGLDM re-ve
 the sibling family was never swept for it.
 
 The IBSI file now asserts at `rel=1e-2`, set by the three significant figures its values are
-published to, and the mirp file at `rel=1e-9`.
+published to, and the mirp file at SPEC §7's exact tier — an **absolute** 1e-9 band, which is what
+that row of the tolerance table specifies, rather than a relative one of the same magnitude.
 
 ## Range and identity checks on the pinned goldens
 
@@ -149,7 +151,7 @@ substitute.
 ## Registry corrections
 
 - The 16 mirp-covered rows: `status=vetted`, `oracle=mirp`, `config_recipe=gldzm.ibsi_phantom_2d`,
-  `tolerance=rel=1e-9`, `current_test=test_2d_gldzm_ibsi.h;test_2d_gldzm_mirp.h`. Each row's notes
+  `tolerance=abs=1e-9`, `current_test=test_2d_gldzm_ibsi.h;test_2d_gldzm_mirp.h`. Each row's notes
   say which quantity backs it — per slice and the four-slice mean.
 - `GLDZM_GLM` and `GLDZM_ZDM` → `status=regression`. Neither is an IBSI GLDZM feature and mirp
   exposes no column for either, so nothing independent covers them; they are drift guards in

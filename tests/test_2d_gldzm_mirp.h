@@ -9,10 +9,12 @@
 // base_discretisation_method="none" (the phantom is already discrete 1..6), which is what Nyxus
 // computes in IBSI mode; generator=tests/vetting/oracles/gen_gldzm_mirp.py.
 //
-// mirp and Nyxus build the same 8-connected zones over the same distance-to-border metric and agree
-// to 8.9e-16 worst case, so these assert at the SPEC 7 "exact" tier (rel=1e-9). test_2d_gldzm_ibsi.h
-// pins the same quantities as published IBSI consensus values, quoted to three significant figures,
-// and therefore asserts at rel=1e-2: IBSI fixes the definition, mirp fixes the digits.
+// mirp and Nyxus build the same 8-connected zones over the same distance-to-border metric, so there
+// is no estimator disagreement between them to absorb -- only float summation order -- and these
+// assert at SPEC 7's "exact" tier, which is an ABSOLUTE 1e-9 band, not a relative one.
+// test_2d_gldzm_ibsi.h pins the same quantities as published IBSI consensus values, quoted to
+// three significant figures, and therefore asserts at rel=1e-2: IBSI fixes the definition and mirp
+// fixes the digits.
 //
 // TWO TABLES, because a mean cannot vet the four values behind it: errors in two slices that cancel
 // leave the average unmoved, and a discrepancy confined to one slice reaches it quartered.
@@ -96,8 +98,11 @@ static const ref_vals_map<double> gldzm_2d_mirp_slice_ref_vals
     {"GLDZM_ZDE_z3", 1.5849625007211563}, {"GLDZM_ZDE_z4", 1.5849625007211563}
 };
 
-// rel=1e-9: agrees_gt divides the golden by this, so a larger argument is a tighter band
-static const double gldzm_2d_mirp_frac_tolerance = 1e9;
+// SPEC 7's exact tier verbatim: an absolute band, so ASSERT_NEAR rather than the relative agrees_gt
+// the looser-tiered files use. Measured worst residual over the 80 comparisons below (16 features x
+// 4 slices, plus 16 means) is 1.3e-15, on GLDZM_ZDE_z2 -- six orders inside the band. The relative
+// worst is 7.0e-16, on GLDZM_ZDE_z3/z4, so neither reading of "agreement" is anywhere near 1e-9.
+static const double gldzm_2d_mirp_abs_tolerance = 1e-9;
 
 static void assert_gldzm_feature_mirp (const Feature2D& feature_, const std::string& feature_name)
 {
@@ -110,13 +115,16 @@ static void assert_gldzm_feature_mirp (const Feature2D& feature_, const std::str
         const std::string key = feature_name + "_z" + std::to_string (z + 1);
         SCOPED_TRACE ("mirp " + key);
         ASSERT_TRUE (gldzm_2d_mirp_slice_ref_vals.count(key) > 0) << key;
-        ASSERT_TRUE (agrees_gt (per_slice[z], gldzm_2d_mirp_slice_ref_vals.at(key),
-                                gldzm_2d_mirp_frac_tolerance)) << key;
+        ASSERT_NEAR (per_slice[z], gldzm_2d_mirp_slice_ref_vals.at(key),
+                     gldzm_2d_mirp_abs_tolerance) << key;
     }
 
-    // then the four-slice mean, the quantity IBSI publishes
-    assert_gldzm_feature_against_golden_values (feature_, feature_name, gldzm_2d_mirp_ref_vals,
-                                                "mirp ", gldzm_2d_mirp_frac_tolerance);
+    // then the four-slice mean, the quantity IBSI publishes -- averaged from the very values just
+    // asserted, so the mean covers those and not a second run of the same four featurisations
+    SCOPED_TRACE ("mirp " + feature_name);
+    ASSERT_TRUE (gldzm_2d_mirp_ref_vals.count(feature_name) > 0) << feature_name;
+    ASSERT_NEAR (gldzm_2d_phantom_slice_mean (per_slice), gldzm_2d_mirp_ref_vals.at(feature_name),
+                 gldzm_2d_mirp_abs_tolerance) << feature_name;
 }
 
 void test_2d_gldzm_sde_mirp()

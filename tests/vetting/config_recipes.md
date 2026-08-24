@@ -159,8 +159,9 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   slice 1 and left slices 2–4 exact.
 - The two oracles are complementary rather than redundant. The IBSI consensus values are quoted to
   three significant figures, so that file asserts at `rel=1e-2` (measured worst case 0.35%, on
-  `GLDZM_LDE`: 1.21 published against 1.2142857 computed). mirp reproduces Nyxus to **8.9e-16**, so
-  the mirp file asserts at `rel=1e-9`: IBSI fixes the definition, mirp fixes the digits.
+  `GLDZM_LDE`: 1.21 published against 1.2142857 computed). mirp reproduces Nyxus to a worst
+  **absolute** residual of 1.3e-15 (worst relative 7.0e-16), so the mirp file asserts at SPEC §7's
+  exact tier, an absolute 1e-9 band: IBSI fixes the definition, mirp fixes the digits.
 - `GLDZM_GLM` and `GLDZM_ZDM` are outside this recipe: they are Nyxus mean-style rows with no IBSI
   GLDZM counterpart and no mirp column, so they stay `regression` in `test_2d_gldzm_regression.h`.
   `GLDZM_SDLGLE` and `GLDZM_ZDV` are in the recipe but covered by mirp only — the IBSI file never

@@ -13,7 +13,7 @@ there is no generator for this file. Verifying them is a two-step check:
 1. **Is each entry actually a published value?** A published consensus value carries three
    significant figures. An entry with sixteen is not a transcription of anything IBSI printed.
 2. **What residual does it leave?** Computed against the full-precision values from the mirp run,
-   which agree with Nyxus to 8.9e-16 after the connectivity fix.
+   which agree with Nyxus to a worst absolute residual of 1.3e-15 after the connectivity fix.
 
 ## Four entries were Nyxus output, not IBSI values
 
@@ -76,7 +76,7 @@ regardless, because its tolerance was ±50%.
 
 This file fixes the **definition** — it is the only assertion in the family tied to a published
 consensus rather than to a tool run. `test_2d_gldzm_mirp.h` fixes the **digits**, per slice and
-averaged, at `rel=1e-9`. Keeping both is deliberate: the published values are the reason the mirp
+averaged, at SPEC §7's exact tier (absolute 1e-9). Keeping both is deliberate: the published values are the reason the mirp
 comparison can be trusted as more than agreement between two implementations of the same mistake.
 
 ## What changed in the file
