@@ -152,6 +152,24 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   is that maximum, so CellProfiler's own answer moves with the label image's padding. A tie-free ROI
   is a precondition for this recipe ever vetting anything.
 
+## zernike.shape2d_native
+- The 8x8 `shape2d_morphology_{mask,intensity}` fixture (`test_data.h`) at `make_shape2d_settings()`.
+  `ZernikeFeature` reads the ROI's image matrix and nothing any other feature produces, so the loader
+  is the whole prerequisite. Oracle: `analytic`. Benchmark: `bench_shape8_concave_holed`. Used by:
+  `test_2d_zernike_{analytic,regression,invariant,mechanics}.h`.
+- The geometry is the recipe. `mb_zernike2D` builds its unit disk from the ROI's **bounding box**:
+  radius = `min(bbox width, bbox height)` in pixels, centre = the ROI's **intensity centroid**,
+  weights = `I / sum(I)`, and the moment carries a `(n+1)/pi` factor. On this ROI that is a 6x7 box,
+  radius 6, centroid (3.8416, 4.4389) in 1-based pixel coordinates, and every one of the 42
+  bounding-box pixels falls inside the disk -- which is what makes `A(0,0)` exactly `1/pi`.
+  `test_2d_zernike_mechanics.h` pins all of it.
+- 30 magnitudes, one per `(n, m)` with `n <= 9`, `m >= 0`, `n - m` even, emitted n-ascending then
+  m-ascending.
+- **Not comparable to CellProfiler `MeasureObjectIntensityDistribution`'s Zernikes**, which centre the
+  disk on the object's minimum enclosing circle and normalise by pixel count rather than by total
+  intensity. Both were run; the divergence is a convention gap, recorded in
+  `tests/vetting/audit/zernike_2d_analytic_vetting_report.md`, not a disagreement about the moments.
+
 ## morphology.shape2d_native
 - The 8x8 `shape2d_morphology_{mask,intensity}` fixture (`test_data.h`) at
   `make_shape2d_settings()`: `PIXELSIZEUM=2.0`, `XYRES=1.0`, `GREYDEPTH=128`, `IBSI=false`, single

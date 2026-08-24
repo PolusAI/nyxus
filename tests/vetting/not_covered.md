@@ -38,7 +38,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_2d_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
 | `test_2d_ooc_mechanics.py` | 1 | oversized-montage failure path |
 | `test_vetting_mechanics.py` | 5 | self-test of `check_coverage.py` |
-| `test_3d_coverage_common.h`, `test_3d_morphology_common.h`, `test_2d_moments_common.h`, `test_2d_morphology_common.h`, `test_2d_radial_common.h` | 0 | shared fixtures; the kind belongs to the files that include them |
+| `test_3d_coverage_common.h`, `test_3d_morphology_common.h`, `test_2d_moments_common.h`, `test_2d_morphology_common.h`, `test_2d_radial_common.h`, `test_2d_zernike_common.h` | 0 | shared fixtures; the kind belongs to the files that include them |
 | `test_feature_calculation_common.h` | 0 | shared `test_feature` template helper |
 
 **`test_2d_radial_mechanics.h` is the one row here that is a judgement rather than a construction.**

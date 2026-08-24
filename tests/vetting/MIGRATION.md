@@ -148,7 +148,7 @@ Exact metric names + caveats are in `oracle_coverage.csv` (`candidate_oracle`, f
 (`CLOSEST_NEIGHBOR*_ANG`, `ANG_BW_NEIGHBORS_*` — CellProfiler's `AngleBetweenNeighbors` is a different
 quantity), 3D GLDZM/NGLDM intermediate means (`3GLDZM_GLM/ZDM`, `3NGLDM_GLM/DCM` — only their
 variances have oracles), `3HYPERSKEWNESS`/`3HYPERFLATNESS` (scipy `moment` only), `3COVERED_IMAGE_INTENSITY_RANGE` (uses image dynamic range).
-**Niche only:** `ZERNIKE2D` → `mahotas.features.zernike_moments` (accept as niche or keep analytic).
+**Niche only:** ~~`ZERNIKE2D` → `mahotas.features.zernike_moments` (accept as niche or keep analytic).~~ **Settled 2026-08-20: analytic.** The closed form is a complete independent reference and no tool was needed; see `audit/zernike_2d_analytic_vetting_report.md`.
 **Analytic-trivial (12):** `3INTEGRATED_INTENSITY`, `3P01/25/75/99` (numpy; IBSI has only P10/P90).
 
 **Token-set impact:** research adds **OpenCV** (min-enclosing-circle) to the tools in play; `skimage`
@@ -550,9 +550,16 @@ work was entirely in the names, which claimed the opposite of the registry's dec
 The helper and table were safe to rename outright because **`ZERNIKE2D` is their only key and only
 caller** — checked before touching them; the near-identical `assert_unvetted_no_direct_oracle_*` twin
 serves the radial features and was left alone. This one mattered beyond tidiness: §6.1 rejects mahotas,
-the only tool that computes Zernike moments, so ZERNIKE2D has **no** accepted oracle — yet four
-identifiers and every failure message said it was third-party-verified. The 0/1 vetted in
-`coverage_report.md` and the test names now agree. Verified: **gtest 730/730**.
+so at the time ZERNIKE2D had no accepted **tool** oracle — yet four identifiers and every failure
+message said it was third-party-verified. The 0/1 vetted in `coverage_report.md` and the test names
+now agree. Verified: **gtest 730/730**.
+
+**Superseded 2026-08-20.** Two claims here did not survive: mahotas is not "the only tool that
+computes Zernike moments" — CellProfiler/centrosome do, at a different disk convention — and "no
+accepted oracle" conflated *no tool* with *no reference*. §9.1 of this document had it right all
+along: `ZERNIKE2D` is **analytic**. The closed form was written down, the family is now
+`status=vetted, oracle=analytic`, and the run found that all 30 values were wrong. See
+`audit/zernike_2d_analytic_vetting_report.md`.
 
 ## 5.25 Wave 15 (neighbor) — executed
 

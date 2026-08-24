@@ -133,16 +133,17 @@ structural zero. Shrinking the scene or moving one block off label 1 costs both 
 
 | | |
 |---|---|
-| Data | `shape2d_morphology_mask` + `shape2d_morphology_intensity` in `tests/test_data.h`, loaded by `load_masked_test_roi_data()` at `make_shape2d_settings()`; built for this family by `build_radial_2d_roi()` in `tests/test_2d_radial_common.h` |
+| Data | `shape2d_morphology_mask` + `shape2d_morphology_intensity` in `tests/test_data.h`, loaded by `load_masked_test_roi_data()` at `make_shape2d_settings()`; built for this family by `build_radial_2d_roi()` in `tests/test_2d_radial_common.h`, and for Zernike by `build_zernike_2d_roi()` in `tests/test_2d_zernike_common.h` |
 | ROI | one of them — label 1, **26 pixels**, total intensity **1048**, per-pixel intensity 12–68 |
 | Shape | an 8×8 grid; the ROI spans x 0–5, y 0–6 as a concave blob with a single one-pixel interior hole at (3,3) |
 | Why it exists | the smallest 2D shape that is neither convex nor simply connected, so contour tracing has to return two contours and every shape descriptor computed from them is non-degenerate |
 
-Recipes: `radial.shape2d_native`, `morphology.shape2d_native`, `radial.cellprofiler_8bin`.
+Recipes: `radial.shape2d_native`, `morphology.shape2d_native`, `radial.cellprofiler_8bin`,
+`zernike.shape2d_native`.
 
 Tests reaching it today: `test_2d_radial_{regression,invariant,mechanics}.h` (through
 `test_2d_radial_common.h`), `test_2d_morphology_common.h` and the morphology files that include it,
-`test_2d_zernike_regression.h`.
+`test_2d_zernike_{analytic,regression,invariant,mechanics}.h` (through `test_2d_zernike_common.h`).
 
 **The interior hole is the load-bearing property, and it is also what limits this fixture.** It is
 what makes `LR::merge_multicontour` concatenate two contours rather than return one, which is the
