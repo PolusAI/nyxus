@@ -276,9 +276,13 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 			R[0] = 1;
 			for (n = 1; n <= L; n++) 
 				R[n] = r * R[n - 1];
-			/* compute COST SINT and save in tables */
-			a = COST[0] = x / r;
-			b = SINT[0] = y / r;
+			// COST[m] and SINT[m] carry the angular term of repetition m, so the tables start at
+			// m = 0 -- cos(0) and sin(0) -- and the angle-addition recurrence below walks them up
+			// one repetition at a time from cos(theta), sin(theta).
+			a = x / r;
+			b = y / r;
+			COST[0] = 1.0;
+			SINT[0] = 0.0;
 			for (m = 1; m <= L; m++) 
 			{
 				COST[m] = a * COST[m - 1] - b * SINT[m - 1];
