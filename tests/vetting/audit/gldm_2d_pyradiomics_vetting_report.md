@@ -151,10 +151,14 @@ dependence axis spelled small/large by Nyxus and low/high by IBSI:
 | `GLDM_LDLGLE` | high dependence low grey level emphasis | | |
 | `GLDM_LDHGLE` | high dependence high grey level emphasis | | |
 
-The identity is measured, not asserted from the names: on this fixture Nyxus' 14 GLDM values are
-**bit-identical to the mirp-vetted NGLDM goldens already pinned in `test_2d_ngldm_mirp.h`**, once
-`GLDM_DE` uses an exact logarithm. Both tables can be compared directly — they are two files in this
-repository — so no extra generator run is needed to reproduce the check.
+The identity is measured, not asserted from the names: on this fixture **13 of Nyxus' 14 GLDM values
+are bit-identical to the mirp-vetted NGLDM goldens already pinned in `test_2d_ngldm_mirp.h`**. The
+fourteenth is `GLDM_DE`, and it differs by exactly the `fast_log10` residual measured above —
+`NGLDMfeature`'s dependence-count entropy takes an exact logarithm where `GLDMFeature::calc_DE()`
+takes the approximate one, so 2.7121510523248058 against 2.7142924232815497. That is the two
+implementations disagreeing about arithmetic, not the two families disagreeing about the statistic.
+Both tables can be compared directly — they are two files in this repository — so no extra generator
+run is needed to reproduce the check.
 
 ## The production config is not comparable to PyRadiomics
 

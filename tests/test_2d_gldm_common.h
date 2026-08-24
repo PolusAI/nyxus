@@ -81,11 +81,15 @@ static std::vector<double> gldm_2d_phantom_slice_values (const Feature2D& featur
 // Compares the four-slice mean against the caller's table. The table, the tolerance and the trace
 // prefix come from the caller, so each file asserts against its own goldens at its own tier.
 //
+// The four slice values come from the caller too, rather than being recomputed here. A caller that
+// also asserts per slice therefore means the very values it just checked: one featurisation, one set
+// of numbers, and no way for the mean and the per-slice assertions to be looking at different runs.
+//
 // A mean is all this can check, and a mean is weaker than the four values behind it: errors in two
 // slices that cancel leave it unmoved. Where the reference exposes per-slice values -- PyRadiomics
 // does, the published IBSI consensus does not -- the caller asserts those separately.
-void assert_gldm_feature_against_golden_values (
-    const Feature2D& feature_,
+void assert_gldm_mean_against_golden_values (
+    const std::vector<double>& per_slice,
     const std::string& feature_name,
     const std::unordered_map<std::string, double>& feature_reference_values,
     const std::string& trace_prefix,
@@ -95,8 +99,7 @@ void assert_gldm_feature_against_golden_values (
 
     // a missing key would otherwise be compared against a default-inserted zero
     ASSERT_TRUE (feature_reference_values.count(feature_name) > 0) << feature_name;
-
-    const std::vector<double> per_slice = gldm_2d_phantom_slice_values (feature_);
+    ASSERT_FALSE (per_slice.empty()) << feature_name;
 
     double total = 0;
     for (double v : per_slice)

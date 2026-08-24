@@ -1,6 +1,6 @@
 #pragma once
 
-#include "test_2d_gldm_common.h"   // gtest, <string>, assert_gldm_feature_against_golden_values
+#include "test_2d_gldm_common.h"   // gtest, <string>, the slice featuriser and the mean assertion
 #include "test_ref_vals.h"         // ref_vals_map
 
 // Digital phantom values for the 2D GLDM family
@@ -40,8 +40,10 @@ static const double gldm_2d_ibsi_frac_tolerance = 100.;
 
 static void assert_gldm_feature_ibsi (const Feature2D& feature_, const std::string& feature_name)
 {
-    assert_gldm_feature_against_golden_values (feature_, feature_name, gldm_2d_ibsi_ref_vals,
-                                               "ibsi ", gldm_2d_ibsi_frac_tolerance);
+    // the published consensus values are means only, so the mean is all there is to assert here
+    assert_gldm_mean_against_golden_values (gldm_2d_phantom_slice_values (feature_), feature_name,
+                                            gldm_2d_ibsi_ref_vals, "ibsi ",
+                                            gldm_2d_ibsi_frac_tolerance);
 }
 
 void test_2d_gldm_sde_ibsi()
