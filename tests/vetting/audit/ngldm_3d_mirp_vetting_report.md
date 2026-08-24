@@ -59,8 +59,18 @@ background:
 ```
 
 Measured on this phantom: the bounding box is 82×96×70 = **551,040** voxels against an ROI of
-**274,432** — a factor of 2.008. IBSI NGLDM is defined over ROI voxels only, and MIRP computes it
-that way.
+**274,432**. IBSI NGLDM is defined over ROI voxels only, and MIRP computes it that way.
+
+**How many voxels the matrix actually counts is measurable from the pinned values alone**, without
+instrumenting anything. `f_GLNU /= Ns` and `f_GLNUN /= (Ns*Ns)` in `3d_ngldm.cpp`, so `GLNU/GLNUN`
+is exactly `Ns`, the number of voxels that contributed an entry; `DCNU/DCNUN` is the same quantity by
+the same construction. Both ratios agree on **Ns = 511,360** (to rel 2.3e-16), and 511,360 =
+68×80×94 is precisely the *interior* of the 82×96×70 box — the one-voxel shell, whose 26-neighbourhood
+would leave the box, is skipped.
+
+So the over-count against the ROI is **511,360 / 274,432 = 1.8633×**, not the 2.008× the raw
+bounding box suggests. The distinction matters for reading the table above: it is the denominator the
+near-linear features should be compared against.
 
 This predicts the error pattern, which is the reason to believe it is the dominant cause rather than
 a coincidence. Background voxels all bin to the same grey level and each sees ~24 identical
@@ -68,7 +78,8 @@ neighbours, so they pile into a single grey row at maximum dependence. That infl
 sum-of-squares over grey rows far more than linearly (`GLNU` 26.5×), raises energy sharply
 (`DCENE` 49.9×), lowers entropy (`DCENT` 0.60×), and pushes the dependence distribution to its top
 end (`HDE` 9.3×, `LDE` 0.40×). `DCNU`, which scales closer to linearly with the voxel count, comes
-out at 2.09× — almost exactly the bounding-box-to-ROI ratio.
+out at 2.09× — the nearest of the seventeen to the 1.8633× voxel-count ratio derived above, and still
+12% above it.
 
 ### 2. The neighbourhood has 24 voxels, not 26
 
@@ -113,8 +124,10 @@ to promote the family properly.
 
 ## Include hygiene and file-level observations
 
-The family is two headers: `test_3d_ngldm_regression.h` and `test_3d_ngldm_coverage.h`. There is no
-`_common.h` and no oracle file.
+The family is one header, `test_3d_ngldm_regression.h`: there is no `_common.h` and no oracle file,
+and `test_3d_ngldm_coverage.h` has since been retired — see `ngldm_3d_golden_regen.md`, "The retired
+coverage sweep". That makes the regression header the family's fixture as well as its table, so the
+include rule below applies to it with no `_common.h` to lean on.
 
 - **`test_3d_ngldm_regression.h` carried a dead `#if 0` block** — a superseded copy of the assert
   body. Removed. It also relied transitively on `<iomanip>`, `<iostream>`, `<string>`, `<tuple>`,
@@ -124,8 +137,13 @@ The family is two headers: `test_3d_ngldm_regression.h` and `test_3d_ngldm_cover
 - Its header comment carried the 2026-07 MIRP comparison inline. That measurement is now in this
   report, at full precision and with causes attached, and the header keeps a short current-state
   statement plus a pointer.
-- **`test_3d_ngldm_coverage.h`** keeps its single include of `test_3d_coverage_common.h`, as all
-  eight 3D `_coverage.h` files do (SPEC §6.3.1).
+- **`test_3d_ngldm_coverage.h`** kept its single include of `test_3d_coverage_common.h`, as the 3D
+  `_coverage.h` files do (SPEC §6.3.1). That file is now retired.
+- Being the family's fixture as well as its table, `test_3d_ngldm_regression.h` also used
+  `Fsettings`/`NyxSetting`, `SlideProps`/`scan_slide_props`, the four `globals.h` ROI-gathering
+  functions and `agrees_gt` without including `feature_settings.h`, `slideprops.h`, `globals.h` or
+  `test_main_nyxus.h` — every one reached it transitively. All four are now direct, and `<iostream>`
+  is dropped because `test_main_nyxus.h` supplies it.
 - The 19 tests in `test_3d_ngldm_regression.h` **do** assert. An earlier note in this series claimed
   the file's body was `#if 0` and its tests therefore vacuous; that was wrong, and was verified by
   negative control — perturbing `3NGLDM_DCENE` from 0.14 to 0.99 makes

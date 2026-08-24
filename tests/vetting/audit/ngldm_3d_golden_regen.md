@@ -23,10 +23,50 @@ ROI bounding box instead of the ROI, and a 24-shift neighbourhood where 3D Cheby
 every number in the table changes when they are corrected. That is the intended trigger, not a
 surprise.
 
+## The retired coverage sweep
+
+`test_3d_ngldm_coverage.h` instantiated the two generic `TEST_P` suites of
+`test_3d_coverage_common.h` over the family's 19 features. It is gone, and this family is the
+cleanest case of the retirement in the series: **its table was a bit-for-bit duplicate**.
+
+- `ngldm_3d_regression_coverage_ref_vals` and `ngldm_3d_regression_ref_vals` held the same 19 keys
+  with the same 19 doubles — verified by parsing both tables and comparing, not by eye.
+- Both were taken at the same recipe. The sweep runs `GREYDEPTH=64`, `IBSI=false`; so does
+  `test_3d_ngldm_regression.h`. Unlike 3D GLCM's grey64 table, there was no second configuration to
+  preserve.
+- The `NGLDM_WITH_3P_EMBEDDED_GT` half instantiated **zero** cases: no NGLDM table appears in
+  `externally_vetted_3d_feature_names()`, because the family has no oracle-backed feature at all.
+- All 19 features already had an individually named `*_regression` test and a `TEST()` registration,
+  so nothing had to be ported.
+
+What the sweep additionally checked, and where it lives now: the name-resolves-and-code-matches step
+is done by every named test (`find_3D_FeatureByString` plus an assert on the returned code), and the
+one-provider-per-`Feature3D`-code step by `FeatureManager::check_11_correspondence()`, in production
+since the 3D GLCM sweep was retired.
+
+The completeness guard in `test_3d_coverage_common.h` reads the family's pins straight off
+`ngldm_3d_regression_ref_vals`, so the migration cost exactly one `add_keys()` line — which is what
+that guard was rebuilt to make true. Deleting a pin from the table now fails
+`TEST_3D_FEATURE_COVERAGE_COUNTS` by feature name.
+
 ## The MIRP comparison — `oracles/gen_ngldm3d_mirp.py`
 
 Recipe `ngldm3d.mirp_fbn64`. Nothing in the tree asserts against it today; it exists so the
 divergence stays reproducible and so the promotion can be re-run against a fixed implementation.
+
+**It verifies the report, because that is the artifact it feeds.** The generator used to point its
+re-verification at `test_3d_ngldm_mirp.h`, a header that has never existed, so it always took the
+"nothing to verify" branch and exited 0 — its `ALL CHECKS PASSED` meant only that the script ran. It
+now parses the comparison table in `ngldm_3d_mirp_vetting_report.md`, checks every MIRP value quoted
+there against a fresh run at `rel<=1e-5` (the six significant figures the report quotes), checks the
+reverse direction for a feature MIRP produces that the report omits, and exits non-zero on either.
+Last run: 17 verified, 0 failed, 0 unproducible, 0 unquoted.
+
+**The over-count is measurable without instrumenting anything.** `GLNU/GLNUN` and `DCNU/DCNUN` are
+both exactly `Ns` by construction (`f_GLNU /= Ns`, `f_GLNUN /= (Ns*Ns)`), and both give
+**Ns = 511,360** — so the matrix counts 1.8633× the ROI's 274,432 voxels, not the 2.008× the raw
+82×96×70 bounding box suggests. See the vetting report for why the difference is the box's one-voxel
+shell.
 
 ```
 python tests/vetting/oracles/gen_ngldm3d_mirp.py
