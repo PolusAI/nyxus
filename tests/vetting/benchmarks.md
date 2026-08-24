@@ -23,7 +23,7 @@ lists are what this tree shows today — the recipe ids are the stable half.
 | Shape | 100×100×100 voxels at 1×1×1 spacing; the ROI is **274 432** voxels, ~27% of the volume |
 | Why it exists | a solid single-label 3D ROI, large enough that a 13-direction texture matrix is well populated in every direction and small enough to featurise inside a unit test |
 
-Recipes: `ngldm3d.regression_ut_phantom`, `ngldm3d.mirp_fbn64`, `gldzm3d.regression_ut_phantom`, `gldzm3d.mirp_fbn64`.
+Recipes: `ngldm3d.regression_ut_phantom`, `ngldm3d.mirp_fbn64`, `gldzm3d.regression_ut_phantom`, `gldzm3d.mirp_fbn64`, `firstorder3d.matlab_ut_phantom`, `firstorder3d.regression_ut_phantom`.
 
 Tests reaching it today: `test_3d_ngldm_regression.h`, `test_3d_coverage_common.h`,
 `test_3d_{glcm,gldm,gldzm}_regression.h`, `test_3d_morphology_matlab.h`, and the
@@ -47,6 +47,8 @@ prevent.
 | Why it exists | an MRI-like intensity distribution over an anatomical segmentation — the fixture the PyRadiomics comparisons are run on, whose grey-level spread suits `binCount` binning |
 
 Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyradiomics.h`.
+
+Recipes: `glcm3d.pyradiomics_bincount20`, `firstorder3d.pyradiomics_bincount20`.
 
 ---
 

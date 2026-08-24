@@ -20,7 +20,7 @@
 // itself is deliberately not asserted here: an assertion of it would fail, and a bound is an
 // invariant rather than a snapshot (SPEC 4.4), so it belongs in an _invariant file once the ratio
 // is computed in one domain. The registry carries flag=bound-violation and
-// tests/vetting/not_covered.md section E records the defect.
+// tests/vetting/not_covered.md section F records the defect.
 static ref_vals_map<double> firstorder_3d_regression_ref_vals
 {
 	{ "3COVERED_IMAGE_INTENSITY_RANGE",	1.0002043207290587 },

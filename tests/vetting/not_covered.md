@@ -130,27 +130,29 @@ column J named a file that did not exist).
 
 ## B. Tests that never run — 114 functions plus 13 config-gated cases
 
-### B.1 In files `test_all.cc` never includes — 112 functions, zero execution
+### B.1 In files `test_all.cc` never includes — 35 functions, zero execution
 
-Seven 3D snapshot files were written but never wired in (MIGRATION §5.10 "systemic orphan finding").
-They compile nowhere, so they cannot even fail.
+Seven 3D snapshot files were written but never wired in (MIGRATION §5.10 "systemic orphan
+finding"). Four have since been wired in by their families' waves; three remain. An orphaned file
+compiles nowhere, so it cannot even fail.
 
 | file | dead functions |
 |---|---:|
-| `test_3d_firstorder_matlab.h` | 35 |
-| `test_3d_glcm_regression.h` | 25 |
-| `test_3d_glrlm_regression.h` | 16 |
 | `test_3d_glszm_regression.h` | 16 |
 | `test_3d_gldm_regression.h` | 14 |
 | `test_3d_ngtdm_regression.h` | 5 |
-| `test_3d_firstorder_regression.h` | 1 |
 
-The file count is seven rather than six because `3COVERED_IMAGE_INTENSITY_RANGE` — the only 3D
-first-order feature with `status=regression` — was split out of `test_3d_firstorder_matlab.h` into its
-own file. Both halves remain unwired, so the total is unchanged at 112.
+Closed so far:
 
-All seven are listed in `current_test` for their families' rows — so the registry currently credits
-coverage to assertions that have never executed. Whether to wire them in or delete them is a
+| file | functions | closed by |
+|---|---:|---|
+| `test_3d_firstorder_matlab.h` | 35 | the 3D first-order wave — wired in, and four pins failed or were wrong on first execution |
+| `test_3d_firstorder_regression.h` | 1 | the same wave |
+| `test_3d_glcm_regression.h` | 25 | the 3D GLCM wave |
+| `test_3d_glrlm_regression.h` | 16 | the 3D GLRLM wave |
+
+The remaining three are listed in `current_test` for their families' rows — so the registry still
+credits coverage to assertions that have never executed. Whether to wire them in or delete them is a
 behavioural decision (they may fail on first run) and belongs to each family's wave, not to a rename.
 
 ### B.1.1 Wired, registered, and asserting nothing — CLOSED for gldm
@@ -215,7 +217,7 @@ Surfaced by Wave 12 and not yet satisfied:
 | site | assertions | what is missing |
 |---|---:|---|
 | `test_2d_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
-| `test_3d_firstorder_matlab.h` | 35 | `firstorder_3d_matlab_ref_vals` values also come from MATLAB, but the map says nothing about it. The 36th assertion moved to `test_3d_firstorder_regression.h`, which reads the same map — so the gap covers both files |
+| `test_3d_firstorder_matlab.h` | 35 | **RESOLVED.** The table is regenerated from GNU Octave 11.3.0 by `tests/vetting/oracles/gen_firstorder3d_matlab.py`, and the header now records tool, version, fixture, recipe and generator per SPEC §6.4. The two files no longer share a map: `test_3d_firstorder_regression.h` carries its own pin, and both take the shared workflow from `test_3d_firstorder_common.h` |
 | `test_2d_morphology_cellprofiler.h` | 6 | the 5 `EDGE_*` + `MASS_DISPLACEMENT` now have their own `morphology_2d_cellprofiler_ref_vals`, split out of the shared snapshot map they used to be asserted against. That fixes the *name*, not the *evidence*: no CellProfiler version, config or generator is recorded, so nothing in the tree distinguishes a CellProfiler number from a Nyxus one. The registry's `vetted` verdict rests on the tracker alone. Closing it means a `gen_morphology_cellprofiler.py` run; if that is not going to happen, the honest alternative is demotion to `regression`, as the ten GLCM `matlab` rows took |
 
 Closing these means writing tool + version + config + generator down at each assertion site, ideally
@@ -392,7 +394,7 @@ Found while placing assertions by column J. Each needs a registry decision, not 
 | 2D `ENTROPY` | pyradiomics | `test_2d_firstorder_regression.h` | **RESOLVED.** Also already asserted in `test_2d_firstorder_pyradiomics.h`; column J repointed, no code moved. The snapshot in the regression file is the drift guard on the default config. |
 | 2D `moments` ×40 | skimage | `test_2d_moments_regression.h` | **RESOLVED in Wave 13.** All 40 were already asserted in `test_2d_moments_skimage.h`; only the registry was stale, so `target_test` was repointed there and no code moved. This is the common case of the class: the assertion was migrated in an earlier wave and column J was never updated. |
 | 2D `ngldm` x19 | mirp | `test_2d_ngldm_mirp.h` | The tree holds **IBSI** goldens for 17 of these 19 features, cited page-by-page against the IBSI documentation in `test_2d_ngldm_ibsi.h`; the other two (`GLM`, `DCM`) are explicitly *not* IBSI features and are now snapshots in `test_2d_ngldm_regression.h`. So the in-tree 2D NGLDM oracle is `ibsi`, not `mirp`. Either these rows should read `oracle=ibsi` (already satisfied, 17 of them), or MIRP is wanted as a second opinion per SPEC 3 and the rows stay backlog until it is run. |
-| 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `firstorder_3d_matlab_ref_vals` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 35 `_matlab` functions and the 18 rows point there. The 36th, `3COVERED_IMAGE_INTENSITY_RANGE`, is the one regression-only feature and was split into `test_3d_firstorder_regression.h`. Two carry-overs: neither file is `#include`d (B.1), and the same map also covers 17 `oracle=pyradiomics` features which per SPEC 3 need a second (matlab) row each. |
+| 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `firstorder_3d_matlab_ref_vals` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 35 `_matlab` functions and the 18 rows point there. The 36th, `3COVERED_IMAGE_INTENSITY_RANGE`, is the one regression-only feature and was split into `test_3d_firstorder_regression.h`. Both carry-overs are now settled: both files are `#include`d in `test_all.cc` and their 36 cases run, and the 17 `oracle=pyradiomics` features keep a single row each naming pyradiomics as the primary oracle, with the second (MATLAB, different fixture and recipe) assertion recorded in the row's `notes` — matching how the ibsi+mirp families are represented rather than doubling the row count. |
 
 The general form: **a `vetted` row whose `target_test` names a `_regression` file** is asserting that
 its oracle evidence lives outside the tree. That is legitimate but should be explicit — a `source` or
@@ -416,6 +418,35 @@ column itself holds one SPEC §4 token by construction, so `notes` is where the 
 
 Add a row here whenever a family is promoted on a partial-pipeline oracle, rather than letting the
 distinction live only in a vetting report.
+
+## F. Features whose pinned value violates a bound their definition forces
+
+A drift guard pins what the code produces. When that value is outside the range the feature's own
+definition allows, the pin is still the right thing to assert — it detects change — but the row is
+not merely "unvetted", it is known-wrong, and the registry says so in `flag`.
+
+| feature | pinned | bound | why |
+|---|---|---|---|
+| 3D `3COVERED_IMAGE_INTENSITY_RANGE` | 1.0002043207290587 | ≤ 1 | the ratio compares two different intensity domains |
+
+`3d_intensity.cpp` computes it as `double(r.aux_max - r.aux_min) / (p.max_preroi_inten -
+p.min_preroi_inten)`. The numerator is the ROI in the loader's **truncated integer** domain —
+`NiftiLoader::unhounsfield` shifts a volume whose whole-volume minimum is negative by `-min`, and
+`ut_inten.nii` stores `[-1024, 2000]`, so the ROI spans `[1024, 3024]` and the range is exactly
+`2000`. The denominator is `SlideProps`, filled by `RawNiftiLoader::get_dpequiv_pixel` from the
+**raw stored** values, giving `2000 - 0.40855798 = 1999.5914`.
+
+An ROI cannot span more than the slide containing it, so the bound is definitional and the excess is
+the domain mismatch, not a rounding artifact. Asserting the bound today would fail; a bound is an
+invariant rather than a snapshot (SPEC §4.4) and belongs in an `_invariant` file once the ratio is
+computed in one domain. Until then `test_3d_firstorder_regression.h` pins the current value and
+states why.
+
+This supersedes the row's earlier registry note, which held that the 3D segmented workflow never
+sets `roi.slide_idx` so the feature always emits a degenerate `1`. `slide_idx` is set on this path
+— the value is not `1`.
+
+---
 
 ## Summary
 
