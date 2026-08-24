@@ -7,53 +7,53 @@
 #include "../src/nyx/features/3d_gldzm.h"
 #include "test_ref_vals.h"
 
-// PROVENANCE: UNKNOWN -- these are NOT IBSI consensus values and this is NOT an oracle table.
+// 3D GLDZM drift guards. These are NOT oracle values and this family is NOT vetted: every row in
+// oracle_coverage.csv is status=regression, and passing these establishes nothing (SPEC 1).
 //
-// The file was named test_3d_gldzm_ibsi.h until the SPEC 6.1/6.2 naming wave acted on this note and
-// renamed it _regression, which is what the registry's 18 rows say (status=regression). The numbers below have no recorded tool/version/config (SPEC 6.4
-// requires provenance for any oracle golden) and they are evaluated on the Nyxus coverage phantom
-// tests/data/nifti/phantoms/ut_inten.nii + ut_mask57.nii -- NOT the IBSI digital phantom -- so IBSI
-// consensus values cannot apply to them in the first place.
+// PROVENANCE: pinned Nyxus output on tests/data/nifti/phantoms/ut_inten.nii + ut_mask57.nii,
+// label 57, at GREYDEPTH=64 and IBSI=false -- the settings the helper below applies. Recorded at
+// full %.17g precision so the guard detects movement rather than absorbing it: a pin rounded to a
+// few significant figures spends most of its band before the test starts.
 //
-// Verified 2026-07 with an independent MIRP GLDZM run (MIRP implements IBSI GLDZM; pyradiomics has no
-// GLDZM at all) on the SAME phantom at the SAME discretisation (fixed_bin_number n=64, 3D). MIRP
-// disagrees with every value here, several by an order of magnitude:
-//      feature   this table     MIRP
-//      LDE           314.0      11.235
-//      SDE            0.0224     0.382
-//      ZDV           79.7        3.246
-//      ZP             0.47       0.270
-//      ZDE           10.23       7.505
-// Harness: morph_oracle/mirp_gldzm_3d.py (offline; CI never runs it).
+// WHAT THESE VALUES ARE NOT. MIRP implements IBSI GLDZM (PyRadiomics has no GLDZM at all) and
+// disagrees with every one of the 16 features it computes, several by more than an order of
+// magnitude -- LDE 314.01 against 11.23, ZDV 79.72 against 3.25, LDHGLE 734618 against 10882. The
+// disagreement is not a tolerance question: an independent implementation that grows zones with
+// 26-connectivity and measures distance with a city-block distance transform reproduces MIRP to
+// ratio 1.0000 on 14 of 16 features, so the definition MIRP computes is reachable and Nyxus is not
+// computing it. tests/vetting/audit/gldzm_3d_mirp_vetting_report.md carries the measurements and
+// the three defects behind them.
 //
-// => Treat the tests below as REGRESSION / drift guards only. Do NOT promote features in
-// oracle_coverage.csv to status=vetted on the strength of them passing. Promoting requires a
-// documented, config-matched external oracle (MIRP is the candidate for GLDZM).
+// So these pins are a change detector for the eventual fix, not an endorsement. Do not promote any
+// row to status=vetted on the strength of them.
 //
-// Also note 3GLDZM_ZDM (zone-distance MEAN) is a Nyxus-specific feature with no counterpart at all:
-// IBSI's GLDZM set has no zone-distance mean and MIRP emits only dzm_zd_var / dzm_zd_entr. Its 222
-// below is additionally self-inconsistent (the same distribution's variance is 79.7 => std ~8.9, so a
-// mean of 222 is impossible; Nyxus computes 15.31).
+// 3GLDZM_GLM and 3GLDZM_ZDM have no counterpart in MIRP or IBSI at all (MIRP emits no dzm_gl_mean
+// or dzm_zd_mean), so they stay regression-only whatever happens to the rest.
 static ref_vals_map<double> gldzm_3d_regression_ref_vals{
-	{"3GLDZM_SDE",		0.0224},
-	{"3GLDZM_LDE",       314.0},
-	{"3GLDZM_LGLZE",     0.0006},
-	{"3GLDZM_HGLZE",     2342.5},
-	{"3GLDZM_SDLGLE",		0.000018},
-	{"3GLDZM_SDHGLE",    61.2},
-	{"3GLDZM_LDLGLE",    0.17},
-	{"3GLDZM_LDHGLE",    734618.0},
-	{"3GLDZM_GLNU",      3435.2},
-	{"3GLDZM_GLNUN",     0.027},
-	{"3GLDZM_ZDNU",      4330.3},
-	{"3GLDZM_ZDNUN",     0.034},
-	{"3GLDZM_ZP",        0.47},
-	{"3GLDZM_GLM",       47.2},
-	{"3GLDZM_GLV",       112.0},
-	{"3GLDZM_ZDM",       222},
-	{"3GLDZM_ZDV",       79.7},
-	{"3GLDZM_ZDE",       10.23}
+	{"3GLDZM_SDE",        0.022387420258025731},
+	{"3GLDZM_LDE",          314.01248309662088},
+	{"3GLDZM_LGLZE",     0.0005581993242951194},
+	{"3GLDZM_HGLZE",        2342.4734665801629},
+	{"3GLDZM_SDLGLE",   1.8362515436029654e-05},
+	{"3GLDZM_SDHGLE",       61.230746106573264},
+	{"3GLDZM_LDLGLE",      0.16729167507144088},
+	{"3GLDZM_LDHGLE",       734618.35720259824},
+	{"3GLDZM_GLNU",         3435.1800942680934},
+	{"3GLDZM_GLNUN",      0.026851399515903585},
+	{"3GLDZM_ZDNU",         4330.2817177741472},
+	{"3GLDZM_ZDNUN",      0.033848043255251946},
+	{"3GLDZM_ZP",          0.46617376982276121},
+	{"3GLDZM_GLM",          47.230300235279401},
+	{"3GLDZM_GLV",          111.77220626552925},
+	{"3GLDZM_ZDM",          15.306504185784746},
+	{"3GLDZM_ZDV",          79.723412707174901},
+	{"3GLDZM_ZDE",          10.230312642315166},
 };
+// rel=1e-9. A drift guard compares the program against its own recorded output, so the only thing
+// it can catch is movement, and the band should be as tight as the value is reproducible.
+// agrees_gt divides the golden by this, so a larger argument is a tighter band.
+static const double gldzm_3d_regression_frac_tolerance = 1.e9;
+
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
@@ -116,7 +116,7 @@ void assert_3d_gldzm_feature_regression (const Nyxus::Feature3D& expecting_fcode
 	double atot = r.fvals[fcode][0];
 
 	// verdict
-	ASSERT_TRUE(agrees_gt(atot, gldzm_3d_regression_ref_vals[fname], 10.));
+	ASSERT_TRUE(agrees_gt(atot, gldzm_3d_regression_ref_vals[fname], gldzm_3d_regression_frac_tolerance));
 
 }
 
@@ -178,6 +178,10 @@ void test_3d_gldzm_glm_regression() {
 
 void test_3d_gldzm_glv_regression() {
 	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_GLV, "3GLDZM_GLV");
+}
+
+void test_3d_gldzm_zdm_regression() {
+	assert_3d_gldzm_feature_regression (Nyxus::Feature3D::GLDZM_ZDM, "3GLDZM_ZDM");
 }
 
 void test_3d_gldzm_zdv_regression() {
