@@ -675,6 +675,10 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDNUN_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_gldzm_zdnun_regression());
 }
 
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDM_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_gldzm_zdm_regression());
+}
+
 TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDV_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_gldzm_zdv_regression());
 }
