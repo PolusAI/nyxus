@@ -76,6 +76,7 @@
 #include "test_3d_gldzm_regression.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
+#include "test_3d_firstorder_matlab.h"
 #include "test_3d_glcm_pyradiomics.h"
 #include "test_3d_glcm_regression.h"
 #include "test_3d_gldm_pyradiomics.h"
@@ -186,6 +187,10 @@ TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_UNIFORMITY_PYRADIOMICS) {
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS) {
 	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::VARIANCE, "3VARIANCE"));
+}
+
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MATLAB) {
+	ASSERT_NO_THROW(test_3d_firstorder_matlab());
 }
 
 

@@ -282,6 +282,7 @@ static const std::set<std::string>& externally_vetted_3d_feature_names()
 				out.insert(kv.first);
 		};
 		add_keys(firstorder_3d_pyradiomics_ref_vals);
+		add_keys(firstorder_3d_matlab_ref_vals);
 		add_keys(glcm_3d_pyradiomics_ref_vals);
 		add_keys(gldm_3d_pyradiomics_ref_vals);
 		add_keys(glrlm_3d_pyradiomics_ref_vals);
@@ -325,6 +326,8 @@ static void assert_oracle_backed_agreement(const Feature3DCoverageCase& c)
 {
 	if (firstorder_3d_pyradiomics_ref_vals.find(c.name) != firstorder_3d_pyradiomics_ref_vals.end())
 		assert_3d_firstorder_feature_pyradiomics(c.code, c.name);
+	else if (firstorder_3d_matlab_ref_vals.find(c.name) != firstorder_3d_matlab_ref_vals.end())
+		assert_3d_firstorder_feature_matlab(c.code, c.name);
 	else if (glcm_3d_pyradiomics_ref_vals.find(c.name) != glcm_3d_pyradiomics_ref_vals.end())
 		assert_3d_glcm_feature_pyradiomics(c.code, c.name);
 	else if (gldm_3d_pyradiomics_ref_vals.find(c.name) != gldm_3d_pyradiomics_ref_vals.end())
@@ -501,8 +504,8 @@ static const std::set<std::string>& individually_pinned_3d_feature_names()
 TEST(TEST_NYXUS, TEST_3D_FEATURE_COVERAGE_COUNTS)
 {
 	EXPECT_EQ(213u, Nyxus::UserFacing_3D_featureNames.size());
-	EXPECT_EQ(94u, feature_3d_cases(true).size());
-	EXPECT_EQ(119u, feature_3d_cases(false).size());
+	EXPECT_EQ(103u, feature_3d_cases(true).size());
+	EXPECT_EQ(110u, feature_3d_cases(false).size());
 	EXPECT_EQ(Nyxus::UserFacing_3D_featureNames.size(), feature_3d_cases(true).size() + feature_3d_cases(false).size());
 
 	// SPEC 1: every public feature with no oracle behind it still has to be pinned somewhere -- in

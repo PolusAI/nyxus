@@ -24,6 +24,21 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 ## firstorder.pyradiomics_default
 - Non-discretised intensity statistics. Oracle: `pyradiomics` firstorder. Used by: `test_2d_firstorder_pyradiomics.h`.
 
+## firstorder3d.matlab_native
+- `bench_ut57_3d`, label 57, with default 3D first-order settings. The fixture is put in the same
+  integer domain as Nyxus' default float-NIfTI loader: shift the negative volume minimum to zero,
+  then truncate nonnegative values to integers.
+- MATLAB R2026a calls the named statistics directly. `prctile(..., Method="midpoint")` and `iqr`
+  use raw samples; Nyxus' percentile family uses its fixed 100-bin CDF, so that group uses `rel=1e-2`.
+  The other native-function comparisons use the SPEC same-definition `rel=1e-3` tier.
+- Used by: `test_3d_firstorder_matlab.h`. Generator:
+  `oracles/gen_firstorder3d_matlab.m`.
+
+## firstorder3d.regression_ut_phantom
+- `bench_ut57_3d`, label 57, with the same default settings. Snapshot-only coverage for first-order
+  features with no equivalent native MATLAB function; establishes no oracle vetting.
+- Used by: `test_3d_firstorder_coverage.h`.
+
 ## firstorder.preserve_hu
 - `--preserve-hu` (CT/Hounsfield mode): the loader applies a slope-1 offset (`value - floor(HU_min)`)
   instead of min-max rescaling, so first-order intensity features are reported in true Hounsfield units.

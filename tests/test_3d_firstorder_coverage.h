@@ -30,20 +30,11 @@ static ref_vals_map<std::vector<double>> firstorder_3d_regression_coverage_ref_v
 	{ "3EXCESS_KURTOSIS", { -1.2127631603215119 } },
 	{ "3HYPERFLATNESS", { 3.8027657005973312 } },
 	{ "3HYPERSKEWNESS", { 0.32001332615517414 } },
-	{ "3INTEGRATED_INTENSITY", { 544286216 } },
 	{ "3MEDIAN_ABSOLUTE_DEVIATION", { 507.12380480410445 } },
-	{ "3MODE", { 1279 } },
-	{ "3P01", { 1039.3829596412556 } },
-	{ "3P25", { 1469.7943925233644 } },
-	{ "3P75", { 2487.9072847682119 } },
-	{ "3P99", { 3002.3047021943576 } },
 	{ "3QCOD", { 0.25724851827174233 } },
 	{ "3ROBUST_MEAN", { 1977.5189642596645 } },  // FIX: baseline was pinning the bug value 0; 3ROBUST_MEAN is now computed (mean of voxels in [P10,P90]) ~ 3MEAN 1983.32, trimmed
-	{ "3STANDARD_DEVIATION", { 584.80556406962933 } },
-	{ "3STANDARD_DEVIATION_BIASED", { 584.80449858510713 } },
 	{ "3STANDARD_ERROR", { 1.116333919044723 } },
 	{ "3UNIFORMITY_PIU", { 50.59288537549407 } },
-	{ "3VARIANCE_BIASED", { 341996.3015653785 } },
 };
 
 static const bool firstorder_3d_coverage_baseline_registered =

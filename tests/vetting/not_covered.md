@@ -128,28 +128,20 @@ column J named a file that did not exist).
 
 ---
 
-## B. Tests that never run — 114 functions plus 13 config-gated cases
+## B. Tests that never run — 37 functions plus 13 config-gated cases
 
-### B.1 In files `test_all.cc` never includes — 112 functions, zero execution
+### B.1 In files `test_all.cc` never includes — 35 functions, zero execution
 
-Seven 3D snapshot files were written but never wired in (MIGRATION §5.10 "systemic orphan finding").
+Three 3D snapshot files were written but never wired in (MIGRATION §5.10 "systemic orphan finding").
 They compile nowhere, so they cannot even fail.
 
 | file | dead functions |
 |---|---:|
-| `test_3d_firstorder_matlab.h` | 35 |
-| `test_3d_glcm_regression.h` | 25 |
-| `test_3d_glrlm_regression.h` | 16 |
 | `test_3d_glszm_regression.h` | 16 |
 | `test_3d_gldm_regression.h` | 14 |
 | `test_3d_ngtdm_regression.h` | 5 |
-| `test_3d_firstorder_regression.h` | 1 |
 
-The file count is seven rather than six because `3COVERED_IMAGE_INTENSITY_RANGE` — the only 3D
-first-order feature with `status=regression` — was split out of `test_3d_firstorder_matlab.h` into its
-own file. Both halves remain unwired, so the total is unchanged at 112.
-
-All seven are listed in `current_test` for their families' rows — so the registry currently credits
+All three are listed in `current_test` for their families' rows — so the registry currently credits
 coverage to assertions that have never executed. Whether to wire them in or delete them is a
 behavioural decision (they may fail on first run) and belongs to each family's wave, not to a rename.
 
@@ -215,13 +207,15 @@ Surfaced by Wave 12 and not yet satisfied:
 | site | assertions | what is missing |
 |---|---:|---|
 | `test_2d_firstorder_matlab.h` | 34 | all 34 are MATLAB values (`oracle_3p_matlab_*` named the tool, `oracle_3p_builtin_*` meant MATLAB's built-ins). Missing: MATLAB version, exact config, generator path — the numbers are here, the reproduction recipe is not |
-| `test_3d_firstorder_matlab.h` | 35 | `firstorder_3d_matlab_ref_vals` values also come from MATLAB, but the map says nothing about it. The 36th assertion moved to `test_3d_firstorder_regression.h`, which reads the same map — so the gap covers both files |
 | `test_2d_morphology_cellprofiler.h` | 6 | the 5 `EDGE_*` + `MASS_DISPLACEMENT` now have their own `morphology_2d_cellprofiler_ref_vals`, split out of the shared snapshot map they used to be asserted against. That fixes the *name*, not the *evidence*: no CellProfiler version, config or generator is recorded, so nothing in the tree distinguishes a CellProfiler number from a Nyxus one. The registry's `vetted` verdict rests on the tracker alone. Closing it means a `gen_morphology_cellprofiler.py` run; if that is not going to happen, the honest alternative is demotion to `regression`, as the ten GLCM `matlab` rows took |
 
 Closing these means writing tool + version + config + generator down at each assertion site, ideally
 by regenerating through the harness so the values become reproducible.
 
-Two grades of gap sit in that table, and they are not equally serious. For the MATLAB rows the values
+The 3D first-order gap is closed: its 22 goldens now have an R2026a generator and provenance at the
+table; nine formula-derived legacy claims were demoted to regression instead of being called MATLAB.
+
+Two grades of gap remain in that table, and they are not equally serious. For the 2D MATLAB rows the values
 *are* the oracle's — only the reproduction recipe is absent. For `test_2d_morphology_cellprofiler.h`
 even that much is unestablished: nothing in the tree shows the numbers ever came from CellProfiler,
 so the entry records an unproven claim rather than an unreproducible one. Do not treat the two the
@@ -392,7 +386,7 @@ Found while placing assertions by column J. Each needs a registry decision, not 
 | 2D `ENTROPY` | pyradiomics | `test_2d_firstorder_regression.h` | **RESOLVED.** Also already asserted in `test_2d_firstorder_pyradiomics.h`; column J repointed, no code moved. The snapshot in the regression file is the drift guard on the default config. |
 | 2D `moments` ×40 | skimage | `test_2d_moments_regression.h` | **RESOLVED in Wave 13.** All 40 were already asserted in `test_2d_moments_skimage.h`; only the registry was stale, so `target_test` was repointed there and no code moved. This is the common case of the class: the assertion was migrated in an earlier wave and column J was never updated. |
 | 2D `ngldm` x19 | mirp | `test_2d_ngldm_mirp.h` | The tree holds **IBSI** goldens for 17 of these 19 features, cited page-by-page against the IBSI documentation in `test_2d_ngldm_ibsi.h`; the other two (`GLM`, `DCM`) are explicitly *not* IBSI features and are now snapshots in `test_2d_ngldm_regression.h`. So the in-tree 2D NGLDM oracle is `ibsi`, not `mirp`. Either these rows should read `oracle=ibsi` (already satisfied, 17 of them), or MIRP is wanted as a second opinion per SPEC 3 and the rows stay backlog until it is run. |
-| 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED under SPEC 6.2.1** (this reverses the earlier "leave it" call, which assumed column J was authoritative). `firstorder_3d_matlab_ref_vals` holds MATLAB values, so the file is now `test_3d_firstorder_matlab.h` with 35 `_matlab` functions and the 18 rows point there. The 36th, `3COVERED_IMAGE_INTENSITY_RANGE`, is the one regression-only feature and was split into `test_3d_firstorder_regression.h`. Two carry-overs: neither file is `#include`d (B.1), and the same map also covers 17 `oracle=pyradiomics` features which per SPEC 3 need a second (matlab) row each. |
+| 3D firstorder x18 | matlab | `test_3d_firstorder_regression.h` | **RESOLVED.** MATLAB R2026a directly produces 22 feature goldens, now generated by `gen_firstorder3d_matlab.m` and asserted from the wired MATLAB header. Nine old raw-formula claims are regression-only; 13 features already covered by PyRadiomics have separate MATLAB rows. |
 
 The general form: **a `vetted` row whose `target_test` names a `_regression` file** is asserting that
 its oracle evidence lives outside the tree. That is legitimate but should be explicit — a `source` or
@@ -425,7 +419,7 @@ distinction live only in a vetting report.
 | functions in those files | 61 |
 | registry rows whose `target_test` is not yet written (backlog) | 256 refs / 17 files |
 | stale `current_test` refs (rename drift, must fix) | 3 |
-| functions that never execute (unwired) | 112 |
+| functions that never execute (unwired) | 35 |
 | functions that never execute (unregistered) | 2 |
 | cases gated by a build flag | 13 |
 
