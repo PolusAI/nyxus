@@ -473,11 +473,11 @@ TEST_P(Test3DFeature_UNVETTED_LOCAL_REGRESSION, PublicFeatureIsComputableButHasN
 
 // Features an individually named test pins, rather than an entry in their family's coverage baseline
 // table -- the shape a family takes once it has retired its instantiations of the two suites above
-// (glcm's "_grey64_regression" tests; morphology's "_regression" ones, plus its five PCA axis features,
-// which a MIRP oracle test pins at rel=1e-9 and so needs no snapshot of its own). Read straight off the
-// tables those tests assert against, the same way externally_vetted_3d_feature_names() is read off the
-// oracle tables, so migrating the next family is one add_keys() line and nothing has to be counted or
-// opted out by hand.
+// (glcm's and glrlm's "_grey64_regression" tests; morphology's "_regression" ones, plus its five PCA
+// axis features, which a MIRP oracle test pins at rel=1e-9 and so needs no snapshot of its own). Read
+// straight off the tables those tests assert against, the same way externally_vetted_3d_feature_names()
+// is read off the oracle tables, so migrating the next family is one add_keys() line and nothing has to
+// be counted or opted out by hand.
 static const std::set<std::string>& individually_pinned_3d_feature_names()
 {
 	static const std::set<std::string> names = [] {
@@ -487,6 +487,7 @@ static const std::set<std::string>& individually_pinned_3d_feature_names()
 				out.insert(kv.first);
 		};
 		add_keys(glcm_3d_regression_grey64_ref_vals);
+		add_keys(glrlm_3d_regression_grey64_ref_vals);
 		add_keys(morphology_3d_regression_ref_vals);
 		add_keys(morphology_3d_mirp_pca_ref_vals);
 		return out;
