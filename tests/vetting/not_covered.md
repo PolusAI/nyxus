@@ -284,6 +284,25 @@ The general form: **a `vetted` row whose `target_test` names a `_regression` fil
 its oracle evidence lives outside the tree. That is legitimate but should be explicit — a `source` or
 `notes` entry saying "external harness" — rather than inferable only by opening the file.
 
+## E. Vetted, but not against a second implementation of the feature
+
+A `vetted` row means an external tool was run and agreed. It does not always mean the tool computes
+the *whole* feature — sometimes it supplies one stage and the rest of the pipeline is Nyxus' own
+definition, reproduced in the generator. That is a weaker claim than the token suggests, and it is
+worth listing separately so nobody reads the coverage percentage as more than it is.
+
+| family | what the oracle actually supplies | what would close it |
+|---|---|---|
+| 2D `gabor` (`GABOR`, both recipes) | scikit-image supplies the **kernel**, cross-checked against the canonical closed form at ≤1.1e-16. The WND-CHARM count-ratio **score** has no scikit-image equivalent and is reproduced from Nyxus' own definition; the `f0=0` kernel is analytic, since `gabor_kernel` cannot express frequency 0. Measured: scoring off skimage's own filtering instead moves values by up to 1.005 (`audit/gabor_2d_skimage_vetting_report.md` §4.1) | `wndcharm` — SPEC §4 names it and `feature2djava` as the highest-value oracles for the Nyxus-original features (Gabor, Zernike, Tamura, radial, chords), because Nyxus descends from WND-CHARM. Neither is built in this tree |
+
+The registry records the split where it can: `audit/gabor_2d_coverage.csv` lists `skimage;analytic`
+rather than `skimage`, and both `oracle_coverage.csv` rows spell it out in `notes`. The `oracle`
+column itself holds one SPEC §4 token by construction, so `notes` is where the narrowing has to live
+— the same arrangement SPEC §4 documents for `matlab`.
+
+Add a row here whenever a family is promoted on a partial-pipeline oracle, rather than letting the
+distinction live only in a vetting report.
+
 ## Summary
 
 | | count |
