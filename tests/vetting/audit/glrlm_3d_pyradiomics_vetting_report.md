@@ -211,18 +211,30 @@ It grows monotonically with the bin count and crosses 1 at positive grey depths 
 across the whole sweep, so this is specific to `RP`. More runs than voxels is impossible, and the
 monotone growth points at a denominator that does not track the binning.
 
+The per-angle figure is now pinned rather than described. At `GLRLM_GREYDEPTH=+64`,
+`glrlm_3d_regression_grey64_ref_vals` records **4 of the 13 angles at 1.0231204815764925** — angles
+0, 2, 6 and 8 — against a 13-angle average of 0.9400989344144661. The average is what the table used
+to hold on its own, and it is in range, which is precisely why an aggregate-only pin could not have
+shown this.
+
 **Not fixed here** — it is a behaviour change in a public feature and belongs on its own branch,
 alongside a cheap invariant test (`RP ≤ 1`, `SRE ≤ 1`, `LRE ≥ 1`) so the class of defect cannot return
 silently. That check is what found this one.
 
-Both this branch's benchmarks use binCount binning, where `RP` is in range, and the `3GLRLM_RP_AVE`
-registry row says so explicitly rather than claiming the feature holds at every config.
+Both of this branch's benchmarks use binCount binning, where `RP` is in range, and the
+`3GLRLM_RP_AVE` registry row says so explicitly rather than claiming the feature holds at every
+config. A third benchmark joined the file when the family's coverage sweep was retired — the grey64
+table in `test_3d_glrlm_regression.h`, at `GLRLM_GREYDEPTH=+64` — and because it pins per angle
+rather than only the mean, it is the first artifact in the tree that carries the out-of-bound values
+themselves. They are pinned as a drift guard with a comment naming this section, not endorsed: the
+fix will show up as a diff on four numbers instead of as a silent change.
 
 ## Include hygiene and file-level observations
 
-The family is three headers — `test_3d_glrlm_pyradiomics.h`, `test_3d_glrlm_regression.h`,
-`test_3d_glrlm_coverage.h` — plus the `test_3d_glrlm_compatibility` case in
-`tests/python/test_nyxus.py`. There is no `test_3d_glrlm_common.h`.
+The family is two headers — `test_3d_glrlm_pyradiomics.h` and `test_3d_glrlm_regression.h` — plus
+the `test_3d_glrlm_compatibility` case in `tests/python/test_nyxus.py`. There is no
+`test_3d_glrlm_common.h`. A third header, `test_3d_glrlm_coverage.h`, was retired after this report
+was written; its goldens live in `test_3d_glrlm_regression.h`'s grey64 table.
 
 - **`test_3d_glrlm_pyradiomics.h` included `../src/nyx/raw_nifti.h` and referenced no symbol from
   it.** Removed; the build is unaffected. It also relied on `<string>`, `<unordered_set>` and
@@ -230,11 +242,10 @@ The family is three headers — `test_3d_glrlm_pyradiomics.h`, `test_3d_glrlm_re
   `get_3d_compat_phantom()`'s return; all four are now included directly.
 - **`test_3d_glrlm_regression.h`** relied on `<iomanip>`, `<iostream>`, `<string>`, `<tuple>`,
   `<vector>` and `helpers/fsystem.h` (for `fs::exists`) transitively. All added.
-- **`test_3d_glrlm_coverage.h` includes only `test_3d_coverage_common.h`**, from which it takes
-  `ref_vals_map` and `std::vector` without naming either header. Left as-is deliberately: all eight
-  3D `_coverage.h` files use the identical single-include form, `test_3d_coverage_common.h` is the
-  shared fixture header SPEC §6.3.1 sanctions for exactly this, and changing one family's copy would
-  break the uniformity for no functional gain.
+- **`test_3d_glrlm_coverage.h` included only `test_3d_coverage_common.h`**, from which it took
+  `ref_vals_map` and `std::vector` without naming either header. Left as-is at the time because all
+  eight 3D `_coverage.h` files used the identical single-include form; the file has since been
+  retired, so the question is moot for this family.
 - **Redundant duplicate assertions, both intentional and both now visible in the coverage CSV.** Each
   base feature is covered twice within `test_3d_glrlm_pyradiomics.h` (its own per-angle test, and the
   `_AVE` test's mapping table), and each `_AVE` feature is asserted a second time through the Python
