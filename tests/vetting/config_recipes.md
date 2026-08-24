@@ -28,16 +28,17 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 - `bench_ut57_3d`, label 57, with default 3D first-order settings. The fixture is put in the same
   integer domain as Nyxus' default float-NIfTI loader: shift the negative volume minimum to zero,
   then truncate nonnegative values to integers.
-- MATLAB R2026a calls the named statistics directly. `prctile(..., Method="midpoint")` and `iqr`
+- MATLAB R2026a uses the named built-ins directly; derived statistics apply only their defining
+  normalization to those results. `prctile(..., Method="midpoint")` and `iqr`
   use raw samples; Nyxus' percentile family uses its fixed 100-bin CDF, so that group uses `rel=1e-2`.
-  The other native-function comparisons use the SPEC same-definition `rel=1e-3` tier.
+  The other same-definition comparisons use the SPEC `rel=1e-3` tier.
 - Used by: `test_3d_firstorder_matlab.h`. Generator:
   `oracles/gen_firstorder3d_matlab.m`.
 
 ## firstorder3d.regression_ut_phantom
 - `bench_ut57_3d`, label 57, with the same default settings. Snapshot-only coverage for first-order
   features with no equivalent native MATLAB function; establishes no oracle vetting.
-- Used by: `test_3d_firstorder_coverage.h`.
+- Used by: `test_3d_firstorder_regression.h`.
 
 ## firstorder.preserve_hu
 - `--preserve-hu` (CT/Hounsfield mode): the loader applies a slope-1 offset (`value - floor(HU_min)`)

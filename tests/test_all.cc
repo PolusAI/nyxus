@@ -76,6 +76,7 @@
 #include "test_3d_gldzm_regression.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
+#include "test_3d_firstorder_regression.h"
 #include "test_3d_firstorder_matlab.h"
 #include "test_3d_glcm_pyradiomics.h"
 #include "test_3d_glcm_regression.h"
@@ -191,6 +192,18 @@ TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS) {
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MATLAB) {
 	ASSERT_NO_THROW(test_3d_firstorder_matlab());
+}
+
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_COVERED_IMAGE_INTENSITY_RANGE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_firstorder_covered_image_intensity_range_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEDIAN_ABSOLUTE_DEVIATION_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_firstorder_median_absolute_deviation_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROBUST_MEAN_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_firstorder_robust_mean_regression());
 }
 
 

@@ -28,7 +28,7 @@ Recipes: `firstorder3d.matlab_native`, `firstorder3d.regression_ut_phantom`,
 `gldzm3d.mirp_fbn64`.
 
 Tests reaching it today: `test_3d_ngldm_regression.h`, `test_3d_coverage_common.h`,
-`test_3d_{glcm,gldm,gldzm}_regression.h`, `test_3d_firstorder_matlab.h`,
+`test_3d_{glcm,gldm,gldzm}_regression.h`, `test_3d_firstorder_{matlab,regression}.h`,
 `test_3d_morphology_matlab.h`, and the
 `get_3d_segmented_phantom()` helper the 3D `_pyradiomics` files define (several of those assert on
 `bench_compat_liver_3d` instead — the helper being present is not the same as the assertion using

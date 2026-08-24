@@ -1,31 +1,23 @@
 #pragma once
 
-#include <cmath>
-#include <string>
-#include <tuple>
-#include <vector>
-
-#include <gtest/gtest.h>
-
-#include "../src/nyx/environment.h"
-#include "../src/nyx/features/3d_intensity.h"
 #include "../src/nyx/featureset.h"
-#include "../src/nyx/globals.h"
-#include "../src/nyx/helpers/fsystem.h"
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/slideprops.h"
+#include "test_3d_firstorder_common.h"
 #include "test_ref_vals.h"
 
 // Provenance (SPEC 6.4):
 //   tool      = MATLAB R2026a
-//   functions = sum, iqr, kurtosis, max, mean, mad, median, min, mode, prctile,
-//               range, rms, skewness, std, var
+//   functions = sum, iqr, kurtosis, max, mean, mad, median, min, mode, moment,
+//               prctile, range, rms, skewness, std, var
 //   fixture   = tests/data/nifti/phantoms/ut_{inten,mask57}.nii, label 57
 //   config    = default Nyxus 3D first-order settings and float-NIfTI loader domain
 //   recipe    = firstorder3d.matlab_native
 //   generator = tests/vetting/oracles/gen_firstorder3d_matlab.m
 static const ref_vals_map<double> firstorder_3d_matlab_ref_vals
 {
+    { "3COV", 0.29486207043457396 },
+    { "3EXCESS_KURTOSIS", -1.2127631603215849 },
+    { "3HYPERFLATNESS", 3.8027657005971736 },
+    { "3HYPERSKEWNESS", 0.32001332615504319 },
     { "3INTEGRATED_INTENSITY", 544286216.0 },
     { "3INTERQUARTILE_RANGE", 1018.5 },
     { "3KURTOSIS", 1.7872368396784151 },
@@ -41,61 +33,36 @@ static const ref_vals_map<double> firstorder_3d_matlab_ref_vals
     { "3P75", 2487.5 },
     { "3P90", 2808.0 },
     { "3P99", 3002.0 },
+    { "3QCOD", 0.25742449134335904 },
     { "3RANGE", 2000.0 },
     { "3ROOT_MEAN_SQUARED", 2067.740503875048 },
     { "3SKEWNESS", 0.074690529125406482 },
     { "3STANDARD_DEVIATION", 584.80556406964115 },
     { "3STANDARD_DEVIATION_BIASED", 584.80449858511895 },
+    { "3STANDARD_ERROR", 1.1163339190447454 },
+    { "3UNIFORMITY_PIU", 50.59288537549407 },
     { "3VARIANCE", 341997.54776681121 },
     { "3VARIANCE_BIASED", 341996.30156539241 }
 };
 
-static double firstorder_3d_matlab_rel_tol(const std::string& fname)
+static double firstorder_3d_matlab_rel_tol(Nyxus::Feature3D feature)
 {
+    switch (feature)
+    {
     // 1%: MATLAB sample percentiles vs Nyxus' 100-bin CDF; worst measured residual is 2.30e-3.
-    if (fname == "3INTERQUARTILE_RANGE" || fname == "3P01" || fname == "3P10" ||
-        fname == "3P25" || fname == "3P75" || fname == "3P90" || fname == "3P99")
+    case Nyxus::Feature3D::INTERQUARTILE_RANGE:
+    case Nyxus::Feature3D::QCOD:
+    case Nyxus::Feature3D::P01:
+    case Nyxus::Feature3D::P10:
+    case Nyxus::Feature3D::P25:
+    case Nyxus::Feature3D::P75:
+    case Nyxus::Feature3D::P90:
+    case Nyxus::Feature3D::P99:
         return 1.0e-2;
-
-    // 0.1%: same native statistic on the same integer voxel vector (SPEC 7).
-    return 1.0e-3;
-}
-
-static std::tuple<std::string, std::string, int> get_3d_firstorder_matlab_phantom()
-{
-    const fs::path tests_dir = fs::path(__FILE__).parent_path();
-    return {
-        (tests_dir / "data/nifti/phantoms/ut_inten.nii").string(),
-        (tests_dir / "data/nifti/phantoms/ut_mask57.nii").string(),
-        57
-    };
-}
-
-static void calculate_3d_firstorder_values_matlab(std::vector<std::vector<double>>& values)
-{
-    auto [ipath, mpath, label] = get_3d_firstorder_matlab_phantom();
-    ASSERT_TRUE(fs::exists(ipath));
-    ASSERT_TRUE(fs::exists(mpath));
-
-    Environment e;
-    e.dataset.dataset_props.reserve(1);
-    SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
-    e.dataset.update_dataset_props_extrema();
-
-    clear_slide_rois(e.uniqueLabels, e.roiData);
-    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0, ipath, mpath, 0));
-    std::vector<int> batch = { label };
-    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0));
-    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
-
-    LR& r = e.roiData.at(label);
-    ASSERT_NO_THROW(r.initialize_fvals());
-    D3_VoxelIntensityFeatures f;
-    Fsettings s;
-    ASSERT_NO_THROW(f.calculate(r, s, e.dataset));
-    f.save_value(r.fvals);
-    values = r.fvals;
+    default:
+        // 0.1%: same native statistic on the same integer voxel vector (SPEC 7).
+        return 1.0e-3;
+    }
 }
 
 static void assert_3d_firstorder_value_matlab(
@@ -117,7 +84,7 @@ static void assert_3d_firstorder_value_matlab(
     const double actual = values[fcode][0];
     const double expected = firstorder_3d_matlab_ref_vals.at(fname);
     const double relative_error = std::abs(actual - expected) / std::abs(expected);
-    ASSERT_LE(relative_error, firstorder_3d_matlab_rel_tol(fname))
+    ASSERT_LE(relative_error, firstorder_3d_matlab_rel_tol(static_cast<Nyxus::Feature3D>(fcode)))
         << fname << " actual=" << actual << " MATLAB=" << expected;
 }
 
@@ -126,14 +93,14 @@ static void assert_3d_firstorder_feature_matlab(
     const std::string& fname)
 {
     std::vector<std::vector<double>> values;
-    calculate_3d_firstorder_values_matlab(values);
+    calculate_3d_firstorder_values(values);
     assert_3d_firstorder_value_matlab(values, fname, static_cast<int>(expected_fcode));
 }
 
 void test_3d_firstorder_matlab()
 {
     std::vector<std::vector<double>> values;
-    calculate_3d_firstorder_values_matlab(values);
+    calculate_3d_firstorder_values(values);
     for (const auto& entry : firstorder_3d_matlab_ref_vals)
         assert_3d_firstorder_value_matlab(values, entry.first);
 }
