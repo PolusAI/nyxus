@@ -58,11 +58,18 @@ Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyrad
 | Shape | four 2D slices; grey levels are already discrete 1..6, so no binning is applied |
 | Why it exists | the fixture the published IBSI consensus values are defined on, so it is the only benchmark on which an `ibsi` assertion means anything |
 
-Recipes: `glcm.ibsi_identity`, `ih.ibsi_fbn`.
+Recipes: `glcm.ibsi_identity`, `ih.ibsi_fbn`, `gldm.ibsi_phantom_2d`, `ngldm.ibsi_phantom_2d`.
 
 Tests reaching it today: `test_2d_{firstorder,glcm,gldm,gldzm,glszm,ngldm,ngtdm}_ibsi.h`,
+`test_2d_gldm_pyradiomics.h`, `test_2d_ngldm_mirp.h`,
 `test_2d_{glcm,glrlm,glszm,ngtdm}_regression.h`, `test_2d_glrlm_common.h`,
-`test_2d_intensity_histogram_common.h`.
+`test_2d_{gldm,intensity_histogram}_common.h`.
 
 Aggregation matters here: the IBSI 2D-averaged values are the mean over the four slices featurised
 one at a time, which is what the per-family fixtures do.
+
+**Both aggregations are worth pinning, not just the published one.** A four-slice mean is blind to
+errors in two slices that cancel: perturbing `GLDM_LDE_z1` by +0.001 and `GLDM_LDE_z3` by -0.001
+leaves the mean unmoved to its last digit. Where a tool exposes the per-slice values — PyRadiomics
+does, the published IBSI consensus does not — the per-slice table is the stronger assertion and the
+mean is the compatibility one. `test_2d_gldm_pyradiomics.h` pins both, 14 means and 56 slice values.
