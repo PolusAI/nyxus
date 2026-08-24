@@ -67,11 +67,20 @@ COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
 # All 14 features are deliberately asserted twice, by test_2d_gldm_ibsi.h and
 # test_2d_gldm_pyradiomics.h. That is not redundancy: the IBSI consensus values are published to
 # three significant figures and fix the DEFINITION (rel=1e-2), while PyRadiomics reproduces Nyxus to
-# 9.9e-16 and fixes the DIGITS (rel=1e-9). Dropping either weakens the family - see
+# 1.6e-16 and fixes the DIGITS (rel=1e-9). Dropping either weakens the family - see
 # audit/gldm_2d_pyradiomics_vetting_report.md.
 DUAL_ORACLE = ("asserted against both oracles by design: IBSI fixes the definition at its published "
-               "3-significant-figure precision, pyradiomics fixes the digits at 9.9e-16")
-NOTE = {}
+               "3-significant-figure precision, pyradiomics fixes the digits at 1.6e-16")
+
+# GLDM_DE is the one feature that does not reach the family's exact tier: calc_DE() takes its
+# logarithm through Nyxus::fast_log10, the shared float log2 approximation the whole texture set
+# reads, so it lands a measured 1.3e-3 from PyRadiomics and asserts at twice that.
+NOTE = {
+    "GLDM_DE": ("asserted against both oracles by design: IBSI fixes the definition at its "
+                "published 3-significant-figure precision, pyradiomics fixes the digits, at "
+                "rel=2.5e-3 rather than the family's 1e-9 because calc_DE() takes its logarithm "
+                "through the shared float fast_log10() approximation (measured residual 1.3e-3)"),
+}
 
 
 def feature_names():

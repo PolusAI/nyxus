@@ -8,8 +8,11 @@ both the per-slice table and the four-slice means -- exiting non-zero on any mis
 this generator cannot produce.
 
 PyRadiomics is the reference that defines GLDM, and it names all 14 of the family's features, so one
-run covers the whole family. Worst residual against Nyxus over the 14 features x 4 slices is
-1.0e-15, which is why these assert at the SPEC 7 "exact" tier rather than a cross-tool band.
+run covers the whole family. Worst residual against Nyxus over 13 of those features x 4 slices is
+2.2e-16, which is why they assert at the SPEC 7 "exact" tier rather than a cross-tool band. GLDM_DE
+is the exception at 1.3e-3, because calc_DE() takes its logarithm through the shared float
+fast_log10() approximation; it asserts at rel=2.5e-3. RELTOL below is not that band -- this script
+checks the pins against PyRadiomics, which is what produced them, so it stays at 1e-9.
 
 Recipe `gldm.ibsi_phantom_2d`: the four IBSI digital-phantom slices, each featurised on its own.
 Each slice is its own ROI and yields its own scalar; their mean is what the IBSI "2D, averaged"
