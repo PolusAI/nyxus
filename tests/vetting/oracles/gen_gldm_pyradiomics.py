@@ -16,7 +16,7 @@ checks the pins against PyRadiomics, which is what produced them, so it stays at
 
 Recipe `gldm.ibsi_phantom_2d`: the four IBSI digital-phantom slices, each featurised on its own.
 Each slice is its own ROI and yields its own scalar; their mean is what the IBSI "2D, averaged"
-aggregation publishes, and it is what assert_gldm_feature_against_golden_values() compares on the
+aggregation publishes, and it is what assert_gldm_mean_against_golden_values() compares on the
 Nyxus side. Both quantities are pinned, because a mean is weaker than the four values behind it --
 errors in two slices that cancel leave it unmoved. `binWidth=1` is identity binning on this integer
 phantom, so neither tool discretises; `gldm_a=0` and `distances=[1]` are the alpha=0, d=1 coarseness

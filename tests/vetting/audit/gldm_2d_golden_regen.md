@@ -31,7 +31,7 @@ unverified — the generator will say so and exit non-zero.
 **Fixture.** The four IBSI digital-phantom slices, read out of `tests/test_data.h` through
 `oracles/ibsi_phantom.py`, so the generator and the C++ tests share one copy of the voxels. Each
 slice is featurised on its own and the per-feature values are averaged over the four — that is what
-`assert_gldm_feature_against_golden_values()` does on the Nyxus side, and the goldens must match
+`assert_gldm_mean_against_golden_values()` does on the Nyxus side, and the goldens must match
 that aggregation, not a single-volume run.
 
 **Config** (recipe `gldm.ibsi_phantom_2d`):

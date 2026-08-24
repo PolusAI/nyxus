@@ -1,6 +1,6 @@
 #pragma once
 
-#include "test_2d_gldm_common.h"   // gtest, <string>, <vector>, the two assertion helpers
+#include "test_2d_gldm_common.h"   // gtest, <string>, <vector>, the slice featuriser and the mean assertion
 #include "test_ref_vals.h"         // ref_vals_map
 
 // PyRadiomics goldens for the 2D GLDM family (SPEC 6.4 provenance).
@@ -130,9 +130,10 @@ static void assert_gldm_feature_pyradiomics (const Feature2D& feature_, const st
                                 frac_tolerance)) << key;
     }
 
-    // then the four-slice mean, the quantity IBSI publishes
-    assert_gldm_feature_against_golden_values (feature_, feature_name, gldm_2d_pyradiomics_ref_vals,
-                                               "pyradiomics ", frac_tolerance);
+    // then the four-slice mean, the quantity IBSI publishes -- averaged from the same per_slice the
+    // loop above just checked, so the two assertions cannot be reading different featurisations
+    assert_gldm_mean_against_golden_values (per_slice, feature_name, gldm_2d_pyradiomics_ref_vals,
+                                            "pyradiomics ", frac_tolerance);
 }
 
 void test_2d_gldm_sde_pyradiomics()

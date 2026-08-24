@@ -136,9 +136,10 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   `audit/gldm_2d_pyradiomics_vetting_report.md`.
 - The two oracles are complementary rather than redundant. The IBSI consensus values are quoted to
   three significant figures, so that file asserts at `rel=1e-2` (measured worst case 0.45%, on
-  `GLDM_GLN`: 10.2 published against 10.2464 computed). PyRadiomics reproduces Nyxus to **9.9e-16**,
-  so the PyRadiomics file asserts at `rel=1e-9`: IBSI fixes the definition, PyRadiomics fixes the
-  digits.
+  `GLDM_GLN`: 10.2 published against 10.2464 computed). PyRadiomics reproduces Nyxus to **1.6e-16**
+  on 13 of the 14, so the PyRadiomics file asserts at `rel=1e-9`: IBSI fixes the definition,
+  PyRadiomics fixes the digits. `GLDM_DE` is the exception at `rel=2.5e-3` — `calc_DE()` takes its
+  logarithm through the shared float `fast_log10()` approximation, worth a measured 1.3e-3.
 - **Outside this recipe:** the production default (`IBSI=false`, MATLAB grey binning at
   `coarse_gray_depth`). There Nyxus re-bins the ROI while PyRadiomics bins at `binWidth=1`, so the
   two build their dependence matrices over different level assignments and disagree by up to 108%
