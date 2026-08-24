@@ -85,7 +85,6 @@
 #include "test_3d_firstorder_coverage.h"
 #include "test_3d_gldm_coverage.h"
 #include "test_3d_gldzm_coverage.h"
-#include "test_3d_glrlm_coverage.h"
 #include "test_3d_glszm_coverage.h"
 #include "test_3d_ngldm_coverage.h"
 #include "test_3d_ngtdm_coverage.h"
@@ -3334,6 +3333,41 @@ TEST(TEST_NYXUS, TEST_3D_GLRLM_RP_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rp
 TEST(TEST_NYXUS, TEST_3D_GLRLM_GLV_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_glv_regression()); }
 TEST(TEST_NYXUS, TEST_3D_GLRLM_RV_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rv_regression()); }
 TEST(TEST_NYXUS, TEST_3D_GLRLM_RE_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_re_regression()); }
+
+// The grey64 profile (GLRLM_GREYDEPTH=+64): the 13 angled values of each base feature and the
+// mean its *_AVE twin stores, one named test per feature.
+TEST(TEST_NYXUS, TEST_3D_GLRLM_GLN_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_gln_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_GLNN_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_glnn_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_GLV_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_glv_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_HGLRE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_hglre_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LGLRE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lglre_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LRE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lre_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LRHGLE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lrhgle_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LRLGLE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lrlgle_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_re_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RLN_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rln_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RLNN_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rlnn_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RP_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rp_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RV_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rv_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_SRE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_sre_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_SRHGLE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_srhgle_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_SRLGLE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_srlgle_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_GLN_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_gln_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_GLNN_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_glnn_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_GLV_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_glv_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_HGLRE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_hglre_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LGLRE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lglre_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LRE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lre_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LRHGLE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lrhgle_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LRLGLE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_lrlgle_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_re_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RLN_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rln_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RLNN_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rlnn_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RP_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rp_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_RV_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_rv_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_SRE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_sre_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_SRHGLE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_srhgle_ave_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLRLM_SRLGLE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_srlgle_ave_grey64_regression()); }
 
 TEST(TEST_NYXUS, TEST_3D_GLRLM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_dump_regression()); }
 
