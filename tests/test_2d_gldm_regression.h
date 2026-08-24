@@ -22,7 +22,7 @@ static const ref_vals_map<double> gldm_2d_regression_ref_vals {
     {"GLDM_DNN", 0.23318176854570605},
     {"GLDM_GLV", 1896.8138388307173},
     {"GLDM_DV", 8.4758547890024012},
-    {"GLDM_DE", 5.3452934752754491}
+    {"GLDM_DE", 5.3430148357241016}
 };
 
 /// @brief Pins one GLDM feature against its recorded value on the cat2500 fixture

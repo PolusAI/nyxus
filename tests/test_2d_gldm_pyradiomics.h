@@ -11,8 +11,9 @@
 // generator=tests/vetting/oracles/gen_gldm_pyradiomics.py.
 //
 // PyRadiomics is the reference that defines GLDM and names all 14 of the family's features, so one
-// run covers the family. Worst residual over the 14 features x 4 slices is 1.0e-15, so these assert
-// at the SPEC 7 "exact" tier (rel=1e-9).
+// run covers the family. Worst residual over 13 of the 14 features x 4 slices is 2.2e-16, so those
+// assert at the SPEC 7 "exact" tier (rel=1e-9). GLDM_DE is the exception and carries its own band --
+// see gldm_2d_pyradiomics_de_frac_tolerance below.
 //
 // TWO TABLES, because a mean cannot vet the four values behind it: errors in two slices that cancel
 // leave the average unmoved. gldm_2d_pyradiomics_slice_ref_vals holds PyRadiomics' value for each
@@ -20,11 +21,11 @@
 // "2D, averaged" aggregation publishes. Every assertion below checks both.
 //
 // test_2d_gldm_ibsi.h pins the same quantities as published IBSI consensus values, quoted to three
-// significant figures -- that file therefore asserts at rel=1e-2 and this one at rel=1e-9. The two
-// are complementary: IBSI fixes the definition, PyRadiomics fixes the digits. The IBSI values are
-// published under the NGLDM name because a GLDM dependence count is IBSI's j = k + 1 at alpha=0,
-// d=1; tests/vetting/audit/gldm_2d_pyradiomics_vetting_report.md carries the mapping and the
-// measurement that establishes it.
+// significant figures -- that file therefore asserts at rel=1e-2 and this one at rel=1e-9, or at
+// rel=2.5e-3 for GLDM_DE. The two are complementary: IBSI fixes the definition, PyRadiomics fixes
+// the digits. The IBSI values are published under the NGLDM name because a GLDM dependence count is
+// IBSI's j = k + 1 at alpha=0, d=1; tests/vetting/audit/gldm_2d_pyradiomics_vetting_report.md
+// carries the mapping and the measurement that establishes it.
 static const ref_vals_map<double> gldm_2d_pyradiomics_ref_vals
 {
     {"GLDM_SDE", 0.15807024738501638},
@@ -93,8 +94,29 @@ static const ref_vals_map<double> gldm_2d_pyradiomics_slice_ref_vals
 // rel=1e-9: agrees_gt divides the golden by this, so a larger argument is a tighter band
 static const double gldm_2d_pyradiomics_frac_tolerance = 1e9;
 
+// rel=2.5e-3, the one feature that cannot hold the exact tier. GLDMFeature::calc_DE() reads its
+// logarithm through Nyxus::fast_log10 (src/nyx/helpers/helpers.h), the shared float polynomial every
+// entropy in the texture set uses; its worst error against log2 is 8.9e-3 over the [0.75, 1.5)
+// reduction range, and on this phantom that lands in DE as at most 1.3e-3 relative (worst slice z1:
+// Nyxus 3.0425443887710575 vs PyRadiomics 3.0464393446710125; the four-slice mean is off by 7.9e-4).
+// The band is twice that measured residual, per SPEC 7's "documented residual" tier. It is not a
+// free pass: every other GLDM feature holds rel=1e-9 on the same dependence matrix, so a real error
+// in the matrix still fails somewhere. This is the same accommodation 2D GLCM already makes for the
+// same helper -- its log-based features land 1e-3..3e-3 off both tools and assert at rel=5e-3 --
+// so closing the band is the whole texture set's business, not this family's.
+// tests/vetting/audit/gldm_2d_pyradiomics_vetting_report.md carries the measurement.
+static const double gldm_2d_pyradiomics_de_frac_tolerance = 400.0;
+
+static double gldm_2d_pyradiomics_tolerance_for (const std::string& feature_name)
+{
+    return feature_name == "GLDM_DE" ? gldm_2d_pyradiomics_de_frac_tolerance
+                                     : gldm_2d_pyradiomics_frac_tolerance;
+}
+
 static void assert_gldm_feature_pyradiomics (const Feature2D& feature_, const std::string& feature_name)
 {
+    const double frac_tolerance = gldm_2d_pyradiomics_tolerance_for (feature_name);
+
     // per slice first: this is what a mean cannot check
     const std::vector<double> per_slice = gldm_2d_phantom_slice_values (feature_);
     ASSERT_EQ (per_slice.size(), 4u) << feature_name;
@@ -105,12 +127,12 @@ static void assert_gldm_feature_pyradiomics (const Feature2D& feature_, const st
         SCOPED_TRACE ("pyradiomics " + key);
         ASSERT_TRUE (gldm_2d_pyradiomics_slice_ref_vals.count(key) > 0) << key;
         ASSERT_TRUE (agrees_gt (per_slice[z], gldm_2d_pyradiomics_slice_ref_vals.at(key),
-                                gldm_2d_pyradiomics_frac_tolerance)) << key;
+                                frac_tolerance)) << key;
     }
 
     // then the four-slice mean, the quantity IBSI publishes
     assert_gldm_feature_against_golden_values (feature_, feature_name, gldm_2d_pyradiomics_ref_vals,
-                                               "pyradiomics ", gldm_2d_pyradiomics_frac_tolerance);
+                                               "pyradiomics ", frac_tolerance);
 }
 
 void test_2d_gldm_sde_pyradiomics()

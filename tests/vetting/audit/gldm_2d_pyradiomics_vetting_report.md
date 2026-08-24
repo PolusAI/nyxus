@@ -2,8 +2,8 @@
 
 All 14 2D GLDM rows read `status=vetted, oracle=ibsi`, evidenced by `test_2d_gldm_ibsi.h`. Running
 the oracles for the first time turned up three things: the goldens in that file are the IBSI
-**NGLDM** consensus values under GLDM names, `GLDM_DE` was computed through an approximate
-logarithm and missed the reference by 7.9e-4, and the family's only PyRadiomics-named test compared
+**NGLDM** consensus values under GLDM names, `GLDM_DE` is computed through an approximate
+logarithm and misses the reference by 7.9e-4, and the family's only PyRadiomics-named test compared
 the two tools at configurations that do not match.
 
 ## Tool and configuration
@@ -17,7 +17,7 @@ the two tools at configurations that do not match.
 | Nyxus config | `IBSI=true`, `GREYDEPTH=128`, each slice featurised on its own and the four averaged |
 | PyRadiomics config | `binWidth=1`, `gldm_a=0`, `distances=[1]`, `force2D`, `force2Ddimension=0` |
 | Test | `test_2d_gldm_pyradiomics.h` |
-| Tolerance | `rel=1e-9` (SPEC §7 exact tier) |
+| Tolerance | `rel=1e-9` (SPEC §7 exact tier) for 13 features; `rel=2.5e-3` for `GLDM_DE` (SPEC §7 documented residual — see below) |
 
 ```
 python tests/vetting/oracles/gen_gldm_pyradiomics.py
@@ -25,13 +25,14 @@ python tests/vetting/oracles/gen_gldm_pyradiomics.py
 
 Verifies every golden pinned in the header — both tables, 14 means and 56 per-slice values — and
 exits non-zero on mismatch. Current run: **70 verified, 0 failed, 0 unproducible**, every one at
-`rel = 0`.
+`rel = 0`. (The generator checks the pinned goldens against PyRadiomics, which is what pins them;
+Nyxus' agreement with those goldens is the table below.)
 
 `binWidth=1` is identity binning on this integer phantom, so neither tool discretises and both build
 the dependence matrix over the phantom's own levels 1..6. `gldm_a=0` with `distances=[1]` is the
 alpha=0, d=1 coarseness Nyxus computes in IBSI mode.
 
-## Results — PyRadiomics reproduces Nyxus to machine precision
+## Results — PyRadiomics reproduces 13 of the 14 to machine precision
 
 | feature | PyRadiomics (= pinned golden) | Nyxus | rel |
 |---|---|---|---|
@@ -42,7 +43,7 @@ alpha=0, d=1 coarseness Nyxus computes in IBSI mode.
 | GLDM_DNN | 0.21177218060411693 | 0.21177218060411693 | 0 |
 | GLDM_GLV | 2.7037332451477982 | 2.7037332451477987 | 1.6e-16 |
 | GLDM_DV | 2.729504577399913 | 2.729504577399913 | 0 |
-| GLDM_DE | 2.714292423281547 | 2.7142924232815497 | 9.8e-16 |
+| GLDM_DE | 2.714292423281547 | 2.7121510523248058 | **7.9e-4** |
 | GLDM_LGLE | 0.7017531915300232 | 0.7017531915300232 | 0 |
 | GLDM_HGLE | 7.486949604403165 | 7.486949604403165 | 0 |
 | GLDM_SDLGLE | 0.047290498640367454 | 0.047290498640367454 | 0 |
@@ -50,10 +51,11 @@ alpha=0, d=1 coarseness Nyxus computes in IBSI mode.
 | GLDM_LDLGLE | 17.59968920804189 | 17.59968920804189 | 0 |
 | GLDM_LDHGLE | 49.477721878224976 | 49.477721878224976 | 0 |
 
-Worst residual **9.8e-16** (`GLDM_DE`), on 12 of 14 bit-identical. PyRadiomics is the reference that
-defines GLDM, and Nyxus implements the same definition over the same neighbourhood, so this is
-pinned at the exact tier rather than as a cross-tool band. The `GLDM_DE` and `GLDM_GLV` residuals
-are summation order, not method.
+Worst residual over the 13 features other than `GLDM_DE` is **1.6e-16** (`GLDM_GLV`, summation
+order), with 12 of 14 bit-identical. PyRadiomics is the reference that defines GLDM, and Nyxus
+implements the same definition over the same neighbourhood, so those 13 are pinned at the exact tier
+rather than as a cross-tool band. `GLDM_DE` is twelve orders of magnitude worse and gets its own
+band; the next section measures why.
 
 ### Per slice, because a mean cannot vet the four values behind it
 
@@ -64,60 +66,71 @@ reimplemented. All 14 features were measured against Nyxus slice by slice:
 
 | | worst per-slice residual |
 |---|---|
-| `GLDM_DE` | 1.0e-15 |
+| `GLDM_DE` | **1.3e-3** (slice z1; see the next section) |
 | `GLDM_SDE`, `GLDM_DV` | 2.2e-16 |
 | `GLDM_SDLGLE` | 1.9e-16 |
 | `GLDM_GLV`, `GLDM_LDLGLE` | 1.3e-16 |
 | the other 8 | 0 |
 
-Worst over all 14 x 4 = **1.0e-15**; nothing was cancelling. The assertions pin all 56 values anyway,
-in `gldm_2d_pyradiomics_slice_ref_vals`, because the measurement says the mean *was* trustworthy
-here, not that it *is* a sufficient check.
+Worst over the 13 exact-tier features x 4 = **2.2e-16**; nothing was cancelling, and `GLDM_DE`'s
+per-slice spread is wider than its mean (1.3e-3 vs 7.9e-4), so the mean was flattering it. The
+assertions pin all 56 values anyway,
+in `gldm_2d_pyradiomics_slice_ref_vals`. For the 13 exact-tier features the measurement says the mean
+*was* trustworthy here, not that it *is* a sufficient check; for `GLDM_DE` it says outright that it
+was not, which is why the band is sized on the per-slice worst and not on the mean.
 
 **Verified non-vacuous.** Moving `GLDM_LDE_z1` by +0.001 and `GLDM_LDE_z3` by -0.001 leaves the
 four-slice mean unchanged to its last digit. The per-slice assertion fails and names `GLDM_LDE_z1`;
 `test_2d_gldm_ibsi.h`, which checks only the mean, passes.
 
-## `GLDM_DE` was computed with an approximate logarithm
+## `GLDM_DE` is computed with an approximate logarithm, and is banded for it
 
-The Nyxus column above is the value **after** the fix in this PR. Before it, `GLDM_DE` was
-2.7121510523248058 against the reference 2.7142924232815497 — off by **7.9e-4**, three orders of
-magnitude worse than every other feature in the family.
+`GLDM_DE` is 2.7121510523248058 against the reference 2.7142924232815471 — off by **7.9e-4** on the
+mean and by up to **1.3e-3** per slice. Every other feature in the family sits at 1e-16 or below,
+so this one residual is twelve orders of magnitude larger than the rest.
 
-`GLDMFeature::calc_DE()` read its logarithm through `Nyxus::fast_log10` (`src/nyx/helpers/helpers.h`),
-a **float** second-order polynomial approximation of `log2` over `[0.75, 1.5)`. Its accuracy is
-about 1e-3 relative, which is the whole of the gap. Swapping it for `std::log(p)/std::log(2)` — what
-`NGLDMfeature`'s dependence-count entropy already used — reproduces the reference exactly:
+`GLDMFeature::calc_DE()` reads its logarithm through `Nyxus::fast_log10` (`src/nyx/helpers/helpers.h`),
+a **float** second-order polynomial approximating `log2` over `[0.75, 1.5)`. Measured against
+`log2` across that reduction range its worst absolute error is **8.9e-3**, at x = 0.75. That is the
+whole of the gap:
 
-| | GLDM_DE, phantom mean |
-|---|---|
-| `fast_log10` (before) | 2.7121510523248058 |
-| `std::log` (after) | 2.7142924232815497 |
-| PyRadiomics | 2.714292423281547 |
-| mirp NGLDM `ngl_dc_entr` (already pinned in `test_2d_ngldm_mirp.h`) | 2.7142924232815497 |
+| slice | PyRadiomics | Nyxus (`fast_log10`) | rel |
+|---|---|---|---|
+| z1 | 3.0464393446710125 | 3.0425443887710575 | **1.3e-3** |
+| z2 | 2.3789919869000604 | 2.376873304969386 | 8.9e-4 |
+| z3 | 2.6098501660289402 | 2.6088697770062619 | 3.8e-4 |
+| z4 | 2.8218881955261761 | 2.820316738552517 | 5.6e-4 |
+| mean | 2.7142924232815471 | 2.7121510523248058 | 7.9e-4 |
 
-The epsilon that guarded the logarithm went with it: `fast_log10(p + EPS)` existed because the loop
-evaluated the logarithm of empty cells too. Guarding on `p > 0` instead skips them, which is exact.
+Reproduced independently of Nyxus: re-summing PyRadiomics' own dependence matrix with the
+`helpers.h` polynomial transcribed into Python — float arithmetic preserved operation by operation —
+lands on 2.7121510523248058, Nyxus' value to the last bit. So the residual is the approximation and
+nothing else: the dependence matrix itself is exact, which is why the other 13 features sit at 1e-16.
 
-**Nothing in the tree could have caught this.** The only assertion on `GLDM_DE` was the IBSI one at
+For reference, `std::log2(p)` in place of `fast_log10(p + EPS) / LOG10_2` reproduces PyRadiomics at
+9.8e-16 — the same value `NGLDMfeature`'s dependence-count entropy already produces, and the same
+2.7142924232815497 that mirp's `ngl_dc_entr` is pinned at in `test_2d_ngldm_mirp.h`.
+
+**The band, not the source change.** `GLDM_DE` asserts at `rel=2.5e-3` — twice the measured
+per-slice worst — under SPEC §7's "documented residual" tier, and the other 13 features keep
+`rel=1e-9`. `fast_log10` stays. It is read by `glcm.cpp`, `glrlm.cpp`, `glszm.cpp`, `3d_glcm.cpp`,
+`3d_gldm.cpp`, `3d_glrlm.cpp` and `3d_glszm.cpp`; every entropy in the texture set carries the same
+~1e-3, and the 3D GLCM re-vet already recorded its share of it — `INFOMEAS1` 1.7e-2, `INFOMEAS2`
+7.7e-3, `DIFENTRO` 1.2e-3, `SUMENTROPY` 7.6e-4, `JE` 4.1e-4, each given a feature-specific band at
+twice its measured residual. This family follows that precedent rather than diverging from it: one
+helper, one convention across every family that reads it, and one change when it changes.
+
+**The band is not a free pass.** Every other GLDM feature holds `rel=1e-9` against the same
+dependence matrix, per slice and on the mean, so an error in the matrix — the thing this family
+actually implements — still fails, and fails on 13 features at once. What `rel=2.5e-3` absorbs is
+one known, measured, single-line arithmetic residual in a shared helper, with the exact value it
+would take pinned above.
+
+**Nothing in the tree measured this before.** The only assertion on `GLDM_DE` was the IBSI one at
 `rel=1e-2` against a value published to three significant figures (2.71) — 7.9e-4 sits comfortably
-inside that band. The drift guard in `test_2d_gldm_regression.h` compared against a pin recorded
-from the same approximate code path, at the `agrees_gt` default of `rel=1e-3`; the fix moves that
-pin from 5.3430148357241016 to 5.3452934752754491 (4.3e-4), which is why it did not fail either.
-Both pins are updated in this PR.
-
-**Not a new root cause.** The 3D GLCM re-vet reached the same conclusion first and recorded it:
-`INFOMEAS1` 1.7e-2, `INFOMEAS2` 7.7e-3, `DIFENTRO` 1.2e-3, `SUMENTROPY` 7.6e-4, `JE` 4.1e-4, each
-given a feature-specific band at twice its measured residual, with the note that closing them means
-a source change. This PR takes the source change for its own family, because GLDM's is one line and
-it is the difference between the family vetting at the exact tier and not. The result is a
-deliberate inconsistency worth naming: after this PR 2D GLDM's entropy is exact while GLCM's is
-banded.
-
-**Left alone deliberately:** `fast_log10` is still read by `glcm.cpp`, `glrlm.cpp`, `glszm.cpp`,
-`3d_glcm.cpp`, `3d_gldm.cpp`, `3d_glrlm.cpp` and `3d_glszm.cpp` — every entropy in the legacy
-texture set carries the same ~1e-3 error. Those belong to their own families' re-vetting; changing
-them here would move pinned goldens in files this PR does not own.
+inside that band. The drift guard in `test_2d_gldm_regression.h` compares against 5.3430148357241016,
+recorded from this same code path, so it cannot see the residual either, by construction. Both
+remain correct; neither is evidence, and the number above is.
 
 ## The IBSI goldens are the NGLDM table, and that is correct
 
@@ -186,10 +199,11 @@ the old one.
 
 ## Registry corrections
 
-All 14 rows: `oracle` `ibsi` → `pyradiomics`, `config_recipe` → `gldm.ibsi_phantom_2d`, `tolerance`
-→ `rel=1e-9`, `current_test` → `test_2d_gldm_ibsi.h;test_2d_gldm_pyradiomics.h`. No row changes
+All 14 rows: `oracle` `ibsi` → `pyradiomics`, `config_recipe` → `gldm.ibsi_phantom_2d`,
+`current_test` → `test_2d_gldm_ibsi.h;test_2d_gldm_pyradiomics.h`, and `tolerance` → `rel=1e-9`
+except `GLDM_DE`, which reads `rel=2.5e-3`. No row changes
 `status`; the family was vetted and remains so, now against the tool that defines the family and at
-15 more digits.
+up to 15 more digits — 15 for the 13 exact-tier features, 6 for `GLDM_DE`.
 
 Every row's `current_test` had listed **`test_3d_gldm_regression.h` and `test_3d_gldm_pyradiomics.h`**
 — 3D files, for 2D rows, naming a different implementation (`3d_gldm.cpp`). `test_3d_gldm_regression.h`

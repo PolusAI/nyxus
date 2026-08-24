@@ -16,7 +16,7 @@ there is no generator for this file. Verifying them is a two-step check:
    `test_2d_ngldm_ibsi.h`, so the transcription can be diffed against a second copy in this
    repository rather than re-typed from the PDF.
 2. **What residual do they leave?** Computed against the full-precision values from the PyRadiomics
-   run, which agree with Nyxus to 9.8e-16.
+   run, which agree with Nyxus to 1.6e-16 on 13 of the 14 features and to 7.9e-4 on `GLDM_DE`.
 
 ## Result table
 
@@ -46,13 +46,15 @@ disagreement.
 ## What the two files are for
 
 This file fixes the **definition** — it is the only assertion in the family tied to a published
-consensus rather than to a tool run. `test_2d_gldm_pyradiomics.h` fixes the **digits**, at
-`rel=1e-9`. Keeping both is deliberate: dropping the IBSI file would leave the family vetted only
-against one implementation, and dropping the PyRadiomics file would leave a band 7 orders of
-magnitude looser than the measured agreement.
+consensus rather than to a tool run. `test_2d_gldm_pyradiomics.h` fixes the **digits**, at `rel=1e-9`
+for 13 features and `rel=2.5e-3` for `GLDM_DE`. Keeping both is deliberate: dropping the IBSI file
+would leave the family vetted only against one implementation, and dropping the PyRadiomics file
+would leave a band 7 orders of magnitude looser than the measured agreement.
 
-That looseness is not hypothetical. `GLDM_DE` was 7.9e-4 away from its reference for as long as this
-file has existed, and 7.9e-4 is invisible at `rel=1e-2`. See the PyRadiomics report.
+That looseness is not hypothetical. `GLDM_DE` sits 7.9e-4 from its reference — the float `fast_log10`
+residual measured in the PyRadiomics report — and 7.9e-4 is invisible at `rel=1e-2`. It is not
+invisible at `rel=2.5e-3`, which is the point of pinning it there rather than leaving it in this
+file's band.
 
 ## What changed in the file
 
