@@ -160,6 +160,34 @@ the `shape2d_morphology` fixture -- which one comes back depends on the label im
 CellProfiler's own answer changes when you change the padding around the ROI. Report the tie set from
 the generator rather than assuming the centre is well defined.
 
+## centrosome as a Zernike cross-check (verified 2026-08-20, 2D zernike vetting)
+
+`centrosome` arrives with the CellProfiler env and exposes the Zernike machinery directly, without
+going through a module or a workspace:
+
+```python
+from centrosome.zernike import construct_zernike_polynomials, get_zernike_indexes
+idx = get_zernike_indexes(10)                     # (n, m) for n < 10 -> 30 pairs
+Z   = construct_zernike_polynomials(X, Y, idx)    # complex Z_nm at each (x, y)
+```
+
+Two things make it usable as an independent reference rather than a second opinion from the same
+tool:
+
+- **It takes the geometry as an argument.** `X` and `Y` are offsets already divided by whatever
+  radius you choose, so the polynomials can be evaluated at *another* implementation's disk. That is
+  what separates "does this recurrence compute R_nm" from "do these two tools agree about where the
+  disk is" -- and those are different questions with different answers.
+- **Its angle convention is `z = y + i*x`**, i.e. `atan2(x, y)`, which is the usual `atan2(y, x)`
+  reflected. Magnitudes are unaffected: the difference is a constant unit-modulus factor per `(n,m)`,
+  so `|sum I * Z|` is identical. Phases are not.
+
+`get_zernike_indexes(limit)` emits n ascending then m ascending with `n - m` even, the same order
+`zernike.cpp` walks -- worth asserting rather than assuming, which the generator does.
+
+`construct_zernike_polynomials` zeroes `r > 1` itself but keeps `r == 0`, where a caller that skips
+`r < DBL_EPSILON` would drop a pixel. It only matters when a pixel sits exactly on the centre.
+
 ## Corrections / notable findings
 
 - **`cellprofiler` runs in-process from a conda env, no Docker.** Used for the 2D neighbour family
