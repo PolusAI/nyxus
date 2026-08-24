@@ -27,6 +27,9 @@
 #include "test_2d_morphology_fraclac.h"
 #include "test_2d_moments_skimage.h"
 #include "test_2d_moments_regression.h"
+#include "test_2d_zernike_analytic.h"
+#include "test_2d_zernike_invariant.h"
+#include "test_2d_zernike_mechanics.h"
 #include "test_2d_zernike_regression.h"
 #include "test_2d_neighbor_common.h"
 #include "test_2d_neighbor_regression.h"
@@ -1264,6 +1267,41 @@ TEST(TEST_NYXUS, TEST_2D_RADIAL_BIN_INDEX_MECHANICS)
 TEST(TEST_NYXUS, TEST_2D_ZERNIKE_MOMENTS_REGRESSION)
 {
 	ASSERT_NO_THROW(test_2d_zernike_moments_regression());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_MOMENTS_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_zernike_moments_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_ZEROTH_MOMENT_IS_ONE_OVER_PI_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_zernike_zeroth_moment_is_one_over_pi_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_FIRST_MOMENT_ABOUT_THE_CENTROID_VANISHES_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_zernike_first_moment_about_the_centroid_vanishes_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_MAGNITUDES_ARE_WITHIN_THEIR_BOUND_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_zernike_magnitudes_are_within_their_bound_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_INDEX_SET_MATCHES_THE_DECLARED_COUNT_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_zernike_index_set_matches_the_declared_count_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_GEOMETRY_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_zernike_geometry_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_EVERY_PIXEL_IS_INSIDE_THE_UNIT_DISK_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_zernike_every_pixel_is_inside_the_unit_disk_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_PERCENT_TOUCHING_REGRESSION)
