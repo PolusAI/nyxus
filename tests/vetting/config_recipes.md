@@ -77,29 +77,56 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   sets no Gabor options computes — the gtest fixture, and a CLI run without
   `--gaborfreqs`/`--gabortheta`.
 - Shared filter settings: kersize n=16, gamma=0.1, sig2lam=0.8, baseline f0LP=0.1 at theta=pi/2,
-  GRAYthr=0.025. Oracle: `skimage` (`gabor_kernel`, cropped to the 16x16 grid and L1-normalized).
-  Used by: `test_2d_gabor_skimage.cc` (`assert_2d_gabor_skimage`).
+  GRAYthr=0.025. Benchmark: `bench_dsb2018_2d`. Oracle: `skimage` **at kernel level**
+  (`gabor_kernel`, cropped to the 16x16 grid and L1-normalized) plus `analytic` for the f0=0
+  member and for the count-ratio score, which skimage has no native equivalent of — see "what the
+  oracle covers" below. Used by: `test_2d_gabor_skimage.cc`
+  (`assert_2d_gabor_cpp_static_defaults_skimage`).
 - **The 16x16 crop and the zero-padded `full` convolution are part of the recipe, not implementation
   detail.** `gamma=0.1` makes `sigma_y` ten times `sigma_x`, so the analytic kernel runs to 369x113
   at the lowest frequency and only 7.9-47.6% of its L1 mass falls inside the window (100% from
   f0 >= 16). Scoring the same feature off skimage's own filtering (`skimage.filters.gabor`,
-  untruncated support, `reflect` border) moves values by up to 1.0 — the whole range of the feature.
-  Measured in `audit/gabor_2d_skimage_vetting_report.md` §4.1; generator part D reprints it.
+  untruncated support, zero-padded border) moves values by up to 1.005 — the whole range of the
+  feature. Measured in `audit/gabor_2d_skimage_vetting_report.md` §4.1; generator part D2 re-runs it
+  and part D1 reprints the mass table.
 - The f0=0 member is degenerate: `gabor_kernel` cannot express frequency 0, and at f0=0 the
   envelope and the carrier are both identically 1, so that filter is the flat window in closed
   form. It is the only kernel in either recipe not taken from skimage.
 
-## gabor.documented_defaults
-- The `(frequency, angle)` set `GaborOptions::parse_input` builds from the documented defaults
+## gabor.python_raw_defaults
+- The `(frequency, angle)` set `GaborOptions::parse_input` builds from the default lists
   `gabor_freqs = [4, 16, 32, 64]`, `gabor_thetas = [0, 45, 90, 135]` degrees: f0 = {4, 16, 32, 64},
   theta = {0, pi/4, pi/2, 3pi/4} radians. This is what the Python API runs (it always passes its
   defaults through the parser) and what a CLI run that passes both flags runs.
-- Same filter settings and oracle as `gabor.cpp_static_defaults`. Used by:
-  `test_2d_gabor_skimage.cc` (`assert_2d_gabor_documented_defaults_skimage`).
+- Same filter settings, benchmark and oracle as `gabor.cpp_static_defaults`. Used by:
+  `test_2d_gabor_skimage.cc` (`assert_2d_gabor_python_raw_defaults_skimage`).
+- **`raw` names the units the recipe actually runs at, because the documented ones are not
+  implemented.** `parse_input` converts the angle list from degrees to radians and passes the
+  frequency list through untouched, so `4` reaches `GaborFeature::Gabor` as f0 = 4 and sets
+  `lambda = 2*pi/4`. Both `src/nyx/python/nyxus/nyxus.py` (`gabor_freqs`: "comma-separated
+  denominators of `\pi`") and `src/nyx/environment.cpp`'s CLI help describe the same list as
+  denominators of pi, and nothing in the tree divides by pi — and the CLI help states a third
+  default again (`1,2,4,8,16,32,64`). The recipe is therefore named for the numbers that reach the
+  filter. Resolving which units are intended is a source change with public value impact
+  (`audit/gabor_2d_skimage_vetting_report.md` §8 item 3); until it is resolved, no test here may be
+  named for the documented contract.
 - **The two recipes are not variants of one configuration — they are two different frequency and
   angle sets, and they produce values up to 0.84 apart on the same ROI.** The compiled-in default
   stores its pairs in the opposite order from the one the parser builds and every consumer reads;
   `audit/gabor_2d_skimage_vetting_report.md` measures both and records the defect.
+
+## What `oracle = skimage` covers for the two gabor recipes
+Both recipes carry `oracle=skimage` in `oracle_coverage.csv` because the registry takes one token
+per row (SPEC §4), but the claim is narrower than "scikit-image computes this feature", and every
+artifact presenting the token repeats the scope — the same rule SPEC §4 sets for `matlab`:
+- **kernel** — skimage's, at the seven non-degenerate (f0, theta) points, cross-checked against the
+  hand-derived closed form at 1.7e-18 .. 1.1e-16;
+- **the f0=0 kernel** — analytic, since `gabor_kernel` cannot express frequency 0;
+- **the score** — Nyxus' own WND-CHARM count ratio, reproduced in the generator. scikit-image has no
+  equivalent, so nothing here is a second implementation of the whole feature.
+A full-feature oracle for this family would be `wndcharm` (SPEC §4 names it as the highest-value
+oracle for the Nyxus-original features); it is not built in this tree, and the gap is recorded in
+`not_covered.md`.
 
 ## radial.cellprofiler_8bin
 - CellProfiler `MeasureObjectIntensityDistribution`, 8 radial bins/slices. Oracle: `cellprofiler`.

@@ -55,7 +55,7 @@ at `theta=pi/2`, `GRAYthr=0.025`.
 | 3 | (1.5708, 32.0000) | 0.4845360824742268 | 0.4845360824742268 | 0.0e+00 |
 | 3 | (2.3562, 64.0000) | 0.04639175257731959 | 0.04639175257731959 | 0.0e+00 |
 
-#### gabor.documented_defaults (new)
+#### gabor.python_raw_defaults (new)
 
 | ROI | filter (f0, theta rad) | pinned | fresh skimage run | rel diff |
 |---|---|---|---|---|
@@ -122,7 +122,7 @@ So the two entry points diverge, and the divergence is user-visible:
 - **Python API** — the wrapper always passes its defaults (`gabor_freqs=[4,16,32,64]`,
   `gabor_thetas=[0,45,90,135]`) through `GaborOptions::parse_input`, so the static default is
   overwritten before any ROI is processed. Measured on the same four fixture ROIs with the built
-  `nyxus.backend`, `Nyxus(["GABOR"])` returns exactly the `gabor.documented_defaults` column above
+  `nyxus.backend`, `Nyxus(["GABOR"])` returns exactly the `gabor.python_raw_defaults` column above
   (0.977528, 1.000000, 1.011236, 0.910112 for ROI 0, …), and `get_params()` reports
   `gabor_freqs=[4.0, 16.0, 32.0, 64.0]`, `gabor_thetas=[0.0, 45.0, 90.0, 135.0]`.
 - **CLI** — `rawFreqs`/`rawTheta` default to empty strings and `parse_input` only rebuilds the pairs
@@ -143,13 +143,21 @@ Both configurations are pinned and asserted, so neither entry point is left unco
 
 | recipe | table | test |
 |---|---|---|
-| `gabor.cpp_static_defaults` | `gabor_2d_skimage_cpp_defaults_ref_vals` | `TEST_2D_GABOR_SKIMAGE` |
-| `gabor.documented_defaults` | `gabor_2d_skimage_documented_defaults_ref_vals` | `TEST_2D_GABOR_DOCUMENTED_DEFAULTS_SKIMAGE` |
+| `gabor.cpp_static_defaults` | `gabor_2d_skimage_cpp_static_defaults_ref_vals` | `TEST_NYXUS.TEST_2D_GABOR_CPP_STATIC_DEFAULTS_SKIMAGE` |
+| `gabor.python_raw_defaults` | `gabor_2d_skimage_python_raw_defaults_ref_vals` | `TEST_NYXUS.TEST_2D_GABOR_PYTHON_RAW_DEFAULTS_SKIMAGE` |
 
-The second test installs the documented-default pairs into the process-wide
-`GaborFeature::f0_theta_pairs` and restores the compiled-in value afterwards, so test order stays
-irrelevant. If the `gabor.cpp` default is corrected on its own branch, the first table is the one
-that must be regenerated, and the two tables will then hold the same values.
+The second test installs the parser-built pairs into the process-wide
+`GaborFeature::f0_theta_pairs` through an RAII guard, so the compiled-in value is put back on every
+exit path including a failing assertion, and test order stays irrelevant. If the `gabor.cpp` default
+is corrected on its own branch, the first table is the one that must be regenerated, and the two
+tables will then hold the same values.
+
+Neither name says "documented". `gabor_freqs` is documented as denominators of pi in
+`src/nyx/python/nyxus/nyxus.py` and in the CLI help, and no code path divides by pi — the parser
+stores `4` and `Gabor()` reads it as `lambda = 2*pi/4`. The recipe is therefore
+`gabor.python_raw_defaults`, named for the numbers that reach the filter; §8 item 3 carries the
+unresolved contract. The GPU path is asserted separately and size-only in
+`tests/test_2d_gabor_mechanics.h`, so no case named `_skimage` runs a branch that has no oracle.
 
 ## 4. Is the oracle independent, or a re-encoding of Nyxus?
 
@@ -173,19 +181,23 @@ The circularity question this framework insists on. Answer, stated exactly:
 
 The three legs the framework asks for (Nyxus / our reimplementation / the tool's own machinery) were
 all run. A and B agree exactly, as tabled above. **C — scoring off `skimage.filters.gabor()`, i.e.
-skimage's own kernel support, border mode and convolution — does not reproduce the feature at all:**
+skimage's own kernel support, border mode and convolution — does not reproduce the feature at all.**
+This leg is generator **part D2**, so the numbers below are re-derived on every run rather than
+quoted from a one-off script:
 
-| config | border mode | max abs diff vs pinned |
-|---|---|---|
-| `gabor.cpp_static_defaults` | `reflect` (skimage default) | **1.005** |
-| `gabor.cpp_static_defaults` | `constant` (zero pad, as Nyxus) | **1.005** |
-| `gabor.documented_defaults` | `reflect` | **0.996** |
-| `gabor.documented_defaults` | `constant` | **0.417** |
+| config | border mode | max abs diff vs pinned | values saturated at 0 or ≥1 |
+|---|---|---|---|
+| `gabor.cpp_static_defaults` | `constant` (zero pad, as Nyxus) | **1.005** | 16/16 |
+| `gabor.python_raw_defaults` | `constant` | **0.417** | 8/16 |
+| `gabor.cpp_static_defaults` | `reflect` (skimage default) | 1.005 … 1.011 | varies, 11–15/16 |
+| `gabor.python_raw_defaults` | `reflect` | 0.964 … 1.011 | varies, 12–15/16 |
 
-i.e. up to the entire range of the feature. The cause is not the border mode (which accounts for the
-0.996 → 0.417 improvement) but the **16×16 kernel crop**, and `gamma = 0.1` is what makes it
-dominant: `sigma_y = sigma_x / gamma` is ten times `sigma_x`, so the analytic kernel is hundreds of
-pixels wide at the low frequencies while the fixture ROIs are 9×10 … 17×11:
+i.e. up to the entire range of the feature. **The cause is the 16×16 kernel crop, not the border
+mode.** Zero padding does help `gabor.python_raw_defaults` — ≈1.0 at `reflect` down to 0.417 — but
+0.417 is still 40% of the feature's range, and for `gabor.cpp_static_defaults` matching Nyxus' border
+buys nothing at all: 1.005 either way. `gamma = 0.1` is what makes the crop dominant:
+`sigma_y = sigma_x / gamma` is ten times `sigma_x`, so the analytic kernel is hundreds of pixels wide
+at the low frequencies while the fixture ROIs are 9×10 … 17×11:
 
 | f0 | sigma_x | sigma_y | skimage's own support | L1 mass inside Nyxus' 16×16 |
 |---|---|---|---|---|
@@ -198,15 +210,35 @@ pixels wide at the low frequencies while the fixture ROIs are 9×10 … 17×11:
 | 64.0000 | 0.08 | 0.79 | 5×5 | 100.00% |
 
 Untruncated, the low-frequency filters are wider than the image and act as near-uniform smoothers,
-so the score saturates (every native run above returns 1.0 or 0.0 on at least one ROI, and on one
-ROI the native baseline comes out constant — the branch where Nyxus returns NaN).
+so the score saturates: at `constant` the whole `gabor.cpp_static_defaults` table comes back at the
+baseline ratio, 16 values out of 16.
+
+**The `reflect` rows are a range because they are not reproducible.** Running the same control five
+times on the same input gives `gabor.python_raw_defaults` maxima of 0.964, 0.996, 0.996, 1.011 and
+1.011. Isolated to one call: `skimage.filters.gabor(img, …, mode='reflect')` on the 9×10 ROI0 with
+the baseline filter — `sigma_x = 50.3`, `sigma_y = 502.7`, so a kernel roughly 3000 px a side against
+a 10 px image — returns responses that differ by up to **7.7e-4** between runs, on values of order
+0.33. The same call at `mode='constant'` is bit-identical across runs. Reflect-padding an image to
+many times its own extent is where it goes; the varying response then flips individual pixels across
+the `GRAYthr` cut, and the score moves in whole 1/baseline_count steps. Only the `constant` rows are
+quoted as measurements anywhere in this tree, and the generator prints the instability rather than
+hiding it. This is also a second reason the `reflect` configuration could not serve as an oracle even
+if the crop question were settled.
 
 **What this means for the claim.** The vetting is exact at kernel level (§4 bullet 1) and exact at
 value level *given Nyxus' truncate-to-16×16 + zero-padded-full-convolution convention*. It is not
 evidence that an independent Gabor implementation would report these numbers — with skimage's own
-conventions it would not, by up to 1.0. That convention is therefore recorded as part of both
-recipes in `config_recipes.md` rather than left as an implementation detail. Generator part D prints
-the mass table on every run so the statement stays measured.
+conventions it would not, by up to 1.005. That convention is therefore recorded as part of both
+recipes in `config_recipes.md` rather than left as an implementation detail. Generator part D1 prints
+the mass table and part D2 re-runs the native-filtering control on every run, so both halves of the
+statement stay measured rather than remembered.
+
+**The registry says so too.** `audit/gabor_2d_coverage.csv` lists this family as `skimage;analytic`,
+not `skimage`, and both `oracle_coverage.csv` rows carry the split in `notes`: kernel from skimage,
+f0=0 kernel and count-ratio score analytic. The `oracle` column itself stays `skimage` because
+`check_coverage.py` takes one SPEC §4 token per row — the same arrangement SPEC §4 already documents
+for `matlab`, where the token names the semantics and every artifact repeats what produced the
+numbers.
 
 ## 5. Tolerance
 
@@ -218,13 +250,17 @@ answer differs by one counted pixel, i.e. by `1/baseline_count`. Measured on the
 (generator part C): baseline counts 89, 223, 186, 194 → one pixel is **4.5e-3 … 1.1e-2**, four to
 eleven times the tolerance.
 
-## 6. Scope limits (unchanged by this pass)
+## 6. Scope limits
 
 - **The GPU path is not vetted.** `calculate_gpu` (FFT-based convolution) diverges from the
-  direct-convolution CPU path on these ROIs. `TEST_2D_GABOR_SKIMAGE` runs the GPU branch under
-  `USE_GPU` only to verify the kernels compile and run; the value comparison is CPU-only. The
-  Python-side `test_gabor_gpu` (`tests/python/test_nyxus.py`, `skip_ci`) compares GPU against CPU
-  and asserts no oracle value.
+  direct-convolution CPU path on these ROIs, so the size-only GPU run lives in
+  `tests/test_2d_gabor_mechanics.h` as `TEST_NYXUS.TEST_2D_GABOR_GPU_RUNS_MECHANICS`, rather than
+  inside a case named for an oracle. The Python-side `test_gabor_gpu`
+  (`tests/python/test_nyxus.py`, `skip_ci`) compares GPU against CPU and asserts no oracle value.
+- **No full-feature oracle.** scikit-image supplies the kernel and nothing else; the score has no
+  second implementation here. SPEC §4 names `wndcharm` (Nyxus' own lineage) and `feature2djava` as
+  the right oracles for this class of feature, and neither is built in this tree. Recorded in
+  `not_covered.md`.
 - **One fixture.** Four DSB2018 ROIs, whole image as one ROI, no anisotropy.
 - The out-of-core (`osized_`) Gabor path is a no-op stub for pixel feed and is not covered here.
 
@@ -233,7 +269,7 @@ eleven times the tolerance.
 | what | before | after |
 |---|---|---|
 | rows | 1 (`GABOR`) | 2 — one per config point |
-| `config_recipe` | the generic "Not mode-specific …" boilerplate | `gabor.cpp_static_defaults` / `gabor.documented_defaults`, both defined in `config_recipes.md` |
+| `config_recipe` | the generic "Not mode-specific …" boilerplate | `gabor.cpp_static_defaults` / `gabor.python_raw_defaults`, both defined in `config_recipes.md` |
 | `current_test` | `test_2d_gabor_skimage.cc;test_nyxus.py` | `test_2d_gabor_skimage.cc` — `test_nyxus.py` asserts no GABOR value (it is a GPU-vs-CPU equality test plus a parameter-validation test), so crediting it was an over-credit |
 | `target_test` | `test_2d_gabor_skimage.h` | empty — the file exists and holds only declarations; the assertions are in the `.cc` |
 | `source` | `audit` | `in-tree` |
@@ -246,7 +282,22 @@ eleven times the tolerance.
    tree — only its definition and its declaration. It returns `pair.second` in degrees, so with the
    compiled-in default it would report 229°, 917°, 1833°, 3667°. Dead code that would mislead the
    moment it is used; remove it or fix it together with §1.
-3. **`oracle_coverage.csv` line 566, `3D,3ROBUST_MEAN`** carries an unquoted comma in `notes`, so
+3. **The `gabor_freqs` units contract is stated three ways and implemented as none of them.**
+   `src/nyx/python/nyxus/nyxus.py:103` documents `gabor_freqs` as "comma-separated denominators of
+   `\pi`" with a default of `[4, 16, 32, 64]`; `src/nyx/environment.cpp:219` documents the same flag
+   as denominators of pi with a *different* default, `1,2,4,8,16,32,64`; and
+   `src/nyx/cli_gabor_options.cpp:37` stores whatever number it is given, which
+   `GaborFeature::Gabor` consumes as `lambda = 2*pi/f0`. Nothing in the tree divides by pi. So a
+   documented `4` is 4 angular units, wavelength `pi/2` — near Nyquist on a 16 px kernel — where the
+   documented reading would give wavelength 8 px. Which is intended decides public feature values, so
+   it is recorded rather than fixed here, and it is why the second recipe is named
+   `gabor.python_raw_defaults`: no test in this tree may be named for a contract nothing implements.
+4. **`skimage.filters.gabor(mode='reflect')` is not reproducible when the kernel exceeds the image.**
+   §4.1 — same input, same process, responses differing by 7.7e-4 between runs on a 9×10 ROI with a
+   ~3000 px kernel; `mode='constant'` is bit-stable. It affects no pinned value (the oracle path uses
+   `gabor_kernel` + `convolve2d`, not `gabor`), but it is worth an upstream report, and any future
+   generator that reaches for `skimage.filters.gabor` on small ROIs should know.
+5. **`oracle_coverage.csv` line 566, `3D,3ROBUST_MEAN`** carries an unquoted comma in `notes`, so
    the row parses as 15 fields. `check_coverage.py` does not notice (it reads with `DictReader`,
    which sweeps the surplus into a `None` key). Any full-file CSV rewrite would corrupt it — this
    pass therefore edited the GABOR line textually and left every other byte alone. Worth a one-line

@@ -129,6 +129,15 @@ Notes:
 - scikit-image (`skimage`) is an accepted mainstream oracle (added 2026-07; covers image
   moments, shape descriptors). `mahotas`, `DIPlib`, and `Centrosome` are NOT accepted — features
   only they cover remain regression/analytic.
+- **A token may cover one stage of a feature rather than all of it, and then the row must say so.**
+  `oracle` holds a single token, so a family whose reference supplies only part of the pipeline
+  carries the narrowing in `notes` — the same arrangement as `matlab` above, where the token names
+  the semantics and every artifact repeats what produced the numbers. 2D `gabor` is the worked case:
+  scikit-image supplies the kernel, the WND-CHARM count-ratio score has no scikit-image equivalent
+  and is reproduced from Nyxus' own definition, and the `f0=0` kernel is analytic. Such a family
+  belongs in `not_covered.md` §E as well, so the coverage percentage is not read as more than it is,
+  and its generator must include the **negative control** that measures the gap — for gabor, scoring
+  the same feature off `skimage.filters.gabor` moves values by up to 1.005.
 - **`opencv`** is the reference for the focus/blur measures Nyxus took from the imaging literature
   rather than from radiomics: `FOCUS_SCORE` is the Pech-Pacheco et al. (2000) variance of the
   Laplacian, which is exactly `cv2.Laplacian(img, cv2.CV_64F, ksize=1).var()`. Prefer it over

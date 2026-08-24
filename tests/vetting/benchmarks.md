@@ -76,3 +76,23 @@ does, the published IBSI consensus does not — the per-slice table is the stron
 mean is the compatibility one. `test_2d_gldm_pyradiomics.h` pins both, 14 means and 56 slice
 values; `test_2d_gldzm_mirp.h` pins 16 means and 64 slice values against mirp, which also exposes
 per-slice output.
+
+---
+
+## `bench_dsb2018_2d` — four DSB2018 nuclei ROIs
+
+| | |
+|---|---|
+| Data | `dsb_data` in `tests/test_dsb2018_data.h`, loaded by `load_test_roi_data()` in `test_main_nyxus.h` |
+| ROI | the whole image is the ROI in each case — no mask, no background inside the bounding box |
+| Shape | four 8-bit crops, 10×9, 16×14, 11×17 and 13×15 pixels; nuclei from the 2018 Data Science Bowl set |
+| Why it exists | real-image intensity texture at a size a unit test can carry as a literal, on four ROIs with different aspect ratios and different amounts of zero border — which is what makes it a spread rather than one shape |
+
+Recipes: `gabor.cpp_static_defaults`, `gabor.python_raw_defaults`.
+
+Tests reaching it today: `test_2d_gabor_skimage.cc`, `test_2d_gabor_mechanics.h`.
+
+**These ROIs are small relative to a Gabor kernel, and that is load-bearing rather than incidental.**
+At `gamma = 0.1` the analytic filter runs to hundreds of pixels a side while these ROIs are 9–17
+pixels, so Nyxus' 16×16 crop decides most of the value. A benchmark swap here does not preserve the
+goldens' meaning — see `audit/gabor_2d_skimage_vetting_report.md` §4.1.

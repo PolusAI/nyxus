@@ -16,17 +16,20 @@ What makes this an independent oracle (not a re-encoding of Nyxus):
      GRAYthr*baseline_max, over the baseline count. Part B reproduces it and matches every
      pinned value to machine precision.
 
-  SCOPE of the vetting: the kernel is skimage's, the scoring pipeline is Nyxus' own definition
-  reproduced here. skimage has no native equivalent of the WND-CHARM score to compare against,
-  so what this oracle establishes is "Nyxus' filter is the canonical Gabor filter and its score
-  is the documented count ratio over that filter", not agreement with a second implementation
-  of the whole feature. Parts C and D bound how much of that claim the numbers can carry: the
-  score is a ratio of pixel counts, so it is insensitive to kernel differences below the counting
-  threshold (C), and the 16x16 crop is a defining part of the recipe rather than a detail (D) --
+  SCOPE of the vetting -- what "oracle = skimage" does and does not cover here:
+    * skimage supplies the KERNEL at the seven non-degenerate (f0, theta) points.
+    * The f0 = 0 kernel is ANALYTIC, not skimage's (see the note below).
+    * The SCORING PIPELINE is Nyxus' own definition, reproduced here -- skimage has no native
+      equivalent of the WND-CHARM count-ratio score, so there is no second implementation of
+      the whole feature to compare against.
+  The registry therefore records this family as skimage-at-kernel-level plus analytic, not as a
+  full-feature skimage comparison. Parts C and D bound how much the numbers can carry: the score
+  is a ratio of pixel counts, so it is insensitive to kernel differences below the counting
+  threshold (C), and Nyxus' 16x16 crop is a defining part of the recipe rather than a detail (D) --
   because gamma=0.1 makes sigma_y ten times sigma_x, the analytic kernel is hundreds of pixels
-  wide at the low frequencies and only 8-48% of its mass lies inside Nyxus' window. Running the
-  same score off skimage's own filtering (skimage.filters.gabor, untruncated support, reflect
-  border) moves values by up to ~1.0, i.e. the entire range of the feature.
+  wide at the low frequencies and only 8-48% of its mass lies inside Nyxus' window. Part D2 runs
+  the same score off skimage's own filtering (skimage.filters.gabor, untruncated support) and
+  measures how far that lands from the pinned values.
 
 TWO CONFIG POINTS (tests/vetting/config_recipes.md). Nyxus carries two different default
 (frequency, angle) sets, and both are pinned:
@@ -34,10 +37,16 @@ TWO CONFIG POINTS (tests/vetting/config_recipes.md). Nyxus carries two different
         f0 = {0, pi/4, pi/2, 3pi/4}, theta = {4, 16, 32, 64} radians.
     Consumers read pair.first as the FREQUENCY and pair.second as the ANGLE, so this is what a
     run that sets no Gabor options computes.
-  * gabor.documented_defaults  -- what GaborOptions::parse_input builds from the documented
-    defaults gabor_freqs=[4,16,32,64], gabor_thetas=[0,45,90,135] deg, i.e.
+  * gabor.python_raw_defaults  -- what GaborOptions::parse_input builds from the default lists
+    gabor_freqs=[4,16,32,64], gabor_thetas=[0,45,90,135] deg, i.e.
         f0 = {4, 16, 32, 64}, theta = {0, pi/4, pi/2, 3pi/4} radians.
     This is the config the Python API always runs, and a CLI run that passes the flags.
+    "raw" is the load-bearing word: the theta list is converted (degrees -> radians), the
+    frequency list is NOT -- 4 enters GaborFeature as f0 = 4 angular units, while the Python
+    docstring and the CLI help both describe gabor_freqs as denominators of pi. Nothing in the
+    tree divides by pi, so this recipe is named for the numbers that reach the filter, not for
+    the units the documentation claims. See config_recipes.md and
+    audit/gabor_2d_skimage_vetting_report.md 3.2.
 The two produce entirely different values (up to 0.84 absolute apart); see
 tests/vetting/audit/gabor_2d_skimage_vetting_report.md.
 
@@ -54,14 +63,18 @@ same-definition tier (rel 1e-3); one miscounted pixel would move a value by 1/ba
 which part C measures at 4.5e-3 .. 1.1e-2 on these ROIs, so that tolerance cannot mask a real
 disagreement.
 
+Runtime: parts A-C are instant; part D2 convolves with skimage's own untruncated kernels, which
+at the baseline frequency run to ~3000 pixels a side, so the whole script takes ~40 s.
+
 Provenance: tool=scikit-image 0.26.0 (skimage.filters.gabor_kernel); scipy 1.17.1
 (scipy.signal.convolve2d); numpy 2.4.6; env=nyxus_mirp (conda, see TOOLS.md);
 generator=tests/vetting/oracles/gen_gabor_skimage.py. Run offline.
 """
 import os, re
 import numpy as np
+from scipy.ndimage import convolve as ndi_convolve
 from scipy.signal import convolve2d
-from skimage.filters import gabor_kernel
+from skimage.filters import gabor, gabor_kernel
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.normpath(os.path.join(HERE, "..", ".."))
@@ -71,11 +84,11 @@ N = 16; GAMMA = 0.1; SIG2LAM = 0.8; F0LP = 0.1; GRAYTHR = 0.025
 
 # (table name in test_2d_gabor_skimage.cc) -> (recipe id, [(f0, theta), ...])
 CONFIGS = {
-    "gabor_2d_skimage_cpp_defaults_ref_vals": (
+    "gabor_2d_skimage_cpp_static_defaults_ref_vals": (
         "gabor.cpp_static_defaults",
         [(0.0, 4.0), (np.pi/4, 16.0), (np.pi/2, 32.0), (np.pi*3/4, 64.0)]),
-    "gabor_2d_skimage_documented_defaults_ref_vals": (
-        "gabor.documented_defaults",
+    "gabor_2d_skimage_python_raw_defaults_ref_vals": (
+        "gabor.python_raw_defaults",
         [(4.0, 0.0), (16.0, np.pi/4), (32.0, np.pi/2), (64.0, np.pi*3/4)]),
 }
 
@@ -155,13 +168,39 @@ def energy(img, f0, theta):
     return np.abs(C[off:off+h, off:off+w])   # real magnitude (no unsigned-int truncation)
 
 
-def feature(img, pairs):
-    base = energy(img, F0LP, np.pi/2)
+def score(img, pairs, energy_of):
+    """The WND-CHARM count ratio, over whatever filtering `energy_of(img, f0, theta)` supplies.
+
+    Both the oracle path (parts B/C) and the native-filtering control (part D2) score the same
+    way, so the control isolates the filtering convention and nothing else.
+    """
+    base = energy_of(img, F0LP, np.pi/2)
     mv, cv = base.max(), base.min()
     if mv == cv:
-        return [0.0]*len(pairs)
+        return None                        # the branch where Nyxus returns NaN
     bscore = int((base > cv).sum())
-    return [int((energy(img, f0, th)/mv > GRAYTHR).sum())/bscore for f0, th in pairs]
+    return [int((energy_of(img, f0, th)/mv > GRAYTHR).sum())/bscore for f0, th in pairs]
+
+
+def feature(img, pairs):
+    got = score(img, pairs, energy)
+    return [0.0]*len(pairs) if got is None else got
+
+
+def native_energy(img, f0, theta, mode):
+    """skimage's OWN filtering: untruncated kernel support and skimage's border handling.
+
+    This is the negative control, not the value path -- it is what the feature becomes if the
+    16x16 crop and the zero-padded 'full' convolution are treated as implementation detail.
+    f0 = 0 has no untruncated form (an infinite envelope), so that member keeps the flat window
+    and is run through the same border mode, which is the closest thing to a native answer.
+    """
+    if f0 == 0:
+        return np.abs(ndi_convolve(img, np.ones((N, N))/(N*N), mode=mode, cval=0.0))
+    sigma_x = SIG2LAM*2*np.pi/f0
+    re, im = gabor(img, frequency=f0/(2*np.pi), theta=theta, sigma_x=sigma_x,
+                   sigma_y=sigma_x/GAMMA, offset=0, mode=mode, cval=0.0)
+    return np.hypot(re, im)
 
 
 def main():
@@ -215,11 +254,11 @@ def main():
 
     # ---- Part D: how much of the recipe is the 16x16 crop? (informational, never fails) ----
     # gamma=0.1 makes sigma_y ten times sigma_x, so the analytic Gabor is far wider than Nyxus'
-    # window at the low frequencies. This measures what the window keeps, and what the score
-    # becomes if the oracle uses skimage's own filtering instead of Nyxus' truncate-and-zero-pad
-    # convention. Printed, not asserted: it states the scope of the vetting claim, and re-measures
-    # it whenever skimage changes.
-    print("\n=== D. the 16x16 crop is part of the recipe, not a detail ===")
+    # window at the low frequencies. D1 measures what the window keeps; D2 scores the feature off
+    # skimage's own filtering instead, which is the reproducible form of the claim that Nyxus'
+    # truncate-and-zero-pad convention is part of the recipe. Printed, not asserted: it states the
+    # scope of the vetting claim, and re-measures it whenever skimage changes.
+    print("\n=== D1. the 16x16 crop is part of the recipe, not a detail ===")
     print("  f0       sigma_x  sigma_y  skimage support  L1 mass inside 16x16")
     seen_f0 = set()
     for _, pairs in CONFIGS.values():
@@ -234,6 +273,29 @@ def main():
             sub = K[max(0, cy - N//2):cy + N//2, max(0, cx - N//2):cx + N//2]
             print(f"  {f0:7.4f}  {sigma_x:7.2f}  {sigma_x/GAMMA:7.2f}  {K.shape[0]:5d}x{K.shape[1]:<5d}"
                   f"      {100*np.abs(sub).sum()/np.abs(K).sum():6.2f}%")
+
+    print("\n=== D2. the same score off skimage's own filtering (negative control) ===")
+    print("  Nyxus' convention replaced by skimage.filters.gabor: untruncated kernel support and")
+    print("  skimage's border handling. 'constant' is zero padding, the border Nyxus uses.")
+    print("  recipe                     border    max |diff| vs pinned  saturated at 0 or >=1")
+    for table, (recipe, pairs) in CONFIGS.items():
+        truth = parse_table(table)
+        for mode in ("constant", "reflect"):
+            rows = [score(img, pairs, lambda im, f, t: native_energy(im, f, t, mode))
+                    for img in images]
+            vals = [v for r in rows if r is not None for v in r]
+            diffs = [abs(rows[i][j] - truth[i][j])
+                     for i in range(len(rows)) if rows[i] is not None
+                     for j in range(len(rows[i]))]
+            sat = sum(1 for v in vals if v == 0.0 or v >= 1.0)
+            note = "  <- NOT reproducible run to run, see below" if mode == "reflect" else ""
+            # every ROI degenerate would leave nothing to compare -- say so rather than raising
+            shown = f"{max(diffs):20.3f}" if diffs else f"{'all baselines constant':>20s}"
+            print(f"  {recipe:26s} {mode:9s} {shown}  {sat:3d}/{len(vals)}{note}")
+    print("  reflect padding is not a stable measurement here: skimage.filters.gabor pads with a")
+    print("  kernel that is far larger than these 9x10..17x11 ROIs, and the response then varies")
+    print("  between runs of the same input (~8e-4 on values of order 0.3), which flips pixels")
+    print("  across the GRAYthr cut. Only the 'constant' rows are quoted as measurements.")
 
     print(f"\n{'ALL CHECKS PASSED' if all_ok else 'SOME CHECKS FAILED -- do not promote'}")
     return 0 if all_ok else 1
