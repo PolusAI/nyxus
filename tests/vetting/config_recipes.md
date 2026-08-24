@@ -469,3 +469,21 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - **Referenced but not asserted against.** No registry row is vetted at this recipe today; it exists
   so the divergence is reproducible and so the promotion can be re-run against a fixed
   implementation. `3NGLDM_GLM` and `3NGLDM_DCM` have no MIRP counterpart at all.
+
+## gldzm3d.regression_ut_phantom
+- The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at
+  `GREYDEPTH=64`, `IBSI=false`. **No oracle** - pinned Nyxus output as drift guards in
+  `test_3d_gldzm_regression.h`, at full `%.17g` precision and `rel=1e-9`.
+- The pins are a change detector, not an endorsement: at this recipe Nyxus disagrees with MIRP on
+  every one of the 16 features MIRP computes. See `gldzm3d.mirp_fbn64` below.
+
+## gldzm3d.mirp_fbn64
+- The same phantom and binning through MIRP 2.6.0: `by_slice=False`,
+  `base_discretisation_method="fixed_bin_number"`, `base_discretisation_n_bins=64` - the same 64
+  grey levels the Nyxus side uses, so the two are directly comparable. Generator
+  `oracles/gen_gldzm3d_mirp.py`.
+- **Referenced but not asserted against.** No registry row is vetted at this recipe: Nyxus'
+  disagreement reaches 67x, and the generator shows why it is a defect rather than a convention -
+  an independent implementation with 26-connected zones and a city-block distance transform
+  reproduces MIRP to rel=3.2e-16 on the same fixture. `3GLDZM_GLM` and `3GLDZM_ZDM` have no MIRP
+  counterpart at all.
