@@ -39,11 +39,6 @@ TESTS = os.path.dirname(VETTING)
 OUT = os.path.join(HERE, "ngldm_3d_coverage.csv")
 REGISTRY = os.path.join(VETTING, "oracle_coverage.csv")
 
-# test_3d_ngldm_coverage.h instantiates two parameterized suites over the family's featureset, so
-# which features it touches is decided at runtime and cannot be read statically. It establishes no
-# vetting either way (SPEC 1), so it is credited to every feature of the family rather than scanned.
-SWEEP = "test_3d_ngldm_coverage.h"
-
 SOURCES = [
     "test_3d_ngldm_regression.h",
     os.path.join("python", "test_nyxus.py"),
@@ -234,7 +229,7 @@ def disagreements(rows, asserted, oracles, regression, other, where):
     for r in rows:
         f = r["feature"]
         covering = asserted.get(f, set()) | regression.get(f, set()) | other.get(f, set())
-        files = {where[fn] for fn in covering} | {SWEEP}
+        files = {where[fn] for fn in covering}
         claimed = {t for t in r["current_test"].split(";") if t}
         if r["status"] == "vetted" and not asserted.get(f):
             out.append(f"{f}: status=vetted but no oracle test asserts it")

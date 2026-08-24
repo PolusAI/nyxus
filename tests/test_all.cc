@@ -86,7 +86,6 @@
 #include "test_3d_gldm_coverage.h"
 #include "test_3d_gldzm_coverage.h"
 #include "test_3d_glszm_coverage.h"
-#include "test_3d_ngldm_coverage.h"
 #include "test_3d_ngtdm_coverage.h"
 #include "test_2d_glcm_mechanics.h"
 #ifdef USE_ARROW
