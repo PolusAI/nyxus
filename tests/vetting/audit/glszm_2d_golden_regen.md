@@ -53,10 +53,11 @@ the generator; every column is suffixed `_2d` under `by_slice=True`.
 | `GLSZM_LAHGLE` | `szm_lzhge_2d` | | `GLSZM_ZE` | `szm_zs_entr_2d` |
 
 **Known convention difference.** None on the matrix or the definitions — fifteen of the sixteen
-features are bit-identical. `GLSZM_ZE` differs by 2.5e-3 because Nyxus takes its logarithm through
-`Nyxus::fast_log10`, a float-precision approximation, where mirp uses a double `log2`. That is why
-that one feature asserts at `rel=4e-3` and the rest at `rel=1e-9`. If the logarithm is ever switched
-to `std::log`, re-run the generator and tighten the band to `rel=1e-9` with the others.
+features agree within 2.0e-16 relative, 7.1e-15 absolute. `GLSZM_ZE` differs by 2.5e-3 because Nyxus
+takes its logarithm through `Nyxus::fast_log10`, a float-precision approximation, where mirp uses a
+double `log2`. That is why that one feature asserts at `rel=4e-3` and the rest at SPEC §7's exact
+tier, an absolute 1e-9 band. If the logarithm is ever switched to `std::log`, re-run the generator
+and move the band to the exact tier with the others.
 
 ### Corroborating the mirp goldens with PyRadiomics
 

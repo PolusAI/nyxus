@@ -1,6 +1,6 @@
 #pragma once
 
-#include "test_2d_glszm_common.h"   // gtest, <string>, <vector>, the fixture and the mean helper
+#include "test_2d_glszm_common.h"   // gtest, <string>, <vector>, the slice featuriser and the mean helper
 #include "test_ref_vals.h"          // ref_vals_map
 
 // mirp goldens for the 2D GLSZM family (SPEC 6.4 provenance).
@@ -9,12 +9,15 @@
 // base_discretisation_method="none" (the phantom is already discrete 1..6), which is what Nyxus
 // computes in IBSI mode; generator=tests/vetting/oracles/gen_glszm_mirp.py.
 //
-// Fifteen of the sixteen features are bit-identical to mirp (2.0e-16 worst case), so they assert at
-// the SPEC 7 "exact" tier. test_2d_glszm_ibsi.h pins the same quantities as published IBSI consensus
-// values, quoted to three significant figures, and therefore asserts at rel=1e-2: IBSI fixes the
-// definition, mirp fixes the digits.
+// mirp and Nyxus build the same 8-connected zones and discretise the phantom the same way, so there
+// is no estimator disagreement between them to absorb -- only float summation order -- and fifteen
+// of the sixteen features agree within 2.0e-16 relative. Those fifteen assert at SPEC 7's "exact"
+// tier, which is an ABSOLUTE 1e-9 band, not a relative one. test_2d_glszm_ibsi.h pins the same
+// quantities as published IBSI consensus values, quoted to three significant figures, and therefore
+// asserts at rel=1e-2: IBSI fixes the definition, mirp fixes the digits.
 //
-// GLSZM_ZE is the exception and carries its own band, see glszm_2d_mirp_ze_frac_tolerance below.
+// GLSZM_ZE is the exception and carries its own relative band, see glszm_2d_mirp_ze_frac_tolerance
+// below.
 //
 // TWO TABLES, because a mean cannot vet the four values behind it: errors in two slices that cancel
 // leave the average unmoved, and a discrepancy confined to one slice reaches it quartered.
@@ -94,26 +97,26 @@ static const ref_vals_map<double> glszm_2d_mirp_slice_ref_vals
     {"GLSZM_ZE_z3", 1.5849625007211563}, {"GLSZM_ZE_z4", 1.5849625007211563}
 };
 
-// rel=1e-9: agrees_gt divides the golden by this, so a larger argument is a tighter band
-static const double glszm_2d_mirp_frac_tolerance = 1e9;
+// SPEC 7's exact tier verbatim: an absolute band, so ASSERT_NEAR rather than the relative agrees_gt
+// the looser-tiered files use. Measured worst residual over the 75 comparisons this band covers
+// (15 features x 4 slices, plus 15 means) is 7.1e-15, on GLSZM_ZV slice 3 -- five orders inside the
+// band. The relative worst is 2.0e-16, on the same value, so neither reading of "agreement" is
+// anywhere near 1e-9.
+static const double glszm_2d_mirp_abs_tolerance = 1e-9;
 
-// rel=4e-3 for GLSZM_ZE alone. Nyxus computes zone entropy through Nyxus::fast_log10, a
-// float-precision quadratic approximation of the logarithm, where mirp uses a double log2; that
-// costs 2.5e-3 per slice and 2.0e-3 on the mean against this run, while the family's other fifteen
-// features are bit-identical to mirp. The band is a statement about the approximation and nothing
-// else, and it is the only reason this feature is not at the exact tier. Widening it to cover
-// anything further, or applying it to another feature, would be a test bug.
+// rel=4e-3 for GLSZM_ZE alone, which is why that one feature stays on the relative agrees_gt. Nyxus
+// computes zone entropy through Nyxus::fast_log10, a float-precision quadratic approximation of the
+// logarithm, where mirp uses a double log2; that costs 2.5e-3 per slice and 2.0e-3 on the mean
+// against this run, while the family's other fifteen features agree with mirp within 2.0e-16. The
+// band is a statement about the approximation and nothing else, and it is the only reason this
+// feature is not at the exact tier. Widening it to cover anything further, or applying it to another
+// feature, would be a test bug.
 static const double glszm_2d_mirp_ze_frac_tolerance = 250.;
-
-static double glszm_2d_mirp_tolerance_for (const std::string& feature_name)
-{
-    return feature_name == "GLSZM_ZE" ? glszm_2d_mirp_ze_frac_tolerance : glszm_2d_mirp_frac_tolerance;
-}
 
 static void assert_glszm_feature_mirp (const Feature2D& feature_, const std::string& feature_name)
 {
     const Fsettings s = make_glszm2d_settings (true, 128);
-    const double frac_tolerance = glszm_2d_mirp_tolerance_for (feature_name);
+    const bool is_ze = feature_name == "GLSZM_ZE";
 
     // per slice first: this is what a mean cannot check
     const std::vector<double> per_slice = glszm_2d_phantom_slice_values (feature_, s);
@@ -124,13 +127,27 @@ static void assert_glszm_feature_mirp (const Feature2D& feature_, const std::str
         const std::string key = feature_name + "_z" + std::to_string (z + 1);
         SCOPED_TRACE ("mirp " + key);
         ASSERT_TRUE (glszm_2d_mirp_slice_ref_vals.count(key) > 0) << key;
-        ASSERT_TRUE (agrees_gt (per_slice[z], glszm_2d_mirp_slice_ref_vals.at(key), frac_tolerance))
-            << key;
+        // GLSZM_ZE is the one feature the exact tier cannot hold, so it alone stays on the relative
+        // band; everything else is checked against the absolute one
+        if (is_ze)
+            ASSERT_TRUE (agrees_gt (per_slice[z], glszm_2d_mirp_slice_ref_vals.at(key),
+                                    glszm_2d_mirp_ze_frac_tolerance)) << key;
+        else
+            ASSERT_NEAR (per_slice[z], glszm_2d_mirp_slice_ref_vals.at(key),
+                         glszm_2d_mirp_abs_tolerance) << key;
     }
 
-    // then the four-slice mean, the quantity IBSI publishes
-    assert_glszm_feature_against_golden_values (feature_, feature_name, glszm_2d_mirp_ref_vals,
-                                                "mirp ", frac_tolerance, s);
+    // then the four-slice mean, the quantity IBSI publishes -- averaged from the very values just
+    // asserted, so the mean covers those and not a second run of the same four featurisations
+    SCOPED_TRACE ("mirp " + feature_name);
+    ASSERT_TRUE (glszm_2d_mirp_ref_vals.count(feature_name) > 0) << feature_name;
+    const double mean_of_slices = glszm_2d_phantom_slice_mean (per_slice);
+    if (is_ze)
+        ASSERT_TRUE (agrees_gt (mean_of_slices, glszm_2d_mirp_ref_vals.at(feature_name),
+                                glszm_2d_mirp_ze_frac_tolerance)) << feature_name;
+    else
+        ASSERT_NEAR (mean_of_slices, glszm_2d_mirp_ref_vals.at(feature_name),
+                     glszm_2d_mirp_abs_tolerance) << feature_name;
 }
 
 void test_2d_glszm_sae_mirp()

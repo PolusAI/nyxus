@@ -13,10 +13,14 @@ behind it -- errors in two slices that cancel leave it unmoved. mirp runs `by_sl
 `base_discretisation_method="none"` (the phantom is already discrete 1..6), which is what Nyxus
 computes in IBSI mode.
 
-Agreement is exact (4.4e-16 worst case) on fifteen of the sixteen features. GLSZM_ZE is the
-exception: Nyxus computes zone entropy through a float log2 approximation (`fast_log10`), which
-costs it ~1.5e-3 relative against this run. That feature therefore asserts at a measured band in the
-header rather than at the exact tier; the golden pinned here is still mirp's own value.
+mirp and Nyxus build the same 8-connected zones and discretise the phantom the same way, so nothing
+but float summation order separates them on fifteen of the sixteen features: worst absolute residual
+7.1e-15, worst relative 2.0e-16, over the 75 comparisons those fifteen make. That is why the header
+pins them at SPEC 7's "exact" tier -- an ABSOLUTE 1e-9 band -- rather than at a cross-tool relative
+one. GLSZM_ZE is the exception: Nyxus computes zone entropy through a float log2 approximation
+(`fast_log10`), which costs it up to 2.5e-3 relative against this run. That feature therefore
+asserts at a measured band in the header rather than at the exact tier; the golden pinned here is
+still mirp's own value.
 
 Provenance: tool=mirp (version printed by this script); numpy; env=nyxus_mirp (conda);
 generator=tests/vetting/oracles/gen_glszm_mirp.py. Run offline; CI never invokes it.

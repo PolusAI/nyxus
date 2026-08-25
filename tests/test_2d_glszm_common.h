@@ -72,6 +72,17 @@ static std::vector<double> glszm_2d_phantom_slice_values (const Feature2D& featu
     return out;
 }
 
+// The mean of slice values already computed. Callers that assert the per-slice values first pass
+// their own vector in, so the mean they check is the mean of the numbers they just checked rather
+// than of a second, independent run of the same four featurisations.
+static double glszm_2d_phantom_slice_mean (const std::vector<double>& per_slice)
+{
+    double total = 0;
+    for (double v : per_slice)
+        total += v;
+    return total / double (per_slice.size());
+}
+
 // Compares the four-slice mean against the caller's table. The table, the settings, the tolerance
 // and the trace prefix come from the caller, so each file asserts against its own goldens at its own
 // tier and on its own recipe.
@@ -79,7 +90,7 @@ static std::vector<double> glszm_2d_phantom_slice_values (const Feature2D& featu
 // A mean is all this can check, and a mean is weaker than the four values behind it: errors in two
 // slices that cancel leave it unmoved, and a defect confined to one slice reaches it diluted by
 // four. Where the reference exposes per-slice values, as mirp does, the caller asserts those
-// separately.
+// separately and derives the mean from that same vector.
 void assert_glszm_feature_against_golden_values (
     const Feature2D& feature_,
     const std::string& feature_name,
@@ -93,14 +104,8 @@ void assert_glszm_feature_against_golden_values (
     // a missing key would otherwise be compared against a default-inserted zero
     ASSERT_TRUE (feature_reference_values.count(feature_name) > 0) << feature_name;
 
-    const std::vector<double> per_slice = glszm_2d_phantom_slice_values (feature_, s);
-
-    double total = 0;
-    for (double v : per_slice)
-        total += v;
-
     // Verdict
-    const double aveTotal = total / double(per_slice.size());
+    const double aveTotal = glszm_2d_phantom_slice_mean (glszm_2d_phantom_slice_values (feature_, s));
     ASSERT_TRUE (agrees_gt (aveTotal, feature_reference_values.at(feature_name), frac_tolerance))
         << feature_name;
 }

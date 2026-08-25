@@ -272,10 +272,10 @@ before trusting it; here it took a 60% error and a family-wide ±50% tolerance t
 with PyRadiomics corroborating.** That target file never existed; the ten rows had claimed
 `oracle=pyradiomics` against it since the tracker was imported, while the six other rows in the
 family claimed `ibsi` against a file that does exist. Both tools were run: mirp 2.6.0 and
-PyRadiomics 3.0.1 agree with each other to **7.0e-16** on all 80 quantities and reproduce Nyxus bit
-for bit on fifteen of the sixteen features, so all sixteen rows are now `oracle=mirp` at `rel=1e-9`,
-asserted per slice as well as on the four-slice mean, and the published-consensus file stays
-alongside at `rel=1e-2`. `GLSZM_ZE` is the sixteenth: it asserts at `rel=4e-3`, the measured cost of
+PyRadiomics 3.0.1 agree with each other to **7.0e-16** on all 80 quantities and agree with Nyxus to
+within 2.0e-16 relative on fifteen of the sixteen features, so all sixteen rows are now
+`oracle=mirp` -- fifteen at SPEC §7's exact tier, an absolute 1e-9 band -- asserted per slice as
+well as on the four-slice mean, with the published-consensus file staying alongside at `rel=1e-2`. `GLSZM_ZE` is the sixteenth: it asserts at `rel=4e-3`, the measured cost of
 taking its logarithm through `fast_log10` rather than a double `log2`, and it misses both tools by
 the same amount so it is not a convention difference. Only mirp's values are pinned — a second table
 identical to the first to 7e-16 would be redundancy, not coverage. See
