@@ -13,5 +13,5 @@
 // Both assertions run the in-RAM CPU path. The GPU path carries no oracle claim and is guarded in
 // tests/test_2d_gabor_mechanics.h.
 
-void assert_2d_gabor_cpp_static_defaults_skimage ();
-void assert_2d_gabor_python_raw_defaults_skimage ();
+void test_2d_gabor_cpp_static_defaults_skimage ();
+void test_2d_gabor_python_raw_defaults_skimage ();

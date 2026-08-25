@@ -147,14 +147,14 @@ static void assert_2d_gabor_scores_skimage (const ref_vals_list<std::vector<doub
     }
 }
 
-void assert_2d_gabor_cpp_static_defaults_skimage ()
+void test_2d_gabor_cpp_static_defaults_skimage ()
 {
     SCOPED_TRACE("GABOR_SKIMAGE_CPP_STATIC_DEFAULTS");
 
     assert_2d_gabor_scores_skimage (gabor_2d_skimage_cpp_static_defaults_ref_vals);
 }
 
-void assert_2d_gabor_python_raw_defaults_skimage ()
+void test_2d_gabor_python_raw_defaults_skimage ()
 {
     SCOPED_TRACE("GABOR_SKIMAGE_PYTHON_RAW_DEFAULTS");
 

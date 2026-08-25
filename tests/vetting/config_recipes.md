@@ -81,7 +81,7 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   (`gabor_kernel`, cropped to the 16x16 grid and L1-normalized) plus `analytic` for the f0=0
   member and for the count-ratio score, which skimage has no native equivalent of — see "what the
   oracle covers" below. Used by: `test_2d_gabor_skimage.cc`
-  (`assert_2d_gabor_cpp_static_defaults_skimage`).
+  (`test_2d_gabor_cpp_static_defaults_skimage`).
 - **The 16x16 crop and the zero-padded `full` convolution are part of the recipe, not implementation
   detail.** `gamma=0.1` makes `sigma_y` ten times `sigma_x`, so the analytic kernel runs to 369x113
   at the lowest frequency and only 7.9-47.6% of its L1 mass falls inside the window (100% from
@@ -99,7 +99,7 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   theta = {0, pi/4, pi/2, 3pi/4} radians. This is what the Python API runs (it always passes its
   defaults through the parser) and what a CLI run that passes both flags runs.
 - Same filter settings, benchmark and oracle as `gabor.cpp_static_defaults`. Used by:
-  `test_2d_gabor_skimage.cc` (`assert_2d_gabor_python_raw_defaults_skimage`).
+  `test_2d_gabor_skimage.cc` (`test_2d_gabor_python_raw_defaults_skimage`).
 - **`raw` names the units the recipe actually runs at, because the documented ones are not
   implemented.** `parse_input` converts the angle list from degrees to radians and passes the
   frequency list through untouched, so `4` reaches `GaborFeature::Gabor` as f0 = 4 and sets
