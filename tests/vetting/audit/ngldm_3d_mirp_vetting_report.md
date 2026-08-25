@@ -64,9 +64,11 @@ Measured on this phantom: the bounding box is 82×96×70 = **551,040** voxels ag
 **How many voxels the matrix actually counts is measurable from the pinned values alone**, without
 instrumenting anything. `f_GLNU /= Ns` and `f_GLNUN /= (Ns*Ns)` in `3d_ngldm.cpp`, so `GLNU/GLNUN`
 is exactly `Ns`, the number of voxels that contributed an entry; `DCNU/DCNUN` is the same quantity by
-the same construction. Both ratios agree on **Ns = 511,360** (to rel 2.3e-16), and 511,360 =
-68×80×94 is precisely the *interior* of the 82×96×70 box — the one-voxel shell, whose 26-neighbourhood
-would leave the box, is skipped.
+the same construction. Both ratios agree on **Ns = 511,360** (to rel 2.3e-16) — the same `Ns` local
+divides both, so that agreement checks the arithmetic rather than confirming the number from a second
+source. The confirmation is the factorisation: 511,360 = 68×80×94 is precisely the *interior* of the
+82×96×70 box measured off the mask above — the one-voxel shell, whose 26-neighbourhood would leave
+the box, is skipped.
 
 So the over-count against the ROI is **511,360 / 274,432 = 1.8633×**, not the 2.008× the raw
 bounding box suggests. The distinction matters for reading the table above: it is the denominator the

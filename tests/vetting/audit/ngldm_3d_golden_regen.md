@@ -72,9 +72,14 @@ shell.
 python tests/vetting/oracles/gen_ngldm3d_mirp.py
 ```
 
-Needs mirp 2.6.0: `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy`. The generator
-prints a paste-ready golden table and verifies pins if `test_3d_ngldm_mirp.h` exists — it does not
-yet, and should only be created when Nyxus actually agrees.
+Needs mirp 2.6.0: `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy`; the run's
+header line prints the mirp version actually installed, so the provenance is the run's own rather
+than this document's. The generator prints a paste-ready golden table and then verifies the MIRP
+values quoted in `ngldm_3d_mirp_vetting_report.md` — every quoted value against a fresh run at
+`rel<=1e-5`, plus the reverse direction, exiting non-zero on a mismatch and on a missing report.
+There is no `test_3d_ngldm_mirp.h` to check: the goldens above are printed for the day the
+implementation is fixed, not pinned today, and such a header should only be created when Nyxus
+actually agrees.
 
 **Name mapping** — MIRP suffixes every NGLDM column with the neighbourhood and discretisation
 (`_d1_a0.0_3d_fbn_n64`). Match on the stem and check the suffix separately, or a changed bin count
