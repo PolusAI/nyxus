@@ -25,10 +25,10 @@ lists are what this tree shows today — the recipe ids are the stable half.
 
 Recipes: `firstorder3d.matlab_native`, `firstorder3d.regression_ut_phantom`,
 `ngldm3d.regression_ut_phantom`, `ngldm3d.mirp_fbn64`, `gldzm3d.regression_ut_phantom`,
-`gldzm3d.mirp_fbn64`, `ngtdm3d.regression_ut_phantom`.
+`gldzm3d.mirp_fbn64`, `ngtdm3d.regression_ut_phantom`, `glszm3d.regression_ut_phantom`.
 
 Tests reaching it today: `test_3d_ngldm_regression.h`, `test_3d_coverage_common.h`,
-`test_3d_{glcm,gldm,gldzm,ngtdm}_regression.h`, `test_3d_firstorder_{matlab,regression}.h`,
+`test_3d_{glcm,gldm,gldzm,glszm,ngtdm}_regression.h`, `test_3d_firstorder_{matlab,regression}.h`,
 `test_3d_morphology_matlab.h`, and the
 `get_3d_segmented_phantom()` helper the 3D `_pyradiomics` files define (several of those assert on
 `bench_compat_liver_3d` instead — the helper being present is not the same as the assertion using
@@ -49,7 +49,20 @@ prevent.
 | ROI | label **1** |
 | Why it exists | an MRI-like intensity distribution over an anatomical segmentation — the fixture the PyRadiomics comparisons are run on, whose grey-level spread suits `binCount` binning |
 
-Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyradiomics.h`.
+Recipes: `glszm3d.pyradiomics_bincount20`.
+
+Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyradiomics.h`,
+`test_3d_glszm_pyradiomics.h`, `test_3d_glszm_mechanics.h`,
+`tests/python/test_nyxus.py::test_3d_glszm_compatibility`.
+
+**Its liver segmentation has background, so PyRadiomics' public extractor loads it.** Worth stating
+because that is not automatic: `imageoperations.getMask()` raises "No labels found in this mask"
+whenever a mask has a single unique value, and a 3D fixture whose label covers every voxel has to be
+reached by constructing the feature class directly. This one does not.
+
+**The ROI is 4 800 voxels in a 30x87x4 bounding box** at 0.677x0.677x4.8 mm spacing, and its
+intensities span 212..653. Its largest single-grey-level connected component is 634 voxels, which is
+why the 3D GLSZM size-zone matrix is 20x634 and mostly empty.
 
 Recipes: `glcm3d.pyradiomics_bincount20`, `firstorder3d.pyradiomics_bincount20`.
 

@@ -129,17 +129,16 @@ column J named a file that did not exist).
 
 ---
 
-## B. Tests that never run — 32 functions plus 13 config-gated cases
+## B. Tests that never run — 16 functions plus 13 config-gated cases
 
-### B.1 In files `test_all.cc` never includes — 30 functions, zero execution
+### B.1 In files `test_all.cc` never includes — 14 functions, zero execution
 
 Seven 3D snapshot files were written but never wired in (MIGRATION §5.10 "systemic orphan
-finding"). Five have since been wired in by their families' waves; two remain. An orphaned file
+finding"). Six have since been wired in by their families' waves; one remains. An orphaned file
 compiles nowhere, so it cannot even fail.
 
 | file | dead functions |
 |---|---:|
-| `test_3d_glszm_regression.h` | 16 |
 | `test_3d_gldm_regression.h` | 14 |
 
 Closed so far:
@@ -150,15 +149,19 @@ Closed so far:
 | `test_3d_firstorder_regression.h` | 1 | the same wave |
 | `test_3d_glcm_regression.h` | 25 | the 3D GLCM wave |
 | `test_3d_glrlm_regression.h` | 16 | the 3D GLRLM wave |
+| `test_3d_glszm_regression.h` | 16 | the 3D GLSZM wave, which had to re-pin all sixteen of its goldens first |
 | `test_3d_ngtdm_regression.h` | 5 | the 3D NGTDM wave, which also had to give the file an `NGTDM_RADIUS` |
 
-The NGTDM one says what the risk here actually is. The settings vector that file carried left
-`NGTDM_RADIUS` at 0, so every one of its five assertions would have compared against NaN on its
-first run: an orphan is not merely untested, it is untested *at settings nobody has ever executed*.
+The NGTDM and GLSZM ones say what the risk here actually is. The settings vector the NGTDM file
+carried left `NGTDM_RADIUS` at 0, so every one of its five assertions would have compared against
+NaN on its first run; the GLSZM file set `GREYDEPTH=64` and left `GLSZM_GREYDEPTH` at 0, and at
+those settings every one of its sixteen pins is wrong by between 1.6x and 1.5e6x
+(`audit/glszm_3d_pyradiomics_vetting_report.md`). An orphan is not merely untested, it is untested
+*at settings nobody has ever executed*.
 
-The remaining two are listed in `current_test` for their families' rows — so the registry still
-credits coverage to assertions that have never executed. Whether to wire them in or delete them is a
-behavioural decision (they may fail on first run) and belongs to each family's wave, not to a rename.
+The remaining one is listed in `current_test` for its family's rows — so the registry still credits
+coverage to assertions that have never executed. Whether to wire it in or delete it is a behavioural
+decision (it may fail on first run) and belongs to that family's wave, not to a rename.
 
 ### B.1.1 Wired, registered, and asserting nothing — CLOSED for gldm
 
@@ -462,7 +465,7 @@ It is set on this path; the value is not the fallback `1`.
 | functions in those files | 61 |
 | registry rows whose `target_test` is not yet written (backlog) | 256 refs / 17 files |
 | stale `current_test` refs (rename drift, must fix) | 3 |
-| functions that never execute (unwired) | 30 |
+| functions that never execute (unwired) | 14 |
 | functions that never execute (unregistered) | 2 |
 | cases gated by a build flag | 13 |
 
