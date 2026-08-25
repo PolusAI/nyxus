@@ -128,11 +128,19 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     defect, so an assertion failing here names the rule that stopped being enforced."""
     (tmp_path / "tests" / "python").mkdir(parents=True)
     # a TEST body with two callees: case = UPPER(function) has no single function to mirror
+    # ... and a case whose only callee wears the helper prefix: nothing else in 6.2 inspects an
+    # assert_*, so without this rule the case name is checked by suffix alone and the function not
+    # at all.
     (tmp_path / "tests" / "test_all.cc").write_text(
         "TEST(TEST_NYXUS, TEST_2D_GLSZM_SZE_REGRESSION) {\n"
         "    test_2d_glszm_sze_regression();\n"
         "    test_2d_glszm_lze_regression();\n"
+        "}\n"
+        "TEST(TEST_NYXUS, TEST_2D_GABOR_SKIMAGE) {\n"
+        "    assert_2d_gabor_skimage();\n"
         "}\n", encoding="utf-8")
+    (tmp_path / "tests" / "test_2d_gabor_skimage.h").write_text(
+        "void assert_2d_gabor_skimage() {}", encoding="utf-8")
     (tmp_path / "tests" / "test_2d_glszm_regression.h").write_text(
         "void test_2d_glszm_sze_regression() {}\nvoid test_2d_glszm_lze_regression() {}",
         encoding="utf-8")
@@ -199,6 +207,8 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     assert any("test_helper" in e and "assert_*" in e for e in errs)          # helper as test_
     assert any("TEST_2D_GLSZM_SZE_REGRESSION" in e and "calls 2 test_ functions" in e
                for e in errs)                                                # case mirrors no single fn
+    assert any("TEST_2D_GABOR_SKIMAGE" in e and "assert_2d_gabor_skimage()" in e
+               and "takes no arguments" in e for e in errs)                  # nullary helper IS the test
     assert any("ibsi_reference_glrlm_golden_values" in e and "SPEC 6.3.1" in e
                for e in errs)                                                # golden table off-convention
     assert any("oracle_3p_ngtdm_values" in e and "SPEC 6.3.1" in e

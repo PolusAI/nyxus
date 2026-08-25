@@ -33,7 +33,9 @@ shared table reached callers it could not see. The neutral home is test_main_nyx
 that genuinely belongs to no family is listed in FAMILY_NEUTRAL with the reason.
 
 Helpers are NOT tests and must not use the test_ prefix (the tree convention is assert_*),
-so every test_* function found here is treated as a test.
+so every test_* function found here is treated as a test. The converse holds too: an assert_*
+that takes no arguments and is called straight from a TEST() case is that case's test, whatever
+it is called, and must be renamed test_* - otherwise none of the 6.2 checks below can see it.
 
 Usage:
     python tests/vetting/check_test_names.py --check     # exit 1 on any violation
@@ -173,6 +175,8 @@ INCLUDE = re.compile(r'^[ 	]*#include[ 	]+"(test_[^"]+)"', re.M)
 
 CPP_DEF = re.compile(
     r"^[ \t]*(?:static[ \t]+)?(?:inline[ \t]+)?void[ \t]+(test_[A-Za-z0-9_]*)[ \t]*\(([^)]*)\)", re.M)
+CPP_HELPER_DEF = re.compile(
+    r"^[ \t]*(?:static[ \t]+)?(?:inline[ \t]+)?void[ \t]+(assert_[A-Za-z0-9_]*)[ \t]*\([ \t]*(?:void)?[ \t]*\)", re.M)
 PY_DEF = re.compile(r"^[ \t]*def[ \t]+(test_[A-Za-z0-9_]*)[ \t]*\(", re.M)
 GTEST_CASE = re.compile(r"^TEST\s*\(\s*([A-Za-z0-9_]+)\s*,\s*([A-Za-z0-9_]+)\s*\)", re.M)
 
@@ -331,12 +335,19 @@ def check(root):
     allcc = tests / "test_all.cc"
     txt = read(allcc)
     defined = set()
+    # An assert_* that takes NO arguments is a helper only if something other than a gtest case
+    # calls it. Wired straight into TEST(), it IS the test - and under the helper prefix it is
+    # invisible to every 6.2 check above, because CPP_DEF matches test_* only. The case-name
+    # mirror below then silently degrades to the weak suffix test. Collect them and say so.
+    nullary_helpers = set()
     for p in files:
         if p.suffix == ".py":
             continue
-        for m in CPP_DEF.finditer(read(p)):
+        body = read(p)
+        for m in CPP_DEF.finditer(body):
             if not m.group(2).strip() or m.group(2).strip() == "void":
                 defined.add(m.group(1))
+        nullary_helpers.update(m.group(1) for m in CPP_HELPER_DEF.finditer(body))
     for m in GTEST_CASE.finditer(txt):
         suite, case = m.group(1), m.group(2)
         if suite != "TEST_NYXUS":
@@ -354,6 +365,11 @@ def check(root):
             j += 1
         called = {c for c in re.findall(r"\b(test_[A-Za-z0-9_]*)\s*\(", txt[body_start:j])
                   if c in defined}
+        for c in sorted({c for c in re.findall(r"\b(assert_[A-Za-z0-9_]*)\s*\([ \t]*\)",
+                                               txt[body_start:j]) if c in nullary_helpers}):
+            errors.append(f"test_all.cc: TEST case {case} calls {c}(), which takes no arguments - "
+                          f"a nullary assert_* wired straight into a case is the test, not a "
+                          f"helper; rename it test_* so 6.2 can see it (SPEC 6.2)")
         # case = UPPER(function) is a 1:1 rule, so it can only be checked against a single
         # callee. A body calling two or more test_ functions is rejected rather than waved
         # through: the mirror check would silently degrade to the weak suffix test below,

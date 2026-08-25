@@ -310,6 +310,14 @@ the same category of error as a `_regression` function in an `_ibsi` file.
 
 gtest macro name = uppercased function, prefixed `TEST_NYXUS.` per existing convention.
 
+`assert_*` is the helper prefix, and what makes a function a helper is that a test calls it -
+not the prefix. **A nullary `assert_*` invoked directly by a `TEST()` case is that case's test
+function and takes the `test_` name**, because every rule above keys on the `test_` prefix: under
+`assert_` the function's dim token, kind suffix and file-purity go unchecked, and the
+`case == UPPER(function)` mirror falls through to the weak "case ends in a kind token" branch. A
+helper that genuinely is one takes arguments - the fixture, the golden table, the config - which
+is also what stops a case from calling it directly.
+
 **Enforced, not aspirational.** `tests/vetting/check_test_names.py --check` fails on any
 violation of §6.1/§6.2 — dim tokens, file names, function suffixes, helper prefixes, gtest
 suite and case names. It runs in CI beside `check_coverage.py` and as a pytest case, with a

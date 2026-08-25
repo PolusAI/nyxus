@@ -774,11 +774,11 @@ TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENE_REGRESSION) {
 //***** Gabor (vetted vs scikit-image, plus the GPU path's plumbing guard) *****
 
 TEST(TEST_NYXUS, TEST_2D_GABOR_CPP_STATIC_DEFAULTS_SKIMAGE){
-    assert_2d_gabor_cpp_static_defaults_skimage();
+    test_2d_gabor_cpp_static_defaults_skimage();
 }
 
 TEST(TEST_NYXUS, TEST_2D_GABOR_PYTHON_RAW_DEFAULTS_SKIMAGE){
-    assert_2d_gabor_python_raw_defaults_skimage();
+    test_2d_gabor_python_raw_defaults_skimage();
 }
 
 TEST(TEST_NYXUS, TEST_2D_GABOR_GPU_RUNS_MECHANICS){
