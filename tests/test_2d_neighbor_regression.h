@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "test_2d_neighbor_common.h"  // fixture only: calculate_neighbor_feature_values
+#include "test_main_nyxus.h"          // agrees_gt
 #include "test_ref_vals.h"            // ref_vals_map_by_label, and <string> for the helper
 
 // Pinned Nyxus output for PERCENT_TOUCHING on the neighborhood2d_scene_labels fixture at
