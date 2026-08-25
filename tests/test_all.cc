@@ -85,6 +85,8 @@
 #include "test_3d_glcm_regression.h"
 #include "test_3d_gldm_pyradiomics.h"
 #include "test_3d_ngtdm_pyradiomics.h"
+#include "test_3d_ngtdm_regression.h"
+#include "test_3d_ngtdm_mechanics.h"
 #include "test_3d_glrlm_pyradiomics.h"
 #include "test_3d_glrlm_regression.h"
 #include "test_3d_glszm_pyradiomics.h"
@@ -228,8 +230,44 @@ TEST(TEST_NYXUS, TEST_3D_NGTDM_STRENGTH_PYRADIOMICS) {
 	ASSERT_NO_THROW(test_3d_ngtdm_strength_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_3D_NGTDM_MATRIX_CORRECTNESS_PYRADIOMICS) {
-	ASSERT_NO_THROW(test_3d_ngtdm_matrix_correctness_pyradiomics());
+TEST(TEST_NYXUS, TEST_3D_NGTDM_MATRIX_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_matrix_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_DOCMATRIX_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_docmatrix_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_DUMP_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_dump_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COARSENESS_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_coarseness_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_CONTRAST_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_contrast_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_BUSYNESS_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_busyness_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COMPLEXITY_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_complexity_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_STRENGTH_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_strength_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_DUMP_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_dump_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_DEFAULT_RADIUS_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_default_radius_mechanics());
 }
 
 
