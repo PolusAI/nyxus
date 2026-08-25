@@ -1124,22 +1124,28 @@ class TestNyxus():
                 "Case-1_original_glszm_ZoneVariance" : 692.5573282855598
             }
 
-            assert np.isclose (f.at[0, "3GLSZM_GLN"],     radiomics_gt["Case-1_original_glszm_GrayLevelNonUniformity"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_GLNN"],     radiomics_gt["Case-1_original_glszm_GrayLevelNonUniformityNormalized"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_GLV"],     radiomics_gt["Case-1_original_glszm_GrayLevelVariance"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_HGLZE"],     radiomics_gt["Case-1_original_glszm_HighGrayLevelZoneEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_LAE"],     radiomics_gt["Case-1_original_glszm_LargeAreaEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_LAHGLE"],     radiomics_gt["Case-1_original_glszm_LargeAreaHighGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_LALGLE"],     radiomics_gt["Case-1_original_glszm_LargeAreaLowGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_LGLZE"],     radiomics_gt["Case-1_original_glszm_LowGrayLevelZoneEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_SZN"],     radiomics_gt["Case-1_original_glszm_SizeZoneNonUniformity"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_SZNN"],     radiomics_gt["Case-1_original_glszm_SizeZoneNonUniformityNormalized"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_SAE"],     radiomics_gt["Case-1_original_glszm_SmallAreaEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_SAHGLE"],     radiomics_gt["Case-1_original_glszm_SmallAreaHighGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_SALGLE"],     radiomics_gt["Case-1_original_glszm_SmallAreaLowGrayLevelEmphasis"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_ZE"],     radiomics_gt["Case-1_original_glszm_ZoneEntropy"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_ZP"],     radiomics_gt["Case-1_original_glszm_ZonePercentage"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3GLSZM_ZV"],     radiomics_gt["Case-1_original_glszm_ZoneVariance"], rtol=1.e-1, atol=1.e-2)
+            # rtol=1e-9, atol=0: Nyxus reproduces PyRadiomics bit for bit at this recipe -- the C++
+            # assertions on the same fixture hold the same band (test_3d_glszm_pyradiomics.h). The
+            # atol matters as much as the rtol here: at the atol=1e-2 this used to carry, SALGLE
+            # (0.00879) passed for anything in [-0.0012, 0.0188], i.e. for any value at all.
+            # 3GLSZM_ZE keeps a looser rel=1e-3 because Nyxus takes its logarithm through
+            # fast_log10(); the residual is 1.9e-4 and its cause is named in the C++ header.
+            assert np.isclose (f.at[0, "3GLSZM_GLN"],  radiomics_gt["Case-1_original_glszm_GrayLevelNonUniformity"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_GLNN"], radiomics_gt["Case-1_original_glszm_GrayLevelNonUniformityNormalized"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_GLV"],  radiomics_gt["Case-1_original_glszm_GrayLevelVariance"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_HGLZE"], radiomics_gt["Case-1_original_glszm_HighGrayLevelZoneEmphasis"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_LAE"],  radiomics_gt["Case-1_original_glszm_LargeAreaEmphasis"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_LAHGLE"], radiomics_gt["Case-1_original_glszm_LargeAreaHighGrayLevelEmphasis"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_LALGLE"], radiomics_gt["Case-1_original_glszm_LargeAreaLowGrayLevelEmphasis"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_LGLZE"], radiomics_gt["Case-1_original_glszm_LowGrayLevelZoneEmphasis"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_SZN"],  radiomics_gt["Case-1_original_glszm_SizeZoneNonUniformity"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_SZNN"], radiomics_gt["Case-1_original_glszm_SizeZoneNonUniformityNormalized"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_SAE"],  radiomics_gt["Case-1_original_glszm_SmallAreaEmphasis"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_SAHGLE"], radiomics_gt["Case-1_original_glszm_SmallAreaHighGrayLevelEmphasis"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_SALGLE"], radiomics_gt["Case-1_original_glszm_SmallAreaLowGrayLevelEmphasis"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_ZE"],   radiomics_gt["Case-1_original_glszm_ZoneEntropy"], rtol=1.e-3, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_ZP"],   radiomics_gt["Case-1_original_glszm_ZonePercentage"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3GLSZM_ZV"],   radiomics_gt["Case-1_original_glszm_ZoneVariance"], rtol=1.e-9, atol=0)
 
 
 

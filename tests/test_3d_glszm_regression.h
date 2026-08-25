@@ -1,212 +1,155 @@
 #pragma once
 
-#include <gtest/gtest.h>
-#include "../src/nyx/environment.h"
-#include "../src/nyx/featureset.h"
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/3d_glszm.h"
-#include "test_ref_vals.h"
+// Drift guard for the 3D GLSZM family on the segmented phantom. Claims no oracle (SPEC 2): the
+// values below are Nyxus' own output, so movement is the only thing they can catch.
+//
+// Recipe glszm3d.regression_ut_phantom: bench_ut_phantom_3d (label 57) with GREYDEPTH=64,
+// IBSI=false and GLSZM_GREYDEPTH=64, whose positive sign selects MATLAB-style binning into that
+// many levels. That is the recipe make_3d_coverage_settings() runs every 3D family at on this same
+// phantom, so the sweep and this file describe one configuration.
+//
+// Pins are the program's own %.17g output -- a value truncated to five digits eats a third of a
+// rel=1e-3 band before the test starts. Regenerate them with
+//     runAllTests --gtest_filter=*3D_GLSZM_DUMP_REGRESSION*
+// and see tests/vetting/audit/glszm_3d_golden_regen.md.
 
-// dig. phantom values for intensity based features
-// Calculated at 100 grey levels
-static ref_vals_map<double> glszm_3d_regression_ref_vals{
-    {"3GLSZM_SAE",  0.6},
-    {"3GLSZM_LAE",  1377.1},
-    {"3GLSZM_LGLZE",    0.0005},
-    {"3GLSZM_HGLZE",    2485.9},
-    {"3GLSZM_SALGLE",   0.0003},
-    {"3GLSZM_SAHGLE",   1592.0},
-    {"3GLSZM_LALGLE",   1.9},
-    {"3GLSZM_LAHGLE",   1.24578e+06},
-    {"3GLSZM_GLN",  2037.0},
-    {"3GLSZM_GLNN", 0.03},
-    {"3GLSZM_SZN",  24582.1},
-    {"3GLSZM_SZNN", 0.36},
-    {"3GLSZM_ZP",   0.275},
-    {"3GLSZM_GLV",  106.5},
-    {"3GLSZM_ZV",   1362.3},
-    {"3GLSZM_ZE",   7.44}
+// Only what nothing this file already includes supplies: <iomanip> for the dump helper's
+// setprecision. gtest, <iostream>, <string>, <vector>, the phantoms and the Environment graph all
+// arrive through the common header.
+#include <iomanip>
+
+#include "test_3d_glszm_common.h"  // gtest, <iostream>, the phantoms, the settings recipe, extract_3d_glszm, agrees_gt
+#include "test_ref_vals.h"         // ref_vals_map
+
+static const ref_vals_map<double> glszm_3d_regression_ref_vals
+{
+	{"3GLSZM_SAE", 0.5641059480170818},
+	{"3GLSZM_LAE", 15936.373617209154},
+	{"3GLSZM_LGLZE", 0.00043490836742224412},
+	{"3GLSZM_HGLZE", 2685.0693909588167},
+	{"3GLSZM_SALGLE", 0.00023107613419972374},
+	{"3GLSZM_SAHGLE", 1570.8808393460524},
+	{"3GLSZM_LALGLE", 18.952399724529606},
+	{"3GLSZM_LAHGLE", 16944465.274890237},
+	{"3GLSZM_GLN", 1349.3969192278446},
+	{"3GLSZM_GLNN", 0.033098602350507607},
+	{"3GLSZM_SZN", 12492.8725011651},
+	{"3GLSZM_SZNN", 0.30643068265508355},
+	{"3GLSZM_ZP", 0.14855774836753732},
+	{"3GLSZM_GLV", 84.662307691187365},
+	{"3GLSZM_ZV", 15891.062018725946},
+	{"3GLSZM_ZE", 7.344185889911989}
 };
 
-static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
+// agrees_gt divides the golden by this, so a larger argument is a tighter band. A snapshot of the
+// program's own arithmetic on a fixed input reproduces exactly, so the band is the exact tier and
+// anything looser would simply stop guarding.
+static const double glszm_3d_regression_frac_tolerance = 1e9;
 
 void assert_3d_glszm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
-#if 0
-    // get segment info
-    auto [ipath, mpath, label] = get_3d_segmented_phantom();
-    ASSERT_TRUE(fs::exists(ipath));
-    ASSERT_TRUE(fs::exists(mpath));
+	// a name with no pin is a failure, not a comparison against whatever a lookup would invent
+	auto iter = glszm_3d_regression_ref_vals.find(fname);
+	ASSERT_TRUE(iter != glszm_3d_regression_ref_vals.end());
 
-    // mock the 3D workflow
-    Environment e;
-    clear_slide_rois (e.uniqueLabels, e.roiData);
-    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
-    std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
-    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
+	int fcode = -1;
+	ASSERT_NO_FATAL_FAILURE(resolve_3d_glszm_fcode (fcode, expecting_fcode, fname));
 
-    // make it find the feature code by name
-    int fcode = -1;
-    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
-    // ... and that it's the feature we expect
-    ASSERT_TRUE((int)expecting_fcode == fcode);
+	auto [ipath, mpath, label] = get_3d_segmented_phantom();
+	Fsettings s = make_glszm3d_settings (64/*greydepth*/, 64/*matlab-style binning*/);
+	std::vector<std::vector<double>> fvals;
+	SimpleCube<PixIntens> cube;
+	PixIntens lo = 0, hi = 0;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_glszm (fvals, cube, lo, hi, ipath, mpath, label, s));
 
-    // set feature's state
-    Environment::ibsi_compliance = false;
-
-    // extract the feature
-    LR& r = e.roiData[label];
-    ASSERT_NO_THROW(r.initialize_fvals());
-    D3_GLSZM_feature f;
-    Fsettings s;
-    ASSERT_NO_THROW(f.calculate(r, s));
-    f.save_value(r.fvals);
-
-    // aggregate all the angles
-    double atot = r.fvals[fcode][0];
-
-    // verdict
-    ASSERT_TRUE(agrees_gt(atot, glszm_3d_regression_ref_vals[fname], 10.));
-#endif
-    // get segment info
-    auto [ipath, mpath, label] = get_3d_segmented_phantom();
-    ASSERT_TRUE(fs::exists(ipath));
-    ASSERT_TRUE(fs::exists(mpath));
-
-    // mock the 3D workflow
-    Environment e;
-    // (1) slide -> dataset -> prescan 
-    e.dataset.dataset_props.reserve(1);
-    SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
-    e.dataset.update_dataset_props_extrema();
-    // (2) properties of specific ROIs sitting in 'e.uniqueLabels'
-    clear_slide_rois(e.uniqueLabels, e.roiData);
-    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
-    // (3) voxel clouds
-    std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
-    // (4) buffers
-    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
-
-    // (5) feature settings
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 64;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = false;
-    //
-
-    // (6) feature extraction
-
-    // make it find the feature code by name
-    int fcode = -1;
-    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
-    // ... and that it's the feature we expect
-    ASSERT_TRUE((int)expecting_fcode == fcode);
-
-    // extract the feature
-    LR& r = e.roiData[label];
-    ASSERT_NO_THROW(r.initialize_fvals());
-    D3_GLSZM_feature f;
-    ASSERT_NO_THROW(f.calculate(r, s));
-
-    // (6) saving values
-
-    f.save_value(r.fvals);
-
-    // we have just 1 value, no need to aggregate subfeatures
-    double atot = r.fvals[fcode][0];
-
-    // verdict
-    ASSERT_TRUE(agrees_gt(atot, glszm_3d_regression_ref_vals[fname], 10.));
-
+	ASSERT_TRUE (agrees_gt (fvals[fcode][0], iter->second,
+	                        glszm_3d_regression_frac_tolerance)) << fname;
 }
 
-void test_3d_glszm_sae_regression()
+// Regenerates every pin above at full precision, in the shape the table wants. Run it with
+//     runAllTests --gtest_filter=*3D_GLSZM_DUMP_REGRESSION*
+void test_3d_glszm_dump_regression()
 {
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SAE, "3GLSZM_SAE");
+	auto [ipath, mpath, label] = get_3d_segmented_phantom();
+	Fsettings s = make_glszm3d_settings (64/*greydepth*/, 64/*matlab-style binning*/);
+	std::vector<std::vector<double>> fvals;
+	SimpleCube<PixIntens> cube;
+	PixIntens lo = 0, hi = 0;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_glszm (fvals, cube, lo, hi, ipath, mpath, label, s));
+
+	Environment e;
+	std::cout << "[3DGLSZM-REGR] cube " << cube.width() << "x" << cube.height() << "x" << cube.depth()
+	          << ", intensity range [" << lo << ", " << hi << "]\n";
+	for (const auto& nv : glszm_3d_regression_ref_vals)
+	{
+		int fcode = -1;
+		ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(nv.first, fcode));
+		std::cout << "[3DGLSZM-REGR]\t{\"" << nv.first << "\", "
+		          << std::setprecision(17) << fvals[fcode][0] << "},\tpinned "
+		          << std::setprecision(17) << nv.second << "\n";
+	}
 }
 
-void test_3d_glszm_lae_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_LAE, "3GLSZM_LAE");
+void test_3d_glszm_sae_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_SAE, "3GLSZM_SAE");
 }
 
-void test_3d_glszm_lglze_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_LGLZE, "3GLSZM_LGLZE");
+void test_3d_glszm_lae_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_LAE, "3GLSZM_LAE");
 }
 
-void test_3d_glszm_hglze_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_HGLZE, "3GLSZM_HGLZE");
+void test_3d_glszm_lglze_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_LGLZE, "3GLSZM_LGLZE");
 }
 
-void test_3d_glszm_salgle_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SALGLE, "3GLSZM_SALGLE");
+void test_3d_glszm_hglze_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_HGLZE, "3GLSZM_HGLZE");
 }
 
-void test_3d_glszm_sahgle_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SAHGLE, "3GLSZM_SAHGLE");
+void test_3d_glszm_salgle_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_SALGLE, "3GLSZM_SALGLE");
 }
 
-void test_3d_glszm_lalgle_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_LALGLE, "3GLSZM_LALGLE");
+void test_3d_glszm_sahgle_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_SAHGLE, "3GLSZM_SAHGLE");
 }
 
-void test_3d_glszm_lahgle_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_LAHGLE, "3GLSZM_LAHGLE");
+void test_3d_glszm_lalgle_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_LALGLE, "3GLSZM_LALGLE");
 }
 
-void test_3d_glszm_gln_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_GLN, "3GLSZM_GLN");
+void test_3d_glszm_lahgle_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_LAHGLE, "3GLSZM_LAHGLE");
 }
 
-void test_3d_glszm_glnn_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_GLNN, "3GLSZM_GLNN");
+void test_3d_glszm_gln_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_GLN, "3GLSZM_GLN");
 }
 
-void test_3d_glszm_szn_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SZN, "3GLSZM_SZN");
+void test_3d_glszm_glnn_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_GLNN, "3GLSZM_GLNN");
 }
 
-void test_3d_glszm_sznn_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_SZNN, "3GLSZM_SZNN");
+void test_3d_glszm_szn_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_SZN, "3GLSZM_SZN");
 }
 
-void test_3d_glszm_zp_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_ZP, "3GLSZM_ZP");
+void test_3d_glszm_sznn_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_SZNN, "3GLSZM_SZNN");
 }
 
-void test_3d_glszm_glv_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_GLV, "3GLSZM_GLV");
+void test_3d_glszm_zp_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_ZP, "3GLSZM_ZP");
 }
 
-void test_3d_glszm_zv_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_ZV, "3GLSZM_ZV");
+void test_3d_glszm_glv_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_GLV, "3GLSZM_GLV");
 }
 
-void test_3d_glszm_ze_regression()
-{
-    assert_3d_glszm_feature_regression(Nyxus::Feature3D::GLSZM_ZE, "3GLSZM_ZE");
+void test_3d_glszm_zv_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_ZV, "3GLSZM_ZV");
 }
 
+void test_3d_glszm_ze_regression() {
+	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_ZE, "3GLSZM_ZE");
+}
