@@ -267,6 +267,8 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   only, in `test_2d_glszm_regression.h`, and no oracle row claims them.
 
 ## neighbor.scene2d_radius1
+- Benchmark `bench_scene7_5roi_enclosed`; config matrix `matrix/neighbor.md`. Assertions at SPEC 7's
+  exact tier, an absolute 1e-9 band.
 - The `neighborhood2d_scene_labels` fixture (`test_data.h`): five labelled ROIs in one scene, built
   into a `roiData` map with basic-morphology and contour features computed first, then
   `NeighborsFeature::manual_reduce`. `PIXELDISTANCE=1`, `PIXELSIZEUM=1`, `XYRES=1`, `IBSI=false`.
@@ -282,8 +284,11 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `degrees(atan2(dy, dx))` mapped into `[0, 360)`, closest/second-closest by centroid distance with
   ties keeping ascending-label push order, `CLOSEST_NEIGHBOR2_*` = 0 when fewer than two neighbours
   lie within the radius, SAMPLE (n-1) standard deviation, and mode as the most frequent
-  `round(angle)` bucket with the lowest bucket winning a tie. Agreement 1.2e-16. Generator:
-  `oracles/gen_neighbor_analytic.py`.
+  `round(angle)` bucket with the lowest bucket winning a tie. Agreement 1.4e-14 absolute
+  (1.2e-16 relative). Generator: `oracles/gen_neighbor_analytic.py`.
+- **Pixel distance is the family's only knob**, and only 1 is measured. `PIXELSIZEUM` and `XYRES` are
+  set because the shared fixture's morphology and contour passes want them; the neighbour quantities
+  are computed from raw pixel coordinates and do not read them. See `matrix/neighbor.md`.
 - **Not circular:** the closed forms are evaluated on the neighbour *graph*, and that graph is what
   CellProfiler vets independently. The analytic oracle supplies the arithmetic, CP supplies the
   graph.

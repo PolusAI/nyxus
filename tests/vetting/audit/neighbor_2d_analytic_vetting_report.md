@@ -15,7 +15,9 @@ what it claimed to check.
 | Fixture | `neighborhood2d_scene_labels` (`tests/test_data.h`), five ROIs |
 | Nyxus config | `PIXELDISTANCE=1`, `PIXELSIZEUM=1`, `XYRES=1`, `IBSI=false` |
 | Test | `test_2d_neighbor_analytic.h` |
-| Tolerance | `rel=1e-9` (SPEC §7 exact tier) |
+| Tolerance | `abs=1e-9` (SPEC §7 exact tier, which is an absolute band) |
+| Benchmark | `bench_scene7_5roi_enclosed` |
+| Config matrix | `matrix/neighbor.md` |
 
 ## Why an analytic oracle is legitimate here, and why it is not circular
 
@@ -95,15 +97,27 @@ Per ROI, never aggregated — all 30 values, every one asserted:
 
 Eighteen of the thirty goldens are **structural zeros**: `CLOSEST_NEIGHBOR2_DIST`/`_ANG` are 0 when
 fewer than two neighbours lie within the radius, and the sample standard deviation of a single angle
-is 0. `agrees_gt` computes `tolerance = golden / frac_tolerance`, so a zero golden demands **bit-exact
-equality** — for those eighteen the assertion is as strong as it can be, and it passes.
+is 0. All eighteen are reproduced bit-exactly, and the twelve non-zero ones to within 1.4e-14.
 
 ## What did not hold up
 
 ### The band, again
 
-`ASSERT_NEAR(..., 1e-4)` absolute against a measured 1.2e-16, with the registry's `tolerance` column
-empty. Now `rel=1e-9` in both.
+`ASSERT_NEAR(..., 1e-4)` absolute against a measured residual of 1.4e-14 absolute (1.2e-16
+relative), with the registry's `tolerance` column empty. Now `abs=1e-9` in both.
+
+SPEC §7 spells the exact tier "`exact` (abs 1e-9)", so the band is absolute and the assertion is
+`ASSERT_NEAR`, not the relative `agrees_gt` the looser-tiered files use. That distinction is not
+cosmetic here: the family's largest value is `CLOSEST_NEIGHBOR1_ANG` = 258.69, where a *relative*
+1e-9 would have permitted 2.6e-7 — four orders looser than the absolute band, against a measured
+residual five orders tighter than it. The same correction is applied to the CellProfiler file, whose
+values run to 2.55.
+
+Where the absolute band is the weaker reading is on the eighteen structural zeros, which
+`agrees_gt` would have held to bit-exact equality. They *are* bit-exact, and the generator prints
+`abs=0` for every one of them, so nothing is lost in evidence — only in what the assertion would
+catch. SPEC's tier is one number for the family, and consistency with `test_2d_gldzm_mirp.h`, the
+other file at this tier, is worth more than a per-value band.
 
 ### The generator compared itself against itself
 
@@ -119,14 +133,20 @@ unproducible, 0 unpinned**.
 **Negative control.** Perturbing the pinned `CLOSEST_NEIGHBOR1_ANG` on ROI 5 by 1e-5 absolute — a
 change the previous ±1e-4 band would have passed — now fails the gtest naming
 `ANALYTIC__CLOSEST_NEIGHBOR1_ANG__L5`, and independently fails the generator with
-`rel=3.87e-08 ... SOME CHECKS FAILED` and exit 1. The old generator could not have caught it at all.
+`SOME CHECKS FAILED` and exit 1. The old generator could not have caught it at all.
+
+**Second control, for the absolute band specifically.** A 1e-8 perturbation of the same golden sits
+*inside* a relative 1e-9 band at 258.69 (which permits 2.6e-7) and outside the absolute one. It
+fails the gtest at the `ANALYTIC__CLOSEST_NEIGHBOR1_ANG__L5` trace and the generator at
+`29 verified, 1 failed`, exit 1 — so the tier correction is a real strengthening on this family's
+values, not a relabelling.
 
 ### The pins were truncated
 
 Every golden had been recorded to ~15 significant digits (`2.54950975679639` for
 `2.5495097567963922`), sitting 1.1e-15 from the oracle's own value. Harmless under the old band,
-but it eats real margin under `rel=1e-9`. All 30 are re-pinned at full `repr` precision, straight
-from the generator's paste-ready output.
+but it is a real fraction of the margin under `abs=1e-9`. All 30 are re-pinned at full `repr`
+precision, straight from the generator's paste-ready output.
 
 ### A parser bug, caught by a guard added in this same pass
 
@@ -146,5 +166,9 @@ have noticed.
 ```
 python tests/vetting/oracles/gen_neighbor_analytic.py     # numpy only, no special environment
 ```
+
+The generator reads `neighborhood2d_scene_labels` out of `tests/test_data.h` rather than carrying
+its own transcription of the scene, so an edit to the fixture reaches the oracle instead of leaving
+it quietly reproducing the old one. Its banner prints the pixel count it read.
 
 Regenerating the goldens: `neighbor_2d_golden_regen.md`.
