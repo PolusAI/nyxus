@@ -60,14 +60,15 @@ COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
 
 # All sixteen features are deliberately asserted twice, by test_2d_glszm_ibsi.h and
 # test_2d_glszm_mirp.h. That is not redundancy: the IBSI consensus values are published to three
-# significant figures and fix the DEFINITION (rel=1e-2), while mirp reproduces Nyxus to 2.0e-16 and
-# fixes the DIGITS (rel=1e-9). Dropping either weakens the family - see
+# significant figures and fix the DEFINITION (rel=1e-2), while mirp agrees with Nyxus to within
+# 2.0e-16 and fixes the DIGITS (SPEC 7's exact tier, an absolute 1e-9 band). Dropping either weakens
+# the family - see
 # audit/glszm_2d_mirp_vetting_report.md.
 DUAL_ORACLE = ("asserted against both oracles by design: IBSI fixes the definition at its published "
                "3-significant-figure precision, mirp fixes the digits at 2.0e-16")
 NOTE = {
-    "GLSZM_ZE": ("dual-oracle like the rest, but asserted against mirp at rel=4e-3 rather than "
-                 "rel=1e-9: Nyxus takes the logarithm through fast_log10, a float-precision "
+    "GLSZM_ZE": ("dual-oracle like the rest, but asserted against mirp at rel=4e-3 rather than at "
+                 "the exact tier: Nyxus takes the logarithm through fast_log10, a float-precision "
                  "approximation, costing 2.5e-3 per slice"),
 }
 

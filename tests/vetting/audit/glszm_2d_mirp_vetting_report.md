@@ -5,9 +5,10 @@ Ten of the family's sixteen rows have claimed `oracle=pyradiomics` with
 exist**. The other six claimed `oracle=ibsi`, backed by a file that does exist and asserts all
 sixteen features at ±1%.
 
-Running independent oracles for the first time found Nyxus reproducing **both** mirp and PyRadiomics
-exactly on fifteen of the sixteen features, and missing the sixteenth, `GLSZM_ZE`, by 2.5e-3 against
-each of them — the `fast_log10` approximation, not a GLSZM defect. The family is now vetted against
+Running independent oracles for the first time found Nyxus agreeing with **both** mirp and
+PyRadiomics to within 2.0e-16 relative on fifteen of the sixteen features, and missing the
+sixteenth, `GLSZM_ZE`, by 2.5e-3 against each of them — the `fast_log10` approximation, not a GLSZM
+defect. The family is now vetted against
 mirp per slice and on the four-slice mean, with PyRadiomics corroborating every value.
 
 ## Tool and configuration
@@ -21,7 +22,7 @@ mirp per slice and on the four-slice mean, with PyRadiomics corroborating every 
 | Nyxus config | `IBSI=true`, `GREYDEPTH=128`, each slice featurised on its own |
 | mirp config | `by_slice=True`, `base_discretisation_method="none"` |
 | Test | `test_2d_glszm_mirp.h` |
-| Tolerance | `rel=1e-9` (SPEC §7 exact tier); `rel=4e-3` for `GLSZM_ZE` alone |
+| Tolerance | SPEC §7 exact tier, an **absolute** `1e-9` band, for fifteen features; `rel=4e-3` for `GLSZM_ZE` alone |
 | Corroborating run | PyRadiomics 3.0.1, env `nyxus_oracle` (conda) — see below |
 
 ```
@@ -58,9 +59,12 @@ Nyxus against mirp, four-slice mean, and the worst of the four per-slice residua
 | GLSZM_ZV | 20.997052154195014 | 20.99705215419501 | 1.7e-16 | 2.0e-16 |
 | **GLSZM_ZE** | **1.9280961666788374** | **1.9319448617396766** | **2.0e-3** | **2.5e-3** |
 
-Fifteen features are bit-identical. Nyxus and mirp build the same zones over the same
-8-connected neighbourhood and discretise the phantom the same way, so this is the exact tier rather
-than a cross-tool band.
+Fifteen features agree within 2.0e-16 relative — thirteen of them to the last bit, `GLSZM_GLV` and
+`GLSZM_ZV` to float summation order. Measured over all 75 comparisons those fifteen make (15 × 4
+slices + 15 means), the worst **absolute** residual is 7.1e-15 and the worst **relative** residual
+2.0e-16, both on `GLSZM_ZV`, slice 3. Nyxus and mirp build the same zones over the same 8-connected
+neighbourhood and discretise the phantom the same way, so this is SPEC §7's exact tier — an absolute
+1e-9 band — rather than a cross-tool relative one.
 
 ## PyRadiomics corroborates, feature for feature
 
@@ -112,7 +116,8 @@ an approximate `log` as this fixture can produce.
 
 The normalisation is correct here — the probability is `p / sum_p`, not a raw count — so the only
 difference from the reference is the logarithm itself. `GLSZM_ZE` therefore asserts at `rel=4e-3`
-with that stated cause, and the other fifteen features stay at `rel=1e-9`. The band is a statement
+with that stated cause, and the other fifteen features stay at the exact tier's absolute 1e-9 band.
+The `rel=4e-3` band is a statement
 about the approximation and nothing else; it is deliberately too tight to absorb anything larger.
 
 The same approximation is live in `glcm.cpp`, `glrlm.cpp`, `3d_glcm.cpp`, `3d_gldm.cpp`,
