@@ -25,10 +25,10 @@ lists are what this tree shows today — the recipe ids are the stable half.
 
 Recipes: `firstorder3d.matlab_native`, `firstorder3d.regression_ut_phantom`,
 `ngldm3d.regression_ut_phantom`, `ngldm3d.mirp_fbn64`, `gldzm3d.regression_ut_phantom`,
-`gldzm3d.mirp_fbn64`.
+`gldzm3d.mirp_fbn64`, `ngtdm3d.regression_ut_phantom`.
 
 Tests reaching it today: `test_3d_ngldm_regression.h`, `test_3d_coverage_common.h`,
-`test_3d_{glcm,gldm,gldzm}_regression.h`, `test_3d_firstorder_{matlab,regression}.h`,
+`test_3d_{glcm,gldm,gldzm,ngtdm}_regression.h`, `test_3d_firstorder_{matlab,regression}.h`,
 `test_3d_morphology_matlab.h`, and the
 `get_3d_segmented_phantom()` helper the 3D `_pyradiomics` files define (several of those assert on
 `bench_compat_liver_3d` instead — the helper being present is not the same as the assertion using
@@ -52,6 +52,31 @@ prevent.
 Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyradiomics.h`.
 
 Recipes: `glcm3d.pyradiomics_bincount20`, `firstorder3d.pyradiomics_bincount20`.
+
+---
+
+## `bench_compat_ngtdm_3d` — the 4x4x3 NGTDM phantom
+
+| | |
+|---|---|
+| Files | `tests/data/nifti/compat_int/compat_int_ngtdm_3d.nii` + `tests/data/nifti/compat_seg/compat_seg_ngtdm_3d.nii` |
+| ROI | label **57**, which is every voxel |
+| Shape | 4x4x3 at 1x1x1 spacing: one populated 4x4 slice of the discrete levels 1..5 between two all-zero slices, 48 voxels in total |
+| Why it exists | six grey levels over 48 voxels, small enough that the whole NGTDM is 18 numbers a reader can check by hand, and constructed so that PyRadiomics' `binWidth=1` discretisation and Nyxus' zero-min correction land on the same level set |
+
+Recipes: `ngtdm3d.pyradiomics_binwidth1`.
+
+Tests reaching it today: `test_3d_ngtdm_pyradiomics.h`, `test_3d_ngtdm_mechanics.h`,
+`tests/python/test_nyxus.py::test_3d_ngtdm_compatibility`.
+
+**Its mask has no background, and that has a consequence.** All 48 voxels carry label 57, so
+PyRadiomics' `imageoperations.getMask()` rejects it outright — `numpy.unique` on the mask has one
+entry and it raises "No labels found in this mask (i.e. nothing is segmented)!". Any oracle run
+against this fixture has to construct the feature class directly rather than go through
+`RadiomicsFeatureExtractor`; `oracles/gen_ngtdm3d_pyradiomics.py` does.
+
+The all-zero slices are ROI voxels, not padding. They become grey level 1 on both sides and are two
+thirds of the volume, which is why `n_1 = 32` dominates the matrix.
 
 ---
 
