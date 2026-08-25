@@ -64,6 +64,16 @@ Gotchas hit while doing it:
   extractor is the cheapest way to get one family's values, but without `force2D=True` +
   `force2Ddimension=0` it applies its 3D kernel to a `(1, y, x)` array and reaches for neighbours
   that are not there. The symptom is plausible-looking numbers, not an error.
+- **PyRadiomics refuses a mask with no background.** `imageoperations.getMask()` raises
+  `ValueError: No labels found in this mask (i.e. nothing is segmented)!` whenever
+  `numpy.unique(mask)` has a single entry - which is true of a fixture whose every voxel carries the
+  ROI label, not only of an empty one. `RadiomicsFeatureExtractor.execute()` goes through
+  `getMask()`, so such a fixture cannot be featurised through the public API at all; construct the
+  feature class directly (`radiomics.ngtdm.RadiomicsNGTDM(image, mask, label=..., ...)`), which
+  reaches the same code without that check. `tests/data/nifti/compat_seg/compat_seg_ngtdm_3d.nii` is
+  one of these, and its test header used to record a `pyradiomics ... --param settings.yaml`
+  invocation that could never have run. Worth checking before believing any recorded invocation:
+  `python -c "import SimpleITK as s, numpy; print(numpy.unique(s.GetArrayFromImage(s.ReadImage(m))))"`.
 - Feeding either tool a numpy array is enough - no file on disk. PyRadiomics wants
   `sitk.GetImageFromArray` with an explicit `SetSpacing`; MIRP takes `image=`/`mask=` arrays
   directly, shaped `(z, y, x)`.
