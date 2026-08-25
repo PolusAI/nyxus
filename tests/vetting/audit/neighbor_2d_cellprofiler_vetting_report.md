@@ -17,7 +17,9 @@ generator's self-check, and where the `PERCENT_TOUCHING` bound assertions lived.
 | Fixture | `neighborhood2d_scene_labels` (`tests/test_data.h`), five ROIs, padded by 3 px so no ROI touches the border |
 | Nyxus config | `PIXELDISTANCE=1`, `PIXELSIZEUM=1`, `XYRES=1`, `IBSI=false` |
 | Test | `test_2d_neighbor_cellprofiler.h` |
-| Tolerance | `rel=1e-9` (SPEC §7 exact tier) |
+| Tolerance | `abs=1e-9` (SPEC §7 exact tier, which is an absolute band) |
+| Benchmark | `bench_scene7_5roi_enclosed` |
+| Config matrix | `matrix/neighbor.md` |
 
 ## Result
 
@@ -40,12 +42,15 @@ the exact tier.
 
 ### The band was ~9 orders of magnitude looser than the agreement
 
-The assertion was `ASSERT_NEAR(..., 1e-4)` — an **absolute** tolerance. On `CLOSEST_NEIGHBOR1_ANG`'s
-neighbour value of 258.69 that is a relative band of 3.9e-7; against a measured residual of 0 it is
-nine orders of magnitude of slack. The registry's `tolerance` column was **empty** on all nine rows,
+The assertion was `ASSERT_NEAR(..., 1e-4)` — an **absolute** tolerance, against a measured residual
+of **0** on both features here. Nine orders of magnitude of slack over an exact match; across the
+family the same 1e-4 sat over `CLOSEST_NEIGHBOR1_ANG`'s 258.69, a relative 3.9e-7. The registry's `tolerance` column was **empty** on all nine rows,
 so nothing recorded what was being claimed either.
 
-Both are now set from the measurement: `rel=1e-9` in the header and in the registry.
+Both are now set from the measurement: `abs=1e-9` in the header and in the registry — SPEC §7
+spells the exact tier "`exact` (abs 1e-9)", so the band is absolute and the assertion is
+`ASSERT_NEAR`, matching `test_2d_gldzm_mirp.h`, the other file at this tier. On values of 2.5 a
+relative 1e-9 would have been the looser of the two anyway, at 2.5e-9.
 
 ### The generator validated itself, not the header
 
@@ -56,8 +61,10 @@ divergence table was a second hardcoded copy, already stale to 6 significant fig
 
 It now parses both headers — the pins it feeds and the regression file it reports divergence
 against — verifies every pin, checks that no vetted feature has silently lost its pin, and exits
-non-zero on any failure. Current run: **10 verified, 0 failed, 0 unproducible, 0 unpinned**, all at
-`rel = 0`.
+non-zero on any failure. It also reads the scene itself out of `tests/test_data.h` rather than
+carrying a transcription of it, so a fixture edit reaches CellProfiler instead of leaving the
+generator driving the old scene. Current run: **10 verified, 0 failed, 0 unproducible, 0 unpinned**,
+every residual `abs = 0`.
 
 ## Range, identity and cross-table checks on the pinned goldens
 

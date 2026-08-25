@@ -96,3 +96,25 @@ Tests reaching it today: `test_2d_gabor_skimage.cc`, `test_2d_gabor_mechanics.h`
 At `gamma = 0.1` the analytic filter runs to hundreds of pixels a side while these ROIs are 9–17
 pixels, so Nyxus' 16×16 crop decides most of the value. A benchmark swap here does not preserve the
 goldens' meaning — see `audit/gabor_2d_skimage_vetting_report.md` §4.1.
+
+---
+
+## `bench_scene7_5roi_enclosed` — five labelled ROIs in one 7×7 scene
+
+| | |
+|---|---|
+| Data | `neighborhood2d_scene_labels` in `tests/test_data.h`, built into a `roiData` map by `calculate_neighbor_feature_values()` in `tests/test_2d_neighbor_common.h` |
+| ROI | five of them — labels 1–5, 27 pixels total, all in one scene |
+| Shape | a 7×7 footprint spanning x 2–8, y 2–8: label 1 is the 3×3 centre block, labels 2–5 are 2×2 and 2×3 blocks placed left, above, right and below it |
+| Why it exists | the neighbour graph is a property of a *scene*, not of a single ROI, so this is the smallest fixture on which every neighbour quantity is non-degenerate — one ROI with four neighbours and four with exactly one each |
+
+Recipes: `neighbor.scene2d_radius1`.
+
+Tests reaching it today: `test_2d_neighbor_{cellprofiler,analytic,regression,invariant}.h`,
+`tests/python/test_2d_neighbor_invariant.py`.
+
+**Label 1 being fully enclosed is the load-bearing property, not a layout accident.** It is the only
+ROI whose every contour pixel is 8-adjacent to some neighbour, which is what makes
+`PERCENT_TOUCHING = 100` a closed form rather than a snapshot, and it is the only ROI with two
+in-radius neighbours — so it is also the only one where `CLOSEST_NEIGHBOR2_*` is anything but a
+structural zero. Shrinking the scene or moving one block off label 1 costs both assertions.

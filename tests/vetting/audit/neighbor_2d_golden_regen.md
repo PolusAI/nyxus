@@ -4,9 +4,12 @@ Concrete steps for each of the family's three tables. Everything runs offline; C
 reference tool.
 
 All three share one fixture and one recipe (`neighbor.scene2d_radius1`): the
-`neighborhood2d_scene_labels` scene from `tests/test_data.h`, five ROIs, `PIXELDISTANCE=1`. The scene
-is duplicated as a `SCENE` list in both generators — if `test_data.h` ever changes, both copies must
-be updated with it.
+`neighborhood2d_scene_labels` scene from `tests/test_data.h`, five ROIs, `PIXELDISTANCE=1`,
+registered as benchmark `bench_scene7_5roi_enclosed`. Both generators **read that array out of
+`test_data.h`** (`parse_scene()`) rather than carrying a transcription of it, so a fixture edit
+reaches the oracle rather than leaving it reproducing the old scene; each prints the pixel count it
+read as the first line of its banner. Confirm that count matches the fixture before trusting a
+regenerated table.
 
 ## 1. `test_2d_neighbor_analytic.h` — the analytic oracle
 
@@ -21,6 +24,9 @@ already in the header and exits non-zero on a mismatch, on a pin it cannot produ
 it produces that the header fails to pin. Paste the printed blocks into
 `neighbor_2d_analytic_ref_vals_by_label` and run it again: it must report
 `30 verified, 0 failed, 0 unproducible, 0 unpinned`.
+
+The generator compares at `ABSTOL = 1e-9` **absolute**, the same band `ASSERT_NEAR` uses in the
+header, so the two cannot disagree about what "agrees" means. Keep them in step if either moves.
 
 **Formulas** (all from the ROI centroids, given the neighbour graph):
 
@@ -53,7 +59,9 @@ python tests/vetting/oracles/gen_neighbor_cellprofiler.py
 
 Prints one paste-ready line per ROI, re-verifies all 10 pins, prints the documented
 `PERCENT_TOUCHING` divergence table (reading Nyxus' side out of the regression header, not a copy),
-and exits non-zero on failure. Must report `10 verified, 0 failed, 0 unproducible, 0 unpinned`.
+and exits non-zero on failure. Must report `10 verified, 0 failed, 0 unproducible, 0 unpinned`,
+every residual `abs=0`. It compares at `ABSTOL = 1e-9` absolute, the band the header's `ASSERT_NEAR`
+uses.
 
 **Config mapping.**
 

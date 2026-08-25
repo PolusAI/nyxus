@@ -320,6 +320,16 @@ those goldens had already been moved out of. Both now parse the header they feed
 report any feature they produce that the header fails to pin, and exit non-zero. See
 `audit/neighbor_2d_analytic_vetting_report.md`.
 
+**And both kept their own transcription of the fixture they run on.** The `neighborhood2d_scene_labels`
+scene was pasted into each generator as a `SCENE` list, so a `test_data.h` edit would have left both
+oracles happily reproducing the old scene and the headers still "verifying" against it. Both now read
+the array out of `test_data.h`, the way `gen_morphology_skimage.py` and the IBSI-phantom generators
+already do. **A generator that does not read the fixture is not running the same experiment as the
+test it feeds.** The same shape is still live elsewhere: `gen_imq_opencv.py` and
+`gen_imq_cellprofiler.py` each carry a transcribed `IMG` matrix of `im_quality_intensity` /
+`im_quality_mask` *and* a hardcoded `NYXUS` golden dict, so both halves of the neighbour finding
+apply to them. Each family should check its own `gen_*` for pasted pixel data as it is revisited.
+
 **A helper-block boundary bug over-credited coverage in the per-family scanners.** The shared
 `helper_features()` logic bounded a python helper's body at the next *helper* rather than the next
 top-level `def`, so the last helper in a file swallowed every test function below it, absorbed every
