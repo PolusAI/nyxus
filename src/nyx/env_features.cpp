@@ -729,6 +729,12 @@ void Environment::compile_feature_settings()
 			s[(int)NyxSetting::GLCM_OFFSET].ival = 1;
 			s[(int)NyxSetting::GLCM_GREYDEPTH].ival = get_coarse_gray_depth();
 			s[(int)NyxSetting::GLCM_NUMANG].ival = (int)GLCMFeature::angles.size();
+			// NGTDM-specific default (otherwise zero-initialised). NGTDM_RADIUS=0 empties the
+			// neighbourhood - the scan visits only the voxel of consideration and skips it - so no
+			// voxel is recorded as having a neighbour, the matrix stays empty and every 3D NGTDM
+			// feature divides by zero. Default the Chebyshev neighbourhood radius to 1 (IBSI
+			// delta=1), which is what --3ngtdm/radius overrides.
+			s[(int)NyxSetting::NGTDM_RADIUS].ival = 1;
 			s[(int)NyxSetting::FPIMG_TARGET_DR].rval = fpimageOptions.target_dyn_range();
 			s[(int)NyxSetting::FPIMG_MIN].rval = fpimageOptions.min_intensity();
 			s[(int)NyxSetting::FPIMG_MAX].rval = fpimageOptions.max_intensity();
