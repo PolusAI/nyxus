@@ -45,19 +45,13 @@ import cellprofiler_core.workspace as cpw
 import cellprofiler_core.pipeline as cpp
 from cellprofiler.modules import measureobjectneighbors as mon
 
-# fixture neighborhood2d_scene_labels (tests/test_data.h): {x, y, label}
-SCENE = [
-    (4, 2, 3), (5, 2, 3), (4, 3, 3), (5, 3, 3),
-    (2, 4, 2), (3, 4, 2), (4, 4, 1), (5, 4, 1), (6, 4, 1), (7, 4, 4), (8, 4, 4),
-    (2, 5, 2), (3, 5, 2), (4, 5, 1), (5, 5, 1), (6, 5, 1), (7, 5, 4), (8, 5, 4),
-    (4, 6, 1), (5, 6, 1), (6, 6, 1), (7, 6, 4), (8, 6, 4),
-    (5, 7, 5), (6, 7, 5), (5, 8, 5), (6, 8, 5),
-]
 PAD = 3  # keep every ROI off the image border (CP border handling)
 LABELS = [1, 2, 3, 4, 5]
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(os.path.dirname(HERE))
+DATA_H = os.path.join(TESTS, "test_data.h")
+SCENE_FIXTURE = "neighborhood2d_scene_labels"
 TEST_H = os.path.join(TESTS, "test_2d_neighbor_cellprofiler.h")
 TABLE = "neighbor_2d_cellprofiler_ref_vals_by_label"
 REGRESSION_H = os.path.join(TESTS, "test_2d_neighbor_regression.h")
@@ -66,7 +60,23 @@ REGRESSION_TABLE = "neighbor_2d_regression_ref_vals_by_label"
 # the two features CP and Nyxus compute the same way; the header pins CP's own digits for them
 CP_VETTED = ("NUM_NEIGHBORS", "CLOSEST_NEIGHBOR1_DIST")
 
-RELTOL = 1e-9  # SPEC 7 exact tier; the measured residual is exactly 0
+ABSTOL = 1e-9  # SPEC 7 exact tier, an ABSOLUTE band; the measured residual is exactly 0
+
+
+def parse_scene(txt, name):
+    """The {x, y, label} pixel array `name` from test_data.h, as a list of (x, y, label) triples.
+
+    Read out of the checked-in fixture rather than transcribed here: a copy in this file would keep
+    driving CellProfiler with the old scene after a test_data.h edit, and the goldens it printed
+    would silently stop describing what the C++ side computes.
+    """
+    body = txt.split(name + "[] = {", 1)[1].split("};", 1)[0]
+    body = re.sub(r"//[^\n]*", "", body)
+    scene = [(int(x), int(y), int(l)) for x, y, l in
+             re.findall(r"\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\}", body)]
+    if not scene:
+        raise RuntimeError("fixture %s not found in %s" % (name, os.path.basename(DATA_H)))
+    return scene
 
 
 def _label_blocks(body):
@@ -109,16 +119,16 @@ def parse_pins(path, table):
     return pins
 
 
-def build_labels():
-    maxx = max(x for x, _, _ in SCENE)
-    maxy = max(y for _, y, _ in SCENE)
+def build_labels(scene):
+    maxx = max(x for x, _, _ in scene)
+    maxy = max(y for _, y, _ in scene)
     lab = np.zeros((maxy + 1 + 2 * PAD, maxx + 1 + 2 * PAD), dtype=np.int32)
-    for x, y, l in SCENE:
+    for x, y, l in scene:
         lab[y + PAD, x + PAD] = l  # CP indexes [row=y, col=x]
     return lab
 
 
-def run_cp(method):
+def run_cp(method, scene):
     module = mon.MeasureObjectNeighbors()
     module.object_name.value = "objs"
     module.neighbors_name.value = "objs"
@@ -127,7 +137,7 @@ def run_cp(method):
         module.distance.value = 1
 
     objects = cpo.Objects()
-    objects.segmented = build_labels()
+    objects.segmented = build_labels(scene)
     oset = cpo.ObjectSet()
     oset.add_objects(objects, "objs")
 
@@ -147,9 +157,11 @@ def run_cp(method):
 
 
 def main():
-    cp = run_cp(mon.D_ADJACENT)
+    scene = parse_scene(open(DATA_H, encoding="utf-8", errors="replace").read(), SCENE_FIXTURE)
+    cp = run_cp(mon.D_ADJACENT, scene)
 
     print("# CellProfiler MeasureObjectNeighbors (Adjacent), recipe neighbor.scene2d_radius1")
+    print("# fixture %s: %d pixels read from tests/test_data.h" % (SCENE_FIXTURE, len(scene)))
     print("# paste-ready goldens")
     for l in LABELS:
         vals = ", ".join('{"%s", %r}' % (f, float(cp[f][l - 1])) for f in CP_VETTED)
@@ -168,12 +180,14 @@ def main():
                 nmiss += 1
                 continue
             have = float(cp[f][l - 1])
-            rel = abs(have - want) / max(abs(want), 1.0)
-            if rel <= RELTOL:
-                print("  OK   L%d %s: cp=%r pinned=%r rel=%.3g" % (l, f, have, want, rel))
+            # absolute, the same band the header asserts at (SPEC 7 exact tier), so this check and
+            # the gtest one cannot disagree about what "agrees" means
+            err = abs(have - want)
+            if err <= ABSTOL:
+                print("  OK   L%d %s: cp=%r pinned=%r abs=%.3g" % (l, f, have, want, err))
                 nok += 1
             else:
-                print("  FAIL L%d %s: cp=%r pinned=%r rel=%.3g" % (l, f, have, want, rel))
+                print("  FAIL L%d %s: cp=%r pinned=%r abs=%.3g" % (l, f, have, want, err))
                 nfail += 1
 
     # every feature CP vets must be pinned on every label, or the header quietly lost coverage

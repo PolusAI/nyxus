@@ -35,23 +35,33 @@ import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(os.path.dirname(HERE))
+DATA_H = os.path.join(TESTS, "test_data.h")
 TEST_H = os.path.join(TESTS, "test_2d_neighbor_analytic.h")
 TABLE = "neighbor_2d_analytic_ref_vals_by_label"
+SCENE_FIXTURE = "neighborhood2d_scene_labels"
 
-RELTOL = 1e-9          # SPEC 7 exact tier; measured worst residual is 1.2e-16
+ABSTOL = 1e-9          # SPEC 7 exact tier, an ABSOLUTE band; measured worst residual is 1.4e-14
 
-# fixture neighborhood2d_scene_labels (tests/test_data.h): {x, y, label}
-SCENE = [
-    (4, 2, 3), (5, 2, 3), (4, 3, 3), (5, 3, 3),
-    (2, 4, 2), (3, 4, 2), (4, 4, 1), (5, 4, 1), (6, 4, 1), (7, 4, 4), (8, 4, 4),
-    (2, 5, 2), (3, 5, 2), (4, 5, 1), (5, 5, 1), (6, 5, 1), (7, 5, 4), (8, 5, 4),
-    (4, 6, 1), (5, 6, 1), (6, 6, 1), (7, 6, 4), (8, 6, 4),
-    (5, 7, 5), (6, 7, 5), (5, 8, 5), (6, 8, 5),
-]
 RADIUS = 1  # PIXELDISTANCE in make_neighbors2d_settings()
 
 FEATURES = ("CLOSEST_NEIGHBOR2_DIST", "CLOSEST_NEIGHBOR1_ANG", "CLOSEST_NEIGHBOR2_ANG",
             "ANG_BW_NEIGHBORS_MEAN", "ANG_BW_NEIGHBORS_STDDEV", "ANG_BW_NEIGHBORS_MODE")
+
+
+def parse_scene(txt, name):
+    """The {x, y, label} pixel array `name` from test_data.h, as a list of (x, y, label) triples.
+
+    Read out of the checked-in fixture rather than transcribed here: a copy in this file would keep
+    reproducing the old scene after a test_data.h edit, and the goldens it printed would silently
+    stop describing what the C++ side computes.
+    """
+    body = txt.split(name + "[] = {", 1)[1].split("};", 1)[0]
+    body = re.sub(r"//[^\n]*", "", body)
+    scene = [(int(x), int(y), int(l)) for x, y, l in
+             re.findall(r"\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\}", body)]
+    if not scene:
+        raise RuntimeError(f"fixture {name} not found in {os.path.basename(DATA_H)}")
+    return scene
 
 
 def min_sqdist(a, b):
@@ -71,10 +81,10 @@ def sample_std(v):
     return float(np.sqrt(((v - v.mean()) ** 2).sum() / (len(v) - 1)))
 
 
-def compute():
+def compute(scene):
     """-> {label: {feature: value}}."""
-    labels = sorted({l for _, _, l in SCENE})
-    px = {l: np.array([(x, y) for x, y, ll in SCENE if ll == l], float) for l in labels}
+    labels = sorted({l for _, _, l in scene})
+    px = {l: np.array([(x, y) for x, y, ll in scene if ll == l], float) for l in labels}
     cen = {l: px[l].mean(axis=0) for l in labels}
 
     neigh = {l: [] for l in labels}
@@ -179,21 +189,24 @@ def verify(pins, got):
                       f"such value")
                 nmiss += 1
                 continue
-            # scale-relative: several of these values are exact zeros by construction
-            rel = abs(have - want) / max(abs(want), 1.0)
-            if rel <= RELTOL:
-                print(f"  OK   L{label} {name}: oracle={have!r} pinned={want!r} rel={rel:.3g}")
+            # absolute, the same band the header asserts at (SPEC 7 exact tier), so this check and
+            # the gtest one cannot disagree about what "agrees" means
+            err = abs(have - want)
+            if err <= ABSTOL:
+                print(f"  OK   L{label} {name}: oracle={have!r} pinned={want!r} abs={err:.3g}")
                 nok += 1
             else:
-                print(f"  FAIL L{label} {name}: oracle={have!r} pinned={want!r} rel={rel:.3g}")
+                print(f"  FAIL L{label} {name}: oracle={have!r} pinned={want!r} abs={err:.3g}")
                 nfail += 1
     return nok, nfail, nmiss
 
 
 def main():
-    got = compute()
+    scene = parse_scene(open(DATA_H, encoding="utf-8", errors="replace").read(), SCENE_FIXTURE)
+    got = compute(scene)
 
     print(f"# analytic (numpy {np.__version__}), recipe neighbor.scene2d_radius1")
+    print(f"# fixture {SCENE_FIXTURE}: {len(scene)} pixels read from tests/test_data.h")
     print("# paste-ready goldens")
     for label in sorted(got):
         print(f"\t{{{label}, {{")
