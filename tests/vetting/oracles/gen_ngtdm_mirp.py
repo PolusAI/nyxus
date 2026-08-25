@@ -12,10 +12,12 @@ aggregation publishes. Both quantities are pinned, because a mean is weaker than
 behind it. mirp runs `by_slice=True` with `base_discretisation_method="none"` (the phantom is already
 discrete 1..6), which is what Nyxus computes in IBSI mode.
 
-Agreement is 3.2e-16 worst case -- floating-point summation order, nothing more -- so the header pins
-at the SPEC 7 exact tier. PyRadiomics 3.0.1 was run on the same fixture and agrees with mirp to
-1.6e-16; that run is recorded in the audit report rather than pinned, since a second table identical
-to this one would be redundancy and not coverage.
+mirp and Nyxus discretise the phantom the same way and walk the same d=1 8-neighbourhood, so nothing
+but floating-point summation order separates them: worst absolute residual 3.6e-15, worst relative
+3.2e-16, over the 25 comparisons the five features make. That is why the header pins them at SPEC 7's
+"exact" tier -- an ABSOLUTE 1e-9 band -- rather than at a cross-tool relative one. PyRadiomics 3.0.1
+was run on the same fixture and agrees with mirp to 1.6e-16; that run is recorded in the audit report
+rather than pinned, since a second table identical to this one would be redundancy and not coverage.
 
 NGTDM takes no distance parameter on either side: the neighbourhood is the d=1 8-neighbourhood the
 IBSI definition fixes, which is why a pixel distance in the Nyxus settings would change nothing.
@@ -39,7 +41,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(os.path.dirname(HERE))
 TEST_H = os.path.join(TESTS, "test_2d_ngtdm_mirp.h")
 
-RELTOL = 1e-9          # SPEC 7 exact tier; measured worst residual is 3.2e-16
+RELTOL = 1e-9          # the pins are mirp's own digits, so they must round-trip exactly
 
 # Nyxus feature -> mirp column stem. mirp abbreviates the family as "ngt" and spells the five
 # features out in full, so this map is one-to-one and unusually boring -- unlike GLSZM/NGLDM, where

@@ -310,7 +310,8 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `test_2d_ngtdm_ibsi.h`, `test_2d_ngtdm_mirp.h`.
 - mirp reaches this configuration with `by_slice=True` and `base_discretisation_method="none"` (the
   phantom is already discrete 1..6). PyRadiomics reaches it with `binWidth=1` -- identity binning on
-  an integer image -- plus `force2D=True`. Generator: `oracles/gen_ngtdm_mirp.py`.
+  an integer image -- plus `force2D=True`. Generator: `oracles/gen_ngtdm_mirp.py`. Config matrix:
+  `matrix/ngtdm.md`.
 - Both the four-slice mean and each slice on its own are asserted. The mean is the quantity IBSI
   publishes, but it cannot vet the four values behind it: two slice errors that cancel leave it
   unmoved and a defect confined to one slice reaches it quartered.
@@ -318,17 +319,30 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   definition fixes, and `ngtdm.cpp` never reads `PIXELDISTANCE`. A pixel distance set in an NGTDM
   test looks meaningful and changes nothing, so this recipe does not set one.
 - All three references agree: mirp and PyRadiomics to **1.6e-16** of each other, Nyxus to
-  **3.2e-16** of both, and the published consensus to within its own 3-significant-figure rounding
-  (worst 0.41%, on `NGTDM_COARSENESS`). The mirp file therefore asserts at `rel=1e-9` and the IBSI
-  file at `rel=1e-2`: IBSI fixes the definition, mirp fixes the digits.
+  **3.6e-15 absolute / 3.2e-16 relative** of both, and the published consensus to within its own
+  3-significant-figure rounding (worst 0.41%, on `NGTDM_COARSENESS`). The mirp file therefore asserts
+  at SPEC §7's exact tier -- an absolute `1e-9` band -- and the IBSI file at `rel=1e-2`: IBSI fixes
+  the definition, mirp fixes the digits.
 - **`NGTDMFeature::n_levels` is a static and is not part of this recipe.** In IBSI mode `ngtdm.cpp`
-  forces the grey-binning info to 0, so the static is ignored entirely -- asserted rather than
-  assumed, in `test_2d_ngtdm_mechanics.h`.
-- **Outside this recipe:** Nyxus' default mode (`IBSI=false`) bins to a fixed grey count instead of
-  using the phantom's own levels, and the value of `n_levels` then decides the result --
-  `NGTDM_CONTRAST` is 0.925 in IBSI mode, 3169.93 in default mode at 100 levels, and 6634.50 at the
-  default 0. Those values are drift-pinned only, in `test_2d_ngtdm_regression.h`, at the grey count
-  they were recorded at, and no oracle row claims them.
+  forces the grey-binning info to 0, so the static is ignored entirely. That immunity is what
+  `test_2d_ngtdm_mechanics.h` checks; being a mechanics test it establishes no vetting and no
+  registry row cites it.
+
+## ngtdm.default_fbn100
+- The same four IBSI digital-phantom slices, through `NGTDMFeature` in Nyxus' **default** mode:
+  `IBSI=false`, `GREYDEPTH=128` and `NGTDMFeature::n_levels=100`. The static wins over `GREYDEPTH`
+  when the two differ (`ngtdm.cpp:44-49`), so the fixed bin number this recipe is named for is 100,
+  assigned by MATLAB binning because the count is positive (`texture_feature.h:101-103`). **No
+  oracle** -- pinned Nyxus output as drift guards in `test_2d_ngtdm_regression.h` at `rel=1e-3`.
+  Config matrix: `matrix/ngtdm.md`.
+- A different config point from `ngtdm.ibsi_phantom_2d` on the same fixture, not a second assertion
+  on it. Default mode bins the intensities to a fixed grey count instead of using the phantom's own
+  levels, and nothing reproduces that: `NGTDM_CONTRAST` is 0.925 under the IBSI recipe and 3169.93
+  here. It is the mode a caller gets without asking for IBSI compliance, which is why it is pinned at
+  all.
+- The bin count is part of the recipe and is passed explicitly rather than assigned to the static and
+  left: at the default `n_levels=0` the same fixture gives `NGTDM_CONTRAST` 6634.50, more than twice
+  these pins.
 
 
 ## glcm3d.pyradiomics_bincount20
