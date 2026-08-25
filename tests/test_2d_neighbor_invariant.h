@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <string>                     // std::string, std::to_string for the SCOPED_TRACE label
 
 #include "test_2d_neighbor_common.h"  // fixture only: calculate_neighbor_feature_values
 

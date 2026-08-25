@@ -12,20 +12,24 @@
 // bring gtest in themselves for their own assertions.
 //
 // Every include below is named for the symbol this file uses directly, rather than left to arrive
-// transitively through test_main_nyxus.h: a transitive include compiles, but it makes this header
-// depend on what an unrelated file happens to pull in.
+// through whatever an unrelated header happens to pull in: a transitive include compiles, but it
+// makes this header depend on that other file keeping its own includes.
+//
+// No test_main_nyxus.h either: nothing here calls agrees_gt or the ROI loaders it defines. Only the
+// regression file in this family does, and carrying the header here would hand it to the three that
+// do not, so that one file names it itself.
 #include <unordered_map>
 #include <unordered_set>
 
 #include "../src/nyx/feature_settings.h"        // Fsettings, NyxSetting
-#include "../src/nyx/roi_cache.h"               // LR, init_label_record_3, update_label_record_3
+#include "../src/nyx/globals.h"                 // init_label_record_3, update_label_record_3
+#include "../src/nyx/roi_cache.h"               // LR
 #include "../src/nyx/features/basic_morphology.h"  // BasicMorphologyFeatures
 #include "../src/nyx/features/contour.h"        // ContourFeature
 #include "../src/nyx/features/image_matrix.h"   // ImageMatrix
 #include "../src/nyx/features/neighbors.h"      // NeighborsFeature
 #include "../src/nyx/features/pixel.h"          // Pixel2, PixIntens
 #include "test_data.h"                          // neighborhood2d_scene_labels
-#include "test_main_nyxus.h"                    // the Nyxus namespace the loaders live in
 
 static Fsettings make_neighbors2d_settings()
 {
