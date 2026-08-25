@@ -90,6 +90,8 @@
 #include "test_3d_glrlm_pyradiomics.h"
 #include "test_3d_glrlm_regression.h"
 #include "test_3d_glszm_pyradiomics.h"
+#include "test_3d_glszm_regression.h"
+#include "test_3d_glszm_mechanics.h"
 #include "test_3d_coverage_common.h"
 #include "test_2d_glcm_mechanics.h"
 #ifdef USE_ARROW
@@ -372,8 +374,16 @@ TEST(TEST_NYXUS, TEST_3D_GLRLM_AVE_PYRADIOMICS) {
 
 //***** 3D GLSZM compatibility *****
 
-TEST(TEST_NYXUS, TEST_3D_GLSZM_MATRIX_CORRECTNESS_PYRADIOMICS) {
-	ASSERT_NO_THROW (test_3d_glszm_matrix_correctness_pyradiomics());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_MATRIX_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_glszm_matrix_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SMALLMATRIX_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_glszm_smallmatrix_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_DUMP_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_glszm_dump_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_GLSZM_SAE_PYRADIOMICS) {
@@ -438,6 +448,78 @@ TEST(TEST_NYXUS, TEST_3D_GLSZM_ZV_PYRADIOMICS) {
 
 TEST(TEST_NYXUS, TEST_3D_GLSZM_ZE_PYRADIOMICS) {
 	ASSERT_NO_THROW(test_3d_glszm_ze_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SAE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_sae_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_LAE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_lae_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_LGLZE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_lglze_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_HGLZE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_hglze_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SALGLE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_salgle_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SAHGLE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_sahgle_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_LALGLE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_lalgle_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_LAHGLE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_lahgle_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_GLN_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_gln_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_GLNN_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_glnn_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SZN_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_szn_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_SZNN_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_sznn_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_ZP_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_zp_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_GLV_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_glv_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_ZV_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_zv_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_ZE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_ze_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_DUMP_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_dump_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_DEFAULT_GREYDEPTH_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_glszm_default_greydepth_mechanics());
 }
 
 
