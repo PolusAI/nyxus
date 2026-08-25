@@ -1,11 +1,18 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include "../src/nyx/environment.h"
-#include "../src/nyx/featureset.h"
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/3d_gldzm.h"
-#include "test_ref_vals.h"
+#include <iomanip>
+#include <tuple>
+#include "../src/nyx/environment.h"           // Environment
+#include "../src/nyx/feature_settings.h"      // Fsettings, NyxSetting
+#include "../src/nyx/featureset.h"            // Nyxus::Feature3D
+#include "../src/nyx/globals.h"               // clear_slide_rois, gatherRoisMetrics_3D, scanTrivialRois_3D, allocateTrivialRoisBuffers_3D
+#include "../src/nyx/roi_cache.h"             // LR
+#include "../src/nyx/slideprops.h"            // SlideProps, scan_slide_props
+#include "../src/nyx/features/3d_gldzm.h"     // D3_GLDZM_feature
+#include "../src/nyx/helpers/fsystem.h"       // fs::exists
+#include "test_main_nyxus.h"                  // agrees_gt
+#include "test_ref_vals.h"                    // ref_vals_map, and the <string> / <vector> it already includes
 
 // 3D GLDZM drift guards. These are NOT oracle values and this family is NOT vetted: every row in
 // oracle_coverage.csv is status=regression, and passing these establishes nothing (SPEC 1).
@@ -29,7 +36,12 @@
 //
 // 3GLDZM_GLM and 3GLDZM_ZDM have no counterpart in MIRP or IBSI at all (MIRP emits no dzm_gl_mean
 // or dzm_zd_mean), so they stay regression-only whatever happens to the rest.
-static ref_vals_map<double> gldzm_3d_regression_ref_vals{
+//
+// The coverage sweep used to keep a second copy of this table; it is gone, and this file is now the
+// family's only pin table -- test_3d_coverage_common.h reads its keys to satisfy SPEC 1. So the
+// table is const: a default-insert here would both pass a bogus assertion and add a phantom feature
+// name to that set.
+static const ref_vals_map<double> gldzm_3d_regression_ref_vals{
 	{"3GLDZM_SDE",        0.022387420258025731},
 	{"3GLDZM_LDE",          314.01248309662088},
 	{"3GLDZM_LGLZE",     0.0005581993242951194},
@@ -59,6 +71,10 @@ static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void assert_3d_gldzm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
+	// the table is const and read through .at(), so a missing key throws rather than being
+	// default-inserted as a 0 golden and compared against; check it up front to fail by name
+	ASSERT_TRUE(gldzm_3d_regression_ref_vals.count(fname) > 0) << fname;
+
 	// get segment info
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();
 	ASSERT_TRUE(fs::exists(ipath));
@@ -116,7 +132,8 @@ void assert_3d_gldzm_feature_regression (const Nyxus::Feature3D& expecting_fcode
 	double atot = r.fvals[fcode][0];
 
 	// verdict
-	ASSERT_TRUE(agrees_gt(atot, gldzm_3d_regression_ref_vals[fname], gldzm_3d_regression_frac_tolerance));
+	ASSERT_TRUE(agrees_gt(atot, gldzm_3d_regression_ref_vals.at(fname), gldzm_3d_regression_frac_tolerance))
+		<< fname << " actual=" << std::setprecision(17) << atot;
 
 }
 
