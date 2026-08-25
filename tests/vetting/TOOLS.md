@@ -59,6 +59,18 @@ Gotchas hit while doing it:
   `Id` 5.5%, `Idm` 7.8%, `Idn` 7.7% and `Correlation` 0.6%. If a golden in that group disagrees by a
   few percent, suspect the tool version before suspecting Nyxus - and record the version, which is
   why `gen_glcm3d_pyradiomics.py` prints `radiomics.__version__` into the table header.
+- **A PyRadiomics feature-matrix axis is not always what its index says.** Intercepting the matrix a
+  family contracts (`P_glszm`, `P_glrlm`, `P_ngtdm`) is the cheapest way to vet the table under the
+  scalars, but `_calculateCoefficients()` may *compact* it first. GLSZM deletes every column whose
+  zone size no zone in the ROI has and keeps the surviving sizes in `coefficients['jvector']`; on the
+  3D compat phantom that turns 634 columns into 46, so reading the zone size off the column index
+  relabels almost every large zone. Read the axis from `ivector` / `jvector`, never from the index,
+  and check whether the class compacts before pinning anything. The symptom is partial: the features
+  that do not weight by that axis still reproduce exactly, so a scalar spot-check looks fine.
+- **Recompute the family's features from the matrix you intercepted and compare against the public
+  extractor's own output.** Twenty lines, no new tool, and it is what catches the axis error above
+  before a single golden is pinned - the mislabelled GLSZM matrix reproduced 9 of 16 features exactly
+  and missed the other 7 by up to 94%.
 - **A per-family PyRadiomics class needs `force2D=True` on a single-slice volume.** Driving one
   feature class directly (`radiomics.gldm.RadiomicsGLDM(image, mask, ...)`) rather than the
   extractor is the cheapest way to get one family's values, but without `force2D=True` +
