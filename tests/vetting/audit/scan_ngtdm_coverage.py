@@ -6,7 +6,12 @@ The feature -> test mapping is read out of the test sources rather than written 
 artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
 acceptance check from the family plan: every `vetted` row in oracle_coverage.csv must be asserted by
 an oracle test, that test's oracle must be the one the row names, and `current_test` must name
-exactly the files that cover the feature.
+exactly the files that cover the feature AT THAT ROW'S CONFIG.
+
+The registry carries one row per (feature x config), so this family has two rows per feature -- the
+IBSI-mode row the oracles vet and the default-mode row only the snapshots pin -- and each is checked
+against the tests of its own kind. The mechanics file answers to neither: it pins no reference value,
+so a row citing it would be claiming coverage it does not have.
 
 Coverage rule: a feature is covered by a test function when its name appears on an ASSERTION line in
 that function, or in a golden table that a function loops over while asserting. Comments are
@@ -67,7 +72,7 @@ COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
 
 # All five features are deliberately asserted by both oracle files. That is not redundancy: the IBSI
 # consensus values are published to three significant figures and fix the DEFINITION (rel=1e-2),
-# while mirp reproduces Nyxus to 3.2e-16 and fixes the DIGITS (rel=1e-9). See
+# while mirp reproduces Nyxus to 3.2e-16 and fixes the DIGITS (SPEC 7's exact tier, abs=1e-9). See
 # audit/ngtdm_2d_mirp_vetting_report.md.
 DUAL_ORACLE = ("asserted against both oracles by design: IBSI fixes the definition at its published "
                "3-significant-figure precision, mirp fixes the digits at 3.2e-16, with a PyRadiomics "
@@ -161,8 +166,9 @@ def render(rows, asserted, oracles, regression, other):
     w = csv.writer(buf, lineterminator="\n")
     w.writerow(["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
                 "Regression", "Reg_Test_Name", "Mechanics", "Notes"])
-    for r in rows:
-        f = r["feature"]
+    # one artifact line per feature, not per registry row: the registry splits a feature across a
+    # vetted row and a regression row, and this table is about the tests, which do not split
+    for f in dict.fromkeys(r["feature"] for r in rows):
         w.writerow(["2D", "ngtdm", f,
                     ";".join(sorted(oracles.get(f, ()))),
                     ";".join(sorted(asserted.get(f, ()))),
@@ -187,24 +193,42 @@ def unregistered_tests(where):
 
 
 def disagreements(rows, asserted, oracles, regression, other, where):
+    """Each row is answerable for the tests of its own kind, and no row for the mechanics ones."""
     out = []
+    mechanics_files = {where[fn] for fns in other.values() for fn in fns}
     for r in rows:
         f = r["feature"]
-        covering = asserted.get(f, set()) | regression.get(f, set()) | other.get(f, set())
-        files = {where[fn] for fn in covering}
         claimed = {t for t in r["current_test"].split(";") if t}
-        if r["status"] == "vetted" and not asserted.get(f):
-            out.append(f"{f}: status=vetted but no oracle test asserts it")
-        if r["oracle"] and r["oracle"] not in oracles.get(f, set()):
-            out.append(f"{f}: registry oracle={r['oracle']!r} but the tests asserting it are "
-                       f"{sorted(oracles.get(f, ())) or 'none'}")
-        if not r["oracle"] and oracles.get(f):
-            out.append(f"{f}: registry claims no oracle but {sorted(oracles[f])} test(s) assert it "
-                       f"under an oracle-suffixed name")
+        if r["status"] == "vetted":
+            files = {where[fn] for fn in asserted.get(f, ())}
+            if not asserted.get(f):
+                out.append(f"{f}: status=vetted but no oracle test asserts it")
+            if r["oracle"] and r["oracle"] not in oracles.get(f, set()):
+                out.append(f"{f}: registry oracle={r['oracle']!r} but the tests asserting it are "
+                           f"{sorted(oracles.get(f, ())) or 'none'}")
+            if not r["oracle"]:
+                out.append(f"{f}: status=vetted but the row names no oracle")
+        else:
+            files = {where[fn] for fn in regression.get(f, ())}
+            if r["oracle"]:
+                out.append(f"{f}: status={r['status']} but the row names oracle {r['oracle']!r}")
         for stale in sorted(claimed - files):
-            out.append(f"{f}: current_test names {stale}, which covers nothing for it")
+            if stale in mechanics_files:
+                out.append(f"{f}: current_test names {stale}, a mechanics file - it pins no "
+                           f"reference value, so no registry row is covered by it")
+            else:
+                out.append(f"{f}: current_test names {stale}, which covers nothing for it at "
+                           f"recipe {r['config_recipe'] or '(none)'}")
         for gap in sorted(files - claimed):
             out.append(f"{f}: {gap} covers it but current_test omits it")
+
+    # the reverse gap: a kind of test with no row to answer for it
+    for f in sorted(asserted):
+        if not any(r["feature"] == f and r["status"] == "vetted" for r in rows):
+            out.append(f"{f}: {sorted(asserted[f])} assert it but no registry row is vetted")
+    for f in sorted(regression):
+        if not any(r["feature"] == f and r["status"] == "regression" for r in rows):
+            out.append(f"{f}: {sorted(regression[f])} pin it but no registry row is a regression one")
     return out
 
 

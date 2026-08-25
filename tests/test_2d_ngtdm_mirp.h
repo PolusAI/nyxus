@@ -9,11 +9,13 @@
 // base_discretisation_method="none" (the phantom is already discrete 1..6), which is what Nyxus
 // computes in IBSI mode; generator=tests/vetting/oracles/gen_ngtdm_mirp.py.
 //
-// All five features are bit-identical to mirp on every slice (3.2e-16 worst case, floating-point
-// summation order), so they assert at the SPEC 7 exact tier. PyRadiomics 3.0.1 was run on the same
-// fixture and recipe and agrees with these goldens to 1.6e-16; it is not pinned separately because a
-// second table identical to this one is redundancy rather than coverage. See
-// tests/vetting/audit/ngtdm_2d_mirp_vetting_report.md.
+// mirp and Nyxus discretise the phantom the same way and walk the same d=1 8-neighbourhood, so
+// nothing but floating-point summation order separates them: the values agree to a worst residual of
+// 3.6e-15 absolute and 3.2e-16 relative, they are not bit-identical. That is why all five features
+// assert at SPEC 7's "exact" tier -- an ABSOLUTE 1e-9 band -- rather than at a cross-tool relative
+// one. PyRadiomics 3.0.1 was run on the same fixture and recipe and agrees with these goldens to
+// 1.6e-16; it is not pinned separately because a second table identical to this one is redundancy
+// rather than coverage. See tests/vetting/audit/ngtdm_2d_mirp_vetting_report.md.
 //
 // test_2d_ngtdm_ibsi.h pins the same quantities as published IBSI consensus values, quoted to three
 // significant figures, and therefore asserts at rel=1e-2: IBSI fixes the definition, mirp fixes the
@@ -52,8 +54,12 @@ static const ref_vals_map<double> ngtdm_2d_mirp_slice_ref_vals
     {"NGTDM_STRENGTH_z3", 3.5422771781859765}, {"NGTDM_STRENGTH_z4", 3.6430627518710423}
 };
 
-// rel=1e-9: agrees_gt divides the golden by this, so a larger argument is a tighter band
-static const double ngtdm_2d_mirp_frac_tolerance = 1e9;
+// SPEC 7's exact tier verbatim: an absolute band, so ASSERT_NEAR rather than the relative agrees_gt
+// the looser-tiered files use. Measured worst residual over the 25 comparisons this band covers
+// (5 features x 4 slices, plus 5 means) is 3.6e-15, on NGTDM_COMPLEXITY slice 2 -- six orders inside
+// the band. The relative worst is 3.2e-16, on NGTDM_CONTRAST slice 2, so neither reading of
+// "agreement" is anywhere near 1e-9.
+static const double ngtdm_2d_mirp_abs_tolerance = 1e-9;
 
 static void assert_ngtdm_feature_mirp (const Feature2D& feature_, const std::string& feature_name)
 {
@@ -69,13 +75,16 @@ static void assert_ngtdm_feature_mirp (const Feature2D& feature_, const std::str
         const std::string key = feature_name + "_z" + std::to_string (z + 1);
         SCOPED_TRACE ("mirp " + key);
         ASSERT_TRUE (ngtdm_2d_mirp_slice_ref_vals.count(key) > 0) << key;
-        ASSERT_TRUE (agrees_gt (per_slice[z], ngtdm_2d_mirp_slice_ref_vals.at(key),
-                                ngtdm_2d_mirp_frac_tolerance)) << key;
+        ASSERT_NEAR (per_slice[z], ngtdm_2d_mirp_slice_ref_vals.at(key),
+                     ngtdm_2d_mirp_abs_tolerance) << key;
     }
 
-    // then the four-slice mean, the quantity IBSI publishes
-    assert_ngtdm_feature_against_golden_values (feature_, feature_name, ngtdm_2d_mirp_ref_vals,
-                                                "mirp ", ngtdm_2d_mirp_frac_tolerance, s, 0);
+    // then the four-slice mean, the quantity IBSI publishes -- averaged from the very values just
+    // asserted, so the mean covers those and not a second run of the same four featurisations
+    SCOPED_TRACE ("mirp " + feature_name);
+    ASSERT_TRUE (ngtdm_2d_mirp_ref_vals.count(feature_name) > 0) << feature_name;
+    ASSERT_NEAR (ngtdm_2d_phantom_slice_mean (per_slice), ngtdm_2d_mirp_ref_vals.at(feature_name),
+                 ngtdm_2d_mirp_abs_tolerance) << feature_name;
 }
 
 void test_2d_ngtdm_coarseness_mirp()

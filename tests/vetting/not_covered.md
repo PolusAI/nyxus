@@ -342,11 +342,21 @@ scripts and should be corrected there as each family is re-vetted.**
 with PyRadiomics corroborating.** That target file never existed; the five rows had claimed
 `oracle=pyradiomics` against it since the tracker was imported, with an **empty tolerance column**
 and a prose sentence where the `config_recipe` id belongs. Both tools were run: mirp 2.6.0 and
-PyRadiomics 3.0.1 agree with each other to 1.6e-16 and reproduce Nyxus to 3.2e-16 on all five
-features across all four slices. All five rows are now `oracle=mirp` at `rel=1e-9`, asserted per
-slice as well as on the four-slice mean, with the published-consensus file alongside at `rel=1e-2`.
-`current_test` also listed two **3D** files on every 2D row, neither of which asserts a 2D feature.
-See `audit/ngtdm_2d_mirp_vetting_report.md`.
+PyRadiomics 3.0.1 agree with each other to 1.6e-16 and reproduce Nyxus to 3.6e-15 absolute /
+3.2e-16 relative on all five features across all four slices. All five rows are now `oracle=mirp` at
+SPEC §7's exact tier -- an absolute 1e-9 band -- asserted per slice as well as on the four-slice
+mean, with the published-consensus file alongside at `rel=1e-2`. `current_test` also listed two **3D**
+files on every 2D row, neither of which asserts a 2D feature. See
+`audit/ngtdm_2d_mirp_vetting_report.md`.
+
+**One row cannot describe two configurations.** The same five rows also listed
+`test_2d_ngtdm_regression.h` -- `IBSI=false` at `NGTDMFeature::n_levels=100`, a different quantity on
+the same fixture -- and `test_2d_ngtdm_mechanics.h`, which pins no reference value at all, under a
+`config_recipe` that names only the IBSI point. Splitting them is what the registry's rule of one row
+per assertion asks for: the default-mode snapshots get their own recipe, `ngtdm.default_fbn100`, and
+their own five `status=regression` rows, and the mechanics file is cited by neither. **The same shape
+is worth grepping for elsewhere:** a `current_test` listing a `_regression.h` beside an oracle file on
+a row whose recipe names one config is describing two.
 
 **A static feature setting was being assigned and left, and nothing said so.**
 `NGTDMFeature::n_levels` is a `static int` shared by every test in the binary.

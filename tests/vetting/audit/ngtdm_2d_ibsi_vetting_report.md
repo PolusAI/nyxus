@@ -50,7 +50,8 @@ The two are complementary, not redundant:
 
 - **IBSI** pins the published consensus, which fixes the *definition* of each feature — but it is
   quoted to three significant figures, so it can only assert at `rel=1e-2`.
-- **mirp** pins the full-precision digits at `rel=1e-9`, per slice as well as averaged.
+- **mirp** pins the full-precision digits at SPEC §7's exact tier -- an absolute `1e-9` band --
+  per slice as well as averaged.
 
 Dropping the IBSI file would leave the family vetted only against tool implementations, with nothing
 tying it to the published standard. Dropping the mirp file would leave a band seven orders of

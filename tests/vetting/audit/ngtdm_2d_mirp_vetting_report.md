@@ -22,7 +22,7 @@ now backed, measured, and pinned at the precision the agreement actually support
 | mirp config | `by_slice=True`, `base_discretisation_method="none"` |
 | PyRadiomics config | `binWidth=1` (identity binning on an integer image), `force2D=True`, `force2Ddimension=0` |
 | Test | `test_2d_ngtdm_mirp.h` |
-| Tolerance | `rel=1e-9` (SPEC §7 exact tier) |
+| Tolerance | `abs=1e-9` (SPEC §7 exact tier, which is an absolute band) |
 
 ```
 python tests/vetting/oracles/gen_ngtdm_mirp.py
@@ -38,10 +38,16 @@ Three implementations, worst residual across all five features and all four slic
 
 | comparison | worst residual |
 |---|---|
-| Nyxus vs mirp | **3.2e-16** |
-| Nyxus vs PyRadiomics | **2.4e-16** |
-| mirp vs PyRadiomics | **1.6e-16** |
+| Nyxus vs mirp | **3.2e-16** relative, **3.6e-15** absolute |
+| Nyxus vs PyRadiomics | **2.4e-16** relative |
+| mirp vs PyRadiomics | **1.6e-16** relative |
 | Nyxus vs the published IBSI consensus (3 s.f.) | 4.1e-3, on `NGTDM_COARSENESS` |
+
+The values **agree**; they are not bit-identical. Eight of the 25 comparisons carry a non-zero
+residual, the largest of them 3.6e-15 absolute on `NGTDM_COMPLEXITY` slice 2 and 3.2e-16 relative on
+`NGTDM_CONTRAST` slice 2. SPEC §7's exact tier is an **absolute** 1e-9 band, so that is what
+`test_2d_ngtdm_mirp.h` asserts (`ASSERT_NEAR`) — six orders of magnitude of headroom over the worst
+measured residual, and the same tier the 2D GLSZM and GLDZM families were pinned at.
 
 Every value, all three implementations — 5 features x (4 slices + the mean):
 
@@ -84,13 +90,16 @@ second table identical to the first to 1.6e-16 is redundancy, not coverage.
 ## Per slice, not just the mean
 
 The mean over the four phantom slices is what IBSI publishes, but it cannot vet the four values
-behind it. `test_2d_ngtdm_mirp.h` pins both tables and asserts on both.
+behind it. `test_2d_ngtdm_mirp.h` pins both tables and asserts on both, and the mean it checks is
+averaged from the per-slice vector it has just asserted rather than from a second featurisation of
+the same four slices — so the two assertions cover one computation, not two that happen to agree.
 
 **Negative control.** Adding +0.01 to the pinned `NGTDM_CONTRAST_z1` and −0.01 to `_z2` leaves the
 mean untouched. `TEST_2D_NGTDM_CONTRAST_MIRP` fails and names the element —
 
 ```
-abs of (actual=1.63628 - groundtruth=1.64628)=0.01 > tolerance=1.64628e-09
+The difference between per_slice[z] and ngtdm_2d_mirp_slice_ref_vals.at(key) is 0.01,
+which exceeds ngtdm_2d_mirp_abs_tolerance, where ... ngtdm_2d_mirp_abs_tolerance evaluates to 1e-09.
   ... NGTDM_CONTRAST_z1
 ```
 
@@ -129,9 +138,19 @@ should get the same treatment when that family is next touched.
 ## What else the registry rows got wrong
 
 - **`tolerance` was empty on all five rows.** Nothing recorded what was being claimed. Now
-  `rel=1e-9`.
+  `abs=1e-9`, SPEC §7's exact tier, on the vetted rows and `rel=1e-3` on the regression ones.
 - **`config_recipe` held a prose sentence**, not a recipe id. Now `ngtdm.ibsi_phantom_2d`, defined in
   `config_recipes.md`.
+- **One row described two configurations.** The five rows named the IBSI recipe while their
+  `current_test` also listed `test_2d_ngtdm_regression.h`, which runs `IBSI=false` at
+  `NGTDMFeature::n_levels=100` — a different quantity on the same fixture — and
+  `test_2d_ngtdm_mechanics.h`, which checks setting behaviour rather than a reference value. The
+  registry is one row per assertion (SPEC §3), so the default-mode snapshots now have their own
+  recipe, `ngtdm.default_fbn100`, and their own five `status=regression` rows; the mechanics file is
+  cited by neither, because a mechanics test establishes no vetting and pins no reference value.
+- **`test_name` and `benchmark` were empty.** Every row now names the exact gtest cases that back it
+  and the `ibsi_digital_phantom` benchmark it runs on. The family's config matrix is
+  `matrix/ngtdm.md`.
 - **`current_test` listed two 3D files on every 2D row** — `test_3d_ngtdm_regression.h` and
   `test_3d_ngtdm_pyradiomics.h` — neither of which asserts a single 2D feature.
 - **`test_3d_ngtdm_regression.h` is orphaned** (no `#include` in `test_all.cc`, so none of it runs).

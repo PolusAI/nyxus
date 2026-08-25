@@ -59,15 +59,20 @@ Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyrad
 | Why it exists | the fixture the published IBSI consensus values are defined on, so it is the only benchmark on which an `ibsi` assertion means anything |
 
 Recipes: `glcm.ibsi_identity`, `ih.ibsi_fbn`, `gldm.ibsi_phantom_2d`, `gldzm.ibsi_phantom_2d`,
-`glszm.ibsi_phantom_2d`, `ngldm.ibsi_phantom_2d`.
+`glszm.ibsi_phantom_2d`, `ngldm.ibsi_phantom_2d`, `ngtdm.ibsi_phantom_2d`, `ngtdm.default_fbn100`.
 
 Tests reaching it today: `test_2d_{firstorder,glcm,gldm,gldzm,glszm,ngldm,ngtdm}_ibsi.h`,
-`test_2d_gldm_pyradiomics.h`, `test_2d_{gldzm,glszm,ngldm}_mirp.h`,
+`test_2d_gldm_pyradiomics.h`, `test_2d_{gldzm,glszm,ngldm,ngtdm}_mirp.h`,
 `test_2d_{glcm,gldzm,glrlm,glszm,ngtdm}_regression.h`, `test_2d_glrlm_common.h`,
 `test_2d_{gldm,gldzm,glszm,intensity_histogram}_common.h`.
 
 Aggregation matters here: the IBSI 2D-averaged values are the mean over the four slices featurised
 one at a time, which is what the per-family fixtures do.
+
+**One recipe on this fixture is not an IBSI one.** `ngtdm.default_fbn100` runs the same four slices
+through Nyxus' default mode, where the intensities are re-binned to a fixed grey count instead of
+using the phantom's own 1..6. The fixture is shared; the quantity is not, and no `ibsi` assertion can
+be made at that recipe.
 
 **Both aggregations are worth pinning, not just the published one.** A four-slice mean is blind to
 errors in two slices that cancel: perturbing `GLDM_LDE_z1` by +0.001 and `GLDM_LDE_z3` by -0.001
@@ -75,7 +80,8 @@ leaves the mean unmoved to its last digit. Where a tool exposes the per-slice va
 does, the published IBSI consensus does not — the per-slice table is the stronger assertion and the
 mean is the compatibility one. `test_2d_gldm_pyradiomics.h` pins both, 14 means and 56 slice
 values; `test_2d_gldzm_mirp.h` and `test_2d_glszm_mirp.h` each pin 16 means and 64 slice values
-against mirp, which also exposes per-slice output.
+against mirp, which also exposes per-slice output, and `test_2d_ngtdm_mirp.h` pins 5 means and 20
+slice values the same way.
 
 ---
 
