@@ -13,8 +13,8 @@
 // generator=tests/vetting/oracles/gen_neighbor_cellprofiler.py.
 //
 // CellProfiler reproduces Nyxus BIT-IDENTICALLY on both features across all five ROIs -- residual
-// exactly 0, not merely small -- so these assert at the SPEC 7 exact tier. Per label, not
-// aggregated: each ROI carries its own value and every one is asserted.
+// exactly 0, not merely small -- so these assert at the SPEC 7 exact tier, which is an ABSOLUTE
+// 1e-9 band. Per label, not aggregated: each ROI carries its own value and every one is asserted.
 //
 // PERCENT_TOUCHING is NOT vetted here: CP and Nyxus use different definitions (Nyxus = contour
 // pixels 8-adjacent to a neighbour / contour length; CP = object outline pixels overlapping a
@@ -32,8 +32,12 @@ static const ref_vals_map_by_label<double> neighbor_2d_cellprofiler_ref_vals_by_
 	{5, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5495097567963922}}}
 };
 
-// rel=1e-9: agrees_gt divides the golden by this, so a larger argument is a tighter band
-static const double neighbor_2d_cellprofiler_frac_tolerance = 1e9;
+// SPEC 7's exact tier verbatim: an absolute band, so ASSERT_NEAR rather than the relative agrees_gt
+// the looser-tiered files use. The measured residual over the ten comparisons below is exactly 0 --
+// CellProfiler returns the same double Nyxus does -- so the band is what SPEC 7 sets rather than
+// what the measurement needs. A relative 1e-9 would also have been the looser of the two here, at
+// 2.5e-9 on CLOSEST_NEIGHBOR1_DIST.
+static const double neighbor_2d_cellprofiler_abs_tolerance = 1e-9;
 
 static void assert_neighbor2d_cellprofiler(
 	const std::unordered_map<int, LR>& roiData,
@@ -44,13 +48,13 @@ static void assert_neighbor2d_cellprofiler(
 	SCOPED_TRACE(std::string("CELLPROFILER__") + feature_name + "__L" + std::to_string(label));
 
 	// .at() on a const table: operator[] would default-insert a missing key and compare against
-	// the zero it just created, which agrees_gt reads as a demand for exact 0
+	// the zero it just created, so a missing pin would read as a golden of 0
 	ASSERT_TRUE(neighbor_2d_cellprofiler_ref_vals_by_label.count(label) > 0) << label;
 	const auto& golden = neighbor_2d_cellprofiler_ref_vals_by_label.at(label);
 	ASSERT_TRUE(golden.count(feature_name) > 0) << feature_name;
 
-	ASSERT_TRUE(agrees_gt(roiData.at(label).fvals[static_cast<int>(feature)][0],
-		golden.at(feature_name), neighbor_2d_cellprofiler_frac_tolerance)) << feature_name;
+	ASSERT_NEAR(roiData.at(label).fvals[static_cast<int>(feature)][0],
+		golden.at(feature_name), neighbor_2d_cellprofiler_abs_tolerance) << feature_name;
 }
 
 void test_2d_neighbor_counts_and_first_distance_cellprofiler()
