@@ -364,6 +364,36 @@ tool:
   Octave's own `containers.Map` supports only `()` indexing — `m{k}` is an error — which matters
   when a generator merges several pinned-golden tables.
 
+### PyRadiomics COMPACTS a feature matrix before the formulas run — read the axes from its vectors
+
+Verified 2026-08 during 3D GLDM vetting; the same shape applies to `P_glszm`, `P_glrlm` and
+`P_ngtdm`, which are intercepted the same way.
+
+Intercepting PyRadiomics' own matrix is the cheapest way to pin the structure a whole texture family
+contracts, because it reimplements nothing. But the array indices are **not** the grey level and the
+zone size / dependence / run length. `RadiomicsGLDM._calculateMatrix()` deletes:
+
+- every **row** whose grey level is absent from the ROI, and
+- every **column** whose dependence no voxel in the ROI has,
+
+and carries the survivors in `coefficients["ivector"]` and `coefficients["jvector"]`. GLSZM compacts
+its **column** axis the same way (`jvector`), turning 634 columns into 46 on the compat phantom.
+
+**So take both axis values from `ivector` / `jvector`, never from `numpy.argwhere`'s indices.** Nyxus
+keeps its matrices dense, so the two representations agree cell for cell only after that mapping.
+
+Reading a size or a dependence off the index does not fail loudly: on 3D GLSZM it reproduced the nine
+features that do not weight by `j` exactly and missed the seven that do by up to 94%, so a scalar
+spot-check looked fine. The check that catches it is to recompute **every** feature in the family
+from the intercepted matrix and compare against the tool's own published scalars — a disagreement
+localises to the axis that was mislabelled.
+
+**A second, independent construction is worth the twenty lines.** `gen_gldm3d_pyradiomics.py` also
+rebuilds the matrix straight from the definition in plain numpy (offsets, in-mask test, equality
+test, count starting at 1) and requires it to reproduce PyRadiomics' C extension cell for cell. That
+is the only check that can catch the tool and the written definition disagreeing, which no
+cross-table check can see — and it turns the neighbourhood, the cutoff and any index offset from
+comments into asserted facts.
 ## Coverage by Nyxus family → which oracles (the "≥1 oracle" picture)
 
 | Nyxus family | headless oracles available |

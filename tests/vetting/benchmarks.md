@@ -25,7 +25,8 @@ lists are what this tree shows today — the recipe ids are the stable half.
 
 Recipes: `firstorder3d.matlab_native`, `firstorder3d.regression_ut_phantom`,
 `ngldm3d.regression_ut_phantom`, `ngldm3d.mirp_fbn64`, `gldzm3d.regression_ut_phantom`,
-`gldzm3d.mirp_fbn64`, `ngtdm3d.regression_ut_phantom`, `glszm3d.regression_ut_phantom`.
+`gldzm3d.mirp_fbn64`, `ngtdm3d.regression_ut_phantom`, `glszm3d.regression_ut_phantom`,
+`gldm3d.regression_ut_phantom`.
 
 Tests reaching it today: `test_3d_ngldm_regression.h`, `test_3d_coverage_common.h`,
 `test_3d_{glcm,gldm,gldzm,glszm,ngtdm}_regression.h`, `test_3d_firstorder_{matlab,regression}.h`,
@@ -52,8 +53,9 @@ prevent.
 Recipes: `glszm3d.pyradiomics_bincount20`.
 
 Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyradiomics.h`,
-`test_3d_glszm_pyradiomics.h`, `test_3d_glszm_mechanics.h`,
-`tests/python/test_nyxus.py::test_3d_glszm_compatibility`.
+`test_3d_glszm_pyradiomics.h`, `test_3d_glszm_mechanics.h`, `test_3d_gldm_pyradiomics.h`,
+`tests/python/test_nyxus.py::test_3d_glszm_compatibility`,
+`tests/python/test_nyxus.py::test_3d_gldm_compatibility`.
 
 **It is not the fixture for the family's connectivity or its IBSI branch.** Its size-zone matrix has
 186 populated cells, which nobody checks by hand, and its grey levels after `binCount` binning are
@@ -69,7 +71,14 @@ reached by constructing the feature class directly. This one does not.
 intensities span 212..653. Its largest single-grey-level connected component is 634 voxels, which is
 why the 3D GLSZM size-zone matrix is 20x634 and mostly empty.
 
-Recipes: `glcm3d.pyradiomics_bincount20`, `firstorder3d.pyradiomics_bincount20`.
+The 3D GLDM assertions reach past the fourteen scalars to the **dependence matrix** on this ROI: 163
+non-empty cells over `Ng=20` grey levels and `Nd=15` dependences, with `Nz = Np = 4800` because
+PyRadiomics allows incomplete zones and so gives every ROI voxel exactly one dependence zone. Those
+numbers are properties of this benchmark, not of the family, and any other family intercepting a
+matrix here should reproduce the same 4800.
+
+Recipes: `glcm3d.pyradiomics_bincount20`, `firstorder3d.pyradiomics_bincount20`,
+`gldm3d.pyradiomics_bincount20`.
 
 ---
 
