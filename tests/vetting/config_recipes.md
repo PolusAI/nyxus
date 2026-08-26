@@ -138,6 +138,7 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   ROI, the centre pixel and the normalising radius, which `test_2d_radial_mechanics.h` pins. That
   file is known-defect characterization and is credited to no feature in the registry - the values it
   pins are ones a correct fix must change (`audit/radial_2d_cellprofiler_vetting_report.md` §6).
+  Config matrix: `matrix/radial.md`.
 
 ## radial.cellprofiler_8bin
 - CellProfiler `MeasureObjectIntensityDistribution` on the same fixture: `center_choice="These

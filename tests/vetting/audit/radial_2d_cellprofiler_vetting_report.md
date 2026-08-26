@@ -21,6 +21,7 @@ CellProfiler. This report is the answer to that candidacy.
 - Generator: `tests/vetting/oracles/gen_radial_cellprofiler.py`. It parses the fixture out of
   `test_data.h`, the pinned vectors out of `test_2d_radial_regression.h` and the centre/radius out of
   `test_2d_radial_mechanics.h`, so it holds no copy of anything it checks.
+- Config matrix: `tests/vetting/matrix/radial.md`.
 - Regeneration: `tests/vetting/audit/radial_2d_golden_regen.md`.
 - **No second oracle exists to corroborate this one.** `TOOLS.md`'s family matrix lists `wndcharm`
   under "Gabor / Tamura / radial", but wndcharm's radial features are Radon-transform coefficients,
