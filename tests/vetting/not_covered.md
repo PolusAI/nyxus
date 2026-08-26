@@ -45,8 +45,9 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 Its third case does read three feature values, so the rule the rest of this table rests on — asserts
 no feature value, therefore no `(feature × config × oracle)` row — does not by itself place it. It is
 uncredited for a different reason: all three cases pin behaviour that
-`audit/radial_2d_cellprofiler_vetting_report.md` §6 shows is wrong (defects 1-3), so a correct fix
-must change every number in the file. Listing it in `current_test` for `FRAC_AT_D`, `MEAN_FRAC` and
+`audit/radial_2d_cellprofiler_vetting_report.md` §6 shows is wrong (defects 1-3), so each correction
+should invalidate the assertions that characterize the defect it fixes. Listing it in `current_test`
+for `FRAC_AT_D`, `MEAN_FRAC` and
 `RADIAL_CV` would make those defects acceptance criteria for the three features (PR #444 review,
 item 4). `audit/scan_radial_coverage.py` carries the exclusion as a declared `UNCREDITED` entry and
 fails in both directions, so the decision cannot be reversed by editing only the registry.

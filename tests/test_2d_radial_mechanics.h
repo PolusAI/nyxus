@@ -2,14 +2,15 @@
 
 // KNOWN-DEFECT CHARACTERIZATION for the 2D radial intensity distribution: the coordinate frame the
 // traced contour comes back in, the centre pixel the feature measures from, and the radius it
-// normalises by. None of it is a feature value and none of it claims an oracle (SPEC 2).
+// normalises by. The first two cases assert that plumbing; the third asserts its effect on the
+// feature outputs. The file is diagnostic known-defect characterization and claims no oracle.
 //
 // Read the numbers here as a record of what the tree does today, NOT as acceptance criteria. All
 // three cases pin behaviour that
 // tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md §6 argues is wrong - the contour's
 // one-pixel offset (defect 1), the non-extremal centre (3,4) and short radius^2 10 (defect 2), and
-// the num_bins-1 bin scaling (defect 3). A correct fix MUST change every value asserted below; the
-// corrective work and its preconditions are tracked in
+// the num_bins-1 bin scaling (defect 3). A correction should invalidate the assertions tied to the
+// defect it fixes; the corrective work and its preconditions are tracked in
 // tests/vetting/audit/radial_2d_golden_regen.md §5, which is the fix branch's checklist.
 //
 // The point of pinning them is that the 24 public values in test_2d_radial_regression.h are decided
@@ -121,8 +122,9 @@ void test_2d_radial_center_and_radius_mechanics()
 // Defect 3. The bin index is int(r / r_max * (num_bins - 1)), so the 8 bins are 7 equal-width rings
 // plus a last bin that only r >= r_max reaches. Here r_max is the short radius pinned above, so the
 // last bin holds the 3 pixels sitting exactly on it plus the 4 that lie beyond it - 7 of the 26, more
-// than any of the 7 real rings. Scaling by num_bins instead, as the report argues, empties the
-// overflow and fails the two counts below.
+// than any of the 7 real rings. Scaling by num_bins instead also places 3 pixels with
+// 7/8 <= r/r_max < 1 in the last bin, changing its occupancy from 7 to 10; the at/past-r_max counts
+// themselves remain 3 and 4.
 void test_2d_radial_bin_index_mechanics()
 {
 	LR roidata(101);
