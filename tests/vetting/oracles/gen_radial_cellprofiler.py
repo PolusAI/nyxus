@@ -10,8 +10,8 @@ family. Nyxus computes a different quantity under each of the three CellProfiler
 names -- see tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md for the
 six divergences and the numbers. The family therefore stays status=regression, and
 this generator exists to keep that verdict honest rather than to produce goldens:
-it fails if CellProfiler ever starts agreeing (the family would then be promotable)
-just as loudly as it fails if a pin stops reproducing.
+it fails if CellProfiler ever starts agreeing (the recorded rejection would then
+need re-vetting) just as loudly as it fails if a pin stops reproducing.
 
 Nothing here carries a literal copy of anything. The fixture is parsed out of
 tests/test_data.h, the pinned feature vectors out of tests/test_2d_radial_regression.h,
@@ -60,10 +60,10 @@ RECORDED_VERSIONS = {
 }
 
 # SPEC 7's band for a cross-tool comparison whose definitional edge differences (the binning rule,
-# the centre rule) are documented: rel=1e-2. This is the PROMOTION gate and it is applied PER
-# FEATURE at the recipe being run -- a feature is promotable when every one of its bins meets its
-# band, whatever the other two features do. One counter over all 24 cells would only fire when the
-# whole family agreed, and would leave a promotable row marked regression.
+# the centre rule) are documented: rel=1e-2. Applied per feature, this is a stale-verdict alert: if
+# every bin meets the band, the recorded rejection must be re-vetted on a suitable fixture. This
+# fixture cannot itself establish promotion because CellProfiler's centre is tie-dependent here.
+# One counter over all 24 cells would miss a stale verdict affecting only one feature.
 SPEC_BAND = {f: 1e-2 for f in FEATURES}
 
 # Descriptive only: the cutoff the report's "N of the 24 disagree by more than 1%" line counts at.
@@ -536,10 +536,10 @@ def main():
     print("  %d of the %d (feature x bin) values disagree by more than %g%% -- descriptive only."
           % (diverging, 3 * NBINS, REPORT_CUTOFF * 100))
 
-    # 5. the promotion verdict, decided per (feature x config) rather than once for the family
+    # 5. stale-verdict check, decided per (feature x config) rather than once for the family
     print()
-    print("=== promotion verdict per feature, at recipe radial.cellprofiler_8bin ===")
-    promotable = []
+    print("=== stale-verdict check per feature, at recipe radial.cellprofiler_8bin ===")
+    needs_revetting = []
     for f in FEATURES:
         band = SPEC_BAND[f]
         outside = [i for i in range(NBINS) if not agrees(cp[f][i], pins[f][i], band)]
@@ -548,21 +548,21 @@ def main():
               % (f, band, worst, len(outside), NBINS,
                  "" if not outside else "  (" + ", ".join(str(i) for i in outside) + ")"))
         if not outside:
-            promotable.append(f)
+            needs_revetting.append(f)
 
-    if promotable:
+    if needs_revetting:
         print()
         print("  UNEXPECTED: every bin of %s meets its SPEC 7 band against CellProfiler,"
-              % ", ".join(promotable))
-        print("  so %s promotable at this recipe. The divergence record in"
-              % ("that row is" if len(promotable) == 1 else "those rows are"))
-        print("  tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md is stale for it --")
-        print("  do not ship this verdict unchanged.")
+              % ", ".join(needs_revetting))
+        print("  so the recorded rejection for %s needs re-vetting on a suitable fixture."
+              % ("that row" if len(needs_revetting) == 1 else "those rows"))
+        print("  This tie-dependent fixture cannot establish promotion; do not ship the verdict in")
+        print("  tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md unchanged.")
         ok = False
     else:
         print()
-        print("  No feature meets its band on every bin, so none of the three rows is promotable at")
-        print("  this recipe. That is the recorded outcome: the family is NOT CellProfiler-vetted.")
+        print("  No feature meets its band on every bin, so the recorded outcome remains current:")
+        print("  the family is NOT CellProfiler-vetted at this recipe.")
 
     if not provenance_ok:
         print()

@@ -200,22 +200,21 @@ is blind to the image entirely — it is a function of the mask alone.
 absolute units. CellProfiler's `MeanFrac` divides that by the ROI's mean intensity. The header
 comment states CellProfiler's definition.
 
-**6. `RADIAL_CV` averages over empty wedges, and accumulates into `size_t`.**
+**6. `RADIAL_CV` averages over empty wedges.**
 `get_RadialCV()` divides by `num_bins` unconditionally, so a ring occupied in 3 of its 8 wedges is
 treated as one occupied in 3 and empty in 5, which inflates the CV; CellProfiler masks the empty
 wedges out. It also uses wedge *sums* where CellProfiler uses wedge *means* — equivalent only when
-every wedge holds the same number of pixels. Separately, `banded_wedges` is declared
-`std::vector<std::vector<size_t>>` (`radial_distribution.h:64`) while the intensities added to it are
-`PixIntens`, so any non-integer intensity is truncated on the way in.
+every wedge holds the same number of pixels. `banded_wedges` stores `size_t`, but `PixIntens` is
+already an unsigned integer, so that container introduces no additional truncation.
 
 ## 7. What this PR did instead
 
 - Re-pinned nothing — the 24 goldens were already at full precision and reproduce bit-exactly.
 - Replaced the `ASSERT_NEAR(..., 1e-9)` *absolute* band with `agrees_gt(..., 1e9)` (`rel=1e-9`), and
   filled the three empty `tolerance` cells in the registry.
-- Split the family into the four SPEC §2 kinds: `_common.h` (fixture), `_regression.h` (the 24 pins
-  plus the convention checks below), `_invariant.h` (3 required properties), `_mechanics.h` (3
-  known-defect pins).
+- Split the family into three applicable SPEC §2 kinds — `_regression.h` (the 24 pins plus the
+  convention checks below), `_invariant.h` (3 required properties), and `_mechanics.h` (3
+  known-defect pins) — plus `_common.h` for the shared fixture.
 - Sorted the property checks by whether they survive a change of definition, which is the entry test
   for `_invariant.h`. `FRAC_AT_D` being a partition of `[0, 1]` summing to one, an empty bin being
   zero in all three tables, and `RADIAL_CV` lying in `[0, sqrt(num_bins - 1)]` hold under
@@ -226,18 +225,19 @@ every wedge holds the same number of pixels. Separately, `banded_wedges` is decl
   `_regression.h` as `TEST_2D_RADIAL_BIN_CONVENTIONS_REGRESSION`, characterization beside the pins
   they characterize. An invariant a correct fix would break is not an invariant.
 - Labelled `_mechanics.h` as known-defect characterization in its header and on each assertion, and
-  removed it from the three registry rows' `current_test`: it pins §6 defects 1-3, and a file whose
-  numbers a correct fix must change cannot also be counted as coverage for the features. The
-  omission is recorded in `not_covered.md` §A.1 so it reads as a decision rather than a gap.
+  removed it from the three registry rows' `current_test`: it pins §6 defects 1-3 and is diagnostic,
+  not correctness coverage for the features. The omission is recorded in `not_covered.md` §A.1 so
+  it reads as a decision rather than a gap.
 - Rewrote the three header comments in `src/nyx/features/radial_distribution.h`. They were
   CellProfiler's help strings verbatim over functions computing something else (§1); they now state
   the pixel-count fraction, the raw bin mean and the all-8-wedge CV of sums, and say that which
   semantics is intended is unresolved. No behaviour changes.
-- Made the generator's promotion gate per feature rather than one counter over all 24 cells, at
+- Made the generator's stale-verdict alert per feature rather than one counter over all 24 cells, at
   SPEC §7's `rel=1e-2` cross-tool band, and left the 1% cutoff as the descriptive report line only.
   The old counter fired only when the whole family agreed; a run in which all eight `FRAC_AT_D` bins
-  came inside the band while `MEAN_FRAC` still diverged would have exited 0 and left a promotable
-  row marked `regression`. Verified by feeding the gate exactly that case.
+  came inside the band while `MEAN_FRAC` still diverged would have exited 0 and left its rejection
+  unexamined. Agreement now requires re-vetting on a suitable fixture; this tie-dependent fixture
+  does not establish promotion. Verified by feeding the alert exactly that case.
 - Made the generator read `cellprofiler`, `cellprofiler-core`, `centrosome`, `numpy` and `scipy`
   versions from the installed distributions, print them, and refuse to run on a mismatch (a missing
   distribution counts as one). `--allow-version-drift` continues with a warning and says on the
@@ -262,11 +262,11 @@ every wedge holds the same number of pixels. Separately, `banded_wedges` is decl
   (−1,−1) — i.e. simulating a fixed `buildRegularContour` — takes the "lands on a ROI pixel after
   unpadding" count from 18 to 12 and fails the assertion, which is what shows it is a detector for
   the offset and not a restatement of it.
-- Negative-controlled the two gates the review asked for. Feeding the generator a CellProfiler run
+- Negative-controlled the two alerts the review asked for. Feeding the generator a CellProfiler run
   in which all eight `FRAC_AT_D` bins match the pins while `MEAN_FRAC` and `RADIAL_CV` still diverge:
-  the old counter reported "14 of the 24 disagree" and exited 0, the per-feature gate exits 1 naming
-  `FRAC_AT_D` as promotable. Moving one of those bins 2% off the pin returns it to a pass, and 0.5%
-  off — inside the band — keeps it a fail, so the gate is the band and not an equality test. For the
-  version check: `cellprofiler 4.2.9` installed and `cellprofiler-core` absent each exit 2, and
+  the old counter reported "14 of the 24 disagree" and exited 0, while the per-feature alert exits 1
+  naming `FRAC_AT_D` for re-vetting. Moving one of those bins 2% off the pin returns it to a pass,
+  and 0.5% off — inside the band — keeps it a fail, so the alert is the band and not an equality
+  test. For the version check: `cellprofiler 4.2.9` installed and `cellprofiler-core` absent each exit 2, and
   `--allow-version-drift` turns both into a warning plus a closing note that the run is not the
   recorded provenance.
