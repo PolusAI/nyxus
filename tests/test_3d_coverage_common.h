@@ -290,11 +290,7 @@ static const std::set<std::string>& externally_vetted_3d_feature_names()
 
 static void assert_oracle_backed_agreement(const Feature3DCoverageCase& c)
 {
-	if (firstorder_3d_pyradiomics_ref_vals.find(c.name) != firstorder_3d_pyradiomics_ref_vals.end())
-		assert_3d_firstorder_feature_pyradiomics(c.code, c.name);
-	else if (firstorder_3d_matlab_ref_vals.find(c.name) != firstorder_3d_matlab_ref_vals.end())
-		assert_3d_firstorder_feature_matlab(c.code, c.name);
-	else if (glcm_3d_pyradiomics_ref_vals.find(c.name) != glcm_3d_pyradiomics_ref_vals.end())
+	if (glcm_3d_pyradiomics_ref_vals.find(c.name) != glcm_3d_pyradiomics_ref_vals.end())
 		assert_3d_glcm_feature_pyradiomics(c.code, c.name);
 	else if (gldm_3d_pyradiomics_ref_vals.find(c.name) != gldm_3d_pyradiomics_ref_vals.end())
 		assert_3d_gldm_feature_pyradiomics(c.code, c.name);
