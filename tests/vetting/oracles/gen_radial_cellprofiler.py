@@ -28,6 +28,13 @@ Provenance: tool=cellprofiler, version=4.2.8 (module package) / cellprofiler-cor
 4.2.8.1; python 3.9; MeasureObjectIntensityDistribution, center_choice="These objects",
 bin_count=8, wants_scaled=True, zernikes off. generator=tests/vetting/oracles/
 gen_radial_cellprofiler.py. Run offline.
+
+Those versions are read back from the installed distributions on every run and printed
+with the results, and a mismatch stops the run: a report that says 4.2.8 has to have
+been produced by 4.2.8. `--allow-version-drift` downgrades the stop to a warning, for
+deliberately re-probing on a newer CellProfiler -- the printed versions are then what
+the run is provenance for, and RECORDED_VERSIONS and the audit report are what need
+updating.
 """
 import argparse
 import math
@@ -40,6 +47,28 @@ TESTS = os.path.normpath(os.path.join(HERE, "..", ".."))
 NBINS = 8
 PAD = 3          # keeps the ROI off the label-image border, which CP treats as an edge
 FEATURES = ("FRAC_AT_D", "MEAN_FRAC", "RADIAL_CV")
+
+# The versions the docstring above and the audit report claim these numbers came from. Read back
+# from the installed distributions on every run by check_versions(), so a report that says 4.2.8
+# has to have been produced by 4.2.8.
+RECORDED_VERSIONS = {
+    "cellprofiler": "4.2.8",
+    "cellprofiler-core": "4.2.8.1",
+    "centrosome": "1.2.3",
+    "numpy": "1.26.4",
+    "scipy": "1.10.1",
+}
+
+# SPEC 7's band for a cross-tool comparison whose definitional edge differences (the binning rule,
+# the centre rule) are documented: rel=1e-2. This is the PROMOTION gate and it is applied PER
+# FEATURE at the recipe being run -- a feature is promotable when every one of its bins meets its
+# band, whatever the other two features do. One counter over all 24 cells would only fire when the
+# whole family agreed, and would leave a promotable row marked regression.
+SPEC_BAND = {f: 1e-2 for f in FEATURES}
+
+# Descriptive only: the cutoff the report's "N of the 24 disagree by more than 1%" line counts at.
+# Nothing is promoted or rejected on it.
+REPORT_CUTOFF = 1e-2
 
 
 # ---------------------------------------------------------------------------- parsing
@@ -98,9 +127,11 @@ def parse_pins():
 def parse_mechanics():
     """The centre pixel and the squared normalising radius pinned in the mechanics header."""
     src = _read("test_2d_radial_mechanics.h")
-    cx = re.search(r"ASSERT_EQ\(pxO\.x,\s*(\d+)\);", src)
-    cy = re.search(r"ASSERT_EQ\(pxO\.y,\s*(\d+)\);", src)
-    r2 = re.search(r"ASSERT_DOUBLE_EQ\(pxO\.max_sqdist\(K\),\s*([0-9.]+)\);", src)
+    # the closing paren, not the semicolon, ends the match: these assertions carry a streamed
+    # message naming the defect they pin, so anchoring on ");" stops finding them
+    cx = re.search(r"ASSERT_EQ\(pxO\.x,\s*(\d+)\)", src)
+    cy = re.search(r"ASSERT_EQ\(pxO\.y,\s*(\d+)\)", src)
+    r2 = re.search(r"ASSERT_DOUBLE_EQ\(pxO\.max_sqdist\(K\),\s*([0-9.]+)\)", src)
     if not (cx and cy and r2):
         raise SystemExit("cannot find the centre / radius pins in test_2d_radial_mechanics.h")
     return int(cx.group(1)), int(cy.group(1)), float(r2.group(1))
@@ -238,6 +269,61 @@ def cellprofiler_independent(pixels, grid, n=NBINS):
     return {"FRAC_AT_D": list(frac), "MEAN_FRAC": list(meanfrac), "RADIAL_CV": list(cv)}
 
 
+def installed_versions():
+    """-> {distribution: version or None} for the packages the provenance line names."""
+    try:
+        from importlib.metadata import PackageNotFoundError, version   # py3.8+
+    except ImportError:                                                # pragma: no cover
+        from importlib_metadata import PackageNotFoundError, version
+    out = {}
+    for dist in RECORDED_VERSIONS:
+        try:
+            out[dist] = version(dist)
+        except PackageNotFoundError:
+            out[dist] = None
+    return out
+
+
+def check_versions(allow_drift):
+    """Print what is actually installed, and refuse to pass its output off as another version.
+
+    The docstring above and the audit report both name a CellProfiler version; nothing until now
+    read the one that is actually importable, so a later environment could produce a run still
+    presented as 4.2.8. Returns True if this run may be presented as RECORDED_VERSIONS. A missing
+    distribution counts as a mismatch: an absent cellprofiler-core is not evidence that 4.2.8.1
+    produced anything.
+    """
+    got = installed_versions()
+    print("=== the CellProfiler environment this run is provenance for ===")
+    bad = []
+    for dist, recorded in RECORDED_VERSIONS.items():
+        have = got[dist]
+        same = have == recorded
+        print("  %-18s recorded=%-8s installed=%-8s %s"
+              % (dist, recorded, have or "MISSING", "" if same else "<-- MISMATCH"))
+        if not same:
+            bad.append("%s: recorded %s, installed %s" % (dist, recorded, have or "MISSING"))
+
+    if not bad:
+        print("  the run matches the recorded provenance")
+        return True
+
+    if allow_drift:
+        print()
+        print("  WARNING: %d version mismatch(es), continuing on --allow-version-drift." % len(bad))
+        print("  The numbers below are THIS environment's and not the recorded provenance. Update")
+        print("  RECORDED_VERSIONS and radial_2d_cellprofiler_vetting_report.md before quoting them.")
+        return False
+
+    print()
+    print("  REFUSING to run: %s." % "; ".join(bad))
+    print("  The audit report quotes this script's output as cellprofiler %s / cellprofiler-core %s."
+          % (RECORDED_VERSIONS["cellprofiler"], RECORDED_VERSIONS["cellprofiler-core"]))
+    print("  Install that environment (tests/vetting/TOOLS.md), or pass --allow-version-drift to")
+    print("  re-probe deliberately.")
+    raise SystemExit(2)
+
+
 def run_cellprofiler(pixels, grid):
     import warnings
     warnings.filterwarnings("ignore")
@@ -286,9 +372,12 @@ def run_cellprofiler(pixels, grid):
 def pin_checks(pins, n_pixels, total_intensity, lo, hi, n=NBINS):
     """Range and identity checks run over the PINNED LITERALS, not over a fresh run.
 
-    The C++ invariant tests assert the same properties of the computed values; this runs them
-    against what the header actually says, so an edit to the table is caught without a rebuild.
-    Returns a list of failure strings.
+    The C++ tests assert the same properties of the computed values, split by whether they survive
+    a change of definition: the fraction bounds, the empty-bin zeros and the CV bound live in
+    test_2d_radial_invariant.h, while the whole-pixel-count, raw-intensity-range and reconstruction
+    checks hold only under Nyxus' current conventions and live in test_2d_radial_regression.h. This
+    runs the whole set against what the header actually says, so an edit to the table is caught
+    without a rebuild. Returns a list of failure strings.
     """
     bad = []
     frac, mean, cv = pins["FRAC_AT_D"], pins["MEAN_FRAC"], pins["RADIAL_CV"]
@@ -329,10 +418,24 @@ def rel(a, b):
     return abs(a - b) / abs(b)
 
 
+def agrees(got, golden, band):
+    """Does one (feature, bin) cell meet its band? Two exact zeros agree; one zero never does.
+
+    rel() already returns inf when only the golden is zero, so the band alone would reject that
+    case; the explicit both-zero arm is what keeps a bin both tools leave empty from being counted
+    as a disagreement.
+    """
+    if got == 0.0 and golden == 0.0:
+        return True
+    return rel(got, golden) <= band
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--skip-cellprofiler", action="store_true",
                     help="verify the pins only; skip the part that needs the CP env")
+    ap.add_argument("--allow-version-drift", action="store_true",
+                    help="run against a CellProfiler env other than the recorded one, and say so")
     args = ap.parse_args()
 
     fixture = parse_fixture()
@@ -396,6 +499,8 @@ def main():
         return 0 if ok else 1
 
     # 4. CellProfiler, on the same fixture, at the recipe radial.cellprofiler_8bin
+    provenance_ok = check_versions(args.allow_version_drift)
+
     top, tied = center_tie_set(pixels, grid)
     print("\n=== CellProfiler's centre rule on this ROI ===")
     print("  max distance-to-edge = %.17g, attained by %d pixels: %s"
@@ -416,27 +521,55 @@ def main():
         print("  FAIL the rebuild does not reproduce the module; the run is not trustworthy")
         ok = False
 
-    print("\n=== CellProfiler MeasureObjectIntensityDistribution vs the pinned goldens ===")
+    print()
+    print("=== CellProfiler MeasureObjectIntensityDistribution vs the pinned goldens ===")
     print("  %-10s %3s %22s %22s %10s" % ("feature", "bin", "nyxus", "cellprofiler", "rel"))
     diverging = 0
     for f in FEATURES:
         for i in range(NBINS):
             r = rel(cp[f][i], pins[f][i])
-            if r > 1e-2:
+            if r > REPORT_CUTOFF:
                 diverging += 1
             print("  %-10s %3d %22.17g %22.17g %10.3g" % (f, i, pins[f][i], cp[f][i], r))
 
-    print("\n  %d of the %d (feature x bin) values disagree by more than 1%%."
-          % (diverging, 3 * NBINS))
-    if diverging == 0:
-        print("  UNEXPECTED: CellProfiler now reproduces Nyxus. The divergence record in")
-        print("  tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md is stale and the")
-        print("  three rows are promotable -- do not ship this verdict unchanged.")
+    print()
+    print("  %d of the %d (feature x bin) values disagree by more than %g%% -- descriptive only."
+          % (diverging, 3 * NBINS, REPORT_CUTOFF * 100))
+
+    # 5. the promotion verdict, decided per (feature x config) rather than once for the family
+    print()
+    print("=== promotion verdict per feature, at recipe radial.cellprofiler_8bin ===")
+    promotable = []
+    for f in FEATURES:
+        band = SPEC_BAND[f]
+        outside = [i for i in range(NBINS) if not agrees(cp[f][i], pins[f][i], band)]
+        worst = max(rel(cp[f][i], pins[f][i]) for i in range(NBINS))
+        print("  %-10s band rel<=%-8g worst rel=%-10.3g %d/%d bins outside%s"
+              % (f, band, worst, len(outside), NBINS,
+                 "" if not outside else "  (" + ", ".join(str(i) for i in outside) + ")"))
+        if not outside:
+            promotable.append(f)
+
+    if promotable:
+        print()
+        print("  UNEXPECTED: every bin of %s meets its SPEC 7 band against CellProfiler,"
+              % ", ".join(promotable))
+        print("  so %s promotable at this recipe. The divergence record in"
+              % ("that row is" if len(promotable) == 1 else "those rows are"))
+        print("  tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md is stale for it --")
+        print("  do not ship this verdict unchanged.")
         ok = False
     else:
-        print("  This is the recorded outcome: the family is NOT CellProfiler-vetted.")
+        print()
+        print("  No feature meets its band on every bin, so none of the three rows is promotable at")
+        print("  this recipe. That is the recorded outcome: the family is NOT CellProfiler-vetted.")
 
-    print("\n%s" % ("ALL CHECKS PASSED" if ok else "SOME CHECKS FAILED -- do not ship"))
+    if not provenance_ok:
+        print()
+        print("  NOTE: this environment did not match the recorded provenance printed above.")
+
+    print()
+    print("%s" % ("ALL CHECKS PASSED" if ok else "SOME CHECKS FAILED -- do not ship"))
     return 0 if ok else 1
 
 

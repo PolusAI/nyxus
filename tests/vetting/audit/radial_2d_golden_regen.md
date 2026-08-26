@@ -35,15 +35,25 @@ runs the range and identity checks over the pinned literals themselves: every `F
 fraction of a whole pixel count summing to one, every `MEAN_FRAC` entry inside the ROI's intensity
 range on a non-empty bin, `RADIAL_CV` within `sqrt(num_bins - 1)`, the empty bins consistent across
 all three tables, and the two intensity tables reconstructing the ROI's total intensity. The C++
-invariant tests assert the same properties of the *computed* values; this asserts them of what the
-header says, so an edit to the table is caught without a rebuild.
+tests assert the same properties of the *computed* values; this asserts them of what the header says,
+so an edit to the table is caught without a rebuild.
+
+They are split by definition-independence on the C++ side and it is worth knowing which is which
+before reading a failure. `TEST_2D_RADIAL_{FRAC_AT_D_IS_A_PARTITION,EMPTY_BINS_ARE_ZERO,CV_IS_WITHIN_ITS_BOUND}_INVARIANT`
+hold under CellProfiler's definitions too. The whole-pixel-count, raw-intensity-range and
+reconstruction checks hold only under the conventions §4 items 4 and 5 describe, so they are
+`TEST_2D_RADIAL_BIN_CONVENTIONS_REGRESSION` — characterization, and a fix that changes those
+conventions is expected to change them.
 
 Pin at `%.17g`. A value truncated shorter eats most of the `rel=1e-9` band before the test starts.
 
 **Three inputs decide every one of the 24 numbers**, and all three are pinned in
 `tests/test_2d_radial_mechanics.h`: the ROI (26 pixels of `shape2d_morphology_mask`), the centre
 pixel `(3,4)`, and the squared normalising radius `10`. If a source change moves any of them, all 24
-goldens move together and the mechanics pins are what tells you which of the three it was.
+goldens move together and the mechanics pins are what tells you which of the three it was. Two of
+those three values are wrong — they are §6 defects 1-3 of the vetting report, pinned as known-defect
+characterization — so fixing this family is *expected* to fail that file, and the file is credited to
+no feature in the registry for that reason.
 
 ## 2. Running CellProfiler on the same fixture
 
@@ -51,6 +61,13 @@ goldens move together and the mechanics pins are what tells you which of the thr
 conda create -n nyxus_cellprofiler -c conda-forge python=3.9 cellprofiler=4.2.8
 conda run -n nyxus_cellprofiler python tests/vetting/oracles/gen_radial_cellprofiler.py
 ```
+
+The script reads `cellprofiler`, `cellprofiler-core`, `centrosome`, `numpy` and `scipy` back from the
+installed distributions, prints them, and exits 2 rather than present another environment's numbers
+as the recorded provenance. To re-probe on a newer CellProfiler deliberately, pass
+`--allow-version-drift`: it warns, runs, and says on the last line that the output is this
+environment's — update `RECORDED_VERSIONS` in the generator and the version line at the top of
+`radial_2d_cellprofiler_vetting_report.md` before quoting the result.
 
 Two things will stop you before the module imports:
 
@@ -64,8 +81,11 @@ Two things will stop you before the module imports:
 
 The generator exits non-zero if a pin stops reproducing, if the header pins a feature the model does
 not produce (or the reverse), if the independent numpy rebuild stops reproducing the CellProfiler
-module, **or if CellProfiler starts agreeing with Nyxus** — that last one means the divergence record
-is stale and the three rows became promotable, which is a result, not a pass.
+module, **or if CellProfiler starts agreeing with Nyxus on every bin of any one feature** — that last
+one means the divergence record is stale and *that row* became promotable, which is a result, not a
+pass. Promotion is decided per `(feature × config)`, so it fires for one feature while the other two
+still diverge; the gate is SPEC §7's `rel=1e-2` cross-tool band, applied bin by bin. The "N of the 24
+disagree by more than 1%" line above it is descriptive and decides nothing.
 
 ## 3. Mapping CellProfiler's names to Nyxus'
 

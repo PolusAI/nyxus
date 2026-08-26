@@ -18,6 +18,10 @@ asserts through a helper on a per-feature call line in the regression file, and 
 name into the failure message of every invariant and mechanics assertion, so nothing here needs the
 weaker rule.
 
+One file is scanned but deliberately excluded from that last rule: `test_2d_radial_mechanics.h` is
+known-defect characterization, so it is reported as coverage in the artifact and is expected to be
+absent from `current_test`. See UNCREDITED below.
+
 The kind of coverage comes from the function-name suffix, per SPEC 2 naming. This family has no
 oracle file at all -- ORACLE_SUFFIX is empty on purpose -- so no function can contribute an oracle
 token, which is what keeps the whole family from reading as a vetting claim. CellProfiler was run
@@ -41,6 +45,18 @@ SOURCES = [
     "test_2d_radial_invariant.h",
     "test_2d_radial_mechanics.h",
 ]
+
+# Scanned, reported in the artifact's Invariant_Mechanics column, and deliberately NOT expected in
+# current_test. Every assertion in this file pins a value that
+# audit/radial_2d_cellprofiler_vetting_report.md section 6 shows is wrong (defects 1-3), so a
+# correct fix must change all of them. Crediting the file as coverage would make those defects
+# acceptance criteria for the three features. The exclusion is declared here rather than applied
+# silently, and is checked in both directions below: naming the file in current_test is an error
+# too, so the decision cannot be reversed by editing only the registry.
+UNCREDITED = {
+    "test_2d_radial_mechanics.h":
+        "known-defect characterization (report section 6 defects 1-3); see not_covered.md A.1",
+}
 # The regression table is read by a helper the test function calls once per feature, and that call
 # line names the feature, so the table needs no attributing to a function here.
 TABLE_OWNER = {}
@@ -174,7 +190,10 @@ def disagreements(rows, asserted, oracles, regression, other, where):
                        f"under an oracle-suffixed name")
         for stale in sorted(claimed - files):
             out.append(f"{f}: current_test names {stale}, which covers nothing for it")
-        for gap in sorted(files - claimed):
+        for named in sorted(claimed & set(UNCREDITED)):
+            out.append(f"{f}: current_test names {named}, which is uncredited on purpose - "
+                       f"{UNCREDITED[named]}")
+        for gap in sorted(files - claimed - set(UNCREDITED)):
             out.append(f"{f}: {gap} covers it but current_test omits it")
     return out
 

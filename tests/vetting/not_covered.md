@@ -17,9 +17,9 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 
 ---
 
-## A. Test files no registry row references — 24 files, 58 test functions
+## A. Test files no registry row references — 25 files, 61 test functions
 
-### A.1 Correctly absent — plumbing, fixtures and framework self-tests (17 files)
+### A.1 Correctly absent — plumbing, fixtures and framework self-tests (18 files)
 
 These assert no feature value, so they have no `(feature × config × oracle)` row by construction
 (SPEC §1). Recording them here so their absence is a documented decision, not an oversight.
@@ -30,6 +30,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_arrow_mechanics.h` | 2 | Arrow + Parquet writer plumbing |
 | `test_arrow_file_name_mechanics.h` | 1 | output-file naming rules |
 | `test_2d_glcm_mechanics.h` | 1 | guards the `GLCM_OFFSET` default (a setting, not a value) |
+| `test_2d_radial_mechanics.h` | 3 | contour frame, centre pixel and normalising radius — the wiring the radial goldens depend on. **Uncredited by decision, not by construction:** see the note below the table |
 | `test_initialization_mechanics.h` | 1 | environment init |
 | `test_2d_omezarr_mechanics.h` | 6 | OME-Zarr tile/raw loader |
 | `test_roi_blacklist_mechanics.h` | 1 | ROI blacklisting |
@@ -39,6 +40,16 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_vetting_mechanics.py` | 5 | self-test of `check_coverage.py` |
 | `test_3d_coverage_common.h`, `test_3d_morphology_common.h`, `test_2d_moments_common.h`, `test_2d_morphology_common.h`, `test_2d_radial_common.h` | 0 | shared fixtures; the kind belongs to the files that include them |
 | `test_feature_calculation_common.h` | 0 | shared `test_feature` template helper |
+
+**`test_2d_radial_mechanics.h` is the one row here that is a judgement rather than a construction.**
+Its third case does read three feature values, so the rule the rest of this table rests on — asserts
+no feature value, therefore no `(feature × config × oracle)` row — does not by itself place it. It is
+uncredited for a different reason: all three cases pin behaviour that
+`audit/radial_2d_cellprofiler_vetting_report.md` §6 shows is wrong (defects 1-3), so a correct fix
+must change every number in the file. Listing it in `current_test` for `FRAC_AT_D`, `MEAN_FRAC` and
+`RADIAL_CV` would make those defects acceptance criteria for the three features (PR #444 review,
+item 4). `audit/scan_radial_coverage.py` carries the exclusion as a declared `UNCREDITED` entry and
+fails in both directions, so the decision cannot be reversed by editing only the registry.
 
 ### A.2 Assert feature values but no row lists them — real gaps (7 files)
 
@@ -410,8 +421,8 @@ distinction live only in a vetting report.
 
 | | count |
 |---|---:|
-| test files no registry row references | 25 (7 of them assert feature values → A.2) |
-| functions in those files | 58 |
+| test files no registry row references | 26 (7 of them assert feature values → A.2) |
+| functions in those files | 61 |
 | registry rows whose `target_test` is not yet written (backlog) | 256 refs / 17 files |
 | stale `current_test` refs (rename drift, must fix) | 3 |
 | functions that never execute (unwired) | 112 |

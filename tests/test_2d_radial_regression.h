@@ -12,15 +12,23 @@
 // Each of the three features is a vector of 8 radial bins and every bin is pinned separately, so a
 // change confined to one bin cannot hide inside an aggregate.
 //
+// Two cases live here. The first asserts the 24 pins. The second characterizes the conventions those
+// pins are computed under - properties that hold only because FRAC_AT_D counts pixels and MEAN_FRAC
+// is a raw bin mean, so they belong beside the snapshots rather than in test_2d_radial_invariant.h,
+// which takes only the properties a re-definition would preserve.
+//
 // Provenance (SPEC 6.4): Nyxus' own output on recipe radial.shape2d_native, at full %.17g precision.
 // `gen_radial_cellprofiler.py --skip-cellprofiler` reproduces all 24 from a written-down model of the
 // implementation and needs no build and no oracle environment.
 
 #include <gtest/gtest.h>
 
+#include <algorithm>                    // std::min, std::max
+
 #include "../src/nyx/featureset.h"      // Feature2D
-#include "test_2d_radial_common.h"      // calculate_radial_2d_values
-#include "test_main_nyxus.h"            // agrees_gt
+#include "test_2d_radial_common.h"      // build_radial_2d_roi, calculate_radial_2d_values, LR,
+                                        // RadialDistributionFeature
+#include "test_main_nyxus.h"            // agrees_gt, <cmath> for std::round
 #include "test_ref_vals.h"              // ref_vals_map, <string>, <vector>
 
 static const ref_vals_map<std::vector<double>> radial_2d_regression_ref_vals{
@@ -65,4 +73,54 @@ void test_2d_radial_distribution_regression()
 	assert_radial_vector_feature_regression(fvals, Nyxus::Feature2D::FRAC_AT_D, "FRAC_AT_D");
 	assert_radial_vector_feature_regression(fvals, Nyxus::Feature2D::MEAN_FRAC, "MEAN_FRAC");
 	assert_radial_vector_feature_regression(fvals, Nyxus::Feature2D::RADIAL_CV, "RADIAL_CV");
+}
+
+// The conventions the 24 pins above are computed under, asserted of the values a build produces
+// rather than of the literals. These are characterization, not invariants (SPEC 2): each one holds
+// because of a choice this implementation makes, and a re-definition of the feature that the
+// CellProfiler comparison would call correct breaks it. FRAC_AT_D counting pixels is what makes
+// every entry a whole-pixel fraction; a fraction of intensity would not be. MEAN_FRAC being the
+// bin's raw mean intensity is what puts it inside the ROI's intensity range and what makes the two
+// tables reconstruct the ROI total; CellProfiler's MeanFrac, normalised by the ROI mean, lands near
+// 1 and does neither. So they are drift guards on the current definitions and nothing more - if
+// they ever fail, read the goldens above and the report before assuming a regression.
+void test_2d_radial_bin_conventions_regression()
+{
+	LR roidata(101);
+	build_radial_2d_roi(roidata);
+	const auto& frac = roidata.fvals[(int)Nyxus::Feature2D::FRAC_AT_D];
+	const auto& mean = roidata.fvals[(int)Nyxus::Feature2D::MEAN_FRAC];
+
+	ASSERT_EQ(frac.size(), (size_t)RadialDistributionFeature::num_bins) << "FRAC_AT_D";
+	ASSERT_EQ(mean.size(), (size_t)RadialDistributionFeature::num_bins) << "MEAN_FRAC";
+
+	const double n_pixels = double(roidata.raw_pixels.size());
+	double lo = roidata.raw_pixels[0].inten, hi = roidata.raw_pixels[0].inten, total = 0.0;
+	for (const auto& p : roidata.raw_pixels)
+	{
+		lo = std::min(lo, (double)p.inten);
+		hi = std::max(hi, (double)p.inten);
+		total += (double)p.inten;
+	}
+
+	// FRAC_AT_D divides a pixel count by a pixel count, so every entry is a whole count over n
+	double reconstructed = 0.0;
+	for (size_t i = 0; i < frac.size(); i++)
+	{
+		const double count = frac[i] * n_pixels;
+		ASSERT_NEAR(count, std::round(count), 1e-6) << "FRAC_AT_D[" << i << "] is not a whole count";
+
+		// MEAN_FRAC is a mean of raw intensities, so a non-empty bin lands inside the ROI's range
+		if (frac[i] != 0.0)
+		{
+			ASSERT_GE(mean[i], lo) << "MEAN_FRAC[" << i << "]";
+			ASSERT_LE(mean[i], hi) << "MEAN_FRAC[" << i << "]";
+		}
+
+		reconstructed += std::round(count) * mean[i];
+	}
+
+	// and the two tables together are a partition of the ROI's intensity
+	ASSERT_TRUE(Nyxus::agrees_gt(reconstructed, total, 1e9))
+		<< "FRAC_AT_D and MEAN_FRAC do not reconstruct the ROI intensity";
 }

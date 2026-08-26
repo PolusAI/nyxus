@@ -124,3 +124,30 @@ ROI whose every contour pixel is 8-adjacent to some neighbour, which is what mak
 `PERCENT_TOUCHING = 100` a closed form rather than a snapshot, and it is the only ROI with two
 in-radius neighbours — so it is also the only one where `CLOSEST_NEIGHBOR2_*` is anything but a
 structural zero. Shrinking the scene or moving one block off label 1 costs both assertions.
+
+---
+
+## `bench_shape8_concave_holed` — one concave 26-pixel ROI with an interior hole
+
+| | |
+|---|---|
+| Data | `shape2d_morphology_mask` + `shape2d_morphology_intensity` in `tests/test_data.h`, loaded by `load_masked_test_roi_data()` at `make_shape2d_settings()`; built for this family by `build_radial_2d_roi()` in `tests/test_2d_radial_common.h` |
+| ROI | one of them — label 1, **26 pixels**, total intensity **1048**, per-pixel intensity 12–68 |
+| Shape | an 8×8 grid; the ROI spans x 0–5, y 0–6 as a concave blob with a single one-pixel interior hole at (3,3) |
+| Why it exists | the smallest 2D shape that is neither convex nor simply connected, so contour tracing has to return two contours and every shape descriptor computed from them is non-degenerate |
+
+Recipes: `radial.shape2d_native`, `morphology.shape2d_native`, `radial.cellprofiler_8bin`.
+
+Tests reaching it today: `test_2d_radial_{regression,invariant,mechanics}.h` (through
+`test_2d_radial_common.h`), `test_2d_morphology_common.h` and the morphology files that include it,
+`test_2d_zernike_regression.h`.
+
+**The interior hole is the load-bearing property, and it is also what limits this fixture.** It is
+what makes `LR::merge_multicontour` concatenate two contours rather than return one, which is the
+condition under which `Pixel2::find_center` and `Pixel2::max_sqdist` return non-extremal answers
+(`audit/radial_2d_cellprofiler_vetting_report.md` §6 defect 2, pinned in
+`test_2d_radial_mechanics.h`). For the same reason it is **not** a fixture the radial family can ever
+be vetted on: its distance-to-edge maximum is attained by 8 of its 26 pixels, so CellProfiler's own
+centre moves with the label image's padding, and 26 pixels over 8 radial bins leaves 3 of them empty
+on one side or the other. `audit/radial_2d_golden_regen.md` §5 lists what a vetting fixture would
+have to add.

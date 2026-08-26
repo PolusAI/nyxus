@@ -1183,19 +1183,19 @@ TEST(TEST_NYXUS, TEST_2D_RADIAL_DISTRIBUTION_REGRESSION)
 	ASSERT_NO_THROW(test_2d_radial_distribution_regression());
 }
 
+TEST(TEST_NYXUS, TEST_2D_RADIAL_BIN_CONVENTIONS_REGRESSION)
+{
+	ASSERT_NO_THROW(test_2d_radial_bin_conventions_regression());
+}
+
 TEST(TEST_NYXUS, TEST_2D_RADIAL_FRAC_AT_D_IS_A_PARTITION_INVARIANT)
 {
 	ASSERT_NO_THROW(test_2d_radial_frac_at_d_is_a_partition_invariant());
 }
 
-TEST(TEST_NYXUS, TEST_2D_RADIAL_MEAN_FRAC_IS_WITHIN_THE_ROI_INTENSITY_RANGE_INVARIANT)
+TEST(TEST_NYXUS, TEST_2D_RADIAL_EMPTY_BINS_ARE_ZERO_INVARIANT)
 {
-	ASSERT_NO_THROW(test_2d_radial_mean_frac_is_within_the_roi_intensity_range_invariant());
-}
-
-TEST(TEST_NYXUS, TEST_2D_RADIAL_BIN_MEANS_RECONSTRUCT_THE_ROI_INTENSITY_INVARIANT)
-{
-	ASSERT_NO_THROW(test_2d_radial_bin_means_reconstruct_the_roi_intensity_invariant());
+	ASSERT_NO_THROW(test_2d_radial_empty_bins_are_zero_invariant());
 }
 
 TEST(TEST_NYXUS, TEST_2D_RADIAL_CV_IS_WITHIN_ITS_BOUND_INVARIANT)

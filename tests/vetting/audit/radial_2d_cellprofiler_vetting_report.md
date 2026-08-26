@@ -11,7 +11,9 @@ registry recorded `status=regression` with an empty `oracle` column and a `candi
 CellProfiler. This report is the answer to that candidacy.
 
 - Oracle: `cellprofiler` 4.2.8 (module package), `cellprofiler-core` 4.2.8.1, `centrosome` 1.2.3,
-  numpy 1.26.4, scipy 1.10.1, python 3.9.23, headless.
+  numpy 1.26.4, scipy 1.10.1, python 3.9.23, headless. The generator reads all five back from the
+  installed distributions and refuses to run against any other, so this line is checked rather than
+  asserted.
 - Module: `MeasureObjectIntensityDistribution`, `center_choice="These objects"`, `bin_count=8`,
   `wants_scaled=True`, Zernikes off. Recipe `radial.cellprofiler_8bin`.
 - Fixture: `shape2d_morphology_{intensity,mask}` (`test_data.h`) — one 26-pixel concave ROI with one
@@ -138,8 +140,11 @@ eight bins are empty on one side or the other.
 ## 6. Defects found, with evidence
 
 None of these are fixed here: all six change public feature values, which belongs on its own branch.
-Defects 1 and 2 are pinned in `test_2d_radial_mechanics.h`, so a correction cannot land silently, and
-`radial_2d_golden_regen.md` §5 lists what has to be true before the family can be promoted.
+Defects 1, 2 and 3 are pinned in `test_2d_radial_mechanics.h`, so a correction cannot land silently.
+Read those pins as a record of today's behaviour, not as acceptance criteria — a fix **must** change
+every number in that file, which is why it is labelled known-defect characterization and credited to
+no feature in the registry. `radial_2d_golden_regen.md` §5 is the corrective work's checklist: what
+has to be true before the family can be promoted.
 
 **1. The traced contour is returned one pixel off in both axes.**
 `ContourFeature::buildRegularContour` (`src/nyx/features/contour.cpp:648-681`) places the ROI into an
@@ -208,8 +213,36 @@ every wedge holds the same number of pixels. Separately, `banded_wedges` is decl
 - Re-pinned nothing — the 24 goldens were already at full precision and reproduce bit-exactly.
 - Replaced the `ASSERT_NEAR(..., 1e-9)` *absolute* band with `agrees_gt(..., 1e9)` (`rel=1e-9`), and
   filled the three empty `tolerance` cells in the registry.
-- Split the family into the four SPEC §2 kinds: `_common.h` (fixture), `_regression.h` (the 24 pins),
-  `_invariant.h` (4 required properties), `_mechanics.h` (3 wiring guards).
+- Split the family into the four SPEC §2 kinds: `_common.h` (fixture), `_regression.h` (the 24 pins
+  plus the convention checks below), `_invariant.h` (3 required properties), `_mechanics.h` (3
+  known-defect pins).
+- Sorted the property checks by whether they survive a change of definition, which is the entry test
+  for `_invariant.h`. `FRAC_AT_D` being a partition of `[0, 1]` summing to one, an empty bin being
+  zero in all three tables, and `RADIAL_CV` lying in `[0, sqrt(num_bins - 1)]` hold under
+  CellProfiler's definitions as well as Nyxus', so they are invariants. `FRAC_AT_D × pixel_count`
+  being a whole number, `MEAN_FRAC` lying inside the ROI's raw intensity range, and the two tables
+  reconstructing the ROI's total intensity hold only because of the conventions §6 defects 4 and 5
+  describe — CellProfiler's `FracAtD` and `MeanFrac` satisfy none of the three — so they moved to
+  `_regression.h` as `TEST_2D_RADIAL_BIN_CONVENTIONS_REGRESSION`, characterization beside the pins
+  they characterize. An invariant a correct fix would break is not an invariant.
+- Labelled `_mechanics.h` as known-defect characterization in its header and on each assertion, and
+  removed it from the three registry rows' `current_test`: it pins §6 defects 1-3, and a file whose
+  numbers a correct fix must change cannot also be counted as coverage for the features. The
+  omission is recorded in `not_covered.md` §A.1 so it reads as a decision rather than a gap.
+- Rewrote the three header comments in `src/nyx/features/radial_distribution.h`. They were
+  CellProfiler's help strings verbatim over functions computing something else (§1); they now state
+  the pixel-count fraction, the raw bin mean and the all-8-wedge CV of sums, and say that which
+  semantics is intended is unresolved. No behaviour changes.
+- Made the generator's promotion gate per feature rather than one counter over all 24 cells, at
+  SPEC §7's `rel=1e-2` cross-tool band, and left the 1% cutoff as the descriptive report line only.
+  The old counter fired only when the whole family agreed; a run in which all eight `FRAC_AT_D` bins
+  came inside the band while `MEAN_FRAC` still diverged would have exited 0 and left a promotable
+  row marked `regression`. Verified by feeding the gate exactly that case.
+- Made the generator read `cellprofiler`, `cellprofiler-core`, `centrosome`, `numpy` and `scipy`
+  versions from the installed distributions, print them, and refuse to run on a mismatch (a missing
+  distribution counts as one). `--allow-version-drift` continues with a warning and says on the
+  final line that the run is not the recorded provenance. The versions above are that check's
+  output on the run in §3.
 - Added range and identity checks over the pinned literals to the generator, so they are asserted of
   what the header *says* and not only of what a build computes: every `FRAC_AT_D` entry a fraction of
   a whole pixel count summing to one, every `MEAN_FRAC` entry inside the ROI's intensity range on a
@@ -217,12 +250,23 @@ every wedge holds the same number of pixels. Separately, `banded_wedges` is decl
   tables, and the two intensity tables reconstructing the ROI total. That path is stdlib-only
   (`--skip-cellprofiler`).
 - Negative-controlled every new assertion shape. For the per-bin regression: swapping the `FRAC_AT_D`
-  bin-3 and bin-6 goldens leaves the sum exactly 1 and every bin count a whole number, so all four
-  invariants still pass, while the per-bin assertion fails naming `FRAC_AT_D[3]`. For the invariants:
-  `FRAC_AT_D[0] += 0.5`, `MEAN_FRAC[2] = 1000`, `MEAN_FRAC[2] += 1` and `RADIAL_CV[2] = 3` each fire
-  their own invariant and nothing else. For the generator's pin checks: raising `MEAN_FRAC[6]` from
-  33.67 to 333.67 fires the range check and the reconstruction identity together. For the mechanics
-  frame guard: shifting the test's own copy of the contour back by (−1,−1) — i.e. simulating a fixed
-  `buildRegularContour` — takes the "lands on a ROI pixel after unpadding" count from 18 to 12 and
-  fails the assertion, which is what shows it is a detector for the offset and not a restatement of
-  it.
+  bin-3 and bin-6 goldens leaves the sum exactly 1 and every bin count a whole number, so all the
+  invariants still pass, while the per-bin assertion fails naming `FRAC_AT_D[3]`. For the invariants
+  and the convention characterization: `FRAC_AT_D[0] += 0.5`, `MEAN_FRAC[2] = 1000`,
+  `MEAN_FRAC[2] += 1` and `RADIAL_CV[2] = 3` each fire one case and nothing else — the first three
+  now land on `TEST_2D_RADIAL_BIN_CONVENTIONS_REGRESSION`, which is where those checks moved, and
+  `+= 0.5` is the instructive one: it leaves `FRAC_AT_D[0] × 26` a whole 14, so it falls past the
+  whole-count check onto the reconstruction identity. For the generator's pin checks: raising
+  `MEAN_FRAC[6]` from 33.67 to 333.67 fires the range check and the reconstruction identity
+  together. For the mechanics frame guard: shifting the test's own copy of the contour back by
+  (−1,−1) — i.e. simulating a fixed `buildRegularContour` — takes the "lands on a ROI pixel after
+  unpadding" count from 18 to 12 and fails the assertion, which is what shows it is a detector for
+  the offset and not a restatement of it.
+- Negative-controlled the two gates the review asked for. Feeding the generator a CellProfiler run
+  in which all eight `FRAC_AT_D` bins match the pins while `MEAN_FRAC` and `RADIAL_CV` still diverge:
+  the old counter reported "14 of the 24 disagree" and exited 0, the per-feature gate exits 1 naming
+  `FRAC_AT_D` as promotable. Moving one of those bins 2% off the pin returns it to a pass, and 0.5%
+  off — inside the band — keeps it a fail, so the gate is the band and not an equality test. For the
+  version check: `cellprofiler 4.2.9` installed and `cellprofiler-core` absent each exit 2, and
+  `--allow-version-drift` turns both into a warning plus a closing note that the run is not the
+  recorded provenance.
