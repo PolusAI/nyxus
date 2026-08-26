@@ -317,3 +317,30 @@ be vetted on: its distance-to-edge maximum is attained by 8 of its 26 pixels, so
 centre moves with the label image's padding, and 26 pixels over 8 radial bins leaves 3 of them empty
 on one side or the other. `audit/radial_2d_golden_regen.md` §5 lists what a vetting fixture would
 have to add.
+
+---
+
+## `bench_imq_quality_roi` — one 8×12 image-quality ROI
+
+| | |
+|---|---|
+| Data | `im_quality_intensity` + `im_quality_mask` in `tests/test_data.h`, loaded by `calc_imq_feature()` in `tests/test_imq_common.h` |
+| ROI | one — the mask is all 1s, so the ROI image matrix is the whole bounding box |
+| Shape | 8 wide × 12 tall, 96 pixels, grey values {0, 1, 4, 6} |
+| Why it exists | the only fixture the IMQ family runs on; it is small enough to featurise inline and carries the vertical stripe structure the Laplacian responds to |
+
+Recipes: `imq.laplacian_ksize1_zeropad`, `imq.saturation_observed_extremum`,
+`imq.regression_quality_roi`.
+
+Tests reaching it today: `test_imq_{opencv,cellprofiler,regression}.h`.
+
+**The 0s are a fixture typo that three features now depend on.** Rows y=7..9 of the intensity
+literal repeat the *coordinates* of rows 1..3 for x=3..8, so those 18 positions are never assigned
+and stay background 0. That makes 0 the ROI's observed minimum, which is what `MIN_SATURATION`
+counts (18/96), and it puts a hard edge in the middle of the image that both focus scores respond
+to. Fixing the typo would move four goldens, so it is recorded here rather than repaired.
+
+**Its size is what leaves `POWER_SPECTRUM_SLOPE` untested.** `rps()` returns early unless
+`floor(min(h,w)/8) >= 3`, i.e. unless the short side is at least 24 px. At 8 wide this fixture never
+reaches the radial-binning code, and the pinned 0 is the guard's return value. A second, larger
+benchmark is what that feature needs — see `matrix/imq.md`.

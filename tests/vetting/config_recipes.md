@@ -334,6 +334,35 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `GLSZM_HGLZE` is 16.44 here and 1497.57 there on the same fixture. Those values are drift-pinned
   only, in `test_2d_glszm_regression.h`, and no oracle row claims them.
 
+## glrlm.ibsi_ng128
+- The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
+  its own with `IBSI=true` and `GREYDEPTH=128`, the four in-slice directions averaged, then the four
+  slices averaged - the IBSI "2D, averaged" aggregation. Settings bundle:
+  `make_2d_glrlm_ibsi_settings()` in `test_2d_glrlm_common.h`. Oracles: `pyradiomics` (20 rows) and
+  `ibsi` (12 rows). Used by: `test_2d_glrlm_pyradiomics.h`, `test_2d_glrlm_ibsi.h`,
+  `test_2d_glrlm_mirp.h`.
+- PyRadiomics reaches this configuration with `binWidth=1` (identity binning on the integer
+  phantom, so neither tool discretises), `distances=[1]`, `force2D=True`, `force2Ddimension=0`,
+  `weightingNorm=None`, `label=1`. It reports one value per feature over the four in-slice
+  directions, which is the Nyxus `*_AVE` aggregation; a base feature keeps the four directions in
+  `fvals[0..3]` and is checked as their mean. Generator: `oracles/gen_glrlm_pyradiomics.py`.
+- MIRP 2.6.0 reaches it with `by_slice=True` and `base_discretisation_method="none"`. Generator:
+  `oracles/gen_glrlm_mirp.py`. It is recorded rather than asserted against: the two tools agree with
+  each other, so a second pinned table would be redundancy and not coverage. What it buys is the
+  reading of `GLRLM_RE` below - one tool disagreeing with Nyxus could be that tool's convention;
+  two agreeing with each other and not with Nyxus is Nyxus' own logarithm.
+- The two oracles are complementary. The IBSI consensus values are quoted to three significant
+  figures, so `test_2d_glrlm_ibsi.h` asserts at `rel=1e-2`; PyRadiomics reproduces Nyxus to 2.3e-16
+  on 15 of the 16, so `test_2d_glrlm_pyradiomics.h` asserts at `rel=1e-9`. IBSI fixes the
+  definition, PyRadiomics fixes the digits. Measurements in
+  `audit/glrlm_2d_pyradiomics_vetting_report.md` and `audit/glrlm_2d_ibsi_vetting_report.md`.
+- `GLRLM_RE` is the exception, at `rel=5e-3`: Nyxus takes run entropy through the shared float
+  `Nyxus::fast_log10` approximation where both tools use a double logarithm, worth a measured
+  1.1e-3 (2.167200381 against 2.169550798). The band states that approximation and nothing else.
+- **Outside this recipe:** the production default (`IBSI=false`, MATLAB grey binning at
+  `coarse_gray_depth`), which no reference tool reproduces. Drift-pinned only, in
+  `test_2d_glrlm_regression.h`; no oracle row claims it.
+
 ## neighbor.scene2d_radius1
 - Benchmark `bench_scene7_5roi_enclosed`; config matrix `matrix/neighbor.md`. Assertions at SPEC 7's
   exact tier, an absolute 1e-9 band.
@@ -805,3 +834,69 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   0.31944444444444442, `DV` 26.743055555555554, `GLN` 48, `GLV` 0). So the arithmetic is right and
   the intercept is the defect; the guard exists to make the day it is fixed visible, not to endorse
   it. Full table in `matrix/gldm3d.md`.
+
+## imq.laplacian_ksize1_zeropad
+- Benchmark `bench_imq_quality_roi`; config matrix `matrix/imq.md`. Assertions at SPEC 7's exact
+  tier, an absolute 1e-9 band.
+- The `im_quality_intensity` / `im_quality_mask` fixture (`test_data.h`) loaded through
+  `load_masked_test_roi_data`, giving one 8x12 ROI image matrix. `FocusScoreFeature::calculate()`
+  reads no `NyxSetting`, so the recipe has no settings to name beyond the fixture: the kernel is the
+  `ksize=1` Laplacian `{{0,1,0},{1,-4,1},{0,1,0}}` compiled into `focus_score.cpp`, out-of-range
+  taps are dropped (zero padding), and the tile scale is the `scale=2` default of
+  `get_local_focus_score()`. Oracle: `opencv`. Used by: `test_imq_opencv.h`.
+- OpenCV reaches it with `cv2.Laplacian(roi, cv2.CV_64F, ksize=1, borderType=cv2.BORDER_CONSTANT)`
+  followed by `ndarray.var()` (population variance, `ddof=0`) - the Pech-Pacheco et al. (2000)
+  variance-of-the-Laplacian focus measure. Generator: `oracles/gen_imq_opencv.py`, which asserts the
+  two filtered images are equal cell for cell before comparing any scalar, so the convolution is
+  proved rather than inferred from a matching variance.
+- Measured: `FOCUS_SCORE` 7.1e-15 absolute (2.0e-16 relative), `LOCAL_FOCUS_SCORE` 3.6e-15 absolute
+  (4.7e-16 relative). The filtered images are equal cell for cell; the residual is the variance
+  summation order alone. Report: `audit/imq_opencv_vetting_report.md`.
+- **Inside the fixture but outside the claim:** `LOCAL_FOCUS_SCORE` reaches exactly one tile.
+  `get_local_focus_score()` loops `y < height - M` with `M = height/scale`, so at `scale=2` the 4x6
+  top-left tile is the only one visited while the divisor stays `scale^2 = 4`. The golden reproduces
+  that; it does not endorse it. See `matrix/imq.md`.
+- **Outside this recipe:** the `ksize>1` kernel `{{2,0,2},{0,-8,0},{2,0,2}}`, which has no
+  `cv2.Laplacian` counterpart and which `calculate()` never selects; and the out-of-core
+  `get_focus_score_NT()` path, which no assertion reaches.
+
+## imq.saturation_observed_extremum
+- Benchmark `bench_imq_quality_roi`; config matrix `matrix/imq.md`. Assertions at SPEC 7's exact
+  tier, an absolute 1e-9 band.
+- The same 8x12 ROI image matrix as `imq.laplacian_ksize1_zeropad`.
+  `SaturationFeature::calculate()` reads no `NyxSetting` either. Both tools use the same
+  convention - the fraction of pixels equal to the image's OWN observed extremum, not a fixed
+  bit-depth threshold - so the metric is scale-invariant and CellProfiler's `[0,1]` float images and
+  Nyxus' integer `PixIntens` give the same fraction. Oracle: `cellprofiler`. Used by:
+  `test_imq_cellprofiler.h`.
+- CellProfiler 4.2.8 reaches it with `MeasureImageQuality.calculate_saturation()` on a single
+  grayscale image with no mask, reporting `Image_ImageQuality_PercentMinimal` and `_PercentMaximal`;
+  the generator divides by 100. Generator: `oracles/gen_imq_cellprofiler.py`.
+- Measured: both tools count the same 18 and 16 of 96 pixels. `MIN_SATURATION` agrees bit for bit
+  (18/96 = 0.1875 is exact in binary). `MAX_SATURATION` differs by one ulp, 2.8e-17 absolute
+  (1.7e-16 relative), because CellProfiler reports a percentage: `100.0*16/96` divided by `100.0` is
+  one ulp above the `16/96` Nyxus computes. The pin carries CellProfiler's digits. Report:
+  `audit/imq_cellprofiler_vetting_report.md`.
+- **Outside this recipe**, two cases the fixture does not reach and the two implementations do not
+  agree on: a constant ROI (`min == max`), where `get_percent_max_pixels()`'s `else if` gives
+  `MIN_SATURATION=0` and `MAX_SATURATION=1` against CellProfiler's 100% for both (measured); and a
+  mask that does not fill the ROI's bounding box, where Nyxus counts the in-box out-of-mask zeros
+  into the extremum and CellProfiler restricts to the mask. They coincide here only because
+  `im_quality_mask` covers the whole 8x12 box.
+
+## imq.regression_quality_roi
+- The same 8x12 ROI image matrix, with **no oracle** - `POWER_SPECTRUM_SLOPE` and `SHARPNESS` are
+  pinned Nyxus output as drift guards in `test_imq_regression.h`, at full `%.17g` precision.
+  Benchmark `bench_imq_quality_roi`; config matrix `matrix/imq.md`.
+- `POWER_SPECTRUM_SLOPE` is pinned at exactly 0, and 0 is what the guard returns rather than what
+  the algorithm computes: `rps()` returns early unless `floor(min(h,w)/8) >= 3`, i.e. unless the ROI
+  is at least 24 px on its short side, and this one is 8. The pin therefore covers the early return
+  and nothing downstream of it. Measured on a 32x32 ROI, the path beyond the guard bins radial power
+  by `floor(sqrt(fft value))+1` - the FFT coefficient, not the frequency radius `sqrt(kx^2+ky^2)` -
+  and indexes `raw_radii` by that bin over a loop bounded by the padded FFT size (1024 against
+  `raw_radii`'s 32). See `matrix/imq.md`.
+- `SHARPNESS` is a DOM (Kumar et al. 2012) port that the published reference implementation does not
+  reproduce: 2.1904708385718963 against 0.54592951157710823 on this fixture, a factor of four. The
+  divergence is structural, not numerical, and is enumerated in
+  `audit/imq_pydom_sharpness_vetting_report.md`. The pin is a change detector; the feature is not
+  vetted.

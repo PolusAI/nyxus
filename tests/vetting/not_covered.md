@@ -349,10 +349,24 @@ scene was pasted into each generator as a `SCENE` list, so a `test_data.h` edit 
 oracles happily reproducing the old scene and the headers still "verifying" against it. Both now read
 the array out of `test_data.h`, the way `gen_morphology_skimage.py` and the IBSI-phantom generators
 already do. **A generator that does not read the fixture is not running the same experiment as the
-test it feeds.** The same shape is still live elsewhere: `gen_imq_opencv.py` and
-`gen_imq_cellprofiler.py` each carry a transcribed `IMG` matrix of `im_quality_intensity` /
-`im_quality_mask` *and* a hardcoded `NYXUS` golden dict, so both halves of the neighbour finding
-apply to them. Each family should check its own `gen_*` for pasted pixel data as it is revisited.
+test it feeds.** The two `gen_imq_*` generators this paragraph named as still carrying the same
+shape - a transcribed `IMG` matrix *and* a hardcoded `NYXUS` golden dict - now read both the fixture
+and the pins out of the tree, and one of the two things that hid behind the self-comparison was a
+real mispin: `MAX_SATURATION` was pinned at Nyxus' `16/96` under a comment crediting CellProfiler,
+whose own double is one ulp higher. At the generator's `TOL=1e-6` that was three orders below
+anything it looked at. Each family should still check its own `gen_*` for pasted pixel data as it is
+revisited.
+
+**The `config_recipe` column was a pointer nobody resolved.** `check_coverage.py` validated
+`benchmark` (`validate_benchmarks`) and `test_name` (`validate_test_names`) and had no validator for
+the third pointer column at all, so a row could name a SPEC 5 recipe that had never been written and
+every checker stayed green. Turning the check on found four dangling ids across three families: the
+two `imq.*` ids (4 rows), `glrlm.ibsi_ng128` (32 rows - the id `test_2d_glrlm_common.h` has named in
+a comment since the family was vetted, whose `config_recipes.md` section was never added), and a
+**prose sentence** sitting in the column on 38 firstorder/radial/zernike rows ("Not mode-specific.
+Any disagreement is a definition, coordinate-frame, ..."). All four are closed: the three real
+recipes are written, and the prose moved to `notes`, where it was always a note. `validate_config_recipes`
+now fails on a fifth.
 
 **A helper-block boundary bug over-credited coverage in the per-family scanners.** The shared
 `helper_features()` logic bounded a python helper's body at the next *helper* rather than the next
@@ -395,6 +409,19 @@ shared fixture now takes the value as a parameter and restores whatever it found
 the same treatment when that family is next touched.
 
 
+### IMQ paths no assertion reaches
+
+Recorded from reading the source, not from measurement - nothing in the tree exercises them, which
+is the point. Full detail in `matrix/imq.md`.
+
+| site | what is uncovered | why it matters |
+|---|---|---|
+| `SaturationFeature::get_percent_max_pixels_NT()` | the whole out-of-core path | it uses two independent `if`s where the in-RAM `get_percent_max_pixels()` uses `else if`, so the two paths disagree by construction on a constant ROI - and `osized_calculate()` returns before either runs when `aux_max == aux_min`, leaving both saturations 0. One input, three answers |
+| `FocusScoreFeature::get_focus_score_NT()` | the whole out-of-core path | passes `(width, height)` where `laplacian()`'s first size parameter is the row count; takes the variance over a `conv_buffer` larger than the region any pixel writes; and in the small-ROI branch fills a 900-entry window buffer with `W[row*width + col]` over the full ROI. Its `tile_variance`, commented "abs sum of tile", is declared and never used |
+| `PowerSpectrumFeature::rps()` beyond the size guard | every ROI at least 24 px on its short side | the only fixture the family has is 8 px wide, so the pinned `POWER_SPECTRUM_SLOPE = 0` is the guard's return value. Measured on a synthetic 32x32 ROI, the path beyond it bins by `floor(sqrt(fft coefficient))+1` rather than by the frequency radius |
+| `FocusScoreFeature` `ksize > 1` | the second kernel | unreachable from `calculate()`, and it mutates the shared `static int kernel[9]` in place without restoring it - latent rather than live, the same shape as the `NGTDMFeature::n_levels` static |
+| `SaturationFeature` on a constant ROI, and on a mask narrower than the bounding box | two config-matrix cells | both are places CellProfiler and Nyxus genuinely differ; the family has no fixture for either |
+
 ## D. Registry rows that contradict themselves
 
 Found while placing assertions by column J. Each needs a registry decision, not a code change:
@@ -421,9 +448,12 @@ worth listing separately so nobody reads the coverage percentage as more than it
 | family | what the oracle actually supplies | what would close it |
 |---|---|---|
 | 2D `gabor` (`GABOR`, both recipes) | scikit-image supplies the **kernel**, cross-checked against the canonical closed form at ≤1.1e-16. The WND-CHARM count-ratio **score** has no scikit-image equivalent and is reproduced from Nyxus' own definition; the `f0=0` kernel is analytic, since `gabor_kernel` cannot express frequency 0. Measured: scoring off skimage's own filtering instead moves values by up to 1.005 (`audit/gabor_2d_skimage_vetting_report.md` §4.1) | `wndcharm` — SPEC §4 names it and `feature2djava` as the highest-value oracles for the Nyxus-original features (Gabor, Zernike, Tamura, radial, chords), because Nyxus descends from WND-CHARM. Neither is built in this tree |
+| `imq` (`LOCAL_FOCUS_SCORE`) | OpenCV supplies the **Laplacian and the population variance** — the filtered image is checked cell for cell, residual exactly 0 — but the **tiling** is Nyxus': `get_local_focus_score()` picks which sub-arrays to visit and divides by `scale²`, and the generator reproduces that rather than taking it from a tool. So the oracle vets the per-tile statistic *conditional on* the tiling, and the tiling is exactly where the family's open defect is (one tile of four, `todo.md` 28). `FOCUS_SCORE` is not in this position — cv2 computes the whole of it | nothing external: no tool implements Nyxus' tiling, because it is not a published convention. What closes it is fixing the loop bound, at which point the divisor and the tile set agree and the whole quantity is `mean(var(Laplacian(tile)))`, which cv2 does compute |
 
 The registry records the split where it can: `audit/gabor_2d_coverage.csv` lists `skimage;analytic`
-rather than `skimage`, and both `oracle_coverage.csv` rows spell it out in `notes`. The `oracle`
+rather than `skimage`, and both `oracle_coverage.csv` rows spell it out in `notes`. `imq`'s
+artifact CSV is generated rather than hand-written, so its split lives in the `Notes` column
+`scan_imq_coverage.py` emits, and in the `LOCAL_FOCUS_SCORE` registry row's `notes`. The `oracle`
 column itself holds one SPEC §4 token by construction, so `notes` is where the narrowing has to live
 — the same arrangement SPEC §4 documents for `matlab`.
 
