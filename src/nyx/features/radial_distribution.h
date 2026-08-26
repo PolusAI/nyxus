@@ -8,7 +8,15 @@
 #include "../roi_cache.h"
 #include "pixel.h"
 
-/// @brief Features describing the radial intensity distribution within a ROI - fraction of total stain in an object at a given radius, mean fractional intensity at a given radius, coefficient of variation of intensity within a ring.
+/// @brief Features describing the radial intensity distribution within a ROI - the fraction of the
+/// ROI's pixels at a given radius, the mean intensity of the pixels at that radius, and the
+/// coefficient of variation of intensity across the wedges of a ring.
+///
+/// The three feature names are CellProfiler's RadialDistribution_* names, but the quantities are not
+/// CellProfiler's: each member below documents what it actually returns. Which of the two sets of
+/// semantics is the intended one is unresolved - the measured comparison against CellProfiler
+/// MeasureObjectIntensityDistribution is in
+/// tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md.
 class RadialDistributionFeature: public FeatureMethod
 {
 public:
@@ -39,13 +47,16 @@ public:
 		num_features_RadialCV = 8;
 
 private:
-	// Fraction of total stain in an object at a given radius
+	// Fraction of the ROI's pixel COUNT falling in a radial bin. Intensity never enters it, so this
+	// is a function of the mask alone and not of the image.
 	void get_FracAtD();
 
-	// Mean fractional intensity at a given radius (Fraction of total intensity normalized by fraction of pixels at a given radius)
+	// The radial bin's mean intensity, in the image's own units. Not a fraction, and not normalized
+	// by the ROI's mean intensity.
 	void get_MeanFrac();
 
-	// Coefficient of variation of intensity within a ring, calculated over 8 slices
+	// Coefficient of variation of a ring's 8 wedge intensity SUMS, taken over all 8 wedges including
+	// the empty ones, with the population (biased) standard deviation.
 	void get_RadialCV();
 
 	// Returns the index of the pixel in parameter 'cloud' having maximum distance from 'contour'

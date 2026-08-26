@@ -1,15 +1,23 @@
 #pragma once
 
-// Plumbing behind the 2D radial intensity distribution: the coordinate frame the traced contour
-// comes back in, the centre pixel the feature measures from, and the radius it normalises by. None
-// of it is a feature value and none of it claims an oracle (SPEC 2) - these are drift guards on
-// three pieces of wiring that the three pinned feature vectors depend on completely and that no
-// other test in the tree looks at.
+// KNOWN-DEFECT CHARACTERIZATION for the 2D radial intensity distribution: the coordinate frame the
+// traced contour comes back in, the centre pixel the feature measures from, and the radius it
+// normalises by. None of it is a feature value and none of it claims an oracle (SPEC 2).
 //
-// Two of the three record behaviour that tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md
-// argues is wrong. They are pinned rather than corrected because a correction moves public feature
-// values and belongs on its own branch; pinning them here is what makes it impossible to land
-// silently.
+// Read the numbers here as a record of what the tree does today, NOT as acceptance criteria. All
+// three cases pin behaviour that
+// tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md §6 argues is wrong - the contour's
+// one-pixel offset (defect 1), the non-extremal centre (3,4) and short radius^2 10 (defect 2), and
+// the num_bins-1 bin scaling (defect 3). A correct fix MUST change every value asserted below; the
+// corrective work and its preconditions are tracked in
+// tests/vetting/audit/radial_2d_golden_regen.md §5, which is the fix branch's checklist.
+//
+// The point of pinning them is that the 24 public values in test_2d_radial_regression.h are decided
+// entirely by these three pieces of wiring and nothing else in the tree looks at them, so without
+// these cases a fix - or an accident - moves the goldens with no statement of which of the three
+// changed. That is a diagnostic role, which is why the registry credits this file for no feature:
+// the three radial rows list test_2d_radial_{regression,invariant}.h and not this one, and
+// tests/vetting/not_covered.md §A.1 records the omission as deliberate.
 
 #include <gtest/gtest.h>
 
@@ -20,11 +28,13 @@
 #include "test_2d_radial_common.h"             // build_radial_2d_roi, LR, <vector>;
                                                // <cmath> for std::sqrt via test_main_nyxus.h
 
-// ContourFeature traces on an image padded by one pixel on every side and adds the ROI's bounding-box
-// origin back afterwards, but never subtracts that one-pixel pad. Every traced contour pixel is
-// therefore reported one pixel right and one pixel down of where it is, which puts 7 of this ROI's 18
-// contour pixels outside the ROI altogether. RadialDistributionFeature measures distances from
-// raw_pixels (untranslated) to this contour, so it mixes the two frames.
+// Defect 1. ContourFeature traces on an image padded by one pixel on every side and adds the ROI's
+// bounding-box origin back afterwards, but never subtracts that one-pixel pad. Every traced contour
+// pixel is therefore reported one pixel right and one pixel down of where it is, which puts 7 of this
+// ROI's 18 contour pixels outside the ROI altogether. RadialDistributionFeature measures distances
+// from raw_pixels (untranslated) to this contour, so it mixes the two frames.
+// The `outside == 7` below is the defect's current size, not a requirement: unpadding the contour
+// takes it to 0 and fails this case, which is the intended outcome of fixing it.
 void test_2d_radial_contour_frame_mechanics()
 {
 	LR roidata(101);
@@ -52,14 +62,18 @@ void test_2d_radial_contour_frame_mechanics()
 	}
 
 	// undoing the one-pixel pad puts every contour pixel back onto a ROI pixel
-	ASSERT_EQ(inside_after_unpadding, K.size());
-	ASSERT_EQ(outside, (size_t)7);
+	ASSERT_EQ(inside_after_unpadding, K.size())
+		<< "the contour is no longer uniformly offset by (+1,+1)";
+	ASSERT_EQ(outside, (size_t)7)
+		<< "known-defect pin (report §6 defect 1): a fix must change this number";
 }
 
-// Pixel2::find_center and Pixel2::max_sqdist are coarse-to-fine searches that assume an ordered
-// contour; merge_multicontour concatenates the outer contour and the hole's, so the sequence they
-// walk is not one. On this ROI both return a non-extremal answer, and the radius the feature
+// Defect 2. Pixel2::find_center and Pixel2::max_sqdist are coarse-to-fine searches that assume an
+// ordered contour; merge_multicontour concatenates the outer contour and the hole's, so the sequence
+// they walk is not one. On this ROI both return a non-extremal answer, and the radius the feature
 // normalises by is 23% short of the largest distance actually present.
+// (3,4) and radius^2 10 below are the searches' current wrong answers; the exact scans in the same
+// case compute (4,4) and 13. A fix makes the two halves agree and fails this case.
 void test_2d_radial_center_and_radius_mechanics()
 {
 	LR roidata(101);
@@ -70,14 +84,15 @@ void test_2d_radial_center_and_radius_mechanics()
 
 	int idxO = Pixel2::find_center(roidata.raw_pixels, K);
 	const Pixel2& pxO = roidata.raw_pixels[idxO];
-	ASSERT_EQ(pxO.x, 3);
-	ASSERT_EQ(pxO.y, 4);
+	ASSERT_EQ(pxO.x, 3) << "known-defect pin (report §6 defect 2): the exact scan below picks (4,4)";
+	ASSERT_EQ(pxO.y, 4) << "known-defect pin (report §6 defect 2): the exact scan below picks (4,4)";
 
 	// the searched maximum against a full linear scan of the same contour
 	double exact_max = 0.0;
 	for (const auto& p : K)
 		exact_max = std::max(exact_max, pxO.sqdist(p));
-	ASSERT_DOUBLE_EQ(pxO.max_sqdist(K), 10.0);
+	ASSERT_DOUBLE_EQ(pxO.max_sqdist(K), 10.0)
+		<< "known-defect pin (report §6 defect 2): the exact scan of the same contour gives 13";
 	ASSERT_DOUBLE_EQ(exact_max, 13.0);
 
 	// the centre a full linear scan of the same criterion (min of max-min squared distance) picks
@@ -103,10 +118,11 @@ void test_2d_radial_center_and_radius_mechanics()
 	ASSERT_EQ(roidata.raw_pixels[exact_idx].y, 4);
 }
 
-// The bin index is int(r / r_max * (num_bins - 1)), so the 8 bins are 7 equal-width rings plus a
-// last bin that only r >= r_max reaches. Here r_max is the short radius pinned above, so the last
-// bin holds the 3 pixels sitting exactly on it plus the 4 that lie beyond it - 7 of the 26, more
-// than any of the 7 real rings.
+// Defect 3. The bin index is int(r / r_max * (num_bins - 1)), so the 8 bins are 7 equal-width rings
+// plus a last bin that only r >= r_max reaches. Here r_max is the short radius pinned above, so the
+// last bin holds the 3 pixels sitting exactly on it plus the 4 that lie beyond it - 7 of the 26, more
+// than any of the 7 real rings. Scaling by num_bins instead, as the report argues, empties the
+// overflow and fails the two counts below.
 void test_2d_radial_bin_index_mechanics()
 {
 	LR roidata(101);
@@ -126,8 +142,10 @@ void test_2d_radial_bin_index_mechanics()
 		else if (rat == 1.0)
 			at_r_max++;
 	}
-	ASSERT_EQ(past_r_max, (size_t)4);
-	ASSERT_EQ(at_r_max, (size_t)3);
+	ASSERT_EQ(past_r_max, (size_t)4)
+		<< "known-defect pin (report §6 defects 2-3): a correct radius leaves no pixel past r_max";
+	ASSERT_EQ(at_r_max, (size_t)3)
+		<< "known-defect pin (report §6 defects 2-3)";
 
 	// and those 7 together are what the last bin of all three features is computed from
 	const auto& frac = roidata.fvals[(int)Nyxus::Feature2D::FRAC_AT_D];
