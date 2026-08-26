@@ -208,33 +208,46 @@ figures, so `rel` sat at 1e-3 to 1e-7 rather than at the agreement's true floor.
 | `3SKEWNESS` | 0.075 | 0.07469052913 | 4.1e-3 | agrees |
 | `3KURTOSIS` | 1.78 | 1.78723684 | 4.0e-3 | agrees |
 
-## Four pins did not hold up
+## Four goldens were wrong, and all four are regenerated
 
-| feature | header pin | Nyxus | true statistic | rel vs Nyxus | at ±10% |
-|---|---:|---:|---:|---:|---|
-| `3ROBUST_MEAN` | **0** | 1977.5189642597 | 1976.5703930354 | 1.0 | **FAILS** |
-| `3UNIFORMITY` | **307211000** | 0.041991745610 | — | 7.3e9 | **FAILS** |
-| `3ENTROPY` | **4.24** | 4.579541890 | — | 7.4e-2 | passes |
-| `3ROBUST_MEAN_ABSOLUTE_DEVIATION` | **392.98** | 406.9817011068 | 407.4270631429 | 3.4e-2 | passes |
+None of these is an open problem: every one is replaced by the Octave value in the table at the top
+of this report, and only one of the four was ever a defect in a feature. Three were simply stale —
+an old Nyxus' output, or a value from a configuration nobody recorded, frozen into the header and
+never rechecked. The fourth was pinning a live bug that had since been fixed without the golden
+following.
 
-1. **`3ROBUST_MEAN = 0` was the pre-fix bug value.** `3d_intensity.cpp` computes the mean over the
-   `[P10,P90]` window and the live coverage baseline pins `1977.5189642596645`, which the binned
-   window reproduces exactly. The pin also failed the identity `P10 ≤ ROBUST_MEAN ≤ P90`.
+| feature | golden as found | what it actually was | pinned now, from Octave |
+|---|---:|---|---:|
+| `3ROBUST_MEAN` | **0** | the value the feature returned before it was computed at all | 1976.5703930354 |
+| `3UNIFORMITY` | **307211000** | `Σcount²` over a 256-bin histogram — unnormalized, and not the default bin count | 0.0419917456104 |
+| `3ENTROPY` | **4.24** | a 19-bin value, against a 24-bin default | 4.5795418896949 |
+| `3ROBUST_MEAN_ABSOLUTE_DEVIATION` | **392.98** | a value predating the p10/p90 robust-MAD fix, matching neither estimator | 407.4270631429 |
+
+1. **`3ROBUST_MEAN = 0` was pinning a real bug** — the only one of the four that was.
+   `val_ROBUST_MEAN` was never assigned on this path, so it defaulted to zero. That was fixed
+   separately in `3d_intensity.cpp`, in both `calculate` and `osized_calculate`, which now take the
+   mean over the `[P10,P90]` window; the golden was left behind. Live Nyxus is 1977.5189642596645,
+   matching the coverage baseline to the digit, and the regenerated golden is Octave's exact-window
+   1976.5703930354 — the two agree to 4.8e-4, inside `_BINNED`. The old pin also failed the identity
+   `P10 ≤ ROBUST_MEAN ≤ P90`, which now passes.
 
 2. **`3UNIFORMITY = 307211000` violated the range its definition forces.** `get_stats()` returns
-   `Σp²`, which lies in `[0,1]`. The pin was `Σcount²` — unnormalized — and reproduces exactly as
-   `sum(count²)` over a **256-bin** histogram (3.07211e8). It was stale in both normalization and
-   bin count.
+   `Σp²`, which lies in `[0,1]`. The pin reproduces exactly as `sum(count²)` over a **256-bin**
+   histogram (3.07211e8), so it was stale in both normalization and bin count. The feature itself was
+   never wrong: the regenerated golden is Octave's 0.041991745610363521 and Nyxus reproduces it
+   inside `_EXACT`.
 
 3. **`3ENTROPY = 4.24` did not reproduce at the default 24 bins** (4.579542). Swept across bin
    counts it lands on **19 bins** (4.243139) — which is not a Nyxus default and does not match the
-   256 bins `3UNIFORMITY` implies, so the two pins came from different configurations.
+   256 bins `3UNIFORMITY` implies, so the two pins came from different configurations. The feature
+   was not wrong here either: `histogram.h` computes entropy with a real `log2`, not the float
+   approximation the texture entropies use, which is why it now agrees with Octave inside `_EXACT`.
 
 4. **`3ROBUST_MEAN_ABSOLUTE_DEVIATION = 392.98` matched neither estimator** — 3.4% off the binned
    window (406.98) and 3.5% off the exact one (407.43). `histogram.h` records a "p10/p90 robust-MAD
-   fix"; the pin predated it.
+   fix"; the pin predated it and was never regenerated.
 
-### Two of the four survived the band the file asserted at
+### Two of the four passed under the band the file asserted at
 
 Both oracle files asserted with `agrees_gt(..., 10.)`, a **±10% band** on all 35 assertions. Against
 a measured agreement of 1e-6 to 1e-7 on the exact statistics that was five to six orders of
