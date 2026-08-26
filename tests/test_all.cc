@@ -84,6 +84,7 @@
 #include "test_3d_glcm_pyradiomics.h"
 #include "test_3d_glcm_regression.h"
 #include "test_3d_gldm_pyradiomics.h"
+#include "test_3d_gldm_regression.h"
 #include "test_3d_ngtdm_pyradiomics.h"
 #include "test_3d_ngtdm_regression.h"
 #include "test_3d_ngtdm_mechanics.h"
@@ -595,6 +596,37 @@ TEST(TEST_NYXUS, TEST_3D_GLDM_SDHGLE_PYRADIOMICS) {
 
 TEST(TEST_NYXUS, TEST_3D_GLDM_SDLGLE_PYRADIOMICS) { 
 	ASSERT_NO_THROW (test_3d_gldm_sdlgle_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDM_MATRIX_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_gldm_matrix_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDM_SMALLMATRIX_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_gldm_smallmatrix_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDM_DUMP_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_gldm_dump_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDM_DE_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_de_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_DN_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_dn_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_DNN_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_dnn_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_DV_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_dv_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_GLN_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_gln_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_GLV_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_glv_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_HGLE_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_hgle_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_LDE_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_lde_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_LDHGLE_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_ldhgle_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_LDLGLE_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_ldlgle_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_LGLE_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_lgle_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_SDE_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_sde_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_SDHGLE_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_sdhgle_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_SDLGLE_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_sdlgle_regression()); }
+
+TEST(TEST_NYXUS, TEST_3D_GLDM_DUMP_REGRESSION) {
+	ASSERT_NO_THROW (test_3d_gldm_dump_regression());
 }
 
 //***** 3D GLCM compatibility *****
