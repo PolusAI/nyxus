@@ -39,6 +39,35 @@ def validate_benchmarks(rows, benchmarks_md):
     return errs
 
 
+def config_recipe_ids(path):
+    """-> the recipe ids config_recipes.md defines, i.e. every '## <id>' heading."""
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8", errors="replace") as fh:
+        return set(re.findall(r"^##\s+([A-Za-z0-9_.]+)\s*$", fh.read(), re.M))
+
+
+def validate_config_recipes(rows, recipes_md):
+    """A config_recipe that is not defined is a pointer to nothing (SPEC 5).
+
+    The third pointer column, and the last one to be checked. benchmark and test_name were
+    validated while this one was not, so two imq ids and a whole glrlm id named sections that had
+    never been written, and nothing in the tree could see it. A blank cell is allowed - a row that
+    names no recipe claims nothing - but a cell that names one has to resolve."""
+    defined = config_recipe_ids(recipes_md)
+    named = [r for r in rows if (r.get("config_recipe") or "").strip()]
+    if defined is None:
+        return [f"{recipes_md} is missing; SPEC 5 requires it once any row names a recipe"] \
+            if named else []
+    errs = []
+    for r in named:
+        c = (r.get("config_recipe") or "").strip()
+        if c not in defined:
+            errs.append(f"{r.get('feature','')}: config_recipe {c!r} is not defined in "
+                        f"{os.path.basename(recipes_md)}")
+    return errs
+
+
 def gtest_case_names(test_all_cc):
     """-> the "SUITE.CASE" names the gtest translation unit defines, or None if it is unreadable."""
     if not os.path.exists(test_all_cc):
@@ -149,6 +178,8 @@ def main(argv=None):
     errs = validate_rows(rows)
     errs += validate_benchmarks(rows, os.path.join(os.path.dirname(a.registry) or ".",
                                                    "benchmarks.md"))
+    errs += validate_config_recipes(rows, os.path.join(os.path.dirname(a.registry) or ".",
+                                                       "config_recipes.md"))
     errs += validate_test_names(rows, os.path.join(
         os.path.dirname(os.path.dirname(a.registry)) or ".", "test_all.cc"))
     if a.check:
