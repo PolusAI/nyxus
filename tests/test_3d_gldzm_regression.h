@@ -37,10 +37,9 @@
 // 3GLDZM_GLM and 3GLDZM_ZDM have no counterpart in MIRP or IBSI at all (MIRP emits no dzm_gl_mean
 // or dzm_zd_mean), so they stay regression-only whatever happens to the rest.
 //
-// The coverage sweep used to keep a second copy of this table; it is gone, and this file is now the
-// family's only pin table -- test_3d_coverage_common.h reads its keys to satisfy SPEC 1. So the
-// table is const: a default-insert here would both pass a bogus assertion and add a phantom feature
-// name to that set.
+// This file holds the family's only pin table, and test_3d_coverage_common.h reads its keys to
+// satisfy SPEC 1. Hence const: a default-insert here would both pass a bogus assertion against a 0
+// golden and add a phantom feature name to that set.
 static const ref_vals_map<double> gldzm_3d_regression_ref_vals{
 	{"3GLDZM_SDE",        0.022387420258025731},
 	{"3GLDZM_LDE",          314.01248309662088},
