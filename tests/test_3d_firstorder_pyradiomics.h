@@ -6,32 +6,20 @@
 #include "../src/nyx/featureset.h"
 #include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_intensity.h"
-#include "../src/nyx/raw_nifti.h"
 #include "test_ref_vals.h"
 
-// Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
-// (100 grey levels, offset 1, and asymmetric cooc matrix)
+// Provenance (SPEC 6.4):
+//   tool      = PyRadiomics 3.0.1
+//   fixture   = tests/data/nifti/compat_int/compat_int_mri.nii and
+//               tests/data/nifti/compat_seg/compat_seg_liver.nii, label 1
+//   config    = binCount 20, no resampling, no weighting
+//   recipe    = firstorder3d.pyradiomics_bincount20
+//   generator = tests/vetting/oracles/gen_firstorder3d_pyradiomics.py
 //
-// Getting Pyradiomics ground truth values:
-//      pyradiomics mri.nii.gz liver.nii.gz --param settings1.yaml
-// 
-// where file "settings1.yaml" is:
-// 
-//  setting:
-//  #disabled - binWidth: 25
-//  binCount : 20
-//  label : 1
-//  interpolator : 'sitkBSpline'
-//  resampledPixelSpacing :
-//  weightingNorm: 
-//
-//  imageType :
-//        Original : {} 
-//  featureClass :
-//      fo:
-//
+// PyRadiomics computes the statistics from the original intensities. binCount affects only
+// Entropy and Uniformity; Nyxus selects the matching bin-count mode with GREYDEPTH = -20.
 
-static ref_vals_map<double> firstorder_3d_pyradiomics_ref_vals
+static const ref_vals_map<double> firstorder_3d_pyradiomics_ref_vals
 {
     {"3P10", 362.0}, // Case-1_original_firstorder_10Percentile
     {"3P90", 527.0}, // Case-1_original_firstorder_90Percentile
@@ -52,6 +40,29 @@ static ref_vals_map<double> firstorder_3d_pyradiomics_ref_vals
     {"3UNIFORMITY", 0.10037109374999999}, // Case-1_original_firstorder_Uniformity
     {"3VARIANCE", 4196.911126692708}, // Case-1_original_firstorder_Variance
 };
+
+// agrees_gt accepts a divisor: 100 means rel=1e-2, 1000 means rel=1e-3, and 1e9 means rel=1e-9.
+// The bands are based on the residuals recorded in firstorder_3d_pyradiomics_vetting_report.md.
+static double firstorder_3d_pyradiomics_divisor(Nyxus::Feature3D feature)
+{
+    switch (feature)
+    {
+    // Nyxus uses a 100-bin interpolated CDF; PyRadiomics uses sample percentiles.
+    // The worst measured residual is 4.99e-3 on robust mean absolute deviation.
+    case Nyxus::Feature3D::P10:
+    case Nyxus::Feature3D::P90:
+    case Nyxus::Feature3D::INTERQUARTILE_RANGE:
+    case Nyxus::Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION:
+        return 100.0;
+    // PyRadiomics uses population variance (N); Nyxus 3VARIANCE uses sample variance (N-1).
+    // Their measured residual on this ROI is 2.08e-4.
+    case Nyxus::Feature3D::VARIANCE:
+        return 1000.0;
+    default:
+        // The remaining twelve features agree to better than rel=1e-12.
+        return 1.0e9;
+    }
+}
 
 static std::tuple<std::string, std::string, int> get_3d_compat_fo_phantom()
 {
@@ -137,7 +148,9 @@ void assert_3d_firstorder_feature_pyradiomics (const Nyxus::Feature3D &expected_
     f.save_value (r.fvals);
 
     // (7) verdict
-    ASSERT_TRUE (agrees_gt(r.fvals[fcode][0], firstorder_3d_pyradiomics_ref_vals[fname], 10.));
+    ASSERT_TRUE(agrees_gt(
+        r.fvals[fcode][0],
+        firstorder_3d_pyradiomics_ref_vals.at(fname),
+        firstorder_3d_pyradiomics_divisor(expected_fcode))) << fname;
 }
-
 

@@ -6,7 +6,6 @@
 #include <cstddef>
 #include <initializer_list>
 #include <limits>
-#include <map>
 #include <set>
 #include <sstream>
 #include <string>
@@ -58,11 +57,6 @@ static int feature_code_value(Nyxus::Feature3D feature)
 static std::size_t feature_index_from_int(int feature)
 {
 	return static_cast<std::size_t>(feature);
-}
-
-static std::size_t feature_code_index(Nyxus::Feature3D feature)
-{
-	return feature_index_from_int(feature_code_value(feature));
 }
 
 static std::string sanitize_3d_feature_test_name(const testing::TestParamInfo<Feature3DCoverageCase>& info)
@@ -294,34 +288,6 @@ static const std::set<std::string>& externally_vetted_3d_feature_names()
 	return names;
 }
 
-
-// Coverage-sweep regression baselines. The tables themselves live in the per-family
-// test_3d_<family>_coverage.h files, beside the suites that assert them (SPEC 6.3.1); this header
-// only holds the registry they publish into. The indirection is forced by include order -- the
-// per-family files include this one, so the shared TEST_P bodies cannot name tables declared later.
-// Registration is a file-scope initialiser, so every table is in place before main() runs, while the
-// tables are only read inside test bodies.
-using CoverageBaselineTable = ref_vals_map<std::vector<double>>;
-using CoverageBaselineRegistry = std::map<std::string, const CoverageBaselineTable*>;
-
-static CoverageBaselineRegistry& coverage_baselines()
-{
-	static CoverageBaselineRegistry r;
-	return r;
-}
-
-static bool register_coverage_baseline(const std::string& family, const CoverageBaselineTable* t)
-{
-	coverage_baselines()[family] = t;
-	return true;
-}
-
-static const CoverageBaselineTable* regression_coverage_table_for_family(const std::string& family)
-{
-	auto it = coverage_baselines().find(family);
-	return it == coverage_baselines().end() ? nullptr : it->second;
-}
-
 static void assert_oracle_backed_agreement(const Feature3DCoverageCase& c)
 {
 	if (firstorder_3d_pyradiomics_ref_vals.find(c.name) != firstorder_3d_pyradiomics_ref_vals.end())
@@ -355,11 +321,9 @@ static std::vector<Feature3DCoverageCase> feature_3d_cases(bool require_oracle_b
 	return out;
 }
 
-// Per-family partition of the coverage sweep. Each public 3D feature belongs to exactly one calculator
-// featureset; first match wins so every case lands in exactly one family (the 94+119 split is preserved
-// regardless of any incidental featureset overlap). A test_3d_<family>_coverage.h file re-instantiates
-// the two parameterized suites below for its family, filtered through feature_3d_cases_for_family();
-// a family that has retired its sweep has no such file and appears here only as a partition entry.
+// Per-family partition of the remaining oracle-backed coverage sweeps. Each public 3D feature belongs
+// to exactly one calculator featureset; first match wins so every case lands in exactly one family.
+// A family that has retired its sweep still appears here for the global coverage accounting below.
 static const std::vector<std::pair<std::string, std::set<Nyxus::Feature3D>>>& feature_3d_family_table()
 {
 	static const std::vector<std::pair<std::string, std::set<Nyxus::Feature3D>>> table = [] {
@@ -418,37 +382,6 @@ static void assert_3d_feature_is_registered_and_computable(const Feature3DCovera
 	EXPECT_TRUE(std::any_of(vals.begin(), vals.end(), [](double v) { return std::isfinite(v); })) << c.name << " was not written by the 3D feature calculators";
 }
 
-static double local_regression_tolerance(double expected)
-{
-	return std::max(1.0e-9, std::abs(expected) * 1.0e-6);
-}
-
-static void assert_unvetted_local_regression_agreement(const Feature3DCoverageCase& c)
-{
-	const std::string family = family_of_3d_feature(c.code);
-	const auto* gt = regression_coverage_table_for_family(family);
-	ASSERT_TRUE(gt != nullptr) << c.name << " belongs to family '" << family << "', which has no coverage baseline table";
-	auto it = gt->find(c.name);
-	ASSERT_TRUE(it != gt->end()) << c.name << " has no coverage baseline in " << family << "_3d_regression_coverage_ref_vals";
-
-	const auto& computed = computed_3d_feature_values();
-	ASSERT_TRUE(computed.setup_error.empty()) << computed.setup_error;
-	const std::size_t fcode_index = feature_code_index(c.code);
-	ASSERT_LT(fcode_index, computed.values.size()) << c.name;
-
-	const auto& actual = computed.values[fcode_index];
-	const auto& expected = it->second;
-	ASSERT_EQ(expected.size(), actual.size()) << c.name;
-	for (std::size_t i = 0; i < expected.size(); ++i)
-	{
-		ASSERT_TRUE(std::isfinite(actual[i])) << c.name << "[" << i << "]";
-		const double tolerance = local_regression_tolerance(expected[i]);
-		EXPECT_NEAR(actual[i], expected[i], tolerance)
-			<< c.name << "[" << i << "] actual=" << actual[i]
-			<< " expected=" << expected[i] << " tolerance=" << tolerance;
-	}
-}
-
 class Test3DFeature_WITH_3P_EMBEDDED_GT : public testing::TestWithParam<Feature3DCoverageCase> {};
 
 TEST_P(Test3DFeature_WITH_3P_EMBEDDED_GT, PublicFeatureIsComputableAndHasEmbeddedOracle)
@@ -459,23 +392,9 @@ TEST_P(Test3DFeature_WITH_3P_EMBEDDED_GT, PublicFeatureIsComputableAndHasEmbedde
 	assert_oracle_backed_agreement(c);
 }
 
-// INSTANTIATE_TEST_SUITE_P for this fixture now lives in the per-family test_3d_<family>_coverage.h
-// files (one instantiation per family, unique prefix), so the coverage sweep is organized by family.
+// The remaining INSTANTIATE_TEST_SUITE_P declarations live in the per-family coverage headers.
 
-class Test3DFeature_UNVETTED_LOCAL_REGRESSION : public testing::TestWithParam<Feature3DCoverageCase> {};
-
-TEST_P(Test3DFeature_UNVETTED_LOCAL_REGRESSION, PublicFeatureIsComputableButHasNoEmbeddedOracleYet)
-{
-	const auto& c = GetParam();
-	ASSERT_TRUE(externally_vetted_3d_feature_names().find(c.name) == externally_vetted_3d_feature_names().end()) << c.name;
-	assert_3d_feature_is_registered_and_computable(c);
-	assert_unvetted_local_regression_agreement(c);
-}
-
-// INSTANTIATE_TEST_SUITE_P for this fixture likewise lives in the per-family files.
-
-// Features an individually named test pins, rather than an entry in their family's coverage baseline
-// table -- the shape a family takes once it has retired its instantiations of the two suites above
+// Features pinned by individually named tests -- the shape a family takes once it has retired its sweep
 // (glcm's and glrlm's "_grey64_regression" tests; morphology's "_regression" ones, plus its five PCA
 // axis features, which a MIRP oracle test pins at rel=1e-9 and so needs no snapshot of its own; gldzm's
 // and ngldm's "_regression" ones, each of which is that whole family). Read straight off the tables
@@ -509,27 +428,10 @@ TEST(TEST_NYXUS, TEST_3D_FEATURE_COVERAGE_COUNTS)
 	EXPECT_EQ(103u, feature_3d_cases(false).size());
 	EXPECT_EQ(Nyxus::UserFacing_3D_featureNames.size(), feature_3d_cases(true).size() + feature_3d_cases(false).size());
 
-	// SPEC 1: every public feature with no oracle behind it still has to be pinned somewhere -- in
-	// its family's coverage baseline table, or by a named test of its own.
-	std::set<std::string> unvetted;
+	// SPEC 1: every public feature with no oracle behind it still has to have a named regression pin.
 	for (const auto& c : feature_3d_cases(false))
-	{
-		unvetted.insert(c.name);
-		if (individually_pinned_3d_feature_names().count(c.name))
-			continue;
-		const std::string family = family_of_3d_feature(c.code);
-		const auto* gt = regression_coverage_table_for_family(family);
-		EXPECT_TRUE(gt != nullptr && gt->find(c.name) != gt->end())
-			<< c.name << " (family " << family << ") has no oracle and no drift guard: neither an entry in "
-			<< family << "_3d_regression_coverage_ref_vals nor a named test pinning it";
-	}
-
-	// ... and the other direction, which a bare count of the tables can only approximate: a baseline
-	// entry that does not name a public unvetted feature is a golden nothing judges.
-	for (const auto& kv : coverage_baselines())
-		for (const auto& e : *kv.second)
-			EXPECT_TRUE(unvetted.count(e.first) > 0)
-				<< e.first << " has a baseline in " << kv.first
-				<< "_3d_regression_coverage_ref_vals but is not a public unvetted 3D feature";
+		EXPECT_TRUE(individually_pinned_3d_feature_names().count(c.name) > 0)
+			<< c.name << " (family " << family_of_3d_feature(c.code)
+			<< ") has no oracle and no named regression pin";
 }
 }
