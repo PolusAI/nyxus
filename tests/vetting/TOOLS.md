@@ -20,6 +20,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | `pydicom` | 3.0.2 | **venv** `pip install pydicom` (pure-Python) | high | DICOM decode + `Rescale*` → HU; offline fixture/golden gen for `--preserve-hu` (CT) |
 | `octave` | 10.3.0 / 11.3.0 | **conda** `conda install -c conda-forge octave octave-statistics` (no Docker, no license) | high | license-free MATLAB substitute (MIGRATION 5.13); `mean`/`median`/`std`/`var`/`skewness`/`kurtosis`/`prctile`/`quantile` all present. Add `octave-image` for `regionprops`/`bweuler` (2D morphology) |
 | `skimage` | 0.26.0 | **conda** — already present in `nyxus_mirp` (mirp pulls scikit-image, scipy, numpy) | high | no separate env needed; `gabor_kernel` + `regionprops` + `moments*`; see the skimage note below |
+| `opencv` | 4.13.0 | **conda** — already present in `nyxus_mirp` (`opencv-python`) | high | no separate env needed; `cv2.Laplacian` (IMQ focus scores) and `cv2.medianBlur`; see the opencv note below |
 
 ## conda route (verified 2026-08, 2D GLCM vetting)
 
@@ -210,6 +211,46 @@ tool:
 `construct_zernike_polynomials` zeroes `r > 1` itself but keeps `r == 0`, where a caller that skips
 `r < DBL_EPSILON` would drop a pixel. It only matters when a pixel sits exactly on the centre.
 
+## opencv — no env of its own (verified 2026-08, IMQ focus-score vetting)
+
+`opencv-python` needs no setup step either: `nyxus_mirp` already carries it (`cv2` 4.13.0 alongside
+numpy 2.4.6, python 3.11.15), so `conda run -n nyxus_mirp python …` runs any cv2 generator. As with
+skimage it is a transitive dependency, so check `cv2.__version__` before pinning goldens and put it
+in the provenance line.
+
+Gotchas hit while vetting the IMQ focus scores against it:
+
+- **`ksize=1` and `ksize=3` are different filters, not the same filter at two sizes.**
+  `cv2.Laplacian(..., ksize=1)` applies the plain `[[0,1,0],[1,-4,1],[0,1,0]]` stencil; `ksize=3`
+  applies a Sobel-derived Laplacian with different weights. A feature written against the plain
+  stencil compared to cv2's default looks nearly right and is not the same statistic.
+- **`borderType` is part of the recipe.** cv2 defaults to `BORDER_REFLECT_101`; a hand-rolled
+  convolution that simply skips out-of-range taps is `BORDER_CONSTANT`. On a small ROI the border is
+  most of the image, so this is not a rounding-level choice.
+- **Compare the filtered IMAGE, not just the scalar it feeds.** A variance is a scalar and many
+  different filtered images share one, so a matching variance is weak evidence that two
+  implementations filter alike. `gen_imq_opencv.py` asserts
+  `max|cv2.Laplacian(img) - nyxus_laplacian(img)| == 0` over every cell first; with that settled,
+  the scalar comparison tests only the variance step, and a residual of 7.1e-15 means what it looks
+  like it means.
+- **`ndarray.var()` is the population variance** (`ddof=0`). If the feature under test divides by
+  `N`, do not reach for `numpy.var(..., ddof=1)`.
+
+## the reference DOM sharpness measure — vendored, not installed
+
+The Kumar et al. (2012) sharpness reference used to refute Nyxus' `SHARPNESS` has **no usable PyPI
+package**: `pip install dom` fetches an unrelated domain-lookup CLI, and `pydom` on PyPI is an HTML
+component library. The implementation lives at `https://github.com/umang-singhal/pydom`
+(`dom/dom.py`), so the six functions are vendored into
+`tests/vetting/audit/imq_sharpness_reference_dom.py` with the upstream file named at the top, each
+line mirroring one upstream statement. It needs numpy and `cv2.medianBlur`, both already in
+`nyxus_mirp`.
+
+`dom` is **not** a SPEC 4 oracle token and the script pins nothing, which is why it sits in `audit/`
+next to its report rather than in `oracles/` as a `gen_*`. Its job is to keep a refutation honest:
+it re-checks that its Python port still reproduces the C++ golden, so the differences it enumerates
+stay statements about the shipped `sharpness.cpp`.
+
 ## Corrections / notable findings
 
 - **`cellprofiler` runs in-process from a conda env, no Docker.** Used for the 2D neighbour family
@@ -225,10 +266,14 @@ tool:
   `numpy<2` is not optional: python-javabridge's C extension uses the numpy 1.x C API and fails to
   build against 2.0. The measurement modules live in `cellprofiler`, not `cellprofiler-core`, which
   is why the last line is needed at all.
-  Three gotchas when running it:
+  Four gotchas when running it:
   - **`JDK_HOME` and `JAVA_HOME` must point at `<env>\Library\lib\jvm`** or javabridge cannot load
     the JVM and the process dies with a bare **exit 127** and no Python traceback -- it reads as a
     missing interpreter, not a missing JVM.
+  - **`<jvm>\bin` and `<jvm>\bin\server` must also be on `PATH`.** Setting the two variables alone
+    is not enough on this box: `jvm.dll` lives in `Library\lib\jvm\bin\server` and the loader has to
+    find it, so the same exit 127 survives an otherwise-correct `JAVA_HOME`. Prepend
+    `<env>;<env>\Library\bin;<env>\Library\lib\jvm\bin;<env>\Library\lib\jvm\bin\server`.
   - Call `cellprofiler_core.preferences.set_headless()` **before** constructing `Measurements()`,
     or it imports wx for config and fails.
   - `Objects().segmented` is indexed `[row=y, col=x]`, and CellProfiler treats border-touching
