@@ -38,7 +38,7 @@ vet the loader transform, which no assertion in this family covers.
 
 ## Result
 
-26 of 36 pins reproduce. Their residual is bounded by the pins' own printed precision — most carry
+29 of 36 pins reproduce. Their residual is bounded by the pins' own printed precision — most carry
 three significant figures, so `rel` sits at 1e-3 to 1e-7 rather than at the agreement's true floor.
 
 | feature | header pin | Octave | rel | verdict |
@@ -88,6 +88,15 @@ Measured, the approximation is good: the worst divergence is `3P01` at **2.3e-3*
 1e-4 to 9e-4. (For contrast, the pre-existing harness under `octave/oracle_3d/` re-implements the
 binned estimator in Octave and reports 15-digit agreement — that number measures nothing.)
 
+**Why they stay oracle tests rather than being demoted to regression.** What separates the two is
+where the pin comes from, not how tight the band is. A regression pin is Nyxus' own output, so it
+can only detect change — it would lock in whatever the estimator does, right or wrong. These ten
+pins are MATLAB `prctile` values computed with no knowledge of Nyxus, so asserting the feature
+within 5e-3 of one is a correctness claim: the binned estimator tracks the true order statistic to
+better than a quarter of a percent. Demoting them would trade that claim for "Nyxus still equals
+Nyxus". The band is set from the measured residual rather than from a round number, and the negative
+control below shows it still catches the two defects the old ±10% let through.
+
 ## Four pins do not hold up
 
 | feature | header pin | Nyxus today | true statistic | rel vs Nyxus | at ±10% |
@@ -122,13 +131,19 @@ agreement of 1e-6 to 1e-7 on the exact statistics, that is five to six orders of
 loose, and it is what lets a 7.4%-wrong `3ENTROPY` and a 3.4%-wrong `3ROBUST_MEAN_ABSOLUTE_DEVIATION`
 pass as "agreed".
 
-## Three pins the oracle cannot back
+## One pin the oracle cannot back
 
 | feature | reason |
 |---|---|
-| `3COVERED_IMAGE_INTENSITY_RANGE` | needs `SlideProps` whole-slide min/max; not an ROI statistic. Correctly `status=regression`, and its pin (1.0) is a rounding of the live baseline 1.0002043207290587 |
-| `3ENTROPY` | from the custom-resolution bin histogram, whose bin count is a Nyxus setting |
-| `3UNIFORMITY` | as above |
+| `3COVERED_IMAGE_INTENSITY_RANGE` | needs `SlideProps` whole-slide min/max, so the generator cannot produce it from the ROI voxel vector at all. Correctly `status=regression`, and its pin (1.0) is a rounding of the live baseline 1.0002043207290587 |
+
+`3ENTROPY` and `3UNIFORMITY` come from the custom-resolution bin histogram, whose bin count is a
+Nyxus setting. That makes them recipe-dependent, not unbackable. The oracle is handed the bin count
+the way a PyRadiomics `binCount` would be and then implements the estimator itself in Octave —
+equal-width binning of `[min,max]`, `-Sum p*log2(p)` and `Sum p^2` — so the comparison is still
+against an independently computed value. Both regenerated pins are Octave's, and Nyxus reproduces
+them inside the `_EXACT` band. What made the old pins wrong was that their recipe was never
+recorded: 256 unnormalized bins for `3UNIFORMITY`, 19 bins for `3ENTROPY`.
 
 ## Two pins are too coarse to assert anything
 
