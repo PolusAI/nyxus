@@ -28,10 +28,10 @@ Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
 3D,firstorder,3ROBUST_MEAN_ABSOLUTE_DEVIATION,matlab;pyradiomics,test_3d_firstorder_robust_mean_absolute_deviation_matlab;TEST_3D_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,"matlab pin was 3.4% wrong and passed the old +/-10% band; regenerated"
 3D,firstorder,3ROOT_MEAN_SQUARED,matlab;pyradiomics,test_3d_firstorder_root_mean_squared_matlab;TEST_3D_FIRSTORDER_ROOT_MEAN_SQUARED_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,exact
 3D,firstorder,3SKEWNESS,matlab;pyradiomics,test_3d_firstorder_skewness_matlab;TEST_3D_FIRSTORDER_SKEWNESS_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,population skewness
-3D,firstorder,3STANDARD_DEVIATION,matlab,test_3d_firstorder_standard_deviation_matlab,yes,test_3d_firstorder_coverage.h,unbiased (N-1); Octave std(x,0)
-3D,firstorder,3STANDARD_DEVIATION_BIASED,matlab,test_3d_firstorder_standard_deviation_biased_matlab,yes,test_3d_firstorder_coverage.h,biased (N); Octave std(x,1)
+3D,firstorder,3STANDARD_DEVIATION,matlab,test_3d_firstorder_standard_deviation_matlab,yes,test_3d_firstorder_coverage.h,"unbiased (N-1); Octave std(x,0)"
+3D,firstorder,3STANDARD_DEVIATION_BIASED,matlab,test_3d_firstorder_standard_deviation_biased_matlab,yes,test_3d_firstorder_coverage.h,"biased (N); Octave std(x,1)"
 3D,firstorder,3STANDARD_ERROR,matlab,test_3d_firstorder_standard_error_matlab,yes,test_3d_firstorder_coverage.h,unbiased sd over sqrt(n)
 3D,firstorder,3UNIFORMITY,matlab;pyradiomics,test_3d_firstorder_uniformity_matlab;TEST_3D_FIRSTORDER_UNIFORMITY_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,"matlab pin was 307211000 - an unnormalized sum of squared counts over a 256-bin histogram, violating the [0,1] range the definition forces; regenerated"
 3D,firstorder,3UNIFORMITY_PIU,matlab,test_3d_firstorder_uniformity_piu_matlab,yes,test_3d_firstorder_coverage.h,percent image uniformity; closed form on min/max
 3D,firstorder,3VARIANCE,matlab;pyradiomics,test_3d_firstorder_variance_matlab;TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,"unbiased (N-1) in Nyxus; PyRadiomics Variance is the biased (N) estimator, so the two differ by exactly n/(n-1) - measured 2.1e-4 on this ROI. 3VARIANCE_BIASED is the feature that matches PyRadiomics term for term"
-3D,firstorder,3VARIANCE_BIASED,matlab,test_3d_firstorder_variance_biased_matlab,yes,test_3d_firstorder_coverage.h,biased (N); Octave var(x,1)
+3D,firstorder,3VARIANCE_BIASED,matlab,test_3d_firstorder_variance_biased_matlab,yes,test_3d_firstorder_coverage.h,"biased (N); Octave var(x,1)"
