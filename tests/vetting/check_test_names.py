@@ -85,6 +85,7 @@ DIM_AGNOSTIC = {
     "test_environment_lifecycle_mechanics.py":
         "instance -> Environment binding in the bindings; no image dimensionality involved",
     # imq carries its own dimension: dim=IMQ in oracle_coverage.csv, not 2D/3D
+    "test_imq_common.h": "dim=IMQ in the registry",
     "test_imq_opencv.h": "dim=IMQ in the registry",
     "test_imq_cellprofiler.h": "dim=IMQ in the registry",
     "test_imq_regression.h": "dim=IMQ in the registry",
@@ -144,6 +145,18 @@ TABLE_MARKERS = ("golden", "_gt", "oracle", "reference", "ref_vals", "ref_tols")
 # listed were all split by the oracle their registry rows record, rather than renamed to whichever
 # oracle happened to cover most of their keys.
 TABLE_EXCEPTIONS = {}
+
+# Tables whose subject has no image dimensionality, each with the reason it has none - the
+# table-level twin of DIM_AGNOSTIC above, and read the same way: membership is the positive claim
+# "this table's family is computed by one implementation", so a new 2D table cannot slip in
+# unmarked. A listed table still has to name its family and its oracle; only the dim token is
+# waived. Without this the imq family could not name a conforming table at all, because its
+# registry dim and its family are the same word.
+TABLE_DIM_AGNOSTIC = {
+    "imq_opencv_ref_vals": "imq names its own dimension (registry dim=IMQ)",
+    "imq_cellprofiler_ref_vals": "imq names its own dimension (registry dim=IMQ)",
+    "imq_regression_ref_vals": "imq names its own dimension (registry dim=IMQ)",
+}
 
 # The SPEC 6.3.1 aliases from test_ref_vals.h. A declaration spelled with one of these IS a
 # reference table whatever it is named, which is what makes the name rule below apply to the
@@ -250,7 +263,16 @@ def table_violation(name):
     stem = name[: -len(suffix)]
     dim = next((d for d in DIMS if ("_%s_" % d) in stem), None)
     if not dim:
-        return "carries no _2d_/_3d_ dim token (SPEC 6.3.1)"
+        # A declared dimension-independent table is <family>_<oracle>; everything else must say
+        # which implementation its numbers describe.
+        if name not in TABLE_DIM_AGNOSTIC:
+            return "carries no _2d_/_3d_ dim token (SPEC 6.3.1)"
+        family, _, rest = stem.partition("_")
+        if not family or not rest:
+            return "names no family before the oracle token (SPEC 6.3.1)"
+        return None if rest.split("_")[0] in KINDS else (
+            "'%s' is not an oracle or kind token; the segment after the family states where the "
+            "numbers came from (SPEC 6.3.1)" % rest.split("_")[0])
     family, _, rest = stem.partition("_%s_" % dim)
     if not family:
         return "names no family before the dim token (SPEC 6.3.1)"
