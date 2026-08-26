@@ -24,6 +24,18 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 ## firstorder.pyradiomics_default
 - Non-discretised intensity statistics. Oracle: `pyradiomics` firstorder. Used by: `test_2d_firstorder_pyradiomics.h`.
 
+## firstorder3d.pyradiomics_bincount20
+- `bench_compat_liver_3d`, label 1, with PyRadiomics 3.0.1 `binCount=20`, no resampling and no
+  weighting. Nyxus uses `GREYDEPTH=-20`; the negative value selects the corresponding radiomics
+  bin-count mode.
+- PyRadiomics computes first-order features from the original intensities. Only `Entropy` and
+  `Uniformity` use the discretized histogram, so the bin count affects those two features.
+- Used by: `test_3d_firstorder_pyradiomics.h`. Generator:
+  `oracles/gen_firstorder3d_pyradiomics.py`.
+- The measured bands are `rel=1e-9` for 12 same-definition statistics, `rel=1e-2` for the four
+  percentile-derived values, and `rel=1e-3` for the population-versus-sample variance comparison.
+  See `audit/firstorder_3d_pyradiomics_vetting_report.md`.
+
 ## firstorder3d.matlab_native
 - `bench_ut57_3d`, label 57, with default 3D first-order settings. The fixture is put in the same
   integer domain as Nyxus' default float-NIfTI loader: shift the negative volume minimum to zero,

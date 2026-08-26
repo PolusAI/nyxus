@@ -51,6 +51,8 @@ prevent.
 
 Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyradiomics.h`.
 
+Recipes: `glcm3d.pyradiomics_bincount20`, `firstorder3d.pyradiomics_bincount20`.
+
 ---
 
 ## `ibsi_digital_phantom` — the IBSI reference phantom, 4 slices
