@@ -100,6 +100,28 @@ def test_vetting_undefined_benchmark_flagged_mechanics(tmp_path):
     assert len(errs) == 1 and "bench_typo" in errs[0], errs
     assert cc.benchmark_ids(str(md)) == {"bench_real_one"}
 
+def test_vetting_undefined_config_recipe_flagged_mechanics(tmp_path):
+    """The third pointer column. benchmark and test_name were validated while config_recipe was
+    not, so a row could name a SPEC 5 recipe that had never been written and every checker stayed
+    green - which is how two imq ids and one glrlm id survived. A blank cell claims nothing and is
+    allowed; a cell that names a recipe has to resolve to a heading."""
+    md = tmp_path / "config_recipes.md"
+    md.write_text("# Config Recipes\n\n## glcm.ibsi_identity\n\nsomething\n", encoding="utf-8")
+    rows = [{"feature": "A", "config_recipe": "glcm.ibsi_identity"},
+            {"feature": "B", "config_recipe": "glcm.typo_that_was_never_written"},
+            {"feature": "C", "config_recipe": ""}]
+    errs = cc.validate_config_recipes(rows, str(md))
+    assert len(errs) == 1 and "typo_that_was_never_written" in errs[0], errs
+    assert cc.config_recipe_ids(str(md)) == {"glcm.ibsi_identity"}
+
+    # The file-missing branch. It is a separate return path, and an untested branch is one a
+    # refactor can turn into a silent pass -- with no config_recipes.md every id resolves to
+    # nothing, so it has to report rather than wave the rows through.
+    gone = tmp_path / "nowhere.md"
+    assert cc.config_recipe_ids(str(gone)) is None
+    assert len(cc.validate_config_recipes(rows, str(gone))) == 1
+    assert cc.validate_config_recipes([{"feature": "C", "config_recipe": ""}], str(gone)) == []
+
 def test_vetting_unresolvable_test_name_flagged_mechanics(tmp_path):
     """A test_name is a pointer too: SPEC 3 identifies an assertion by the gtest case it runs as,
     so a name no case answers to says a feature is covered by a test nobody runs."""
