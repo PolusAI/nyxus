@@ -55,6 +55,11 @@ Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyrad
 `test_3d_glszm_pyradiomics.h`, `test_3d_glszm_mechanics.h`,
 `tests/python/test_nyxus.py::test_3d_glszm_compatibility`.
 
+**It is not the fixture for the family's connectivity or its IBSI branch.** Its size-zone matrix has
+186 populated cells, which nobody checks by hand, and its grey levels after `binCount` binning are
+contiguous 1..20, which makes the IBSI row index and the one beside it the same number. Those two
+questions are asked on `bench_cube4x4x3_zcross` and `bench_cube3_gapped_levels` below.
+
 **Its liver segmentation has background, so PyRadiomics' public extractor loads it.** Worth stating
 because that is not automatic: `imageoperations.getMask()` raises "No labels found in this mask"
 whenever a mask has a single unique value, and a 3D fixture whose label covers every voxel has to be
@@ -127,6 +132,57 @@ mean is the compatibility one. `test_2d_gldm_pyradiomics.h` pins both, 14 means 
 values; `test_2d_gldzm_mirp.h` and `test_2d_glszm_mirp.h` each pin 16 means and 64 slice values
 against mirp, which also exposes per-slice output, and `test_2d_ngtdm_mirp.h` pins 5 means and 20
 slice values the same way.
+
+---
+
+## `bench_cube4x4x3_zcross` — a 4x4x3 cube whose zones cross the slices
+
+| | |
+|---|---|
+| Data | `glszm_3d_zcross_volume` in `tests/test_3d_glszm_common.h`, run through `run_3d_glszm_on_volume()` |
+| ROI | every non-zero voxel — 17 of the 48, over grey levels 1..4 |
+| Shape | three populated 4x4 slices; nine 26-connected zones of sizes 1..3 |
+| Why it exists | the family's connectivity check, on a volume whose every zone can be counted by eye — which the phantom's 186-cell matrix cannot be |
+
+Recipes: none of its own — it is asserted under `glszm3d.pyradiomics_ibsi_gapped`'s sibling case
+`TEST_3D_GLSZM_SMALLMATRIX_PYRADIOMICS`, at the family's no-binning setting.
+
+Tests reaching it today: `test_3d_glszm_pyradiomics.h`.
+
+**Every one of its nine zones is there to separate one neighbourhood from another**, which is the
+property that makes it a fixture rather than a small input: a vertical run (dz=±1, dy=dx=0), an
+in-slice diagonal, a z-edge join, a z-corner join no 18-neighbourhood makes, and two same-level
+voxels two slices apart that must stay two zones. Counting under the readings this could be confused
+with gives 9 zones at 26-connectivity, 10 at 18-, 13 at 6-, and 13 for a purely 2D 8-neighbour pass.
+
+**Its predecessor had one populated slice between two empty ones**, so every `dz != 0` neighbour of
+every voxel was background: 26-, 18- and 2D 8-connectivity all produced the same nine zones there,
+and only 6-connectivity differed. The fixture was measuring in-slice connectivity under a 3D name.
+
+---
+
+## `bench_cube3_gapped_levels` — a 3x3x3 cube with grey levels 1, 3 and 5
+
+| | |
+|---|---|
+| Data | `glszm_3d_gapped_volume` in `tests/test_3d_glszm_common.h`, run through `run_3d_glszm_on_volume()` |
+| ROI | every non-zero voxel — 9 of the 27 |
+| Shape | three populated 3x3 slices; six 26-connected zones, sizes 1..3, over three occupied grey levels |
+| Why it exists | the only fixture on which the `IBSI=true` branch of `D3_GLSZM_feature::calculate()` is distinguishable from the code beside it |
+
+Recipes: `glszm3d.pyradiomics_ibsi_gapped`.
+
+Tests reaching it today: `test_3d_glszm_pyradiomics.h`, `test_3d_glszm_mechanics.h`.
+
+**The gap is the whole point.** `calculate()` indexes a zone's row as `zone.first - 1` when IBSI is
+on and as the position of that level in `I` when it is off, and reports `Ng` as `max(I)` against
+`I.size()`. On any fixture whose occupied levels run contiguously from 1 those are the same numbers.
+Here they are not, and both sides still agree: PyRadiomics reports `Ng = 5` for three occupied
+levels, leaving rows 2 and 4 empty, and so does Nyxus.
+
+**It also carries the family's connectivity questions in miniature** — a vertical pair, a level-3
+zone assembled from two z-corner steps, and three level-5 voxels that are pairwise non-adjacent
+(`dx = 2` in-slice, `dz = 2` across slices) and must stay three zones.
 
 ---
 

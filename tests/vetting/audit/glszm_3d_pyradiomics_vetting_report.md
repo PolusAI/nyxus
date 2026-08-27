@@ -1,9 +1,18 @@
 # 3D GLSZM vs PyRadiomics — vetting report
 
 Family: 3D GLSZM, 16 public features. Oracle: **pyradiomics 3.0.1** (SimpleITK 2.3.1, Python 3.8, in
-the `nyxus_oracle` conda env). Recipe: `glszm3d.pyradiomics_bincount20`. Fixture:
-`bench_compat_liver_3d` (`compat_int/compat_int_mri.nii` + `compat_seg/compat_seg_liver.nii`,
-label 1). Generator: `tests/vetting/oracles/gen_glszm3d_pyradiomics.py`.
+the `nyxus_oracle` conda env). Generator: `tests/vetting/oracles/gen_glszm3d_pyradiomics.py`.
+
+Two oracle recipes:
+
+- `glszm3d.pyradiomics_bincount20` on `bench_compat_liver_3d` (`compat_int/compat_int_mri.nii` +
+  `compat_seg/compat_seg_liver.nii`, label 1) — the family at radiomics binning.
+- `glszm3d.pyradiomics_ibsi_gapped` on `bench_cube3_gapped_levels` — the family at `IBSI=true`, added
+  in the review pass below, which is the only configuration reaching `calculate()`'s IBSI-only row
+  index and `Ng`.
+
+Two drift guards with no oracle: `glszm3d.regression_ut_phantom` (MATLAB binning) and
+`glszm3d.regression_ut_phantom_nobinning` (the default a flagless run gets).
 
 Reproduce with `tests/vetting/audit/glszm_3d_golden_regen.md`.
 
@@ -27,6 +36,19 @@ What this pass changed is what surrounded that claim:
 | `test_3d_glszm_regression.h` | 16 functions, 0 registrations, never `#include`d, pins reproducible at no configuration | wired in, re-pinned at `%.17g` from `glszm3d.regression_ut_phantom` |
 | registry `config_recipe` / `tolerance` | empty on all 16 rows | filled on all 16 |
 | the family's settings at a default run | never exercised | `test_3d_glszm_default_greydepth_mechanics` |
+
+A second pass, answering review of PR #454, closed four more gaps. Each of them is a case of an
+assertion that named something stronger than what it was checking:
+
+| | before | after |
+|---|---|---|
+| the matrix pin | rebuilt `P` beside `calculate()` from `gather_size_zones()`, so a defect in the row mapping, `Ng`/`Ns`, the allocation or the fill loop left it green | reads `P`, `I` and the four dimensions off the feature object, through read-only accessors added to `3d_glszm.h` |
+| the 4×4×3 connectivity fixture | one populated slice between two empty ones — 26-, 18- and 2D 8-connectivity all produce its nine zones | three populated slices; the four readings give 9, 10, 13 and 13 |
+| the `IBSI=true` cell | `NOT MEASURED` in `matrix/glszm3d.md` | vetted, `glszm3d.pyradiomics_ibsi_gapped`, 16/16 + the matrix; and measured identical to `GLSZM_GREYDEPTH=0` |
+| the `GLSZM_GREYDEPTH=0` cell | asserted finite only | 16 numeric pins, `glszm3d.regression_ut_phantom_nobinning` |
+| `aux_min == aux_max` | `INVALID` — "a blank ROI has no zones" | `DIVERGENCE`: a constant-intensity ROI has a valid one-zone GLSZM; pinned by `test_3d_glszm_constant_roi_regression` and filed in `PR/todo.md` |
+| registry rows | 16, each conflating the `-20` oracle with the `+64` regression | 64, one per assertion (SPEC §3) |
+| `scan_glszm3d_coverage.py --check` | one-way: passed when `current_test` held the right file plus others | exact file match, kind match, one-recipe-per-case, and (feature, recipe, oracle) uniqueness |
 
 `agrees_gt`'s third argument is a **divisor**: `10.` is ±10%, `1e9` is `rel=1e-9`. The old band
 accepted anything within a tenth of the golden on every feature of the family.
@@ -101,36 +123,147 @@ for on the generator itself rather than on the tree.
 
 With the sizes taken from `jvector`, all sixteen recompute from the matrix at `rel < 1e-9`.
 
+### It is the production matrix, not a copy of it
+
+The assertion reads `P` and `I` off the `D3_GLSZM_feature` that the sixteen scalar assertions ran,
+through read-only accessors `3d_glszm.h` now carries, and checks `Ng`, `Ns`, `Nz`, `Np` and the
+width and height the table was allocated at as well as its cells.
+
+It did not, until the review pass. It called the static `gather_size_zones()` and filled a local
+`SimpleMatrix<int>` from the result, which reproduces the zone list but not the four places a defect
+can live in `calculate()`: the row mapping, `Ng`/`Ns`, the allocation, and the fill loop. A pin that
+rebuilds the table it is pinning cannot see any of them. Negative control J below plants a defect in
+the fill loop alone — `gather_size_zones()` stays correct — and the assertion now fails naming the
+level and the size, where before it would have passed.
+
 ### The 4×4×3 volume
 
 The phantom's matrix has 186 cells nobody can check by hand, so the connectivity itself is checked on
-a fixture that can be: one populated 4×4 slice between two empty ones, four grey levels, **nine
-zones**. Its matrix is
+a fixture that can be: `bench_cube4x4x3_zcross`, three populated 4×4 slices, four grey levels,
+**nine zones**. Its matrix is
 
 |            | size=1 | size=2 | size=3 |
 |---|---|---|---|
-| level=1 | 2 | 1 | 0 |
-| level=2 | 1 | 0 | 1 |
-| level=3 | 0 | 0 | 1 |
-| level=4 | 2 | 0 | 1 |
+| level=1 | 0 | 1 | 1 |
+| level=2 | 1 | 1 | 0 |
+| level=3 | 0 | 1 | 1 |
+| level=4 | 2 | 1 | 0 |
 
-This check existed before this pass but was named `_pyradiomics` while asserting hand-computed
+This check existed before the first pass but was named `_pyradiomics` while asserting hand-computed
 expectations that no PyRadiomics run had ever produced — the function name is the oracle claim
 (revet.txt §9), so the name was crediting an oracle the assertion did not use. The fix was to make
-the claim true rather than to rename: `gen_glszm3d_pyradiomics.py` now runs `RadiomicsGLSZM` on the
-same literal at `binWidth=1` and reproduces all seven cells. The hand-worked values were correct.
+the claim true rather than to rename: `gen_glszm3d_pyradiomics.py` runs `RadiomicsGLSZM` on the same
+literal at `binWidth=1`.
 
-**This is not SPEC §5.2 self-consistency.** The volume is the fixture, not a copy of one — there is
-no file to read it from — and its expected values come from an independent tool, not from the model
-that wrote the volume.
+**The volume it ran on could not see 3D connectivity at all.** It had one populated slice between two
+empty ones, so for every foreground voxel all 18 neighbours with `dz != 0` were background. Counting
+its zones under the readings it was supposed to separate:
+
+| fixture | 26-conn | 18-conn | 6-conn | 2D 8-conn |
+|---|---|---|---|---|
+| the old volume, one populated slice | 9 zones | **9, same table** | 11 | **9, same table** |
+| `bench_cube4x4x3_zcross` | 9 zones | 10 | 13 | 13 |
+| `bench_cube3_gapped_levels` | 6 zones | 8 | 8 | 9 |
+
+The replacement carries a strictly vertical run (`dz=±1`, `dy=dx=0`), an in-slice diagonal, a z-edge
+join (`dz=1, dy=0, dx=1`), a z-corner join (`dz=1, dy=1, dx=1`) that no 18-neighbourhood makes, and
+two same-level voxels two slices apart that must stay two zones — the control in the other direction,
+against an implementation that joined a whole column. PyRadiomics reproduces all eight of its cells.
+
+**This is not SPEC §5.2 self-consistency.** The volumes are the fixtures, not copies of ones — there
+is no file to read them from — and their expected values come from an independent tool, not from the
+model that wrote the volumes.
 
 ### Connectivity
 
 Both sides walk the full 26-voxel neighbourhood. `gather_size_zones()` spells out 8 in-slice, 8
 upper, 8 lower and 2 strictly-vertical offsets; PyRadiomics' C extension uses full 3D connectivity by
-construction. The 4×4×3 fixture is the direct check — its single populated slice makes every zone a
-2D 8-connected component with a known answer, and dropping to 4-connectivity would split level 3's
-diagonal chain into three zones. No repeat here of the 3D GLDZM 4-vs-8 defect.
+construction. The two literal fixtures are the direct check, and negative control K removes the
+upper-Z offset block: both fail, 11 zones against 9 and 8 against 6. No repeat here of the 3D GLDZM
+4-vs-8 defect.
+
+---
+
+## The `IBSI=true` branch, measured
+
+`calculate()` overwrites `GLSZM_GREYDEPTH` with 0 whenever `IBSI` is on, and two of its expressions
+then read the flag directly: the row a zone lands in is `zone.first - 1` rather than the position of
+that level in `I`, and `Ng` is `max_element(I)` rather than `I.size()`. Nothing in the tree ran on
+that branch, and `matrix/glszm3d.md` recorded it as NOT MEASURED with the note that a fixture whose
+levels are contiguous from 1 cannot tell the two apart.
+
+`bench_cube3_gapped_levels` is that fixture: a 3×3×3 literal carrying levels 1, 3 and 5, with 2 and 4
+absent, so a level's position in the occupied-level list and the level itself are different numbers.
+
+**PyRadiomics is a valid oracle at this point.** At `binWidth=1` it leaves integer levels where they
+are — which is exactly what Nyxus' no-binning path reads off the volume — and it reports `Ng = 5` for
+three occupied levels, leaving rows 2 and 4 empty. So does Nyxus. Measured:
+
+| | oracle | nyxus | rel |
+|---|---|---|---|
+| 15 features | — | — | exact |
+| `3GLSZM_ZE` | 1.7924812503605767 | 1.7904872894287109 | 1.11e-3 |
+| matrix | 4 cells, `Ng`=5 `Ns`=3 `Nz`=6 `Np`=9 | identical | — |
+
+`3GLSZM_ZE` bands at `rel=2e-3` here against `rel=1e-3` on the phantom. It is the same `fast_log10`
+path; zone entropy sums `-p·log2(p)` over the matrix, so on six zones each term carries the
+approximation's error at full weight, while on the phantom's 860 zones it is spread over 186 terms
+and partly cancels. Measured, banded at the measurement rounded up, not assumed.
+
+**And the branch turns out not to be a branch.** At `greyInfo == 0` the `ibsi_grey_binning` path
+builds `I` as the contiguous run `1..max(D)` whatever the volume holds — absent levels get empty rows
+rather than being packed out — so the position of a level in `I` is always `level - 1` and `I.size()`
+is always `max(I)`. The two forms compute the same numbers on every input.
+`test_3d_glszm_ibsi_equals_no_binning_mechanics` asserts that on the gapped fixture: sixteen values
+and the whole `SimpleMatrix<int>`, bit for bit. It passes `GLSZM_GREYDEPTH=64` on the IBSI side, so
+it measures the overwrite too — a run that honoured the 64 would bin into MATLAB levels and miss.
+
+That is why `matrix/glszm3d.md` now carries one cell for the two rows rather than one unmeasured row.
+
+---
+
+## The `GLSZM_GREYDEPTH == 0` cell
+
+This is the value a run passing no `--3glszm/greydepth` reaches the feature with:
+`compile_feature_settings()` zero-fills the family's settings vector and nothing writes the entry.
+The first pass added `test_3d_glszm_default_greydepth_mechanics`, which asserts that the 0 really
+arrives and that the sixteen features are finite there. Finiteness is mechanics; it says nothing
+about the numbers.
+
+`glszm3d.regression_ut_phantom_nobinning` pins them: sixteen `%.17g` goldens on `bench_ut57_3d` under
+one case, `TEST_3D_GLSZM_DEFAULT_GREYDEPTH_REGRESSION`. One case for the sixteen because one phantom
+read answers all of them, and the matrix at this setting is 3024 grey levels wide against `binCount`'s
+20. They claim no oracle: PyRadiomics discretises before it counts zones and has no counterpart for
+reading 2001 raw levels off this phantom. The *setting* is vetted on the fixture that is small enough
+to carry an oracle, which is `glszm3d.pyradiomics_ibsi_gapped` above.
+
+---
+
+## A constant-intensity ROI is discarded, and should not be
+
+`calculate()` opens with
+
+```cpp
+// intercept blank ROIs (equal intensity)
+if (r.aux_min == r.aux_max) { invalidate (STNGS_NAN(s)); return; }
+```
+
+Those are two different conditions. A constant-intensity ROI is fully populated: at no binning or at
+MATLAB binning it has one grey level, one 26-connected zone if its voxels touch, a size-zone matrix
+with a single populated cell and sixteen finite features over it. On a 2×2×2 block of one intensity
+that is `SAE = 1/64`, `LAE = 64`, `ZE = 0`, `GLV = 0`, `ZP = 1/8`. Nyxus returns the soft-NaN
+sentinel — `--noval`, default `0.0` — for all sixteen.
+
+The guard is doing real work at radiomics binning, where `to_grayscale_radiomix` divides by
+`(max - min)`; it is unconditional, so it discards the two schemes that would have answered as well.
+Negative control O makes one voxel of the constant block different, so the intercept does not fire,
+and the family computes `SAE = 0.51020408163265307` on the result — the arithmetic is there, it is
+the guard that is too wide.
+
+Recorded as a **divergence** in `matrix/glszm3d.md` and filed in `PR/todo.md`. Narrowing it changes a
+public feature's output on a reachable input, so it is `src/` work on its own branch; this pass pins
+the current behaviour instead, in `test_3d_glszm_constant_roi_regression`, with the sentinel set to a
+distinctive `-98765` so that a zero-filled feature buffer cannot satisfy the assertion.
 
 ---
 
@@ -220,8 +353,26 @@ proves it compares the right thing:
 
 C is the control the previous family's session did not run. Its own pass planted a bad *golden* in a
 matrix assertion, which proves the assertion compares but not that it reads the run under test; that
-assertion turned out to be working from a hand-written copy of the phantom. Here the cube comes back
-out of `extract_3d_glszm()` and C is what demonstrates it.
+assertion turned out to be working from a hand-written copy of the phantom.
+
+**The review pass re-ran the controls that its changes touch, and added the ones its changes are
+about.** C and D perturbed the test's own copy of the cube and its own binning call; the matrix
+assertion no longer has either, so they are retired rather than re-run. E ran on the old 4×4×3
+volume, which no longer exists. Five controls were applied to the current tree, built and run, then
+reverted:
+
+| # | half | perturbation | result |
+|---|---|---|---|
+| A | golden | `{ 11, 634, 1 }` → `{ 11, 634, 2 }` (re-run) | matrix test fails, `1` vs `2`, trace naming grey level 11, zone size 634 |
+| J | **input** | production fill loop skips zones of size 5 — `gather_size_zones()` untouched | matrix test fails on the same cell; this is the defect the rebuilt-table version could not see |
+| K | **input** | the upper-Z offset block of `gather_size_zones()` removed | connectivity test fails, 11 zones vs 9; gapped test fails, 8 vs 6 |
+| L | **input** | one voxel of `bench_cube4x4x3_zcross`, the `(1,3,3)` level-1 voxel → 4 | connectivity test fails, 8 zones vs 9 |
+| M | **input** | one voxel of `bench_cube3_gapped_levels`, the bridging level-3 voxel → 5 | gapped test fails on the scalars |
+| N | golden | `3GLSZM_ZP` default-configuration pin perturbed by rel=1e-6 | default-greydepth regression fails |
+| O | **input** | the constant 2×2×2 block gets one different voxel, so the intercept does not fire | constant-ROI test fails, `0.51020408163265307` vs `-98765` |
+
+K is the control that answers the fixture question directly: under the old volume it changes nothing,
+because that volume's zones never crossed a slice.
 
 ---
 
@@ -230,5 +381,6 @@ out of `extract_3d_glszm()` and C is what demonstrates it.
 - tool: pyradiomics 3.0.1, SimpleITK 2.3.1, Python 3.8.20, conda env `nyxus_oracle`
 - generator: `tests/vetting/oracles/gen_glszm3d_pyradiomics.py`, run offline; CI never invokes it
 - Nyxus values: `runAllTests --gtest_filter=*3D_GLSZM_DUMP_*`, Release/MSVC, `USEGPU=OFF`
-- gtest suite: 892 cases, 891 pass, 1 skipped (`TEST_2D_GABOR_GPU_RUNS_MECHANICS`, CPU-only build).
-  Baseline on the branch point is 872, so the delta is the 20 cases this branch adds
+- gtest suite: 912 cases, 911 pass, 1 skipped (`TEST_2D_GABOR_GPU_RUNS_MECHANICS`, CPU-only build).
+  Baseline on the branch point is 872, so the delta is the 40 cases this branch adds — 20 in the
+  first pass and 4 in the review pass, on top of the 16 regression functions the first pass wired in
