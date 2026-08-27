@@ -79,9 +79,8 @@
 #include "test_3d_gldzm_regression.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
-#include "test_3d_firstorder_common.h"
-#include "test_3d_firstorder_matlab.h"
 #include "test_3d_firstorder_regression.h"
+#include "test_3d_firstorder_matlab.h"
 #include "test_3d_glcm_pyradiomics.h"
 #include "test_3d_glcm_regression.h"
 #include "test_3d_gldm_pyradiomics.h"
@@ -90,7 +89,6 @@
 #include "test_3d_glrlm_regression.h"
 #include "test_3d_glszm_pyradiomics.h"
 #include "test_3d_coverage_common.h"
-#include "test_3d_firstorder_coverage.h"
 #include "test_3d_gldm_coverage.h"
 #include "test_3d_glszm_coverage.h"
 #include "test_3d_ngtdm_coverage.h"
@@ -194,46 +192,21 @@ TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS) {
 	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::VARIANCE, "3VARIANCE"));
 }
 
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MATLAB) {
+	ASSERT_NO_THROW(test_3d_firstorder_matlab());
+}
 
-//***** 3D first-order vs MATLAB semantics (GNU Octave), on the ut_ segmented phantom *****
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_COVERED_IMAGE_INTENSITY_RANGE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_firstorder_covered_image_intensity_range_regression());
+}
 
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_COV_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_cov_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ENERGY_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_energy_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ENTROPY_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_entropy_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_EXCESS_KURTOSIS_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_excess_kurtosis_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_HYPERFLATNESS_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_hyperflatness_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_HYPERSKEWNESS_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_hyperskewness_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_INTEGRATED_INTENSITY_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_integrated_intensity_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_INTERQUARTILE_RANGE_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_interquartile_range_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_KURTOSIS_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_kurtosis_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MAX_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_max_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEAN_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_mean_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_mean_absolute_deviation_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEDIAN_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_median_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEDIAN_ABSOLUTE_DEVIATION_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_median_absolute_deviation_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MIN_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_min_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MODE_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_mode_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P01_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_p01_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P10_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_p10_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P25_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_p25_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P75_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_p75_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P90_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_p90_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P99_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_p99_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_QCOD_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_qcod_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_RANGE_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_range_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROBUST_MEAN_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_robust_mean_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_robust_mean_absolute_deviation_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROOT_MEAN_SQUARED_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_root_mean_squared_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_SKEWNESS_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_skewness_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_STANDARD_DEVIATION_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_standard_deviation_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_STANDARD_DEVIATION_BIASED_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_standard_deviation_biased_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_STANDARD_ERROR_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_standard_error_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_UNIFORMITY_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_uniformity_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_UNIFORMITY_PIU_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_uniformity_piu_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_VARIANCE_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_variance_matlab()); }
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_VARIANCE_BIASED_MATLAB) { ASSERT_NO_THROW(test_3d_firstorder_variance_biased_matlab()); }
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEDIAN_ABSOLUTE_DEVIATION_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_firstorder_median_absolute_deviation_regression());
+}
 
-TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_COVERED_IMAGE_INTENSITY_RANGE_REGRESSION) { ASSERT_NO_THROW(test_3d_firstorder_covered_image_intensity_range_regression()); }
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROBUST_MEAN_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_firstorder_robust_mean_regression());
+}
 
 
 //***** 3D NGTDM compatibility *****

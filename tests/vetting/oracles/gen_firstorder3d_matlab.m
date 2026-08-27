@@ -1,94 +1,76 @@
-% MATLAB-semantics reference for the 3D first-order features, run as GNU Octave (SPEC section 4:
-% the `matlab` token names the semantics, Octave supplies them license-free).
+% MATLAB reference generator for native 3D first-order statistics.
+% MATLAB version: R2026a.
 %
-% Input:  voxels.csv  - the label-57 ROI voxel vector in the LOADER DOMAIN, written by
-%                       gen_firstorder3d_matlab.py (see that file for how the domain is defined).
-% Output: KEY=VALUE lines on stdout, consumed by the same driver.
+% Source fixture (label 57):
+%   https://github.com/PolusAI/nyxus/tree/main/tests/data/nifti/phantoms
 %
-% Every statistic below is an Octave/MATLAB built-in or a one-line closed form. Nothing here
-% re-implements a Nyxus code path: where Nyxus uses its own binned-histogram estimator the built-in
-% order statistic is emitted instead, and the driver reports the divergence rather than hiding it.
+% Every reported value uses MATLAB built-ins; derived statistics apply only their defining
+% normalization to those built-in results.
 
-pkg load statistics;
+intensity_url = ['https://github.com/PolusAI/nyxus/blob/main/' ...
+    'tests/data/nifti/phantoms/ut_inten.nii'];
+mask_url = ['https://github.com/PolusAI/nyxus/blob/main/' ...
+    'tests/data/nifti/phantoms/ut_mask57.nii'];
 
-args = argv();
-voxfile = args{1};
+intensity_file = [tempname '.nii'];
+mask_file = [tempname '.nii'];
+websave(intensity_file, [intensity_url '?raw=1']);
+websave(mask_file, [mask_url '?raw=1']);
+intensity = niftiread(intensity_file);
+mask = niftiread(mask_file);
+delete(intensity_file);
+delete(mask_file);
 
-x = dlmread(voxfile);
-x = x(:);
-n = numel(x);
+% Match Nyxus' default float-NIfTI loader domain: shift a negative volume minimum to zero,
+% then cast the nonnegative values to integers. This is fixture setup, not a feature formula.
+intensity = double(intensity);
+intensity = fix(intensity - min(intensity, [], 'all'));
+voxels = intensity(mask == 57);
 
-mu    = mean(x);
-med   = median(x);
-mn    = min(x);
-mx    = max(x);
-sd_u  = std(x, 0);      % unbiased, N-1  -> Nyxus 3STANDARD_DEVIATION
-sd_b  = std(x, 1);      % biased,   N    -> Nyxus 3STANDARD_DEVIATION_BIASED
+sample_mean = mean(voxels);
+sample_std = std(voxels, 0);
+p25 = prctile(voxels, 25, Method="midpoint");
+p75 = prctile(voxels, 75, Method="midpoint");
+voxel_min = min(voxels);
+voxel_max = max(voxels);
 
-printf('N=%d\n', n);
-
-% ---- exact statistics: Nyxus and MATLAB agree on the definition ----
-printf('3MIN=%.17g\n',                   mn);
-printf('3MAX=%.17g\n',                   mx);
-printf('3RANGE=%.17g\n',                 mx - mn);
-printf('3MEAN=%.17g\n',                  mu);
-printf('3MEDIAN=%.17g\n',                med);
-printf('3MODE=%.17g\n',                  mode(x));
-printf('3INTEGRATED_INTENSITY=%.17g\n',  sum(x));
-printf('3ENERGY=%.17g\n',                sum(x .^ 2));
-printf('3ROOT_MEAN_SQUARED=%.17g\n',     sqrt(mean(x .^ 2)));
-printf('3VARIANCE=%.17g\n',              var(x, 0));
-printf('3VARIANCE_BIASED=%.17g\n',       var(x, 1));
-printf('3STANDARD_DEVIATION=%.17g\n',    sd_u);
-printf('3STANDARD_DEVIATION_BIASED=%.17g\n', sd_b);
-printf('3STANDARD_ERROR=%.17g\n',        sd_u / sqrt(n));
-printf('3COV=%.17g\n',                   sd_u / mu);
-printf('3MEAN_ABSOLUTE_DEVIATION=%.17g\n', mean(abs(x - mu)));
-printf('3UNIFORMITY_PIU=%.17g\n',        (1 - (mx - mn) / (mx + mn)) * 100);
-
-% Nyxus 3MEDIAN_ABSOLUTE_DEVIATION is mean|x - median|, not MATLAB mad(x,1) = median|x - median|.
-% Both are emitted so the driver can show which definition the golden follows.
-printf('3MEDIAN_ABSOLUTE_DEVIATION=%.17g\n', mean(abs(x - med)));
-printf('MATLAB_mad_1=%.17g\n',               mad(x, 1));
-
-% Population moments: Octave's skewness()/kurtosis() are the same estimators Moments4 computes
-% (sqrt(n)*M3/M2^1.5 and n*M4/M2^2), so these are a direct comparison, not a convention match.
-printf('3SKEWNESS=%.17g\n',        skewness(x));
-printf('3KURTOSIS=%.17g\n',        kurtosis(x));
-printf('3EXCESS_KURTOSIS=%.17g\n', kurtosis(x) - 3);
-
-% Hyperskewness / hyperflatness are closed forms over the UNBIASED sd (3d_intensity.cpp).
-printf('3HYPERSKEWNESS=%.17g\n', sum((x - mu) .^ 5) / (n * sd_u ^ 5));
-printf('3HYPERFLATNESS=%.17g\n', sum((x - mu) .^ 6) / (n * sd_u ^ 6));
-
-% ---- order statistics: MATLAB prctile, the definition Nyxus approximates ----
-p01 = prctile(x,  1); p10 = prctile(x, 10); p25 = prctile(x, 25);
-p75 = prctile(x, 75); p90 = prctile(x, 90); p99 = prctile(x, 99);
-printf('3P01=%.17g\n', p01);
-printf('3P10=%.17g\n', p10);
-printf('3P25=%.17g\n', p25);
-printf('3P75=%.17g\n', p75);
-printf('3P90=%.17g\n', p90);
-printf('3P99=%.17g\n', p99);
-printf('3INTERQUARTILE_RANGE=%.17g\n', p75 - p25);
-printf('3QCOD=%.17g\n', (p75 - p25) / (p75 + p25));
-
-% Robust window [P10,P90] on the exact percentiles.
-r = x(x >= p10 & x <= p90);
-printf('3ROBUST_MEAN=%.17g\n', mean(r));
-printf('3ROBUST_MEAN_ABSOLUTE_DEVIATION=%.17g\n', mean(abs(r - mean(r))));
-
-% ---- histogram statistics, on the recipe the Nyxus settings define ----
-% Equal-width binning of [min,max] into NB bins, top value folded into the last bin. That is a
-% standard histogram, not a Nyxus-specific estimator; only the bin count is a Nyxus setting, so it
-% is passed in as a recipe parameter the same way a PyRadiomics binCount would be.
-NB = str2double(args{2});
-g = floor((x - mn) / (mx - mn) * NB);
-g(g >= NB) = NB - 1;
-counts = accumarray(g + 1, 1, [NB 1]);
-p = counts / n;
-nz = p(p > 0);
-printf('3ENTROPY=%.17g\n',    -sum(nz .* log2(nz)));
-printf('3UNIFORMITY=%.17g\n',  sum(p .^ 2));
-
-printf('OCTAVE_FO3D_DONE\n');
+fprintf('3COV                        std/mean       %.17g\n', sample_std / sample_mean);
+fprintf('3EXCESS_KURTOSIS            kurtosis-3     %.17g\n', kurtosis(voxels, 1) - 3);
+fprintf('3HYPERFLATNESS              moment/std^6   %.17g\n', ...
+    moment(voxels, 6) / sample_std^6);
+fprintf('3HYPERSKEWNESS              moment/std^5   %.17g\n', ...
+    moment(voxels, 5) / sample_std^5);
+fprintf('3QCOD                       prctile ratio  %.17g\n', ...
+    (p75 - p25) / (p75 + p25));
+fprintf('3STANDARD_ERROR             std/sqrt(n)    %.17g\n', ...
+    sample_std / sqrt(numel(voxels)));
+fprintf('3UNIFORMITY_PIU             min/max PIU    %.17g\n', ...
+    (1 - (voxel_max - voxel_min) / (voxel_max + voxel_min)) * 100);
+fprintf('3INTEGRATED_INTENSITY       sum            %.17g\n', sum(voxels));
+fprintf('3INTERQUARTILE_RANGE        iqr            %.17g\n', iqr(voxels));
+fprintf('3KURTOSIS                   kurtosis       %.17g\n', kurtosis(voxels, 1));
+fprintf('3MAX                        max            %.17g\n', max(voxels));
+fprintf('3MEAN                       mean           %.17g\n', mean(voxels));
+fprintf('3MEAN_ABSOLUTE_DEVIATION    mad            %.17g\n', mad(voxels, 0));
+fprintf('3MEDIAN                     median         %.17g\n', median(voxels));
+fprintf('3MIN                        min            %.17g\n', min(voxels));
+fprintf('3MODE                       mode           %.17g\n', mode(voxels));
+fprintf('3P01                        prctile        %.17g\n', ...
+    prctile(voxels, 1, Method="midpoint"));
+fprintf('3P10                        prctile        %.17g\n', ...
+    prctile(voxels, 10, Method="midpoint"));
+fprintf('3P25                        prctile        %.17g\n', ...
+    p25);
+fprintf('3P75                        prctile        %.17g\n', ...
+    p75);
+fprintf('3P90                        prctile        %.17g\n', ...
+    prctile(voxels, 90, Method="midpoint"));
+fprintf('3P99                        prctile        %.17g\n', ...
+    prctile(voxels, 99, Method="midpoint"));
+fprintf('3RANGE                      range          %.17g\n', range(voxels));
+fprintf('3ROOT_MEAN_SQUARED          rms            %.17g\n', rms(voxels));
+fprintf('3SKEWNESS                   skewness       %.17g\n', skewness(voxels, 1));
+fprintf('3STANDARD_DEVIATION         std            %.17g\n', std(voxels, 0));
+fprintf('3STANDARD_DEVIATION_BIASED  std            %.17g\n', std(voxels, 1));
+fprintf('3VARIANCE                   var            %.17g\n', var(voxels, 0));
+fprintf('3VARIANCE_BIASED            var            %.17g\n', var(voxels, 1));
