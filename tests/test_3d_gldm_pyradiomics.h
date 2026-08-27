@@ -283,8 +283,8 @@ static const ref_vals_list<Gldm3dMatrixCell> gldm_3d_pyradiomics_smallmatrix_ref
 };
 
 // The 26 offsets calculate() walks, in {dz, dy, dx}. Spelled out here rather than reached for in the
-// feature class, because what this assertion exists to check is that the neighbourhood the matrix is
-// built from is the one PyRadiomics uses -- borrowing the table under test would make it circular.
+// feature class, because one of the two matrices below exists to check that the neighbourhood is the
+// one PyRadiomics uses -- borrowing the table under test would make that arm circular.
 static const int gldm_3d_neighbour_shifts[26][3] =
 {
 	{ 0,-1,-1}, { 0,-1, 0}, { 0,-1,+1}, { 0, 0,-1}, { 0, 0,+1}, { 0,+1,-1}, { 0,+1, 0}, { 0,+1,+1},
@@ -292,21 +292,45 @@ static const int gldm_3d_neighbour_shifts[26][3] =
 	{+1,-1,-1}, {+1,-1, 0}, {+1,-1,+1}, {+1, 0,-1}, {+1, 0, 0}, {+1, 0,+1}, {+1,+1,-1}, {+1,+1, 0}, {+1,+1,+1}
 };
 
-// Builds the dependence matrix of a binned cube and compares it against a pinned table, cell for
-// cell and in both directions -- a populated cell the table does not carry fails as loudly as a
-// pinned cell the cube does not produce.
-static void assert_3d_gldm_matrix_pyradiomics (
-	const SimpleCube<PixIntens>& D,
-	const ref_vals_list<Gldm3dMatrixCell>& expect,
-	int expect_ng,
-	int expect_nd,
-	int expect_nz)
+// The tally of one dependence matrix: cells keyed by {grey level, dependence}, plus the three
+// dimensions the pinned table carries alongside them.
+struct Gldm3dMatrixTally
+{
+	std::map<std::pair<unsigned int, int>, int> cells;
+	int ng = 0;        // distinct grey levels that own at least one cell
+	int nd = 0;        // largest dependence observed
+	int nz = 0;        // dependence zones, one per ROI voxel
+};
+
+// The matrix production builds: D3_GLDM_feature::gather_dependence_zones() is the same traversal
+// calculate() fills P from, so its shifts[] table, its alpha = 0 test and its background rule are
+// all under this tally rather than beside it.
+static Gldm3dMatrixTally tally_3d_gldm_matrix_production (const SimpleCube<PixIntens>& D)
+{
+	std::vector<std::pair<PixIntens, int>> Z;
+	D3_GLDM_feature::gather_dependence_zones (Z, D, 0/*background at radiomics binning*/);
+
+	Gldm3dMatrixTally t;
+	std::unordered_set<PixIntens> levels;
+	for (const auto& z : Z)
+	{
+		t.cells[{ z.first, z.second }]++;
+		levels.insert (z.first);
+		t.nd = (std::max)(t.nd, z.second);
+		t.nz++;
+	}
+	t.ng = (int)levels.size();
+	return t;
+}
+
+// The same matrix from the definition alone, walking the shift table spelled out above. It shares no
+// code with the feature class, so it fails when production and the pins drift together.
+static Gldm3dMatrixTally tally_3d_gldm_matrix_definition (const SimpleCube<PixIntens>& D)
 {
 	int w = D.width(), h = D.height(), d = D.depth();
 
-	std::map<std::pair<unsigned int, int>, int> got;
+	Gldm3dMatrixTally t;
 	std::unordered_set<PixIntens> levels;
-	int voxels = 0, max_dep = 0;
 
 	for (int z = 0; z < d; z++)
 		for (int y = 0; y < h; y++)
@@ -315,7 +339,7 @@ static void assert_3d_gldm_matrix_pyradiomics (
 				PixIntens pi = D.zyx(z, y, x);
 				if (pi == 0)          // background at radiomics binning; never a dependence centre
 					continue;
-				voxels++;
+				t.nz++;
 				levels.insert(pi);
 
 				int dep = 1;          // the voxel counts toward its own dependence
@@ -327,21 +351,61 @@ static void assert_3d_gldm_matrix_pyradiomics (
 					if (D.zyx(az, ay, ax) == pi)   // alpha = 0: dependent iff equal
 						dep++;
 				}
-				got[{ pi, dep }]++;
-				max_dep = (std::max)(max_dep, dep);
+				t.cells[{ pi, dep }]++;
+				t.nd = (std::max)(t.nd, dep);
 			}
 
-	ASSERT_EQ ((int)levels.size(), expect_ng) << "grey levels present in the ROI";
-	ASSERT_EQ (max_dep, expect_nd) << "largest dependence observed";
-	ASSERT_EQ (voxels, expect_nz) << "dependence zones, one per ROI voxel";
+	t.ng = (int)levels.size();
+	return t;
+}
 
-	ASSERT_EQ ((int)expect.size(), (int)got.size()) << "non-empty cells";
+// Compares one tally against the pinned table, cell for cell and in both directions -- a populated
+// cell the table does not carry fails as loudly as a pinned cell the cube does not produce.
+static void assert_3d_gldm_tally_matches (
+	const Gldm3dMatrixTally& got,
+	const ref_vals_list<Gldm3dMatrixCell>& expect,
+	int expect_ng,
+	int expect_nd,
+	int expect_nz)
+{
+	ASSERT_EQ (got.ng, expect_ng) << "grey levels present in the ROI";
+	ASSERT_EQ (got.nd, expect_nd) << "largest dependence observed";
+	ASSERT_EQ (got.nz, expect_nz) << "dependence zones, one per ROI voxel";
+
+	ASSERT_EQ ((int)expect.size(), (int)got.cells.size()) << "non-empty cells";
 	for (const auto& c : expect)
 	{
 		SCOPED_TRACE ("level " + std::to_string(c.level) + ", dependence " + std::to_string(c.dep));
-		auto it = got.find({ c.level, c.dep });
-		ASSERT_TRUE (it != got.end()) << "pinned cell is empty in this run";
+		auto it = got.cells.find({ c.level, c.dep });
+		ASSERT_TRUE (it != got.cells.end()) << "pinned cell is empty in this run";
 		ASSERT_EQ (it->second, c.count);
+	}
+}
+
+// Holds the pinned table to both matrices of a binned cube: the one production's own traversal
+// produces, and the one the definition produces independently of it. Production carries the claim --
+// a change to shifts[], to the alpha cutoff or to the background rule fails the first arm -- and the
+// definition arm keeps the pins from being whatever production happens to say.
+//
+// EXPECT rather than ASSERT between the two, so a failing arm does not hide the other's verdict: the
+// pair of them is what says whether production moved, the pins moved, or both moved together.
+static void assert_3d_gldm_matrix_pyradiomics (
+	const SimpleCube<PixIntens>& D,
+	const ref_vals_list<Gldm3dMatrixCell>& expect,
+	int expect_ng,
+	int expect_nd,
+	int expect_nz)
+{
+	{
+		SCOPED_TRACE ("matrix built by D3_GLDM_feature::gather_dependence_zones()");
+		EXPECT_NO_FATAL_FAILURE (assert_3d_gldm_tally_matches (
+			tally_3d_gldm_matrix_production (D), expect, expect_ng, expect_nd, expect_nz));
+	}
+
+	{
+		SCOPED_TRACE ("matrix built from the definition, sharing no code with the feature class");
+		EXPECT_NO_FATAL_FAILURE (assert_3d_gldm_tally_matches (
+			tally_3d_gldm_matrix_definition (D), expect, expect_ng, expect_nd, expect_nz));
 	}
 }
 

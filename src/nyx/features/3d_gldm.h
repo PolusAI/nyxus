@@ -80,6 +80,11 @@ public:
 	// 14. Large Dependence High Gray Level Emphasis (LDHGLE)
 	double calc_LDHGLE();
 
+	// Walks a grey-binned cube and emits one (intensity, dependence count) pair per non-background
+	// voxel, which is what calculate() fills the dependence matrix from. Exposed so a test can build
+	// the matrix out of production's own neighbourhood traversal instead of a copy of it.
+	static void gather_dependence_zones (std::vector<std::pair<PixIntens, int>> & zones, const SimpleCube<PixIntens> & greybinned_image, PixIntens zero_intensity);
+
 private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	int Ng = 0;	// number of discrete intensity values in the image

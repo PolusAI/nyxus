@@ -62,7 +62,10 @@ Three facts make the cell comparable at all, and all three are asserted rather t
 dependence offset — PyRadiomics puts a voxel with no dependent neighbour in column `j=1`, Nyxus
 starts `nd = 1` — so the two index the same column. `TEST_3D_GLDM_SMALLMATRIX_PYRADIOMICS` is the
 direct check: a 4×4×3 volume with two identical populated slices, where every dependence must come
-out `2 * (in-slice matches) + 2`, and `gen_gldm3d_pyradiomics.py` rebuilds the whole matrix from the
+out `2 * (in-slice matches) + 2`. It runs that check against two tallies — the one
+`D3_GLDM_feature::gather_dependence_zones()` produces, which is the traversal `calculate()` fills `P`
+from, and one written out in the test file independently of it — so the neighbourhood under
+assertion is production's own. `gen_gldm3d_pyradiomics.py` rebuilds the whole matrix from the
 definition and requires all 163 cells to match PyRadiomics' C extension.
 
 ## The two unmeasured cells
