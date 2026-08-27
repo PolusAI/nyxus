@@ -99,6 +99,18 @@ public:
 
 	static void gather_size_zones (std::vector<std::pair<PixIntens, int>> & zones, SimpleCube <PixIntens> & greybinned_image, PixIntens zero_intensity);
 
+	// Read-only views of the size-zone matrix the last calculate() built, of the sorted grey levels
+	// its rows are indexed by, and of the four dimensions it was allocated and normalized from. The
+	// sixteen features are contractions of this table, so an assertion that pins it has to read this
+	// object rather than a copy rebuilt beside it: a defect in the row mapping, in Ng/Ns, in the
+	// allocation or in the fill loop lives here and nowhere else.
+	const SimpleMatrix<int> & get_P() const { return P; }
+	const std::vector<PixIntens> & get_I() const { return I; }
+	int get_Ng() const { return Ng; }
+	int get_Ns() const { return Ns; }
+	int get_Nz() const { return Nz; }
+	int get_Np() const { return Np; }
+
 private:
 
 	int Ng = 0;	// number of discrete intensity values in the image
