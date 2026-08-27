@@ -1,37 +1,37 @@
 Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
-3D,firstorder,3COV,matlab,test_3d_firstorder_cov_matlab,yes,test_3d_firstorder_coverage.h,"unbiased sd over mean; sd/mean, both Octave built-ins"
-3D,firstorder,3COVERED_IMAGE_INTENSITY_RANGE,,,yes,test_3d_firstorder_regression.h;test_3d_firstorder_coverage.h,"Nyxus convention with no oracle counterpart; pinned value 1.0002 exceeds the bound of 1 its definition implies - ROI range is measured in the loader integer domain and the slide range in the raw stored domain"
-3D,firstorder,3ENERGY,matlab;pyradiomics,test_3d_firstorder_energy_matlab;TEST_3D_FIRSTORDER_ENERGY_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,two fixtures and two recipes; both reproduce exactly
-3D,firstorder,3ENTROPY,matlab;pyradiomics,test_3d_firstorder_entropy_matlab;TEST_3D_FIRSTORDER_ENTROPY_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,"matlab pin was 7.4% wrong (a 19-bin value against the 24-bin default) and passed the old +/-10% band; regenerated"
-3D,firstorder,3EXCESS_KURTOSIS,matlab,test_3d_firstorder_excess_kurtosis_matlab,yes,test_3d_firstorder_coverage.h,Octave kurtosis(x)-3; Moments4 computes the same population estimator
-3D,firstorder,3HYPERFLATNESS,matlab,test_3d_firstorder_hyperflatness_matlab,yes,test_3d_firstorder_coverage.h,closed form over the unbiased sd
-3D,firstorder,3HYPERSKEWNESS,matlab,test_3d_firstorder_hyperskewness_matlab,yes,test_3d_firstorder_coverage.h,closed form over the unbiased sd
-3D,firstorder,3INTEGRATED_INTENSITY,matlab,test_3d_firstorder_integrated_intensity_matlab,yes,test_3d_firstorder_coverage.h,exact integer sum; agrees bit-for-bit
-3D,firstorder,3INTERQUARTILE_RANGE,matlab;pyradiomics,test_3d_firstorder_interquartile_range_matlab;TEST_3D_FIRSTORDER_INTERQUARTILE_RANGE_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,binned estimator vs exact order statistic; residual 3.8e-4
-3D,firstorder,3KURTOSIS,matlab;pyradiomics,test_3d_firstorder_kurtosis_matlab;TEST_3D_FIRSTORDER_KURTOSIS_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,population Pearson kurtosis
-3D,firstorder,3MAX,matlab;pyradiomics,test_3d_firstorder_max_matlab;TEST_3D_FIRSTORDER_MAX_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,exact
-3D,firstorder,3MEAN,matlab;pyradiomics,test_3d_firstorder_mean_matlab;TEST_3D_FIRSTORDER_MEAN_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,exact
-3D,firstorder,3MEAN_ABSOLUTE_DEVIATION,matlab;pyradiomics,test_3d_firstorder_mean_absolute_deviation_matlab;TEST_3D_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,mean|x-mean|
-3D,firstorder,3MEDIAN,matlab;pyradiomics,test_3d_firstorder_median_matlab;TEST_3D_FIRSTORDER_MEDIAN_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,"computed on raw values (get_median), not from the histogram, so it is an exact order statistic"
-3D,firstorder,3MEDIAN_ABSOLUTE_DEVIATION,matlab,test_3d_firstorder_median_absolute_deviation_matlab,yes,test_3d_firstorder_coverage.h,"Nyxus definition is mean|x-median|, not MATLAB mad(x,1)=median|x-median|; the generator emits both"
-3D,firstorder,3MIN,matlab;pyradiomics,test_3d_firstorder_min_matlab;TEST_3D_FIRSTORDER_MIN_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,exact
-3D,firstorder,3MODE,matlab,test_3d_firstorder_mode_matlab,yes,test_3d_firstorder_coverage.h,"computed on raw values (get_mode); exact"
-3D,firstorder,3P01,matlab,test_3d_firstorder_p01_matlab,yes,test_3d_firstorder_coverage.h,binned estimator vs MATLAB prctile; residual 2.3e-3 - the worst in the family and what sets the binned band
-3D,firstorder,3P10,matlab;pyradiomics,test_3d_firstorder_p10_matlab;TEST_3D_FIRSTORDER_P10_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,binned estimator vs exact; residual 8.9e-4
-3D,firstorder,3P25,matlab,test_3d_firstorder_p25_matlab,yes,test_3d_firstorder_coverage.h,binned estimator vs exact; residual 5.4e-4
-3D,firstorder,3P75,matlab,test_3d_firstorder_p75_matlab,yes,test_3d_firstorder_coverage.h,binned estimator vs exact; residual 1.6e-4
-3D,firstorder,3P90,matlab;pyradiomics,test_3d_firstorder_p90_matlab;TEST_3D_FIRSTORDER_P90_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,binned estimator vs exact; residual 2.2e-4
-3D,firstorder,3P99,matlab,test_3d_firstorder_p99_matlab,yes,test_3d_firstorder_coverage.h,binned estimator vs exact; residual 1.0e-4
-3D,firstorder,3QCOD,matlab,test_3d_firstorder_qcod_matlab,yes,test_3d_firstorder_coverage.h,derived from the binned P25/P75; residual 6.8e-4
-3D,firstorder,3RANGE,matlab;pyradiomics,test_3d_firstorder_range_matlab;TEST_3D_FIRSTORDER_RANGE_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,exact
-3D,firstorder,3ROBUST_MEAN,matlab,test_3d_firstorder_robust_mean_matlab,yes,test_3d_firstorder_coverage.h,"matlab pin was 0, the value the feature returned before it was computed at all; regenerated"
-3D,firstorder,3ROBUST_MEAN_ABSOLUTE_DEVIATION,matlab;pyradiomics,test_3d_firstorder_robust_mean_absolute_deviation_matlab;TEST_3D_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,"matlab pin was 3.4% wrong and passed the old +/-10% band; regenerated"
-3D,firstorder,3ROOT_MEAN_SQUARED,matlab;pyradiomics,test_3d_firstorder_root_mean_squared_matlab;TEST_3D_FIRSTORDER_ROOT_MEAN_SQUARED_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,exact
-3D,firstorder,3SKEWNESS,matlab;pyradiomics,test_3d_firstorder_skewness_matlab;TEST_3D_FIRSTORDER_SKEWNESS_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,population skewness
-3D,firstorder,3STANDARD_DEVIATION,matlab,test_3d_firstorder_standard_deviation_matlab,yes,test_3d_firstorder_coverage.h,"unbiased (N-1); Octave std(x,0)"
-3D,firstorder,3STANDARD_DEVIATION_BIASED,matlab,test_3d_firstorder_standard_deviation_biased_matlab,yes,test_3d_firstorder_coverage.h,"biased (N); Octave std(x,1)"
-3D,firstorder,3STANDARD_ERROR,matlab,test_3d_firstorder_standard_error_matlab,yes,test_3d_firstorder_coverage.h,unbiased sd over sqrt(n)
-3D,firstorder,3UNIFORMITY,matlab;pyradiomics,test_3d_firstorder_uniformity_matlab;TEST_3D_FIRSTORDER_UNIFORMITY_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,"matlab pin was 307211000 - an unnormalized sum of squared counts over a 256-bin histogram, violating the [0,1] range the definition forces; regenerated"
-3D,firstorder,3UNIFORMITY_PIU,matlab,test_3d_firstorder_uniformity_piu_matlab,yes,test_3d_firstorder_coverage.h,percent image uniformity; closed form on min/max
-3D,firstorder,3VARIANCE,matlab;pyradiomics,test_3d_firstorder_variance_matlab;TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS,yes,test_3d_firstorder_coverage.h,"unbiased (N-1) in Nyxus; PyRadiomics Variance is the biased (N) estimator, so the two differ by exactly n/(n-1) - measured 2.1e-4 on this ROI. 3VARIANCE_BIASED is the feature that matches PyRadiomics term for term"
-3D,firstorder,3VARIANCE_BIASED,matlab,test_3d_firstorder_variance_biased_matlab,yes,test_3d_firstorder_coverage.h,"biased (N); Octave var(x,1)"
+3D,firstorder,3COV,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a std/mean
+3D,firstorder,3COVERED_IMAGE_INTENSITY_RANGE,,,yes,TEST_3D_FIRSTORDER_COVERED_IMAGE_INTENSITY_RANGE_REGRESSION,Nyxus-specific slide/ROI ratio; snapshot only
+3D,firstorder,3ENERGY,pyradiomics,TEST_3D_FIRSTORDER_ENERGY_PYRADIOMICS,no,,Native PyRadiomics Energy
+3D,firstorder,3ENTROPY,pyradiomics,TEST_3D_FIRSTORDER_ENTROPY_PYRADIOMICS,no,,Native PyRadiomics Entropy at binCount=20
+3D,firstorder,3EXCESS_KURTOSIS,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a kurtosis-3
+3D,firstorder,3HYPERFLATNESS,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a sixth central moment standardized by std
+3D,firstorder,3HYPERSKEWNESS,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a fifth central moment standardized by std
+3D,firstorder,3INTEGRATED_INTENSITY,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a sum
+3D,firstorder,3INTERQUARTILE_RANGE,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_INTERQUARTILE_RANGE_PYRADIOMICS,no,,Two oracle recipes; percentile-estimator residuals use rel=1e-2
+3D,firstorder,3KURTOSIS,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_KURTOSIS_PYRADIOMICS,no,,Native kurtosis in both tools
+3D,firstorder,3MAX,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MAX_PYRADIOMICS,no,,Native maximum in both tools
+3D,firstorder,3MEAN,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MEAN_PYRADIOMICS,no,,Native mean in both tools
+3D,firstorder,3MEAN_ABSOLUTE_DEVIATION,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS,no,,Native mean absolute deviation in both tools
+3D,firstorder,3MEDIAN,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MEDIAN_PYRADIOMICS,no,,Native median in both tools
+3D,firstorder,3MEDIAN_ABSOLUTE_DEVIATION,,,yes,TEST_3D_FIRSTORDER_MEDIAN_ABSOLUTE_DEVIATION_REGRESSION,MATLAB median deviation differs from Nyxus mean deviation about the median
+3D,firstorder,3MIN,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MIN_PYRADIOMICS,no,,Native minimum in both tools
+3D,firstorder,3MODE,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a mode
+3D,firstorder,3P01,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a prctile midpoint; rel=1e-2 covers the Nyxus CDF estimator
+3D,firstorder,3P10,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_P10_PYRADIOMICS,no,,Two native percentile oracles at separate recipes
+3D,firstorder,3P25,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a prctile midpoint
+3D,firstorder,3P75,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a prctile midpoint
+3D,firstorder,3P90,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_P90_PYRADIOMICS,no,,Two native percentile oracles at separate recipes
+3D,firstorder,3P99,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a prctile midpoint
+3D,firstorder,3QCOD,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,Defining ratio over MATLAB R2026a percentile built-ins
+3D,firstorder,3RANGE,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_RANGE_PYRADIOMICS,no,,Native range in both tools
+3D,firstorder,3ROBUST_MEAN,,,yes,TEST_3D_FIRSTORDER_ROBUST_MEAN_REGRESSION,MATLAB trimmean semantics differ from Nyxus histogram-threshold selection
+3D,firstorder,3ROBUST_MEAN_ABSOLUTE_DEVIATION,pyradiomics,TEST_3D_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS,no,,Native PyRadiomics RobustMeanAbsoluteDeviation
+3D,firstorder,3ROOT_MEAN_SQUARED,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_ROOT_MEAN_SQUARED_PYRADIOMICS,no,,Native RMS in both tools
+3D,firstorder,3SKEWNESS,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_SKEWNESS_PYRADIOMICS,no,,Native skewness in both tools
+3D,firstorder,3STANDARD_DEVIATION,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a std with N-1 normalization
+3D,firstorder,3STANDARD_DEVIATION_BIASED,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a std with N normalization
+3D,firstorder,3STANDARD_ERROR,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,Defining std/sqrt(n) over MATLAB R2026a built-in
+3D,firstorder,3UNIFORMITY,pyradiomics,TEST_3D_FIRSTORDER_UNIFORMITY_PYRADIOMICS,no,,Native PyRadiomics Uniformity at binCount=20
+3D,firstorder,3UNIFORMITY_PIU,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,Defining PIU expression over MATLAB R2026a min/max
+3D,firstorder,3VARIANCE,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS,no,,MATLAB matches sample variance; PyRadiomics population variance agrees within rel=1e-3
+3D,firstorder,3VARIANCE_BIASED,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a var with N normalization

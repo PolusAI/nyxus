@@ -24,6 +24,34 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 ## firstorder.pyradiomics_default
 - Non-discretised intensity statistics. Oracle: `pyradiomics` firstorder. Used by: `test_2d_firstorder_pyradiomics.h`.
 
+## firstorder3d.pyradiomics_bincount20
+- `bench_compat_liver_3d`, label 1, with PyRadiomics 3.0.1 `binCount=20`, no resampling and no
+  weighting. Nyxus uses `GREYDEPTH=-20`; the negative value selects the corresponding radiomics
+  bin-count mode.
+- PyRadiomics computes first-order features from the original intensities. Only `Entropy` and
+  `Uniformity` use the discretized histogram, so the bin count affects those two features.
+- Used by: `test_3d_firstorder_pyradiomics.h`. Generator:
+  `oracles/gen_firstorder3d_pyradiomics.py`.
+- The measured bands are `rel=1e-9` for 12 same-definition statistics, `rel=1e-2` for the four
+  percentile-derived values, and `rel=1e-3` for the population-versus-sample variance comparison.
+  See `audit/firstorder_3d_pyradiomics_vetting_report.md`.
+
+## firstorder3d.matlab_native
+- `bench_ut57_3d`, label 57, with default 3D first-order settings. The fixture is put in the same
+  integer domain as Nyxus' default float-NIfTI loader: shift the negative volume minimum to zero,
+  then truncate nonnegative values to integers.
+- MATLAB R2026a uses the named built-ins directly; derived statistics apply only their defining
+  normalization to those results. `prctile(..., Method="midpoint")` and `iqr`
+  use raw samples; Nyxus' percentile family uses its fixed 100-bin CDF, so that group uses `rel=1e-2`.
+  The other same-definition comparisons use the SPEC `rel=1e-3` tier.
+- Used by: `test_3d_firstorder_matlab.h`. Generator:
+  `oracles/gen_firstorder3d_matlab.m`.
+
+## firstorder3d.regression_ut_phantom
+- `bench_ut57_3d`, label 57, with the same default settings. Snapshot-only coverage for first-order
+  features with no equivalent native MATLAB function; establishes no oracle vetting.
+- Used by: `test_3d_firstorder_regression.h`.
+
 ## firstorder.preserve_hu
 - `--preserve-hu` (CT/Hounsfield mode): the loader applies a slope-1 offset (`value - floor(HU_min)`)
   instead of min-max rescaling, so first-order intensity features are reported in true Hounsfield units.
@@ -527,35 +555,3 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   an independent implementation with 26-connected zones and a city-block distance transform
   reproduces MIRP to rel=3.2e-16 on the same fixture. `3GLDZM_GLM` and `3GLDZM_ZDM` have no MIRP
   counterpart at all.
-## firstorder3d.matlab_ut_phantom
-- The segmented phantom (phantoms/ut_inten.nii + phantoms/ut_mask57.nii, label 57) with a
-  **default-constructed Fsettings**, which leaves STNGS_MISSING true so the histogram-derived
-  statistics use DEFAULT_NUM_HISTO_BINS (24) rather than a bin count a test picked.
-- Oracle: MATLAB semantics run as GNU Octave 11.3.0 + statistics. Generator
-  oracles/gen_firstorder3d_matlab.py + .m; goldens in test_3d_firstorder_matlab.h.
-- The oracle runs on the voxels Nyxus featurizes, not the stored NIfTI voxels: NiftiLoader
-  shifts a volume whose whole-volume minimum is negative by -min before the cast to the unsigned
-  buffer truncates it, and ut_inten.nii stores [-1024, 2000], so the ROI spans [1024, 3024].
-  Comparing against the stored voxels instead moves every location statistic by exactly 1024 and
-  leaves every shift-invariant one untouched.
-- Two bands, both measured: rel=1e-9 for the statistics where Nyxus and Octave compute the same
-  quantity (worst residual 6.6e-14), and rel=5e-3 for the percentile-derived ones, where Nyxus
-  uses the 100-bin interpolated estimator in TrivialHistogram and the oracle uses prctile
-  (worst residual 2.3e-3, on 3P01). See audit/firstorder_3d_matlab_vetting_report.md.
-
-## firstorder3d.regression_ut_phantom
-- The same phantom and settings, for 3COVERED_IMAGE_INTENSITY_RANGE alone. **No oracle** - the
-  feature is a fraction of the slide's own dynamic range, a Nyxus convention with no counterpart in
-  any listed tool. Pinned Nyxus output as a drift guard in test_3d_firstorder_regression.h.
-
-## firstorder3d.pyradiomics_bincount20
-- The COMPAT phantom (compat_int/compat_int_mri.nii + compat_seg/compat_seg_liver.nii, label 1)
-  through PyRadiomics 3.0.1 at binCount=20, interpolator='sitkBSpline', no resampling, no
-  weighting; matched on the Nyxus side by GREYDEPTH=-20, whose sign selects radiomics
-  binCount-style grey binning. Generator oracles/gen_firstorder3d_pyradiomics.py.
-- PyRadiomics computes first-order features on the original intensities; only Entropy and
-  Uniformity read the discretized histogram, so binCount matters to those two alone.
-- Three measured bands: rel=1e-9 for the twelve features that agree to better than 1e-12,
-  rel=1e-2 for the four percentile-derived ones (worst 5.0e-3), and rel=1e-3 for 3VARIANCE,
-  which differs by exactly n/(n-1) because PyRadiomics Variance is the biased estimator and
-  Nyxus 3VARIANCE is the unbiased one. See audit/firstorder_3d_pyradiomics_vetting_report.md.
