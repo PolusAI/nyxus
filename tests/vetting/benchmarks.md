@@ -64,7 +64,9 @@ Recipes: `glcm3d.pyradiomics_bincount20`, `firstorder3d.pyradiomics_bincount20`.
 | Shape | 4x4x3 at 1x1x1 spacing: one populated 4x4 slice of the discrete levels 1..5 between two all-zero slices, 48 voxels in total |
 | Why it exists | six grey levels over 48 voxels, small enough that the whole NGTDM is 18 numbers a reader can check by hand, and constructed so that PyRadiomics' `binWidth=1` discretisation and Nyxus' zero-min correction land on the same level set |
 
-Recipes: `ngtdm3d.pyradiomics_binwidth1`.
+Recipes: `ngtdm3d.pyradiomics_binwidth1`, `ngtdm3d.pyradiomics_binwidth1_r2`. The two differ only
+in `NGTDM_RADIUS` (1 and 2). The fixture supports no third: at radius 3 a Chebyshev neighbourhood
+already spans the whole 4×4×3 volume from every voxel, so radius 3 and radius 4 compute one matrix.
 
 Tests reaching it today: `test_3d_ngtdm_pyradiomics.h`, `test_3d_ngtdm_mechanics.h`,
 `tests/python/test_nyxus.py::test_3d_ngtdm_compatibility`.

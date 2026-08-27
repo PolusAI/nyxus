@@ -10,14 +10,18 @@
 // NGTDM_RADIUS is the Chebyshev radius of the neighbourhood a voxel's dependency is measured over,
 // and the family is undefined at 0: gather_zones() then visits only the centre voxel, skips it, and
 // no voxel is recorded as having a neighbour, so the matrix stays empty and every feature divides by
-// zero. This asserts that a run which sets no --3ngtdm/radius still reaches the feature with a
-// radius that produces numbers, which is the same guarantee compile_feature_settings() already gives
+// zero. This asserts that a run which calls no set_metaparam("3ngtdm/radius=...") reaches the
+// feature at exactly 1, which is the same guarantee compile_feature_settings() already gives
 // GLCM_OFFSET a few lines up, for the identical reason.
+//
+// The radius is pinned rather than bounded below. Every radius from 1 up is finite, so a >= 1 check
+// would pass on a default that had drifted to 2 -- a different neighbourhood, and different values
+// for all five features, which is what ngtdm3d.pyradiomics_binwidth1_r2 measures.
 void test_3d_ngtdm_default_radius_mechanics()
 {
 	Environment e;
 	e.compile_feature_settings();
-	ASSERT_GE (STNGS_NGTDM_RADIUS (e.fsett_D3_NGTDM), 1);
+	ASSERT_EQ (STNGS_NGTDM_RADIUS (e.fsett_D3_NGTDM), 1);
 
 	auto [ipath, mpath, label] = get_3d_compat_ngtdm_phantom();
 	std::vector<std::vector<double>> fvals;
