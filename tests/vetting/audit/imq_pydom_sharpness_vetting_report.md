@@ -18,10 +18,15 @@ Covers `tests/test_imq_regression.h` (the `SHARPNESS` pin) and
 - **Reference**: Kumar, Chen, Doermann, *Sharpness estimation for document and scene images*
   (ICPR 2012), as implemented in `https://github.com/umang-singhal/pydom`, file `dom/dom.py`, entry
   point `DOM.get_sharpness` with its defaults `width=2`, `sharpness_threshold=2`,
-  `edge_threshold=0.0001`. The package is not installable from PyPI under a usable name — `pip
-  install dom` fetches an unrelated domain-lookup CLI — so the six upstream functions are vendored
-  into `imq_sharpness_reference_dom.py`, each mirroring one upstream statement, with the upstream
-  file named at the top. `cv2.medianBlur` supplies the reference's median filter.
+  `edge_threshold=0.0001`. **The reference is invoked, not vendored**: pydom is GPL-3.0 and Nyxus is
+  MIT, so no line of it lives in this repository. `imq_sharpness_reference_dom.py` imports the
+  installed package and calls its public API — `get_sharpness` for the score, and
+  `load`/`edges`/`sharpness_matrix` for the intermediates tabulated below — then asserts the
+  intermediates recompose the score, so the diagnostics describe the same run the entry point
+  produced. The package is not on PyPI under a usable name (`pip install dom` fetches an unrelated
+  domain-lookup CLI), so it is installed from git into the offline audit env only:
+  `pip install git+https://github.com/umang-singhal/pydom.git`. It is not a Nyxus dependency and CI
+  never invokes this script.
 - **Nyxus side**: the same script carries a line-for-line Python port of
   `SharpnessFeature::sharpness()`. That port is not decoration — it is what makes the comparison a
   statement about the shipped C++ rather than about a script, and the script asserts it: the port
@@ -49,13 +54,8 @@ Each is a statement about a specific line, and together they account for the fac
 a tolerance question.
 
 **1. The aggregation is a different statistic.** The reference counts the pixels whose sharpness
-reaches `sharpness_threshold`:
-
-```python
-n_sharpx = np.sum(Sx >= sharpness_threshold)      # a count, default threshold 2
-```
-
-Nyxus sums the sharpness values themselves:
+matrix reaches `sharpness_threshold` (default 2) — measured here as 28 and 16. Nyxus sums the
+sharpness values themselves:
 
 ```cpp
 auto n_sharpx = std::accumulate(sx.begin(), sx.end(), 0.);
@@ -66,14 +66,8 @@ the reference it is a *fraction of edge pixels that are sharp* — bounded by 1,
 the paper's `0 < S < sqrt(2)` bound hold — and in Nyxus it is a mean sharpness magnitude, which is
 not bounded by anything. Nyxus' 2.19 is already above `sqrt(2)`.
 
-**2. `Sy` is summed along the wrong axis.** The reference computes `Sx` over row windows and `Sy`
-over *column* windows:
-
-```python
-for j in range(width, domy.shape[1]-width):
-    num = np.abs(domy[:, j-width: j+width]).sum(axis=1)
-```
-
+**2. `Sy` is summed along the wrong axis.** The reference's `sharpness_matrix` computes `Sx` over row
+windows and `Sy` over *column* windows — it walks `domy`'s columns and sums each window along axis 1.
 Nyxus runs the identical row-wise loop for both, differing only in which `dom`/`contrast` field it
 reads. The y half of the measure is therefore not the reference's y half at all.
 
@@ -89,14 +83,10 @@ and divides both by it, so the transposed image is scaled by a maximum that is n
 shifts which of its pixels clear `edge_threshold`.
 
 **5. `Sx`/`Sy` are never masked by the edge maps before aggregating.** The reference applies the mask
-twice — once to the contrast terms and again to `Sx`/`Sy` immediately before counting:
-
-```python
-Sx = np.multiply(Sx, self.edgex)
-Sy = np.multiply(Sy, self.edgey)
-```
-
-Nyxus applies it only to `cx`/`cy`, so sharpness computed at non-edge pixels reaches the numerator.
+twice — once to the contrast terms and again to `Sx`/`Sy` immediately before counting. Measured: the
+raw matrices out of `sharpness_matrix` hold 50 and 28 pixels at or above the threshold, and masking
+drops those to the 28 and 16 the score is built from. Nyxus applies the mask only to `cx`/`cy`, so
+sharpness computed at non-edge pixels reaches the numerator.
 
 **6. The last `width` columns are never written.** Nyxus fills `sx`/`sy` for `k < cols - width`; the
 reference fills every column. At `width=2` on an 8-wide ROI that is a quarter of each row dropped.
@@ -132,6 +122,7 @@ whatever the rest of the pipeline does.
 
 ```
 conda activate nyxus_mirp                     # numpy 2.4.6, cv2 4.13.0, python 3.11.15
+pip install git+https://github.com/umang-singhal/pydom.git    # the reference, GPL-3.0, audit env only
 python tests/vetting/audit/imq_sharpness_reference_dom.py
 ```
 

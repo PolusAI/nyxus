@@ -13,14 +13,21 @@ to keep the refutation honest, and it has exactly two checks that can fail:
 
 Reference: Kumar, Chen, Doermann, "Sharpness estimation for document and scene images" (ICPR 2012),
 as implemented in https://github.com/umang-singhal/pydom (dom/dom.py, DOM.get_sharpness, defaults
-width=2, sharpness_threshold=2, edge_threshold=0.0001). The reference is transcribed here rather
-than imported: the package is not on PyPI under a usable name, so vendoring the six functions with
-the upstream file named above is the reproducible option. Every line of `ref_*` below mirrors one
-upstream statement.
+width=2, sharpness_threshold=2, edge_threshold=0.0001).
 
-Provenance of the run behind this report: numpy 2.4.6, cv2 4.13.0 (for cv2.medianBlur, the
-reference's median filter), python 3.11.15, conda env nyxus_mirp. Every run prints its own
-installed versions. Run offline; CI never invokes it.
+THE REFERENCE IS INVOKED, NOT VENDORED. pydom is GPL-3.0 and Nyxus is MIT, so no line of it is
+copied into this repository: this script imports the installed package and calls its public API,
+and every reference number below is upstream's own output. Install it into the offline audit env
+only -- it is not a Nyxus dependency and CI never invokes this script:
+
+    pip install git+https://github.com/umang-singhal/pydom.git
+
+The `nyx_*` functions below are a port of Nyxus' own MIT-licensed sharpness.cpp and carry no
+upstream code.
+
+Provenance of the run behind this report: pydom 0.1 at upstream commit 2554af8, numpy 2.4.6,
+cv2 4.13.0, python 3.11.15, conda env nyxus_mirp. Every run prints its own installed versions.
+Run offline; CI never invokes it.
 
 Usage:  python tests/vetting/audit/imq_sharpness_reference_dom.py
 """
@@ -28,7 +35,17 @@ import os
 import re
 
 import numpy as np
-import cv2
+import cv2      # not called here: the reference uses it for its median filter, so its version is
+                # part of this run's provenance and is printed rather than assumed
+
+try:
+    from dom import DOM
+except ImportError as exc:      # an absent reference must name its own remedy, not traceback
+    raise SystemExit(
+        "the reference DOM implementation is not installed: %s\n"
+        "  pip install git+https://github.com/umang-singhal/pydom.git\n"
+        "It is deliberately not vendored -- pydom is GPL-3.0 and this repository is MIT." % exc)
+
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(os.path.dirname(HERE))
@@ -216,61 +233,63 @@ def nyx_sharpness(img, width=2):
         n_edgex=int(ex.sum()), n_edgey=int(ey.sum()), rx=float(rx), ry=float(ry))
 
 
-# ------------------------------------------------- the reference (pydom dom/dom.py, upstream)
+# ------------------------------------------------- the reference (pydom, INVOKED not vendored)
 
-def ref_dom(Im):
-    up = np.pad(Im, ((0, 2), (0, 0)), "constant")[2:, :]
-    dn = np.pad(Im, ((2, 0), (0, 0)), "constant")[:-2, :]
-    domx = np.abs(up - 2 * Im + dn)
-    lf = np.pad(Im, ((0, 0), (0, 2)), "constant")[:, 2:]
-    rt = np.pad(Im, ((0, 0), (2, 0)), "constant")[:, :-2]
-    domy = np.abs(lf - 2 * Im + rt)
-    return domx, domy
+# The upstream package is GPL-3.0 and this repository is MIT, so nothing below reimplements or
+# copies it: every reference number is produced by calling DOM's own public methods. get_sharpness()
+# is the entry point the report quotes; the intermediates come from the same object so the
+# diagnostics describe that same run, and reference_sharpness() asserts the two agree before
+# returning either.
 
-
-def ref_contrast(Im):
-    Cx = np.abs(Im - np.pad(Im, ((1, 0), (0, 0)), "constant")[:-1, :])
-    Cy = np.abs(Im - np.pad(Im, ((0, 0), (1, 0)), "constant")[:, :-1])
-    return Cx, Cy
+WIDTH = 2                  # DOM.get_sharpness defaults, restated so the call site is readable
+SHARPNESS_THRESHOLD = 2
+EDGE_THRESHOLD = 0.0001
 
 
-def ref_smoothen(image, transpose=False, epsilon=1e-8):
-    fil = np.array([0.5, 0, -0.5])
-    if transpose:
-        image = image.T
-    sm = np.array([np.convolve(image[i], fil, mode="same") for i in range(image.shape[0])])
-    if transpose:
-        sm = sm.T
-    return np.abs(sm) / (np.max(sm) + epsilon)   # each normalized by its OWN max
+def reference_version():
+    """What the installed reference calls itself -- provenance the run produced, not a literal."""
+    try:
+        from importlib.metadata import version
+        return version("pydom")
+    except Exception:
+        return "unknown"
 
 
-def ref_sharpness(image_u8, width=2, sharpness_threshold=2, edge_threshold=0.0001):
-    Im = cv2.medianBlur(image_u8, 3).astype("double") / 255.0
-    edgex = ref_smoothen(image_u8.astype(float), transpose=True) > edge_threshold  # COLUMN pass
-    edgey = ref_smoothen(image_u8.astype(float)) > edge_threshold                  # ROW pass
-    domx, domy = ref_dom(Im)
-    Cx, Cy = ref_contrast(Im)
-    Cx, Cy = np.multiply(Cx, edgex), np.multiply(Cy, edgey)
-    Sx = np.zeros(domx.shape)
-    Sy = np.zeros(domy.shape)
-    for i in range(width, domx.shape[0] - width):
-        num = np.abs(domx[i - width:i + width, :]).sum(axis=0)
-        dn = Cx[i - width:i + width, :].sum(axis=0)
-        Sx[i] = [(num[k] / dn[k] if dn[k] > 1e-3 else 0) for k in range(Sx.shape[1])]
-    for j in range(width, domy.shape[1] - width):        # Sy runs down COLUMNS
-        num = np.abs(domy[:, j - width:j + width]).sum(axis=1)
-        dn = Cy[:, j - width:j + width].sum(axis=1)
-        Sy[:, j] = [(num[k] / dn[k] if dn[k] > 1e-3 else 0) for k in range(Sy.shape[0])]
-    Sx = np.multiply(Sx, edgex)                          # masked again before aggregating
-    Sy = np.multiply(Sy, edgey)
-    n_sharpx = int(np.sum(Sx >= sharpness_threshold))    # a COUNT above a threshold
-    n_sharpy = int(np.sum(Sy >= sharpness_threshold))
+def reference_sharpness(image_u8):
+    """DOM.get_sharpness on the fixture, plus the intermediates the report tabulates.
+
+    Composed from the public API rather than reimplemented: load() -> edges() -> sharpness_matrix()
+    -> sharpness_measure() is the pipeline get_sharpness() runs, so recomposing the score from the
+    intermediates and comparing it to get_sharpness() checks that this call sequence IS that entry
+    point. Sx/Sy are masked by the edge maps before counting because the reference does that
+    immediately before aggregating -- divergence 5 in the report, and the reason the raw matrices
+    count more pixels than the score reflects.
+    """
+    iqa = DOM()
+    score = float(iqa.get_sharpness(image_u8, width=WIDTH,
+                                    sharpness_threshold=SHARPNESS_THRESHOLD,
+                                    edge_threshold=EDGE_THRESHOLD))
+
+    gray, Im = iqa.load(image_u8)
+    iqa.edges(gray, edge_threshold=EDGE_THRESHOLD)
+    edgex, edgey = iqa.edgex, iqa.edgey
+    Sx, Sy = iqa.sharpness_matrix(Im, width=WIDTH)
+
+    n_sharpx = int(np.sum(np.multiply(Sx, edgex) >= SHARPNESS_THRESHOLD))
+    n_sharpy = int(np.sum(np.multiply(Sy, edgey) >= SHARPNESS_THRESHOLD))
     n_edgex, n_edgey = int(np.sum(edgex)), int(np.sum(edgey))
-    rx = n_sharpx / (n_edgex + 1e-8)
-    ry = n_sharpy / (n_edgey + 1e-8)
-    return float(np.sqrt(rx ** 2 + ry ** 2)), dict(
-        n_sharpx=n_sharpx, n_sharpy=n_sharpy, n_edgex=n_edgex, n_edgey=n_edgey,
-        rx=float(rx), ry=float(ry))
+    rx = n_sharpx / (n_edgex + EPS)
+    ry = n_sharpy / (n_edgey + EPS)
+    recomposed = float(np.sqrt(rx ** 2 + ry ** 2))
+    if abs(recomposed - score) > 1e-12:
+        raise RuntimeError(
+            "the intermediates do not recompose get_sharpness() (%r vs %r) -- upstream's pipeline "
+            "moved and the diagnostics below no longer describe the score" % (recomposed, score))
+
+    return score, dict(n_sharpx=n_sharpx, n_sharpy=n_sharpy, n_edgex=n_edgex, n_edgey=n_edgey,
+                       rx=float(rx), ry=float(ry),
+                       n_sharpx_unmasked=int(np.sum(Sx >= SHARPNESS_THRESHOLD)),
+                       n_sharpy_unmasked=int(np.sum(Sy >= SHARPNESS_THRESHOLD)))
 
 
 def main():
@@ -281,13 +300,14 @@ def main():
     pinned = pins["SHARPNESS"]
 
     port, pd = nyx_sharpness(img)
-    ref, rd = ref_sharpness(img.astype(np.uint8))
+    ref, rd = reference_sharpness(img.astype(np.uint8))
 
     all_ok = True
     print("=== SHARPNESS vs the reference DOM implementation ===")
-    # The INSTALLED versions, not the docstring's.
-    print("    numpy %s, cv2 %s, fixture %dx%d (w x h)"
-          % (np.__version__, cv2.__version__, img.shape[1], img.shape[0]))
+    # The INSTALLED versions, not the docstring's. pydom's is here because the reference is now
+    # invoked rather than vendored, so which build produced the number is a property of this env.
+    print("    pydom %s, numpy %s, cv2 %s, fixture %dx%d (w x h)"
+          % (reference_version(), np.__version__, cv2.__version__, img.shape[1], img.shape[0]))
 
     rel = abs(port - pinned) / abs(pinned)
     ok = rel <= PORT_RELTOL
@@ -306,9 +326,13 @@ def main():
           % (pd["sum_sx"], pd["sum_sy"], rd["n_sharpx"], rd["n_sharpy"]))
     print("    edge axes     nyxus edge_x=%d edge_y=%d; reference edgex=%d edgey=%d -- swapped"
           % (pd["n_edgex"], pd["n_edgey"], rd["n_edgex"], rd["n_edgey"]))
+    print("    masking       nyxus never masks Sx/Sy by the edge maps before aggregating; the "
+          "reference's counts drop %d->%d and %d->%d when it does"
+          % (rd["n_sharpx_unmasked"], rd["n_sharpx"], rd["n_sharpy_unmasked"], rd["n_sharpy"]))
+    # Read off the reference's source rather than measured: its public API exposes no hook that
+    # isolates either, and neither is worth vendoring a copy to demonstrate.
     print("    Sy pass       nyxus sums Sy over ROWS like Sx; the reference sums it down COLUMNS")
     print("    normalization nyxus divides both smoothed images by the row-convolved one's max")
-    print("    masking       nyxus never multiplies Sx/Sy by the edge maps before aggregating")
     print("    coverage      nyxus leaves the last width=2 columns of Sx/Sy at 0")
 
     print("\n%s" % ("SHARPNESS IS NOT THE REFERENCE DOM MEASURE -- keep it regression" if all_ok
