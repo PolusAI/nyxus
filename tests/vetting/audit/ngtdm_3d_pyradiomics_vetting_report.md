@@ -12,8 +12,9 @@ unusable in the configuration a default run reaches.
 | NGTDM matrix (`n_i`, `p_i`, `s_i`) on the phantom | not asserted | 18 values pinned, per grey level |
 | the hand-worked 4×4 example | 8 values at `agrees_gt(..., 1)` = **±100%** | 12 values at `rel=1e-9` |
 | drift guards on `bench_ut57_3d` | 5 pins in a file nothing included | wired in, re-pinned at `%.17g` |
-| `NGTDM_RADIUS` with no `--3ngtdm/radius` | 0 → every feature NaN | 1, guarded by a mechanics test |
+| `NGTDM_RADIUS` with no `set_metaparam("3ngtdm/radius=...")` | 0 → every feature NaN | 1, guarded by a mechanics test |
 | recorded provenance | the wrong two files and a GLCM sentence | the fixture the test actually loads |
+| `NGTDM_RADIUS=2` | honoured but never asserted | a second recipe, five features and the matrix, at `rel=1e-9` |
 
 ---
 
@@ -24,9 +25,9 @@ unusable in the configuration a default run reaches.
 | Tool | PyRadiomics **3.0.1** (SimpleITK 2.3.1, Python 3.8), conda env `nyxus_oracle` |
 | Generator | `tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py` |
 | Benchmark | `bench_compat_ngtdm_3d` — `compat_int_ngtdm_3d.nii` + `compat_seg_ngtdm_3d.nii`, label 57 |
-| Recipe | `ngtdm3d.pyradiomics_binwidth1` |
-| PyRadiomics settings | `binWidth=1`, `distances=[1]`, `resampledPixelSpacing=None`, `force2D=False`, `imageType=Original` |
-| Nyxus settings | `GREYDEPTH=100`, `IBSI=false`, `NGTDM_GREYDEPTH=0`, `NGTDM_RADIUS=1` |
+| Recipes | `ngtdm3d.pyradiomics_binwidth1`, `ngtdm3d.pyradiomics_binwidth1_r2` |
+| PyRadiomics settings | `binWidth=1`, `distances=[1]` (or `[1, 2]`), `resampledPixelSpacing=None`, `force2D=False`, `imageType=Original` |
+| Nyxus settings | `GREYDEPTH=100`, `IBSI=false`, `NGTDM_GREYDEPTH=0`, `NGTDM_RADIUS=1` (or 2) |
 
 The phantom is 4×4×3 = 48 voxels: one populated slice of the discrete values 1..5 between two
 all-zero slices, with **every** voxel labelled 57.
@@ -96,6 +97,51 @@ anything was measured off it.
 and Strength are sums of products, absolute differences and squares — there is no logarithm anywhere
 in `3d_ngtdm.cpp`. That is why this family holds the exact tier where 2D GLDM's `GLDM_DE`, 2D GLSZM's
 entropy and 3D GLRLM's `RE` each needed a measured band.
+
+---
+
+## The radius is asserted at two values, not one
+
+`NGTDM_RADIUS` is the one axis of this family a run gets wrong by leaving it alone, and a single
+config point cannot tell an implementation that honours it from one that ignores it. So the same
+phantom is asserted a second time at radius 2, against PyRadiomics at `distances=[1, 2]`:
+
+| feature | radius 1 | radius 2 | change | rel. diff vs PyRadiomics |
+|---|---|---|---|---|
+| `3NGTDM_BUSYNESS` | 4.5534015564267669 | 2.939225091018405 | −35% | 0 |
+| `3NGTDM_COARSENESS` | 0.030118770647251797 | 0.046659528581847694 | +55% | 0 |
+| `3NGTDM_COMPLEXITY` | 32.130372204003443 | 21.8284982055839 | −32% | 0 |
+| `3NGTDM_CONTRAST` | 0.23138014315250832 | 0.17445848889575338 | −25% | 0 |
+| `3NGTDM_STRENGTH` | 1.2458005968884538 | 1.6522756918969699 | +33% | 0 |
+
+Exact again, and the matrix under them is pinned per level as well
+(`test_3d_ngtdm_matrix_r2_pyradiomics`). Negative control: rebuilding the five `*_r2_pyradiomics`
+assertions and `test_3d_ngtdm_matrix_r2_pyradiomics` at radius 1 fails all six, each reporting the
+whole gap above rather than a rounding difference.
+
+### `distances` is a list of shells, not a radius
+
+The obvious reading of "radius 2 is `distances=[2]`" is wrong. PyRadiomics' `distances` names the
+Chebyshev shells the neighbourhood is drawn from, so `distances=[2]` is the 98 offsets at distance
+exactly 2 and excludes the 26 at distance 1; `gather_zones()` scans the solid cube `-2..2`. Measured
+on this phantom against an independent numpy neighbourhood at `delta=2`:
+
+| PyRadiomics setting | worst `s_i` rel. diff vs the solid radius-2 neighbourhood |
+|---|---|
+| `distances=[1, 2]` | 2.4e-16 |
+| `distances=[2]` | 0.334 |
+
+`distances_semantics_check()` in the generator re-measures both readings on every run and fails if
+either verdict flips, so a PyRadiomics release that changed the convention would stop the generator
+rather than silently re-pin the wrong neighbourhood.
+
+### Why the phantom supports no third radius
+
+`bench_compat_ngtdm_3d` is 4×4×3. At radius 3 a Chebyshev neighbourhood already reaches every voxel
+of the volume from every voxel, so radius 3 and radius 4 compute the same matrix (checked against the
+numpy reference) and an implementation that clamped the radius would be indistinguishable from one
+that honoured it. Radius ≥ 3 therefore needs a wider fixture, not a wider oracle — which is a
+different thing from the missing-reference reason the matrix used to give for radius ≥ 2.
 
 ---
 
@@ -218,14 +264,16 @@ Measured against the settings vector the environment actually compiles, on the p
 [PROBE] fcode 703 = -nan(ind)      3NGTDM_STRENGTH
 ```
 
-Every 3D run that asks for these features and does not pass `--3ngtdm/radius` gets five NaNs. Nothing
-caught it because every assertion in the tree sets the radius explicitly: the C++ tests build their
-own `Fsettings`, and `tests/python/test_nyxus.py::test_3d_ngtdm_compatibility` calls
-`set_metaparam("3ngtdm/radius=1")`.
+Every 3D run that asks for these features and calls no `set_metaparam("3ngtdm/radius=...")` gets
+five NaNs. Nothing caught it because every assertion in the tree sets the radius explicitly: the C++
+tests build their own `Fsettings`, and `tests/python/test_nyxus.py::test_3d_ngtdm_compatibility`
+calls `set_metaparam("3ngtdm/radius=1")`.
 
 **Fixed**, one line beside the GLCM default it mirrors, and guarded by
-`test_3d_ngtdm_default_radius_mechanics`, which compiles the real settings vector and requires the
-five values to be finite. The guard is the point: the value could be reverted by anyone reformatting
+`test_3d_ngtdm_default_radius_mechanics`, which compiles the real settings vector, requires the
+radius to be exactly 1 and the five values to be finite. Exactly 1, not merely finite: radius 2 is a
+valid setting that produces different numbers for all five features
+(`ngtdm3d.pyradiomics_binwidth1_r2`), so a lower bound would pass on a drifted default. The guard is the point: the value could be reverted by anyone reformatting
 that block, and a `1` in a settings assignment does not look like a correctness constraint.
 
 This is the same failure the tree already knows about in 2D GLCM —
@@ -397,6 +445,11 @@ survives. What changed:
   on all five → replaced with what backs the row.
 - `test_name` and `benchmark` were empty (the columns postdate these rows) →
   `TEST_NYXUS.TEST_3D_NGTDM_<F>_PYRADIOMICS` and `bench_compat_ngtdm_3d`.
+
+The radius-2 recipe adds no row. The registry keys a row by feature and this is the same feature
+against the same oracle on the same benchmark, so the second config point is recorded in `notes`
+and in `config_recipes.md`; splitting the five rows into ten would say the family has ten features'
+worth of oracle coverage, which it does not.
 
 No row changes status, and no feature in this family lacks an oracle.
 

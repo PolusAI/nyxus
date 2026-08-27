@@ -575,6 +575,24 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - The five features are contractions of one `(i, n_i, p_i, s_i)` table, so the recipe also backs the
   per-level assertion in `test_3d_ngtdm_matrix_pyradiomics`, not only the five scalars.
 
+## ngtdm3d.pyradiomics_binwidth1_r2
+- `ngtdm3d.pyradiomics_binwidth1` with `NGTDM_RADIUS=2` — the same phantom, the same binning, the
+  neighbourhood widened from 3×3×3 to 5×5×5. Oracle: `pyradiomics` at `distances: [1, 2]`, same
+  generator. Used by the five `*_r2_pyradiomics` assertions and `test_3d_ngtdm_matrix_r2_pyradiomics`
+  in `test_3d_ngtdm_pyradiomics.h`.
+- **`distances` is a list of shells, not a radius.** `distances=[2]` is the 98 offsets at Chebyshev
+  distance exactly 2 and excludes the 26 at distance 1; Nyxus scans the solid cube `-2..2`. So the
+  match is `[1, 2]`, and `distances_semantics_check()` in the generator measures both readings
+  against an independent numpy neighbourhood on every run rather than resting on the documentation.
+- **What it is for.** The radius is the one axis of this family a default run gets wrong when it is
+  left unset, so a second config point is what separates a family that honours `NGTDM_RADIUS` from
+  one that ignores it: coarseness rises by half, busyness and complexity each fall by about a third.
+  It is also what lets `test_3d_ngtdm_default_radius_mechanics` pin the default at exactly 1 instead
+  of bounding it below.
+- The radius is the only setting that moves between this recipe and
+  `ngtdm3d.pyradiomics_binwidth1`. The levels and their `n_i` are unchanged — every voxel of this
+  phantom has a neighbour at either radius — so the whole difference lands in `s_i`.
+
 ## ngtdm3d.regression_ut_phantom
 - The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at
   `GREYDEPTH=64`, `IBSI=false`, `NGTDM_GREYDEPTH=64`, `NGTDM_RADIUS=1`. **No oracle** — pinned Nyxus

@@ -6,6 +6,12 @@
 // distances=[1], no resampling, imageType=Original; on the Nyxus side GREYDEPTH=100, IBSI=false,
 // NGTDM_GREYDEPTH=0 (no binning) and NGTDM_RADIUS=1. Both sides work on the grey levels 1..6.
 //
+// Recipe ngtdm3d.pyradiomics_binwidth1_r2 is the same phantom and the same binning at
+// NGTDM_RADIUS=2, against PyRadiomics distances=[1, 2]. PyRadiomics' distances names Chebyshev
+// shells rather than a radius, so distances=[2] would be the shell at exactly 2 and would drop the
+// 26 offsets at distance 1, while Nyxus scans the solid cube -2..2; the generator measures both
+// readings so the recipe's distances list is a measurement and not a reading of the documentation.
+//
 // Goldens and their reproduction: tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py, which also
 // re-verifies every pin below. Measurements and the PyRadiomics-loader limitation this phantom runs
 // into: tests/vetting/audit/ngtdm_3d_pyradiomics_vetting_report.md.
@@ -54,6 +60,33 @@ static const ref_vals_list<Ngtdm3dMatrixRow> ngtdm_3d_pyradiomics_matrix_ref_val
 	{ 6, 3, 0.0625, 12.916289592760181 }
 };
 
+// The same five features at NGTDM_RADIUS=2 -- the neighbourhood widened from 3x3x3 to 5x5x5, and
+// nothing else about the recipe changed. A radius is not a scale factor on any of them: coarseness
+// rises by half, busyness falls by a third, and complexity by a third, so a family that ignored the
+// setting and a family that honours it are far apart in every one of these numbers.
+static const ref_vals_map<double> ngtdm_3d_pyradiomics_r2_ref_vals
+{
+	{"3NGTDM_BUSYNESS", 2.939225091018405},         // original_ngtdm_Busyness
+	{"3NGTDM_COARSENESS", 0.046659528581847694},    // original_ngtdm_Coarseness
+	{"3NGTDM_COMPLEXITY", 21.8284982055839},        // original_ngtdm_Complexity
+	{"3NGTDM_CONTRAST", 0.17445848889575338},       // original_ngtdm_Contrast
+	{"3NGTDM_STRENGTH", 1.6522756918969699}         // original_ngtdm_Strength
+};
+
+// The radius-2 NGTDM of the phantom, again from PyRadiomics' P_ngtdm array. The levels and their
+// n_i are the radius-1 table's -- every voxel of this phantom has a neighbour at either radius, so
+// only the s_i move -- which is what makes this table the direct reading of what widening the
+// neighbourhood does.
+static const ref_vals_list<Ngtdm3dMatrixRow> ngtdm_3d_pyradiomics_r2_matrix_ref_vals
+{
+	{ 1, 32, 0.6666666666666666, 29.490811316343237 },
+	{ 2, 6, 0.125, 0.7983867196633154 },
+	{ 3, 2, 0.041666666666666664, 1.98021978021978 },
+	{ 4, 4, 0.08333333333333333, 8.832148702361469 },
+	{ 5, 1, 0.020833333333333332, 3.2127659574468086 },
+	{ 6, 3, 0.0625, 12.576899696048631 }
+};
+
 // The 4x4 image PyRadiomics' NGTDM documentation works through by hand, driven here as a
 // single-slice volume. Its published s_i carry three significant figures; these are the
 // full-precision values of a PyRadiomics run on the same image, which the generator also reproduces
@@ -82,17 +115,24 @@ static const std::vector<PixIntens> ngtdm_3d_pyradiomics_doc_image
 // and the eighteen matrix entries is at the last bit.
 static const double ngtdm_3d_pyradiomics_frac_tolerance = 1e9;
 
-void assert_3d_ngtdm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+// One feature at one neighbourhood radius, against the table pinning that recipe's goldens.
+static void assert_3d_ngtdm_feature_pyradiomics_at (
+	const Nyxus::Feature3D& expecting_fcode,
+	const std::string& fname,
+	int radius,
+	const ref_vals_map<double>& expected)
 {
+	SCOPED_TRACE ("NGTDM_RADIUS " + std::to_string (radius));
+
 	// a name with no golden is a failure, not a comparison against whatever a lookup would invent
-	auto iter = ngtdm_3d_pyradiomics_ref_vals.find(fname);
-	ASSERT_TRUE(iter != ngtdm_3d_pyradiomics_ref_vals.end());
+	auto iter = expected.find(fname);
+	ASSERT_TRUE(iter != expected.end());
 
 	int fcode = -1;
 	ASSERT_NO_FATAL_FAILURE(resolve_3d_ngtdm_fcode (fcode, expecting_fcode, fname));
 
 	auto [ipath, mpath, label] = get_3d_compat_ngtdm_phantom();
-	Fsettings s = make_ngtdm3d_settings (100/*greydepth*/, 0/*no ngtdm binning*/, 1/*radius*/);
+	Fsettings s = make_ngtdm3d_settings (100/*greydepth*/, 0/*no ngtdm binning*/, radius);
 	std::vector<std::vector<double>> fvals;
 	SimpleCube<PixIntens> cube;
 	ASSERT_NO_FATAL_FAILURE(extract_3d_ngtdm (fvals, cube, ipath, mpath, label, s));
@@ -101,12 +141,30 @@ void assert_3d_ngtdm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcod
 	                        ngtdm_3d_pyradiomics_frac_tolerance)) << fname;
 }
 
+void assert_3d_ngtdm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+{
+	ASSERT_NO_FATAL_FAILURE(assert_3d_ngtdm_feature_pyradiomics_at (
+		expecting_fcode, fname, 1, ngtdm_3d_pyradiomics_ref_vals));
+}
+
+// The same five features one radius out. Asserting them separately rather than only asserting that
+// the two runs differ is what pins the widened neighbourhood to the oracle's arithmetic instead of
+// to the fact that something changed.
+void assert_3d_ngtdm_feature_pyradiomics_r2 (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+{
+	ASSERT_NO_FATAL_FAILURE(assert_3d_ngtdm_feature_pyradiomics_at (
+		expecting_fcode, fname, 2, ngtdm_3d_pyradiomics_r2_ref_vals));
+}
+
 // Asserts one NGTDM the family's matrix builder produces against a pinned oracle table.
 static void assert_3d_ngtdm_matrix_pyradiomics (
 	const std::vector<PixIntens>& raw,
 	int width, int height, int depth,
-	const ref_vals_list<Ngtdm3dMatrixRow>& expected)
+	const ref_vals_list<Ngtdm3dMatrixRow>& expected,
+	int radius = 1)
 {
+	SCOPED_TRACE ("NGTDM_RADIUS " + std::to_string (radius));
+
 	SimpleCube<PixIntens> D (raw, width, height, depth);
 
 	// sorted unique intensities, which is the row order calc_NGTDM indexes into
@@ -116,7 +174,7 @@ static void assert_3d_ngtdm_matrix_pyradiomics (
 	ASSERT_EQ (I.size(), expected.size());
 
 	std::vector<std::pair<PixIntens, double>> Zones;
-	D3_NGTDM_feature::gather_zones (Zones, D, 1/*radius*/, 0/*zeroI: no level is background here*/);
+	D3_NGTDM_feature::gather_zones (Zones, D, radius, 0/*zeroI: no level is background here*/);
 
 	std::vector<int> N;
 	std::vector<double> P, S;
@@ -148,10 +206,12 @@ static void assert_3d_ngtdm_matrix_pyradiomics (
 // The one step reproduced here is calculate()'s zero-min correction: when the minimum level is 0 it
 // shifts every level by one, which at NGTDM_GREYDEPTH=0 (no binning) is the whole of its preamble.
 // The minimum is asserted rather than assumed, since the shift is conditional on it.
-void test_3d_ngtdm_matrix_pyradiomics()
+static void assert_3d_ngtdm_phantom_matrix_pyradiomics (
+	int radius,
+	const ref_vals_list<Ngtdm3dMatrixRow>& expected)
 {
 	auto [ipath, mpath, label] = get_3d_compat_ngtdm_phantom();
-	Fsettings s = make_ngtdm3d_settings (100/*greydepth*/, 0/*no ngtdm binning*/, 1/*radius*/);
+	Fsettings s = make_ngtdm3d_settings (100/*greydepth*/, 0/*no ngtdm binning*/, radius);
 	std::vector<std::vector<double>> fvals;
 	SimpleCube<PixIntens> cube;
 	ASSERT_NO_FATAL_FAILURE(extract_3d_ngtdm (fvals, cube, ipath, mpath, label, s));
@@ -164,7 +224,20 @@ void test_3d_ngtdm_matrix_pyradiomics()
 		lev += 1;
 
 	assert_3d_ngtdm_matrix_pyradiomics (levels, cube.width(), cube.height(), cube.depth(),
-	                                    ngtdm_3d_pyradiomics_matrix_ref_vals);
+	                                    expected, radius);
+}
+
+void test_3d_ngtdm_matrix_pyradiomics()
+{
+	assert_3d_ngtdm_phantom_matrix_pyradiomics (1, ngtdm_3d_pyradiomics_matrix_ref_vals);
+}
+
+// The matrix the radius-2 features are contractions of. The two tables share their levels and their
+// n_i and differ only in s_i, so this is where a neighbourhood that widened by the wrong amount --
+// a shell instead of a solid cube, say -- shows up as itself rather than as five moved scalars.
+void test_3d_ngtdm_matrix_r2_pyradiomics()
+{
+	assert_3d_ngtdm_phantom_matrix_pyradiomics (2, ngtdm_3d_pyradiomics_r2_matrix_ref_vals);
 }
 
 // The doc example keeps a literal, and for it that is the right shape: the 4x4 image IS the
@@ -219,4 +292,24 @@ void test_3d_ngtdm_contrast_pyradiomics() {
 
 void test_3d_ngtdm_strength_pyradiomics() {
 	assert_3d_ngtdm_feature_pyradiomics (Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
+}
+
+void test_3d_ngtdm_busyness_r2_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_r2 (Nyxus::Feature3D::NGTDM_BUSYNESS, "3NGTDM_BUSYNESS");
+}
+
+void test_3d_ngtdm_coarseness_r2_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_r2 (Nyxus::Feature3D::NGTDM_COARSENESS, "3NGTDM_COARSENESS");
+}
+
+void test_3d_ngtdm_complexity_r2_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_r2 (Nyxus::Feature3D::NGTDM_COMPLEXITY, "3NGTDM_COMPLEXITY");
+}
+
+void test_3d_ngtdm_contrast_r2_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_r2 (Nyxus::Feature3D::NGTDM_CONTRAST, "3NGTDM_CONTRAST");
+}
+
+void test_3d_ngtdm_strength_r2_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_r2 (Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
 }
