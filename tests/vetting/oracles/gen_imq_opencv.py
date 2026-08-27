@@ -29,7 +29,9 @@ SCOPE OF THE CLAIM -- what these two assertions do and do not cover:
     `for (y = 0; y < height - M; y += M)` with M = height/scale, so for scale=2 the condition is
     0 < h/2 -> true, 6 < 6 -> false: exactly ONE tile is visited, not scale^2 = 4, while the divisor
     stays scale^2. The generator asserts that tile count, so a change to the loop bound fails here
-    instead of quietly redefining the golden.
+    instead of quietly redefining the golden -- and carries the SPEC 4 negative control that measures
+    what the count alone cannot: the same feature scored over all four tiles, which is how far the
+    pinned partial value sits from the whole-feature one.
   * The out-of-core path (get_focus_score_NT) is not covered: it convolves through a fixed 30x30
     window buffer, passes (width, height) to laplacian() in the (m_image, n_image) order, and takes
     the variance over the whole conv_buffer including the part no pixel wrote. Out of scope here.
@@ -156,6 +158,21 @@ def nyxus_tiles(img, scale):
             for y in range(0, h - m, m) for x in range(0, w - n, n)]
 
 
+def all_tiles(img, scale):
+    """Every scale^2 tile -- the `<=` bound, i.e. the tiling the divisor scale^2 already assumes.
+
+    This is the negative control, not the value path. cv2 supplies the Laplacian and the variance;
+    the tile extraction and the scale^2 divisor are Nyxus' own definition, so the oracle vets the
+    per-tile statistic CONDITIONAL on the tiling and cannot see the tiling itself (SPEC 4, the
+    partial-pipeline rule; not_covered.md section E). Scoring the same feature over all four tiles
+    measures how much of the feature that leaves uncovered.
+    """
+    h, w = img.shape
+    m, n = h // scale, w // scale
+    return [img[y:y + m, x:x + n]
+            for y in range(0, h - m + 1, m) for x in range(0, w - n + 1, n)]
+
+
 def main():
     img = build_roi()
     pins = parse_pins(TEST_H, TABLE)
@@ -189,6 +206,22 @@ def main():
         "FOCUS_SCORE": float(cv_laplacian(img).var()),
         "LOCAL_FOCUS_SCORE": sum(float(cv_laplacian(t).var()) for t in tiles) / (SCALE * SCALE),
     }
+
+    # (2b) NEGATIVE CONTROL for the partial-pipeline claim (SPEC 4). EXPECTED_TILES only checks that
+    # the tiling this generator reproduces still matches the one Nyxus walks -- it says nothing about
+    # how much of LOCAL_FOCUS_SCORE the opencv assertion leaves unvetted. Scoring the same feature
+    # over all scale^2 tiles, which is the tiling the /scale^2 divisor already assumes, measures that
+    # gap directly. A vanishing gap would mean the one-tile pin is not actually a partial value and
+    # the scope note is overstated, so this is an assertion rather than a print.
+    full = all_tiles(img, SCALE)
+    full_score = sum(float(cv_laplacian(t).var()) for t in full) / (SCALE * SCALE)
+    partial = produced["LOCAL_FOCUS_SCORE"]
+    gap = abs(full_score - partial) / abs(full_score)
+    ok = len(full) == SCALE * SCALE and gap > 1e-2
+    all_ok &= ok
+    print("  %s negative control: all %d tiles give %.17g against the pinned %d-tile %.17g "
+          "-- %.0f%% of the feature is outside the oracle's reach"
+          % ("OK " if ok else "FAIL", len(full), full_score, len(tiles), partial, 100 * gap))
 
     # (3) range checks: both quantities are population variances
     for name, value in sorted(produced.items()):

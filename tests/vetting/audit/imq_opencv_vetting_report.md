@@ -94,6 +94,15 @@ visit all `scale²` tiles, and `docs/source/Math/f_image_quality.rst` says "the 
 values of the tiles are returned" where the code returns one sum over one tile. Both are recorded as
 open in `matrix/imq.md`.
 
+**How much of the feature that leaves unvetted, measured.** The tile count alone only checks that
+the tiling this generator reproduces still matches the one Nyxus walks; it says nothing about the
+size of the gap. So the generator carries the SPEC §4 negative control for a partial-pipeline
+oracle: scoring the same feature over all `scale² = 4` tiles — the tiling the `/scale²` divisor
+already assumes — gives **28.341145833333336** against the pinned one-tile **7.5763888888888902**.
+**73% of `LOCAL_FOCUS_SCORE` is outside this oracle's reach**, and the control asserts that gap
+rather than printing it: were it to vanish, the one-tile pin would not be a partial value and this
+scope note would be overstated.
+
 **The out-of-core path.** `FocusScoreFeature::get_focus_score_NT()` is reached by
 `osized_calculate()` and by no assertion in the tree. Reading it (not measuring — nothing exercises
 it): it passes `(width, height)` to `laplacian()` where the signature's first size parameter is the
