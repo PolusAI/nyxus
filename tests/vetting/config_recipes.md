@@ -884,6 +884,36 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   into the extremum and CellProfiler restricts to the mask. They coincide here only because
   `im_quality_mask` covers the whole 8x12 box.
 
+## imq.saturation_production_only
+- Two ROI configurations `imq.saturation_observed_extremum` cannot reach, with **no oracle**:
+  CellProfiler computes a different quantity on each, so both are VALID-BUT-PRODUCTION-ONLY under
+  SPEC 5.1 and are pinned as drift guards in `test_imq_regression.h`. Benchmark
+  `bench_imq_matrix_cell_rois`; config matrix `matrix/imq.md`.
+- **Constant ROI** (`min == max`): a 4x4 of a single value. `get_percent_max_pixels()` chains
+  `else if`, so a pixel equal to both extrema is counted only as maximal - `MIN_SATURATION` 0 and
+  `MAX_SATURATION` 1, where CellProfiler counts minimal and maximal independently and reports 100%
+  for both.
+- **Mask narrower than the bounding box**: a 4x4 AABB with 5 masked pixels. Nyxus builds its image
+  matrix over the whole box and leaves the other 11 at 0, so they take part in the extremum -
+  `MIN_SATURATION` 11/16 and `MAX_SATURATION` 1/16. CellProfiler restricts to the mask and never
+  sees them.
+- Both pins are exact fractions with power-of-two denominators, so the band is an absolute 0: any
+  other value is a change of behaviour rather than a float wobble.
+
+## imq.power_spectrum_past_guard
+- A 24x24 ROI, the smallest that clears `floor(min(h,w)/8) >= 3`, with **no oracle** - the one cell
+  in which the power-spectrum algorithm actually runs, pinned as a drift guard in
+  `test_imq_regression.h` at 1.7837481542489078. Benchmark `bench_imq_matrix_cell_rois`; config
+  matrix `matrix/imq.md`.
+- The pin endorses nothing. The radius axis is `floor(sqrt(fft coefficient)) + 1` rather than the
+  frequency radius `sqrt(kx^2 + ky^2)` a log-log power-spectrum fit is defined over, and the loop
+  that reads `raw_radii[i]` is bounded by the padded FFT size (1024 here) instead of by
+  `raw_radii.size()` (24). Measured on this fixture the largest index reached is 3, so the read
+  stays in range and the pinned value is defined; nothing in the code keeps it there. Fixing either
+  moves this golden.
+- The candidate oracle is CellProfiler's `centrosome.radial_power_spectrum.rps`, which this was
+  ported from; vetting against it needs the radial binning rewritten first.
+
 ## imq.regression_quality_roi
 - The same 8x12 ROI image matrix, with **no oracle** - `POWER_SPECTRUM_SLOPE` and `SHARPNESS` are
   pinned Nyxus output as drift guards in `test_imq_regression.h`, at full `%.17g` precision.

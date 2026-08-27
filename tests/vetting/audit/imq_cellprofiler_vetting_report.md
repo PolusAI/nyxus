@@ -73,10 +73,16 @@ Run mechanically by the generator over both pins rather than eyeballed:
 
 ## What the two assertions do not cover
 
+Both cells below are reachable production configs, so under SPEC §5.1 they are
+VALID-BUT-PRODUCTION-ONLY rather than gaps: CellProfiler computes a different quantity on each, so
+neither can carry an oracle claim, and each is pinned as a drift guard in `test_imq_regression.h`
+instead. What is uncovered is the *agreement*, not the code path.
+
 **A constant ROI (`min == max`).** CellProfiler counts minimal and maximal independently and reports
 100% for both. Nyxus' `get_percent_max_pixels()` uses `else if`, so a pixel equal to both extrema is
-counted only as maximal. Measured on a constant 4×4 ROI (temporary probe, not committed): Nyxus
-returns `MIN_SATURATION = 0`, `MAX_SATURATION = 1`.
+counted only as maximal. On a constant 4×4 ROI Nyxus returns `MIN_SATURATION = 0`,
+`MAX_SATURATION = 1` — now pinned by `test_imq_{min,max}_saturation_constant_roi_regression`, recipe
+`imq.saturation_production_only`.
 
 That case has a third behaviour as well. `SaturationFeature::osized_calculate()` returns early when
 `r.aux_max == r.aux_min`, leaving both values at 0 — and the out-of-core
@@ -87,8 +93,10 @@ which code path runs. Recorded in `matrix/imq.md` and `not_covered.md`.
 **A mask narrower than the bounding box.** Nyxus computes over the ROI's bounding-box image matrix,
 in which in-box out-of-mask pixels are 0 and *do* take part in the extremum; CellProfiler restricts
 to `image.mask` when one is present. The two coincide here only because `im_quality_mask` covers the
-whole 8×12 box. Vetting that cell needs a fixture whose mask does not, which this family does not
-have.
+whole 8×12 box. `test_imq_{min,max}_saturation_narrow_mask_regression` supplies a 4×4 AABB whose mask
+holds 5 of its 16 pixels and pins Nyxus at `MIN_SATURATION = 11/16`, `MAX_SATURATION = 1/16` — the 11
+in-box out-of-mask zeros counted into both. Vetting the cell, as opposed to guarding it, would need
+CellProfiler and Nyxus to agree on which pixels the ROI contains, which they do not.
 
 **CellProfiler's `FocusScore` / `LocalFocusScore` are not an oracle for Nyxus' features of those
 names.** CP's `FocusScore` is the normalized variance of the *raw* image, `sum((x-mean)²)/(N·mean)`,

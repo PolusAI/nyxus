@@ -61,14 +61,21 @@ FUNC = re.compile(r"^(?:inline\s+)?(?:static\s+)?void\s+(test_\w+)", re.M)
 # assert_imq_regression), so the line that names the feature is the helper call, not a bare
 # ASSERT_ macro. No trailing \b after `assert` for the same reason.
 ASSERTION = re.compile(r"\b(ASSERT_|EXPECT_|assert)")
+# The golden-table key a test reads, as the quoted SCREAMING_SNAKE literal it passes to its helper.
+PIN_KEY = re.compile(r'"([A-Z][A-Z0-9_]*)"')
+# SCOPED_TRACE labels are the other SCREAMING_SNAKE literal in these functions and pin nothing, so
+# they are dropped before the keys are read - otherwise every trace label reads as an unpinned key.
+TRACE = re.compile(r"SCOPED_TRACE\s*\(.*?\)\s*;", re.S)
 COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/", re.S)
 
 NOTE = {
     "LOCAL_FOCUS_SCORE": "opencv covers the per-tile statistic only: the tile extraction and "
                          "the scale^2 divisor are Nyxus' own definition, reproduced in the "
                          "generator. See not_covered.md section E",
-    "POWER_SPECTRUM_SLOPE": "pinned at the guard, not the algorithm: rps() returns early below a "
-                            "24 px short side, so the 0 is the early return. See matrix/imq.md",
+    "POWER_SPECTRUM_SLOPE": "two cells, both regression: the 8 px fixture pins the GUARD's return "
+                            "value (rps() returns early below a 24 px short side, so the 0 is the "
+                            "early return), and a 24x24 ROI pins the algorithm past it at "
+                            "1.7837481542489078. Neither is vetted. See matrix/imq.md",
     "SHARPNESS": "candidate oracle measured and refuted: the reference DOM implementation returns "
                  "0.5459 against Nyxus' 2.1905 on this fixture. See "
                  "audit/imq_pydom_sharpness_vetting_report.md",
@@ -109,12 +116,12 @@ def table_keys(text, table):
 
 
 def scan(path, feat_re):
-    """-> ({test function name: {features it covers}}, {keys the file's table pins})."""
+    """-> ({test fn: {features it covers}}, {test fn: {pin keys it names}}, {keys the table pins})."""
     with open(path, encoding="utf-8", errors="replace") as fh:
         text = strip_comments(fh.read())
     keys = table_keys(text, TABLE_OF[os.path.basename(path)])
 
-    hits = {}
+    hits, read = {}, {}
     marks = [(m.start(), m.group(1)) for m in FUNC.finditer(text)]
     for i, (pos, fn) in enumerate(marks):
         block = text[pos:marks[i + 1][0] if i + 1 < len(marks) else len(text)]
@@ -123,15 +130,23 @@ def scan(path, feat_re):
         for line in block.splitlines():
             if ASSERTION.search(line):
                 hits.setdefault(fn, set()).update(feat_re.findall(line))
-    return hits, keys
+        # The pin key a function reads, taken from the literal it passes rather than inferred from
+        # the feature it names. A cell outside the family's one recipe pins a QUALIFIED key -- the
+        # feature plus the cell, e.g. MIN_SATURATION_CONSTANT_ROI -- so a feature name no longer
+        # identifies the pin, and matching on the feature would report every such key as unread.
+        # Read over the whole block, not per line: these calls wrap.
+        read[fn] = set(PIN_KEY.findall(TRACE.sub("", block)))
+    return hits, read, keys
 
 
 def collect(feat_re):
     """-> (oracle fns, oracle tokens, regression fns, other-kind fns, fn -> file, file -> keys)."""
     asserted, oracles, regression, other, where, keys = {}, {}, {}, {}, {}, {}
+    read_keys = {}
     for rel in SOURCES:
-        hits, table = scan(os.path.join(TESTS, rel), feat_re)
+        hits, read, table = scan(os.path.join(TESTS, rel), feat_re)
         keys[rel] = table
+        read_keys[rel] = set().union(*read.values()) if read else set()
         for fn, feats in hits.items():
             where[fn] = os.path.basename(rel)
             kind = fn.rsplit("_", 1)[-1]
@@ -143,7 +158,7 @@ def collect(feat_re):
                     regression.setdefault(feat, set()).add(fn)
                 else:                   # invariant / mechanics - coverage, never vetting
                     other.setdefault(feat, set()).add(fn)
-    return asserted, oracles, regression, other, where, keys
+    return asserted, oracles, regression, other, where, keys, read_keys
 
 
 def render(rows, asserted, oracles, regression, other):
@@ -183,19 +198,19 @@ def enum_features():
         return set(re.findall(r'\{\s*"(\w+)"\s*,\s*FeatureIMQ::\w+\s*\}', fh.read()))
 
 
-def key_reader_problems(keys, asserted, regression, other, where):
+def key_reader_problems(keys, read_keys):
     """A pinned key nothing reads, and an assertion with nothing pinned for it.
 
-    Three set differences per file. The first direction is the one that matters: an assertion never
+    Two set differences per file. The first direction is the one that matters: an assertion never
     evaluates a key it does not name, so a key sitting at another feature's value is invisible to
     every other check in this file.
+
+    Compared on the KEYS themselves, taken from the literals the tests pass. Comparing on feature
+    names instead would collapse every cell of a feature onto one name, and the family pins more
+    than one cell per feature -- MIN_SATURATION alone is pinned at three.
     """
     out = []
-    read_by_file = {}
-    for bucket in (asserted, regression, other):
-        for feat, fns in bucket.items():
-            for fn in fns:
-                read_by_file.setdefault(where[fn], set()).add(feat)
+    read_by_file = dict(read_keys)
     for rel, pinned in keys.items():
         if pinned is None:
             out.append(f"{rel}: golden table {TABLE_OF[rel]} not found - the scanner cannot check "
@@ -210,7 +225,7 @@ def key_reader_problems(keys, asserted, regression, other, where):
     return out
 
 
-def disagreements(rows, asserted, oracles, regression, other, where, keys):
+def disagreements(rows, asserted, oracles, regression, other, where, keys, read_keys):
     """Each row is answerable for the tests of its own kind."""
     out = []
     for r in rows:
@@ -243,7 +258,7 @@ def disagreements(rows, asserted, oracles, regression, other, where, keys):
         if not any(r["feature"] == f and r["status"] == "regression" for r in rows):
             out.append(f"{f}: {sorted(regression[f])} pin it but no registry row is a regression one")
 
-    out += key_reader_problems(keys, asserted, regression, other, where)
+    out += key_reader_problems(keys, read_keys)
 
     # registration, both directions
     registered = registered_cases()
@@ -275,9 +290,10 @@ def main(argv=None):
 
     rows = registry_rows()
     feat_re = feature_re(feature_names())
-    asserted, oracles, regression, other, where, keys = collect(feat_re)
+    asserted, oracles, regression, other, where, keys, read_keys = collect(feat_re)
     text = render(rows, asserted, oracles, regression, other)
-    problems = disagreements(rows, asserted, oracles, regression, other, where, keys)
+    problems = disagreements(rows, asserted, oracles, regression, other, where, keys,
+                             read_keys)
 
     if a.check:
         with open(OUT, newline="", encoding="utf-8") as fh:

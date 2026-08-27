@@ -340,7 +340,29 @@ and stay background 0. That makes 0 the ROI's observed minimum, which is what `M
 counts (18/96), and it puts a hard edge in the middle of the image that both focus scores respond
 to. Fixing the typo would move four goldens, so it is recorded here rather than repaired.
 
-**Its size is what leaves `POWER_SPECTRUM_SLOPE` untested.** `rps()` returns early unless
+**Its size is what leaves `POWER_SPECTRUM_SLOPE` pinned at its guard.** `rps()` returns early unless
 `floor(min(h,w)/8) >= 3`, i.e. unless the short side is at least 24 px. At 8 wide this fixture never
-reaches the radial-binning code, and the pinned 0 is the guard's return value. A second, larger
-benchmark is what that feature needs — see `matrix/imq.md`.
+reaches the radial-binning code, and the pinned 0 is the guard's return value. The larger ROI that
+feature needs lives in `bench_imq_matrix_cell_rois` below.
+
+## `bench_imq_matrix_cell_rois` — three probe ROIs for the cells outside the 8×12 fixture
+
+| | |
+|---|---|
+| Data | built in `tests/test_imq_regression.h` (`imq_constant_roi_intensity`, `imq_narrow_mask_intensity` + `imq_narrow_mask_mask`, `imq_large_roi_intensity`), fed through `calc_imq_feature_on()` |
+| ROIs | three, one per matrix cell — a constant 4×4, a 4×4 whose mask covers 5 of the 16 pixels in its bounding box, and a 24×24 modular ramp `1 + (7x + 13y) mod 64` |
+| Why it exists | `bench_imq_quality_roi` cannot reach these cells at all: its mask fills its bounding box, its extrema differ, and it is 8 px wide. Each ROI here is the smallest input that reaches one VALID-BUT-PRODUCTION-ONLY cell of `matrix/imq.md` |
+
+Recipes: `imq.saturation_production_only`, `imq.power_spectrum_past_guard`.
+
+Tests reaching it today: `test_imq_regression.h`.
+
+**They are built rather than added to `test_data.h`.** Each is a closed-form pattern a reader can
+evaluate by hand — the saturation pins are `k/16` for a countable `k`, and the ramp is a one-line
+formula — so a literal pixel table would be less checkable than the loop that generates it, not more.
+
+**The 24×24 is the smallest ROI past the power-spectrum guard, and it is deliberately textured.**
+`floor(min(h,w)/8) >= 3` first holds at 24. A smooth ramp there leaves fewer than two points
+surviving `magnitude[i] > 0 && isfinite(log(raw_power[i]))`, `power_spectrum_slope()` falls through
+to the same `0` the guard returns, and the pin could no longer tell the two paths apart. The modular
+ramp leaves 3 surviving points and a fitted slope of 1.7837481542489078.
