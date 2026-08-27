@@ -156,75 +156,51 @@ void assert_3d_ngtdm_feature_pyradiomics_r2 (const Nyxus::Feature3D& expecting_f
 		expecting_fcode, fname, 2, ngtdm_3d_pyradiomics_r2_ref_vals));
 }
 
-// Asserts one NGTDM the family's matrix builder produces against a pinned oracle table.
-static void assert_3d_ngtdm_matrix_pyradiomics (
-	const std::vector<PixIntens>& raw,
-	int width, int height, int depth,
+// Asserts one NGTD matrix against a pinned oracle table, level by level. 'expected_nvp' is the
+// number of voxels the run should have found a neighbour for.
+static void assert_3d_ngtdm_matrix_rows (
+	const Ngtdm3dMatrix& m,
 	const ref_vals_list<Ngtdm3dMatrixRow>& expected,
-	int radius = 1)
+	size_t expected_nvp)
 {
-	SCOPED_TRACE ("NGTDM_RADIUS " + std::to_string (radius));
-
-	SimpleCube<PixIntens> D (raw, width, height, depth);
-
-	// sorted unique intensities, which is the row order calc_NGTDM indexes into
-	std::unordered_set<PixIntens> U (raw.begin(), raw.end());
-	std::vector<PixIntens> I (U.begin(), U.end());
-	std::sort (I.begin(), I.end());
-	ASSERT_EQ (I.size(), expected.size());
-
-	std::vector<std::pair<PixIntens, double>> Zones;
-	D3_NGTDM_feature::gather_zones (Zones, D, radius, 0/*zeroI: no level is background here*/);
-
-	std::vector<int> N;
-	std::vector<double> P, S;
-	double Nvp = D3_NGTDM_feature::calc_NGTDM (N, P, S, Zones, I);
-
-	ASSERT_EQ (N.size(), expected.size());
-	ASSERT_EQ (P.size(), expected.size());
-	ASSERT_EQ (S.size(), expected.size());
-
-	// every voxel of these fixtures has a neighbour, so the valid-voxel count is the voxel count
-	ASSERT_EQ ((size_t)Nvp, raw.size());
+	ASSERT_EQ (m.I.size(), expected.size());
+	ASSERT_EQ (m.N.size(), expected.size());
+	ASSERT_EQ (m.P.size(), expected.size());
+	ASSERT_EQ (m.S.size(), expected.size());
+	ASSERT_EQ ((size_t)m.Nvp, expected_nvp);
 
 	for (size_t k = 0; k < expected.size(); k++)
 	{
 		const Ngtdm3dMatrixRow& row = expected[k];
 		SCOPED_TRACE ("grey level " + std::to_string (row.level));
-		ASSERT_EQ (I[k], row.level);
-		ASSERT_EQ (N[k], row.n);
-		ASSERT_TRUE (agrees_gt (P[k], row.p, ngtdm_3d_pyradiomics_frac_tolerance));
-		ASSERT_TRUE (agrees_gt (S[k], row.s, ngtdm_3d_pyradiomics_frac_tolerance));
+		ASSERT_EQ (m.I[k], row.level);
+		ASSERT_EQ (m.N[k], row.n);
+		ASSERT_TRUE (agrees_gt (m.P[k], row.p, ngtdm_3d_pyradiomics_frac_tolerance));
+		ASSERT_TRUE (agrees_gt (m.S[k], row.s, ngtdm_3d_pyradiomics_frac_tolerance));
 	}
 }
 
-// The matrix under the five features, on the voxels the featurisation actually read. It takes the
-// cube back out of the same extract_3d_ngtdm() the five oracle assertions run, so this assertion and
-// those describe one run rather than two -- a hand-written copy of the phantom would keep passing
-// after the loader started producing something else.
-//
-// The one step reproduced here is calculate()'s zero-min correction: when the minimum level is 0 it
-// shifts every level by one, which at NGTDM_GREYDEPTH=0 (no binning) is the whole of its preamble.
-// The minimum is asserted rather than assumed, since the shift is conditional on it.
+// The matrix the five features are contractions of, as the featurisation itself built it: the run
+// is the same extract_3d_ngtdm() the five oracle assertions make, and the table asserted here is the
+// one calculate() left behind, read back off the feature object. So this assertion and those five
+// describe one run and one matrix -- nothing here rebuilds the levels, the neighbourhoods or the
+// binning, and a preamble that changed any of them moves these numbers.
 static void assert_3d_ngtdm_phantom_matrix_pyradiomics (
 	int radius,
 	const ref_vals_list<Ngtdm3dMatrixRow>& expected)
 {
+	SCOPED_TRACE ("NGTDM_RADIUS " + std::to_string (radius));
+
 	auto [ipath, mpath, label] = get_3d_compat_ngtdm_phantom();
 	Fsettings s = make_ngtdm3d_settings (100/*greydepth*/, 0/*no ngtdm binning*/, radius);
 	std::vector<std::vector<double>> fvals;
 	SimpleCube<PixIntens> cube;
-	ASSERT_NO_FATAL_FAILURE(extract_3d_ngtdm (fvals, cube, ipath, mpath, label, s));
+	Ngtdm3dMatrix m;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_ngtdm (fvals, cube, ipath, mpath, label, s, &m));
 
+	// every voxel of this phantom has a neighbour, so the valid-voxel count is the voxel count
 	ASSERT_EQ (cube.size(), size_t(4 * 4 * 3));
-	ASSERT_EQ (*std::min_element (cube.begin(), cube.end()), PixIntens(0));
-
-	std::vector<PixIntens> levels (cube.begin(), cube.end());
-	for (auto& lev : levels)
-		lev += 1;
-
-	assert_3d_ngtdm_matrix_pyradiomics (levels, cube.width(), cube.height(), cube.depth(),
-	                                    expected, radius);
+	ASSERT_NO_FATAL_FAILURE(assert_3d_ngtdm_matrix_rows (m, expected, cube.size()));
 }
 
 void test_3d_ngtdm_matrix_pyradiomics()
@@ -243,10 +219,29 @@ void test_3d_ngtdm_matrix_r2_pyradiomics()
 // The doc example keeps a literal, and for it that is the right shape: the 4x4 image IS the
 // fixture -- it is published, there is no file to read it from, and the generator runs
 // PyRadiomics on the same literal.
+//
+// With no file there is no featurisation to read a matrix off, so this one is an INDEPENDENT
+// RECONSTRUCTION through the production helpers: it calls gather_zones() and calc_NGTDM() itself
+// and asserts what they return. It therefore covers those two and not calculate()'s preamble --
+// the binning, the level list and the zero-min shift are the test's here, whereas the phantom
+// assertions above observe all of it.
 void test_3d_ngtdm_docmatrix_pyradiomics()
 {
-	assert_3d_ngtdm_matrix_pyradiomics (ngtdm_3d_pyradiomics_doc_image, 4, 4, 1,
-	                                    ngtdm_3d_pyradiomics_docmatrix_ref_vals);
+	const std::vector<PixIntens>& raw = ngtdm_3d_pyradiomics_doc_image;
+	SimpleCube<PixIntens> D (raw, 4/*width*/, 4/*height*/, 1/*depth*/);
+
+	// sorted unique intensities, which is the row order calc_NGTDM indexes into
+	std::unordered_set<PixIntens> U (raw.begin(), raw.end());
+	Ngtdm3dMatrix m;
+	m.I.assign (U.begin(), U.end());
+	std::sort (m.I.begin(), m.I.end());
+
+	std::vector<std::pair<PixIntens, double>> Zones;
+	D3_NGTDM_feature::gather_zones (Zones, D, 1/*radius*/, 0/*zeroI: no level is background here*/);
+	m.Nvp = (int) D3_NGTDM_feature::calc_NGTDM (m.N, m.P, m.S, Zones, m.I);
+
+	ASSERT_NO_FATAL_FAILURE(assert_3d_ngtdm_matrix_rows (
+		m, ngtdm_3d_pyradiomics_docmatrix_ref_vals, raw.size()));
 }
 
 // Regenerates every golden in ngtdm_3d_pyradiomics_ref_vals at full precision, in the shape the
