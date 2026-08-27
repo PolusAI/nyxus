@@ -33,6 +33,17 @@ of a golden table must be read by a test function, that function's name must agr
 it passes, and a TEST() in test_all.cc must call it. A pinned key that nothing reads is where a bad
 number lives, because no assertion ever evaluates it -- which is how this family shipped 3GLDM_LGLE
 pinned to 3GLDM_SDE's value, off by a factor of 353, under a function that asserted 3GLDM_SDE.
+
+AND IT RESOLVES EACH ROW'S `test_name`. The two checks above answer different questions -- which
+files cover a feature, and which functions read a table -- and neither looks at the column that says
+which assertion the row IS. check_coverage.py looks, but only asks whether the name is *a* gtest
+case, so between the three a row could name an unrelated existing case and stay green; that is how
+the per-feature rows here came to name TEST_3D_GLDM_SMALLMATRIX_PYRADIOMICS, a case asserting
+dependence cells on a hand-written unbinned volume rather than the feature on the row's benchmark.
+Each name is now resolved through test_all.cc to the function it runs, and that function has to
+carry an assertion of the row's own feature, at the row's own kind, in a file current_test names,
+and at the row's own config_recipe -- the last because this family has two regression recipes over
+the same fourteen features in the same file, so feature, kind and file alone cannot tell them apart.
 """
 import argparse
 import csv
@@ -69,6 +80,18 @@ PYTEST_ORACLE = {"test_3d_gldm_compatibility": "pyradiomics"}
 ORACLE_FILES = {"test_3d_gldm_pyradiomics.h", "test_nyxus.py"}
 REGRESSION_FILES = {"test_3d_gldm_regression.h"}
 
+# recipe -> the function that asserts AT that recipe. A row's config_recipe is the configuration its
+# numbers were taken at, and the function name is where that configuration lives in the tree, so the
+# two have to agree. Feature, kind and file are all identical between the family's two regression
+# recipes -- one file, one kind, the same fourteen features at GLDM_GREYDEPTH 64 and 0 -- so without
+# this the two sets of rows could be swapped and every other check would stay green.
+RECIPE_READER = {
+    "gldm3d.pyradiomics_bincount20": re.compile(r"^test_3d_gldm_[a-z0-9]+_pyradiomics$"),
+    "gldm3d.regression_ut_phantom": re.compile(r"^test_3d_gldm_[a-z0-9]+_regression$"),
+    "gldm3d.regression_ut_phantom_nobinning": re.compile(r"^test_3d_gldm_[a-z0-9]+_nobinning_regression$"),
+    "gldm3d.regression_constant_roi": re.compile(r"^test_3d_gldm_constant_roi_regression$"),
+}
+
 FUNC = re.compile(r"^(?:inline\s+)?(?:void|def)\s+(test_\w+)|^\s+def\s+(test_\w+)", re.M)
 HELPER = re.compile(r"^def\s+(_\w+)\s*\(", re.M)
 # Every top-level def, helper or test. A helper's body ends at the NEXT TOP-LEVEL DEF OF ANY KIND,
@@ -81,10 +104,14 @@ LOOP_LIST = re.compile(r"for\s*\([^)]*:\s*\{([^}]*)\}\s*\)"
                        r"|for\s+\w+\s+in\s*[\[(]([^\])]*)[\])]\s*:", re.S)
 COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
 
-# the two scalar tables, and the file each lives in
+# the scalar tables: the file each lives in, and the suffix its per-feature reader wears. The suffix
+# is what attributes readers PER TABLE rather than per file -- two tables now share the regression
+# file, one per config, so a file-wide reader set would report every feature as asserted twice and
+# would let a key of one table be answered by the other table's reader.
 TABLES = {
-    "gldm_3d_pyradiomics_ref_vals": "test_3d_gldm_pyradiomics.h",
-    "gldm_3d_regression_ref_vals": "test_3d_gldm_regression.h",
+    "gldm_3d_pyradiomics_ref_vals": ("test_3d_gldm_pyradiomics.h", "_pyradiomics"),
+    "gldm_3d_regression_ref_vals": ("test_3d_gldm_regression.h", "_regression"),
+    "gldm_3d_regression_nobinning_ref_vals": ("test_3d_gldm_regression.h", "_nobinning_regression"),
 }
 
 NOTE = {
@@ -217,44 +244,91 @@ def table_body(text, table):
 
 
 def key_reader_problems():
-    """Three set differences: table keys vs the functions reading them vs the TEST() registrations.
+    """Every key of a golden table against the function named for it and the TEST() that runs it.
 
-    A key nothing reads is where a bad number lives. Also catches a function whose name disagrees
-    with the feature it passes, and a feature asserted twice under two names.
+    A key nothing reads is where a bad number lives, because no assertion ever evaluates it -- which
+    is how this family shipped 3GLDM_LGLE pinned to 3GLDM_SDE's value, off by a factor of 353, under
+    a function that asserted 3GLDM_SDE. The key is resolved to the function its own name implies
+    rather than to whatever happens to read it, so a missing reader is as loud as a mismatched one.
+
+    The reader's feature token is [a-z0-9]+ with no underscore, which is what keeps the tables apart:
+    `_regression` is a suffix of `_nobinning_regression` too, and matching on the suffix alone would
+    let each table's readers answer for the other's keys.
     """
     out = []
     registered = set(registered_calls().values())
-    for table, rel in TABLES.items():
+    for table, (rel, suffix) in TABLES.items():
         text = read(os.path.join(TESTS, rel))
         body = table_body(text, table)
         if body is None:
             out.append(f"{table}: not found in {rel}")
             continue
-        keys = set(re.findall(r'\{\s*"(3GLDM_[A-Z0-9_]+)"\s*,', body))
+        keys = sorted(set(re.findall(r'\{\s*"(3GLDM_[A-Z0-9_]+)"\s*,', body)))
 
+        reader_name = re.compile(r"^test_3d_gldm_[a-z0-9]+" + re.escape(suffix) + r"$")
         readers = {}
         for fn, args in re.findall(r"void\s+(test_3d_gldm_\w+)\s*\(\s*\)\s*\{([^}]*)\}", text):
+            if EXCLUDE_FROM_KIND.match(fn) or not reader_name.match(fn):
+                continue
             m = re.search(r'"(3GLDM_[A-Z0-9_]+)"', args)
             if m:
                 readers[fn] = m.group(1)
 
-        for unread in sorted(keys - set(readers.values())):
-            out.append(f"{table}: {unread} is pinned but no test function asserts it")
-        for fn, feat in sorted(readers.items()):
-            want = fn[len("test_3d_gldm_"):].rsplit("_", 1)[0].upper()
-            if want != feat[len("3GLDM_"):]:
-                out.append(f"{fn}() passes {feat} but its name says 3GLDM_{want}")
-            if fn not in registered:
-                out.append(f"{fn}() reads a pin but no TEST() in test_all.cc calls it")
-        seen = list(readers.values())
-        for dup in sorted({v for v in seen if seen.count(v) > 1}):
-            out.append(f"{table}: {dup} is asserted by more than one function")
+        for key in keys:
+            want = "test_3d_gldm_" + key[len("3GLDM_"):].lower() + suffix
+            got = readers.pop(want, None)
+            if got is None:
+                out.append(f"{table}: {key} is pinned but {want}() does not exist to assert it")
+            elif got != key:
+                out.append(f"{want}() passes {got} but its name says {key}")
+            elif want not in registered:
+                out.append(f"{want}() reads a pin but no TEST() in test_all.cc calls it")
+        for stray, feat in sorted(readers.items()):
+            out.append(f"{table}: {stray}() asserts {feat}, which this table does not pin")
+    return out
+
+
+def test_name_problems(r, f, st, covering, claimed, cases, where):
+    """One row's test_name resolved to the assertion it identifies: feature, kind and file.
+
+    check_coverage.py asks only whether the name is *a* gtest case, and the coverage checks ask only
+    what covers the feature; between them a row could name an unrelated existing case and stay green.
+    Resolving it is what ties one row to one assertion -- the case has to run a function that carries
+    an assertion of THIS feature, at THIS row's kind, in a file current_test names. That is what
+    rejects a matrix case under a per-feature row: TEST_3D_GLDM_SMALLMATRIX_PYRADIOMICS asserts
+    dependence cells on a hand-written unbinned volume, so it covers no feature and is not on the
+    row's benchmark.
+    """
+    out = []
+    names = [t.strip() for t in (r.get("test_name") or "").split(";") if t.strip()]
+    if not names:
+        out.append(f"{f} ({st}): no test_name, so the row identifies no assertion")
+    for name in names:
+        fn = cases.get(name)
+        if fn is None:
+            out.append(f"{f} ({st}): test_name {name} resolves to no TEST() in test_all.cc")
+        elif fn not in covering:
+            out.append(f"{f} ({st}): test_name {name} runs {fn}(), which carries no {st} "
+                       f"assertion of {f}")
+        elif where[fn] not in claimed:
+            out.append(f"{f} ({st}): test_name {name} is defined in {where[fn]}, which "
+                       f"current_test ({r['current_test'] or 'empty'}) does not name")
+        else:
+            recipe = r["config_recipe"].strip()
+            reader = RECIPE_READER.get(recipe)
+            if reader is None:
+                out.append(f"{f} ({st}): config_recipe {recipe!r} has no reader in RECIPE_READER, "
+                           f"so test_name cannot be checked against the configuration")
+            elif not reader.match(fn):
+                out.append(f"{f} ({st}): test_name {name} runs {fn}(), which does not assert at "
+                           f"config_recipe {recipe}")
     return out
 
 
 def disagreements(rows, asserted, oracles, regression, where):
     """Each registry row against the tests of ITS OWN KIND - see the module docstring."""
     out = []
+    cases = registered_calls()
     for r in rows:
         f, st = r["feature"], r["status"].strip()
         claimed = {t for t in r["current_test"].split(";") if t}
@@ -283,6 +357,7 @@ def disagreements(rows, asserted, oracles, regression, where):
             out.append(f"{f} ({st}): {gap} asserts it but current_test omits it")
         for bad in sorted(t for t in claimed if "mechanics" in t or "coverage" in t):
             out.append(f"{f} ({st}): current_test names {bad}, which pins no reference value")
+        out += test_name_problems(r, f, st, covering, claimed, cases, where)
     return out
 
 
