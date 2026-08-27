@@ -394,39 +394,37 @@ are recorded instead, and this report carries the rest.
 
 ---
 
-## The generic 3D coverage sweep stays
+## The generic 3D coverage sweep, and what its retirement dropped
 
-`test_3d_ngtdm_coverage.h` still instantiates both parameterized suites for this family, and its
-oracle half calls the same `assert_3d_ngtdm_feature_pyradiomics` the five named tests call — so five
-of the sweep's cases duplicate five named assertions, and the family is fully oracle-backed, which is
-the condition under which three other families (glcm, morphology, ngldm, glrlm) have retired their
-instantiations.
+`test_3d_ngtdm_coverage.h` is gone: upstream `ef0d2d92` deleted it together with the gldm and glszm
+instantiations and the shared `Test3DFeature_WITH_3P_EMBEDDED_GT` fixture in
+`test_3d_coverage_common.h`, which had no caller left after them. NGTDM is now covered by its named
+tests alone, which is the condition the retirement was made under: every one of the family's five
+features has its own `TEST_3D_NGTDM_<FEATURE>_PYRADIOMICS`, and the sweep's oracle half called the
+same `assert_3d_ngtdm_feature_pyradiomics` those tests call, so its cases were duplicates.
 
-It is deliberately not retired here, for a reason that is not just "open question 7":
-`Test3DFeature_WITH_3P_EMBEDDED_GT`'s body is three assertions and only the third is the duplicate.
-The second, `assert_3d_feature_is_registered_and_computable`, is itself five checks, and they are not
-covered equally — measured across `871ebfc` and the four already-retired families:
+They were not duplicates in full, and the difference is worth recording rather than losing.
+`Test3DFeature_WITH_3P_EMBEDDED_GT`'s body was three assertions and only the third was the duplicate.
+The second, `assert_3d_feature_is_registered_and_computable`, was itself five checks, and they were
+not covered equally — measured across `871ebfc` and the families that had retired by then:
 
 | | check | covered elsewhere? |
 |---|---|---|
-| A1 | `find_3D_FeatureByString(name, fcode)` resolves | **yes** — `resolve_3d_ngtdm_fcode` in this family, and the four retired families' `_regression.h` files call it too (1–3 sites each) |
+| A1 | `find_3D_FeatureByString(name, fcode)` resolves | **yes** — `resolve_3d_ngtdm_fcode` in this family, and the retired families' `_regression.h` files call it too (1–3 sites each) |
 | A2 | the name maps to the expected `Feature3D` code | **yes**, same place |
-| A3 | the feature is in some `D3_*::featureset` | **yes**, by a different route — `FeatureManager::check_11_correspondence()` runs inside `test_feature_manager_mechanics.h` and its zero-provider branch is this property over the whole enum. Substitution rather than identity: A3 reads the nine `D3_*::featureset` statics, `check_11_correspondence` reads `FeatureManager::full_featureset`, and those coincide only while the constructor registers exactly those nine classes |
+| A3 | the feature is in some `D3_*::featureset` | **yes**, by a different route — `FeatureManager::check_11_correspondence()` runs inside `test_feature_manager_mechanics.h` and its zero-provider branch is this property over the whole enum. Substitution rather than identity: A3 read the nine `D3_*::featureset` statics, `check_11_correspondence` reads `FeatureManager::full_featureset`, and those coincide only while the constructor registers exactly those nine classes |
 | A4 | the feature's slot exists and is non-empty in the global value table | **no** |
 | A5 | something finite was written there by the calculators | **no** |
 
 A4 and A5 are what nothing else asserts: that `calculate()` followed by `save_value()` actually
 populates the feature's slot. Every named test in every family — including this one's — reads
 `r.fvals[fcode][0]` off an ROI it built itself. `grep` for `implemented_3d_feature_codes` or
-`computed_3d_feature_values` in the four retired `_regression.h` files returns 0 in all four, so for
-glcm, morphology, ngldm and glrlm that pair is no longer asserted anywhere.
+`computed_3d_feature_values` in the retired `_regression.h` files returns 0 in all of them, so that
+pair is now asserted for no 3D family. **This is an open gap, not a resolved one** — the retirement
+deleted A4/A5 rather than porting them, and closing it needs a home that is not per-family.
 
-So the retirement is a port rather than a delete, and what has to be ported is A4/A5 specifically —
-not "the registration check", which was the first and looser reading of this. Recorded rather than
-done, because `test_3d_coverage_common.h` is shared with every other 3D family's branch.
-
-**One thing A5 is not.** `make_3d_coverage_settings()` hand-sets `NGTDM_RADIUS = 1` and every family
-greydepth to 64, so the sweep exercises the calculators under a correctly-configured `Fsettings` and
+**One thing A5 was not.** `make_3d_coverage_settings()` hand-set `NGTDM_RADIUS = 1` and every family
+greydepth to 64, so the sweep exercised the calculators under a correctly-configured `Fsettings` and
 never through `compile_feature_settings()`. It could not have caught the NaN defect above, and should
 not be credited with that class of check — `test_3d_ngtdm_default_radius_mechanics` is the only thing
 covering it.
