@@ -629,6 +629,29 @@ TEST(TEST_NYXUS, TEST_3D_GLDM_DUMP_REGRESSION) {
 	ASSERT_NO_THROW (test_3d_gldm_dump_regression());
 }
 
+TEST(TEST_NYXUS, TEST_3D_GLDM_CONSTANT_ROI_REGRESSION) {
+	ASSERT_NO_THROW (test_3d_gldm_constant_roi_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDM_DE_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_de_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_DN_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_dn_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_DNN_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_dnn_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_DV_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_dv_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_GLN_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_gln_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_GLV_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_glv_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_HGLE_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_hgle_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_LDE_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_lde_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_LDHGLE_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_ldhgle_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_LDLGLE_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_ldlgle_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_LGLE_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_lgle_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_SDE_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_sde_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_SDHGLE_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_sdhgle_nobinning_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLDM_SDLGLE_NOBINNING_REGRESSION) { ASSERT_NO_THROW (test_3d_gldm_sdlgle_nobinning_regression()); }
+
+TEST(TEST_NYXUS, TEST_3D_GLDM_DUMP_NOBINNING_REGRESSION) {
+	ASSERT_NO_THROW (test_3d_gldm_dump_nobinning_regression());
+}
+
 //***** 3D GLCM compatibility *****
 
 TEST(TEST_NYXUS, TEST_3D_GLCM_EQUIVALENCE_DUMP_PYRADIOMICS) {
