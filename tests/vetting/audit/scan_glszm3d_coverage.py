@@ -5,14 +5,29 @@
 The feature -> test mapping is read out of the test sources rather than written by hand, so the
 artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
 acceptance check from the family plan: every `vetted` row in oracle_coverage.csv must be asserted by
-an oracle test, that test's oracle must be the one the row names, and `current_test` must name the
-file holding the assertion the row's `test_name` identifies.
+an oracle test, that test's oracle must be the one the row names, and the row's two identifiers --
+`test_name` and `current_test` -- must describe the same assertion.
 
 A row describes ONE assertion -- feature x config x reference (SPEC 3) -- so `current_test` names the
-file that assertion lives in, not every file that touches the feature. It used to require the whole
-covering set, which put the parameterized coverage sweep and the drift guard in one field and left
-the row unable to say which of them its recipe, tolerance and benchmark belonged to. The sweep is
-still scanned and still reported below; it simply is not the row's assertion.
+file that assertion lives in, and nothing else. It used to require the whole covering set, which put
+the parameterized coverage sweep and the drift guard in one field and left the row unable to say
+which of them its recipe, tolerance and benchmark belonged to. The sweep is still scanned and still
+reported below; it simply is not the row's assertion.
+
+That is checked in BOTH directions, because a one-way check is how the conflation survived: a row
+whose `current_test` held the right oracle file plus three unrelated ones passed a rule that only
+asked whether the right file was present. So `current_test` must be exactly the file the row's
+`test_name` is defined in -- no supersets -- and three further checks say the row is about the
+assertion it names rather than merely near it:
+
+  * the KIND of the case matches the row. A `vetted` row must name a case whose function carries an
+    oracle suffix, and that suffix must be the oracle the row claims; a `regression` row must name a
+    `_regression` case and claim no oracle.
+  * one case asserts one configuration, so two rows for the same feature naming the same `test_name`
+    must carry the same `config_recipe`. This is the check that the four-file `current_test` was
+    hiding: the -20 oracle and the +64 regression were one row.
+  * an assertion is recorded once, so (feature, config_recipe, oracle) is unique, and a row that
+    names no recipe or no tolerance is not saying which assertion it is.
 
 Coverage rule: a feature is covered by a test function when its name appears on an ASSERTION line in
 that function, or in a golden table that a function loops over while asserting. Comments are
@@ -50,11 +65,16 @@ SOURCES = [
     "test_3d_glszm_mechanics.h",
     os.path.join("python", "test_nyxus.py"),
 ]
-# A golden table whose keys are never named in the asserting function's body. The pytest case keys
-# its dict by the PyRadiomics feature name and asserts through the Nyxus name, but it names the
-# Nyxus name on the assertion line itself, so nothing here needs the indirection. The two matrix
-# tables are keyed by grey level rather than by feature and cover no feature at all.
-TABLE_OWNER = {}
+# A golden table whose keys are never named in the asserting function's body. Two cases assert their
+# sixteen features by looping their table and resolving each name at runtime, so the names appear
+# only in the table: the row is credited to the function that loops it. The pytest case keys its dict
+# by the PyRadiomics feature name and asserts through the Nyxus name, but it names the Nyxus name on
+# the assertion line itself, so nothing here needs the indirection; the three matrix tables are keyed
+# by grey level rather than by feature and cover no feature at all.
+TABLE_OWNER = {
+    "glszm_3d_pyradiomics_gapped_ref_vals": "test_3d_glszm_ibsi_gapped_pyradiomics",
+    "glszm_3d_regression_nobinning_ref_vals": "test_3d_glszm_default_greydepth_regression",
+}
 
 ORACLE_SUFFIX = {"pyradiomics": "pyradiomics"}
 
@@ -74,7 +94,7 @@ COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
 # Every feature of this family is a contraction of one size-zone matrix, so the note belongs on all
 # sixteen rows rather than on a representative one.
 FAMILY_NOTE = ("the size-zone matrix all sixteen features contract is pinned cell by cell as well, "
-               "in test_3d_glszm_matrix_pyradiomics")
+               "read off the feature object calculate() filled, in test_3d_glszm_matrix_pyradiomics")
 
 
 def feature_names():
@@ -167,12 +187,22 @@ def registry_rows():
 
 
 def render(rows, asserted, oracles, regression, other):
+    """The artifact is a feature -> test map, so it carries one line per feature.
+
+    The registry carries one line per ASSERTION, and a feature has several: two oracle recipes and
+    two drift guards here. Rendering it row for row would repeat every feature four times with the
+    same test lists, which reads as four findings rather than one.
+    """
     buf = io.StringIO()
     w = csv.writer(buf, lineterminator="\n")
     w.writerow(["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
                 "Regression", "Reg_Test_Name", "Notes"])
+    seen = set()
     for r in rows:
         f = r["feature"]
+        if f in seen:
+            continue
+        seen.add(f)
         notes = [FAMILY_NOTE]
         # A function whose name-suffix is neither an oracle nor `regression` contributes coverage but
         # no oracle token, so it would otherwise be invisible in this artifact. Naming it keeps the
@@ -200,13 +230,14 @@ def unregistered_tests(where):
                   if src.endswith(".h") and fn not in registered)
 
 
-def case_to_file(where):
-    """-> {gtest case name: the source file defining the function it calls}.
+def case_to_fn(where):
+    """-> {gtest case name: (the function it calls, the source file defining that function)}.
 
     test_all.cc registers `TEST(SUITE, CASE) { ASSERT_NO_THROW(fn()); }`, and `where` already maps a
-    test function to the file that defines it, so the two compose into case -> file. That is what
-    lets the check below confirm a row's test_name and its current_test describe the same assertion
-    rather than merely both being true of the feature.
+    test function to the file that defines it, so the two compose into case -> (fn, file). That is
+    what lets the checks below confirm a row's test_name and its current_test describe the same
+    assertion rather than merely both being true of the feature -- and, through the function's
+    name-suffix, that the assertion is of the kind the row claims.
     """
     with open(os.path.join(TESTS, "test_all.cc"), encoding="utf-8", errors="replace") as fh:
         txt = fh.read()
@@ -215,18 +246,23 @@ def case_to_file(where):
             r"TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{(.*?)\n\}", txt, re.S):
         for fn in re.findall(r"(test_3d_glszm_\w+)\s*\(\s*\)", body):
             if fn in where:
-                out[f"{suite}.{case}"] = where[fn]
+                out[f"{suite}.{case}"] = (fn, where[fn])
     return out
 
 
 def disagreements(rows, asserted, oracles, regression, other, where):
     out = []
-    cases = case_to_file(where)
+    cases = case_to_fn(where)
+    by_case = {}          # test_name -> the recipes claiming it, per feature
+    seen_assertions = {}  # (feature, recipe, oracle) -> how many rows record it
     for r in rows:
         f = r["feature"]
         covering = asserted.get(f, set()) | regression.get(f, set()) | other.get(f, set())
         files = {where[fn] for fn in covering} | {SWEEP}
         claimed = {t for t in r["current_test"].split(";") if t}
+        recipe = (r.get("config_recipe") or "").strip()
+        name = (r.get("test_name") or "").strip()
+
         if r["status"] == "vetted" and not asserted.get(f):
             out.append(f"{f}: status=vetted but no oracle test asserts it")
         if r["oracle"] and r["oracle"] not in oracles.get(f, set()):
@@ -235,16 +271,51 @@ def disagreements(rows, asserted, oracles, regression, other, where):
         for stale in sorted(claimed - files):
             out.append(f"{f}: current_test names {stale}, which covers nothing for it")
 
-        # The row describes one assertion, so its two identifiers must agree: the file named in
-        # current_test is the file the case named in test_name is defined in.
-        name = r.get("test_name", "")
+        # A row is one assertion, so it has to say which one: a recipe and a band, recorded once.
+        if not recipe:
+            out.append(f"{f}: no config_recipe, so the row does not say which configuration it is")
+        if not (r.get("tolerance") or "").strip():
+            out.append(f"{f}: no tolerance, so the row does not say what agreement it claims")
+        key = (f, recipe, r["oracle"])
+        seen_assertions[key] = seen_assertions.get(key, 0) + 1
+        if seen_assertions[key] == 2:
+            out.append(f"{f}: two rows record the assertion (recipe {recipe or 'empty'}, oracle "
+                       f"{r['oracle'] or 'none'}); one assertion is one row")
+
+        # ...and its two identifiers must agree. current_test is the file the case in test_name is
+        # defined in, and ONLY that file: a superset passes a one-way check while still conflating
+        # this row's assertion with somebody else's.
         if not name:
             out.append(f"{f}: no test_name, so current_test names an assertion nothing identifies")
-        elif name not in cases:
+            continue
+        if name not in cases:
             out.append(f"{f}: test_name {name} resolves to no registered case in test_all.cc")
-        elif cases[name] not in claimed:
-            out.append(f"{f}: test_name {name} is defined in {cases[name]}, which current_test "
-                       f"({r['current_test'] or 'empty'}) does not name")
+            continue
+        fn, src = cases[name]
+        if claimed != {src}:
+            out.append(f"{f}: test_name {name} is defined in {src}, but current_test is "
+                       f"{r['current_test'] or 'empty'}; a row names the one file its assertion "
+                       f"lives in")
+
+        # the kind of the case is the kind of the row, read off the function's name-suffix (SPEC 2)
+        kind = fn.rsplit("_", 1)[-1]
+        if r["status"] == "vetted":
+            if kind not in ORACLE_SUFFIX:
+                out.append(f"{f}: status=vetted but {name} is a {kind!r} case, which claims no oracle")
+            elif ORACLE_SUFFIX[kind] != r["oracle"]:
+                out.append(f"{f}: row claims oracle={r['oracle']!r} but {name} is a "
+                           f"{ORACLE_SUFFIX[kind]!r} assertion")
+        elif r["status"] == "regression":
+            if kind != "regression":
+                out.append(f"{f}: status=regression but {name} is a {kind!r} case")
+            if r["oracle"]:
+                out.append(f"{f}: status=regression but the row claims oracle={r['oracle']!r}")
+
+        # one case asserts one configuration
+        prev = by_case.setdefault((f, name), recipe)
+        if prev != recipe:
+            out.append(f"{f}: {name} is claimed by two recipes, {prev or 'empty'} and "
+                       f"{recipe or 'empty'}; one case asserts one configuration")
     return out
 
 
