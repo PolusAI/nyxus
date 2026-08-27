@@ -75,6 +75,15 @@ codebase, so it belongs in the band rather than in a defect report.
 All fourteen features are contractions of one dependence matrix `P(i, j)`, so a compensating pair of
 errors inside it survives every scalar assertion. The matrix is therefore pinned as well.
 
+**The pinned table is held to two matrices, one of them production's.**
+`TEST_3D_GLDM_MATRIX_PYRADIOMICS` tallies the cells twice. The first tally comes from
+`D3_GLDM_feature::gather_dependence_zones()` — the traversal `calculate()` fills `P` from — so the
+26-offset `shifts` table, the `pi == neig_pi` cutoff and the background rule are all *under* the
+assertion; changing any of them fails it. The second comes from a 26-offset walk written out in the
+test file, sharing no code with the feature class, which is what keeps the pins from being whatever
+production happens to say. Both are compared cell for cell and in both directions — a populated cell
+the table does not carry fails as loudly as a pinned cell the run does not produce.
+
 | | value |
 |---|---|
 | non-empty cells | **163** |
@@ -140,10 +149,16 @@ isolation, then reverted.
 | E | **one voxel of the 4×4×3 volume 1 → 2** | `TEST_3D_GLDM_SMALLMATRIX_PYRADIOMICS` | fails |
 | F | `3GLDM_DE` band tightened to the exact tier | `TEST_3D_GLDM_DE_PYRADIOMICS` | fails |
 | G | one snapshot pin moved by 1e-6 relative | `TEST_3D_GLDM_LGLE_REGRESSION` | fails |
+| H | **production's `shifts` table loses the `-z` offset** | `TEST_3D_GLDM_MATRIX_PYRADIOMICS`, `TEST_3D_GLDM_SMALLMATRIX_PYRADIOMICS` | fail |
 
 C, D and E are the input half: they demonstrate the matrix assertions read the cube the featurisation
 produced rather than a hand-written copy of it. F demonstrates the `3GLDM_DE` band is load-bearing —
 at `abs=1e-9` the `fast_log10` residual fails, so the band is neither decorative nor over-wide.
+H is the production half: `{0,0,-1}` was made a duplicate of `{0,0,+1}`, which is a change no scalar
+golden was moved for. Both matrix assertions failed on the production tally (`nd` 6 → 7 on the small
+volume), and the definition tally — which ran, since the two arms are separated by `EXPECT` rather
+than `ASSERT` — still matched the pins, so the failure named production rather than the goldens.
+Before the review round this perturbation failed no matrix assertion at all.
 
 Generator-side controls: removing the header's matrix table makes `gen_gldm3d_pyradiomics.py` exit 1;
 so does any bound violation, identity failure, cross-table mismatch, definition mismatch or unpinned
@@ -156,7 +171,8 @@ feature, each through its own counter.
   reconciliation before it could corroborate anything here.
 - **`GLDM_GREYDEPTH = 0` / `IBSI=true` are unmeasured.** They are the same code path reached two
   ways, reachable in production, and pinned nowhere. Recorded in `matrix/gldm3d.md`.
-- **The matrix assertion re-derives the matrix rather than reading `calculate()`'s.** `P`, `I`, `Ng`,
-  `Nd` and `Nz` are private and exposing them would be a source change. So the assertion establishes
-  that *the cube Nyxus loaded produces PyRadiomics' matrix*; what ties that to `calculate()`'s own
-  matrix is the fourteen scalars agreeing to 7.11e-15.
+- **`calculate()`'s filled `P` is still not read directly.** `P`, `I`, `Ng`, `Nd` and `Nz` stay
+  private. The assertion observes the production traversal that *produces* the cells —
+  `gather_dependence_zones()` — but not the row indexing through `I`, the `Nd` trim, or the `Nz`
+  sum that `calculate()` performs on top of it. Those three remain tied to the pinned matrix only by
+  the fourteen scalars agreeing to 7.11e-15.
