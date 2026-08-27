@@ -236,15 +236,25 @@ Gotchas hit while vetting the IMQ focus scores against it:
 - **`ndarray.var()` is the population variance** (`ddof=0`). If the feature under test divides by
   `N`, do not reach for `numpy.var(..., ddof=1)`.
 
-## the reference DOM sharpness measure — vendored, not installed
+## the reference DOM sharpness measure — installed from git, never vendored
 
 The Kumar et al. (2012) sharpness reference used to refute Nyxus' `SHARPNESS` has **no usable PyPI
 package**: `pip install dom` fetches an unrelated domain-lookup CLI, and `pydom` on PyPI is an HTML
 component library. The implementation lives at `https://github.com/umang-singhal/pydom`
-(`dom/dom.py`), so the six functions are vendored into
-`tests/vetting/audit/imq_sharpness_reference_dom.py` with the upstream file named at the top, each
-line mirroring one upstream statement. It needs numpy and `cv2.medianBlur`, both already in
-`nyxus_mirp`.
+(`dom/dom.py`) and installs cleanly from git:
+
+```
+pip install git+https://github.com/umang-singhal/pydom.git      # into nyxus_mirp
+```
+
+**Install it; do not copy it.** Upstream is GPL-3.0 and Nyxus is MIT, so a transcription of its
+functions into this tree — even in a test-only script — would put GPL-derived code in an MIT
+repository without its licence or copyright notice.
+`tests/vetting/audit/imq_sharpness_reference_dom.py` therefore imports the package and calls its
+public API (`DOM.get_sharpness` for the score; `load`/`edges`/`sharpness_matrix` for the
+intermediates the report tabulates, with an assertion that they recompose the score). The same rule
+applies to any future reference under a copyleft licence: invoke it, or reimplement independently
+from the publication — never paste it in.
 
 `dom` is **not** a SPEC 4 oracle token and the script pins nothing, which is why it sits in `audit/`
 next to its report rather than in `oracles/` as a `gen_*`. Its job is to keep a refutation honest:
