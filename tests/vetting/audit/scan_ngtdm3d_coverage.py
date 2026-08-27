@@ -207,12 +207,18 @@ def case_to_file(where):
     test function to the file that defines it, so the two compose into case -> file. That is what
     lets the check below confirm a row's test_name and its current_test describe the same assertion
     rather than merely both being true of the feature.
+
+    The body is matched as a brace-free span rather than as "up to a closing brace in column 1",
+    because the file registers cases in two shapes: a three-line block, and a one-liner whose
+    closing brace sits at the end of the line. A pattern anchored on the block shape runs straight
+    through every one-liner to the next block's brace, and silently attributes the cases it swallowed
+    to whichever registration opened the span.
     """
     with open(os.path.join(TESTS, "test_all.cc"), encoding="utf-8", errors="replace") as fh:
         txt = fh.read()
     out = {}
     for suite, case, body in re.findall(
-            r"TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{(.*?)\n\}", txt, re.S):
+            r"TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{([^{}]*)\}", txt):
         for fn in re.findall(r"(test_3d_ngtdm_\w+)\s*\(\s*\)", body):
             if fn in where:
                 out[f"{suite}.{case}"] = where[fn]
