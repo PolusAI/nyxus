@@ -7,6 +7,12 @@ the sixteen scalars, the size-zone matrix of the phantom, and the size-zone matr
 hand-worked volume -- exiting non-zero on any mismatch, on any pin it cannot produce, on a bound
 violation, or on a cross-table disagreement.
 
+TWO RECIPES. `glszm3d.pyradiomics_bincount20` is the phantom run below. `glszm3d.pyradiomics_ibsi_gapped`
+is the second: a 3x3x3 literal carrying grey levels 1, 3 and 5, read at binWidth=1, which is the only
+place either side is asked what an absent grey level does to the row index. Nyxus reaches that point
+through IBSI=true, where calculate() forces its binning to 0; PyRadiomics reaches it through a bin
+width that leaves the levels alone. Both report Ng = 5 for three occupied levels.
+
 Recipe `glszm3d.pyradiomics_bincount20`: the compat phantom
 (tests/data/nifti/compat_int/compat_int_mri.nii + compat_seg/compat_seg_liver.nii, label 1) with
 binCount=20, no resampling, weightingNorm=None, imageType=Original -- the settings the test header's
@@ -27,7 +33,11 @@ makes it impossible to edit one table here and not the other.
 CONNECTIVITY: both sides walk the full 26-voxel neighbourhood in 3D. PyRadiomics' C extension uses
 it by construction; Nyxus' D3_GLSZM_feature::gather_size_zones spells out the 8 in-slice, 8 upper, 8
 lower and 2 strictly-vertical offsets. The 4x4x3 hand-worked volume below is the direct check of
-that: its single populated slice makes every zone a 2D 8-connected component with a known answer.
+that, and it is built so that only the 26-neighbourhood produces its table: its zones include a
+strictly vertical run, a z-edge join, a z-corner join that no 18-neighbourhood would make, and a pair
+of same-level voxels two slices apart that must stay two zones. Counting them under 18-, 6- and
+2D-8-connectivity gives 10, 13 and 13 zones against 26-connectivity's 9. Its predecessor, one
+populated slice between two empty ones, gave the same nine zones under 26-, 18- AND 2D-8-connectivity.
 
 Provenance: tool=pyradiomics 3.0.1 (SimpleITK 2.3.1, Python 3.8); env=nyxus_oracle (conda, needs
 Python <= 3.9); generator=tests/vetting/oracles/gen_glszm3d_pyradiomics.py. Run offline; CI never
@@ -88,12 +98,23 @@ BOUNDS = {
     "3GLSZM_ZV": (0.0, None),
 }
 
-# The 4x4x3 volume the header's small matrix assertion runs on: one populated slice between two
-# all-zero ones. Written as PyRadiomics wants it, (z, y, x).
+# The 4x4x3 volume the header's small matrix assertion runs on, written as PyRadiomics wants it,
+# (z, y, x). Every slice is populated and the zones cross them; the header lists the nine zones and
+# what each one is there to separate.
 DOC_VOLUME = numpy.array([
-    [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
-    [[1, 2, 3, 4], [1, 3, 4, 4], [3, 2, 2, 2], [4, 1, 4, 1]],
-    [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+    [[1, 0, 2, 0], [0, 0, 0, 0], [3, 0, 0, 0], [0, 0, 0, 4]],
+    [[1, 0, 0, 2], [0, 0, 0, 0], [0, 0, 1, 0], [0, 3, 0, 1]],
+    [[1, 0, 4, 0], [3, 3, 3, 4], [0, 0, 0, 0], [2, 0, 0, 4]],
+], dtype=numpy.int16)
+
+# The 3x3x3 volume behind recipe `glszm3d.pyradiomics_ibsi_gapped`, (z, y, x). Levels 1, 3 and 5 with
+# 2 and 4 absent, so the position of a level in the occupied-level list and the level itself are
+# different numbers -- which is the only thing that separates the IBSI row-index branch from the one
+# beside it.
+GAPPED_VOLUME = numpy.array([
+    [[1, 0, 3], [0, 0, 0], [5, 0, 5]],
+    [[1, 0, 0], [0, 3, 0], [0, 0, 0]],
+    [[0, 0, 3], [0, 0, 0], [5, 0, 1]],
 ], dtype=numpy.int16)
 
 
@@ -140,7 +161,7 @@ def phantom_matrix():
 
 
 def doc_matrix():
-    """-> (cells, Ng, Ns) of DOC_VOLUME's size-zone matrix at binWidth=1.
+    """-> (cells, Ng, Ns, Np) of DOC_VOLUME's size-zone matrix at binWidth=1.
 
     binWidth=1 on levels 1..4 discretises to 1..4, which is what Nyxus' no-binning path reads
     straight off the volume, so the two sides index the same rows.
@@ -151,7 +172,37 @@ def doc_matrix():
                              resampledPixelSpacing=None, force2D=False)
     f._initCalculation()
     cells = nonzero_cells(f)
-    return cells, int(numpy.asarray(f.coefficients["Ng"]).ravel()[0]), max(c[1] for c in cells)
+    return (cells,
+            int(numpy.asarray(f.coefficients["Ng"]).ravel()[0]),
+            max(c[1] for c in cells),
+            int(f.coefficients["Np"][0]))
+
+
+def gapped_matrix():
+    """-> (cells, Ng, Ns, Np) of GAPPED_VOLUME's size-zone matrix at binWidth=1."""
+    img = sitk.GetImageFromArray(GAPPED_VOLUME)
+    msk = sitk.GetImageFromArray((GAPPED_VOLUME > 0).astype(numpy.uint8))
+    f = glszm.RadiomicsGLSZM(img, msk, binWidth=1, label=1, weightingNorm=None,
+                             resampledPixelSpacing=None, force2D=False)
+    f._initCalculation()
+    cells = nonzero_cells(f)
+    return (cells,
+            int(numpy.asarray(f.coefficients["Ng"]).ravel()[0]),
+            max(c[1] for c in cells),
+            int(f.coefficients["Np"][0]))
+
+
+def gapped_run():
+    """-> {nyxus feature: PyRadiomics value} on GAPPED_VOLUME, through the public extractor."""
+    radiomics.logger.setLevel(40)
+    ex = featureextractor.RadiomicsFeatureExtractor(
+        binWidth=1, label=1, weightingNorm=None, resampledPixelSpacing=None, force2D=False)
+    ex.disableAllFeatures()
+    ex.enableFeatureClassByName("glszm")
+    img = sitk.GetImageFromArray(GAPPED_VOLUME)
+    msk = sitk.GetImageFromArray((GAPPED_VOLUME > 0).astype(numpy.uint8))
+    res = ex.execute(img, msk)
+    return {nyx: float(res[f"original_glszm_{pyr}"]) for nyx, pyr in PYRAD.items()}
 
 
 def recompute(cells, Ng, Ns, Nz, Np):
@@ -296,7 +347,9 @@ def main():
 
     got = run()
     cells, Ng, Ns, Nz, Np = phantom_matrix()
-    doc_cells, doc_Ng, doc_Ns = doc_matrix()
+    doc_cells, doc_Ng, doc_Ns, doc_Np = doc_matrix()
+    gap = gapped_run()
+    gap_cells, gap_Ng, gap_Ns, gap_Np = gapped_matrix()
 
     print(f"# pyradiomics {radiomics.__version__}, SimpleITK {sitk.__version__}, "
           f"binCount={BINCOUNT}, label={LABEL}")
@@ -312,6 +365,14 @@ def main():
     print(f"\n# paste-ready non-empty cells of the 4x4x3 volume's matrix "
           f"(Ng={doc_Ng}, Ns={doc_Ns}), {{level, size, count}}")
     for lev, size, cnt in doc_cells:
+        print(f"\t{{ {lev}, {size}, {cnt} }},")
+
+    print("\n# paste-ready goldens of the gapped-level volume (recipe glszm3d.pyradiomics_ibsi_gapped)")
+    for name in sorted(gap):
+        print(f'\t{{"{name}", {gap[name]!r}}},'.ljust(56) + f"// original_glszm_{PYRAD[name]}")
+    print(f"\n# paste-ready non-empty cells of the gapped volume's matrix "
+          f"(Ng={gap_Ng}, Ns={gap_Ns}, Np={gap_Np}), {{level, size, count}}")
+    for lev, size, cnt in gap_cells:
         print(f"\t{{ {lev}, {size}, {cnt} }},")
 
     print()
@@ -330,26 +391,29 @@ def main():
 
     txt_h = open(TEST_H, encoding="utf-8", errors="replace").read()
 
-    pins = parse_pins(txt_h, "glszm_3d_pyradiomics_ref_vals")
-    print(f"\n# verifying {len(pins)} pinned goldens against this run")
     nok = nfail = nmiss = 0
-    for name in sorted(pins):
-        want = pins[name]
-        if name not in got:
-            print(f"  MISSING {name}: pinned {want!r} but PyRadiomics reports no counterpart")
-            nmiss += 1
-            continue
-        band = ZE_RELTOL if name == "3GLSZM_ZE" else RELTOL
-        if compare(name, got[name], want, band):
-            nfail += 1
-        else:
-            print(f"  OK   {name}: pyradiomics={got[name]!r} pinned={want!r}")
-            nok += 1
+    missing_pin = []
+    for table, oracle in (("glszm_3d_pyradiomics_ref_vals", got),
+                          ("glszm_3d_pyradiomics_gapped_ref_vals", gap)):
+        pins = parse_pins(txt_h, table)
+        print(f"\n# verifying {len(pins)} pinned goldens of {table} against this run")
+        for name in sorted(pins):
+            want = pins[name]
+            if name not in oracle:
+                print(f"  MISSING {name}: pinned {want!r} but PyRadiomics reports no counterpart")
+                nmiss += 1
+                continue
+            band = ZE_RELTOL if name == "3GLSZM_ZE" else RELTOL
+            if compare(name, oracle[name], want, band):
+                nfail += 1
+            else:
+                print(f"  OK   {name}: pyradiomics={oracle[name]!r} pinned={want!r}")
+                nok += 1
 
-    # the reverse check: something the oracle produces that the header pins nothing for
-    missing_pin = sorted(set(got) - set(pins))
-    for name in missing_pin:
-        print(f"  UNPINNED {name}: PyRadiomics reports {got[name]!r} and nothing pins it")
+        # the reverse check: something the oracle produces that the header pins nothing for
+        for name in sorted(set(oracle) - set(pins)):
+            print(f"  UNPINNED {name}: PyRadiomics reports {oracle[name]!r} and nothing pins it")
+            missing_pin.append(f"{table}:{name}")
 
     nmat = 0
     for table, want_cells, want_dims in (
@@ -360,7 +424,14 @@ def main():
              (("glszm_3d_pyradiomics_smallmatrix_ng", doc_Ng),
               ("glszm_3d_pyradiomics_smallmatrix_ns", doc_Ns),
               ("glszm_3d_pyradiomics_smallmatrix_nz",
-               sum(c[2] for c in doc_cells))))):
+               sum(c[2] for c in doc_cells)),
+              ("glszm_3d_pyradiomics_smallmatrix_np", doc_Np))),
+            ("glszm_3d_pyradiomics_gappedmatrix_ref_vals", gap_cells,
+             (("glszm_3d_pyradiomics_gappedmatrix_ng", gap_Ng),
+              ("glszm_3d_pyradiomics_gappedmatrix_ns", gap_Ns),
+              ("glszm_3d_pyradiomics_gappedmatrix_nz",
+               sum(c[2] for c in gap_cells)),
+              ("glszm_3d_pyradiomics_gappedmatrix_np", gap_Np)))):
         pinned_cells = parse_cells(txt_h, table)
         print(f"\n# verifying {len(pinned_cells)} pinned cells of {table} against this run")
         if pinned_cells != want_cells:

@@ -10,13 +10,12 @@
 // re-verifies every pin below and recomputes all sixteen features from the pinned matrix.
 // Measurements: tests/vetting/audit/glszm_3d_pyradiomics_vetting_report.md.
 
-// Only what nothing this file already includes supplies: <algorithm> for sort / find / max, and
-// <unordered_set> for the unique-level list the matrix assertions build. <iomanip> for the dump
-// helper's setprecision. <iostream>, <string>, <vector> and gtest arrive through the common header
-// and are not repeated.
+// Only what nothing this file already includes supplies: <algorithm> for the std::find that turns a
+// pinned grey level into the row calculate() put it in, and <iomanip> for the dump helper's
+// setprecision. <iostream>, <string>, <vector> and gtest arrive through the common header and are
+// not repeated.
 #include <algorithm>
 #include <iomanip>
-#include <unordered_set>
 
 #include "test_3d_glszm_common.h"  // gtest, <iostream>, the phantoms, the settings recipe, extract_3d_glszm, agrees_gt
 #include "test_ref_vals.h"         // ref_vals_map, ref_vals_list
@@ -52,6 +51,12 @@ static const double glszm_3d_pyradiomics_frac_tolerance = 1e9;
 // numpy.log2. That is a deliberate fast path and its error is a convention of this codebase, so it
 // belongs in the band rather than in a defect report; rel=1e-3 is the measured residual rounded up.
 static const double glszm_3d_pyradiomics_ze_frac_tolerance = 1e3;
+
+// The same fast path, measured again on the gapped-level fixture, where it costs more: 1.1e-3 there
+// against 1.9e-4 on the phantom. Zone entropy is a sum of -p*log2(p) over the matrix, so on six zones
+// each term carries the approximation's error at full weight, while on the phantom's 860 zones the
+// errors are spread over 186 terms and partly cancel. Band rel=2e-3, the measured residual rounded up.
+static const double glszm_3d_pyradiomics_gapped_ze_frac_tolerance = 5e2;
 
 // One non-empty cell of a size-zone matrix: the grey level, the size of the zones counted, and how
 // many zones of that level and size the ROI holds.
@@ -265,52 +270,79 @@ static const ref_vals_list<Glszm3dMatrixCell> glszm_3d_pyradiomics_matrix_ref_va
 	{ 20, 2, 2 },
 };
 
-// A 4x4x3 volume with one populated slice between two empty ones, small enough that its zones can be
-// read off by eye and every one of them is a 2D 8-connected component of the middle slice. It is the
-// direct check that the 26 offsets gather_size_zones() walks agree with PyRadiomics' neighbourhood:
-// the phantom above would hide a connectivity difference in a matrix nobody can check by hand.
-//
-// The volume is the fixture here, not a copy of one -- there is no file to read it from, and the
-// generator runs PyRadiomics on this same literal at binWidth=1.
-static const std::vector<PixIntens> glszm_3d_pyradiomics_small_volume
-{
-	// z=0
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	// z=1
-	1, 2, 3, 4,
-	1, 3, 4, 4,
-	3, 2, 2, 2,
-	4, 1, 4, 1,
-	// z=2
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0,
-	0, 0, 0, 0
-};
-
+// Dimensions and cells of the connectivity fixture's matrix. Its nine zones are listed with the
+// fixture in the common header; what is pinned here is what PyRadiomics makes of them.
 static const int glszm_3d_pyradiomics_smallmatrix_ng = 4;
 static const int glszm_3d_pyradiomics_smallmatrix_ns = 3;
 static const int glszm_3d_pyradiomics_smallmatrix_nz = 9;
+static const int glszm_3d_pyradiomics_smallmatrix_np = 17;
 
-// Its size-zone matrix, as PyRadiomics reports it:
+// The size-zone matrix of glszm_3d_zcross_volume, as PyRadiomics reports it:
 //
 //              [size=1 size=2 size=3]
-//    [level=1]      2      1      0
-//    [level=2]      1      0      1
-//    [level=3]      0      0      1
-//    [level=4]      2      0      1
+//    [level=1]      0      1      1
+//    [level=2]      1      1      0
+//    [level=3]      0      1      1
+//    [level=4]      2      1      0
 static const ref_vals_list<Glszm3dMatrixCell> glszm_3d_pyradiomics_smallmatrix_ref_vals
 {
-	{ 1, 1, 2 },
 	{ 1, 2, 1 },
+	{ 1, 3, 1 },
 	{ 2, 1, 1 },
-	{ 2, 3, 1 },
+	{ 2, 2, 1 },
+	{ 3, 2, 1 },
 	{ 3, 3, 1 },
 	{ 4, 1, 2 },
-	{ 4, 3, 1 },
+	{ 4, 2, 1 },
+};
+
+// PyRadiomics 3.0.1 on glszm_3d_gapped_volume at binWidth=1, which leaves levels 1, 3 and 5 where
+// they are. Nyxus reaches the same three levels through IBSI=true, where calculate() forces the
+// family's binning to 0 and reads the volume's own values. Reproduced by
+// gen_glszm3d_pyradiomics.py under recipe glszm3d.pyradiomics_ibsi_gapped.
+static const ref_vals_map<double> glszm_3d_pyradiomics_gapped_ref_vals
+{
+	{"3GLSZM_GLN", 2.3333333333333335},          // original_glszm_GrayLevelNonUniformity
+	{"3GLSZM_GLNN", 0.3888888888888889},         // original_glszm_GrayLevelNonUniformityNormalized
+	{"3GLSZM_GLV", 3.222222222222222},           // original_glszm_GrayLevelVariance
+	{"3GLSZM_HGLZE", 14.333333333333334},        // original_glszm_HighGrayLevelZoneEmphasis
+	{"3GLSZM_LAE", 2.8333333333333335},          // original_glszm_LargeAreaEmphasis
+	{"3GLSZM_LAHGLE", 26.833333333333332},       // original_glszm_LargeAreaHighGrayLevelEmphasis
+	{"3GLSZM_LALGLE", 1.02},                     // original_glszm_LargeAreaLowGrayLevelEmphasis
+	{"3GLSZM_LGLZE", 0.3718518518518519},        // original_glszm_LowGrayLevelZoneEmphasis
+	{"3GLSZM_SAE", 0.7268518518518517},          // original_glszm_SmallAreaEmphasis
+	{"3GLSZM_SAHGLE", 12.875},                   // original_glszm_SmallAreaHighGrayLevelEmphasis
+	{"3GLSZM_SALGLE", 0.2303909465020576},       // original_glszm_SmallAreaLowGrayLevelEmphasis
+	{"3GLSZM_SZN", 3.0},                         // original_glszm_SizeZoneNonUniformity
+	{"3GLSZM_SZNN", 0.5},                        // original_glszm_SizeZoneNonUniformityNormalized
+	{"3GLSZM_ZE", 1.7924812503605767},           // original_glszm_ZoneEntropy
+	{"3GLSZM_ZP", 0.6666666666666666},           // original_glszm_ZonePercentage
+	{"3GLSZM_ZV", 0.5833333333333333}            // original_glszm_ZoneVariance
+};
+
+// Ng is 5, not 3: both sides count the levels up to the largest one, so rows 2 and 4 exist and are
+// empty. That is the whole point of the fixture -- an implementation that packed the three occupied
+// levels into rows 0..2 would produce the same sixteen scalars only if it also renumbered the levels,
+// and it does not.
+static const int glszm_3d_pyradiomics_gappedmatrix_ng = 5;
+static const int glszm_3d_pyradiomics_gappedmatrix_ns = 3;
+static const int glszm_3d_pyradiomics_gappedmatrix_nz = 6;
+static const int glszm_3d_pyradiomics_gappedmatrix_np = 9;
+
+// The size-zone matrix of glszm_3d_gapped_volume, as PyRadiomics reports it:
+//
+//              [size=1 size=2 size=3]
+//    [level=1]      1      1      0
+//    [level=2]      0      0      0
+//    [level=3]      0      0      1
+//    [level=4]      0      0      0
+//    [level=5]      3      0      0
+static const ref_vals_list<Glszm3dMatrixCell> glszm_3d_pyradiomics_gappedmatrix_ref_vals
+{
+	{ 1, 1, 1 },
+	{ 1, 2, 1 },
+	{ 3, 3, 1 },
+	{ 5, 1, 3 },
 };
 
 void assert_3d_glszm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
@@ -334,40 +366,29 @@ void assert_3d_glszm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcod
 	ASSERT_TRUE (agrees_gt (fvals[fcode][0], iter->second, band)) << fname;
 }
 
-// Asserts the size-zone matrix a grey-binned volume produces against a pinned oracle table.
+// Asserts the size-zone matrix a run built against a pinned oracle table.
 //
-// 'binned' is taken by value because gather_size_zones() marks visited voxels in place, so the
-// caller's copy would come back destroyed.
+// It reads the P the feature object holds after calculate() returned, not a table rebuilt beside it:
+// the sixteen scalars are contractions of exactly this matrix, so an error in the row mapping, in
+// Ng/Ns, in the allocation or in the fill loop has to be visible here, or the pin is not pinning the
+// production table. The row a grey level sits in is looked up in the same I calculate() indexed by.
 static void assert_3d_glszm_matrix_pyradiomics (
-	SimpleCube<PixIntens> binned,
+	const D3_GLSZM_feature& f,
 	const ref_vals_list<Glszm3dMatrixCell>& expected,
-	int expect_ng, int expect_ns, int expect_nz)
+	int expect_ng, int expect_ns, int expect_nz, int expect_np)
 {
-	// sorted unique non-background intensities, which is the row order calculate() indexes into
-	std::unordered_set<PixIntens> U (binned.begin(), binned.end());
-	U.erase (0);
-	std::vector<PixIntens> I (U.begin(), U.end());
-	std::sort (I.begin(), I.end());
-	ASSERT_EQ ((int)I.size(), expect_ng);
+	const SimpleMatrix<int>& P = f.get_P();
+	const std::vector<PixIntens>& I = f.get_I();
 
-	std::vector<std::pair<PixIntens, int>> zones;
-	D3_GLSZM_feature::gather_size_zones (zones, binned, 0/*zeroI at radiomics and no binning*/);
-	ASSERT_EQ ((int)zones.size(), expect_nz);
+	ASSERT_EQ (f.get_Ng(), expect_ng);
+	ASSERT_EQ (f.get_Ns(), expect_ns);
+	ASSERT_EQ (f.get_Nz(), expect_nz);
+	ASSERT_EQ (f.get_Np(), expect_np);
 
-	int ns = 0;
-	for (const auto& z : zones)
-		ns = (std::max) (ns, z.second);
-	ASSERT_EQ (ns, expect_ns);
-
-	SimpleMatrix<int> P;
-	P.allocate (ns/*width*/, (int)I.size()/*height*/);
-	P.fill (0);
-	for (const auto& z : zones)
-	{
-		auto it = std::find (I.begin(), I.end(), z.first);
-		ASSERT_TRUE (it != I.end());
-		P.xy (z.second - 1, int(it - I.begin()))++;
-	}
+	// the table is the one those dimensions describe, so a mis-sized allocation is not read as a
+	// matrix whose missing cells are merely empty
+	ASSERT_EQ (P.width(), expect_ns);
+	ASSERT_EQ (P.height(), expect_ng);
 
 	int pinned_zones = 0;
 	for (const Glszm3dMatrixCell& c : expected)
@@ -389,11 +410,10 @@ static void assert_3d_glszm_matrix_pyradiomics (
 	ASSERT_EQ (pinned_zones, expect_nz);
 }
 
-// The matrix under the sixteen features, on the voxels the featurisation actually read and binned
-// by the same bin_intensities_3d() calculate() calls. It takes the cube and the intensity extrema
-// back out of the same extract_3d_glszm() the sixteen oracle assertions run, so this assertion and
-// those describe one run rather than two -- a hand-written copy of the phantom would keep passing
-// after the loader started producing something else.
+// The matrix under the sixteen features, read off the feature object the sixteen oracle assertions
+// run through: this assertion and those describe one run of one phantom rather than two, and a
+// hand-written copy of the phantom would keep passing after the loader started producing something
+// else.
 void test_3d_glszm_matrix_pyradiomics()
 {
 	auto [ipath, mpath, label] = get_3d_compat_phantom();
@@ -401,39 +421,67 @@ void test_3d_glszm_matrix_pyradiomics()
 	std::vector<std::vector<double>> fvals;
 	SimpleCube<PixIntens> cube;
 	PixIntens lo = 0, hi = 0;
-	ASSERT_NO_FATAL_FAILURE(extract_3d_glszm (fvals, cube, lo, hi, ipath, mpath, label, s));
-
 	D3_GLSZM_feature f;
-	SimpleCube<PixIntens> binned;
-	binned.allocate (cube.width(), cube.height(), cube.depth());
-	f.bin_intensities_3d (binned, cube, lo, hi, -20);
+	ASSERT_NO_FATAL_FAILURE(extract_3d_glszm (fvals, cube, lo, hi, ipath, mpath, label, s, f));
 
 	ASSERT_NO_FATAL_FAILURE(assert_3d_glszm_matrix_pyradiomics (
-		binned, glszm_3d_pyradiomics_matrix_ref_vals,
-		glszm_3d_pyradiomics_matrix_ng, glszm_3d_pyradiomics_matrix_ns, glszm_3d_pyradiomics_matrix_nz));
-
-	// the ROI's voxel count, which is what ZonePercentage divides the zone count by
-	int occupied = 0;
-	for (auto v : binned)
-		if (v)
-			occupied++;
-	ASSERT_EQ (occupied, glszm_3d_pyradiomics_matrix_np);
+		f, glszm_3d_pyradiomics_matrix_ref_vals,
+		glszm_3d_pyradiomics_matrix_ng, glszm_3d_pyradiomics_matrix_ns,
+		glszm_3d_pyradiomics_matrix_nz, glszm_3d_pyradiomics_matrix_np));
 }
 
-// The connectivity check: eight zones that can be counted by eye, on a volume small enough to print.
+// The connectivity check: nine zones that can be counted by eye, on a volume small enough to print.
+// It runs the same calculate() the phantom assertion does, at the family's no-binning setting, so the
+// matrix is indexed by the literal's own levels 1..4 -- which is what PyRadiomics reads at binWidth=1.
 void test_3d_glszm_smallmatrix_pyradiomics()
 {
-	SimpleCube<PixIntens> D (glszm_3d_pyradiomics_small_volume, 4/*width*/, 4/*height*/, 3/*depth*/);
+	Fsettings s = make_glszm3d_settings (64/*greydepth, inert here*/, 0/*no binning: the raw levels*/);
+	std::vector<std::vector<double>> fvals;
+	D3_GLSZM_feature f;
+	ASSERT_NO_FATAL_FAILURE(run_3d_glszm_on_volume (
+		fvals, glszm_3d_zcross_volume, 4/*width*/, 4/*height*/, 3/*depth*/, s, f));
+
 	ASSERT_NO_FATAL_FAILURE(assert_3d_glszm_matrix_pyradiomics (
-		D, glszm_3d_pyradiomics_smallmatrix_ref_vals,
+		f, glszm_3d_pyradiomics_smallmatrix_ref_vals,
 		glszm_3d_pyradiomics_smallmatrix_ng, glszm_3d_pyradiomics_smallmatrix_ns,
-		glszm_3d_pyradiomics_smallmatrix_nz));
+		glszm_3d_pyradiomics_smallmatrix_nz, glszm_3d_pyradiomics_smallmatrix_np));
 }
 
-// Regenerates every golden in glszm_3d_pyradiomics_ref_vals at full precision, in the shape the
-// table wants. Run it with
+// The IBSI half of the config matrix, measured rather than assumed: the sixteen features and the
+// size-zone matrix under them, at IBSI=true on the gapped-level volume.
+//
+// GLSZM_GREYDEPTH is passed as 64 and has to be ignored -- calculate() overwrites it with 0 whenever
+// IBSI is on -- so a run that honoured it would bin levels 1..5 into 64 MATLAB bins and miss every
+// pin below. That makes this assertion the measurement of the overwrite as well as of the branch.
+void test_3d_glszm_ibsi_gapped_pyradiomics()
+{
+	Fsettings s = make_glszm3d_settings (64/*greydepth*/, 64/*overwritten with 0 by IBSI*/, true/*ibsi*/);
+	std::vector<std::vector<double>> fvals;
+	D3_GLSZM_feature f;
+	ASSERT_NO_FATAL_FAILURE(run_3d_glszm_on_volume (
+		fvals, glszm_3d_gapped_volume, 3/*width*/, 3/*height*/, 3/*depth*/, s, f));
+
+	Environment e;
+	for (const auto& nv : glszm_3d_pyradiomics_gapped_ref_vals)
+	{
+		SCOPED_TRACE (nv.first);
+		int fcode = -1;
+		ASSERT_TRUE (e.theFeatureSet.find_3D_FeatureByString (nv.first, fcode));
+		double band = nv.first == "3GLSZM_ZE" ? glszm_3d_pyradiomics_gapped_ze_frac_tolerance
+		                                      : glszm_3d_pyradiomics_frac_tolerance;
+		ASSERT_TRUE (agrees_gt (fvals[fcode][0], nv.second, band)) << nv.first;
+	}
+
+	ASSERT_NO_FATAL_FAILURE(assert_3d_glszm_matrix_pyradiomics (
+		f, glszm_3d_pyradiomics_gappedmatrix_ref_vals,
+		glszm_3d_pyradiomics_gappedmatrix_ng, glszm_3d_pyradiomics_gappedmatrix_ns,
+		glszm_3d_pyradiomics_gappedmatrix_nz, glszm_3d_pyradiomics_gappedmatrix_np));
+}
+
+// Regenerates every golden of both oracle recipes at full precision, in the shape the tables want.
+// Run it with
 //     runAllTests --gtest_filter=*3D_GLSZM_DUMP_PYRADIOMICS*
-// It prints Nyxus' own values at the recipe the assertions use, which is what makes the residual
+// It prints Nyxus' own values at the recipes the assertions use, which is what makes the residual
 // against the pinned PyRadiomics goldens readable without a debugger.
 void test_3d_glszm_dump_pyradiomics()
 {
@@ -453,6 +501,22 @@ void test_3d_glszm_dump_pyradiomics()
 		ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(nv.first, fcode));
 		std::cout << "[3DGLSZM-PYRAD]\t{\"" << nv.first << "\", "
 		          << std::setprecision(17) << fvals[fcode][0] << "},\tpinned "
+		          << std::setprecision(17) << nv.second << "\n";
+	}
+
+	Fsettings s_gap = make_glszm3d_settings (64/*greydepth*/, 64/*overwritten with 0*/, true/*ibsi*/);
+	std::vector<std::vector<double>> gap_vals;
+	D3_GLSZM_feature f_gap;
+	ASSERT_NO_FATAL_FAILURE(run_3d_glszm_on_volume (
+		gap_vals, glszm_3d_gapped_volume, 3/*width*/, 3/*height*/, 3/*depth*/, s_gap, f_gap));
+	std::cout << "[3DGLSZM-GAPPED] Ng " << f_gap.get_Ng() << ", Ns " << f_gap.get_Ns()
+	          << ", Nz " << f_gap.get_Nz() << ", Np " << f_gap.get_Np() << "\n";
+	for (const auto& nv : glszm_3d_pyradiomics_gapped_ref_vals)
+	{
+		int fcode = -1;
+		ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(nv.first, fcode));
+		std::cout << "[3DGLSZM-GAPPED]\t{\"" << nv.first << "\", "
+		          << std::setprecision(17) << gap_vals[fcode][0] << "},\tpinned "
 		          << std::setprecision(17) << nv.second << "\n";
 	}
 }

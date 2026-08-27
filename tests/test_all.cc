@@ -382,6 +382,10 @@ TEST(TEST_NYXUS, TEST_3D_GLSZM_SMALLMATRIX_PYRADIOMICS) {
 	ASSERT_NO_THROW (test_3d_glszm_smallmatrix_pyradiomics());
 }
 
+TEST(TEST_NYXUS, TEST_3D_GLSZM_IBSI_GAPPED_PYRADIOMICS) {
+	ASSERT_NO_THROW (test_3d_glszm_ibsi_gapped_pyradiomics());
+}
+
 TEST(TEST_NYXUS, TEST_3D_GLSZM_DUMP_PYRADIOMICS) {
 	ASSERT_NO_THROW (test_3d_glszm_dump_pyradiomics());
 }
@@ -518,8 +522,20 @@ TEST(TEST_NYXUS, TEST_3D_GLSZM_DUMP_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_glszm_dump_regression());
 }
 
+TEST(TEST_NYXUS, TEST_3D_GLSZM_DEFAULT_GREYDEPTH_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_default_greydepth_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_CONSTANT_ROI_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_constant_roi_regression());
+}
+
 TEST(TEST_NYXUS, TEST_3D_GLSZM_DEFAULT_GREYDEPTH_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_glszm_default_greydepth_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_IBSI_EQUALS_NO_BINNING_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_glszm_ibsi_equals_no_binning_mechanics());
 }
 
 

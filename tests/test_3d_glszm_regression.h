@@ -3,10 +3,18 @@
 // Drift guard for the 3D GLSZM family on the segmented phantom. Claims no oracle (SPEC 2): the
 // values below are Nyxus' own output, so movement is the only thing they can catch.
 //
-// Recipe glszm3d.regression_ut_phantom: bench_ut_phantom_3d (label 57) with GREYDEPTH=64,
-// IBSI=false and GLSZM_GREYDEPTH=64, whose positive sign selects MATLAB-style binning into that
-// many levels. That is the recipe make_3d_coverage_settings() runs every 3D family at on this same
-// phantom, so the sweep and this file describe one configuration.
+// Recipe glszm3d.regression_ut_phantom: bench_ut57_3d (label 57) with GREYDEPTH=64, IBSI=false and
+// GLSZM_GREYDEPTH=64, whose positive sign selects MATLAB-style binning into that many levels. That is
+// the recipe make_3d_coverage_settings() runs every 3D family at on this same phantom, so the sweep
+// and this file describe one configuration.
+//
+// Recipe glszm3d.regression_ut_phantom_nobinning: the same phantom at GLSZM_GREYDEPTH=0, which is the
+// value a run that passes no --3glszm/greydepth reaches the feature with. It is a third binning
+// scheme rather than a coarser version of the second -- the background is intensity 0 there and bin 1
+// under MATLAB binning -- so it gets its own table. Nothing vets it: PyRadiomics has no counterpart
+// for reading raw levels off an unbinned volume, so these are Nyxus' own numbers and catch movement
+// only. What the family's default DOES have an oracle for is the same setting on a fixture small
+// enough for one: test_3d_glszm_ibsi_gapped_pyradiomics.
 //
 // Pins are the program's own %.17g output -- a value truncated to five digits eats a third of a
 // rel=1e-3 band before the test starts. Regenerate them with
@@ -46,6 +54,33 @@ static const ref_vals_map<double> glszm_3d_regression_ref_vals
 // anything looser would simply stop guarding.
 static const double glszm_3d_regression_frac_tolerance = 1e9;
 
+// Recipe glszm3d.regression_ut_phantom_nobinning. Regenerate with
+//     runAllTests --gtest_filter=*3D_GLSZM_DUMP_REGRESSION*
+static const ref_vals_map<double> glszm_3d_regression_nobinning_ref_vals
+{
+	{"3GLSZM_SAE", 0.94295833254546912},
+	{"3GLSZM_LAE", 2.7199275479509657},
+	{"3GLSZM_LGLZE", 3.2643501709471912e-07},
+	{"3GLSZM_HGLZE", 4375588.4213418188},
+	{"3GLSZM_SALGLE", 3.0154454804699187e-07},
+	{"3GLSZM_SAHGLE", 4174165.8670778177},
+	{"3GLSZM_LALGLE", 1.2124812887383795e-06},
+	{"3GLSZM_LAHGLE", 9822729.2611831687},
+	{"3GLSZM_GLN", 133.99255264094188},
+	{"3GLSZM_GLNN", 0.00054174302422996202},
+	{"3GLSZM_SZN", 213149.1383947343},
+	{"3GLSZM_SZNN", 0.86177967782584941},
+	{"3GLSZM_ZP", 0.90126515858208955},
+	{"3GLSZM_GLV", 331757.72876714077},
+	{"3GLSZM_ZV", 1.4888232842007658},
+	{"3GLSZM_ZE", 11.250904156928172}
+};
+
+// The sentinel a constant-intensity ROI comes back as. Distinctive on purpose: a zero-filled feature
+// buffer would satisfy the assertion below if this were the 0.0 a default settings vector carries, so
+// what it proves would be nothing.
+static const double glszm_3d_regression_softnan = -98765.0;
+
 void assert_3d_glszm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
 	// a name with no pin is a failure, not a comparison against whatever a lookup would invent
@@ -66,7 +101,7 @@ void assert_3d_glszm_feature_regression (const Nyxus::Feature3D& expecting_fcode
 	                        glszm_3d_regression_frac_tolerance)) << fname;
 }
 
-// Regenerates every pin above at full precision, in the shape the table wants. Run it with
+// Regenerates every pin of both recipes at full precision, in the shape the tables want. Run it with
 //     runAllTests --gtest_filter=*3D_GLSZM_DUMP_REGRESSION*
 void test_3d_glszm_dump_regression()
 {
@@ -85,6 +120,19 @@ void test_3d_glszm_dump_regression()
 		int fcode = -1;
 		ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(nv.first, fcode));
 		std::cout << "[3DGLSZM-REGR]\t{\"" << nv.first << "\", "
+		          << std::setprecision(17) << fvals[fcode][0] << "},\tpinned "
+		          << std::setprecision(17) << nv.second << "\n";
+	}
+
+	Fsettings s_nobin = make_glszm3d_settings (64/*greydepth, inert*/, 0/*no binning*/);
+	ASSERT_NO_FATAL_FAILURE(extract_3d_glszm (fvals, cube, lo, hi, ipath, mpath, label, s_nobin));
+	std::cout << "[3DGLSZM-NOBIN] cube " << cube.width() << "x" << cube.height() << "x" << cube.depth()
+	          << ", intensity range [" << lo << ", " << hi << "]\n";
+	for (const auto& nv : glszm_3d_regression_nobinning_ref_vals)
+	{
+		int fcode = -1;
+		ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(nv.first, fcode));
+		std::cout << "[3DGLSZM-NOBIN]\t{\"" << nv.first << "\", "
 		          << std::setprecision(17) << fvals[fcode][0] << "},\tpinned "
 		          << std::setprecision(17) << nv.second << "\n";
 	}
@@ -152,4 +200,56 @@ void test_3d_glszm_zv_regression() {
 
 void test_3d_glszm_ze_regression() {
 	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_ZE, "3GLSZM_ZE");
+}
+
+// The family at the settings a run with no --3glszm/greydepth flag reaches it with, pinned rather
+// than merely asserted finite (test_3d_glszm_mechanics.h does the finiteness). One case for the
+// sixteen because one phantom read answers all of them, and at this setting the matrix is Ng = the
+// phantom's largest raw level wide, which is not a read to repeat sixteen times.
+void test_3d_glszm_default_greydepth_regression()
+{
+	auto [ipath, mpath, label] = get_3d_segmented_phantom();
+	Fsettings s = make_glszm3d_settings (64/*greydepth, inert for this family*/, 0/*no binning*/);
+	std::vector<std::vector<double>> fvals;
+	SimpleCube<PixIntens> cube;
+	PixIntens lo = 0, hi = 0;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_glszm (fvals, cube, lo, hi, ipath, mpath, label, s));
+
+	Environment e;
+	for (const auto& nv : glszm_3d_regression_nobinning_ref_vals)
+	{
+		SCOPED_TRACE (nv.first);
+		int fcode = -1;
+		ASSERT_TRUE (e.theFeatureSet.find_3D_FeatureByString (nv.first, fcode));
+		ASSERT_TRUE (agrees_gt (fvals[fcode][0], nv.second,
+		                        glszm_3d_regression_frac_tolerance)) << nv.first;
+	}
+}
+
+// A ROI whose voxels all carry one intensity, which calculate() intercepts as a blank ROI: it returns
+// the soft-NaN sentinel for all sixteen features before it bins anything.
+//
+// That interception is wider than the case that needs it. Radiomics binning divides by
+// (aux_max - aux_min) and would divide by zero here, but at MATLAB binning and at no binning the ROI
+// is an ordinary one: eight voxels of one grey level, one 26-connected zone, a size-zone matrix with
+// a single populated cell, and sixteen finite features over it -- SAE = 1/64, ZE = 0, GLV = 0, and so
+// on. Nyxus reports the sentinel for all of them instead. Recorded as a divergence in
+// tests/vetting/matrix/glszm3d.md and pinned here so the behaviour cannot change unnoticed; it is not
+// endorsed, and fixing it is src work on its own branch.
+void test_3d_glszm_constant_roi_regression()
+{
+	Fsettings s = make_glszm3d_settings (64/*greydepth*/, 0/*no binning*/);
+	s[(int)NyxSetting::SOFTNAN].rval = glszm_3d_regression_softnan;
+
+	// 2x2x2, every voxel the same non-background intensity
+	const std::vector<PixIntens> constant_volume (8, 7);
+	std::vector<std::vector<double>> fvals;
+	D3_GLSZM_feature f;
+	ASSERT_NO_FATAL_FAILURE(run_3d_glszm_on_volume (fvals, constant_volume, 2, 2, 2, s, f));
+
+	for (auto fc : D3_GLSZM_feature::featureset)
+	{
+		SCOPED_TRACE ("3D feature code " + std::to_string ((int)fc));
+		ASSERT_EQ (fvals[(int)fc][0], glszm_3d_regression_softnan);
+	}
 }
