@@ -62,6 +62,16 @@ public:
 		const std::vector<std::pair<PixIntens, double>>& Z,
 		const std::vector<PixIntens>& I);
 
+	// The NGTD matrix the last calculate() built: the sorted grey levels it indexed, their
+	// voxel counts n_i, probabilities p_i and neighbourhood-difference sums s_i, and the count
+	// of voxels having at least one neighbour. The five features are contractions of this
+	// table, so it is readable on its own.
+	const std::vector<PixIntens>& get_levels() const { return I; }
+	const std::vector<int>& get_N() const { return N; }
+	const std::vector<double>& get_P() const { return P; }
+	const std::vector<double>& get_S() const { return S; }
+	int get_Nvp() const { return Nvp; }
+
 private:
 
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs

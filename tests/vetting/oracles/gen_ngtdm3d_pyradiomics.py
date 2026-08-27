@@ -83,9 +83,9 @@ PYRAD = {
 }
 
 # The 4x4 image PyRadiomics' NGTDM docstring works through by hand, which
-# test_3d_ngtdm_matrix_correctness_pyradiomics() drives through D3_NGTDM_feature's own matrix
-# builder as a single-slice volume. The published s_i are rounded to three figures; the pins are
-# this run's full-precision values.
+# test_3d_ngtdm_docmatrix_pyradiomics() drives through D3_NGTDM_feature's own matrix builder as a
+# single-slice volume. The published s_i are rounded to three figures; the pins are this run's
+# full-precision values.
 DOC_IMAGE = [[1, 2, 5, 2],
              [3, 5, 1, 3],
              [1, 3, 5, 5],

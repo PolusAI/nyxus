@@ -73,6 +73,17 @@ static Fsettings make_ngtdm3d_settings (int greydepth, int ngtdm_greydepth, int 
 	return s;
 }
 
+// The NGTD matrix a run built, copied out of the feature object: the grey levels it indexed, their
+// n_i, p_i and s_i, and the count of voxels having a neighbour. The five features are contractions
+// of this table, so an assertion on it is an assertion on what produced them.
+struct Ngtdm3dMatrix
+{
+	std::vector<PixIntens> I;
+	std::vector<int> N;
+	std::vector<double> P, S;
+	int Nvp = 0;
+};
+
 // Mocks the 3D workflow on one phantom ROI, copying the computed feature values into 'fvals' (indexed
 // by Nyxus 3D feature code) and the ROI's voxel cube into 'cube'. One place for the four-step prescan
 // / metrics / voxel-cloud / buffer sequence, so the oracle and regression assertions cannot drift
@@ -80,14 +91,16 @@ static Fsettings make_ngtdm3d_settings (int greydepth, int ngtdm_greydepth, int 
 //
 // The cube is handed back so an assertion about the NGTD matrix works from the voxels this
 // featurisation actually read, rather than from a second, hand-written copy of them: two assertions
-// that describe one run have to be reading one run (SPEC 5.2).
+// that describe one run have to be reading one run (SPEC 5.2). 'matrix', when asked for, is the
+// matrix that run built -- the state the five feature values came out of, not a rebuild of it.
 static void extract_3d_ngtdm (
 	std::vector<std::vector<double>>& fvals,
 	SimpleCube<PixIntens>& cube,
 	const std::string& ipath,
 	const std::string& mpath,
 	int label,
-	const Fsettings& s)
+	const Fsettings& s,
+	Ngtdm3dMatrix* matrix = nullptr)
 {
 	ASSERT_TRUE(fs::exists(ipath));
 	ASSERT_TRUE(fs::exists(mpath));
@@ -120,6 +133,9 @@ static void extract_3d_ngtdm (
 
 	fvals = r.fvals;
 	cube = r.aux_image_cube;
+
+	if (matrix)
+		*matrix = { f.get_levels(), f.get_N(), f.get_P(), f.get_S(), f.get_Nvp() };
 }
 
 // Resolves a 3D feature name to its code and checks it is the one the caller expects, so a renamed

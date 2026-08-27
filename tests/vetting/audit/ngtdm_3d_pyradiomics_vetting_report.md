@@ -9,7 +9,7 @@ unusable in the configuration a default run reaches.
 | what | before | after |
 |---|---|---|
 | oracle band | `agrees_gt(..., 10.)` = ±10% | `rel=1e-9` |
-| NGTDM matrix (`n_i`, `p_i`, `s_i`) on the phantom | not asserted | 18 values pinned, per grey level |
+| NGTDM matrix (`n_i`, `p_i`, `s_i`) on the phantom | not asserted | 18 values pinned per grey level, read off the run that produced the five scalars |
 | the hand-worked 4×4 example | 8 values at `agrees_gt(..., 1)` = **±100%** | 12 values at `rel=1e-9` |
 | drift guards on `bench_ut57_3d` | 5 pins in a file nothing included | wired in, re-pinned at `%.17g` |
 | `NGTDM_RADIUS` with no `set_metaparam("3ngtdm/radius=...")` | 0 → every feature NaN | 1, guarded by a mechanics test |
@@ -171,23 +171,30 @@ attribute read and reimplements nothing:
 | 5 | 1 | 0.020833333333333332 | 3.1923076923076925 |
 | 6 | 3 | 0.0625 | 12.916289592760181 |
 
-`test_3d_ngtdm_matrix_pyradiomics` drives `D3_NGTDM_feature::gather_zones` and `calc_NGTDM` over the
-phantom's levels and asserts all 18, plus `N_v,p = 48` and the row order. Level 1 holding 32 of the
-48 voxels is the two all-zero slices: they are ROI voxels, not padding.
+`test_3d_ngtdm_matrix_pyradiomics` asserts all 18, plus `N_v,p = 48` and the row order. Level 1
+holding 32 of the 48 voxels is the two all-zero slices: they are ROI voxels, not padding.
 
-**It takes those levels out of the same featurisation the five scalar assertions run**, rather than
-from a hand-written copy of the phantom. That distinction is the whole point and it was not free —
-the first version of this assertion carried a 48-entry literal of the phantom's levels, which is
-SPEC §5.2's fixture-encodes-the-model shape: it would have kept passing after the loader started
-producing something else, while claiming to back the same numbers the scalars do. `extract_3d_ngtdm`
-now hands the ROI's voxel cube back beside `fvals`, and the assertion works from that. The one step
-still reproduced is `calculate()`'s zero-min correction (`+1` on every level when the minimum is 0),
-which at `NGTDM_GREYDEPTH=0` is the whole of its preamble; the minimum is **asserted**, not assumed,
-because the shift is conditional on it.
+**The table it asserts is the one the featurisation built**, read back off the feature object after
+`calculate()` returns: `D3_NGTDM_feature` now exposes the levels it indexed and their `n_i`, `p_i`,
+`s_i` (`get_levels()`, `get_N()`, `get_P()`, `get_S()`, `get_Nvp()`), and `extract_3d_ngtdm()` hands
+them out beside `fvals`. So this assertion and the five scalar ones describe one run and one matrix,
+and nothing in the test rebuilds the levels, the binning or the neighbourhoods.
 
-This is the same finding the reviewer raised on #438 item 2 — a mean recomputed from a second
-featurisation of the same slices, where "only the accident that both are deterministic kept them
-agreeing". Here the two were not even reading the same input.
+Getting there took two passes, and the intermediate one is worth recording because it looked
+finished. The first version carried a 48-entry literal of the phantom's levels — SPEC §5.2's
+fixture-encodes-the-model shape, which would have kept passing after the loader started producing
+something else. The second took the voxel cube out of the run and rebuilt the matrix from it by
+calling `gather_zones()` and `calc_NGTDM()` itself. That reads the right input, but it is still a
+**second** computation: it reproduced `calculate()`'s zero-min correction rather than observing it,
+so nothing in `calculate()`'s preamble was under the assertion at all. The negative control below
+measures exactly that gap. This is the same finding the reviewer raised on #438 item 2 — a mean
+recomputed from a second featurisation of the same slices, where "only the accident that both are
+deterministic kept them agreeing".
+
+`test_3d_ngtdm_docmatrix_pyradiomics` keeps the reconstruction, and says so: the doc example is a
+published 4×4 literal with no file behind it, so there is no featurisation to read a matrix off. It
+drives `gather_zones()` and `calc_NGTDM()` directly and therefore covers those two, not the preamble
+around them.
 
 ### Negative control
 
@@ -205,13 +212,24 @@ chosen so that it exceeds the `rel=1e-9` band while level 5's share of every sca
 So the per-level table catches an error in the matrix that every scalar assertion in the family is
 blind to, and the generator catches it independently of the build.
 
-**A second control, for the property the rewrite added:** one voxel of the cube the featurisation
-returned was perturbed (`levels[20] += 1`) with every golden left alone. The matrix assertion failed
-naming grey level 1 (`48.1176` against `47.0512`) while all five scalar assertions passed, since they
-read `fvals` from the unperturbed run. That is the check the literal version could not have made —
-it never touched the loader, so no change to what the loader produces could have reached it.
+**A second control, for the property reading production state adds.** `calculate()`'s zero-min
+correction was disabled in `src/nyx/features/3d_ngtdm.cpp` (`if (false && I[0] == 0)`) with every
+golden left alone. Level 0 then stays level 0, `zeroI` still names 0 as background, and the 32
+zero-intensity voxels drop out of the matrix entirely:
 
-Both perturbations were reverted.
+| | result |
+|---|---|
+| `TEST_3D_NGTDM_MATRIX_PYRADIOMICS`, matrix read off the run | **FAILED**, `(size_t)m.Nvp Which is: 16` against `expected_nvp Which is: 48` |
+| the same two assertions in their previous, reconstructing shape | **passed**, both radii |
+| the ten `TEST_3D_NGTDM_*_PYRADIOMICS` scalar assertions | failed |
+
+The middle row is the point. The reconstruction built its own level list from the cube and applied
+the `+1` itself, so removing the production shift could not reach it: it went on reporting the
+matrix as correct while every scalar contracted from that matrix was wrong. Reading the state
+`calculate()` left behind closes that, and the five scalar assertions are not what closed it — they
+say a number moved, not which of the eighteen did.
+
+All perturbations were reverted.
 
 ### The hand-worked example was asserted at ±100%
 
@@ -431,8 +449,8 @@ covering it.
 
 ## Registry corrections
 
-The family had five rows and now has ten — one per `(feature x config recipe x oracle)` assertion,
-per SPEC 3. All five originals were already `status=vetted`, `oracle=pyradiomics`,
+The family had five rows and now has fifteen — one per `(feature x config recipe x oracle)`
+assertion, per SPEC 3. All five originals were already `status=vetted`, `oracle=pyradiomics`,
 `agreement=agreed`, and that verdict survives. What changed on them:
 
 - `config_recipe` was **empty** on all five → `ngtdm3d.pyradiomics_binwidth1`.
@@ -449,6 +467,20 @@ per SPEC 3. All five originals were already `status=vetted`, `oracle=pyradiomics
 `ngtdm3d.pyradiomics_binwidth1_r2`, `current_test` `test_3d_ngtdm_pyradiomics.h` and `test_name`
 `TEST_NYXUS.TEST_3D_NGTDM_<F>_R2_PYRADIOMICS`, and the radius-2 narrative moves out of the
 radius-1 rows' `notes` and into them.
+
+**The drift guards get five rows of their own too**, at `config_recipe`
+`ngtdm3d.regression_ut_phantom`, `status=regression`, no oracle, `current_test`
+`test_3d_ngtdm_regression.h`, `test_name` `TEST_NYXUS.TEST_3D_NGTDM_<F>_REGRESSION` and benchmark
+`bench_ut57_3d` — and `test_3d_ngtdm_regression.h` comes **out** of the ten PyRadiomics rows'
+`current_test`, where it had been folded in beside the oracle file. It never belonged there: that
+header asserts a different fixture (`bench_ut57_3d`, not `bench_compat_ngtdm_3d`) at a different
+recipe (`NGTDM_GREYDEPTH=64` MATLAB binning, where bin 1 is background) against Nyxus' own snapshots
+and no oracle. A row's `config_recipe`, `tolerance` and `benchmark` describe one assertion, so a row
+that names two files describing two recipes has columns that are false of one of them — and the
+drift pins, having no row, had no recipe, no band and no benchmark recorded anywhere a checker
+reads. `tests/python/test_nyxus.py` stays on the radius-1 rows: `test_3d_ngtdm_compatibility` asserts
+the same five goldens on the same fixture at the same recipe through the Python API, so it is the
+same assertion in a second language binding, not a second config point.
 
 An earlier draft of this section kept the second config point in `notes` instead, on the grounds
 that "the registry keys a row by feature" and that ten rows would overstate the family's coverage.
