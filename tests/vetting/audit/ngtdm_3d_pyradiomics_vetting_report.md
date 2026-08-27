@@ -431,8 +431,9 @@ covering it.
 
 ## Registry corrections
 
-All five rows were already `status=vetted`, `oracle=pyradiomics`, `agreement=agreed`, and that verdict
-survives. What changed:
+The family had five rows and now has ten — one per `(feature x config recipe x oracle)` assertion,
+per SPEC 3. All five originals were already `status=vetted`, `oracle=pyradiomics`,
+`agreement=agreed`, and that verdict survives. What changed on them:
 
 - `config_recipe` was **empty** on all five → `ngtdm3d.pyradiomics_binwidth1`.
 - `tolerance` was **empty** on all five → `rel=1e-9`. An empty tolerance column on a vetted row is
@@ -444,10 +445,31 @@ survives. What changed:
 - `test_name` and `benchmark` were empty (the columns postdate these rows) →
   `TEST_NYXUS.TEST_3D_NGTDM_<F>_PYRADIOMICS` and `bench_compat_ngtdm_3d`.
 
-The radius-2 recipe adds no row. The registry keys a row by feature and this is the same feature
-against the same oracle on the same benchmark, so the second config point is recorded in `notes`
-and in `config_recipes.md`; splitting the five rows into ten would say the family has ten features'
-worth of oracle coverage, which it does not.
+**The radius-2 recipe gets five rows of its own**, carrying `config_recipe`
+`ngtdm3d.pyradiomics_binwidth1_r2`, `current_test` `test_3d_ngtdm_pyradiomics.h` and `test_name`
+`TEST_NYXUS.TEST_3D_NGTDM_<F>_R2_PYRADIOMICS`, and the radius-2 narrative moves out of the
+radius-1 rows' `notes` and into them.
+
+An earlier draft of this section kept the second config point in `notes` instead, on the grounds
+that "the registry keys a row by feature" and that ten rows would overstate the family's coverage.
+Both halves are wrong, and both are measurable:
+
+- The registry does not key by feature. SPEC 3 is explicit -- "one row per assertion, a
+  `(feature x config recipe x oracle)` triple ... a feature can (and for confidence should) have
+  several rows" -- and this scanner's own docstring repeats it. Twenty-two features in
+  `oracle_coverage.csv` already carry more than one row, **including 2D NGTDM**, which splits
+  `ngtdm.ibsi_phantom_2d` from `ngtdm.default_fbn100`. The 3D rows were the outlier.
+- Ten rows do not inflate the rollup. `check_coverage.py`'s headline metric is per feature -- "is
+  there at least one row with `outcome=vetted`" -- so the split is invisible to it: regenerating
+  `coverage_report.md` after adding the five rows leaves it byte-identical.
+
+Burying the radius-2 assertion in `notes` cost something concrete. `config_recipe`, `tolerance`,
+`current_test`, `test_name` and `benchmark` are the columns every checker reads, and prose in
+`notes` is read by none of them, so `TEST_3D_NGTDM_<F>_R2_PYRADIOMICS` could have been deleted with
+`scan_ngtdm3d_coverage.py --check`, `check_coverage.py --check` and `check_test_names.py --check`
+all staying green -- the same hole the coverage-sweep retirement had to close. It is now guarded:
+renaming one of the five to a case that does not exist is reported as
+`test_name ... resolves to no registered case in test_all.cc`.
 
 No row changes status, and no feature in this family lacks an oracle.
 

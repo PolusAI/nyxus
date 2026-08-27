@@ -166,8 +166,11 @@ def render(rows, asserted, oracles, regression, other):
     w = csv.writer(buf, lineterminator="\n")
     w.writerow(["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
                 "Regression", "Reg_Test_Name", "Notes"])
-    for r in rows:
-        f = r["feature"]
+    # This artifact is per FEATURE, while the registry is per assertion -- one row per
+    # (feature x config recipe x oracle), so a feature vetted at two radii has two rows. Its columns
+    # are already the union over a feature's tests (List_of_Oracles, Test_Names), so walk the
+    # features in registry order rather than the rows, or each extra config point emits a duplicate.
+    for f in dict.fromkeys(r["feature"] for r in rows):
         notes = [NOTE[f]] if f in NOTE else []
         # A function whose name-suffix is neither an oracle nor `regression` contributes coverage but
         # no oracle token, so it would otherwise be invisible in this artifact. Naming it keeps the
