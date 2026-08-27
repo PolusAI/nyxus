@@ -3465,9 +3465,34 @@ TEST(TEST_NYXUS, TEST_IMQ_MAX_SATURATION_CELLPROFILER)
 	ASSERT_NO_THROW(test_imq_max_saturation_cellprofiler());
 }
 
-TEST(TEST_NYXUS, TEST_IMQ_SHARPNESS_REGRESSION) 
+TEST(TEST_NYXUS, TEST_IMQ_SHARPNESS_REGRESSION)
 {
 	ASSERT_NO_THROW(test_imq_sharpness_regression());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_MIN_SATURATION_CONSTANT_ROI_REGRESSION)
+{
+	ASSERT_NO_THROW(test_imq_min_saturation_constant_roi_regression());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_MAX_SATURATION_CONSTANT_ROI_REGRESSION)
+{
+	ASSERT_NO_THROW(test_imq_max_saturation_constant_roi_regression());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_MIN_SATURATION_NARROW_MASK_REGRESSION)
+{
+	ASSERT_NO_THROW(test_imq_min_saturation_narrow_mask_regression());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_MAX_SATURATION_NARROW_MASK_REGRESSION)
+{
+	ASSERT_NO_THROW(test_imq_max_saturation_narrow_mask_regression());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_POWER_SPECTRUM_SLOPE_LARGE_ROI_REGRESSION)
+{
+	ASSERT_NO_THROW(test_imq_power_spectrum_slope_large_roi_regression());
 }
 
 

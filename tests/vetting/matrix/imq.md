@@ -8,22 +8,31 @@ assigned (SPEC §5.1).
 `NyxSetting` — grep the four `.cpp` files for `NyxSetting`, `STNGS_` or `theEnvironment` and nothing
 comes back. Every knob these features have is a compile-time default on a private static method, so
 the cross-product is over defaults rather than over configuration, and a recipe here names a fixture
-and a set of defaults instead of a settings bundle. That is why all three IMQ recipes describe the
-same 8×12 ROI.
+and a set of defaults instead of a settings bundle. So the cells below are separated by INPUT, not by
+settings: three of the five IMQ recipes describe the same 8×12 ROI, and the other two exist because
+a constant ROI, a narrow mask and a 24 px short side are the only ways to reach the remaining
+branches at all.
 
-| feature | knob | value | verdict | recipe / oracle |
+Every verdict below is one of SPEC §5.1's three dispositions — VALID, VALID-BUT-PRODUCTION-ONLY,
+INVALID — and each carries the test it maps to, because the disposition *is* the claim about which
+test exists. A reachable production cell no external tool reproduces is
+VALID-BUT-PRODUCTION-ONLY and gets a regression guard; recording a defect is not a substitute for
+one, and a cell whose guard is still outstanding says so in its own row rather than being labelled
+something outside the vocabulary.
+
+| feature | knob | value | verdict | recipe / oracle / test |
 |---|---|---|---|---|
 | `FOCUS_SCORE` | `ksize` | 1, the only value `calculate()` passes | VALID | `imq.laplacian_ksize1_zeropad` — opencv, SPEC §7 exact tier |
 | `FOCUS_SCORE` | `ksize` | >1, kernel `{{2,0,2},{0,-8,0},{2,0,2}}` | INVALID | unreachable from `calculate()` and no `cv2.Laplacian` counterpart |
 | `LOCAL_FOCUS_SCORE` | `scale` | 2, the only value `calculate()` passes | VALID | `imq.laplacian_ksize1_zeropad` — opencv, one tile (see below) |
-| `LOCAL_FOCUS_SCORE` | `scale` | ≠2 | NOT REACHABLE | no caller sets it; the parameter has a default and no plumbing |
+| `LOCAL_FOCUS_SCORE` | `scale` | ≠2 | INVALID | no config reaches it: `calculate()` hardcodes 2, the parameter has a default and no plumbing, and nothing else calls `get_local_focus_score()` |
 | `MIN`/`MAX_SATURATION` | — | in-RAM path | VALID | `imq.saturation_observed_extremum` — cellprofiler, SPEC §7 exact tier |
-| `MIN`/`MAX_SATURATION` | ROI | constant (`min == max`) | VALID-but-divergent | not asserted; Nyxus and CellProfiler disagree (below) |
-| `MIN`/`MAX_SATURATION` | mask | narrower than the bounding box | VALID-but-divergent | not asserted; Nyxus counts in-box out-of-mask zeros, CellProfiler does not |
-| `POWER_SPECTRUM_SLOPE` | ROI short side | < 24 px | VALID-prod-only | `imq.regression_quality_roi` — the pin is the guard's return value |
-| `POWER_SPECTRUM_SLOPE` | ROI short side | ≥ 24 px | NOT PINNED | the algorithm's only reachable cell, and it is defective (below) |
-| `SHARPNESS` | `width` | 2 | VALID-prod-only | `imq.regression_quality_roi` — the reference DOM measure does not reproduce it (below) |
-| any | out-of-core (`osized_calculate`) | — | NOT COVERED | no assertion reaches either NT path (below) |
+| `MIN`/`MAX_SATURATION` | ROI | constant (`min == max`) | VALID-BUT-PRODUCTION-ONLY | CellProfiler computes something else here (below), so no oracle claim — `test_imq_{min,max}_saturation_constant_roi_regression`, pinned 0 and 1 |
+| `MIN`/`MAX_SATURATION` | mask | narrower than the bounding box | VALID-BUT-PRODUCTION-ONLY | Nyxus counts in-box out-of-mask zeros and CellProfiler does not (below) — `test_imq_{min,max}_saturation_narrow_mask_regression`, pinned 11/16 and 1/16 |
+| `POWER_SPECTRUM_SLOPE` | ROI short side | < 24 px | VALID-BUT-PRODUCTION-ONLY | `imq.regression_quality_roi` — the pin is the guard's return value, `test_imq_power_spectrum_slope_regression` |
+| `POWER_SPECTRUM_SLOPE` | ROI short side | ≥ 24 px | VALID-BUT-PRODUCTION-ONLY | the algorithm's only reachable cell, and it is defective (below) — `test_imq_power_spectrum_slope_large_roi_regression`, pinned 1.7837481542489078 on a 24×24 ROI |
+| `SHARPNESS` | `width` | 2 | VALID-BUT-PRODUCTION-ONLY | `imq.regression_quality_roi` — the reference DOM measure does not reproduce it (below), `test_imq_sharpness_regression` |
+| any | out-of-core (`osized_calculate`) | — | VALID-BUT-PRODUCTION-ONLY | reachable and **still unguarded** — the one open row; needs an oversized-ROI harness, see below and `not_covered.md` |
 
 ## Three things that look like knobs and are not
 
@@ -51,30 +60,38 @@ Two separate claims are entangled in that loop and neither is settled here: the 
 median values of the tiles are returned" where the code returns one sum over one tile. **Open, not
 endorsed.** The assertion pins the current behaviour so a fix is visible as a moved golden.
 
-## `POWER_SPECTRUM_SLOPE` is pinned at the guard, not at the algorithm
+## `POWER_SPECTRUM_SLOPE` is pinned twice: at the guard, and at the algorithm behind it
 
 `rps()` returns `{0.}` unless `floor(min(h, w) / 8) >= 3`. The fixture is 8 px wide, so
 `min(12,8)/8 = 1`, the guard fires, and `power_spectrum_slope()` returns the literal `0` its
-`accumulate(magnitude) > 0` test falls through to. The pin covers that path and nothing beyond it.
+`accumulate(magnitude) > 0` test falls through to. `test_imq_power_spectrum_slope_regression` covers
+that path and nothing beyond it.
 
-Measured on a synthetic 32×32 ROI, where the guard does not fire (`PROBE_PS` instrumentation, not
-committed):
+The cell past the guard is reachable production, so it is snapshotted too rather than described and
+left unpinned: `test_imq_power_spectrum_slope_large_roi_regression` runs a deterministic 24×24
+modular ramp — the smallest ROI that clears `floor(min(h,w)/8) >= 3` — and pins
+**1.7837481542489078**. The pin endorses nothing; it exists so that fixing either defect below moves
+a golden instead of passing unnoticed.
 
-- `magnitude.size() = 1024`, `raw_radii.size() = 32`. `power_spectrum_slope()` loops `i` over
-  `magnitude.size()` and reads `raw_radii[i]` inside it, with no bound relating the two. On this
-  input only 4 bins passed the `magnitude[i] > 0` test and the largest index reached was 5, so the
-  read stayed in range — but nothing in the code keeps it there.
+What the algorithm does in that cell, measured (`PROBE_PS` instrumentation, not committed):
+
+- `power_spectrum_slope()` loops `i` over `magnitude.size()` and reads `raw_radii[i]` inside it, with
+  no bound relating the two. On the pinned 24×24 fixture `magnitude.size() = 1024` (the 32×32
+  power-of-2 padded FFT) against `raw_radii.size() = 24`, the largest index reached was **3**, and 3
+  points survived to the fit — so the read stays in range here and the pin is a defined value. On a
+  synthetic 32×32 ROI it was `raw_radii.size() = 32`, 4 surviving bins, largest index 5. Nothing in
+  the code keeps the index below `raw_radii.size()`; both inputs happen to stay under it.
 - The radius axis is `std::floor(std::sqrt(image_invariant[i])) + 1`, i.e. a function of the FFT
   **coefficient at bin i**, not of the frequency radius `sqrt(kx² + ky²)` the log-log power-spectrum
   fit is defined over. `sqrt` of a negative coefficient is NaN, and a NaN `label_index` fails both
   bounds tests and is dropped.
-- With 4 surviving points the least-squares fit ran and returned 1.3518845575419998 (32×32) and
-  −0.1408723598022707 (24×24).
+- Earlier synthetic runs returned 1.3518845575419998 (32×32) and −0.1408723598022707 (24×24) on
+  fixtures that were not committed; the pinned figure above is the one this tree reproduces.
 
-So the cell "short side ≥ 24 px" is reachable, produces a number, and that number is not a radial
-power-spectrum slope. Vetting it needs the radial binning rewritten and a second benchmark at least
-24 px on its short side; the candidate oracle is CellProfiler's
-`centrosome.radial_power_spectrum.rps`, which is the implementation this was ported from.
+So the cell is reachable, produces a number, and that number is not a radial power-spectrum slope.
+Vetting it needs the radial binning rewritten and the index bounded; the candidate oracle is
+CellProfiler's `centrosome.radial_power_spectrum.rps`, which is the implementation this was ported
+from.
 
 ## `SHARPNESS` is not the reference DOM measure
 
@@ -108,11 +125,19 @@ tail nothing reads. Neither changes the six above.
 rather than untried; promotion needs the six differences resolved first. Report:
 `audit/imq_pydom_sharpness_vetting_report.md`.
 
-## The out-of-core paths are uncovered, and one of them is not a port of the in-RAM path
+## The out-of-core paths are the one row still without a guard
 
-No assertion in the tree reaches `osized_calculate()` for any IMQ feature, so what follows is read
-off the source rather than measured, and is recorded here so it is tracked rather than implied by
-the word "uncovered".
+`phase3.cpp` calls `osized_scan_whole_image()` on every registered feature method for an oversized
+ROI, and `FocusScoreFeature` and `SaturationFeature` are both registered, so this cell is reachable
+production — VALID-BUT-PRODUCTION-ONLY, not "not covered". It is also the one cell in this matrix
+whose regression guard is **outstanding**: reaching `osized_calculate()` needs an oversized-ROI
+harness (a disk-backed `raw_pixels_NT` and `WriteImageMatrix_nontriv`), which the gtest fixture here
+does not build, and the 2D out-of-core path is being repaired on its own branch. Stated here as an
+open row rather than closed by relabelling; `not_covered.md` carries the same entry.
+
+What follows is therefore read off the source rather than measured. The two feature classes not
+listed below, `PowerSpectrumFeature` and `SharpnessFeature`, carry their own out-of-core defect,
+tracked outside this vetting pass.
 
 - `SaturationFeature::get_percent_max_pixels_NT()` uses two independent `if`s where the in-RAM
   `get_percent_max_pixels()` uses `else if`. On a constant ROI those two disagree by construction —
@@ -149,4 +174,5 @@ tolerance and `assert_feature`'s signature ends `double frac_tolerance = 1000`. 
 
 None of the four features has a GPU path, an IBSI mode, or a 3D twin — `FeatureIMQ` is its own
 enum and `dim=IMQ` is its own registry dimension. IMQ is also the one family with no
-`*_coverage.h` sweep to retire: all six features have named tests, one each.
+`*_coverage.h` sweep to retire: every feature has a named test, and the features whose matrix has
+more than one reachable cell have one test per cell — eleven assertions over six features.

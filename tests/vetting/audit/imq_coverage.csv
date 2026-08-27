@@ -1,7 +1,7 @@
 Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Mechanics,Notes
 IMQ,imq,FOCUS_SCORE,opencv,test_imq_focus_score_opencv,N,,,
 IMQ,imq,LOCAL_FOCUS_SCORE,opencv,test_imq_local_focus_score_opencv,N,,,"opencv covers the per-tile statistic only: the tile extraction and the scale^2 divisor are Nyxus' own definition, reproduced in the generator. See not_covered.md section E"
-IMQ,imq,POWER_SPECTRUM_SLOPE,,,Y,test_imq_power_spectrum_slope_regression,,"pinned at the guard, not the algorithm: rps() returns early below a 24 px short side, so the 0 is the early return. See matrix/imq.md"
-IMQ,imq,MAX_SATURATION,cellprofiler,test_imq_max_saturation_cellprofiler,N,,,
-IMQ,imq,MIN_SATURATION,cellprofiler,test_imq_min_saturation_cellprofiler,N,,,
+IMQ,imq,POWER_SPECTRUM_SLOPE,,,Y,test_imq_power_spectrum_slope_large_roi_regression;test_imq_power_spectrum_slope_regression,,"two cells, both regression: the 8 px fixture pins the GUARD's return value (rps() returns early below a 24 px short side, so the 0 is the early return), and a 24x24 ROI pins the algorithm past it at 1.7837481542489078. Neither is vetted. See matrix/imq.md"
+IMQ,imq,MAX_SATURATION,cellprofiler,test_imq_max_saturation_cellprofiler,Y,test_imq_max_saturation_constant_roi_regression;test_imq_max_saturation_narrow_mask_regression,,
+IMQ,imq,MIN_SATURATION,cellprofiler,test_imq_min_saturation_cellprofiler,Y,test_imq_min_saturation_constant_roi_regression;test_imq_min_saturation_narrow_mask_regression,,
 IMQ,imq,SHARPNESS,,,Y,test_imq_sharpness_regression,,candidate oracle measured and refuted: the reference DOM implementation returns 0.5459 against Nyxus' 2.1905 on this fixture. See audit/imq_pydom_sharpness_vetting_report.md
