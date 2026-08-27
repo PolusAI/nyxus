@@ -164,13 +164,60 @@ Generator-side controls: removing the header's matrix table makes `gen_gldm3d_py
 so does any bound violation, identity failure, cross-table mismatch, definition mismatch or unpinned
 feature, each through its own counter.
 
+### Review round: the default configuration and the degenerate ROI
+
+| # | perturbation | caught by | result |
+|---|---|---|---|
+| I | **`I[i] = i + 1` → `i + 2` in the no-binning branch** | `TEST_3D_GLDM_LGLE_NOBINNING_REGRESSION` | fails |
+| J | **the `aux_min == aux_max` intercept restricted to empty cubes** | `TEST_3D_GLDM_CONSTANT_ROI_REGRESSION` | fails |
+| K | a registry row's `test_name` set to a matrix case | `scan_gldm3d_coverage.py --check` | fails |
+| L | a registry row's `test_name` set to another family's case | `scan_gldm3d_coverage.py --check` | fails |
+| M | a defaults row's `test_name` swapped to the `64`-config case | `scan_gldm3d_coverage.py --check` | fails |
+| N | a registry row's `test_name` emptied | `scan_gldm3d_coverage.py --check` | fails |
+
+I is the point of the default-configuration table: the perturbation is confined to the
+`ibsi_grey_binning()` branch, so **every assertion that existed before it stayed green** — the
+`bincount20` oracle cases, the `64` snapshots and both matrix cases — and only the new pins moved.
+That is what "the compiled default was unguarded" means in a failing test rather than in prose.
+
+J is the control for the degenerate cell, and it carried a finding. At the cell's own configuration
+(`GLDM_GREYDEPTH=0`) the bypass produces real values and the guard fails as it should — and those
+values reproduce PyRadiomics **to the last bit** on all seven dependence-axis features
+(`SDE` 0.0066408036122542298, `LDE` 239.41666666666666, `DN` 15.333333333333334, `DNN`
+0.31944444444444442, `DV` 26.743055555555554, `GLN` 48, `GLV` 0), with `3GLDM_DE` at the family's
+documented `fast_log10` residual and the grey-level features apart only by the level convention.
+So nothing under the intercept is wrong; the intercept is the whole defect. Run at *radiomics*
+binning instead, the same bypass leaves the case green: `to_grayscale_radiomix()`'s
+`binW = (max - min) / binCount` is zero at zero range, every voxel bins to background and the
+`Nz == 0` branch emits the same sentinel by a second route — which is why the cell is asserted at the
+configuration where the intercept stands alone.
+
+K–N are the registry-side controls. K is the defect the review found: before this round the
+per-feature rows named `TEST_3D_GLDM_SMALLMATRIX_PYRADIOMICS`, a case that asserts dependence cells
+on a hand-written unbinned volume, and no check looked at the `test_name` column closely enough to
+object. `check_coverage.py` asked only whether the name was *a* gtest case; the scanner's other two
+checks asked which files cover a feature and which functions read a table. The name is now resolved
+through `test_all.cc` to the function it runs, which must carry an assertion of the row's own
+feature, at its kind, in a file `current_test` names, and at its `config_recipe` — M is the control
+for that last clause, since the family's two regression recipes share a feature set, a kind and a
+file.
+
 ## What this report does not cover
 
 - **One oracle.** IBSI calls this family NGLDM and `mirp` exposes one, but Nyxus ships 3D GLDM and 3D
   NGLDM as *separate* families with different conventions, so a `mirp` run would need its own
   reconciliation before it could corroborate anything here.
-- **`GLDM_GREYDEPTH = 0` / `IBSI=true` are unmeasured.** They are the same code path reached two
-  ways, reachable in production, and pinned nowhere. Recorded in `matrix/gldm3d.md`.
+- **`GLDM_GREYDEPTH = 0` / `IBSI=true` are pinned but unvetted.** They are the same code path reached
+  two ways, and it is the **compiled default** — `compile_feature_settings()` names no default for
+  `GLDM_GREYDEPTH`, so the zero-fill stands and only `--3gldm/greydepth=N` moves it. All fourteen are
+  now snapshotted at that configuration (`gldm3d.regression_ut_phantom_nobinning`), which claims no
+  vetting: the oracle question, whether PyRadiomics can be made to skip discretisation on a
+  non-integer intensity volume, is still open. See `matrix/gldm3d.md`.
+- **A nonempty constant-intensity ROI is a measured defect, guarded rather than fixed.** PyRadiomics
+  3.0.1 computes a full GLDM on such an ROI; Nyxus emits the no-value sentinel for all fourteen,
+  through an intercept whose comment says "blank ROIs". `test_3d_gldm_constant_roi_regression()` pins
+  the emitted value. The fix is a production change on a reachable input, and the same intercept sits
+  in five sibling families, so it is tracked as its own change — see `matrix/gldm3d.md`.
 - **`calculate()`'s filled `P` is still not read directly.** `P`, `I`, `Ng`, `Nd` and `Nz` stay
   private. The assertion observes the production traversal that *produces* the cells —
   `gather_dependence_zones()` — but not the row indexing through `I`, the `Nd` trim, or the `Nz`

@@ -26,8 +26,7 @@ lists are what this tree shows today — the recipe ids are the stable half.
 Recipes: `firstorder3d.matlab_native`, `firstorder3d.regression_ut_phantom`,
 `ngldm3d.regression_ut_phantom`, `ngldm3d.mirp_fbn64`, `gldzm3d.regression_ut_phantom`,
 `gldzm3d.mirp_fbn64`, `ngtdm3d.regression_ut_phantom`, `glszm3d.regression_ut_phantom`,
-`gldm3d.regression_ut_phantom`.
-
+`gldm3d.regression_ut_phantom`, `gldm3d.regression_ut_phantom_nobinning`.
 Tests reaching it today: `test_3d_ngldm_regression.h`, `test_3d_coverage_common.h`,
 `test_3d_{glcm,gldm,gldzm,glszm,ngtdm}_regression.h`, `test_3d_firstorder_{matlab,regression}.h`,
 `test_3d_morphology_matlab.h`, and the
@@ -222,6 +221,32 @@ was never written pass.
 
 **Not interchangeable with the family's other small cubes.** `bench_cube4x4x3_zcross` and
 `bench_cube3_gapped_levels` both carry several grey levels, so neither reaches the intercept at all.
+
+---
+
+## `bench_constant_roi_3d` — a nonempty ROI of one intensity
+
+| | |
+|---|---|
+| Data | built inline in `test_3d_gldm_constant_roi_regression()` (`tests/test_3d_gldm_regression.h`) |
+| ROI | one label filling the whole cube |
+| Shape | 4×4×3 voxels, every voxel intensity **7**, so `aux_min == aux_max` |
+| Why it exists | the degenerate ROI a texture family has to have an answer for. It is the smallest fixture on which `aux_min == aux_max` holds while the ROI is *not* blank, which is the case Nyxus and PyRadiomics answer differently |
+
+Recipes: `gldm3d.regression_constant_roi`.
+
+Tests reaching it today: `test_3d_gldm_regression.h`.
+
+**Reachable in production, and the fixture is deliberately tiny.** Any segmentation over a flat
+region produces this shape, and 4×4×3 is small enough that PyRadiomics' whole dependence matrix on
+the same voxels fits in the recipe entry — `[8, 20, 16, 4]` over one grey level — so the divergence
+is stated in numbers rather than in prose. The intensity value itself carries nothing: any single
+value reaches the same guard.
+
+**Not interchangeable with `bench_cube2_constant`.** That cube is 2x2x2, so every voxel has the same
+26-neighbourhood count and PyRadiomics' dependence matrix over it is a single cell. This one spreads
+the same eight-voxel idea over four dependence values, which is what lets the negative control below
+check the dependence axis rather than one number.
 
 ---
 
