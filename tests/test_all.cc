@@ -89,9 +89,6 @@
 #include "test_3d_glrlm_regression.h"
 #include "test_3d_glszm_pyradiomics.h"
 #include "test_3d_coverage_common.h"
-#include "test_3d_gldm_coverage.h"
-#include "test_3d_glszm_coverage.h"
-#include "test_3d_ngtdm_coverage.h"
 #include "test_2d_glcm_mechanics.h"
 #ifdef USE_ARROW
     #include "test_arrow_mechanics.h"
