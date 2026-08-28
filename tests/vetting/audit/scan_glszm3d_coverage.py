@@ -11,8 +11,8 @@ an oracle test, that test's oracle must be the one the row names, and the row's 
 A row describes ONE assertion -- feature x config x reference (SPEC 3) -- so `current_test` names the
 file that assertion lives in, and nothing else. It used to require the whole covering set, which put
 the parameterized coverage sweep and the drift guard in one field and left the row unable to say
-which of them its recipe, tolerance and benchmark belonged to. The sweep is still scanned and still
-reported below; it simply is not the row's assertion.
+which of them its recipe, tolerance and benchmark belonged to. The sweep has since been retired; the
+rule outlives it, because the drift guard and the oracle tests conflate the same way.
 
 That is checked in BOTH directions, because a one-way check is how the conflation survived: a row
 whose `current_test` held the right oracle file plus three unrelated ones passed a rule that only
@@ -53,11 +53,6 @@ VETTING = os.path.dirname(HERE)
 TESTS = os.path.dirname(VETTING)
 OUT = os.path.join(HERE, "glszm_3d_coverage.csv")
 REGISTRY = os.path.join(VETTING, "oracle_coverage.csv")
-
-# test_3d_glszm_coverage.h instantiates two parameterized suites over the family's featureset, so
-# which features it touches is decided at runtime and cannot be read statically. It establishes no
-# vetting either way (SPEC 1), so it is credited to every feature of the family rather than scanned.
-SWEEP = "test_3d_glszm_coverage.h"
 
 SOURCES = [
     "test_3d_glszm_pyradiomics.h",
@@ -258,7 +253,7 @@ def disagreements(rows, asserted, oracles, regression, other, where):
     for r in rows:
         f = r["feature"]
         covering = asserted.get(f, set()) | regression.get(f, set()) | other.get(f, set())
-        files = {where[fn] for fn in covering} | {SWEEP}
+        files = {where[fn] for fn in covering}
         claimed = {t for t in r["current_test"].split(";") if t}
         recipe = (r.get("config_recipe") or "").strip()
         name = (r.get("test_name") or "").strip()
