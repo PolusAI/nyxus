@@ -248,9 +248,10 @@ void test_3d_glszm_default_greydepth_regression()
 // (aux_max - aux_min) and would divide by zero here, but at MATLAB binning and at no binning the ROI
 // is an ordinary one: eight voxels of one grey level, one 26-connected zone, a size-zone matrix with
 // a single populated cell, and sixteen finite features over it -- SAE = 1/64, ZE = 0, GLV = 0, and so
-// on. Nyxus reports the sentinel for all of them instead. Recorded as a divergence in
-// tests/vetting/matrix/glszm3d.md and pinned here so the behaviour cannot change unnoticed; it is not
-// endorsed, and fixing it is src work on its own branch.
+// on. Nyxus reports the sentinel for all of them instead. tests/vetting/matrix/glszm3d.md carries the
+// cell as VALID-prod-only -- a configuration a real run reaches that no oracle reproduces -- and says
+// there that what it pins is a defect. Pinned here so the behaviour cannot change unnoticed; it is
+// not endorsed, and fixing it is src work on its own branch.
 void test_3d_glszm_constant_roi_regression()
 {
 	Fsettings s = make_glszm3d_settings (64/*greydepth*/, 0/*no binning*/);

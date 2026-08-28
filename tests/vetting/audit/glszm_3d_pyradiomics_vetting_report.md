@@ -46,7 +46,7 @@ assertion that named something stronger than what it was checking:
 | the 4×4×3 connectivity fixture | one populated slice between two empty ones — 26-, 18- and 2D 8-connectivity all produce its nine zones | three populated slices; the four readings give 9, 10, 13 and 13 |
 | the `IBSI=true` cell | `NOT MEASURED` in `matrix/glszm3d.md` | vetted, `glszm3d.pyradiomics_ibsi_gapped`, 16/16 + the matrix; and measured identical to `GLSZM_GREYDEPTH=0` |
 | the `GLSZM_GREYDEPTH=0` cell | asserted finite only | 16 numeric pins, `glszm3d.regression_ut_phantom_nobinning` |
-| `aux_min == aux_max` | `INVALID` — "a blank ROI has no zones" | `DIVERGENCE`: a constant-intensity ROI has a valid one-zone GLSZM; pinned by `test_3d_glszm_constant_roi_regression`, recipe `glszm3d.regression_constant_roi` |
+| `aux_min == aux_max` | `INVALID` — "a blank ROI has no zones" | `VALID-prod-only`, recipe `glszm3d.regression_constant_roi`, pinned by `test_3d_glszm_constant_roi_regression` — with the cell saying in full that the behaviour it pins is a defect |
 | registry rows | 16, each conflating the `-20` oracle with the `+64` regression | 64, one per assertion (SPEC §3) |
 | `scan_glszm3d_coverage.py --check` | one-way: passed when `current_test` held the right file plus others | exact file match, kind match, one-recipe-per-case, and (feature, recipe, oracle) uniqueness |
 
@@ -277,7 +277,9 @@ Negative control O makes one voxel of the constant block different, so the inter
 and the family computes `SAE = 0.51020408163265307` on the result — the arithmetic is there, it is
 the guard that is too wide.
 
-Recorded as a **divergence** in `matrix/glszm3d.md`. Narrowing it changes a public feature's output
+Recorded in `matrix/glszm3d.md` as `VALID-prod-only` — SPEC §5.1's disposition for a real
+configuration no external tool reproduces — with the cell stating that what it pins is a defect
+rather than a convention. Narrowing it changes a public feature's output
 on a reachable input, so it is `src/` work on its own branch; this pass pins the current behaviour
 instead, in `test_3d_glszm_constant_roi_regression`, with the sentinel set to a distinctive `-98765`
 so that a zero-filled feature buffer cannot satisfy the assertion. It carries its own recipe,
