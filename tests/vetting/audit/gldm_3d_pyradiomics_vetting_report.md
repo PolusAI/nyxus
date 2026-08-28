@@ -70,6 +70,34 @@ roughly five times wider; carrying that number across would have produced a band
 anything measured here. `fast_log10` is a deliberate fast path and its error is a convention of this
 codebase, so it belongs in the band rather than in a defect report.
 
+### The same helper costs `3GLDM_DE` a second carve-out, on the snapshot side
+
+Found by CI, not by this pass, and worth separating from the paragraph above: that band is against
+*PyRadiomics*. The two **snapshot** tables compare Nyxus to itself, so they were pinned at the
+family's `rel=1e-9` drift band like the other thirteen features — and both failed on macOS-arm64:
+
+```
+[  FAILED  ] TEST_NYXUS.TEST_3D_GLDM_DE_REGRESSION
+[  FAILED  ] TEST_NYXUS.TEST_3D_GLDM_DE_NOBINNING_REGRESSION
+```
+
+885 of 888 passed there; nothing else in the family moved. `calc_DE()` is the family's **single**
+`fast_log10()` call site (`3d_gldm.cpp`), and that helper evaluates
+`fexp + a*signif*signif + b*signif` in `float`, which clang contracts into fused multiply-adds on
+arm64 where MSVC does not on x86-64. A pin is one platform's output, so the contraction lands in the
+golden.
+
+Both are now banded at `rel=1e-6` through `gldm_3d_regression_band()`, which is the carve-out
+`test_3d_glrlm_regression.h` and `test_3d_glszm_regression.h` already carry for `3GLRLM_RE` and
+`3GLSZM_ZE`, at the same `1e6` and for the same helper. **Only this one feature is widened** — the
+other thirteen of each table stay at the exact drift tier, and the macOS run is the evidence that
+they can: all twenty-six of them passed there unchanged.
+
+**Which features are exposed is a structural property, not a judgement.** Counting `fast_log10` call
+sites per 3D family: GLCM 13, GLRLM 1, GLSZM 1, GLDM 1, and **GLDZM, NGLDM and NGTDM 0** — those
+three cannot drift this way and need no carve-out. That count is what a check should key on rather
+than a feature name.
+
 ## The matrix under the scalars
 
 All fourteen features are contractions of one dependence matrix `P(i, j)`, so a compensating pair of
