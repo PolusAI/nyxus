@@ -723,6 +723,7 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - **What it pins is a divergence.** A constant-intensity ROI is fully populated and has sixteen
   finite features over it; Nyxus answers the sentinel for all sixteen. The band is SPEC 7's absolute
   exact tier and the assertion is in fact `ASSERT_EQ`, bit-exact against the sentinel, because there
-  is no arithmetic left to disagree about. `tests/vetting/matrix/glszm3d.md` records why the cell is
-  a divergence rather than an invalid one, and narrowing the intercept is `src/` work on its own
-  branch — these rows are what will fail when it happens.
+  is no arithmetic left to disagree about. `tests/vetting/matrix/glszm3d.md` dispositions the cell
+  `VALID-prod-only` rather than `INVALID` and records that the pinned behaviour is a defect;
+  narrowing the intercept is `src/` work on its own branch — these rows are what will fail when it
+  happens.

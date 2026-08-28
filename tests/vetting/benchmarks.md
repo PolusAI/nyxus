@@ -203,7 +203,8 @@ Tests reaching it today: `test_3d_glszm_regression.h`.
 and has sixteen finite features over it — on this cube `SAE = 1/64`, `LAE = 64`, `ZE = 0`, `GLV = 0`,
 `ZP = 1/8` — and Nyxus returns the soft-NaN sentinel for all sixteen instead. The assertions pin the
 sentinel, so they will fail the day the intercept is narrowed, which is the point:
-`tests/vetting/matrix/glszm3d.md` records why that is a divergence rather than an invalid cell.
+`tests/vetting/matrix/glszm3d.md` dispositions the cell `VALID-prod-only` rather than `INVALID`, and
+records that what it pins is a known defect.
 
 **Its intensity is 7 and its sentinel is `-98765`, both deliberately.** A zone landing on the wrong
 row is a visibly wrong level at 7, and a sentinel of `-98765` cannot be satisfied by the zero-filled

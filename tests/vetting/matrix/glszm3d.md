@@ -22,7 +22,7 @@ therefore has no distance, angle or alpha axis at all, unlike 3D GLCM, 3D GLRLM 
 | False | MATLAB (`GLSZM_GREYDEPTH > 0`) | 64 | VALID-prod-only | drift guard, `glszm3d.regression_ut_phantom` — no oracle |
 | False | none (`GLSZM_GREYDEPTH == 0`) | the raw levels | VALID | `glszm3d.pyradiomics_ibsi_gapped` — pyradiomics, 16/16 + the matrix, on `bench_cube3_gapped_levels`; pinned on the phantom too, `glszm3d.regression_ut_phantom_nobinning` |
 | True | none (forced) | the raw levels | VALID — the same cell | measured identical to the row above, values and matrix, by `test_3d_glszm_ibsi_equals_no_binning_mechanics`; see below |
-| any | any | ROI with `aux_min == aux_max` | **DIVERGENCE** | a constant-intensity ROI has a valid one-zone GLSZM; `calculate()` returns the soft-NaN sentinel for all sixteen instead. Pinned, not endorsed, by `test_3d_glszm_constant_roi_regression`; see below |
+| any | any | ROI with `aux_min == aux_max` | VALID-prod-only | drift guard, `glszm3d.regression_constant_roi` — no oracle, and **the pinned behaviour is a known defect**: a constant-intensity ROI has a valid one-zone GLSZM, and `calculate()` returns the soft-NaN sentinel for all sixteen instead. Pinned by `test_3d_glszm_constant_roi_regression`, not endorsed; see below |
 
 ## Measured agreement at the radiomics-binning cell
 
@@ -105,7 +105,10 @@ level, one 26-connected zone if its voxels touch, a size-zone matrix with a sing
 and sixteen finite features over it — on a 2×2×2 block, `SAE = 1/64`, `ZE = 0`, `GLV = 0`, `ZP = 1/8`.
 Nyxus returns the soft-NaN sentinel for all sixteen instead, which is `--noval` and defaults to `0.0`.
 
-**Recorded as a divergence, not as an invalid cell.** The guard is doing real work at radiomics
+**Dispositioned `VALID-prod-only`, not `INVALID`.** It is a configuration a real run reaches and no
+external tool reproduces, which is what SPEC §5.1 gives that disposition to, so it earns a regression
+row rather than a dropped one — and the cell says in full that the behaviour it pins is a defect.
+Calling it neither vetted nor invalid is the whole point. The guard is doing real work at radiomics
 binning, where `to_grayscale_radiomix` divides by `(max - min)` and would divide by zero; it is
 unconditional, so it also discards the two schemes that would have answered. Whether to narrow it is
 `src/` work on its own branch — it changes a public feature's output on a reachable input — so this
