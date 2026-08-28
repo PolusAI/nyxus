@@ -29,9 +29,17 @@ assertion it names rather than merely near it:
   * an assertion is recorded once, so (feature, config_recipe, oracle) is unique, and a row that
     names no recipe or no tolerance is not saying which assertion it is.
 
+Those five walk the registry, so they can only judge rows that exist -- a whole case can assert
+sixteen features at a configuration of its own and stay invisible. So the walk also runs the other
+way: every gtest case whose function asserts a feature value must be named by a row, because a row
+is what carries the recipe, the band and the benchmark. Mechanics and invariant cases are exempt,
+carrying no row anywhere in the registry, and the `_dump_` regenerators fall out on their own since
+they print rather than compare.
+
 Coverage rule: a feature is covered by a test function when its name appears on an ASSERTION line in
-that function, or in a golden table that a function loops over while asserting. Comments are
-stripped first -- several of them name features they do not assert.
+that function, in a golden table that a function loops over while asserting, or -- naming nothing at
+all -- when the function range-loops the calculator's own featureset, which asserts the whole family.
+Comments are stripped first -- several of them name features they do not assert.
 
 Deliberately NOT counted: a line that merely READS a feature out of the buffer. A
 readout-counts-as-coverage rule credits an oracle test with vetting features it never checks --
@@ -85,6 +93,10 @@ ASSERTION = re.compile(r"\b(ASSERT_|EXPECT_|assert)")
 LOOP_LIST = re.compile(r"for\s*\([^)]*:\s*\{([^}]*)\}\s*\)"
                        r"|for\s+\w+\s+in\s*[\[(]([^\])]*)[\])]\s*:", re.S)
 COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
+# `for (auto fc : D3_GLSZM_feature::featureset)` -- a function that range-loops the calculator's own
+# featureset asserts every feature of the family while naming none of them, so no pattern above sees
+# it. It is not a table this file could own either: the list comes from the featureset at runtime.
+FEATURESET_LOOP = re.compile(r"for\s*\([^)]*:\s*D3_GLSZM_feature::featureset\s*\)")
 
 # Every feature of this family is a contraction of one size-zone matrix, so the note belongs on all
 # sixteen rows rather than on a representative one.
@@ -102,7 +114,7 @@ def feature_re(names):
     return re.compile(r"\b(" + "|".join(re.escape(n) for n in names) + r")\b")
 
 
-def scan(path, feat_re):
+def scan(path, feat_re, all_names):
     """-> {test function name: {features it covers}}."""
     with open(path, encoding="utf-8", errors="replace") as fh:
         text = fh.read()
@@ -132,6 +144,10 @@ def scan(path, feat_re):
                 hits.setdefault(fn, set()).update(feat_re.findall(line))
         for m in LOOP_LIST.finditer(block):
             hits.setdefault(fn, set()).update(feat_re.findall(m.group(1) or m.group(2) or ""))
+        # Asserting over the featureset covers the whole family, which is stronger than naming its
+        # members: a feature added to the calculator is covered the day it is added.
+        if FEATURESET_LOOP.search(block):
+            hits.setdefault(fn, set()).update(all_names)
         # A table the function builds and then loops over while asserting -- the equivalence tests
         # put their feature pairs in `std::vector<Pair> pairs = { ... };` and assert inside the
         # loop, so the names never appear on an assertion line. Credited only when the function
@@ -157,11 +173,11 @@ def helper_features(text, feat_re):
     return out
 
 
-def collect(feat_re):
+def collect(feat_re, all_names):
     """-> (oracle fns, oracle tokens, regression fns, other-kind fns, fn -> file)."""
     asserted, oracles, regression, other, where = {}, {}, {}, {}, {}
     for rel in SOURCES:
-        for fn, feats in scan(os.path.join(TESTS, rel), feat_re).items():
+        for fn, feats in scan(os.path.join(TESTS, rel), feat_re, all_names).items():
             where[fn] = os.path.basename(rel)
             kind = fn.rsplit("_", 1)[-1]
             for feat in feats:
@@ -223,6 +239,29 @@ def unregistered_tests(where):
         registered = set(re.findall(r"(test_3d_glszm_\w+)\s*\(\s*\)", fh.read()))
     return sorted(fn for fn, src in where.items()
                   if src.endswith(".h") and fn not in registered)
+
+
+def unregistered_assertions(rows, asserted, regression, where):
+    """gtest cases that assert feature values but that no registry row names.
+
+    `disagreements()` walks the registry, so it can only validate rows that already exist: a case can
+    be added, assert sixteen features at a configuration of its own, and stay invisible to `--check`
+    because nothing points at it. This is the other direction -- a row is what carries an assertion's
+    recipe, its band and its benchmark, so a case that pins feature values and has no row is an
+    assertion the registry does not know about.
+
+    Only the kinds that earn a row are considered. An oracle case is a `vetted` row and a regression
+    case is a `regression` row; mechanics and invariant cases assert a behaviour rather than a value
+    and carry no row anywhere in the registry. The gate is the function actually asserting a feature,
+    which is also what keeps the `_dump_` regenerators out: they print, they do not compare.
+    """
+    named = {r["test_name"].strip() for r in rows if r["test_name"].strip()}
+    asserting = {fn for fns in list(asserted.values()) + list(regression.values()) for fn in fns}
+    return sorted(
+        f"{case}: {fn} asserts feature values but no registry row names this case, so nothing "
+        f"records which configuration it pins"
+        for case, (fn, _src) in case_to_fn(where).items()
+        if fn in asserting and case not in named)
 
 
 def case_to_fn(where):
@@ -321,12 +360,13 @@ def main(argv=None):
     a = ap.parse_args(argv)
 
     rows = registry_rows()
-    feat_re = feature_re(feature_names())
-    asserted, oracles, regression, other, where = collect(feat_re)
+    names = feature_names()
+    asserted, oracles, regression, other, where = collect(feature_re(names), names)
     text = render(rows, asserted, oracles, regression, other)
     problems = disagreements(rows, asserted, oracles, regression, other, where)
     problems += [f"{fn}: defined but no TEST() in test_all.cc calls it, so it never runs"
                  for fn in unregistered_tests(where)]
+    problems += unregistered_assertions(rows, asserted, regression, where)
 
     if a.check:
         with open(OUT, newline="", encoding="utf-8") as fh:

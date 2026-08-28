@@ -699,3 +699,23 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   an oracle on a fixture small enough to carry one, which is `glszm3d.pyradiomics_ibsi_gapped`.
 - The matrix here is as wide as the phantom's largest raw level (`Ng` = 3024 against `binCount`'s 20),
   which is why the sixteen features share one gtest case: one phantom read answers all of them.
+
+## glszm3d.regression_constant_roi
+- `bench_cube2_constant` — a 2x2x2 volume of one non-background intensity — at `GREYDEPTH=64`,
+  `IBSI=false` and `GLSZM_GREYDEPTH=0`, with the soft-NaN sentinel set to a distinctive `-98765`.
+  **No oracle** — pinned Nyxus output in `test_3d_glszm_regression.h`, one assertion per feature
+  under `test_3d_glszm_constant_roi_regression`.
+- **It carries the same settings as `glszm3d.regression_ut_phantom_nobinning` and is still a separate
+  recipe**, because the fixture is what it is about: that one reads a 274 432-voxel phantom, and this
+  one reads the eight voxels that reach `calculate()`'s `aux_min == aux_max` intercept. No phantom
+  row says anything about that path — the sentinel is the only value it can produce.
+- **The sentinel is part of the recipe, not incidental.** `--noval` defaults to `0.0` and
+  `initialize_fvals()` zero-fills the buffer `calculate()` writes into, so at the default a feature
+  the calculator never touched is indistinguishable from one it deliberately invalidated. Setting it
+  to `-98765` is what makes the assertion about the intercept.
+- **What it pins is a divergence.** A constant-intensity ROI is fully populated and has sixteen
+  finite features over it; Nyxus answers the sentinel for all sixteen. The band is SPEC 7's absolute
+  exact tier and the assertion is in fact `ASSERT_EQ`, bit-exact against the sentinel, because there
+  is no arithmetic left to disagree about. `tests/vetting/matrix/glszm3d.md` records why the cell is
+  a divergence rather than an invalid one, and narrowing the intercept is `src/` work on its own
+  branch — these rows are what will fail when it happens.

@@ -112,7 +112,9 @@ unconditional, so it also discards the two schemes that would have answered. Whe
 pass pins the current behaviour rather than changing it: `test_3d_glszm_constant_roi_regression` runs
 a constant 2×2×2 volume with the sentinel set to a distinctive `-98765` and asserts all sixteen come
 back as that, which is an assertion about the intercept path rather than about a zero-filled buffer.
-Filed in `PR/todo.md`.
+Its configuration is a recipe of its own, `glszm3d.regression_constant_roi` on `bench_cube2_constant`,
+and each of the sixteen assertions carries a registry row: the phantom rows at the same
+`GLSZM_GREYDEPTH` say nothing about this path, since no phantom ROI is constant.
 
 ## The connectivity check is a fixture, not a cell
 

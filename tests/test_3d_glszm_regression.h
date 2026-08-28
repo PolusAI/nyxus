@@ -240,11 +240,10 @@ void test_3d_glszm_constant_roi_regression()
 	Fsettings s = make_glszm3d_settings (64/*greydepth*/, 0/*no binning*/);
 	s[(int)NyxSetting::SOFTNAN].rval = glszm_3d_regression_softnan;
 
-	// 2x2x2, every voxel the same non-background intensity
-	const std::vector<PixIntens> constant_volume (8, 7);
+	// bench_cube2_constant: 2x2x2, every voxel the same non-background intensity
 	std::vector<std::vector<double>> fvals;
 	D3_GLSZM_feature f;
-	ASSERT_NO_FATAL_FAILURE(run_3d_glszm_on_volume (fvals, constant_volume, 2, 2, 2, s, f));
+	ASSERT_NO_FATAL_FAILURE(run_3d_glszm_on_volume (fvals, glszm_3d_constant_volume, 2, 2, 2, s, f));
 
 	for (auto fc : D3_GLSZM_feature::featureset)
 	{
