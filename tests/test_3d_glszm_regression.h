@@ -4,9 +4,8 @@
 // values below are Nyxus' own output, so movement is the only thing they can catch.
 //
 // Recipe glszm3d.regression_ut_phantom: bench_ut57_3d (label 57) with GREYDEPTH=64, IBSI=false and
-// GLSZM_GREYDEPTH=64, whose positive sign selects MATLAB-style binning into that many levels. That is
-// the recipe make_3d_coverage_settings() runs every 3D family at on this same phantom, so the sweep
-// and this file describe one configuration.
+// GLSZM_GREYDEPTH=64, whose positive sign selects MATLAB-style binning into that many levels, so bin 1
+// is the background level and a voxel binned there starts no zone of its own.
 //
 // Recipe glszm3d.regression_ut_phantom_nobinning: the same phantom at GLSZM_GREYDEPTH=0, which is the
 // value a run that passes no --3glszm/greydepth reaches the feature with. It is a third binning

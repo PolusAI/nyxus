@@ -302,8 +302,8 @@ nobody has ever executed*.
 The pins reproduce at no configuration in the tree: 12 of 16 miss at the settled `=64`, and 13 of 16
 miss at the `=100` the file's own header comment claimed, so they are a snapshot of an older state of
 the code rather than of a recipe that got lost. They are replaced with a fresh `%.17g` run at
-`glszm3d.regression_ut_phantom` — `GREYDEPTH=64`, `IBSI=false`, `GLSZM_GREYDEPTH=64`, which is what
-`make_3d_coverage_settings()` already runs every 3D family at on this same phantom.
+`glszm3d.regression_ut_phantom` — `GREYDEPTH=64`, `IBSI=false`, `GLSZM_GREYDEPTH=64`, the
+configuration the retired 3D coverage sweep ran every 3D family at on this same phantom.
 
 `GLSZM_GREYDEPTH=0` is not degenerate, and that is the difference from `NGTDM_RADIUS=0`: it is this
 family's documented "no binning" default, `--3glszm/greydepth` is what overrides it, and a run that

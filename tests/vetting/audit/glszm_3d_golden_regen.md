@@ -123,8 +123,8 @@ Full precision is the point: a value truncated to five digits eats a third of a 
 before the test starts, and these assert at `rel=1e-9`.
 
 The recipe is `GREYDEPTH=64`, `IBSI=false`, `GLSZM_GREYDEPTH=64` on `bench_ut57_3d` (label 57) —
-`make_glszm3d_settings(64, 64)`. That is what `make_3d_coverage_settings()` runs every 3D family at
-on this same phantom. **State `GLSZM_GREYDEPTH`; do not leave it at the zero a settings vector starts
+`make_glszm3d_settings(64, 64)` — the configuration the retired 3D coverage sweep ran every 3D
+family at on this same phantom. **State `GLSZM_GREYDEPTH`; do not leave it at the zero a settings vector starts
 at.** Zero is a third configuration — no binning rather than 64 MATLAB levels — and the values differ
 by up to five orders of magnitude between the two.
 
