@@ -53,47 +53,6 @@ D3_GLDM_feature::D3_GLDM_feature() : FeatureMethod("D3_GLDM_feature")
 	provide_features (D3_GLDM_feature::featureset);
 }
 
-// Emits one (intensity, dependence count) pair per non-background voxel of a grey-binned cube. A
-// voxel counts toward its own dependence, and every one of the 26 neighbours holding the same binned
-// intensity adds one more -- the alpha = 0 cutoff.
-/*static*/ void D3_GLDM_feature::gather_dependence_zones (std::vector<std::pair<PixIntens, int>> & Z, const SimpleCube<PixIntens> & D, PixIntens zeroI)
-{
-	int w = D.width(),
-		h = D.height(),
-		d = D.depth();
-
-	for (int zslice = 0; zslice < d; zslice++)
-	{
-		for (int row = 0; row < h; row++)
-		{
-			for (int col = 0; col < w; col++)
-			{
-				PixIntens pi = D.zyx (zslice, row, col);
-
-				// skip background
-				if (pi == zeroI)
-					continue;
-
-				// count dependencies
-				int nd = 1;	 // number of dependencies
-
-				for (int i = 0; i < nsh; i++)
-				{
-					if (D.safe(zslice + shifts[i].dz, row + shifts[i].dy, col + shifts[i].dx))
-					{
-						PixIntens neig_pi = D.zyx(zslice + shifts[i].dz, row + shifts[i].dy, col + shifts[i].dx); // neighboring voxel
-						if (pi == neig_pi)
-							nd++;
-					}
-				}
-
-				// save the intensity's dependency
-				Z.push_back ({ pi, nd });
-			}
-		}
-	}
-}
-
 void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 {
 	clear_buffers();
@@ -158,7 +117,37 @@ void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 	PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
 
 	// Gather zones
-	gather_dependence_zones (Z, D, zeroI);
+	for (int zslice = 0; zslice < d; zslice++)
+	{
+		for (int row = 0; row < h; row++)
+		{
+			for (int col = 0; col < w; col++)
+			{
+				PixIntens pi = D.zyx (zslice, row, col);
+
+				// skip background
+				if (pi == zeroI)
+					continue;
+
+				// count dependencies
+				int nd = 1;	 // number of dependencies
+
+				for (int i = 0; i < nsh; i++)
+				{
+					if (D.safe(zslice + shifts[i].dz, row + shifts[i].dy, col + shifts[i].dx))
+					{
+						PixIntens neig_pi = D.zyx(zslice + shifts[i].dz, row + shifts[i].dy, col + shifts[i].dx); // neighboring voxel
+						if (pi == neig_pi)
+							nd++;
+					}
+				}
+
+				// save the intensity's dependency
+				ACluster clu = { pi, nd };
+				Z.push_back(clu);
+			}
+		}
+	}
 
 	//==== Fill the matrix
 	Ng = greyInfo == 0 ? *std::max_element(I.begin(), I.end()) : (int)I.size();

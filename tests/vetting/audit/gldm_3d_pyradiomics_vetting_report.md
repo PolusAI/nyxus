@@ -75,14 +75,15 @@ codebase, so it belongs in the band rather than in a defect report.
 All fourteen features are contractions of one dependence matrix `P(i, j)`, so a compensating pair of
 errors inside it survives every scalar assertion. The matrix is therefore pinned as well.
 
-**The pinned table is held to two matrices, one of them production's.**
-`TEST_3D_GLDM_MATRIX_PYRADIOMICS` tallies the cells twice. The first tally comes from
-`D3_GLDM_feature::gather_dependence_zones()` — the traversal `calculate()` fills `P` from — so the
-26-offset `shifts` table, the `pi == neig_pi` cutoff and the background rule are all *under* the
-assertion; changing any of them fails it. The second comes from a 26-offset walk written out in the
-test file, sharing no code with the feature class, which is what keeps the pins from being whatever
-production happens to say. Both are compared cell for cell and in both directions — a populated cell
-the table does not carry fails as loudly as a pinned cell the run does not produce.
+**The pinned table is held to two matrices, one of them the run's own.** `TEST_3D_GLDM_MATRIX_PYRADIOMICS`
+asserts the cells twice. The first arm reads the table `D3_GLDM_feature::calculate()` left behind —
+`P`, the grey-level list `I` its rows are indexed through, and `Ng` / `Nd` / `Nz`, exposed read-only
+on the feature object — off the same run the fourteen scalar assertions go through. That puts
+production's allocation, its row mapping, its fill loop and its `Nd` trim under the assertion, not
+just the neighbourhood walk that feeds them. The second arm comes from a 26-offset walk written out
+in the test file, sharing no code with the feature class, which is what keeps the pins from being
+whatever production happens to say. Both are compared cell for cell and in both directions — a
+populated cell the table does not carry fails as loudly as a pinned cell the run does not produce.
 
 | | value |
 |---|---|
@@ -155,10 +156,10 @@ C, D and E are the input half: they demonstrate the matrix assertions read the c
 produced rather than a hand-written copy of it. F demonstrates the `3GLDM_DE` band is load-bearing —
 at `abs=1e-9` the `fast_log10` residual fails, so the band is neither decorative nor over-wide.
 H is the production half: `{0,0,-1}` was made a duplicate of `{0,0,+1}`, which is a change no scalar
-golden was moved for. Both matrix assertions failed on the production tally (`nd` 6 → 7 on the small
-volume), and the definition tally — which ran, since the two arms are separated by `EXPECT` rather
-than `ASSERT` — still matched the pins, so the failure named production rather than the goldens.
-Before the review round this perturbation failed no matrix assertion at all.
+golden was moved for. Both matrix assertions failed on the arm that reads the run, and the definition
+arm — which ran, since the two are separated by `EXPECT` rather than `ASSERT` — still matched the
+pins, so the failure named production rather than the goldens. Before the review round this
+perturbation failed no matrix assertion at all.
 
 Generator-side controls: removing the header's matrix table makes `gen_gldm3d_pyradiomics.py` exit 1;
 so does any bound violation, identity failure, cross-table mismatch, definition mismatch or unpinned
@@ -202,6 +203,31 @@ feature, at its kind, in a file `current_test` names, and at its `config_recipe`
 for that last clause, since the family's two regression recipes share a feature set, a kind and a
 file.
 
+### Second review round: what reading `P` catches that nothing else does
+
+The arm above reads the table `calculate()` left behind. These four controls measure the difference
+between that and the previous arm, which reproduced the zone list beside `calculate()` and so could
+only ever see the traversal.
+
+| # | perturbation | caught by | everything else |
+|---|---|---|---|
+| O | **`P.allocate(Nd + 1, Ng + 1)` → `Nd + 3`** | both matrix cases | **46 of 48 GLDM cases stay green** |
+| P | **the `if (greyInfo) Nd = max_Nd` trim disabled** | `TEST_3D_GLDM_MATRIX_PYRADIOMICS` | **47 of 48 stay green** |
+| Q | **the fill loop skips dependence 6 (`col != 5`)** | both matrix cases | 14 oracle + 28 snapshot cases also fail |
+| R | **`lower_bound` row lookup → `inten - 1`** | the 14 `_REGRESSION` cases | **both matrix cases stay green** |
+
+O and P are the point. Neither perturbation changes a single feature value — `calc_*()` reads rows
+`1..Ng` and columns `1..Nd`, so extra allocated columns are never summed, and the untrimmed `Nd`
+only widens a loop over cells that are zero. Both were invisible to all 48 GLDM assertions before
+this round, and each is now caught by the matrix assertion alone: O on `P.width()`, P on
+`f.get_Nd()` reading 27 where 15 is pinned.
+
+Q is the fill loop, which the scalars do see — it is here to show the matrix arm names the cell
+(`level 4, dependence 6`) where a scalar assertion reports only a moved number.
+
+R is the row mapping, and it is the one this arm does **not** catch; see the limitation at the end of
+this report for why and for what fixture would.
+
 ## What this report does not cover
 
 - **One oracle.** IBSI calls this family NGLDM and `mirp` exposes one, but Nyxus ships 3D GLDM and 3D
@@ -218,8 +244,13 @@ file.
   through an intercept whose comment says "blank ROIs". `test_3d_gldm_constant_roi_regression()` pins
   the emitted value. The fix is a production change on a reachable input, and the same intercept sits
   in five sibling families, so it is tracked as its own change — see `matrix/gldm3d.md`.
-- **`calculate()`'s filled `P` is still not read directly.** `P`, `I`, `Ng`, `Nd` and `Nz` stay
-  private. The assertion observes the production traversal that *produces* the cells —
-  `gather_dependence_zones()` — but not the row indexing through `I`, the `Nd` trim, or the `Nz`
-  sum that `calculate()` performs on top of it. Those three remain tied to the pinned matrix only by
-  the fourteen scalars agreeing to 7.11e-15.
+- **The two matrix fixtures cannot tell the two row-mapping branches apart.** `calculate()` indexes a
+  zone's row as `inten - 1` under `IBSI` and as the position of that level in `I` otherwise. Both
+  matrix fixtures carry contiguous grey levels — the phantom's `binCount` binning gives 1..20, the
+  small volume's raw levels are 1..4 — so on either one the two expressions are the same number.
+  Measured: replacing the `lower_bound` lookup with `inten - 1`, with no golden touched, leaves both
+  matrix cases green. What catches it is the MATLAB-binning snapshot, whose levels are gapped: all
+  fourteen `_REGRESSION` assertions fail. So the branch is under assertion in this suite, but not by
+  the assertion that reads `P`. A fixture that would put it there is a gapped-level volume with a
+  `binWidth=1` oracle — the same measurement `matrix/gldm3d.md` lists as what would move the
+  no-binning cell to VALID, and the shape `glszm3d.pyradiomics_ibsi_gapped` already uses next door.

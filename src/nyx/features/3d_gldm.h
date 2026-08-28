@@ -80,10 +80,16 @@ public:
 	// 14. Large Dependence High Gray Level Emphasis (LDHGLE)
 	double calc_LDHGLE();
 
-	// Walks a grey-binned cube and emits one (intensity, dependence count) pair per non-background
-	// voxel, which is what calculate() fills the dependence matrix from. Exposed so a test can build
-	// the matrix out of production's own neighbourhood traversal instead of a copy of it.
-	static void gather_dependence_zones (std::vector<std::pair<PixIntens, int>> & zones, const SimpleCube<PixIntens> & greybinned_image, PixIntens zero_intensity);
+	// Read-only views of the dependence matrix the last calculate() built, of the sorted grey levels
+	// its rows are indexed by, and of the three dimensions it was allocated and summed from. The
+	// fourteen features are contractions of this table, so an assertion that pins it has to read this
+	// object rather than a copy rebuilt beside it: a defect in the row mapping, in Ng/Nd, in the
+	// allocation or in the fill loop lives here and nowhere else.
+	const SimpleMatrix<int> & get_P() const { return P; }
+	const std::vector<PixIntens> & get_I() const { return I; }
+	int get_Ng() const { return Ng; }
+	int get_Nd() const { return Nd; }
+	int get_Nz() const { return Nz; }
 
 private:
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
