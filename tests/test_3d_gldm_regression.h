@@ -78,6 +78,23 @@ static const ref_vals_map<double> gldm_3d_regression_nobinning_ref_vals
 // an absolute 1e-9 and belongs to an oracle comparison -- there is no oracle here.
 static const double gldm_3d_regression_frac_tolerance = 1e9;
 
+// 3GLDM_DE is the exception, and not by choice: it is the family's only logarithm, and fast_log10()
+// evaluates 'fexp + a*signif*signif + b*signif' in float, which clang on arm64 contracts into fused
+// multiply-adds where MSVC on x86-64 does not. The pins are one platform's output, so the difference
+// lands in the golden. Both snapshot configurations failed on macOS-arm64 at 1e-9 while all thirteen
+// non-logarithm features of both tables passed there, which is the same split 3GLRLM_RE and
+// 3GLSZM_ZE were widened for; test_3d_glrlm_regression.h and test_3d_glszm_regression.h carry the
+// identical carve-out at the same 1e6.
+static const double gldm_3d_regression_de_frac_tolerance = 1e6;
+
+// -> the band for one feature: the exact tier, except for the logarithm. Both snapshot recipes share
+// it, because both compute 3GLDM_DE through the same fast_log10().
+static double gldm_3d_regression_band (const std::string& fname)
+{
+	return fname == "3GLDM_DE" ? gldm_3d_regression_de_frac_tolerance
+	                           : gldm_3d_regression_frac_tolerance;
+}
+
 // The no-value sentinel the degenerate-ROI guard runs under. Deliberately a value no GLDM feature
 // can take -- production defaults it to 0.0, which is also what several of the fourteen legitimately
 // compute, so a guard run at the default could not tell the two apart.
@@ -99,7 +116,7 @@ static void assert_3d_gldm_feature_regression (const Nyxus::Feature3D& expecting
 	int fcode = -1;
 	ASSERT_NO_FATAL_FAILURE(resolve_3d_gldm_fcode (fcode, expecting_fcode, fname));
 
-	ASSERT_TRUE (agrees_gt (fvals[fcode][0], iter->second, gldm_3d_regression_frac_tolerance)) << fname;
+	ASSERT_TRUE (agrees_gt (fvals[fcode][0], iter->second, gldm_3d_regression_band (fname))) << fname;
 }
 
 static void assert_3d_gldm_feature_nobinning_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
@@ -120,7 +137,7 @@ static void assert_3d_gldm_feature_nobinning_regression (const Nyxus::Feature3D&
 	int fcode = -1;
 	ASSERT_NO_FATAL_FAILURE(resolve_3d_gldm_fcode (fcode, expecting_fcode, fname));
 
-	ASSERT_TRUE (agrees_gt (fvals[fcode][0], iter->second, gldm_3d_regression_frac_tolerance)) << fname;
+	ASSERT_TRUE (agrees_gt (fvals[fcode][0], iter->second, gldm_3d_regression_band (fname))) << fname;
 }
 
 // Regenerates every pin above at full precision, in the shape the table wants. Run it with

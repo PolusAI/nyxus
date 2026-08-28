@@ -757,6 +757,15 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   opinions about one number. The value 64 is what the retired 3D coverage sweep's
   `make_3d_coverage_settings()` hand-set for this family, kept here so the pins stay comparable with
   the numbers that sweep produced.
+- **`3GLDM_DE` is banded at `rel=1e-6` here, not at the exact tier**, and the same carve-out applies
+  to `gldm3d.regression_ut_phantom_nobinning` below. A snapshot of the program's own arithmetic
+  reproduces to the last bit on the platform that produced it, and these pins were taken on one.
+  `calc_DE()` is the family's single `fast_log10()` site, and that helper evaluates
+  `fexp + a*signif*signif + b*signif` in `float`, which clang contracts into fused multiply-adds on
+  arm64 and MSVC does not on x86-64. Measured: on macOS-arm64 both snapshot configurations failed at
+  `rel=1e-9` while all thirteen non-logarithm features of both tables passed there, which is the
+  split `test_3d_glrlm_regression.h` and `test_3d_glszm_regression.h` already carry for `3GLRLM_RE`
+  and `3GLSZM_ZE`, at the same `1e6`.
 - The `GLDM_GREYDEPTH=0` cell is the compiled default rather than a variant of this one, so it is
   pinned separately at `gldm3d.regression_ut_phantom_nobinning` below.
 
