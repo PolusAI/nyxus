@@ -20,6 +20,12 @@ VALID-BUT-PRODUCTION-ONLY and gets a regression guard; recording a defect is not
 one, and a cell whose guard is still outstanding says so in its own row rather than being labelled
 something outside the vocabulary.
 
+**Scope: this matrix vets the in-RAM paths.** Every VALID and VALID-BUT-PRODUCTION-ONLY row below is
+a cell `calculate()` reaches. The out-of-core cell — `osized_calculate()`, entered when a ROI exceeds
+the RAM limit — is classified and described here but **deliberately left unguarded**: closing it
+means changing what these four features publish, which is a source change rather than a vetting
+pass. It ships as one open row, and the follow-up that closes it is scoped at the end of this file.
+
 | feature | knob | value | verdict | recipe / oracle / test |
 |---|---|---|---|---|
 | `FOCUS_SCORE` | `ksize` | 1, the only value `calculate()` passes | VALID | `imq.laplacian_ksize1_zeropad` — opencv, SPEC §7 exact tier |
@@ -127,29 +133,81 @@ rather than untried; promotion needs the six differences resolved first. Report:
 
 ## The out-of-core paths are the one row still without a guard
 
-`phase3.cpp` calls `osized_scan_whole_image()` on every registered feature method for an oversized
-ROI, and `FocusScoreFeature` and `SaturationFeature` are both registered, so this cell is reachable
-production — VALID-BUT-PRODUCTION-ONLY, not "not covered". It is also the one cell in this matrix
-whose regression guard is **outstanding**: reaching `osized_calculate()` needs an oversized-ROI
-harness (a disk-backed `raw_pixels_NT` and `WriteImageMatrix_nontriv`), which the gtest fixture here
-does not build, and the 2D out-of-core path is being repaired on its own branch. Stated here as an
-open row rather than closed by relabelling; `not_covered.md` carries the same entry.
+`phase3.cpp:117` calls `osized_scan_whole_image()` on every registered feature method for an
+oversized ROI, and all four IMQ feature methods are registered in `feature_mgr_init.cpp`, so this
+cell is reachable production — VALID-BUT-PRODUCTION-ONLY, not "not covered". It is also the one cell
+in this matrix whose regression guard is **outstanding**: reaching `osized_calculate()` needs an
+oversized-ROI harness (a disk-backed `raw_pixels_NT` and `WriteImageMatrix_nontriv`) which the gtest
+fixture here does not build, and which overlaps the harness the 2D out-of-core repair needs on its
+own branch — building a second one here would leave two to reconcile. Stated as an open row rather
+than closed by relabelling; `not_covered.md` carries the same entry.
 
-What follows is therefore read off the source rather than measured. The two feature classes not
-listed below, `PowerSpectrumFeature` and `SharpnessFeature`, carry their own out-of-core defect,
-tracked outside this vetting pass.
+Everything below is therefore read off the source rather than measured; measuring it is what the
+harness is for. Per feature:
 
-- `SaturationFeature::get_percent_max_pixels_NT()` uses two independent `if`s where the in-RAM
-  `get_percent_max_pixels()` uses `else if`. On a constant ROI those two disagree by construction —
-  and `osized_calculate()` returns before either runs when `aux_max == aux_min`, leaving both
-  saturations at 0. Three behaviours for one input.
-- `FocusScoreFeature::get_focus_score_NT()` calls `laplacian(W, conv_buffer, width, height, ksize)`,
-  passing width where the signature's `m_image` (rows) is; takes the variance over the whole
-  `conv_buffer`, which is sized `(winY+2)*(winX+2)*2 = 2048` and larger than the region any pixel
-  writes; and fills `W`, sized `winY*winX = 900`, with `W[row*width + col]` over the full ROI in the
-  branch taken when the ROI is smaller than one 30×30 window — which for a 100×20 ROI writes 2000
-  entries into 900. Its `tile_variance` vector, whose comment still says "abs sum of tile", is
-  declared and never used.
+- **`PowerSpectrumFeature::osized_calculate()` is empty** — `{}` at `power_spectrum.h:28`, overriding
+  the base's pure virtual. `FeatureMethod::osized_scan_whole_image()` (`feature_method.cpp:49`) calls
+  it and then `save_value()` unconditionally, so `POWER_SPECTRUM_SLOPE` is published from `slope_`
+  without anything having computed it.
+- **`SharpnessFeature::osized_calculate()` is empty** — `{}` at `sharpness.h:32`, the same shape,
+  publishing `sharpness_`.
+- **`FocusScoreFeature::osized_calculate()` never assigns `local_focus_score_`.** It sets
+  `focus_score_` only (`focus_score.cpp:80`); `local_focus_score_` is assigned at
+  `focus_score.cpp:26`, inside `calculate()`, on the in-RAM path alone — while `save_value()` writes
+  both members either way. So it is three features in this position, not two.
+- **No member has a default initializer.** `slope_`, `sharpness_`, `focus_score_`,
+  `local_focus_score_`, `max_saturation_` and `min_saturation_` are all bare `double x;`, no
+  constructor assigns them, and `cleanup_instance()` is `virtual void cleanup_instance() {}`
+  (`feature_method.h:43`) with no override in any of the four classes. Combined with the three items
+  above, the first oversized ROI publishes an **indeterminate** double rather than a zero.
+- **The early returns leak the previous ROI's values.** `SaturationFeature::osized_calculate()`
+  (`saturation.cpp:58`) and `FocusScoreFeature::osized_calculate()` (`focus_score.cpp:75`) both
+  return early when `aux_max == aux_min`, but the base calls `save_value()` regardless. Feature
+  methods are long-lived singletons registered once in `feature_mgr_init.cpp` and nothing resets them
+  between ROIs, so the second oversized constant ROI publishes the first one's numbers. Same shape as
+  the `NGTDMFeature::n_levels` static the 2D NGTDM pass fixed.
+- **`SaturationFeature::get_percent_max_pixels_NT()` uses two independent `if`s** (`saturation.cpp`
+  lines 125-126) where the in-RAM `get_percent_max_pixels()` uses `else if` (lines 87-89), so on a
+  constant ROI the two paths disagree by construction — and on that ROI the early return above means
+  neither of them runs. One input, three answers.
+- **`FocusScoreFeature::get_focus_score_NT()`** carries four defects of its own. It calls
+  `laplacian (W, conv_buffer, width, height, ksize)` at `focus_score.cpp:141`, passing the width
+  where the definition's first size parameter is the row count — the other branch passes
+  `(winY, winX)` at line 173, which is what identifies line 141 as the bug rather than the
+  convention. The declaration in `focus_score.h` names those two parameters `(n_image, m_image)`
+  and the definition names them `(m_image, n_image)`, which is how the confusion survives. It takes `variance()` over the whole `conv_buffer`, sized
+  `(winY + n - 1) * (winX + n - 1) * 2 = 2048`, larger than the region any pixel writes. In the
+  branch taken when the ROI is smaller than one 30×30 window it fills `W`, sized `winY * winX = 900`,
+  with `W[row * width + col]` over the full ROI — a 100×20 ROI writes 2000 entries into 900. And the
+  large-ROI branch steps wrong twice: the horizontal term is `winHor * n_winHor * winX` where one
+  window's stride is `winX`, so it moves `n_winHor` windows sideways per window, and
+  `row * n_winHor * winX` assumes `width == n_winHor * winX`, true only when the width is an exact
+  multiple of 30. Its `tile_variance` vector (`focus_score.cpp:151`), commented "0: abs sum of tile",
+  is declared and never touched.
+- **`PowerSpectrumFeature::featureset` names the wrong feature** (`power_spectrum.h:17`):
+  `{ FeatureIMQ::FOCUS_SCORE }` where the constructor provides `POWER_SPECTRUM_SLOPE`. Latent today —
+  nothing reads it, and `required()` tests the enum directly — but `SaturationFeature::required()` is
+  written as `anyEnabled(featureset)`, so aligning this class with that pattern would gate
+  `POWER_SPECTRUM_SLOPE` on whether `FOCUS_SCORE` was requested.
+
+### What the follow-up carries
+
+One PR, because the harness is what every row needs and the fixes are what make the rows assertable:
+
+1. the oversized-ROI harness itself — a disk-backed `raw_pixels_NT` plus `WriteImageMatrix_nontriv`,
+   or the existing `ram_limit` route if IMQ can be driven out-of-core through the Python invariant
+   test the 2D repair already uses;
+2. one matrix row per feature in place of the single family-wide row above, each with its own SPEC
+   §5.1 disposition and its own assertion;
+3. a fix for every defect listed above.
+
+It changes what these four features publish on the out-of-core path, so it is a source change and
+lands on its own branch under the standing rule.
+
+Not in it: the `POWER_SPECTRUM_SLOPE` radial-binning defect described earlier. That one is an
+**in-RAM** defect the out-of-core path merely inherits, it is already pinned by
+`test_imq_power_spectrum_slope_large_roi_regression`, and closing it needs an oracle
+(`centrosome.radial_power_spectrum.rps`) rather than a harness — so the two stay separable.
 
 ## Measured agreement at the two VALID points
 
