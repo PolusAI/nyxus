@@ -49,9 +49,25 @@ static const ref_vals_map<double> glszm_3d_regression_ref_vals
 };
 
 // agrees_gt divides the golden by this, so a larger argument is a tighter band. A snapshot of the
-// program's own arithmetic on a fixed input reproduces exactly, so the band is the exact tier and
-// anything looser would simply stop guarding.
+// program's own arithmetic on a fixed input reproduces to the last bit on one platform, so the band
+// is the exact tier and anything looser would simply stop guarding.
 static const double glszm_3d_regression_frac_tolerance = 1e9;
+
+// 3GLSZM_ZE is the exception, and not by choice: it is the family's only logarithm, and fast_log10()
+// evaluates 'fexp + a*signif*signif + b*signif' in float, which clang on arm64 contracts into fused
+// multiply-adds where MSVC on x86-64 does not. The pins are one platform's output, so the difference
+// lands in the golden. Measured on the same phantom, 3GLRLM_RE -- the same fast_log10 through the
+// same kind of sum -- moves by 1.06e-9 between the two, which a 1e-9 band cannot hold. Every other
+// feature of the family moves by ~1e-16 there, so only this one is widened.
+// test_3d_glrlm_regression.h carries the identical carve-out for 3GLRLM_RE, at the same 1e6.
+static const double glszm_3d_regression_ze_frac_tolerance = 1e6;
+
+// -> the band for one feature: the exact tier, except for the logarithm.
+static double glszm_3d_regression_band (const std::string& fname)
+{
+	return fname == "3GLSZM_ZE" ? glszm_3d_regression_ze_frac_tolerance
+	                            : glszm_3d_regression_frac_tolerance;
+}
 
 // Recipe glszm3d.regression_ut_phantom_nobinning. Regenerate with
 //     runAllTests --gtest_filter=*3D_GLSZM_DUMP_REGRESSION*
@@ -97,7 +113,7 @@ void assert_3d_glszm_feature_regression (const Nyxus::Feature3D& expecting_fcode
 	ASSERT_NO_FATAL_FAILURE(extract_3d_glszm (fvals, cube, lo, hi, ipath, mpath, label, s));
 
 	ASSERT_TRUE (agrees_gt (fvals[fcode][0], iter->second,
-	                        glszm_3d_regression_frac_tolerance)) << fname;
+	                        glszm_3d_regression_band (fname))) << fname;
 }
 
 // Regenerates every pin of both recipes at full precision, in the shape the tables want. Run it with
@@ -221,7 +237,7 @@ void test_3d_glszm_default_greydepth_regression()
 		int fcode = -1;
 		ASSERT_TRUE (e.theFeatureSet.find_3D_FeatureByString (nv.first, fcode));
 		ASSERT_TRUE (agrees_gt (fvals[fcode][0], nv.second,
-		                        glszm_3d_regression_frac_tolerance)) << nv.first;
+		                        glszm_3d_regression_band (nv.first))) << nv.first;
 	}
 }
 
