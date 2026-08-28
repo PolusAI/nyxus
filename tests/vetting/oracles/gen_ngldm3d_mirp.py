@@ -2,8 +2,16 @@
 
     python tests/vetting/oracles/gen_ngldm3d_mirp.py     (from the repository root)
 
-Prints the paste-ready goldens AND re-verifies every golden pinned in test_3d_ngldm_mirp.h, exiting
-non-zero on any mismatch or on any pin it cannot produce.
+Prints the paste-ready goldens AND re-verifies every MIRP value quoted in the vetting report,
+exiting non-zero on any mismatch, on any quoted feature it cannot produce, and on any feature it
+produces that the report does not quote.
+
+Nothing in the tree PINS these numbers: the family is regression-only and this oracle is deliberately
+unasserted (see the warning below), so the artifact this generator feeds is
+../audit/ngldm_3d_mirp_vetting_report.md rather than a header. That is what it verifies. A generator
+that has nothing to check exits 0 without checking anything, and its "ALL CHECKS PASSED" then means
+only that it ran -- which is the state this one was in while it pointed at a test_3d_ngldm_mirp.h
+that has never existed.
 
 Recipe `ngldm3d.mirp_fbn64`: the segmented phantom (tests/data/nifti/phantoms/ut_inten.nii +
 ut_mask57.nii, label 57) at native 1x1x1 spacing, `by_slice=False`, fixed_bin_number with 64 bins,
@@ -24,7 +32,9 @@ NIFTI READING WITHOUT A NIFTI LIBRARY: the mirp env has neither SimpleITK nor ni
 are uncompressed single-file NIfTI-1 (magic "n+1"), so the header is parsed directly below and the
 generator stays single-env. Same approach as gen_morphology3d_mirp.py.
 
-Provenance: tool=mirp 2.6.0 (numpy 2.4.6, pandas 3.0.3, Python 3.11); env=nyxus_mirp (conda-forge:
+Provenance of the run behind the vetting report -- the printed header names whatever mirp is
+actually installed, so a run under another version says so rather than repeating this line:
+tool=mirp 2.6.0 (numpy 2.4.6, pandas 3.0.3, Python 3.11); env=nyxus_mirp (conda-forge:
 `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy`);
 generator=tests/vetting/oracles/gen_ngldm3d_mirp.py. Run offline; CI never invokes it.
 """
@@ -32,6 +42,7 @@ import logging
 import os
 import re
 import sys
+from importlib import metadata
 
 import numpy as np
 
@@ -40,9 +51,11 @@ TESTS = os.path.dirname(os.path.dirname(HERE))
 PHANTOMS = os.path.join(TESTS, "data", "nifti", "phantoms")
 INTEN = os.path.join(PHANTOMS, "ut_inten.nii")
 MASK = os.path.join(PHANTOMS, "ut_mask57.nii")
-TEST_H = os.path.join(TESTS, "test_3d_ngldm_mirp.h")
+REPORT = os.path.join(TESTS, "vetting", "audit", "ngldm_3d_mirp_vetting_report.md")
 
-RELTOL = 1e-9
+# The report quotes the comparison to six significant figures, so that is the precision the
+# re-verification can hold it to. It is a staleness check on a published table, not a vetting band.
+RELTOL = 1e-5
 LABEL = 57
 NBINS = 64
 
@@ -91,14 +104,19 @@ def read_nifti(path):
     return vol, (float(pixdim[3]), float(pixdim[2]), float(pixdim[1]))
 
 
-def parse_pins(txt, table):
-    m = re.search(re.escape(table) + r"\s*\{", txt)
-    if not m:
-        raise RuntimeError(f"table {table} not found")
-    body = txt[m.end():].split("};", 1)[0]
-    body = re.sub(r"//[^\n]*", "", body)
-    return {n: float(v) for n, v in
-            re.findall(r'\{\s*"(3NGLDM_[A-Z0-9_]+)"\s*,\s*([-0-9.eE+]+)\s*\}', body)}
+def parse_report(txt):
+    """-> {feature: MIRP value} from the report's comparison table.
+
+    Rows look like | `3NGLDM_GLNU` | 115443 | 4350.27 | **26.5x** | -- Nyxus, MIRP, ratio. Only
+    the MIRP column is this generator's to verify; the Nyxus column is the program's own output and
+    the ratio is derived from the two.
+    """
+    rows = re.findall(
+        r"^\|\s*`(3NGLDM_[A-Z0-9_]+)`\s*\|\s*[-0-9.eE+]+\s*\|\s*([-0-9.eE+]+)\s*\|",
+        txt, re.M)
+    if not rows:
+        raise RuntimeError("no comparison rows found in " + os.path.basename(REPORT))
+    return {n: float(v) for n, v in rows}
 
 
 def run():
@@ -138,40 +156,52 @@ def main():
 
     got = run()
 
-    import mirp
-    print(f"# mirp 2.6.0, numpy {np.__version__}, label={LABEL}, by_slice=False, "
+    try:
+        version = metadata.version("mirp")       # mirp exposes no __version__
+    except metadata.PackageNotFoundError:
+        version = "unknown"
+
+    # the installed mirp, read from the distribution rather than written in: this line is the
+    # provenance of the goldens printed below it, so a run under another version has to say so.
+    print(f"# mirp {version}, numpy {np.__version__}, label={LABEL}, by_slice=False, "
           f"fixed_bin_number n={NBINS}, distance=1, alpha=0")
     print("# paste-ready goldens")
     for name in sorted(got):
         print(f'\t{{"{name}", {got[name]!r}}},'.ljust(56) + f"// {MIRP[name]}{SUFFIX}")
     print("\n# no MIRP counterpart, cannot be vetted here: 3NGLDM_GLM, 3NGLDM_DCM")
 
-    if not os.path.exists(TEST_H):
-        print(f"\n# {os.path.basename(TEST_H)} does not exist yet -- nothing to verify")
-        return 0
+    if not os.path.exists(REPORT):
+        print(f"\n# {os.path.basename(REPORT)} is missing -- there is nothing this run can be "
+              f"checked against, which is a failure, not a pass")
+        return 1
 
-    pins = parse_pins(open(TEST_H, encoding="utf-8", errors="replace").read(),
-                      "ngldm_3d_mirp_ref_vals")
-    print(f"\n# verifying {len(pins)} pinned goldens against this run")
+    quoted = parse_report(open(REPORT, encoding="utf-8", errors="replace").read())
+    print(f"\n# verifying the {len(quoted)} MIRP values quoted in "
+          f"{os.path.basename(REPORT)} against this run, at rel<={RELTOL:g}")
     nok = nfail = nmiss = 0
-    for name in sorted(pins):
-        want = pins[name]
+    for name in sorted(quoted):
+        want = quoted[name]
         if name not in got:
-            print(f"  MISSING {name}: pinned {want!r} but MIRP reports no counterpart")
+            print(f"  MISSING {name}: report quotes {want!r} but MIRP reports no counterpart")
             nmiss += 1
             continue
         have = got[name]
         rel = abs(have - want) / max(abs(want), 1e-12)
         if rel <= RELTOL:
-            print(f"  OK   {name}: mirp={have!r} pinned={want!r} rel={rel:.3g}")
+            print(f"  OK   {name}: mirp={have!r} report={want!r} rel={rel:.3g}")
             nok += 1
         else:
-            print(f"  FAIL {name}: mirp={have!r} pinned={want!r} rel={rel:.3g}")
+            print(f"  FAIL {name}: mirp={have!r} report={want!r} rel={rel:.3g}")
             nfail += 1
 
-    print(f"\n{nok} verified, {nfail} failed, {nmiss} unproducible")
-    if nfail or nmiss:
-        print("SOME CHECKS FAILED -- do not promote")
+    # the reverse direction: a feature this run produces that the report says nothing about
+    unquoted = sorted(set(got) - set(quoted))
+    for name in unquoted:
+        print(f"  UNQUOTED {name}: MIRP reports {got[name]!r} and the report does not quote it")
+
+    print(f"\n{nok} verified, {nfail} failed, {nmiss} unproducible, {len(unquoted)} unquoted")
+    if nfail or nmiss or unquoted:
+        print("SOME CHECKS FAILED -- the report is out of step with the tool")
         return 1
     print("ALL CHECKS PASSED")
     return 0

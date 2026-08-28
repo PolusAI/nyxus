@@ -115,3 +115,58 @@ Only what is independent of the defects:
 
 The values remain wrong with respect to IBSI. They are pinned as a change detector for the eventual
 fix, and the registry says so; nothing here promotes a row.
+
+## The retired coverage sweep, and include hygiene
+
+`test_3d_gldzm_coverage.h` instantiated the two generic `TEST_P` suites of
+`test_3d_coverage_common.h` over the family's 18 features and published a second pin table,
+`gldzm_3d_regression_coverage_ref_vals`. It is gone. What was measured before deleting it:
+
+- **The two tables now hold the same 18 keys, 16 of them bit-identical.** The two that differ,
+  `3GLDZM_GLV` and `3GLDZM_ZDE`, differ in the last decimal digit — 1.8e-16 and 2.0e-16 relative,
+  one ULP, and seven orders of magnitude inside the `rel=1e-9` band both copies were asserted at. No
+  assertion in the tree can distinguish them.
+- **They were not duplicates before this pass, and that is why the retirement could not be cut from
+  `main`.** The regression copy carried the same quantities rounded to between two and five
+  significant figures, and `3GLDZM_ZDM` read `222` against the sweep's `15.306504185784746` — a
+  factor of 14.5. Nothing caught it because `3GLDZM_ZDM` had no test function and no registration:
+  the pin existed and was read by nothing. Re-pinning at full precision and registering that
+  assertion are what made the two tables comparable in the first place.
+- Both are taken at the same recipe. The sweep runs `GREYDEPTH=64`, `IBSI=false`; so does this
+  file's helper. `make_3d_coverage_settings()` additionally sets the GLCM/GLDM/GLRLM/GLSZM/NGTDM
+  grey depths and the NGTDM radius, none of which GLDZM reads, so the two configurations are
+  equivalent for this family.
+- The `GLDZM_WITH_3P_EMBEDDED_GT` half instantiated **zero** cases: no GLDZM table appears in
+  `externally_vetted_3d_feature_names()`, because the family has no oracle-backed feature at all —
+  which is the subject of the rest of this report.
+- All 18 features have an individually named `*_regression` test and a `TEST()` registration, so
+  nothing had to be ported.
+
+**What the sweep additionally checked, and where it lives now.** The name-resolves-and-code-matches
+step is done by every named test (`find_3D_FeatureByString` plus an assert on the returned code).
+The one-provider-per-`Feature3D`-code step is done by `FeatureManager::check_11_correspondence()`,
+which `test_feature_manager_mechanics.h` exercises through `fm.compile()`.
+
+**One step has no counterpart and is genuinely dropped**, here as in the three families retired
+before this one: the sweep also ran all nine 3D calculators once over the phantom and asserted that
+each feature's slot in the global value table came back non-empty with at least one finite value —
+i.e. that `save_value()` writes it. The named tests build their own ROI and read `r.fvals[fcode][0]`
+directly, so none of them exercise that path. Worth stating plainly rather than implying the port is
+lossless. Its practical reach was narrower than it sounds: `make_3d_coverage_settings()` hand-sets
+every grey depth and the NGTDM radius, so the check only ever covered the calculators under a
+correctly configured `Fsettings`, never the defaults that `compile_feature_settings()` produces.
+
+The completeness guard in `test_3d_coverage_common.h` reads this family's pins straight off
+`gldzm_3d_regression_ref_vals`, so the migration cost exactly one `add_keys()` line. Deleting a pin
+from the table now fails `TEST_3D_FEATURE_COVERAGE_COUNTS` by feature name. Note what that guard
+does **not** do: `feature_3d_cases()` classifies all 213 public features whether or not any family
+instantiates the suites, so the `94`/`119` counts are unmoved by a retirement and cannot detect one.
+
+**Include hygiene.** Being the family's fixture as well as its table, `test_3d_gldzm_regression.h`
+used `Fsettings`/`NyxSetting`, `SlideProps`/`scan_slide_props`, the four `globals.h` ROI-gathering
+functions, `fs::exists` and `agrees_gt` without including `feature_settings.h`, `slideprops.h`,
+`globals.h`, `helpers/fsystem.h` or `test_main_nyxus.h` — every one reached it transitively. All are
+now direct. The pin table is also `const` and read through `.at()`: with the coverage copy gone this
+file is the family's only pin table and `test_3d_coverage_common.h` reads its keys, so an
+`operator[]` default-insert would have both passed a bogus assertion against a 0 golden and added a
+phantom feature name to the individually-pinned set.

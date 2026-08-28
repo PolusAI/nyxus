@@ -138,7 +138,7 @@ Exact metric names + caveats are in `oracle_coverage.csv` (`candidate_oracle`, f
 | **3D GLCM** | 7 | **PyRadiomics / MIRP** — `DIS`→DifferenceAverage, `HOM1`→Id, `HOM2`→Idm, `SUMVARIANCE`→ClusterTendency, `ENERGY`→JointEnergy(=ASM), `VAR`→mirp `cm_var` | **config-sensitive**: Nyxus GT is asymmetric/1-offset/100-level; pyradiomics is symmetric+13-direction → needs a matching config recipe or it diverges badly |
 | **3D shape** | 9 | **PyRadiomics 3D shape** — Sphericity, SphericalDisproportion, Major/Minor/LeastAxisLength, Elongation, Flatness, SurfaceVolumeRatio, Compactness1/2 | Compactness1/2 disabled by default (enable); align surface-mesh + voxel spacing |
 | **Intensity-histogram** (IH dispersion/index) | ~17 | **MIRP** (IBSI IH family); `IH_ENTROPY`/`IH_UNIFORMITY` also PyRadiomics | PyRadiomics firstorder is on *non-discretised* values (IBSI intensity-based-stats) → only Entropy/Uniformity match; vet `_IDX` against MIRP, `_VAL` analytic |
-| **Radial distribution** (`RADIAL_CV`,`FRAC_AT_D`,`MEAN_FRAC`) | 3 | **CellProfiler** `MeasureObjectIntensityDistribution` (`RadialDistribution_*`) | Nyxus copied verbatim from CP → near-exact; match center def + 8 bins/slices |
+| **Radial distribution** (`RADIAL_CV`,`FRAC_AT_D`,`MEAN_FRAC`) | 3 | ~~**CellProfiler** `MeasureObjectIntensityDistribution` (`RadialDistribution_*`)~~ **none** | **Run 2026-08-20: CellProfiler does NOT vet these.** The prediction here — "copied verbatim from CP → near-exact" — is what the run disproves: only the three *names* and the help strings were copied, and 21 of the 24 (feature × bin) values disagree by more than 1%. Six independent definition and implementation differences, in `audit/radial_2d_cellprofiler_vetting_report.md`. Stays regression. |
 | **CIRCULARITY** | 1 | **PyRadiomics** 2D `Sphericity` (formula-identical) | any mismatch = real bug or perimeter-convention |
 | **DIAMETER_MIN_ENCLOSING_CIRCLE** | 1 | **OpenCV** `minEnclosingCircle` / **imea** | opencv radius×2 |
 
@@ -148,7 +148,7 @@ Exact metric names + caveats are in `oracle_coverage.csv` (`candidate_oracle`, f
 (`CLOSEST_NEIGHBOR*_ANG`, `ANG_BW_NEIGHBORS_*` — CellProfiler's `AngleBetweenNeighbors` is a different
 quantity), 3D GLDZM/NGLDM intermediate means (`3GLDZM_GLM/ZDM`, `3NGLDM_GLM/DCM` — only their
 variances have oracles), `3HYPERSKEWNESS`/`3HYPERFLATNESS` (scipy `moment` only), `3COVERED_IMAGE_INTENSITY_RANGE` (uses image dynamic range).
-**Niche only:** `ZERNIKE2D` → `mahotas.features.zernike_moments` (accept as niche or keep analytic).
+**Niche only:** ~~`ZERNIKE2D` → `mahotas.features.zernike_moments` (accept as niche or keep analytic).~~ **Settled 2026-08-20: analytic.** The closed form is a complete independent reference and no tool was needed; see `audit/zernike_2d_analytic_vetting_report.md`.
 **Analytic-trivial (12):** `3INTEGRATED_INTENSITY`, `3P01/25/75/99` (numpy; IBSI has only P10/P90).
 
 **Token-set impact:** research adds **OpenCV** (min-enclosing-circle) to the tools in play; `skimage`
@@ -550,9 +550,16 @@ work was entirely in the names, which claimed the opposite of the registry's dec
 The helper and table were safe to rename outright because **`ZERNIKE2D` is their only key and only
 caller** — checked before touching them; the near-identical `assert_unvetted_no_direct_oracle_*` twin
 serves the radial features and was left alone. This one mattered beyond tidiness: §6.1 rejects mahotas,
-the only tool that computes Zernike moments, so ZERNIKE2D has **no** accepted oracle — yet four
-identifiers and every failure message said it was third-party-verified. The 0/1 vetted in
-`coverage_report.md` and the test names now agree. Verified: **gtest 730/730**.
+so at the time ZERNIKE2D had no accepted **tool** oracle — yet four identifiers and every failure
+message said it was third-party-verified. The 0/1 vetted in `coverage_report.md` and the test names
+now agree. Verified: **gtest 730/730**.
+
+**Superseded 2026-08-20.** Two claims here did not survive: mahotas is not "the only tool that
+computes Zernike moments" — CellProfiler/centrosome do, at a different disk convention — and "no
+accepted oracle" conflated *no tool* with *no reference*. §9.1 of this document had it right all
+along: `ZERNIKE2D` is **analytic**. The closed form was written down, the family is now
+`status=vetted, oracle=analytic`, and the run found that all 30 values were wrong. See
+`audit/zernike_2d_analytic_vetting_report.md`.
 
 ## 5.25 Wave 15 (neighbor) — executed
 

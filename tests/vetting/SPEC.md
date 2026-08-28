@@ -157,8 +157,8 @@ Notes:
   the ellipse triple. So `oracle=matlab` means an Octave run unless a table's provenance header
   says otherwise, and every artifact presenting the token — registry `notes`, the audit
   coverage CSVs, the vetting reports — repeats which tool produced the numbers rather than
-  leaving `matlab` to imply a licensed run. One legacy 3D table predates this and says so at
-  its definition site: `test_3d_firstorder_matlab.h` (no provenance recorded — `not_covered.md` §C).
+  leaving `matlab` to imply a licensed run. `test_3d_firstorder_matlab.h` is a licensed-run
+  exception: its provenance pins MATLAB R2026a and its generator calls the named native statistics.
   `graycoprops` is the one gap: Octave's `image` has no equivalent, so GLCM has no Octave path
   and is vetted against `pyradiomics` / `ibsi` instead.
 - Flag any family no listed tool covers as we go.

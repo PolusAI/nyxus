@@ -23,10 +23,13 @@ lists are what this tree shows today — the recipe ids are the stable half.
 | Shape | 100×100×100 voxels at 1×1×1 spacing; the ROI is **274 432** voxels, ~27% of the volume |
 | Why it exists | a solid single-label 3D ROI, large enough that a 13-direction texture matrix is well populated in every direction and small enough to featurise inside a unit test |
 
-Recipes: `ngldm3d.regression_ut_phantom`, `ngldm3d.mirp_fbn64`, `gldzm3d.regression_ut_phantom`, `gldzm3d.mirp_fbn64`.
+Recipes: `firstorder3d.matlab_native`, `firstorder3d.regression_ut_phantom`,
+`ngldm3d.regression_ut_phantom`, `ngldm3d.mirp_fbn64`, `gldzm3d.regression_ut_phantom`,
+`gldzm3d.mirp_fbn64`, `ngtdm3d.regression_ut_phantom`.
 
 Tests reaching it today: `test_3d_ngldm_regression.h`, `test_3d_coverage_common.h`,
-`test_3d_{glcm,gldm,gldzm}_regression.h`, `test_3d_morphology_matlab.h`, and the
+`test_3d_{glcm,gldm,gldzm,ngtdm}_regression.h`, `test_3d_firstorder_{matlab,regression}.h`,
+`test_3d_morphology_matlab.h`, and the
 `get_3d_segmented_phantom()` helper the 3D `_pyradiomics` files define (several of those assert on
 `bench_compat_liver_3d` instead — the helper being present is not the same as the assertion using
 it).
@@ -47,6 +50,35 @@ prevent.
 | Why it exists | an MRI-like intensity distribution over an anatomical segmentation — the fixture the PyRadiomics comparisons are run on, whose grey-level spread suits `binCount` binning |
 
 Tests reaching it today: `test_3d_glcm_pyradiomics.h`, `test_3d_firstorder_pyradiomics.h`.
+
+Recipes: `glcm3d.pyradiomics_bincount20`, `firstorder3d.pyradiomics_bincount20`.
+
+---
+
+## `bench_compat_ngtdm_3d` — the 4x4x3 NGTDM phantom
+
+| | |
+|---|---|
+| Files | `tests/data/nifti/compat_int/compat_int_ngtdm_3d.nii` + `tests/data/nifti/compat_seg/compat_seg_ngtdm_3d.nii` |
+| ROI | label **57**, which is every voxel |
+| Shape | 4x4x3 at 1x1x1 spacing: one populated 4x4 slice of the discrete levels 1..5 between two all-zero slices, 48 voxels in total |
+| Why it exists | six grey levels over 48 voxels, small enough that the whole NGTDM is 18 numbers a reader can check by hand, and constructed so that PyRadiomics' `binWidth=1` discretisation and Nyxus' zero-min correction land on the same level set |
+
+Recipes: `ngtdm3d.pyradiomics_binwidth1`, `ngtdm3d.pyradiomics_binwidth1_r2`. The two differ only
+in `NGTDM_RADIUS` (1 and 2). The fixture supports no third: at radius 3 a Chebyshev neighbourhood
+already spans the whole 4×4×3 volume from every voxel, so radius 3 and radius 4 compute one matrix.
+
+Tests reaching it today: `test_3d_ngtdm_pyradiomics.h`, `test_3d_ngtdm_mechanics.h`,
+`tests/python/test_nyxus.py::test_3d_ngtdm_compatibility`.
+
+**Its mask has no background, and that has a consequence.** All 48 voxels carry label 57, so
+PyRadiomics' `imageoperations.getMask()` rejects it outright — `numpy.unique` on the mask has one
+entry and it raises "No labels found in this mask (i.e. nothing is segmented)!". Any oracle run
+against this fixture has to construct the feature class directly rather than go through
+`RadiomicsFeatureExtractor`; `oracles/gen_ngtdm3d_pyradiomics.py` does.
+
+The all-zero slices are ROI voxels, not padding. They become grey level 1 on both sides and are two
+thirds of the volume, which is why `n_1 = 32` dominates the matrix.
 
 ---
 
@@ -124,3 +156,31 @@ ROI whose every contour pixel is 8-adjacent to some neighbour, which is what mak
 `PERCENT_TOUCHING = 100` a closed form rather than a snapshot, and it is the only ROI with two
 in-radius neighbours — so it is also the only one where `CLOSEST_NEIGHBOR2_*` is anything but a
 structural zero. Shrinking the scene or moving one block off label 1 costs both assertions.
+
+---
+
+## `bench_shape8_concave_holed` — one concave 26-pixel ROI with an interior hole
+
+| | |
+|---|---|
+| Data | `shape2d_morphology_mask` + `shape2d_morphology_intensity` in `tests/test_data.h`, loaded by `load_masked_test_roi_data()` at `make_shape2d_settings()`; built for this family by `build_radial_2d_roi()` in `tests/test_2d_radial_common.h`, and for Zernike by `build_zernike_2d_roi()` in `tests/test_2d_zernike_common.h` |
+| ROI | one of them — label 1, **26 pixels**, total intensity **1048**, per-pixel intensity 12–68 |
+| Shape | an 8×8 grid; the ROI spans x 0–5, y 0–6 as a concave blob with a single one-pixel interior hole at (3,3) |
+| Why it exists | a compact 2D shape that is neither convex nor simply connected, so contour tracing has to return two contours and every shape descriptor computed from them is non-degenerate |
+
+Recipes: `radial.shape2d_native`, `morphology.shape2d_native`, `radial.cellprofiler_8bin`,
+`zernike.shape2d_native`.
+
+Tests reaching it today: `test_2d_radial_{regression,invariant,mechanics}.h` (through
+`test_2d_radial_common.h`), `test_2d_morphology_common.h` and the morphology files that include it,
+`test_2d_zernike_{analytic,regression,invariant,mechanics}.h` (through `test_2d_zernike_common.h`).
+
+**The interior hole is the load-bearing property, and it is also what limits this fixture.** It is
+what makes `LR::merge_multicontour` concatenate two contours rather than return one, which is the
+condition under which `Pixel2::find_center` and `Pixel2::max_sqdist` return non-extremal answers
+(`audit/radial_2d_cellprofiler_vetting_report.md` §6 defect 2, pinned in
+`test_2d_radial_mechanics.h`). For the same reason it is **not** a fixture the radial family can ever
+be vetted on: its distance-to-edge maximum is attained by 8 of its 26 pixels, so CellProfiler's own
+centre moves with the label image's padding, and 26 pixels over 8 radial bins leaves 3 of them empty
+on one side or the other. `audit/radial_2d_golden_regen.md` §5 lists what a vetting fixture would
+have to add.

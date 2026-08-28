@@ -1,6 +1,6 @@
-"""Regenerate ngldm_3d_coverage.csv by scanning the 3D NGLDM tests. Stdlib only.
+"""Regenerate ngtdm_3d_coverage.csv by scanning the 3D NGTDM tests. Stdlib only.
 
-    python tests/vetting/audit/scan_ngldm3d_coverage.py [--check]
+    python tests/vetting/audit/scan_ngtdm3d_coverage.py [--check]
 
 The feature -> test mapping is read out of the test sources rather than written by hand, so the
 artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
@@ -36,46 +36,39 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 VETTING = os.path.dirname(HERE)
 TESTS = os.path.dirname(VETTING)
-OUT = os.path.join(HERE, "ngldm_3d_coverage.csv")
+OUT = os.path.join(HERE, "ngtdm_3d_coverage.csv")
 REGISTRY = os.path.join(VETTING, "oracle_coverage.csv")
 
 SOURCES = [
-    "test_3d_ngldm_regression.h",
+    "test_3d_ngtdm_pyradiomics.h",
+    "test_3d_ngtdm_regression.h",
+    "test_3d_ngtdm_mechanics.h",
     os.path.join("python", "test_nyxus.py"),
 ]
-# A golden table whose keys are never named in the asserting function's body. The 16 per-angle
-# assertions name their feature on the assertion line, so only the pytest table needs this: it keys
-# a dict by the PyRadiomics feature name and asserts through the Nyxus name, and its dict literal
-# sits outside any loop.
+# A golden table whose keys are never named in the asserting function's body. The pytest case keys
+# its dict by the PyRadiomics feature name and asserts through the Nyxus name, but it names the
+# Nyxus name on the assertion line itself, so nothing here needs the indirection. The two matrix
+# tables are keyed by grey level rather than by feature and cover no feature at all.
 TABLE_OWNER = {}
 
-# Deliberately empty: no oracle test exists for this family. MIRP is config-matched and reproducible
-# (oracles/gen_ngldm3d_mirp.py) but disagrees with Nyxus on 16 of 17 features for implementation
-# reasons, so nothing here is vetted and no function carries an oracle suffix. Add "mirp": "mirp"
-# once the defects in the audit report are fixed and the promotion is re-run.
-ORACLE_SUFFIX = {}
+ORACLE_SUFFIX = {"pyradiomics": "pyradiomics"}
 
 FUNC = re.compile(r"^(?:void|def)\s+(test_\w+)|^\s+def\s+(test_\w+)", re.M)
 # A module-level helper in the pytest files, e.g. `def _fd(label)`. The python tests read the
 # dataframe column inside such a helper and assert on the returned scalar, so the feature name never
 # appears in the test body -- credit the helper's features to every test function that calls it.
 HELPER = re.compile(r"^def\s+(_\w+)\s*\(", re.M)
-# No trailing \b after `assert`: this family asserts through per-oracle helpers
-# (assert_morphology_feature_regression, assert_caliper_imea, ...), so the call line that names the
-# feature is `assert_<something>(fvals, Feature2D::X, "X")`, not a bare ASSERT_ macro.
+# No trailing \b after `assert`: this family asserts through per-kind helpers
+# (assert_3d_ngtdm_feature_pyradiomics, assert_3d_ngtdm_feature_regression), so the call line that
+# names the feature is `assert_<something>(Feature3D::X, "3X")`, not a bare ASSERT_ macro.
 ASSERTION = re.compile(r"\b(ASSERT_|EXPECT_|assert)")
 LOOP_LIST = re.compile(r"for\s*\([^)]*:\s*\{([^}]*)\}\s*\)"
                        r"|for\s+\w+\s+in\s*[\[(]([^\])]*)[\])]\s*:", re.S)
 COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
 
 NOTE = {
-    "3NGLDM_DCP": "was status=vetted/oracle=mirp from an offline run; demoted -- it agrees with MIRP "
-                  "only at the degenerate value 1.0, while every other comparable feature diverges",
-    "3NGLDM_GLM": "no counterpart in any tool (MIRP's NGLDM emits no gl_mean column)",
-    "3NGLDM_DCM": "no counterpart in any tool (MIRP's NGLDM emits no dc_mean column)",
-    "3NGLDM_GLNU": "26.5x from MIRP -- consistent with background voxels piling into one grey row",
-    "3NGLDM_DCENE": "49.9x from MIRP, the family's widest measured divergence",
-    "3NGLDM_HDE": "9.3x from MIRP -- background voxels each see ~24 identical neighbours",
+    "3NGTDM_COARSENESS": "the matrix the five features contract is pinned per grey level as well, "
+                         "in test_3d_ngtdm_matrix_pyradiomics",
 }
 
 
@@ -94,11 +87,9 @@ def scan(path, feat_re):
     with open(path, encoding="utf-8", errors="replace") as fh:
         text = fh.read()
     text = COMMENT.sub(lambda m: "\n" * m.group(0).count("\n"), text)
-    # 3D tests name features by enum (Feature3D::NGLDM_SRE_AVE) while the registry carries the
-    # leading dimension digit (3NGLDM_SRE_AVE). Normalise so one pattern matches both spellings.
-    # The _AVE test aliases the enum (`using F = Nyxus::Feature3D;`), so cover `F::` too.
+    # 3D tests name features by enum (Feature3D::NGTDM_BUSYNESS) while the registry carries the
+    # leading dimension digit (3NGTDM_BUSYNESS). Normalise so one pattern matches both spellings.
     text = text.replace("Feature3D::", "Feature3D::3")
-    text = re.sub(r"\bF::(?=NGLDM_)", "F::3", text)
     hits = {}
 
     for table, owner in TABLE_OWNER.items():
@@ -167,7 +158,7 @@ def collect(feat_re):
 def registry_rows():
     with open(REGISTRY, newline="", encoding="utf-8") as fh:
         return [r for r in csv.DictReader(fh)
-                if r["dim"] == "3D" and r["family"] == "ngldm"]
+                if r["dim"] == "3D" and r["family"] == "ngtdm"]
 
 
 def render(rows, asserted, oracles, regression, other):
@@ -175,16 +166,19 @@ def render(rows, asserted, oracles, regression, other):
     w = csv.writer(buf, lineterminator="\n")
     w.writerow(["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
                 "Regression", "Reg_Test_Name", "Notes"])
-    for r in rows:
-        f = r["feature"]
+    # This artifact is per FEATURE, while the registry is per assertion -- one row per
+    # (feature x config recipe x oracle), so a feature vetted at two radii has two rows. Its columns
+    # are already the union over a feature's tests (List_of_Oracles, Test_Names), so walk the
+    # features in registry order rather than the rows, or each extra config point emits a duplicate.
+    for f in dict.fromkeys(r["feature"] for r in rows):
         notes = [NOTE[f]] if f in NOTE else []
         # A function whose name-suffix is neither an oracle nor `regression` contributes coverage but
         # no oracle token, so it would otherwise be invisible in this artifact. Naming it keeps the
-        # duplication legible: test_3d_ngldm_compatibility asserts the same _AVE features against the
-        # same goldens through the Python API, so the two must be re-tightened together.
+        # duplication legible: test_3d_ngtdm_compatibility asserts the same five features against the
+        # same PyRadiomics goldens through the Python API, so the two must be re-tightened together.
         for fn in sorted(other.get(f, ())):
             notes.append(f"also asserted by {fn} (kind is neither oracle nor regression)")
-        w.writerow(["3D", "ngldm", f,
+        w.writerow(["3D", "ngtdm", f,
                     ";".join(sorted(oracles.get(f, ()))),
                     ";".join(sorted(asserted.get(f, ()))),
                     "Y" if f in regression else "N",
@@ -199,7 +193,7 @@ def unregistered_tests(where):
     Only the C++ headers are checked; pytest collects the .py functions by name.
     """
     with open(os.path.join(TESTS, "test_all.cc"), encoding="utf-8", errors="replace") as fh:
-        registered = set(re.findall(r"(test_3d_ngldm_\w+)\s*\(\s*\)", fh.read()))
+        registered = set(re.findall(r"(test_3d_ngtdm_\w+)\s*\(\s*\)", fh.read()))
     return sorted(fn for fn, src in where.items()
                   if src.endswith(".h") and fn not in registered)
 
@@ -211,13 +205,19 @@ def case_to_file(where):
     test function to the file that defines it, so the two compose into case -> file. That is what
     lets the check below confirm a row's test_name and its current_test describe the same assertion
     rather than merely both being true of the feature.
+
+    The body is matched as a brace-free span rather than as "up to a closing brace in column 1",
+    because the file registers cases in two shapes: a three-line block, and a one-liner whose
+    closing brace sits at the end of the line. A pattern anchored on the block shape runs straight
+    through every one-liner to the next block's brace, and silently attributes the cases it swallowed
+    to whichever registration opened the span.
     """
     with open(os.path.join(TESTS, "test_all.cc"), encoding="utf-8", errors="replace") as fh:
         txt = fh.read()
     out = {}
     for suite, case, body in re.findall(
-            r"TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{(.*?)\n\}", txt, re.S):
-        for fn in re.findall(r"(test_3d_ngldm_\w+)\s*\(\s*\)", body):
+            r"TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{([^{}]*)\}", txt):
+        for fn in re.findall(r"(test_3d_ngtdm_\w+)\s*\(\s*\)", body):
             if fn in where:
                 out[f"{suite}.{case}"] = where[fn]
     return out

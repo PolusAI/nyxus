@@ -1,35 +1,70 @@
-#pragma once
+﻿#pragma once
+
+#include <string>
+#include <tuple>
 
 #include <gtest/gtest.h>
-#include "../src/nyx/helpers/fsystem.h"
-#include "../src/nyx/environment.h"
-#include "../src/nyx/featureset.h"
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/3d_intensity.h"
-#include "../src/nyx/raw_nifti.h"
-#include "test_ref_vals.h"
 
-// Feature values calculated on intensity ut_inten.nii and mask ut_inten.nii, label 57:
-// (100 grey levels, offset 1, and asymmetric cooc matrix)
+#include "../src/nyx/environment.h"				// Environment
+#include "../src/nyx/feature_settings.h"			// Fsettings, NyxSetting
+#include "../src/nyx/featureset.h"				// Nyxus::Feature3D
+#include "../src/nyx/helpers/fsystem.h"			// fs::exists
+#include "../src/nyx/slideprops.h"				// SlideProps, scan_slide_props
+#include "../src/nyx/features/3d_intensity.h"	// D3_VoxelIntensityFeatures
+#include "test_main_nyxus.h"					// agrees_gt; also supplies LR (roi_cache.h) and the 3D workflow (globals.h)
+#include "test_ref_vals.h"						// ref_vals_map
+
+// PROVENANCE (SPEC 6.4)
+//   oracle  : PyRadiomics 3.0.1
+//   fixture : tests/data/nifti/compat_int/compat_int_mri.nii +
+//             tests/data/nifti/compat_seg/compat_seg_liver.nii, label 1 (get_3d_compat_fo_phantom)
+//   recipe  : firstorder3d.pyradiomics_bincount20
 //
-// Getting Pyradiomics ground truth values:
-//      pyradiomics mri.nii.gz liver.nii.gz --param settings1.yaml
-// 
-// where file "settings1.yaml" is:
-// 
-//  setting:
-//  #disabled - binWidth: 25
-//  binCount : 20
-//  label : 1
-//  interpolator : 'sitkBSpline'
-//  resampledPixelSpacing :
-//  weightingNorm: 
+//      pyradiomics compat_int_mri.nii compat_seg_liver.nii --param settings1.yaml
 //
-//  imageType :
-//        Original : {} 
-//  featureClass :
-//      fo:
+//   where settings1.yaml is:
 //
+//      setting:
+//        binCount: 20
+//        label: 1
+//        interpolator: 'sitkBSpline'
+//        resampledPixelSpacing:
+//        weightingNorm:
+//      imageType:
+//        Original: {}
+//      featureClass:
+//        firstorder:
+//
+// PyRadiomics computes first-order features on the original intensities; only Entropy and
+// Uniformity read the discretized histogram, which is what binCount 20 sets and what the
+// GREYDEPTH = -20 setting below matches on the Nyxus side.
+
+// Three bands, each set from the measured Nyxus-vs-PyRadiomics residual (audit report
+// firstorder_3d_pyradiomics_vetting_report.md). agrees_gt's third argument is a DIVISOR
+// (tolerance = golden / frac), so a larger number is a tighter band.
+//
+//   _EXACT (rel 1e-9)    twelve of the seventeen, which agree to better than 1e-12.
+//   _BINNED (rel 1e-2)   3P10, 3P90, 3INTERQUARTILE_RANGE, 3ROBUST_MEAN_ABSOLUTE_DEVIATION. Nyxus
+//                        estimates these from the 100-bin interpolated histogram in
+//                        TrivialHistogram while PyRadiomics uses numpy percentiles, so the residual
+//                        is the estimator's error. Worst measured 5.0e-3, on the robust MAD.
+//   _VARIANCE (rel 1e-3) 3VARIANCE alone. PyRadiomics Variance is the biased (N) estimator and
+//                        Nyxus 3VARIANCE is the unbiased (N-1) one, so the two differ by exactly
+//                        n/(n-1); on this ROI that is 2.1e-4. 3VARIANCE_BIASED is the feature that
+//                        matches PyRadiomics term for term.
+static constexpr double FO3D_PYRAD_EXACT = 1.e9;
+static constexpr double FO3D_PYRAD_BINNED = 100.;
+static constexpr double FO3D_PYRAD_VARIANCE = 1000.;
+
+static double firstorder_3d_pyradiomics_band (const std::string& fname)
+{
+    if (fname == "3P10" || fname == "3P90" || fname == "3INTERQUARTILE_RANGE"
+        || fname == "3ROBUST_MEAN_ABSOLUTE_DEVIATION")
+        return FO3D_PYRAD_BINNED;
+    if (fname == "3VARIANCE")
+        return FO3D_PYRAD_VARIANCE;
+    return FO3D_PYRAD_EXACT;
+}
 
 static ref_vals_map<double> firstorder_3d_pyradiomics_ref_vals
 {
@@ -137,7 +172,8 @@ void assert_3d_firstorder_feature_pyradiomics (const Nyxus::Feature3D &expected_
     f.save_value (r.fvals);
 
     // (7) verdict
-    ASSERT_TRUE (agrees_gt(r.fvals[fcode][0], firstorder_3d_pyradiomics_ref_vals[fname], 10.));
+    ASSERT_TRUE (agrees_gt(r.fvals[fcode][0], firstorder_3d_pyradiomics_ref_vals[fname],
+        firstorder_3d_pyradiomics_band(fname))) << fname;
 }
 
 

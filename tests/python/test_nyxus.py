@@ -1015,11 +1015,15 @@ class TestNyxus():
                 "Case-1_original_ngtdm_Strength" : 1.245800596888454
             }
 
-            assert np.isclose (f.at[0, "3NGTDM_BUSYNESS"],     radiomics_gt["Case-1_original_ngtdm_Busyness"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3NGTDM_COARSENESS"],     radiomics_gt["Case-1_original_ngtdm_Coarseness"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3NGTDM_COMPLEXITY"],    radiomics_gt["Case-1_original_ngtdm_Complexity"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3NGTDM_CONTRAST"],     radiomics_gt["Case-1_original_ngtdm_Contrast"], rtol=1.e-1, atol=1.e-2)
-            assert np.isclose (f.at[0, "3NGTDM_STRENGTH"],    radiomics_gt["Case-1_original_ngtdm_Strength"], rtol=1.e-5, atol=1.e-8)
+            # rtol=1e-9, atol=0: Nyxus reproduces PyRadiomics bit for bit at this recipe -- the C++
+            # assertions on the same fixture hold the same band (test_3d_ngtdm_pyradiomics.h). The
+            # atol matters as much as the rtol here: at the atol=1e-2 this used to carry, COARSENESS
+            # (0.0301) passed for anything in [0.020, 0.040].
+            assert np.isclose (f.at[0, "3NGTDM_BUSYNESS"],   radiomics_gt["Case-1_original_ngtdm_Busyness"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3NGTDM_COARSENESS"], radiomics_gt["Case-1_original_ngtdm_Coarseness"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3NGTDM_COMPLEXITY"], radiomics_gt["Case-1_original_ngtdm_Complexity"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3NGTDM_CONTRAST"],   radiomics_gt["Case-1_original_ngtdm_Contrast"], rtol=1.e-9, atol=0)
+            assert np.isclose (f.at[0, "3NGTDM_STRENGTH"],   radiomics_gt["Case-1_original_ngtdm_Strength"], rtol=1.e-9, atol=0)
 
 
         def test_3d_glrlm_compatibility (self):

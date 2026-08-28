@@ -9,6 +9,8 @@
 #include "test_2d_firstorder_regression.h"
 #include "test_2d_firstorder_matlab.h"
 #include "test_2d_intensity_histogram_regression.h"
+#include "test_2d_radial_invariant.h"
+#include "test_2d_radial_mechanics.h"
 #include "test_2d_radial_regression.h"
 #include "test_2d_intensity_histogram_mechanics.h"
 #include "test_2d_intensity_histogram_ibsi.h"
@@ -25,6 +27,9 @@
 #include "test_2d_morphology_fraclac.h"
 #include "test_2d_moments_skimage.h"
 #include "test_2d_moments_regression.h"
+#include "test_2d_zernike_analytic.h"
+#include "test_2d_zernike_invariant.h"
+#include "test_2d_zernike_mechanics.h"
 #include "test_2d_zernike_regression.h"
 #include "test_2d_neighbor_common.h"
 #include "test_2d_neighbor_regression.h"
@@ -74,19 +79,18 @@
 #include "test_3d_gldzm_regression.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
+#include "test_3d_firstorder_regression.h"
+#include "test_3d_firstorder_matlab.h"
 #include "test_3d_glcm_pyradiomics.h"
 #include "test_3d_glcm_regression.h"
 #include "test_3d_gldm_pyradiomics.h"
 #include "test_3d_ngtdm_pyradiomics.h"
+#include "test_3d_ngtdm_regression.h"
+#include "test_3d_ngtdm_mechanics.h"
 #include "test_3d_glrlm_pyradiomics.h"
 #include "test_3d_glrlm_regression.h"
 #include "test_3d_glszm_pyradiomics.h"
 #include "test_3d_coverage_common.h"
-#include "test_3d_firstorder_coverage.h"
-#include "test_3d_gldzm_coverage.h"
-#include "test_3d_glszm_coverage.h"
-#include "test_3d_ngldm_coverage.h"
-#include "test_3d_ngtdm_coverage.h"
 #include "test_2d_glcm_mechanics.h"
 #ifdef USE_ARROW
     #include "test_arrow_mechanics.h"
@@ -187,6 +191,22 @@ TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS) {
 	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::VARIANCE, "3VARIANCE"));
 }
 
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MATLAB) {
+	ASSERT_NO_THROW(test_3d_firstorder_matlab());
+}
+
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_COVERED_IMAGE_INTENSITY_RANGE_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_firstorder_covered_image_intensity_range_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEDIAN_ABSOLUTE_DEVIATION_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_firstorder_median_absolute_deviation_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROBUST_MEAN_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_firstorder_robust_mean_regression());
+}
+
 
 //***** 3D NGTDM compatibility *****
 
@@ -210,8 +230,68 @@ TEST(TEST_NYXUS, TEST_3D_NGTDM_STRENGTH_PYRADIOMICS) {
 	ASSERT_NO_THROW(test_3d_ngtdm_strength_pyradiomics());
 }
 
-TEST(TEST_NYXUS, TEST_3D_NGTDM_MATRIX_CORRECTNESS_PYRADIOMICS) {
-	ASSERT_NO_THROW(test_3d_ngtdm_matrix_correctness_pyradiomics());
+TEST(TEST_NYXUS, TEST_3D_NGTDM_BUSYNESS_R2_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_busyness_r2_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COARSENESS_R2_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_coarseness_r2_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COMPLEXITY_R2_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_complexity_r2_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_CONTRAST_R2_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_contrast_r2_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_STRENGTH_R2_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_strength_r2_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_MATRIX_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_matrix_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_MATRIX_R2_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_matrix_r2_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_DOCMATRIX_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_docmatrix_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_DUMP_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_dump_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COARSENESS_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_coarseness_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_CONTRAST_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_contrast_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_BUSYNESS_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_busyness_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COMPLEXITY_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_complexity_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_STRENGTH_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_strength_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_DUMP_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_ngtdm_dump_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_DEFAULT_RADIUS_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_default_radius_mechanics());
 }
 
 
@@ -1181,9 +1261,79 @@ TEST(TEST_NYXUS, TEST_2D_RADIAL_DISTRIBUTION_REGRESSION)
 	ASSERT_NO_THROW(test_2d_radial_distribution_regression());
 }
 
+TEST(TEST_NYXUS, TEST_2D_RADIAL_BIN_CONVENTIONS_REGRESSION)
+{
+	ASSERT_NO_THROW(test_2d_radial_bin_conventions_regression());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_FRAC_AT_D_IS_A_PARTITION_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_radial_frac_at_d_is_a_partition_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_EMPTY_BINS_ARE_ZERO_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_radial_empty_bins_are_zero_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_CV_IS_WITHIN_ITS_BOUND_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_radial_cv_is_within_its_bound_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_CONTOUR_FRAME_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_radial_contour_frame_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_CENTER_AND_RADIUS_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_radial_center_and_radius_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_BIN_INDEX_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_radial_bin_index_mechanics());
+}
+
 TEST(TEST_NYXUS, TEST_2D_ZERNIKE_MOMENTS_REGRESSION)
 {
 	ASSERT_NO_THROW(test_2d_zernike_moments_regression());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_MOMENTS_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_zernike_moments_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_ZEROTH_MOMENT_IS_ONE_OVER_PI_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_zernike_zeroth_moment_is_one_over_pi_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_FIRST_MOMENT_ABOUT_THE_CENTROID_VANISHES_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_zernike_first_moment_about_the_centroid_vanishes_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_MAGNITUDES_ARE_WITHIN_THEIR_BOUND_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_zernike_magnitudes_are_within_their_bound_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_INDEX_SET_MATCHES_THE_DECLARED_COUNT_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_zernike_index_set_matches_the_declared_count_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_GEOMETRY_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_zernike_geometry_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ZERNIKE_EVERY_PIXEL_IS_INSIDE_THE_UNIT_DISK_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_zernike_every_pixel_is_inside_the_unit_disk_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_PERCENT_TOUCHING_REGRESSION)

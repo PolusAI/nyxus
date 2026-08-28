@@ -1,147 +1,112 @@
 #pragma once
 
-#include <gtest/gtest.h>
-#include "../src/nyx/environment.h"
-#include "../src/nyx/featureset.h"
-#include "../src/nyx/roi_cache.h"
-#include "../src/nyx/features/3d_ngtdm.h"
-#include "test_ref_vals.h"
+// Drift guards on the segmented phantom (ut_inten.nii + ut_mask57.nii, label 57) at 64 grey levels,
+// NGTDM_GREYDEPTH=64, NGTDM_RADIUS=1, ibsi=false -- recipe ngtdm3d.regression_ut_phantom. Nyxus' own
+// output, so these claim no oracle (SPEC 1); the family's oracle assertions live in
+// test_3d_ngtdm_pyradiomics.h and run on a different fixture.
+//
+// Regenerate with test_3d_ngtdm_dump_regression() below.
+//
+// At NGTDM_GREYDEPTH=64 the binning is MATLAB-style, which makes bin 1 the background level: a voxel
+// binned there is not a matrix row of its own, but it still counts towards its neighbours'
+// neighbourhood means. That is Nyxus' convention for this family and is what these values are of.
 
-// dig. phantom values for intensity based features
-// Calculated at grey scalefactlr 100
-static ref_vals_map<double> ngtdm_3d_regression_ref_vals {
-    {"3NGTDM_COARSENESS",   0.00004},
-    {"3NGTDM_CONTRAST",     0.66},
-    {"3NGTDM_BUSYNESS",     46.0},
-    {"3NGTDM_COMPLEXITY",   2936.0},
-    {"3NGTDM_STRENGTH",     0.024}
+// Only what nothing this file already includes supplies: <iomanip> for the dump helper's
+// setprecision. <iostream>, <string>, <tuple>, <vector> and gtest arrive through the common header
+// and are not repeated.
+#include <iomanip>
+
+#include "test_3d_ngtdm_common.h"  // gtest, <iostream>, <tuple>, the settings recipe, extract_3d_ngtdm, agrees_gt
+#include "test_ref_vals.h"         // ref_vals_map
+
+static const ref_vals_map<double> ngtdm_3d_regression_ref_vals
+{
+	{"3NGTDM_COARSENESS", 4.1746559837294642e-05},
+	{"3NGTDM_CONTRAST",   0.63226607482802633},
+	{"3NGTDM_BUSYNESS",   44.389552850401223},
+	{"3NGTDM_COMPLEXITY", 2819.3512285176689},
+	{"3NGTDM_STRENGTH",   0.024654440905359544}
 };
 
+// Defined in test_3d_glcm_pyradiomics.h, which the translation unit includes first.
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-void assert_3d_ngtdm_feature_regression(const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+// rel=1e-9: agrees_gt divides the golden by this, so a larger argument is a tighter band. A
+// regression pin is the program's own output at full precision, so movement is the only thing it can
+// catch and the band should be as tight as the pin's precision allows.
+static const double ngtdm_3d_regression_frac_tolerance = 1e9;
+
+// The settings every assertion in this file runs on, so the guards and the dump helper cannot drift
+// apart in them.
+static Fsettings make_ngtdm3d_regression_settings()
 {
-#if 0
-    // get segment info
-    auto [ipath, mpath, label] = get_3d_segmented_phantom();
-    ASSERT_TRUE(fs::exists(ipath));
-    ASSERT_TRUE(fs::exists(mpath));
+	return make_ngtdm3d_settings (64/*greydepth*/, 64/*ngtdm greydepth*/, 1/*radius*/);
+}
 
-    // mock the 3D workflow
-    Environment e;
-    clear_slide_rois (e.uniqueLabels, e.roiData);
-    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
-    std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
-    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
+void assert_3d_ngtdm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+{
+	// a name with no golden is a failure, not a comparison against whatever a lookup would invent
+	auto iter = ngtdm_3d_regression_ref_vals.find(fname);
+	ASSERT_TRUE(iter != ngtdm_3d_regression_ref_vals.end());
 
-    // make it find the feature code by name
-    int fcode = -1;
-    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
-    // ... and that it's the feature we expect
-    ASSERT_TRUE((int)expecting_fcode == fcode);
+	int fcode = -1;
+	ASSERT_NO_FATAL_FAILURE(resolve_3d_ngtdm_fcode (fcode, expecting_fcode, fname));
 
-    // set feature's state
-    Environment::ibsi_compliance = false;
+	auto [ipath, mpath, label] = get_3d_segmented_phantom();
+	std::vector<std::vector<double>> fvals;
+	SimpleCube<PixIntens> cube;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_ngtdm (fvals, cube, ipath, mpath, label,
+	                                          make_ngtdm3d_regression_settings()));
 
-    // extract the feature
-    LR& r = e.roiData[label];
-    ASSERT_NO_THROW(r.initialize_fvals());
-    D3_NGTDM_feature f;
-    Fsettings s;
-    ASSERT_NO_THROW(f.calculate(r, s));
-    f.save_value(r.fvals);
+	ASSERT_TRUE (agrees_gt (fvals[fcode][0], iter->second,
+	                        ngtdm_3d_regression_frac_tolerance)) << fname;
+}
 
-    // aggregate all the angles
-    double atot = r.fvals[fcode][0];
+// Regenerates every golden in ngtdm_3d_regression_ref_vals at full precision, in the exact shape the
+// table wants. Run it with
+//     runAllTests --gtest_filter=*3D_NGTDM_DUMP_REGRESSION*
+// and paste the output over the table above. It uses the same settings the shared assert helper
+// does, so the two cannot drift apart.
+void test_3d_ngtdm_dump_regression()
+{
+	auto [ipath, mpath, label] = get_3d_segmented_phantom();
+	std::vector<std::vector<double>> fvals;
+	SimpleCube<PixIntens> cube;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_ngtdm (fvals, cube, ipath, mpath, label,
+	                                          make_ngtdm3d_regression_settings()));
 
-    // verdict
-    ASSERT_TRUE(agrees_gt(atot, ngtdm_3d_regression_ref_vals[fname], 10.));
-#endif
-
-    // get segment info
-    auto [ipath, mpath, label] = get_3d_segmented_phantom();
-    ASSERT_TRUE(fs::exists(ipath));
-    ASSERT_TRUE(fs::exists(mpath));
-
-    // mock the 3D workflow
-    Environment e;
-    // (1) slide -> dataset -> prescan 
-    e.dataset.dataset_props.reserve(1);
-    SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
-    e.dataset.update_dataset_props_extrema();
-    // (2) properties of specific ROIs sitting in 'e.uniqueLabels'
-    clear_slide_rois(e.uniqueLabels, e.roiData);
-    ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
-    // (3) voxel clouds
-    std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-    ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
-    // (4) buffers
-    ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
-
-    // (5) feature settings
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 64;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = false;
-    //
-
-    // (6) feature extraction
-
-    // make it find the feature code by name
-    int fcode = -1;
-    ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
-    // ... and that it's the feature we expect
-    ASSERT_TRUE((int)expecting_fcode == fcode);
-
-    // extract the feature
-    LR& r = e.roiData[label];
-    ASSERT_NO_THROW(r.initialize_fvals());
-    D3_NGTDM_feature f;
-    ASSERT_NO_THROW(f.calculate(r, s));
-
-    // (6) saving values
-
-    f.save_value(r.fvals);
-
-    // we have just 1 value, no need to aggregate subfeatures
-    double atot = r.fvals[fcode][0];
-
-    // verdict
-    ASSERT_TRUE(agrees_gt(atot, ngtdm_3d_regression_ref_vals[fname], 10.));
-
+	Environment e;
+	std::cout << "[3DNGTDM-REGEN]\n";
+	for (const auto& nv : ngtdm_3d_regression_ref_vals)
+	{
+		int fcode = -1;
+		ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(nv.first, fcode));
+		std::cout << "[3DNGTDM-REGEN]\t{\"" << nv.first << "\",\t"
+		          << std::setprecision(17) << fvals[fcode][0] << "},\n";
+	}
 }
 
 void test_3d_ngtdm_coarseness_regression()
 {
-    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_COARSENESS, "3NGTDM_COARSENESS");
+	assert_3d_ngtdm_feature_regression (Nyxus::Feature3D::NGTDM_COARSENESS, "3NGTDM_COARSENESS");
 }
 
 void test_3d_ngtdm_contrast_regression()
 {
-    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_CONTRAST, "3NGTDM_CONTRAST");
+	assert_3d_ngtdm_feature_regression (Nyxus::Feature3D::NGTDM_CONTRAST, "3NGTDM_CONTRAST");
 }
 
 void test_3d_ngtdm_busyness_regression()
 {
-    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_BUSYNESS, "3NGTDM_BUSYNESS");
+	assert_3d_ngtdm_feature_regression (Nyxus::Feature3D::NGTDM_BUSYNESS, "3NGTDM_BUSYNESS");
 }
 
 void test_3d_ngtdm_complexity_regression()
 {
-    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_COMPLEXITY, "3NGTDM_COMPLEXITY");
+	assert_3d_ngtdm_feature_regression (Nyxus::Feature3D::NGTDM_COMPLEXITY, "3NGTDM_COMPLEXITY");
 }
 
 void test_3d_ngtdm_strength_regression()
 {
-    assert_3d_ngtdm_feature_regression(Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
+	assert_3d_ngtdm_feature_regression (Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
 }
-

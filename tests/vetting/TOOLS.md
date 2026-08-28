@@ -64,6 +64,16 @@ Gotchas hit while doing it:
   extractor is the cheapest way to get one family's values, but without `force2D=True` +
   `force2Ddimension=0` it applies its 3D kernel to a `(1, y, x)` array and reaches for neighbours
   that are not there. The symptom is plausible-looking numbers, not an error.
+- **PyRadiomics refuses a mask with no background.** `imageoperations.getMask()` raises
+  `ValueError: No labels found in this mask (i.e. nothing is segmented)!` whenever
+  `numpy.unique(mask)` has a single entry - which is true of a fixture whose every voxel carries the
+  ROI label, not only of an empty one. `RadiomicsFeatureExtractor.execute()` goes through
+  `getMask()`, so such a fixture cannot be featurised through the public API at all; construct the
+  feature class directly (`radiomics.ngtdm.RadiomicsNGTDM(image, mask, label=..., ...)`), which
+  reaches the same code without that check. `tests/data/nifti/compat_seg/compat_seg_ngtdm_3d.nii` is
+  one of these, and its test header used to record a `pyradiomics ... --param settings.yaml`
+  invocation that could never have run. Worth checking before believing any recorded invocation:
+  `python -c "import SimpleITK as s, numpy; print(numpy.unique(s.GetArrayFromImage(s.ReadImage(m))))"`.
 - Feeding either tool a numpy array is enough - no file on disk. PyRadiomics wants
   `sitk.GetImageFromArray` with an explicit `SetSpacing`; MIRP takes `image=`/`mask=` arrays
   directly, shaped `(z, y, x)`.
@@ -120,6 +130,73 @@ Gotchas hit while vetting GABOR against it:
   threshold, so it only moves in steps of `1/baseline_count`. Print that step (generator part C)
   before believing that an exact match proves the filters agree to machine precision — it does not,
   and the honest claim is the one the tolerance can support.
+
+## CellProfiler headless on Windows (verified 2026-08, 2D neighbour and 2D radial vetting)
+
+`cellprofiler` resolves from conda-forge with its own Python, so no Docker image is needed for the
+two modules this tree uses as oracles -- `MeasureObjectNeighbors` and
+`MeasureObjectIntensityDistribution`:
+
+```bash
+conda create -n nyxus_cellprofiler -c conda-forge python=3.9 cellprofiler=4.2.8
+conda run -n nyxus_cellprofiler python tests/vetting/oracles/gen_neighbor_cellprofiler.py
+conda run -n nyxus_cellprofiler python tests/vetting/oracles/gen_radial_cellprofiler.py
+```
+
+Three things stop the run before any module executes, none of them with a useful message:
+
+- **`JDK_HOME` and `JAVA_HOME` must be set to `<env>\Library\lib\jvm`.** Without them the process
+  exits **127** with no traceback at all -- CellProfiler starts a JVM through `python-javabridge`
+  during import.
+- **The working directory must be on the same drive as the installed package.** Importing any module
+  under `cellprofiler.modules` pulls in `cellprofiler.gui.help.content`, which calls
+  `os.path.relpath` between the package directory and the cwd. Across drives that raises
+  `ValueError: path is on mount 'C:', start on mount 'D:'` at import time. `cd` to any directory on
+  the package's drive and pass absolute paths to the script.
+- **`create_settings()` has already added one object group and one bin group.** Calling
+  `add_object()` / `add_bin_count()` yourself leaves a second group whose `object_name` is still
+  `"None"`, and the run dies with `KeyError: 'None'` from the object set. Configure
+  `module.objects[0]` and `module.bin_counts[0]` in place.
+
+Driving a module takes no pipeline file: build `cellprofiler_core.object.Objects` with a label
+array, an `ImageSetList().get_image_set(0)` with a `cpi.Image` in `[0, 1]`, and call
+`module.run(Workspace(...))`. `MeasureObjectIntensityDistribution`'s measurements come back as
+`RadialDistribution_<Stat>_<image>_<bin>of<n>` with 1-based bin numbers.
+
+**Its centre rule is a maximum and can tie.** The centre is the pixel of maximum distance-to-edge
+(`centrosome.cpmorphology.distance_to_edge` then `maximum_position_of_labels`, which is
+`scipy.ndimage.maximum_position` underneath). When several pixels attain that maximum -- 8 of 26 on
+the `shape2d_morphology` fixture -- which one comes back depends on the label image's shape, so
+CellProfiler's own answer changes when you change the padding around the ROI. Report the tie set from
+the generator rather than assuming the centre is well defined.
+
+## centrosome as a Zernike cross-check (verified 2026-08-20, 2D zernike vetting)
+
+`centrosome` arrives with the CellProfiler env and exposes the Zernike machinery directly, without
+going through a module or a workspace:
+
+```python
+from centrosome.zernike import construct_zernike_polynomials, get_zernike_indexes
+idx = get_zernike_indexes(10)                     # (n, m) for n < 10 -> 30 pairs
+Z   = construct_zernike_polynomials(X, Y, idx)    # complex Z_nm at each (x, y)
+```
+
+Two things make it usable as an independent reference rather than a second opinion from the same
+tool:
+
+- **It takes the geometry as an argument.** `X` and `Y` are offsets already divided by whatever
+  radius you choose, so the polynomials can be evaluated at *another* implementation's disk. That is
+  what separates "does this recurrence compute R_nm" from "do these two tools agree about where the
+  disk is" -- and those are different questions with different answers.
+- **Its angle convention is `z = y + i*x`**, i.e. `atan2(x, y)`, which is the usual `atan2(y, x)`
+  reflected. Magnitudes are unaffected: the difference is a constant unit-modulus factor per `(n,m)`,
+  so `|sum I * Z|` is identical. Phases are not.
+
+`get_zernike_indexes(limit)` emits n ascending then m ascending with `n - m` even, the same order
+`zernike.cpp` walks -- worth asserting rather than assuming, which the generator does.
+
+`construct_zernike_polynomials` zeroes `r > 1` itself but keeps `r == 0`, where a caller that skips
+`r < DBL_EPSILON` would drop a pixel. It only matters when a pixel sits exactly on the centre.
 
 ## Corrections / notable findings
 

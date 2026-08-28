@@ -24,6 +24,34 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 ## firstorder.pyradiomics_default
 - Non-discretised intensity statistics. Oracle: `pyradiomics` firstorder. Used by: `test_2d_firstorder_pyradiomics.h`.
 
+## firstorder3d.pyradiomics_bincount20
+- `bench_compat_liver_3d`, label 1, with PyRadiomics 3.0.1 `binCount=20`, no resampling and no
+  weighting. Nyxus uses `GREYDEPTH=-20`; the negative value selects the corresponding radiomics
+  bin-count mode.
+- PyRadiomics computes first-order features from the original intensities. Only `Entropy` and
+  `Uniformity` use the discretized histogram, so the bin count affects those two features.
+- Used by: `test_3d_firstorder_pyradiomics.h`. Generator:
+  `oracles/gen_firstorder3d_pyradiomics.py`.
+- The measured bands are `rel=1e-9` for 12 same-definition statistics, `rel=1e-2` for the four
+  percentile-derived values, and `rel=1e-3` for the population-versus-sample variance comparison.
+  See `audit/firstorder_3d_pyradiomics_vetting_report.md`.
+
+## firstorder3d.matlab_native
+- `bench_ut57_3d`, label 57, with default 3D first-order settings. The fixture is put in the same
+  integer domain as Nyxus' default float-NIfTI loader: shift the negative volume minimum to zero,
+  then truncate nonnegative values to integers.
+- MATLAB R2026a uses the named built-ins directly; derived statistics apply only their defining
+  normalization to those results. `prctile(..., Method="midpoint")` and `iqr`
+  use raw samples; Nyxus' percentile family uses its fixed 100-bin CDF, so that group uses `rel=1e-2`.
+  The other same-definition comparisons use the SPEC `rel=1e-3` tier.
+- Used by: `test_3d_firstorder_matlab.h`. Generator:
+  `oracles/gen_firstorder3d_matlab.m`.
+
+## firstorder3d.regression_ut_phantom
+- `bench_ut57_3d`, label 57, with the same default settings. Snapshot-only coverage for first-order
+  features with no equivalent native MATLAB function; establishes no oracle vetting.
+- Used by: `test_3d_firstorder_regression.h`.
+
 ## firstorder.preserve_hu
 - `--preserve-hu` (CT/Hounsfield mode): the loader applies a slope-1 offset (`value - floor(HU_min)`)
   instead of min-max rescaling, so first-order intensity features are reported in true Hounsfield units.
@@ -128,8 +156,48 @@ A full-feature oracle for this family would be `wndcharm` (SPEC §4 names it as 
 oracle for the Nyxus-original features); it is not built in this tree, and the gap is recorded in
 `not_covered.md`.
 
+## radial.shape2d_native
+- The 8x8 `shape2d_morphology_{mask,intensity}` fixture (`test_data.h`) at `make_shape2d_settings()`,
+  one 26-pixel concave ROI with an interior hole. `RadialDistributionFeature` reads the ROI contour,
+  so `ContourFeature` runs first; nothing else in the shape set feeds it. Oracles: none - the family
+  is regression-only. Benchmark: `bench_shape8_concave_holed`. Used by:
+  `test_2d_radial_{regression,invariant,mechanics}.h`.
+- The three features are 8-entry vectors and every entry is pinned; the whole table is decided by the
+  ROI, the centre pixel and the normalising radius, which `test_2d_radial_mechanics.h` pins. That
+  file is known-defect characterization and is credited to no feature in the registry - the values it
+  pins are ones a correct fix must change (`audit/radial_2d_cellprofiler_vetting_report.md` §6).
+  Config matrix: `matrix/radial.md`.
+
 ## radial.cellprofiler_8bin
-- CellProfiler `MeasureObjectIntensityDistribution`, 8 radial bins/slices. Oracle: `cellprofiler`.
+- CellProfiler `MeasureObjectIntensityDistribution` on the same fixture: `center_choice="These
+  objects"`, `bin_count=8`, `wants_scaled=True`, Zernikes off. Oracle: `cellprofiler`.
+- **Run 2026-08-20 and it does not vet the family.** Nyxus computes a different quantity under each
+  of the three `RadialDistribution_*` names, and 21 of the 24 (feature x bin) values disagree by more
+  than 1%. The recipe is kept because it is the configuration that was tried and the one to re-try
+  after the source divergences are resolved; the six of them are in
+  `tests/vetting/audit/radial_2d_cellprofiler_vetting_report.md` and the run is
+  `tests/vetting/oracles/gen_radial_cellprofiler.py`.
+- The fixture's distance-to-edge maximum is attained by 8 of its 26 pixels, and CellProfiler's centre
+  is that maximum, so CellProfiler's own answer moves with the label image's padding. A tie-free ROI
+  is a precondition for this recipe ever vetting anything.
+
+## zernike.shape2d_native
+- The 8x8 `shape2d_morphology_{mask,intensity}` fixture (`test_data.h`) at `make_shape2d_settings()`.
+  `ZernikeFeature` reads the ROI's image matrix and nothing any other feature produces, so the loader
+  is the whole prerequisite. Oracle: `analytic`. Benchmark: `bench_shape8_concave_holed`. Used by:
+  `test_2d_zernike_{analytic,regression,invariant,mechanics}.h`.
+- The geometry is the recipe. `mb_zernike2D` builds its unit disk from the ROI's **bounding box**:
+  radius = `min(bbox width, bbox height)` in pixels, centre = the ROI's **intensity centroid**,
+  weights = `I / sum(I)`, and the moment carries a `(n+1)/pi` factor. On this ROI that is a 6x7 box,
+  radius 6, centroid (3.8416, 4.4389) in 1-based pixel coordinates, and every one of the 42
+  bounding-box pixels falls inside the disk -- which is what makes `A(0,0)` exactly `1/pi`.
+  `test_2d_zernike_mechanics.h` pins all of it.
+- 30 magnitudes, one per `(n, m)` with `n <= 9`, `m >= 0`, `n - m` even, emitted n-ascending then
+  m-ascending.
+- **Not comparable to CellProfiler `MeasureObjectIntensityDistribution`'s Zernikes**, which centre the
+  disk on the object's minimum enclosing circle and normalise by pixel count rather than by total
+  intensity. Both were run; the divergence is a convention gap, recorded in
+  `tests/vetting/audit/zernike_2d_analytic_vetting_report.md`, not a disagreement about the moments.
 
 ## morphology.shape2d_native
 - The 8x8 `shape2d_morphology_{mask,intensity}` fixture (`test_data.h`) at
@@ -487,3 +555,55 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   an independent implementation with 26-connected zones and a city-block distance transform
   reproduces MIRP to rel=3.2e-16 on the same fixture. `3GLDZM_GLM` and `3GLDZM_ZDM` have no MIRP
   counterpart at all.
+
+## ngtdm3d.pyradiomics_binwidth1
+- The 4x4x3 NGTDM phantom (`compat_int/compat_int_ngtdm_3d.nii` +
+  `compat_seg/compat_seg_ngtdm_3d.nii`, label 57) at `GREYDEPTH=100`, `IBSI=false`,
+  `NGTDM_GREYDEPTH=0` (no binning, so the raw levels survive) and `NGTDM_RADIUS=1`. Oracle:
+  `pyradiomics` (`binWidth: 1`, `distances: [1]`, no resampling, `imageType: Original`). Generator:
+  `oracles/gen_ngtdm3d_pyradiomics.py`. Used by `test_3d_ngtdm_pyradiomics.h` and
+  `tests/python/test_nyxus.py::test_3d_ngtdm_compatibility`.
+- **The two grey-level scales coincide here rather than being made to.** The phantom's intensities
+  are the discrete values 0..5. PyRadiomics' `binWidth=1` maps a value to
+  `floor(x/1) - floor(min/1) + 1`, i.e. 1..6; Nyxus does not bin at `NGTDM_GREYDEPTH=0` but shifts
+  every level by one because the minimum is zero. Both sides therefore index the same six levels,
+  which is what makes a `rel=1e-9` band honest on a cross-tool comparison.
+- **PyRadiomics' public extractor cannot load this phantom.** Its mask is label 57 in all 48 voxels
+  with no background, and `imageoperations.getMask()` raises "No labels found in this mask" whenever
+  the mask has a single unique value. The generator constructs `RadiomicsNGTDM` directly, which is
+  the same feature code, and cross-checks it against an independent numpy NGTDM.
+- The five features are contractions of one `(i, n_i, p_i, s_i)` table, so the recipe also backs the
+  per-level assertion in `test_3d_ngtdm_matrix_pyradiomics`, not only the five scalars.
+
+## ngtdm3d.pyradiomics_binwidth1_r2
+- `ngtdm3d.pyradiomics_binwidth1` with `NGTDM_RADIUS=2` — the same phantom, the same binning, the
+  neighbourhood widened from 3×3×3 to 5×5×5. Oracle: `pyradiomics` at `distances: [1, 2]`, same
+  generator. Used by the five `*_r2_pyradiomics` assertions and `test_3d_ngtdm_matrix_r2_pyradiomics`
+  in `test_3d_ngtdm_pyradiomics.h`.
+- **`distances` is a list of shells, not a radius.** `distances=[2]` is the 98 offsets at Chebyshev
+  distance exactly 2 and excludes the 26 at distance 1; Nyxus scans the solid cube `-2..2`. So the
+  match is `[1, 2]`, and `distances_semantics_check()` in the generator measures both readings
+  against an independent numpy neighbourhood on every run rather than resting on the documentation.
+- **What it is for.** The radius is the one axis of this family a default run gets wrong when it is
+  left unset, so a second config point is what separates a family that honours `NGTDM_RADIUS` from
+  one that ignores it: coarseness rises by half, busyness and complexity each fall by about a third.
+  It is also what lets `test_3d_ngtdm_default_radius_mechanics` pin the default at exactly 1 instead
+  of bounding it below.
+- The radius is the only setting that moves between this recipe and
+  `ngtdm3d.pyradiomics_binwidth1`. The levels and their `n_i` are unchanged — every voxel of this
+  phantom has a neighbour at either radius — so the whole difference lands in `s_i`.
+
+## ngtdm3d.regression_ut_phantom
+- The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at
+  `GREYDEPTH=64`, `IBSI=false`, `NGTDM_GREYDEPTH=64`, `NGTDM_RADIUS=1`. **No oracle** — pinned Nyxus
+  output as drift guards in `test_3d_ngtdm_regression.h`, regenerated by
+  `test_3d_ngtdm_dump_regression()`.
+- `NGTDM_GREYDEPTH=64` is MATLAB-style binning, which makes bin 1 the background level: a voxel
+  binned there is not a matrix row of its own but still counts towards its neighbours' neighbourhood
+  means. That is a different quantity from `ngtdm3d.pyradiomics_binwidth1`, where nothing is
+  background, which is why this fixture carries no oracle claim.
+- Both recipes state `NGTDM_RADIUS` explicitly rather than leaning on the default. At 0 the
+  neighbourhood is empty and every feature is NaN, so a recipe that leaves the radius to whatever a
+  settings vector happens to hold is not a recipe — which is what the unwired version of
+  `test_3d_ngtdm_regression.h` did, and why its five assertions would have compared against NaN on
+  their first run.

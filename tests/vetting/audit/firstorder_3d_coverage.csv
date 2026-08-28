@@ -1,0 +1,37 @@
+Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
+3D,firstorder,3COV,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a std/mean
+3D,firstorder,3COVERED_IMAGE_INTENSITY_RANGE,,,yes,TEST_3D_FIRSTORDER_COVERED_IMAGE_INTENSITY_RANGE_REGRESSION,Nyxus-specific slide/ROI ratio; snapshot only
+3D,firstorder,3ENERGY,pyradiomics,TEST_3D_FIRSTORDER_ENERGY_PYRADIOMICS,no,,Native PyRadiomics Energy
+3D,firstorder,3ENTROPY,pyradiomics,TEST_3D_FIRSTORDER_ENTROPY_PYRADIOMICS,no,,Native PyRadiomics Entropy at binCount=20
+3D,firstorder,3EXCESS_KURTOSIS,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a kurtosis-3
+3D,firstorder,3HYPERFLATNESS,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a sixth central moment standardized by std
+3D,firstorder,3HYPERSKEWNESS,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a fifth central moment standardized by std
+3D,firstorder,3INTEGRATED_INTENSITY,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a sum
+3D,firstorder,3INTERQUARTILE_RANGE,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_INTERQUARTILE_RANGE_PYRADIOMICS,no,,Two oracle recipes; percentile-estimator residuals use rel=1e-2
+3D,firstorder,3KURTOSIS,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_KURTOSIS_PYRADIOMICS,no,,Native kurtosis in both tools
+3D,firstorder,3MAX,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MAX_PYRADIOMICS,no,,Native maximum in both tools
+3D,firstorder,3MEAN,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MEAN_PYRADIOMICS,no,,Native mean in both tools
+3D,firstorder,3MEAN_ABSOLUTE_DEVIATION,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS,no,,Native mean absolute deviation in both tools
+3D,firstorder,3MEDIAN,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MEDIAN_PYRADIOMICS,no,,Native median in both tools
+3D,firstorder,3MEDIAN_ABSOLUTE_DEVIATION,,,yes,TEST_3D_FIRSTORDER_MEDIAN_ABSOLUTE_DEVIATION_REGRESSION,MATLAB median deviation differs from Nyxus mean deviation about the median
+3D,firstorder,3MIN,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_MIN_PYRADIOMICS,no,,Native minimum in both tools
+3D,firstorder,3MODE,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a mode
+3D,firstorder,3P01,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a prctile midpoint; rel=1e-2 covers the Nyxus CDF estimator
+3D,firstorder,3P10,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_P10_PYRADIOMICS,no,,Two native percentile oracles at separate recipes
+3D,firstorder,3P25,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a prctile midpoint
+3D,firstorder,3P75,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a prctile midpoint
+3D,firstorder,3P90,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_P90_PYRADIOMICS,no,,Two native percentile oracles at separate recipes
+3D,firstorder,3P99,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a prctile midpoint
+3D,firstorder,3QCOD,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,Defining ratio over MATLAB R2026a percentile built-ins
+3D,firstorder,3RANGE,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_RANGE_PYRADIOMICS,no,,Native range in both tools
+3D,firstorder,3ROBUST_MEAN,,,yes,TEST_3D_FIRSTORDER_ROBUST_MEAN_REGRESSION,MATLAB trimmean semantics differ from Nyxus histogram-threshold selection
+3D,firstorder,3ROBUST_MEAN_ABSOLUTE_DEVIATION,pyradiomics,TEST_3D_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS,no,,Native PyRadiomics RobustMeanAbsoluteDeviation
+3D,firstorder,3ROOT_MEAN_SQUARED,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_ROOT_MEAN_SQUARED_PYRADIOMICS,no,,Native RMS in both tools
+3D,firstorder,3SKEWNESS,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_SKEWNESS_PYRADIOMICS,no,,Native skewness in both tools
+3D,firstorder,3STANDARD_DEVIATION,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a std with N-1 normalization
+3D,firstorder,3STANDARD_DEVIATION_BIASED,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a std with N normalization
+3D,firstorder,3STANDARD_ERROR,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,Defining std/sqrt(n) over MATLAB R2026a built-in
+3D,firstorder,3UNIFORMITY,pyradiomics,TEST_3D_FIRSTORDER_UNIFORMITY_PYRADIOMICS,no,,Native PyRadiomics Uniformity at binCount=20
+3D,firstorder,3UNIFORMITY_PIU,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,Defining PIU expression over MATLAB R2026a min/max
+3D,firstorder,3VARIANCE,matlab;pyradiomics,TEST_3D_FIRSTORDER_MATLAB;TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS,no,,MATLAB matches sample variance; PyRadiomics population variance agrees within rel=1e-3
+3D,firstorder,3VARIANCE_BIASED,matlab,TEST_3D_FIRSTORDER_MATLAB,no,,MATLAB R2026a var with N normalization
