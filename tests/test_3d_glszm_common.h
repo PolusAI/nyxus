@@ -191,6 +191,14 @@ static const std::vector<PixIntens> glszm_3d_gapped_volume
 	5, 0, 1
 };
 
+// bench_cube2_constant -- a 2x2x2 volume of one non-background intensity, which is the smallest ROI
+// that reaches calculate()'s aux_min == aux_max intercept. It is fully populated rather than blank:
+// at no binning it has one grey level, one 26-connected zone of eight voxels, a single populated
+// cell, and sixteen finite features over it. The intercept returns the soft-NaN sentinel for all
+// sixteen instead, which is what test_3d_glszm_constant_roi_regression pins. The intensity is 7
+// rather than 1 so that a zone landing on the wrong row is a visibly wrong level.
+static const std::vector<PixIntens> glszm_3d_constant_volume (8, 7);
+
 // Runs the family on a literal volume rather than on a phantom read from disk: an LR carrying that
 // volume as its voxel cube, its extrema, and one Pixel3 per non-background voxel, which is the Np
 // ZonePercentage divides by. It is the same calculate() the phantom assertions run -- the fixture is

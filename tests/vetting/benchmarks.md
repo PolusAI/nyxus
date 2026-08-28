@@ -186,6 +186,35 @@ zone assembled from two z-corner steps, and three level-5 voxels that are pairwi
 
 ---
 
+## `bench_cube2_constant` — a 2x2x2 cube of one intensity
+
+| | |
+|---|---|
+| Data | `glszm_3d_constant_volume` in `tests/test_3d_glszm_common.h`, run through `run_3d_glszm_on_volume()` |
+| ROI | all 8 voxels, every one of them intensity 7 |
+| Shape | one grey level, one 26-connected zone of size 8, a size-zone matrix with a single populated cell |
+| Why it exists | the smallest ROI that reaches `calculate()`'s `aux_min == aux_max` intercept, which is the one input on which this family answers nothing |
+
+Recipes: `glszm3d.regression_constant_roi`.
+
+Tests reaching it today: `test_3d_glszm_regression.h`.
+
+**It is a fixture for a divergence, not for a value.** A constant-intensity ROI is fully populated
+and has sixteen finite features over it — on this cube `SAE = 1/64`, `LAE = 64`, `ZE = 0`, `GLV = 0`,
+`ZP = 1/8` — and Nyxus returns the soft-NaN sentinel for all sixteen instead. The assertions pin the
+sentinel, so they will fail the day the intercept is narrowed, which is the point:
+`tests/vetting/matrix/glszm3d.md` records why that is a divergence rather than an invalid cell.
+
+**Its intensity is 7 and its sentinel is `-98765`, both deliberately.** A zone landing on the wrong
+row is a visibly wrong level at 7, and a sentinel of `-98765` cannot be satisfied by the zero-filled
+buffer `initialize_fvals()` hands `calculate()` — a default `0.0` sentinel would let a feature that
+was never written pass.
+
+**Not interchangeable with the family's other small cubes.** `bench_cube4x4x3_zcross` and
+`bench_cube3_gapped_levels` both carry several grey levels, so neither reaches the intercept at all.
+
+---
+
 ## `bench_dsb2018_2d` — four DSB2018 nuclei ROIs
 
 | | |

@@ -46,12 +46,29 @@ assertion that named something stronger than what it was checking:
 | the 4×4×3 connectivity fixture | one populated slice between two empty ones — 26-, 18- and 2D 8-connectivity all produce its nine zones | three populated slices; the four readings give 9, 10, 13 and 13 |
 | the `IBSI=true` cell | `NOT MEASURED` in `matrix/glszm3d.md` | vetted, `glszm3d.pyradiomics_ibsi_gapped`, 16/16 + the matrix; and measured identical to `GLSZM_GREYDEPTH=0` |
 | the `GLSZM_GREYDEPTH=0` cell | asserted finite only | 16 numeric pins, `glszm3d.regression_ut_phantom_nobinning` |
-| `aux_min == aux_max` | `INVALID` — "a blank ROI has no zones" | `DIVERGENCE`: a constant-intensity ROI has a valid one-zone GLSZM; pinned by `test_3d_glszm_constant_roi_regression` and filed in `PR/todo.md` |
+| `aux_min == aux_max` | `INVALID` — "a blank ROI has no zones" | `DIVERGENCE`: a constant-intensity ROI has a valid one-zone GLSZM; pinned by `test_3d_glszm_constant_roi_regression`, recipe `glszm3d.regression_constant_roi` |
 | registry rows | 16, each conflating the `-20` oracle with the `+64` regression | 64, one per assertion (SPEC §3) |
 | `scan_glszm3d_coverage.py --check` | one-way: passed when `current_test` held the right file plus others | exact file match, kind match, one-recipe-per-case, and (feature, recipe, oracle) uniqueness |
 
 `agrees_gt`'s third argument is a **divisor**: `10.` is ±10%, `1e9` is `rel=1e-9`. The old band
 accepted anything within a tenth of the golden on every feature of the family.
+
+A third pass closed the gap the second one opened. Splitting the rows per assertion made the registry
+say which configuration each case pins — and left `test_3d_glszm_constant_roi_regression`, sixteen
+assertions at a seventeenth configuration, with no row at all:
+
+| | before | after |
+|---|---|---|
+| `glszm3d.regression_constant_roi` | 16 assertions, no recipe, no rows, no benchmark | a recipe, `bench_cube2_constant`, and 16 `status=regression` rows at SPEC §7's absolute exact tier |
+| the constant cube | a `constant_volume` local inside the test function | `glszm_3d_constant_volume` in `test_3d_glszm_common.h`, named by the benchmark entry |
+| `scan_glszm3d_coverage.py --check` | walked the registry only, so a case with no row was invisible | also walks the other way: a case asserting feature values must be named by a row |
+| the scanner's coverage rule | credited a feature only where its name appears | also credits a function that range-loops `D3_GLSZM_feature::featureset`, which asserts all sixteen while naming none |
+
+**The scanner's blind spot was the real finding, not the missing rows.** Every check it ran started
+from a registry row, so the one thing it could not report was a row that had never been written —
+and the case it missed asserts the whole family, at a configuration no other row describes. Deleting
+the sixteen new rows and re-running `--check` now names the case; that is what makes the check worth
+having rather than a restatement of the rows it already reads.
 
 ---
 
@@ -260,10 +277,13 @@ Negative control O makes one voxel of the constant block different, so the inter
 and the family computes `SAE = 0.51020408163265307` on the result — the arithmetic is there, it is
 the guard that is too wide.
 
-Recorded as a **divergence** in `matrix/glszm3d.md` and filed in `PR/todo.md`. Narrowing it changes a
-public feature's output on a reachable input, so it is `src/` work on its own branch; this pass pins
-the current behaviour instead, in `test_3d_glszm_constant_roi_regression`, with the sentinel set to a
-distinctive `-98765` so that a zero-filled feature buffer cannot satisfy the assertion.
+Recorded as a **divergence** in `matrix/glszm3d.md`. Narrowing it changes a public feature's output
+on a reachable input, so it is `src/` work on its own branch; this pass pins the current behaviour
+instead, in `test_3d_glszm_constant_roi_regression`, with the sentinel set to a distinctive `-98765`
+so that a zero-filled feature buffer cannot satisfy the assertion. It carries its own recipe,
+`glszm3d.regression_constant_roi`, and sixteen `status=regression` registry rows on
+`bench_cube2_constant` — so the day the intercept is narrowed, sixteen named assertions fail and say
+so, rather than the behaviour changing unrecorded.
 
 ---
 
