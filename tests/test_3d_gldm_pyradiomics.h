@@ -283,9 +283,17 @@ static const ref_vals_list<Gldm3dMatrixCell> gldm_3d_pyradiomics_smallmatrix_ref
 };
 
 // The 26 offsets calculate() walks, in {dz, dy, dx}. Spelled out here rather than reached for in the
-// feature class, because one of the two matrices below exists to check that the neighbourhood is the
-// one PyRadiomics uses -- borrowing the table under test would make that arm circular.
-static const int gldm_3d_neighbour_shifts[26][3] =
+// feature class, because the definition arm below exists to check that the neighbourhood is the one
+// PyRadiomics uses -- borrowing the table under test would make that arm circular.
+static const int gldm_3d_neighbourhood_size = 26;
+
+// What calculate() leaves in Nd on the small volume. Unlike the phantom's, that run is at no binning,
+// so the 'if (greyInfo) Nd = max_Nd' trim is skipped and Nd stays at the width the matrix was
+// allocated to -- one column per neighbour, plus the centre voxel's own count. Pinned separately from
+// the 6 above because those two numbers being different is the trim being exercised.
+static const int gldm_3d_pyradiomics_smallmatrix_nd_reported = gldm_3d_neighbourhood_size + 1;
+
+static const int gldm_3d_neighbour_shifts[gldm_3d_neighbourhood_size][3] =
 {
 	{ 0,-1,-1}, { 0,-1, 0}, { 0,-1,+1}, { 0, 0,-1}, { 0, 0,+1}, { 0,+1,-1}, { 0,+1, 0}, { 0,+1,+1},
 	{-1,-1,-1}, {-1,-1, 0}, {-1,-1,+1}, {-1, 0,-1}, {-1, 0, 0}, {-1, 0,+1}, {-1,+1,-1}, {-1,+1, 0}, {-1,+1,+1},
@@ -301,27 +309,6 @@ struct Gldm3dMatrixTally
 	int nd = 0;        // largest dependence observed
 	int nz = 0;        // dependence zones, one per ROI voxel
 };
-
-// The matrix production builds: D3_GLDM_feature::gather_dependence_zones() is the same traversal
-// calculate() fills P from, so its shifts[] table, its alpha = 0 test and its background rule are
-// all under this tally rather than beside it.
-static Gldm3dMatrixTally tally_3d_gldm_matrix_production (const SimpleCube<PixIntens>& D)
-{
-	std::vector<std::pair<PixIntens, int>> Z;
-	D3_GLDM_feature::gather_dependence_zones (Z, D, 0/*background at radiomics binning*/);
-
-	Gldm3dMatrixTally t;
-	std::unordered_set<PixIntens> levels;
-	for (const auto& z : Z)
-	{
-		t.cells[{ z.first, z.second }]++;
-		levels.insert (z.first);
-		t.nd = (std::max)(t.nd, z.second);
-		t.nz++;
-	}
-	t.ng = (int)levels.size();
-	return t;
-}
 
 // The same matrix from the definition alone, walking the shift table spelled out above. It shares no
 // code with the feature class, so it fails when production and the pins drift together.
@@ -382,31 +369,82 @@ static void assert_3d_gldm_tally_matches (
 	}
 }
 
-// Holds the pinned table to both matrices of a binned cube: the one production's own traversal
-// produces, and the one the definition produces independently of it. Production carries the claim --
-// a change to shifts[], to the alpha cutoff or to the background rule fails the first arm -- and the
-// definition arm keeps the pins from being whatever production happens to say.
+// Holds the pinned table to the dependence matrix a run left behind -- 'P', the grey-level list 'I'
+// its rows are indexed through, and the three dimensions the fourteen features are contracted from.
+// Reading the feature object rather than rebuilding the table beside it is what puts calculate()'s
+// row mapping, its Ng and Nd, its allocation and its fill loop under the assertion: a defect in any
+// of those lives in this object and nowhere the definition arm below can see.
 //
-// EXPECT rather than ASSERT between the two, so a failing arm does not hide the other's verdict: the
-// pair of them is what says whether production moved, the pins moved, or both moved together.
-static void assert_3d_gldm_matrix_pyradiomics (
+// 'expect_nd' is the largest dependence carrying a zone, read off P. 'expect_nd_reported' is what
+// calculate() leaves in Nd, which is that same number only when the binning is not IBSI -- at
+// GLDM_GREYDEPTH=0 the trim is skipped and Nd stays at the full neighbourhood width. The two are
+// separate parameters because a run that stopped trimming would otherwise be invisible.
+static void assert_3d_gldm_matrix_production (
+	const D3_GLDM_feature& f,
+	const ref_vals_list<Gldm3dMatrixCell>& expect,
+	int expect_ng,
+	int expect_nd,
+	int expect_nd_reported,
+	int expect_nz)
+{
+	const SimpleMatrix<int>& P = f.get_P();
+	const std::vector<PixIntens>& I = f.get_I();
+
+	ASSERT_EQ (f.get_Ng(), expect_ng) << "grey levels the matrix is indexed over";
+	ASSERT_EQ (f.get_Nd(), expect_nd_reported) << "dependence count calculate() reports";
+	ASSERT_EQ (f.get_Nz(), expect_nz) << "dependence zones, summed off the matrix";
+
+	// The allocation, so a mis-sized table is not read as a matrix whose missing cells are merely
+	// empty. calculate() allocates at the full neighbourhood width, before it trims Nd, and one row
+	// per grey level plus one -- the +1s are what a zone at the largest dependence needs.
+	ASSERT_EQ (P.width(), gldm_3d_neighbourhood_size + 2) << "allocated dependence columns";
+	ASSERT_EQ (P.height(), expect_ng + 1) << "allocated grey-level rows";
+
+	int pinned_zones = 0;
+	for (const Gldm3dMatrixCell& c : expect)
+	{
+		SCOPED_TRACE ("level " + std::to_string(c.level) + ", dependence " + std::to_string(c.dep));
+		auto it = std::find (I.begin(), I.end(), (PixIntens)c.level);
+		ASSERT_TRUE (it != I.end()) << "pinned grey level is absent from the run's level list";
+		ASSERT_EQ (P.yx (int(it - I.begin()), c.dep - 1), c.count);
+		pinned_zones += c.count;
+	}
+
+	// Nothing outside the pinned cells, and the deepest occupied column read off P rather than off
+	// the pins: without these a matrix carrying an extra populated cell, or one dependence deeper
+	// than anything pinned, would still pass every line above.
+	int nonempty = 0, total = 0, deepest = 0;
+	for (int row = 0; row < P.height(); row++)
+		for (int col = 0; col < P.width(); col++)
+		{
+			int v = P.yx (row, col);
+			if (!v)
+				continue;
+			nonempty++;
+			total += v;
+			deepest = (std::max)(deepest, col + 1);
+		}
+	ASSERT_EQ (nonempty, (int)expect.size()) << "non-empty cells";
+	ASSERT_EQ (total, expect_nz) << "zones the matrix accounts for";
+	ASSERT_EQ (pinned_zones, expect_nz) << "zones the pinned cells account for";
+	ASSERT_EQ (deepest, expect_nd) << "largest dependence carrying a zone";
+}
+
+// Holds the same pinned table to the matrix the definition produces, walking the shift table spelled
+// out above and sharing no code with the feature class. This is what keeps the pins from being
+// whatever production happens to say; the assertion above is what says production produced them.
+//
+// EXPECT rather than ASSERT between the two arms at the call sites, so a failing arm does not hide
+// the other's verdict: the pair of them is what says whether production moved, the pins moved, or
+// both moved together.
+static void assert_3d_gldm_matrix_definition (
 	const SimpleCube<PixIntens>& D,
 	const ref_vals_list<Gldm3dMatrixCell>& expect,
 	int expect_ng,
 	int expect_nd,
 	int expect_nz)
 {
-	{
-		SCOPED_TRACE ("matrix built by D3_GLDM_feature::gather_dependence_zones()");
-		EXPECT_NO_FATAL_FAILURE (assert_3d_gldm_tally_matches (
-			tally_3d_gldm_matrix_production (D), expect, expect_ng, expect_nd, expect_nz));
-	}
-
-	{
-		SCOPED_TRACE ("matrix built from the definition, sharing no code with the feature class");
-		EXPECT_NO_FATAL_FAILURE (assert_3d_gldm_tally_matches (
-			tally_3d_gldm_matrix_definition (D), expect, expect_ng, expect_nd, expect_nz));
-	}
+	assert_3d_gldm_tally_matches (tally_3d_gldm_matrix_definition (D), expect, expect_ng, expect_nd, expect_nz);
 }
 
 // Asserts one feature against its PyRadiomics golden at the tier SPEC 7 gives it.
@@ -432,11 +470,11 @@ static void assert_3d_gldm_feature_pyradiomics (const Nyxus::Feature3D& expectin
 	ASSERT_NEAR (fvals[fcode][0], iter->second, band) << fname;
 }
 
-// The matrix under the fourteen features, on the voxels the featurisation actually read and binned by
-// the same bin_intensities_3d() calculate() calls. It takes the cube and the intensity extrema back
-// out of the same extract_3d_gldm() the fourteen oracle assertions run, so this assertion and those
-// describe one run rather than two -- a hand-written copy of the phantom would keep passing after the
-// loader started producing something else.
+// The matrix under the fourteen features, read off the feature object the fourteen oracle assertions
+// run through: this assertion and those describe one run of one phantom rather than two, and a
+// hand-written copy of the phantom would keep passing after the loader started producing something
+// else. The definition arm beside it re-bins the cube that run read, with the same
+// bin_intensities_3d() calculate() calls, and walks the neighbourhood from the definition.
 void test_3d_gldm_matrix_pyradiomics()
 {
 	auto [ipath, mpath, label] = get_3d_compat_phantom();
@@ -444,16 +482,29 @@ void test_3d_gldm_matrix_pyradiomics()
 	std::vector<std::vector<double>> fvals;
 	SimpleCube<PixIntens> cube;
 	PixIntens lo = 0, hi = 0;
-	ASSERT_NO_FATAL_FAILURE(extract_3d_gldm (fvals, cube, lo, hi, ipath, mpath, label, s));
-
 	D3_GLDM_feature f;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_gldm (fvals, cube, lo, hi, ipath, mpath, label, s, f));
+
+	{
+		SCOPED_TRACE ("the dependence matrix D3_GLDM_feature::calculate() built");
+		EXPECT_NO_FATAL_FAILURE (assert_3d_gldm_matrix_production (
+			f, gldm_3d_pyradiomics_matrix_ref_vals,
+			gldm_3d_pyradiomics_matrix_ng, gldm_3d_pyradiomics_matrix_nd,
+			gldm_3d_pyradiomics_matrix_nd/*trimmed: the binning is not IBSI*/,
+			gldm_3d_pyradiomics_matrix_nz));
+	}
+
 	SimpleCube<PixIntens> binned;
 	binned.allocate (cube.width(), cube.height(), cube.depth());
 	f.bin_intensities_3d (binned, cube, lo, hi, -20);
 
-	ASSERT_NO_FATAL_FAILURE(assert_3d_gldm_matrix_pyradiomics (
-		binned, gldm_3d_pyradiomics_matrix_ref_vals,
-		gldm_3d_pyradiomics_matrix_ng, gldm_3d_pyradiomics_matrix_nd, gldm_3d_pyradiomics_matrix_nz));
+	{
+		SCOPED_TRACE ("the matrix the definition builds, sharing no code with the feature class");
+		EXPECT_NO_FATAL_FAILURE (assert_3d_gldm_matrix_definition (
+			binned, gldm_3d_pyradiomics_matrix_ref_vals,
+			gldm_3d_pyradiomics_matrix_ng, gldm_3d_pyradiomics_matrix_nd,
+			gldm_3d_pyradiomics_matrix_nz));
+	}
 
 	// Nz == Np: every ROI voxel owns exactly one dependence zone, so the zone count the matrix
 	// carries has to be the voxel count, reached here by counting the cube instead of the matrix.
@@ -465,14 +516,34 @@ void test_3d_gldm_matrix_pyradiomics()
 }
 
 // The neighbourhood check: a volume small enough to count by hand, where the vertical offsets have a
-// visible signature.
+// visible signature. It runs the same calculate() the phantom assertion does, at the family's
+// no-binning setting, so the matrix is indexed by the literal's own levels 1..4 -- which is what
+// PyRadiomics reads at binWidth=1, and which leaves Nd untrimmed at the full neighbourhood width.
 void test_3d_gldm_smallmatrix_pyradiomics()
 {
-	SimpleCube<PixIntens> D (gldm_3d_pyradiomics_small_volume, 4/*width*/, 4/*height*/, 3/*depth*/);
-	ASSERT_NO_FATAL_FAILURE(assert_3d_gldm_matrix_pyradiomics (
-		D, gldm_3d_pyradiomics_smallmatrix_ref_vals,
-		gldm_3d_pyradiomics_smallmatrix_ng, gldm_3d_pyradiomics_smallmatrix_nd,
-		gldm_3d_pyradiomics_smallmatrix_nz));
+	Fsettings s = make_gldm3d_settings (64/*greydepth, inert here*/, 0/*no binning: the raw levels*/);
+	std::vector<std::vector<double>> fvals;
+	D3_GLDM_feature f;
+	ASSERT_NO_FATAL_FAILURE(run_3d_gldm_on_volume (
+		fvals, gldm_3d_pyradiomics_small_volume, 4/*width*/, 4/*height*/, 3/*depth*/, s, f));
+
+	{
+		SCOPED_TRACE ("the dependence matrix D3_GLDM_feature::calculate() built");
+		EXPECT_NO_FATAL_FAILURE (assert_3d_gldm_matrix_production (
+			f, gldm_3d_pyradiomics_smallmatrix_ref_vals,
+			gldm_3d_pyradiomics_smallmatrix_ng, gldm_3d_pyradiomics_smallmatrix_nd,
+			gldm_3d_pyradiomics_smallmatrix_nd_reported,
+			gldm_3d_pyradiomics_smallmatrix_nz));
+	}
+
+	{
+		SCOPED_TRACE ("the matrix the definition builds, sharing no code with the feature class");
+		SimpleCube<PixIntens> D (gldm_3d_pyradiomics_small_volume, 4/*width*/, 4/*height*/, 3/*depth*/);
+		EXPECT_NO_FATAL_FAILURE (assert_3d_gldm_matrix_definition (
+			D, gldm_3d_pyradiomics_smallmatrix_ref_vals,
+			gldm_3d_pyradiomics_smallmatrix_ng, gldm_3d_pyradiomics_smallmatrix_nd,
+			gldm_3d_pyradiomics_smallmatrix_nz));
+	}
 }
 
 // Regenerates every golden in gldm_3d_pyradiomics_ref_vals at full precision, in the shape the table

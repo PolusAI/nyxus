@@ -53,10 +53,10 @@ static Fsettings make_gldm3d_settings (int greydepth, int gldm_greydepth)
 // One place for the four-step prescan / metrics / voxel-cloud / buffer sequence, so the oracle and
 // regression assertions cannot drift apart in it.
 //
-// The cube and the extrema are handed back so an assertion about the dependence matrix works from the
-// voxels this featurisation actually read and bins them exactly as calculate() did, rather than from
-// a second, hand-written copy of them: two assertions that describe one run have to be reading one
-// run (SPEC 5.2).
+// The cube and the extrema are handed back so a caller can report the voxels this featurisation
+// actually read, and 'f' outlives calculate() so an assertion can read the dependence matrix that run
+// left behind rather than a copy rebuilt beside it: two assertions that describe one run have to be
+// reading one run (SPEC 5.2).
 static void extract_3d_gldm (
 	std::vector<std::vector<double>>& fvals,
 	SimpleCube<PixIntens>& cube,
@@ -65,7 +65,8 @@ static void extract_3d_gldm (
 	const std::string& ipath,
 	const std::string& mpath,
 	int label,
-	const Fsettings& s)
+	const Fsettings& s,
+	D3_GLDM_feature& f)
 {
 	ASSERT_TRUE(fs::exists(ipath));
 	ASSERT_TRUE(fs::exists(mpath));
@@ -92,7 +93,6 @@ static void extract_3d_gldm (
 	// (5) feature extraction
 	LR& r = e.roiData[label];
 	ASSERT_NO_THROW(r.initialize_fvals());
-	D3_GLDM_feature f;
 	ASSERT_NO_THROW(f.calculate(r, s));
 	f.save_value(r.fvals);
 
@@ -100,6 +100,59 @@ static void extract_3d_gldm (
 	cube = r.aux_image_cube;
 	lo = r.aux_min;
 	hi = r.aux_max;
+}
+
+// The same run for the callers that only want the numbers. 'f' outlives calculate() in the overload
+// above so an assertion can read the dependence matrix that run built; a caller with no such
+// assertion says so by not naming one.
+static void extract_3d_gldm (
+	std::vector<std::vector<double>>& fvals,
+	SimpleCube<PixIntens>& cube,
+	PixIntens& lo,
+	PixIntens& hi,
+	const std::string& ipath,
+	const std::string& mpath,
+	int label,
+	const Fsettings& s)
+{
+	D3_GLDM_feature f;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_gldm (fvals, cube, lo, hi, ipath, mpath, label, s, f));
+}
+
+// The same run on a volume written out as a literal rather than loaded from a phantom: the voxels
+// become an ROI, the running extrema are accumulated the way the real prescan leaves them, and
+// calculate() reads it. 'f' outlives the call for the same reason as above.
+static void run_3d_gldm_on_volume (
+	std::vector<std::vector<double>>& fvals,
+	const std::vector<PixIntens>& voxels,
+	int w, int h, int d,
+	const Fsettings& s,
+	D3_GLDM_feature& f)
+{
+	ASSERT_EQ (voxels.size(), size_t(w) * size_t(h) * size_t(d));
+
+	// An LR starts at the empty running-extrema state (aux_min = +inf, aux_max = 0), which is what
+	// the loop below accumulates into -- the same state the real prescan hands calculate().
+	LR r;
+	r.aux_image_cube = SimpleCube<PixIntens> (voxels, w, h, d);
+	for (int z = 0; z < d; z++)
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+			{
+				PixIntens v = r.aux_image_cube.zyx (z, y, x);
+				if (!v)
+					continue;   // background, outside the ROI
+				r.raw_pixels_3D.push_back (Pixel3 (x, y, z, v));
+				if (v < r.aux_min)
+					r.aux_min = v;
+				if (v > r.aux_max)
+					r.aux_max = v;
+			}
+
+	ASSERT_NO_THROW(r.initialize_fvals());
+	ASSERT_NO_THROW(f.calculate(r, s));
+	f.save_value(r.fvals);
+	fvals = r.fvals;
 }
 
 // Resolves a 3D feature name to its code and checks it is the one the caller expects, so a renamed
