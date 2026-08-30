@@ -25,7 +25,7 @@
 // Dissimilarity and SumVariance as duplicates of DifferenceAverage and ClusterTendency, which is
 // where the goldens for GLCM_DIS and GLCM_SUMVARIANCE come from; MIRP reports those two as
 // quantities of their own and test_2d_glcm_mirp.h pins them there.
-static ref_vals_map<double> glcm_2d_pyradiomics_ref_vals
+static const ref_vals_map<double> glcm_2d_pyradiomics_ref_vals
 {
     {"GLCM_ACOR", 20.512755102040817},   // Autocorrelation
     {"GLCM_ACOR_AVE", 20.512755102040817},   // Autocorrelation

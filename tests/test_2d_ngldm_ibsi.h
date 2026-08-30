@@ -13,7 +13,7 @@
 //
 // These are published to three significant figures, which is what sets this file's rel=1e-2
 // tolerance. The full-precision digits are pinned against mirp in test_2d_ngldm_mirp.h.
-static ref_vals_map<double> ngldm_2d_ibsi_ref_vals
+static const ref_vals_map<double> ngldm_2d_ibsi_ref_vals
 {
 	{"NGLDM_LDE",		0.158},	// Low dependence emphasis, p.120, consensus - strong
 	{"NGLDM_HDE",		19.2},	// High dependence emphasis, p.121

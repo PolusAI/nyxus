@@ -23,7 +23,7 @@
 // NGLDM_GLM and NGLDM_DCM are absent by design: mirp exposes no grey-level-mean or
 // dependence-count-mean column because they are not IBSI NGLDM features. They stay regression rows
 // in test_2d_ngldm_regression.h.
-static ref_vals_map<double> ngldm_2d_mirp_ref_vals
+static const ref_vals_map<double> ngldm_2d_mirp_ref_vals
 {
 	{"NGLDM_LDE", 0.15807024738501638},
 	{"NGLDM_HDE", 19.173821809425526},

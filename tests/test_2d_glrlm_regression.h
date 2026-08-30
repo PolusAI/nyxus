@@ -14,7 +14,7 @@
 
 // dig. phantom values for intensity based features
 // Calculated at 100 grey levels
-static ref_vals_map<double> glrlm_2d_regression_ref_vals {
+static const ref_vals_map<double> glrlm_2d_regression_ref_vals {
     {"GLRLM_SRE", 0.677679}, 
     {"GLRLM_LRE", 3.41805}, 
     {"GLRLM_LGLRE", 0.11546}, 
@@ -164,7 +164,7 @@ void assert_glrlm_feature_regression(const Nyxus::Feature2D& feature_, const std
 
     // Verdict
     const double divisor = is_ave_feature ? 4.0 : 16.0;
-    ASSERT_TRUE(Nyxus::agrees_gt(total / divisor, glrlm_2d_regression_ref_vals[truth_key], 100.));
+    ASSERT_TRUE(Nyxus::agrees_gt(total / divisor, glrlm_2d_regression_ref_vals.at(truth_key), 100.));
 }
 
 void test_2d_glrlm_sre_regression()

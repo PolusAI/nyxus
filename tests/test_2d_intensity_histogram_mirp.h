@@ -20,7 +20,7 @@
 // family has no MIRP counterpart and is vetted analytically in
 // test_2d_intensity_histogram_analytic.h; the conventions are set out in
 // tests/vetting/audit/intensity_histogram_2d_analytic_vetting_report.md.
-static ref_vals_map<double> intensity_histogram_2d_mirp_ref_vals
+static const ref_vals_map<double> intensity_histogram_2d_mirp_ref_vals
 {
     {"IH_COEFFICIENT_OF_VARIATION_IDX", 0.81219785849173143},   // ih_cov
     {"IH_ENTROPY_IDX", 1.2656115555865246},   // ih_entropy

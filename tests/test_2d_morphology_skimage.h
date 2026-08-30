@@ -7,7 +7,7 @@
 
 #include "test_ref_vals.h"
 
-static ref_vals_map<double> morphology_2d_skimage_shape2d_ref_vals{
+static const ref_vals_map<double> morphology_2d_skimage_shape2d_ref_vals{
 	// CONVEX_HULL_AREA / SOLIDITY are cross-checked against scikit-image on this exact ROI. Nyxus
 	// computes a Pick's-theorem pixel-count hull area (convex_hull_nontriv.cpp) = 27, solidity
 	// 26/27 = 0.9629630. Because Nyxus hulls through pixel CENTRES, this reproduces skimage's
@@ -42,7 +42,7 @@ static ref_vals_map<double> morphology_2d_skimage_shape2d_ref_vals{
 // The two do NOT agree on the small shape2d mask (skimage 12.657 vs Nyxus 26.935): there the object
 // is 26 pixels with a 1-pixel hole, and the two contour conventions have nothing to converge to.
 // PERIMETER is therefore vetted on this benchmark only, and stays a regression row on shape2d.
-static ref_vals_map<double> morphology_2d_skimage_circles_ref_vals{
+static const ref_vals_map<double> morphology_2d_skimage_circles_ref_vals{
 	{"PERIMETER", 999.25901807804496},
 };
 
@@ -51,7 +51,7 @@ static void assert_morphology_shape2d_skimage(const std::vector<std::vector<doub
 {
 	SCOPED_TRACE(std::string("SKIMAGE_ORACLE__") + feature_name);
 	ASSERT_TRUE(morphology_2d_skimage_shape2d_ref_vals.count(feature_name) > 0) << feature_name;
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_skimage_shape2d_ref_vals[feature_name], frac_tolerance));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_skimage_shape2d_ref_vals.at(feature_name), frac_tolerance));
 }
 
 void test_2d_morphology_convex_hull_skimage()
@@ -125,5 +125,5 @@ void test_2d_morphology_perimeter_skimage()
 	SCOPED_TRACE("SKIMAGE_ORACLE__PERIMETER");
 	ASSERT_TRUE(morphology_2d_skimage_circles_ref_vals.count("PERIMETER") > 0);
 	ASSERT_TRUE(agrees_gt(roidata.fvals[(int)Nyxus::Feature2D::PERIMETER][0],
-		morphology_2d_skimage_circles_ref_vals["PERIMETER"]));
+		morphology_2d_skimage_circles_ref_vals.at("PERIMETER")));
 }

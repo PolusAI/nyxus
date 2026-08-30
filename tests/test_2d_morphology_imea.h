@@ -19,7 +19,7 @@
 // differ from Nyxus by 3.9-79.3%, too coarse for the hull-vs-raster conventions to converge -- so
 // they are regression snapshots in test_2d_morphology_regression.h and the diameters are vetted
 // against imea on the clean ellipse below. Measured in audit/morphology_2d_imea_vetting_report.md.
-static ref_vals_map<double> morphology_2d_imea_shape2d_ref_vals{
+static const ref_vals_map<double> morphology_2d_imea_shape2d_ref_vals{
 	{"DIAMETER_EQUAL_PERIMETER", 8.573658094355881},
 	{"GEODETIC_LENGTH", 11.13182483477333},
 	{"THICKNESS", 2.3356458070362205}
@@ -36,7 +36,7 @@ static ref_vals_map<double> morphology_2d_imea_shape2d_ref_vals{
 // (rot_angle_increment = 10 degrees, caliper.h), so the two sample the same angles. Every value here
 // comes from one run at that step; mixing steps inflates the tolerance
 // (audit/morphology_2d_imea_vetting_report.md). Worst residual 4.99%.
-static ref_vals_map<double> morphology_2d_imea_ellipse_ref_vals{
+static const ref_vals_map<double> morphology_2d_imea_ellipse_ref_vals{
 	{"STAT_MARTIN_DIAM_MIN", 19.0},
 	{"STAT_MARTIN_DIAM_MAX", 41.0},
 	{"STAT_MARTIN_DIAM_MEAN", 27.5},
@@ -68,7 +68,7 @@ static void assert_iso_transform_imea(const std::vector<std::vector<double>>& fv
 {
 	SCOPED_TRACE(std::string("IMEA_ORACLE__") + feature_name);
 	ASSERT_TRUE(morphology_2d_imea_shape2d_ref_vals.count(feature_name) > 0) << feature_name;
-	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_imea_shape2d_ref_vals[feature_name], frac_tolerance));
+	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_imea_shape2d_ref_vals.at(feature_name), frac_tolerance));
 }
 
 static void assert_caliper_close_to_imea(
@@ -84,7 +84,7 @@ static void assert_caliper_close_to_imea(
 {
 	SCOPED_TRACE(std::string("CALIPER_VS_IMEA__") + feature_name);
 	ASSERT_TRUE(morphology_2d_imea_ellipse_ref_vals.count(feature_name) > 0);
-	const double imea_ref = morphology_2d_imea_ellipse_ref_vals[feature_name];
+	const double imea_ref = morphology_2d_imea_ellipse_ref_vals.at(feature_name);
 	const double actual = fvals[static_cast<int>(feature)][0];
 	const double denom = std::max(std::abs(imea_ref), 1e-9);
 	ASSERT_LE(std::abs(actual - imea_ref) / denom, reltol)

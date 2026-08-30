@@ -145,7 +145,7 @@ void test_2d_intensity_histogram_bin_counts_analytic()
 // evaluates each closed form from the published definitions rather than from
 // intensity_histogram.cpp. Evidence:
 // tests/vetting/audit/intensity_histogram_2d_analytic_vetting_report.md.
-static ref_vals_map<double> intensity_histogram_2d_analytic_phantom_ref_vals
+static const ref_vals_map<double> intensity_histogram_2d_analytic_phantom_ref_vals
 {
     {"IH_BIN_SIZE", 0.83333333333333337},
     {"IH_COEFFICIENT_OF_VARIATION_VAL", 0.61261603178456026},

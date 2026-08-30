@@ -22,7 +22,7 @@
 // are bounded in [0,1] by construction, and SUMVARIANCE == CLUTEND / DIS == DIFAVE hold exactly (to
 // ~1e-15). Why these values replaced the ones this file used to carry:
 // tests/vetting/audit/glcm_3d_pyradiomics_vetting_report.md.
-static ref_vals_map<double> glcm_3d_regression_ref_vals
+static const ref_vals_map<double> glcm_3d_regression_ref_vals
 {
     {"3GLCM_ACOR", 2864.4036927337511},
     {"3GLCM_ASM", 0.00075632811401173821},
@@ -139,7 +139,7 @@ void assert_3d_glcm_feature_regression (const Nyxus::Feature3D& expecting_fcode,
     // verdict, at rel=1e-8: a full-precision drift guard on Nyxus' own values, with headroom over
     // the fast_log10-derived (3d_glcm.cpp) compiler-rounding residuals measured on INFOMEAS1/2 and
     // DIFENTRO (up to rel 3.6e-9).
-    ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals[fname], 1.e8)) << fname;
+    ASSERT_TRUE(agrees_gt(atot, glcm_3d_regression_ref_vals.at(fname), 1.e8)) << fname;
 }
 
 // Regenerates every golden in glcm_3d_regression_ref_vals at full precision, in the exact shape the
@@ -335,7 +335,7 @@ void test_3d_glcm_sum_variance_regression()
 // same-value identity trick documented there). This table claims no vetting of its own (SPEC 1):
 // it is a drift guard on the grey64 configuration, which nothing else in the tree exercises.
 // History: tests/vetting/audit/glcm_3d_golden_regen.md, "grey64 table and the retired Wave-9 sweep".
-static ref_vals_map<std::vector<double>> glcm_3d_regression_grey64_ref_vals
+static const ref_vals_map<std::vector<double>> glcm_3d_regression_grey64_ref_vals
 {
 	{ "3GLCM_ACOR_AVE", { 896.29490954682888 } },
 	{ "3GLCM_ASM_AVE", { 0.21714923037245615 } },

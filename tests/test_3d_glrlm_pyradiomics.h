@@ -39,7 +39,7 @@
 // Regenerate with tests/vetting/oracles/gen_glrlm3d_pyradiomics.py, which also re-verifies every
 // pin. See tests/vetting/audit/glrlm_3d_golden_regen.md.
 
-static ref_vals_map<double> glrlm_3d_pyradiomics_ref_vals
+static const ref_vals_map<double> glrlm_3d_pyradiomics_ref_vals
 {
     {"3GLRLM_GLN", 406.68709120394277},     // Case-1_original_glrlm_GrayLevelNonUniformity
     {"3GLRLM_GLNN", 0.09722976558135092},   // Case-1_original_glrlm_GrayLevelNonUniformityNormalized
@@ -578,9 +578,9 @@ void test_3d_glrlm_ave_pyradiomics()
     for (auto& a : aves)
     {
         double v = r.fvals[(int)a.ave][0];
-        ASSERT_TRUE(agrees_gt(v, glrlm_3d_pyradiomics_ref_vals[a.gt],
+        ASSERT_TRUE(agrees_gt(v, glrlm_3d_pyradiomics_ref_vals.at(a.gt),
                               glrlm_3d_pyradiomics_frac_tolerance(a.gt))) << a.gt << "_AVE = " << v
-            << " vs pyradiomics " << glrlm_3d_pyradiomics_ref_vals[a.gt];
+            << " vs pyradiomics " << glrlm_3d_pyradiomics_ref_vals.at(a.gt);
     }
 }
 

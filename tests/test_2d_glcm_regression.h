@@ -26,7 +26,7 @@
 //
 // CORRELATION/INFOMEAS1 are softNAN(=0)-guarded on the degenerate (single-grey-marginal) phantom
 // directions. An _AVE key shares its base feature's golden: it is the mean of the same 4 angles.
-static ref_vals_map<double> glcm_2d_regression_ref_vals
+static const ref_vals_map<double> glcm_2d_regression_ref_vals
 {
     {"GLCM_ACOR", 1437.33},                 // absolute-level-dependent: matlab binning re-maps levels, so ibsi=False diverges from a symmetric oracle by ~43%. Vetted on the IBSI path instead -- see below.
     {"GLCM_ASM", 0.381801},
