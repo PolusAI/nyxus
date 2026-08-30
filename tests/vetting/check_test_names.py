@@ -186,6 +186,11 @@ TABLE_ACCESSOR = re.compile(
 
 INCLUDE = re.compile(r'^[ 	]*#include[ 	]+"(test_[^"]+)"', re.M)
 
+# A conforming table is const-qualified before its type, in whichever order the declaration puts
+# the other specifiers: "static const T x", "const T x", "static inline const T x", and the accessor
+# form "static const T& x()".
+TABLE_CONST = re.compile(r"^(?:(?:static|inline)[ 	]+)*const[ 	]")
+
 CPP_DEF = re.compile(
     r"^[ \t]*(?:static[ \t]+)?(?:inline[ \t]+)?void[ \t]+(test_[A-Za-z0-9_]*)[ \t]*\(([^)]*)\)", re.M)
 CPP_HELPER_DEF = re.compile(
@@ -456,6 +461,17 @@ def check(root):
                               f"declare it through a test_ref_vals.h alias "
                               f"({' / '.join(TABLE_ALIASES)}) so it is identifiable by type "
                               f"(SPEC 6.3.1)")
+            # 6.3.1: a reference table is read-only data, and const is what enforces it. Without
+            # const, operator[] compiles, so a key the table does not hold is default-inserted as 0
+            # instead of failing -- the assertion then compares against a golden that does not exist
+            # and passes whenever the computed value is also 0, which is the very case (a feature
+            # that silently returned nothing) the table exists to catch. It also leaves the phantom
+            # key behind for every later lookup in the run. const makes operator[] a compile error
+            # and forces .at(), which throws naming the key it could not find.
+            if not TABLE_CONST.match(line):
+                errors.append(f"{p.name}: golden table {name} is declared without const; a mutable "
+                              f"table permits operator[], which default-inserts a missing key as 0 "
+                              f"rather than failing (SPEC 6.3.1)")
             why = table_violation(name)
             if why:
                 errors.append(f"{p.name}: golden table {name} {why}")

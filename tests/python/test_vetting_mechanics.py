@@ -146,7 +146,7 @@ def test_vetting_tree_names_conform_to_spec_mechanics():
 
 def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
     """The checker must actually fail on each defect class - a lint that cannot fail is not a lint.
-    Plants one of each and requires all thirteen to be reported. Each planted file isolates a single
+    Plants one of each and requires all fourteen to be reported. Each planted file isolates a single
     defect, so an assertion failing here names the rule that stopped being enforced."""
     (tmp_path / "tests" / "python").mkdir(parents=True)
     # a TEST body with two callees: case = UPPER(function) has no single function to mirror
@@ -212,6 +212,14 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
         '    {"NGLDM_LDE", 1.0},\n};\n'
         'void test_2d_ngldm_lde_regression() {}', encoding="utf-8")
 
+    # a table whose name, location and type all conform, declared without const. Only its
+    # mutability makes it a defect -- which is what a mutable table costs: operator[] compiles, so a
+    # missing key is default-inserted as 0 instead of failing the lookup.
+    (tmp_path / "tests" / "test_2d_glszm_ibsi.h").write_text(
+        'static ref_vals_map<double> glszm_2d_ibsi_ref_vals = {\n'
+        '    {"GLSZM_SZE", 1.0},\n};\n'
+        'void test_2d_glszm_sze_ibsi() {}', encoding="utf-8")
+
     # one family reaching into another family's fixture header. Both file names conform and the
     # header holds no values, so only the include makes it a defect (SPEC 6.3.1).
     (tmp_path / "tests" / "test_2d_glszm_common.h").write_text(
@@ -243,3 +251,9 @@ def test_vetting_name_checker_rejects_bad_names_mechanics(tmp_path):
                for e in errs)                                                # conforming name, raw type
     assert any("test_2d_gldzm_regression.h" in e and "test_2d_glszm_common.h" in e
                and "SPEC 6.3.1" in e for e in errs)                          # includes another family
+    assert any("glszm_2d_ibsi_ref_vals" in e and "without const" in e
+               for e in errs)                                                # conforming name+type, mutable
+    # and it must not fire on a const-qualified table -- a rule that flags everything is as useless
+    # as one that flags nothing. ngldm_2d_regression_ref_vals above is const, so it earns the raw
+    # container error and only that one.
+    assert not any("ngldm_2d_regression_ref_vals" in e and "without const" in e for e in errs)
