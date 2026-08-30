@@ -86,7 +86,7 @@
 //        - 'SumSquares'
 //
 
-static ref_vals_map<double> glcm_3d_pyradiomics_ref_vals
+static const ref_vals_map<double> glcm_3d_pyradiomics_ref_vals
 {
     {"3GLCM_ACOR", 122.14708306342365},         // Case-1_original_glcm_Autocorrelation
     {"3GLCM_ASM", 0.0143339715631298},          // Case-1_original_glcm_JointEnergy
@@ -848,7 +848,7 @@ void assert_3d_glcm_ave_feature_pyradiomics (const Nyxus::Feature3D& ave_fcode,
     f.save_value(r.fvals);
 
     SCOPED_TRACE(std::string("PYRADIOMICS_ORACLE__") + base_fname + "_AVE");
-    const double want = glcm_3d_pyradiomics_ref_vals[base_fname];
+    const double want = glcm_3d_pyradiomics_ref_vals.at(base_fname);
     const double tol = glcm_3d_pyradiomics_tol(base_fname);
     ASSERT_NEAR(r.fvals[(int)ave_fcode][0], want, std::abs(want) * tol + 1e-12);
 }
@@ -1030,6 +1030,6 @@ void test_3d_glcm_ave_equivalence_pyradiomics()
         // (1) the identity holds on the stored _AVE features
         EXPECT_NEAR(va, vb, std::abs(vb) * 1e-6 + 1e-9) << p.an << " != " << p.bn;
         // (2) and the twin still matches its PyRadiomics golden, so the identity carries the claim
-        ASSERT_TRUE(agrees_gt(vb, glcm_3d_pyradiomics_ref_vals[p.golden], 10.));
+        ASSERT_TRUE(agrees_gt(vb, glcm_3d_pyradiomics_ref_vals.at(p.golden), 10.));
     }
 }

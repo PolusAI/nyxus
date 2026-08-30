@@ -12,7 +12,7 @@
 // (Reference: IBSI Documentation, Release 0.0.1dev Dec 13, 2021. Dataset: dig phantom.)
 // Verified against fresh PyRadiomics and MIRP runs on the phantom pixels checked into test_data.h -
 // see tests/vetting/audit/glrlm_2d_ibsi_vetting_report.md.
-static ref_vals_map<double> glrlm_2d_ibsi_ref_vals {
+static const ref_vals_map<double> glrlm_2d_ibsi_ref_vals {
     {"GLRLM_SRE", 0.641},
     {"GLRLM_LRE", 3.78},
     {"GLRLM_LGLRE", 0.604},

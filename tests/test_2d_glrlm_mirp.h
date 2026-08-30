@@ -20,7 +20,7 @@
 // Each quantity is pinned twice: once for the per-direction feature, once for its _AVE twin. The
 // tool reports one value over the 4 in-slice directions, which is what _AVE holds and what
 // averaging the 4 directional values of the base feature produces.
-static ref_vals_map<double> glrlm_2d_mirp_ref_vals
+static const ref_vals_map<double> glrlm_2d_mirp_ref_vals
 {
     {"GLRLM_GLV", 3.3530283911078764},   // rlm_gl_var
     {"GLRLM_GLV_AVE", 3.3530283911078764},   // rlm_gl_var

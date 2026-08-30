@@ -66,7 +66,7 @@ static double firstorder_3d_pyradiomics_band (const std::string& fname)
     return FO3D_PYRAD_EXACT;
 }
 
-static ref_vals_map<double> firstorder_3d_pyradiomics_ref_vals
+static const ref_vals_map<double> firstorder_3d_pyradiomics_ref_vals
 {
     {"3P10", 362.0}, // Case-1_original_firstorder_10Percentile
     {"3P90", 527.0}, // Case-1_original_firstorder_90Percentile
@@ -172,7 +172,7 @@ void assert_3d_firstorder_feature_pyradiomics (const Nyxus::Feature3D &expected_
     f.save_value (r.fvals);
 
     // (7) verdict
-    ASSERT_TRUE (agrees_gt(r.fvals[fcode][0], firstorder_3d_pyradiomics_ref_vals[fname],
+    ASSERT_TRUE (agrees_gt(r.fvals[fcode][0], firstorder_3d_pyradiomics_ref_vals.at(fname),
         firstorder_3d_pyradiomics_band(fname))) << fname;
 }
 

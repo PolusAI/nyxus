@@ -18,7 +18,7 @@
 // MIRP is the IBSI reference implementation, so it reports the two quantities PyRadiomics dropped
 // as duplicates - dissimilarity and sum variance - in their own right, and GLCM_DIS and
 // GLCM_SUMVARIANCE are vetted here against those rather than through an equality argument.
-static ref_vals_map<double> glcm_2d_mirp_ref_vals
+static const ref_vals_map<double> glcm_2d_mirp_ref_vals
 {
     {"GLCM_ACOR", 20.512755102040813},   // cm_auto_corr
     {"GLCM_ACOR_AVE", 20.512755102040813},   // cm_auto_corr

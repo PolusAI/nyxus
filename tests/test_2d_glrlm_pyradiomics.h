@@ -20,7 +20,7 @@
 // Each quantity is pinned twice: once for the per-direction feature, once for its _AVE twin. The
 // tool reports one value over the 4 in-slice directions, which is what _AVE holds and what
 // averaging the 4 directional values of the base feature produces.
-static ref_vals_map<double> glrlm_2d_pyradiomics_ref_vals
+static const ref_vals_map<double> glrlm_2d_pyradiomics_ref_vals
 {
     {"GLRLM_GLN", 5.1970624045072578},   // GrayLevelNonUniformity
     {"GLRLM_GLN_AVE", 5.1970624045072578},   // GrayLevelNonUniformity
