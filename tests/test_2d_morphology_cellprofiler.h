@@ -54,8 +54,11 @@ static void assert_morphology_feature_cellprofiler(
 	SCOPED_TRACE(std::string("CELLPROFILER__") + feature_name);
 	ASSERT_TRUE(morphology_2d_cellprofiler_ref_vals.count(feature_name) > 0) << feature_name;
 	// 1e6 -> a 1e-6 relative band, set from the measured 5.2e-8 float32 residual rather than left
-	// at the 0.1% the shared snapshot helper used; a band that loose would pass the sqrt(n/(n-1))
-	// estimator gap that disqualified EDGE_STDDEV_INTENSITY.
+	// at the 0.1% the shared snapshot helper used. The looser band was not what let the old
+	// EDGE_STDDEV_INTENSITY assertion pass -- the estimator gap below is 2.9% relative, 29 times
+	// 0.1%, so that band would have caught CellProfiler's value. What let it pass is that the
+	// golden it compared against was the Nyxus number, so the assertion never faced a
+	// CellProfiler one. A band should still be set from the measurement rather than inherited.
 	ASSERT_TRUE(agrees_gt(fvals[static_cast<int>(feature)][0], morphology_2d_cellprofiler_ref_vals.at(feature_name), 1e6));
 }
 

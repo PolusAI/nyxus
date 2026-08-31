@@ -89,10 +89,13 @@ report (`tests/vetting/coverage_report.md`) shows, per family and overall:
 registry and the test tree (e.g. an `outcome=vetted, oracle=pyradiomics` row with no matching test).
 
 The report is **generated, never hand-edited**, and `--check` enforces that: it re-renders the
-registry and fails when the committed text differs. A stale report is not a formatting problem — it
-publishes a coverage figure the registry does not support, which is how `glcm` read 118/118 vetted
-for a stretch after #422 demoted ten of its rows to `regression`. Any change to the registry has to
-bring `--write` with it.
+registry and fails when the committed text differs, or when it is not there at all. A stale report
+is not a formatting problem — it publishes a coverage figure the registry does not support, which is
+how `glcm` read 118/118 vetted for a stretch after #422 demoted ten of its rows to `regression`;
+and a deleted one would otherwise be the single edit that passes, so absence is checked as well as
+disagreement. Only the committed report at the `--report` default is required to exist — a report
+named on the command line is ad-hoc, and `--check` runs against throwaway registries that have none
+beside them. Any change to the registry has to bring `--write` with it.
 
 The north star: every real (implemented) feature has ≥1 `vetted` row.
 

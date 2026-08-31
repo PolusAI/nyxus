@@ -151,9 +151,46 @@ def test_vetting_check_fails_on_stale_report_mechanics(tmp_path):
         {"dim":"2D","feature":"A","family":"glcm","status":"regression","oracle":""},
     ])
     assert cc.main(["--check", "--registry", path2, "--report", str(report)]) == 1
-    # a registry with no report beside it is not an error (the other self-tests rely on this)
+    # an AD-HOC report (named on the command line) that is not there claims nothing, and the other
+    # self-tests rely on that; the canonical one is covered by the next test
     assert cc.main(["--check", "--registry", path2,
                     "--report", str(tmp_path / "absent.md")]) == 0
+
+
+def test_vetting_check_fails_on_missing_canonical_report_mechanics(tmp_path, monkeypatch):
+    """Deleting coverage_report.md must not be the one edit that passes --check. The staleness rule
+    compares rendered text to the file, so an absent file has nothing to disagree with; without this
+    the enforcement SPEC 3.1 promises is one `rm` away from silent. Only the CANONICAL report -- the
+    --report default -- is required to exist, because --check also runs against ad-hoc registries in
+    tmp_path that have no report beside them."""
+    monkeypatch.chdir(tmp_path)
+    reg = tmp_path / "tests" / "vetting"
+    reg.mkdir(parents=True)
+    path = _write(reg, [
+        {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"pyradiomics"},
+    ])
+    canonical = reg / "coverage_report.md"
+    assert cc.main(["--write", "--registry", path, "--report", str(canonical)]) == 0
+    # the canonical path is cc.DEFAULT_REPORT relative to the cwd, so --check with no --report
+    # resolves to the file just written -> clean
+    assert cc.DEFAULT_REPORT == "tests/vetting/coverage_report.md"
+    assert cc.main(["--check", "--registry", path]) == 0
+    # delete it and the same command must now fail rather than pass by absence
+    canonical.unlink()
+    assert cc.main(["--check", "--registry", path]) == 1
+
+
+def test_vetting_unknown_source_flagged_mechanics(tmp_path):
+    """`source` is a closed SPEC 3 set -- in-tree / tracker / audit -- and nothing checked it, so an
+    invented token read as meaningful: six rows said `generator`, naming where the numbers came from
+    rather than where the verdict does. A blank cell claims nothing and stays allowed."""
+    path = _write(tmp_path, [
+        {"dim":"2D","feature":"A","family":"x","status":"regression","source":"in-tree"},
+        {"dim":"2D","feature":"B","family":"x","status":"regression","source":"generator"},
+        {"dim":"2D","feature":"C","family":"x","status":"regression","source":""},
+    ])
+    errs = [e for e in cc.validate_rows(cc.load_registry(path)) if "source" in e]
+    assert len(errs) == 1 and "'generator'" in errs[0] and errs[0].startswith("B:"), errs
 
 
 # ---- SPEC 6.1/6.2 test-naming conventions (tests/vetting/check_test_names.py) ----

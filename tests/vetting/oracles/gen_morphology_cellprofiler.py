@@ -1,8 +1,17 @@
 """OFFLINE CellProfiler oracle for the 2D edge-intensity morphology features and
 MASS_DISPLACEMENT (SPEC 4, oracle=cellprofiler). Runs the real
 cellprofiler.modules.MeasureObjectIntensity module on the gtest fixture
-`shape2d_morphology_intensity` / `shape2d_morphology_mask` (test_data.h) and validates it
-against the goldens pinned in test_2d_morphology_cellprofiler.h.
+`shape2d_morphology_intensity` / `shape2d_morphology_mask` (test_data.h) and re-verifies EVERY
+golden pinned in test_2d_morphology_cellprofiler.h against that run, exiting non-zero on any
+mismatch, on any pin this generator cannot produce, and on any feature CellProfiler vets that the
+header does not pin.
+
+Both the fixture and the pins are READ OUT OF THE TREE rather than transcribed here. A copy of
+either would only ever compare this script against itself: a test_data.h edit would keep driving
+CellProfiler with the old fixture while the gtest input moved, and a hand-edited golden in the
+header would go unnoticed. The Nyxus stddev pin is bound the same way, out of
+test_2d_morphology_regression.h, so the divergence identity below is checked against the number the
+C++ side actually asserts.
 
 The six features map onto one module, one measurement each:
 
@@ -33,7 +42,7 @@ Environment: a dedicated CellProfiler env is required to RUN this generator
 invokes it -- CellProfiler is not a runtime dependency.
 
 Windows notes: activate the env rather than calling its python.exe by path -- without the
-env's Library\bin and friends on PATH, importing cellprofiler_core.image dies on a DLL
+env's Library\\bin and friends on PATH, importing cellprofiler_core.image dies on a DLL
 ordinal lookup (exit 0xC06D007E) with nothing on stderr, which reads like a crash in the
 generator and is not one. And import the module package from a working directory on the SAME
 drive as the env: cellprofiler.modules pulls in cellprofiler.gui.help.content, which calls
@@ -44,6 +53,8 @@ centrosome 1.2.3, scikit-image as pinned by that env; python 3.9; module
 MeasureObjectIntensity with a single image and a single object set, all settings at their
 defaults. generator=tests/vetting/oracles/gen_morphology_cellprofiler.py. Run offline.
 """
+import os
+import re
 import warnings
 warnings.filterwarnings("ignore")
 import numpy as np
@@ -57,49 +68,32 @@ import cellprofiler_core.pipeline as cpp
 import cellprofiler_core.workspace as cpw
 from cellprofiler.modules import measureobjectintensity as moi
 
-# tests/test_data.h: shape2d_morphology_intensity and shape2d_morphology_mask, as rows y=0..7
-# of columns x=0..7. A single irregular concave ROI with one interior hole at (x=3, y=3).
-INTENSITY = [
-    [0,  0, 12, 14,  0,  0, 0, 0],
-    [0, 18, 20, 24, 26,  0, 0, 0],
-    [30, 32, 35, 38, 42, 45, 0, 0],
-    [34, 37, 40,  0, 48, 52, 0, 0],
-    [0, 44, 47, 51, 55,  0, 0, 0],
-    [0,  0, 53, 58, 62,  0, 0, 0],
-    [0,  0,  0, 63, 68,  0, 0, 0],
-    [0,  0,  0,  0,  0,  0, 0, 0],
-]
-MASK = [
-    [0, 0, 1, 1, 0, 0, 0, 0],
-    [0, 1, 1, 1, 1, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 0, 0],
-    [1, 1, 1, 0, 1, 1, 0, 0],
-    [0, 1, 1, 1, 1, 0, 0, 0],
-    [0, 0, 1, 1, 1, 0, 0, 0],
-    [0, 0, 0, 1, 1, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-]
+HERE = os.path.dirname(os.path.abspath(__file__))
+TESTS = os.path.dirname(os.path.dirname(HERE))
+DATA_H = os.path.join(TESTS, "test_data.h")
+INTENSITY_FIXTURE = "shape2d_morphology_intensity"
+MASK_FIXTURE = "shape2d_morphology_mask"
+TEST_H = os.path.join(TESTS, "test_2d_morphology_cellprofiler.h")
+TABLE = "morphology_2d_cellprofiler_ref_vals"
+REGRESSION_H = os.path.join(TESTS, "test_2d_morphology_regression.h")
+REGRESSION_TABLE = "morphology_2d_regression_ref_vals"
 
 PAD = 1           # background border, so "outside is background" is stated by the fixture
 SCALE = 255.0     # CP measures on [0,1]; the fixture's raw values are 8-bit
 IMAGE = "img"
 OBJECTS = "objs"
 
-# goldens CellProfiler reproduces -- pinned in tests/test_2d_morphology_cellprofiler.h
-GOLDENS = {
-    "MASS_DISPLACEMENT":         0.634476074243407,
-    "EDGE_MEAN_INTENSITY":       41.8333333333333,
-    "EDGE_MAX_INTENSITY":        68.0,
-    "EDGE_MIN_INTENSITY":        12.0,
-    "EDGE_INTEGRATED_INTENSITY": 753.0,
-}
-# EDGE_STDDEV_INTENSITY is NOT in that set: the two tools use different estimators over the
+# the five features CP and Nyxus compute the same way; the header pins CP's own digits for them
+CP_VETTED = ("MASS_DISPLACEMENT", "EDGE_MEAN_INTENSITY", "EDGE_MAX_INTENSITY",
+             "EDGE_MIN_INTENSITY", "EDGE_INTEGRATED_INTENSITY")
+# EDGE_STDDEV_INTENSITY is NOT among them: the two tools use different estimators over the
 # identical 18 pixels. Nyxus divides by n-1 (Moments4::std() is sqrt(M2/(n-1)), a shared
 # helper, so this is a house convention rather than a slip here); CellProfiler divides by n.
 # The ratio is therefore exactly sqrt(n/(n-1)) and the divergence is checked as that identity,
-# not waved through as "close enough". The row stays regression until an oracle is found that
-# uses the same estimator, or Nyxus states which one it means to report.
-NYXUS_EDGE_STDDEV = 16.7691944455582
+# not waved through as "close enough". Its pin lives in the regression header and is read from
+# there, so an edit to that number fails this generator instead of quietly redefining the gap.
+STDDEV_FEATURE = "EDGE_STDDEV_INTENSITY"
+
 # measurement name and whether the value carries the image's intensity scale
 MEASUREMENTS = {
     "MASS_DISPLACEMENT":         (moi.MASS_DISPLACEMENT,         False),
@@ -113,18 +107,53 @@ MEASUREMENTS = {
 # residual is CellProfiler storing the image as float32: Image(float64).pixel_data.dtype is
 # float32, so a raw value round-trips as raw/255 -> float32 -> *255 and comes back within
 # ~1 ulp of float32 (measured: 5.2e-8 relative on the max, 2.1e-8 on the integrated sum).
-# 1e-6 sits above that and far below any real disagreement.
+# 1e-6 sits above that and far below any real disagreement. It is the band the header
+# asserts at, so this check and the gtest one cannot disagree about what "agrees" means.
 TOL = 1e-6
 
 
+def parse_grid(txt, name):
+    """The {x, y, value} pixel array `name` from test_data.h, as a dense 2D numpy array.
+
+    Read out of the checked-in fixture rather than transcribed here: a copy in this file would
+    keep driving CellProfiler with the old fixture after a test_data.h edit, so the gtest input
+    could move while this oracle stayed green.
+    """
+    body = txt.split(name + "[] = {", 1)[1].split("};", 1)[0]
+    body = re.sub(r"//[^\n]*", "", body)
+    px = [(int(x), int(y), int(v)) for x, y, v in
+          re.findall(r"\{\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\}", body)]
+    if not px:
+        raise RuntimeError("fixture %s not found in %s" % (name, os.path.basename(DATA_H)))
+    grid = np.zeros((max(y for _, y, _ in px) + 1, max(x for x, _, _ in px) + 1), dtype=np.int64)
+    for x, y, v in px:
+        grid[y, x] = v                              # test_data.h is {x, y, ...}; numpy is [row, col]
+    return grid
+
+
+def parse_pins(path, table):
+    """The header's own reference table, as {feature: value}."""
+    txt = open(path, encoding="utf-8", errors="replace").read()
+    m = re.search(re.escape(table) + r"\s*\{", txt)
+    if not m:
+        raise RuntimeError("table %s not found in %s" % (table, os.path.basename(path)))
+    body = txt[m.end():].split("\n};", 1)[0]
+    body = re.sub(r"//[^\n]*", "", body)            # a commented-out golden is not a pin
+    return {n: float(v) for n, v in
+            re.findall(r'\{\s*"(\w+)"\s*,\s*([-0-9.eE+]+)\s*\}', body)}
+
+
 def build():
-    inten = np.pad(np.array(INTENSITY, dtype=float), PAD)
-    labels = np.pad(np.array(MASK, dtype=np.int32), PAD)
-    return inten / SCALE, labels
+    txt = open(DATA_H, encoding="utf-8", errors="replace").read()
+    inten = np.pad(parse_grid(txt, INTENSITY_FIXTURE).astype(float), PAD)
+    labels = np.pad(parse_grid(txt, MASK_FIXTURE).astype(np.int32), PAD)
+    if inten.shape != labels.shape:
+        raise RuntimeError("intensity and mask fixtures differ in shape")
+    return inten, labels
 
 
-def run_cp():
-    image, labels = build()
+def run_cp(inten, labels):
+    image = inten / SCALE
 
     module = moi.MeasureObjectIntensity()
     module.images_list.value = IMAGE
@@ -150,54 +179,91 @@ def run_cp():
     return out
 
 
-def edge_pixels():
+def edge_pixels(inten, labels):
     """The edge set, derived independently of CellProfiler, so a disagreement can be read as
     'different pixels' or 'same pixels, different arithmetic' rather than just a number."""
-    inten = np.array(INTENSITY, dtype=float)
-    mask = np.array(MASK, dtype=bool)
+    mask = labels.astype(bool)
     padded = np.pad(mask, 1)
     interior = (padded[:-2, 1:-1] & padded[2:, 1:-1] &     # N, S
                 padded[1:-1, :-2] & padded[1:-1, 2:])      # W, E
-    edge = mask & ~interior[0:mask.shape[0], 0:mask.shape[1]]
+    edge = mask & ~interior
     return inten[edge], inten[mask & ~edge]
 
 
 def main():
-    cp = run_cp()
-    edge_vals, interior_vals = edge_pixels()
+    inten, labels = build()
+    cp = run_cp(inten, labels)
+    edge_vals, interior_vals = edge_pixels(inten, labels)
 
-    print("=== fixture ===")
-    print(f"  ROI pixels {int(np.array(MASK).sum())}, edge {edge_vals.size}, "
-          f"interior {interior_vals.size}")
-    print(f"  ROI intensity sum {np.array(INTENSITY)[np.array(MASK, dtype=bool)].sum():g}, "
-          f"edge sum {edge_vals.sum():g}, interior sum {interior_vals.sum():g}")
+    print("=== fixture (read from tests/test_data.h) ===")
+    print("  %s / %s, padded by %d" % (INTENSITY_FIXTURE, MASK_FIXTURE, PAD))
+    print("  ROI pixels %d, edge %d, interior %d"
+          % (int(labels.astype(bool).sum()), edge_vals.size, interior_vals.size))
+    print("  ROI intensity sum %g, edge sum %g, interior sum %g"
+          % (inten[labels.astype(bool)].sum(), edge_vals.sum(), interior_vals.sum()))
 
-    print("\n=== CellProfiler MeasureObjectIntensity vs the pinned goldens ===")
-    all_ok = True
-    for feat, gold in GOLDENS.items():
-        got = cp[feat]
-        ok = abs(got - gold) <= TOL * max(1.0, abs(gold))
-        all_ok &= ok
-        print(f"  {'OK  ' if ok else 'FAIL'} {feat:<26} cp={got!r:<22} golden={gold!r}")
+    print("\n=== paste-ready goldens ===")
+    for f in CP_VETTED:
+        print('\t{"%s", %r},' % (f, cp[f]))
 
-    # The one divergence, checked as an identity rather than reported as a number.
+    # ---- forward: every pin in the header must be a feature CP vets, and must match this run.
+    pins = parse_pins(TEST_H, TABLE)
+    print("\n=== verifying %d pinned goldens in %s against this run ==="
+          % (len(pins), os.path.basename(TEST_H)))
+    nok = nfail = nmiss = 0
+    for f in sorted(pins):
+        want = pins[f]
+        if f not in CP_VETTED:
+            print("  EXTRA  %-26s pinned %r but this recipe does not vet it" % (f, want))
+            nmiss += 1
+            continue
+        got = cp[f]
+        err = abs(got - want) / max(1.0, abs(want))
+        if err <= TOL:
+            print("  OK     %-26s cp=%-22r pinned=%-22r rel=%.3g" % (f, got, want, err))
+            nok += 1
+        else:
+            print("  FAIL   %-26s cp=%-22r pinned=%-22r rel=%.3g" % (f, got, want, err))
+            nfail += 1
+
+    # ---- reverse: every feature CP vets must be pinned, or the header quietly lost coverage.
+    unpinned = [f for f in CP_VETTED if f not in pins]
+    for f in unpinned:
+        print("  UNPINNED %-24s CP vets it but the header pins nothing" % f)
+
+    # ---- the one divergence, checked as an identity against the pin the C++ side asserts.
+    reg = parse_pins(REGRESSION_H, REGRESSION_TABLE)
+    nyxus_std = reg.get(STDDEV_FEATURE)
     n = edge_vals.size
     pop = float(np.std(edge_vals, ddof=0))
     smp = float(np.std(edge_vals, ddof=1))
     bessel = (n / (n - 1.0)) ** 0.5
-    cp_std = cp["EDGE_STDDEV_INTENSITY"]
-    ident_ok = (abs(cp_std - pop) <= TOL * pop
-                and abs(NYXUS_EDGE_STDDEV - smp) <= TOL * smp
-                and abs(smp / pop - bessel) <= 1e-12)
-    all_ok &= ident_ok
-    print("\n=== EDGE_STDDEV_INTENSITY -- divergence by estimator, NOT vetted vs CP ===")
-    print(f"  cellprofiler {cp_std!r}  == population std (/n)      {pop!r}")
-    print(f"  nyxus        {NYXUS_EDGE_STDDEV!r}  == sample std     (/n-1)    {smp!r}")
-    print(f"  ratio {smp / pop!r} == sqrt(n/(n-1)) {bessel!r} for n={n}")
-    print(f"  {'identity holds' if ident_ok else 'IDENTITY BROKEN -- investigate'}")
+    cp_std = cp[STDDEV_FEATURE]
+    print("\n=== %s -- divergence by estimator, NOT vetted vs CP ===" % STDDEV_FEATURE)
+    if nyxus_std is None:
+        print("  UNPINNED %s: not in %s::%s -- the divergence has no pinned Nyxus side"
+              % (STDDEV_FEATURE, os.path.basename(REGRESSION_H), REGRESSION_TABLE))
+        ident_ok = False
+    elif STDDEV_FEATURE in pins:
+        print("  MISPLACED %s is pinned in %s, which claims CellProfiler backs it -- it does not"
+              % (STDDEV_FEATURE, os.path.basename(TEST_H)))
+        ident_ok = False
+    else:
+        ident_ok = (abs(cp_std - pop) <= TOL * pop
+                    and abs(nyxus_std - smp) <= TOL * smp
+                    and abs(smp / pop - bessel) <= 1e-12)
+        print("  cellprofiler %r  == population std (/n)   %r" % (cp_std, pop))
+        print("  nyxus        %r  == sample std     (/n-1) %r  (pinned in %s)"
+              % (nyxus_std, smp, os.path.basename(REGRESSION_H)))
+        print("  ratio %r == sqrt(n/(n-1)) %r for n=%d" % (smp / pop, bessel, n))
+        print("  %s" % ("identity holds" if ident_ok else "IDENTITY BROKEN -- investigate"))
 
-    print(f"\n{'ALL CHECKS PASSED' if all_ok else 'SOME CHECKS FAILED -- do not promote'}")
-    return 0 if all_ok else 1
+    print("\n%d verified, %d failed, %d unproducible, %d unpinned" % (nok, nfail, nmiss, len(unpinned)))
+    if nfail or nmiss or unpinned or not ident_ok:
+        print("SOME CHECKS FAILED -- do not promote")
+        return 1
+    print("ALL CHECKS PASSED")
+    return 0
 
 
 if __name__ == "__main__":

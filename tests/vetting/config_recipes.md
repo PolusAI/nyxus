@@ -219,10 +219,17 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   on a 26-pixel object with a hole); it is vetted at `morphology.perimeter_circles` instead.
 
 ## morphology.cellprofiler_edge_intensity
-- CellProfiler `MeasureObjectIntensity` on the same `shape2d_morphology_{mask,intensity}` fixture,
-  one image and one object set, all module settings at their defaults. Oracle: `cellprofiler`.
-  Benchmark: `bench_shape8_concave_holed`. Used by: `test_2d_morphology_cellprofiler.h`. Generator:
-  `oracles/gen_morphology_cellprofiler.py`.
+- **Nyxus side:** `ContourFeature::calculate()` at `make_shape2d_settings()` with
+  `SINGLEROI=false`, i.e. the in-RAM segmented contour (`buildRegularContour`), on the
+  `shape2d_morphology_{mask,intensity}` fixture. That is **one** of the three reachable cells and
+  the only one this recipe vets; `SINGLEROI=true` (`buildWholeSlideContour`) and the out-of-core
+  `osized_calculate()` (`buildRegularContour_nontriv`) build a different contour and are not
+  covered here. `matrix/morphology.md` records all three and what is known about each.
+- **CellProfiler side:** `MeasureObjectIntensity`, one image and one object set, all module
+  settings at their defaults. Oracle: `cellprofiler`. Benchmark: `bench_shape8_concave_holed`.
+  Used by: `test_2d_morphology_cellprofiler.h`. Generator: `oracles/gen_morphology_cellprofiler.py`,
+  which reads the fixture from `test_data.h` and the pins from the headers rather than holding
+  copies, so a fixture edit or a hand-edited golden fails it.
 - The edge is `skimage.segmentation.find_boundaries(mode="inner")` (connectivity=1): an object pixel
   is an edge pixel unless all four of its N/S/E/W neighbours share its label. On this ROI that is 18
   of the 26 pixels, summing to 753 against the ROI's 1048 - the same set Nyxus walks, which is what
