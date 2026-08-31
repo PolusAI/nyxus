@@ -252,6 +252,13 @@ the two answers differ by exactly `sqrt(n/(n-1))` = 1.0289915 at n=18 — 16.769
 honest. The row is now `regression` with `candidate_oracle=cellprofiler (MeasureObjectIntensity)`
 and `flag=estimator-divergence`.
 
+Worth being exact about why the old assertion passed, because the obvious answer is wrong: it was
+**not** that the inherited 0.1% band was loose enough to swallow the gap. The gap is 2.9% relative,
+29 times that band, so 0.1% would have caught CellProfiler's value comfortably. It passed because
+the golden it compared against was the *Nyxus* number — the assertion was labelled `cellprofiler`
+while judging Nyxus against itself, which is exactly the condition §C exists to surface. Tightening
+the band was still right, but it fixes a different problem from the one that hid this.
+
 Worth a decision outside the test tree: `Moments4::std()` is shared across features, so Nyxus is
 reporting the sample estimator wherever that helper is used, while the tools it is vetted against
 generally report the population one. Whether that is intended is a `src/nyx` question, not a

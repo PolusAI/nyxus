@@ -11,6 +11,10 @@ ALLOWED_STATUS = {"vetted","regression","untested"}
 ALLOWED_ORACLES = {"pyradiomics","radiomicsj","mirp","matlab","cellprofiler","mitk",
                    "feature2djava","wndcharm","imea","imagej","fraclac","ibsi","analytic","skimage",
                    "pydicom","opencv"}
+# SPEC 3: where the VERDICT comes from -- a test in this repo, an offline harness run not migrated
+# in, or an audit. Not where the numbers were generated; that belongs in notes.
+ALLOWED_SOURCES = {"in-tree","tracker","audit"}
+DEFAULT_REPORT = "tests/vetting/coverage_report.md"
 
 def load_registry(path):
     with open(path, newline="") as fh:
@@ -123,6 +127,13 @@ def validate_rows(rows):
             errs.append(f"{f}: status=vetted but no oracle")
         if st != "vetted" and ora:
             errs.append(f"{f}: status={st} but has oracle {ora!r}")
+        # SPEC 3 defines three source values and nothing checked the column, so an invented one
+        # read as meaningful: six rows said source=generator, which no reader resolves. The
+        # generator belongs in notes; the column says where the VERDICT comes from.
+        src = (r.get("source") or "").strip()
+        if src and src not in ALLOWED_SOURCES:
+            errs.append(f"{f}: source {src!r} not in SPEC 3 allowed set "
+                        f"{sorted(ALLOWED_SOURCES)}")
     return errs
 
 def coverage_stats(rows):
@@ -167,11 +178,18 @@ def drift_warnings(rows, tests_dir):
             warns.append(f"{r.get('feature', '')}: target_test {tgt} not found in {tests_dir}")
     return warns
 
-def report_staleness(rows, report_path):
+def report_staleness(rows, report_path, canonical):
     """[] if coverage_report.md matches what the registry renders to, one error if it does not.
-    A missing report is not an error -- --check runs against ad-hoc registries in the self-tests,
-    which have no report beside them."""
+
+    `canonical` says whether this is the committed report (the --report default) or one named on
+    the command line. A missing canonical report is an error in its own right: deleting the file
+    would otherwise be the one edit that passes, which is the same overstatement as a stale one
+    reached by a shorter route. A missing ad-hoc report claims nothing -- the self-tests validate
+    registries in tmp_path that have no report beside them -- so it stays clean."""
     if not os.path.exists(report_path):
+        if canonical:
+            return [f"{report_path} is missing: it is generated from the registry and committed "
+                    f"beside it. Regenerate it with --write."]
         return []
     with open(report_path, newline="") as fh:
         on_disk = fh.read()
@@ -184,10 +202,13 @@ def report_staleness(rows, report_path):
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--registry", default="tests/vetting/oracle_coverage.csv")
-    ap.add_argument("--report", default="tests/vetting/coverage_report.md")
+    # default None rather than the path itself, so --check can tell the committed report from one
+    # named on the command line; only the former must exist
+    ap.add_argument("--report", default=None)
     ap.add_argument("--check", action="store_true")
     ap.add_argument("--write", action="store_true")
     a = ap.parse_args(argv)
+    report = a.report if a.report is not None else DEFAULT_REPORT
     rows = load_registry(a.registry)
     errs = validate_rows(rows)
     errs += validate_benchmarks(rows, os.path.join(os.path.dirname(a.registry) or ".",
@@ -204,7 +225,7 @@ def main(argv=None):
         # registry's 108, and the published headline overstated coverage by ten features until
         # someone happened to regenerate. Comparing the rendered text to the file on disk closes
         # that for good; every registry edit after this one has to bring its report with it.
-        errs += report_staleness(rows, a.report)
+        errs += report_staleness(rows, report, canonical=a.report is None)
         for e in errs: print("ERROR:", e)
         return 1 if errs else 0
     if a.write:
@@ -212,8 +233,8 @@ def main(argv=None):
             for e in errs: print("ERROR:", e)
             return 1
         # newline LF: text mode would emit CRLF on Windows, and LF is the repo standard
-        with open(a.report, "w", newline="\n") as fh: fh.write(render_report(rows))
-        print(f"wrote {a.report}")
+        with open(report, "w", newline="\n") as fh: fh.write(render_report(rows))
+        print(f"wrote {report}")
         return 0
     ap.print_help(); return 0
 
