@@ -72,7 +72,7 @@ static void run_3d_glcm_feature_pipeline (Environment& e, const std::string& fna
     // slide -> dataset -> prescan
     e.dataset.dataset_props.reserve(1);
     SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
     e.dataset.update_dataset_props_extrema();
 
     // properties of specific ROIs sitting in 'e.uniqueLabels'
@@ -157,7 +157,7 @@ void test_3d_glcm_dump_regression()
     Environment e;
     e.dataset.dataset_props.reserve(1);
     SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
     e.dataset.update_dataset_props_extrema();
 
     clear_slide_rois(e.uniqueLabels, e.roiData);

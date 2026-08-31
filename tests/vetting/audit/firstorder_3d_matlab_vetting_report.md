@@ -24,14 +24,23 @@ The MATLAB pins and their owning assertion are in `tests/test_3d_firstorder_matl
 | | |
 |---|---|
 | Generator | `tests/vetting/oracles/gen_firstorder3d_matlab.m` |
-| Tool | MATLAB R2026a |
+| Tool | MATLAB R2026a for the definitions; values re-derived on GNU Octave 11.3.0 + statistics |
 | Fixture | `tests/data/nifti/phantoms/ut_inten.nii` and `ut_mask57.nii`, label 57 |
 | Recipe | `firstorder3d.matlab_native` |
 | Test | `TEST_NYXUS.TEST_3D_FIRSTORDER_MATLAB` |
 
 The generator downloads the fixture from the moving `PolusAI/nyxus` `main` tree, applies the
-documented float-NIfTI loader-domain setup, and then evaluates the feature values. MATLAB is an
+documented reported-domain setup, and then evaluates the feature values. MATLAB is an
 offline golden generator; CI consumes only the checked-in full-precision values.
+
+The pins were re-derived when Nyxus began reporting first-order values in the volume's own
+intensity domain rather than in the loader's grey levels. The fixture's volume minimum is
+`-1024`, so the loader offsets by that and the intensity family adds it back: every location
+statistic in the table moved by exactly `-1024`, every dispersion statistic is unchanged, and
+`3COV`, `3QCOD`, `3UNIFORMITY_PIU` and `3ROOT_MEAN_SQUARED` were recomputed from their moved
+parts. The re-derivation ran on GNU Octave 11.3.0 with the statistics package, over the same
+built-ins the MATLAB generator names, and reproduced all 29 previous MATLAB values to 13
+significant digits on the old domain first as a control.
 
 Twenty-two features use a matching MATLAB function directly: `sum`, `iqr`, `kurtosis`, `max`,
 `mean`, `mad`, `median`, `min`, `mode`, `prctile`, `range`, `rms`, `skewness`, `std`, or `var`.
@@ -52,11 +61,17 @@ inside the MATLAB generator.
 | Group | Tolerance | Reason |
 |---|---:|---|
 | Same-definition native statistics | `rel=1e-3` | SPEC §7 tier for the same statistic on the same integer voxel vector |
-| Percentile-derived statistics | `rel=1e-2` | MATLAB sample percentiles versus Nyxus's fixed 100-bin interpolated CDF |
+| `3QCOD` | `rel=1e-2` | a ratio of two binned percentiles; measured residual `1.01e-3` |
+| Binned percentiles | `2e-3` of the voxel range | MATLAB sample percentiles versus Nyxus's fixed 100-bin interpolated CDF |
+| Zero reference (`3MIN`, `3UNIFORMITY_PIU`) | `1e-3` of the voxel range | a zero reference has no relative error to take |
 
-The worst measured MATLAB residual is `2.30e-3` on `3P01` (`Nyxus 1039.3829596413`, MATLAB
-`1037`). It is inside the common one-percent percentile band. The tolerance records agreement; it
-does not require bit identity between two different percentile estimators.
+The percentile group is measured against the voxel range (`2000`) rather than against each
+value. That changed with the reported domain: the residual is a binning artefact of a couple of
+grey levels wherever the percentile sits, but the values themselves now start at zero, so
+`3P01 = 13` turns `2.38` grey levels into 18% of the value and 0.12% of the range. The worst
+measured residual is `1.19e-3` of the range, on `3P01` (`Nyxus 15.382959641256`, MATLAB `13`).
+The tolerance records agreement; it does not require bit identity between two different
+percentile estimators.
 
 ## Deliberate oracle boundary
 

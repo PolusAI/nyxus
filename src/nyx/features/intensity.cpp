@@ -56,6 +56,74 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 
 void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Dataset & ds)
 {
+	calculate_grey_levels (r, fsett, ds);
+	report_in_source_domain (r, ds);
+}
+
+// Reports every location statistic in the slide's own intensity domain. The loader stored grey
+// levels u for intensities x = inten_offset + inten_scale * u, so a CT read in Hounsfield units
+// is reported in Hounsfield units instead of in the offset the unsigned pixel type needed, and a
+// real-valued slide is reported in its own float range instead of in quantization steps. Which
+// correction each feature takes follows from that map: the location statistics are affine in it,
+// the dispersions and ranges take the scale alone, the standardized moments and the histogram
+// shape are invariant, and the ratios are recomputed from their already-mapped parts. Nothing
+// moves on the identity map, which is every ordinary non-negative integer image.
+void PixelIntensityFeatures::report_in_source_domain (const LR& r, const Dataset& ds)
+{
+	double s, o;
+	ds.intensity_domain_map (r.slide_idx, s, o);
+	if (s == 1.0 && o == 0.0)
+		return;
+
+	double n = r.aux_area;
+
+	// ENERGY is quadratic in the map: sum (o + s*u)^2 == n*o^2 + 2*o*s*sum(u) + s^2*sum(u^2).
+	// Both sums are still on hand as INTEGRATED_INTENSITY and ENERGY, so no second pass over
+	// the pixel cloud is needed. It has to run before INTEGRATED_INTENSITY is mapped.
+	val_ENERGY = n * o * o + 2.0 * o * s * val_INTEGRATED_INTENSITY + s * s * val_ENERGY;
+	val_ROOT_MEAN_SQUARED = sqrt (val_ENERGY / n);
+	val_INTEGRATED_INTENSITY = n * o + s * val_INTEGRATED_INTENSITY;
+
+	// Affine in the map
+	val_MIN = o + s * val_MIN;
+	val_MAX = o + s * val_MAX;
+	val_MEAN = o + s * val_MEAN;
+	val_MEDIAN = o + s * val_MEDIAN;
+	val_MODE = o + s * val_MODE;
+	val_P01 = o + s * val_P01;
+	val_P10 = o + s * val_P10;
+	val_P25 = o + s * val_P25;
+	val_P75 = o + s * val_P75;
+	val_P90 = o + s * val_P90;
+	val_P99 = o + s * val_P99;
+	val_ROBUST_MEAN = o + s * val_ROBUST_MEAN;
+
+	// Offset-invariant, linear in the scale
+	val_RANGE *= s;
+	val_INTERQUARTILE_RANGE *= s;
+	val_MEAN_ABSOLUTE_DEVIATION *= s;
+	val_MEDIAN_ABSOLUTE_DEVIATION *= s;
+	val_ROBUST_MEAN_ABSOLUTE_DEVIATION *= s;
+	val_STANDARD_DEVIATION *= s;
+	val_STANDARD_DEVIATION_BIASED *= s;
+	val_STANDARD_ERROR *= s;
+	val_VARIANCE *= s * s;
+	val_VARIANCE_BIASED *= s * s;
+
+	// The ROI range was measured in grey levels while the slide range it is divided by was
+	// measured in the slide's own domain; the scale is what reconciles the two.
+	val_COVERED_IMAGE_INTENSITY_RANGE *= s;
+
+	// Ratios: same definitions as above, recomputed from the mapped parts. None of them is
+	// invariant, and QCOD and PIU are not even meaningful once intensities can be negative --
+	// which is a property of the measure, not something the domain should hide.
+	val_COV = val_STANDARD_DEVIATION / val_MEAN;
+	val_QCOD = (val_P75 - val_P25) / (val_P75 + val_P25);
+	val_UNIFORMITY_PIU = (1.0 - (val_MAX - val_MIN) / (val_MAX + val_MIN)) * 100.0;
+}
+
+void PixelIntensityFeatures::calculate_grey_levels (LR& r, const Fsettings & fsett, const Dataset & ds)
+{
 	// A constant-intensity ROI (aux_max == aux_min) used to be intercepted here, keeping only
 	// MEAN/MEDIAN/MIN/MAX/RANGE and setting every other feature to the soft-NAN sentinel. That
 	// discarded values which are perfectly well defined on a constant ROI (INTEGRATED_INTENSITY,
@@ -195,6 +263,12 @@ void PixelIntensityFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_
 {}
 
 void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, const Dataset& ds, ImageLoader& imloader)
+{
+	osized_calculate_grey_levels (r, stng, ds, imloader);
+	report_in_source_domain (r, ds);
+}
+
+void PixelIntensityFeatures::osized_calculate_grey_levels (LR& r, const Fsettings& stng, const Dataset& ds, ImageLoader& imloader)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;

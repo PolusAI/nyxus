@@ -157,13 +157,13 @@ namespace Nyxus
 			// slide file names
 			SlideProps& p = env.dataset.dataset_props.emplace_back (intensFiles[i].fdir + intensFiles[i].fname, labelFiles[i].fdir + labelFiles[i].fname);
 
-			// CT/HU preservation is a global user option; record it on the slide so
-			// IntensityHistogramFeatures::float_domain_map reports features in true HU.
+			// A global user option, recorded per slide because it selects the slide's
+			// load-time map (see Nyxus::record_intensity_domain_map).
 			p.preserve_hu = env.fpimageOptions.preserve_hu();
 
 			// slide metrics
 			VERBOSLVL1(env.get_verbosity_level(), std::cout << "prescanning " << p.fname_int);
-			if (! scan_slide_props(p, 3, env.anisoOptions, env.resultOptions.need_annotation()))
+			if (! scan_slide_props(p, 3, env.anisoOptions, env.fpimageOptions, env.resultOptions.need_annotation()))
 			{
 				VERBOSLVL1(env.get_verbosity_level(), std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;

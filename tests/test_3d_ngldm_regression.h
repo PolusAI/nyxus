@@ -73,7 +73,7 @@ void assert_3d_ngldm_feature_regression (const std::string& fname, const Nyxus::
 	// (1) slide -> dataset -> prescan 
 	e.dataset.dataset_props.reserve(1);
 	SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-	ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
 	e.dataset.update_dataset_props_extrema();
 	// (2) properties of specific ROIs sitting in 'e.uniqueLabels'
 	clear_slide_rois(e.uniqueLabels, e.roiData);
@@ -142,7 +142,7 @@ void test_3d_ngldm_dump_regression()
 	Environment e;
 	e.dataset.dataset_props.reserve(1);
 	SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-	ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+	ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
 	e.dataset.update_dataset_props_extrema();
 
 	clear_slide_rois(e.uniqueLabels, e.roiData);

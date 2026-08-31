@@ -38,6 +38,14 @@ namespace Nyxus
 
 			// Scan this Z intensity-mask pair 
 			SlideProps p (ifpath, mfpath);
+			// The prescan measured this slide's intensity range and recorded the map the loader
+			// will apply to it; a bare SlideProps carries neither, so this pass would otherwise
+			// map its grey levels differently from the prescan and be reported in a domain of
+			// its own.
+			const SlideProps * scanned = batch_labels.empty() ? nullptr
+				: env.dataset.scanned_slide (env.roiData[batch_labels[0]].slide_idx);
+			if (scanned)
+				p.inherit_intensity_domain (*scanned);
 			if (! env.theImLoader.open(p, env.fpimageOptions))
 			{
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
@@ -162,6 +170,14 @@ namespace Nyxus
 
 			// Scan this Z intensity-mask pair 
 			SlideProps p (ifpath, mfpath);
+			// The prescan measured this slide's intensity range and recorded the map the loader
+			// will apply to it; a bare SlideProps carries neither, so this pass would otherwise
+			// map its grey levels differently from the prescan and be reported in a domain of
+			// its own.
+			const SlideProps * scanned = batch_labels.empty() ? nullptr
+				: env.dataset.scanned_slide (env.roiData[batch_labels[0]].slide_idx);
+			if (scanned)
+				p.inherit_intensity_domain (*scanned);
 			if (! env.theImLoader.open(p, env.fpimageOptions))
 			{
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";

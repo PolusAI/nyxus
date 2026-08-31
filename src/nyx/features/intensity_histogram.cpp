@@ -320,55 +320,17 @@ void IntensityHistogramFeatures::calculate (LR& r, const Fsettings& s, const Dat
 	}
 
 	double pscale, poffset;
-	float_domain_map (r, s, ds, pscale, poffset);
+	float_domain_map (r, ds, pscale, poffset);
 	compute (r.raw_pixels, poffset + pscale * mn, poffset + pscale * mx, cnt, nbins, nanv, pscale, poffset);
 }
 
-// Float intensity domain: when the slide is a float image, recover the linear map
-// that undoes Nyxus's load-time float->uint quantization so the IH histogram is
-// computed in the ORIGINAL float intensity domain. No-op (scale=1, offset=0) for
-// integer images or when slide props are unavailable.
-void IntensityHistogramFeatures::float_domain_map (LR& r, const Fsettings& s, const Dataset& ds,
+// Undoes the slide's load-time map so the histogram is computed in the slide's own
+// intensity domain -- the original float range, or absolute Hounsfield units for a CT.
+// No-op (scale=1, offset=0) when the loader stored intensities natively.
+void IntensityHistogramFeatures::float_domain_map (const LR& r, const Dataset& ds,
                                                    double& pscale, double& poffset)
 {
-	pscale = 1.0;
-	poffset = 0.0;
-	if (STNGS_MISSING(s) || r.slide_idx < 0)
-		return;
-	const SlideProps& sp = ds.dataset_props[r.slide_idx];
-	if (sp.preserve_hu)
-	{
-		// HU mode inverts the slope-1 offset map applied at load time:
-		// reported = floor(min) + 1*u, recovering absolute Hounsfield units.
-		// The load-time HU offset base is ALWAYS the scanned slide min (image_loader
-		// ignores fp min/max/dr in preserve_hu mode); mirror that here with
-		// sp.min_preroi_inten unconditionally so the reconstructed "true HU" matches the
-		// load-time offset even when --fpimgmin/max/dr are also supplied.
-		poffset = std::floor (sp.min_preroi_inten);
-		return;	// pscale stays 1.0
-	}
-	if (! sp.fp_phys_pivoxels)
-		return;	// integer image: stored intensities are already native, no rescale happened
-
-	// Mirror image_loader.cpp exactly: with fp options active the loader quantized
-	// float over [fpimg_min, fpimg_max]; otherwise over the per-slide pre-ROI [min,max].
-	double DR = STNGS_FPIMG_DR(s);
-	double fpmin, fpmax;
-	if (STNGS_FPIMG_ACTIVE(s))
-	{
-		fpmin = STNGS_FPIMG_MIN(s);
-		fpmax = STNGS_FPIMG_MAX(s);
-	}
-	else
-	{
-		fpmin = sp.min_preroi_inten;
-		fpmax = sp.max_preroi_inten;
-	}
-	if (DR > 0.0 && fpmax > fpmin)
-	{
-		pscale = (fpmax - fpmin) / DR;	// float per uint step
-		poffset = fpmin;
-	}
+	ds.intensity_domain_map (r.slide_idx, pscale, poffset);
 }
 
 void IntensityHistogramFeatures::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity)
@@ -395,7 +357,7 @@ void IntensityHistogramFeatures::osized_calculate (LR& r, const Fsettings& s, co
 	}
 
 	double pscale, poffset;
-	float_domain_map (r, s, ds, pscale, poffset);
+	float_domain_map (r, ds, pscale, poffset);
 	compute (r.raw_pixels_NT, poffset + pscale * mn, poffset + pscale * mx, cnt, nbins, nanv, pscale, poffset);
 }
 

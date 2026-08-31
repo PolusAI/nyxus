@@ -1,4 +1,3 @@
-#include <cmath>
 #include <fstream>
 #include <future>
 #include <string>
@@ -96,21 +95,11 @@ namespace Nyxus
 		const SlideProps & p = env.dataset.dataset_props [sidx];
 		vroi.aux_area = p.max_roi_area;
 		vroi.aabb.init_from_wh (p.max_roi_w, p.max_roi_h);
-		// tell ROI the actual uint rynamic range or greybinned one depending on the slide's low-level properties
-		if (p.preserve_hu)
-		{
-			// CT/HU mode: mirror the loader's offset (u = x - floor(min)) so MIN/MAX land in the
-			// same offset domain as the loaded pixels (as workflow_3d_whole already does), instead
-			// of casting a negative HU straight to PixIntens and wrapping.
-			double off = std::floor (p.min_preroi_inten);
-			vroi.aux_min = (PixIntens) std::llround (p.min_preroi_inten - off);
-			vroi.aux_max = (PixIntens) std::llround (p.max_preroi_inten - off);
-		}
-		else
-		{
-			vroi.aux_min = (PixIntens) p.fp_phys_pivoxels ? 0 : (PixIntens) p.min_preroi_inten;
-			vroi.aux_max = (PixIntens) p.fp_phys_pivoxels ? (PixIntens) env.fpimageOptions.target_dyn_range() : (PixIntens) p.max_preroi_inten;
-		}
+		// tell ROI the grey levels the loader will store for this slide's range, through the same
+		// map the loader itself uses -- so a negative intensity is offset rather than cast straight
+		// to PixIntens and wrapped, and a real-valued slide lands on its quantization endpoints.
+		vroi.aux_min = (PixIntens) p.to_grey_level (p.min_preroi_inten);
+		vroi.aux_max = (PixIntens) p.to_grey_level (p.max_preroi_inten);
 
 		// fix the AABB with respect to anisotropy
 		if (env.anisoOptions.customized() == false)
@@ -237,13 +226,13 @@ namespace Nyxus
 			// rather than setting min as within-mask min
 			SlideProps& p = env.dataset.dataset_props.emplace_back (intensFiles[i], labelFiles[i]);
 
-			// CT/HU preservation is a global user option; record it on the slide so
-			// IntensityHistogramFeatures::float_domain_map reports features in true HU.
+			// A global user option, recorded per slide because it selects the slide's
+			// load-time map (see Nyxus::record_intensity_domain_map).
 			p.preserve_hu = env.fpimageOptions.preserve_hu();
 
 			// slide metrics
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "prescanning " << p.fname_int);
-			if (! scan_slide_props(p, 2, env.anisoOptions, env.resultOptions.need_annotation()))
+			if (! scan_slide_props(p, 2, env.anisoOptions, env.fpimageOptions, env.resultOptions.need_annotation()))
 			{
 				VERBOSLVL1 (env.get_verbosity_level(), std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;
