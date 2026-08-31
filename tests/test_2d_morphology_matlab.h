@@ -7,10 +7,14 @@
 
 #include "test_ref_vals.h"
 
-// MATLAB regionprops goldens for the shape2d fixture (SPEC 6.4 provenance).
-// tool=GNU Octave 11.3.0 + image 2.20.0 (license-free MATLAB stand-in, TOOLS.md);
-// config=make_shape2d_settings() -- PIXELSIZEUM=2.0, IBSI=false, single ROI, mask+intensity read
-// from tests/test_data.h; generator=tests/vetting/oracles/gen_morphology_matlab.m.
+// Provenance (SPEC 6.4):
+//   tool      = MATLAB R2026a, Image Processing Toolbox 26.1
+//   functions = regionprops, bweuler
+//   fixture   = shape2d_morphology_{mask,intensity} in tests/test_data.h
+//   config    = make_shape2d_settings(): PIXELSIZEUM=2.0, IBSI=false, single ROI
+//   recipe    = morphology.shape2d_native
+//   generator = tests/vetting/oracles/gen_morphology_matlab.m
+//   report    = tests/vetting/audit/morphology_2d_matlab_vetting_report.md
 //
 // Coordinate conventions applied to make regionprops directly comparable, per feature:
 //   Centroid / WeightedCentroid  MATLAB is 1-based pixel centres, Nyxus 0-based -> minus 1
@@ -27,8 +31,8 @@
 static const ref_vals_map<double> morphology_2d_matlab_regionprops_ref_vals{
 	{"AREA_PIXELS_COUNT", 26.0},
 	{"AREA_UM2", 104.0},
-	{"CENTROID_X", 2.6153846153846163},
-	{"CENTROID_Y", 2.8461538461538467},
+	{"CENTROID_X", 2.6153846153846154},
+	{"CENTROID_Y", 2.8461538461538463},
 	{"WEIGHTED_CENTROID_X", 2.8416030534351147},
 	{"WEIGHTED_CENTROID_Y", 3.4389312977099236},
 	{"BBOX_XMIN", 0.0},
@@ -38,10 +42,10 @@ static const ref_vals_map<double> morphology_2d_matlab_regionprops_ref_vals{
 	{"ASPECT_RATIO", 0.8571428571428571},
 	{"EXTENT", 0.61904761904761907},
 	{"MAJOR_AXIS_LENGTH", 6.9688161689861872},
-	{"MINOR_AXIS_LENGTH", 5.4887099129573791},
-	{"ELONGATION", 0.78761008754746198},
-	{"ECCENTRICITY", 0.61617396082070786},
-	// bweuler agrees at both connectivities on this fixture (one object, one hole -> 1 - 1)
+	{"MINOR_AXIS_LENGTH", 5.48870991295738},
+	{"ELONGATION", 0.78761008754746209},
+	{"ECCENTRICITY", 0.61617396082070774},
+	// bweuler(mask, 8): one object with one hole -> 1 - 1
 	{"EULER_NUMBER", 0.0},
 };
 
@@ -102,11 +106,11 @@ void test_2d_morphology_euler_matlab()
 }
 
 static const ref_vals_map<double> morphology_2d_matlab_extrema_ref_vals{
-	// EXTREMA P1..P8 (X,Y) match MATLAB/Octave regionprops('Extrema') EXACTLY under the documented
+	// EXTREMA P1..P8 (X,Y) match MATLAB regionprops('Extrema') exactly under the documented
 	// coordinate convention: MATLAB returns 1-based sub-pixel *corner* coords, Nyxus returns 0-based
 	// pixel *centers*. The corner is direction-specific -> the offset is per-point: left/top coords
 	// map as (matlab - 0.5), right/bottom coords as (matlab - 1.5). Verified on this 8x8 fixture by
-	// octave/matlab_oracle_tests/extrema_8x8.m: raw Extrema P1(2.5,0.5) P2(4.5,0.5) P3(6.5,2.5)
+	// gen_morphology_matlab.m: raw Extrema P1(2.5,0.5) P2(4.5,0.5) P3(6.5,2.5)
 	// P4(6.5,4.5) P5(5.5,7.5) P6(3.5,7.5) P7(0.5,4.5) P8(0.5,2.5) -> after the per-point offset ->
 	// P1(2,0) P2(3,0) P3(5,2) P4(5,3) P5(4,6) P6(3,6) P7(0,3) P8(0,2), i.e. these goldens exactly.
 	// (The earlier "~1px off" on the right/bottom coords was a harness bug: it used a uniform -0.5.)
