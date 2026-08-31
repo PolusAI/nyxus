@@ -8,8 +8,14 @@ Axes = the settings the feature actually reads; verdicts are measured on
 group the CellProfiler recipe makes a `vetted` claim about, and SPEC §5.1 asks a recipe to name the
 production cell it covers. The rest of the family (hull, caliper, moments-fit ellipse, fractal) has
 no rows here yet; its recipes are in `config_recipes.md` and the gap is real rather than implied
-covered. `MASS_DISPLACEMENT` sits in `basic_morphology` rather than `ContourFeature` but is asserted
-by the same test at the same settings, so it inherits this cell.
+covered.
+
+`MASS_DISPLACEMENT` is asserted by the same oracle test at the same settings, but it is **not** a
+`ContourFeature` and does **not** inherit a contour-builder cell: `BasicMorphologyFeatures::
+calculate()` computes it from the geometric and intensity-weighted centroids, reads no contour, and
+has its own `osized_calculate()`. Its axis is therefore its own, and only its segmented in-RAM cell
+is covered here — the same restriction the table below states for the contour features, reached
+independently rather than by inheritance.
 
 ## The axis is which contour builder runs, not a numeric knob
 

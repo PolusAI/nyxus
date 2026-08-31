@@ -219,12 +219,17 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   on a 26-pixel object with a hole); it is vetted at `morphology.perimeter_circles` instead.
 
 ## morphology.cellprofiler_edge_intensity
-- **Nyxus side:** `ContourFeature::calculate()` at `make_shape2d_settings()` with
-  `SINGLEROI=false`, i.e. the in-RAM segmented contour (`buildRegularContour`), on the
-  `shape2d_morphology_{mask,intensity}` fixture. That is **one** of the three reachable cells and
-  the only one this recipe vets; `SINGLEROI=true` (`buildWholeSlideContour`) and the out-of-core
-  `osized_calculate()` (`buildRegularContour_nontriv`) build a different contour and are not
-  covered here. `matrix/morphology.md` records all three and what is known about each.
+- **Nyxus side, the `EDGE_*` statistics:** `ContourFeature::calculate()` at
+  `make_shape2d_settings()` with `SINGLEROI=false`, i.e. the in-RAM segmented contour
+  (`buildRegularContour`), on the `shape2d_morphology_{mask,intensity}` fixture. That is **one** of
+  the three reachable cells and the only one this recipe vets; `SINGLEROI=true`
+  (`buildWholeSlideContour`) and the out-of-core `osized_calculate()`
+  (`buildRegularContour_nontriv`) build a different contour and are not covered here.
+- **Nyxus side, `MASS_DISPLACEMENT`:** a different producer — `BasicMorphologyFeatures::calculate()`,
+  which computes the distance between the geometric and intensity-weighted centroids and reads no
+  contour at all, and which has its own `osized_calculate()`. It is asserted by this same oracle test
+  at the same settings, but it does **not** inherit a contour-builder cell: its paths are its own.
+- `matrix/morphology.md` records both producers' cells and what is known about each.
 - **CellProfiler side:** `MeasureObjectIntensity`, one image and one object set, all module
   settings at their defaults. Oracle: `cellprofiler`. Benchmark: `bench_shape8_concave_holed`.
   Used by: `test_2d_morphology_cellprofiler.h`. Generator: `oracles/gen_morphology_cellprofiler.py`,
