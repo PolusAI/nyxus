@@ -40,25 +40,39 @@ Transfer Syntax UID supports are available in Nyxus by utilizing ``dcmtk`` and `
 CT / Hounsfield Units
 ---------------------
 
-By default Nyxus quantizes floating-point and out-of-range images into its internal
-unsigned-integer intensity range by min-max rescaling, which does not preserve absolute
-CT Hounsfield Unit (HU) values and wraps negative stored values (e.g. air at roughly
--1000 HU). Passing ``--preserve-hu`` (CLI) or ``preserve_hu=True`` (Python) switches to
-an offset-preserving mode: intensities are kept as ``value - floor(slide_min)`` so that
-one grey level equals one intensity unit, negative values no longer wrap, and for DICOM
-the ``RescaleSlope`` / ``RescaleIntercept`` tags are applied to recover true HU before the
-offset. The offset is **per-slide** (each slide's own floored minimum, not a
-dataset-global minimum), so offset-domain intensity values are not directly comparable
-across slides. Which feature families are affected:
+Nyxus carries pixels internally as unsigned integers, so a slide holding negative values --
+every CT does, air sitting at roughly -1000 HU -- is offset at load time by its own floored
+minimum, ``value - floor(slide_min)``, which keeps one grey level equal to one intensity unit
+and stops the negatives wrapping on the unsigned cast. For DICOM and NIfTI the
+``RescaleSlope`` / ``RescaleIntercept`` tags (``scl_slope`` / ``scl_inter``) are applied first,
+so the offset is taken on true Hounsfield values. **That offset is recorded per slide and
+undone on the way out**: reported intensity features are in the slide's own domain, so a CT read
+in Hounsfield units is reported in Hounsfield units, negative values included. A slide with no
+negative pixel takes no offset at all.
 
-* Intensity Histogram (``IH_*``) features are reported directly in true HU.
-* Shift-invariant intensity features (variance, standard deviation, skewness, kurtosis,
-  range, interquartile range) and all shape/texture features are unaffected.
-* Location intensity features (mean, median, mode, percentiles, min, max) are reported in
-  the offset domain and recover true HU by adding that slide's floored minimum back.
-* Sum/energy intensity features (integrated intensity, energy, root-mean-squared, total
-  energy) are **not** recoverable by simply adding the minimum back — they also depend on
-  the pixel count and the offset.
+.. note::
+
+   **Despite its name, you do not need** ``--preserve-hu`` **to get Hounsfield units.** A CT is
+   read and reported in Hounsfield units either way. The flag is named for the case it was first
+   written for; what it actually selects is described below, and it applies to floating-point
+   slides only.
+
+``--preserve-hu`` (CLI) or ``preserve_hu=True`` (Python) is what a **floating-point** slide needs
+to take that same offset map. Left off, a float slide is instead min-max rescaled into
+``[0, --fpimgdr]``, which keeps its shape but quantizes it; that rescale is likewise recorded and
+undone, so its features come back in the slide's own float range rather than in quantization
+steps. Integer slides, DICOM and NIfTI do not need the flag.
+
+Which feature families the load-time map touches:
+
+* All intensity features -- location (mean, median, mode, percentiles, min, max), dispersion,
+  and the sum/energy family (integrated intensity, energy, root-mean-squared) -- are reported in
+  the slide's own intensity domain, as are the Intensity Histogram (``IH_*``) features.
+* Shift-invariant intensity features (variance, standard deviation, skewness, kurtosis, range,
+  interquartile range) and all shape/texture features are unaffected by the offset.
+* Sub-unit precision is not preserved: grey levels are integers, so a slide whose values are not
+  integer-valued is reported rounded down to the grey level it was stored as. Hounsfield units
+  are integer-valued, so CT is unaffected.
 
 
 

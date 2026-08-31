@@ -1,6 +1,8 @@
+#include <cmath>
 #include <limits>
 #include <string>
 #include <vector>
+#include "dirs_and_files.h"
 #include "globals.h"
 #include "helpers/fsystem.h"
 #include "helpers/timing.h"
@@ -101,7 +103,10 @@ namespace Nyxus
 		bool wholeslide = p.fname_seg.empty();
 
 		double slide_I_max = (std::numeric_limits<double>::lowest)(),
-			slide_I_min = (std::numeric_limits<double>::max)();
+			slide_I_min = (std::numeric_limits<double>::max)(),
+			// the minimum over EVERY pixel, mask or not: the load-time offset has to keep the
+			// whole buffer non-negative, not just the part a mask happens to cover
+			allpix_I_min = (std::numeric_limits<double>::max)();
 
 		std::unordered_set<int> U;	// unique ROI mask labels
 		std::unordered_map <int, LR> R;	// ROI data
@@ -140,6 +145,18 @@ namespace Nyxus
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
 				{
+					int y = row * th + i / tw,
+						x = col * tw + i % tw;
+
+					// Skip tile buffer pixels beyond the image's bounds
+					if (x >= fullwidth || y >= fullheight)
+						continue;
+
+					// the offset the loader will apply is driven by every pixel, so this runs
+					// before the mask filter below
+					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
+					allpix_I_min = (std::min)(allpix_I_min, dxequiv_I);
+
 					// Mask
 					uint32_t msk = 1; // wholeslide by default
 					if (!wholeslide)
@@ -149,15 +166,7 @@ namespace Nyxus
 					if (!msk)
 						continue;
 
-					int y = row * th + i / tw,
-						x = col * tw + i % tw;
-
-					// Skip tile buffer pixels beyond the image's bounds
-					if (x >= fullwidth || y >= fullheight)
-						continue;
-
 					// dynamic range within- and off-ROI
-					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
 					slide_I_max = (std::max)(slide_I_max, dxequiv_I);
 					slide_I_min = (std::min)(slide_I_min, dxequiv_I);
 
@@ -247,6 +256,7 @@ namespace Nyxus
 
 		p.max_preroi_inten = slide_I_max;		// in case fp_phys_pivoxels==true, max/min _preroi_inten 
 		p.min_preroi_inten = slide_I_min;		// needs adjusting (grey-binning) before using in wsi scenarios (assigning ROI's min and max)
+		p.min_allpix_inten = allpix_I_min;		// drives the load-time offset (see record_intensity_domain_map)
 
 		p.max_roi_area = maxArea;
 		p.n_rois = R.size();
@@ -276,7 +286,10 @@ namespace Nyxus
 		bool wholeslide = p.fname_seg.empty();
 
 		double slide_I_max = (std::numeric_limits<double>::lowest)(),
-			slide_I_min = (std::numeric_limits<double>::max)();
+			slide_I_min = (std::numeric_limits<double>::max)(),
+			// the minimum over EVERY voxel, mask or not: the load-time offset has to keep the
+			// whole buffer non-negative, not just the part a mask happens to cover
+			allpix_I_min = (std::numeric_limits<double>::max)();
 
 		std::unordered_set<int> U;	// unique ROI mask labels
 		std::unordered_map <int, LR> R;	// ROI data
@@ -304,25 +317,29 @@ namespace Nyxus
 		// iterate voxels
 		for (size_t i = 0; i < nVox; i++)
 		{
+			int z = i / sliceSize,
+				y = (i - z * sliceSize) / fullW,
+				x = (i - z * sliceSize) % fullW;
+
+			// Skip tile buffer voxels beyond the volume's bounds
+			if (x >= fullW || y >= fullH || z >= fullD)
+				continue;
+
+			// the offset the loader will apply is driven by every voxel, so this runs before
+			// the mask filter below
+			double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
+			allpix_I_min = (std::min)(allpix_I_min, dxequiv_I);
+
 			// Mask
 			uint32_t msk = 1; // wholeslide by default
 			if (!wholeslide)
 				msk = ilo.get_cur_tile_seg_pixel(i);
 
-			// Skip non-mask pixels					
+			// Skip non-mask voxels					
 			if (!msk)
 				continue;
 
-			int z = i / sliceSize,
-				y = (i - z * sliceSize) / fullW,
-				x = (i - z * sliceSize) % fullW;
-
-			// Skip tile buffer pixels beyond the image's bounds
-			if (x >= fullW || y >= fullH || z >= fullD)
-				continue;
-
 			// dynamic range within- and off-ROI
-			double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
 			slide_I_max = (std::max)(slide_I_max, dxequiv_I);
 			slide_I_min = (std::min)(slide_I_min, dxequiv_I);
 
@@ -412,6 +429,7 @@ namespace Nyxus
 
 		p.max_preroi_inten = slide_I_max;		// in case fp_phys_pivoxels==true, max/min _preroi_inten 
 		p.min_preroi_inten = slide_I_min;		// needs adjusting (grey-binning) before using in wsi scenarios (assigning ROI's min and max)
+		p.min_allpix_inten = allpix_I_min;		// drives the load-time offset (see record_intensity_domain_map)
 
 		p.max_roi_area = maxArea;
 		p.n_rois = R.size();
@@ -453,12 +471,10 @@ namespace Nyxus
 	//
 	// prerequisite: initialized fields fname_int and  fname_seg
 	//
-	bool scan_slide_props (SlideProps & p, int dim, const AnisotropyOptions & aniso, bool need_annot)
+	bool scan_slide_props (SlideProps & p, int dim, const AnisotropyOptions & aniso, const FpImageOptions & fpo, bool need_annot)
 	{
 		RawImageLoader ilo;
-		// p.preserve_hu was set from the CLI/Python option before this scan (see workflow_*.cpp),
-		// so the DICOM scan can compute the slide min/max in the Hounsfield domain.
-		if (! ilo.open(p.fname_int, p.fname_seg, p.preserve_hu))
+		if (! ilo.open(p.fname_int, p.fname_seg))
 		{
 			std::cerr << "error opening an ImageLoader for " << p.fname_int << " | " << p.fname_seg << "\n";
 			return false;
@@ -472,6 +488,9 @@ namespace Nyxus
 		}
 
 		ilo.close();
+
+		// the load-time intensity map, now that the slide's range is known
+		record_intensity_domain_map (p, fpo);
 
 		// annotations
 		if (need_annot)
@@ -496,5 +515,58 @@ namespace Nyxus
 
 
 		return true;
+	}
+
+	//
+	// Records the map the tile loader will apply to this slide, so the intensity families can
+	// report their location statistics in the slide's own domain instead of in grey levels.
+	// ImageLoader::open() hands p.inten_offset to the loader, so the two sides cannot drift.
+	//
+	void record_intensity_domain_map (SlideProps & p, const FpImageOptions & fpo)
+	{
+		// Default: the loader stores this slide's values as they are.
+		p.inten_scale = 1.0;
+		p.inten_offset = 0.0;
+		p.inten_map = IntenMap::native;
+
+		// A slide handed over in memory (montage / numpy input) never went through a tile
+		// loader, so nothing mapped it.
+		if (p.fname_int.empty())
+			return;
+
+		std::string ext = Nyxus::get_big_extension (p.fname_int);
+
+		// OME-Zarr is carried natively; it has no offset or rescale branch to invert.
+		if (ext == ".zarr" || ext == ".ome.zarr")
+			return;
+
+		// A floating-point slide is hard-clamped to a range and quantized into
+		// [0, target dynamic range], unless preserve_hu asks for the offset map instead.
+		if (p.fp_phys_pivoxels && ! p.preserve_hu)
+		{
+			double fpmin = p.min_preroi_inten,
+				fpmax = p.max_preroi_inten;
+			if (! fpo.empty())
+			{
+				fpmin = fpo.min_intensity();
+				fpmax = fpo.max_intensity();
+			}
+			double dr = fpo.target_dyn_range();
+			if (dr > 0.0 && fpmax > fpmin)
+			{
+				p.inten_map = IntenMap::quantized;
+				p.inten_scale = (fpmax - fpmin) / dr;
+				p.inten_offset = fpmin;
+			}
+			return;
+		}
+
+		// Everything else keeps 1 grey level == 1 intensity unit and is shifted only when it has
+		// to be: a slide holding a negative intensity anywhere would wrap it on the unsigned
+		// cast, so the whole slide is offset by that floored minimum. A slide with no negative
+		// pixel is stored as it is, which leaves every ordinary integer image untouched.
+		p.inten_map = IntenMap::offset;
+		if (p.min_allpix_inten < 0.0)
+			p.inten_offset = std::floor (p.min_allpix_inten);
 	}
 }

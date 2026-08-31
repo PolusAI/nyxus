@@ -40,14 +40,10 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			if (ext == ".dcm" || ext == ".dicom")
 			{
 				#ifdef DICOM_SUPPORT
-					// HU offset base must be the scanned (HU-domain) slide min. In preserve_hu
-					// mode the slope-1 map bypasses fp min/max/dr, so we must NOT take
-					// fpopts.min_intensity() (defaults to 0 when --fpimgmin is absent) — that
-					// would clamp every negative HU to 0. Only the non-HU float path uses the
-					// fp override min.
-					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath,
-						(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : (double)fpopts.min_intensity(),
-						fpopts.preserve_hu());
+					// A DICOM slide always carries physical units, so it always takes the
+					// offset map recorded by the scan: rescale to true intensities, then shift
+					// by p.inten_offset (0 unless the slide's own minimum is negative).
+					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath, p.inten_offset);
 				#else
 					std::string erm = "This version of Nyxus was not build with DICOM support";
 					#ifdef WITH_PYTHON_H
@@ -59,26 +55,21 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			else
 				if (ext == ".nii" || ext == ".nii.gz")
 				{
-					intFL = new NiftiLoader<uint32_t> (int_fpath,
-							(fpopts.preserve_hu() || fpopts.empty()) ? p.min_preroi_inten : (double)fpopts.min_intensity(),		// HU offset base = scanned HU-domain slide min; ignore fp min in preserve_hu mode (else negative HU clamps to 0)
-							fpopts.preserve_hu());		// CT/HU mode: offset-preserving map (matches DICOM/TIFF)
+					// Same as DICOM: rescale to true intensities, then shift by the offset the
+					// scan recorded, so a CT volume reaches the features in Hounsfield units.
+					intFL = new NiftiLoader<uint32_t> (int_fpath, p.inten_offset);
 				}
 				else 
 				{
 					// flavors of TIFF (TIFF, OME.TIFF)
 					
-					// automatic or overriden FP dynamic range
-					double fpmin = p.min_preroi_inten,
-						fpmax = p.max_preroi_inten;
-					// Only the non-HU float path honors the fp override min/max. In preserve_hu
-					// mode fpmin is the HU offset base and must stay the scanned slide min —
-					// taking fpopts.min_intensity() (0 by default) would clamp every negative
-					// HU to 0. hu_offset() ignores fpmax entirely.
-					if (! fpopts.empty() && ! fpopts.preserve_hu())
-					{
-						fpmin = fpopts.min_intensity();
-						fpmax = fpopts.max_intensity();
-					}
+					// The quantized branch spans [inten_offset, inten_offset + inten_scale*DR],
+					// which is the [fpmin, fpmax] the scan recorded (the fp overrides included).
+					// The offset branch ignores both and shifts by inten_offset alone.
+					bool quantize = p.inten_map == IntenMap::quantized;
+					double dr = fpopts.target_dyn_range(),
+						fpmin = p.inten_offset,
+						fpmax = quantize ? p.inten_offset + p.inten_scale * dr : p.max_preroi_inten;
 
 					if (Nyxus::check_tile_status(int_fpath))
 					{
@@ -88,12 +79,12 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 							true,
 							fpmin,
 							fpmax,
-							fpopts.target_dyn_range(),
-							fpopts.preserve_hu());		// CT/HU mode: offset-preserving map
+							dr,
+							quantize);
 					} 
 					else 
 					{
-						intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath);
+						intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, fpmin, fpmax, dr, quantize);
 					}
 				}
 	}
@@ -147,7 +138,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			if (ext == ".dcm" || ext == ".dicom")
 			{
 				#ifdef DICOM_SUPPORT
-					segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath);
+					segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath, 0.0, false);		// a mask carries labels, not physical units
 				#else
 					std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
 				#endif
@@ -155,7 +146,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			else
 				if (ext == ".nii" || ext == ".nii.gz")
 				{
-					segFL = new NiftiLoader <uint32_t> (seg_fpath);
+					segFL = new NiftiLoader <uint32_t> (seg_fpath, 0.0, false);		// a mask carries labels, not physical units
 				}
 				else
 				{

@@ -753,7 +753,7 @@ bool Environment::parse_cmdline(int argc, char** argv)
 
 	//==== Parse floating point image options
 	// empty() intentionally excludes raw_preserve_hu (so FPIMG_ACTIVE stays false for a
-	// bare --preserve-hu and the non-HU float path keeps using the scanned min/max).
+	// bare --preserve-hu and the quantized float path keeps using the scanned min/max).
 	// parse_input() is what sets preserve_hu_, so we must still parse when only
 	// --preserve-hu is supplied — otherwise the bare CLI flag would be a no-op.
 	if (!fpimageOptions.empty() || !fpimageOptions.raw_preserve_hu.empty())

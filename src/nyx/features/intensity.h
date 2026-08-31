@@ -59,6 +59,13 @@ public:
 	static bool required(const FeatureSet& fs);
 
 private:
+	// The two above, computed in the grey levels the loader stored.
+	void calculate_grey_levels (LR& roi, const Fsettings& settings, const Dataset& dataset);
+	void osized_calculate_grey_levels (LR& roi, const Fsettings& s, const Dataset& dataset, ImageLoader& ldr);
+
+	// Maps what they produced back into the slide's own intensity domain.
+	void report_in_source_domain (const LR& roi, const Dataset& dataset);
+
 	double
 		val_INTEGRATED_INTENSITY = 0,
 		val_MEAN = 0,

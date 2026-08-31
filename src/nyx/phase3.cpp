@@ -37,16 +37,11 @@ namespace Nyxus
 
 			// Scan one label-intensity pair
 			SlideProps p (intens_fpath, label_fpath);
-			// FIX: preserve_hu offset base — inherit the scanned HU-domain slide min/max + flag so the
-			// load-time HU offset matches the prescan (bare SlideProps defaults min to -1 -> bad bins/crash).
-			// Guarded on preserve_hu so the default (non-HU) path is byte-for-byte unchanged.
-			if (env.fpimageOptions.preserve_hu() && r.slide_idx >= 0)
-			{
-				const SlideProps& scanned = env.dataset.dataset_props [r.slide_idx];
-				p.min_preroi_inten = scanned.min_preroi_inten;
-				p.max_preroi_inten = scanned.max_preroi_inten;
-				p.preserve_hu = scanned.preserve_hu;
-			}
+			// carry over what the prescan measured and recorded for this slide, so this pass's
+			// grey levels land in the same domain the features will report them in
+			const SlideProps * scanned = env.dataset.scanned_slide (r.slide_idx);
+			if (scanned)
+				p.inherit_intensity_domain (*scanned);
 			if (! env.theImLoader.open(p, env.fpimageOptions))
 			{
 				std::cout << "Terminating\n";

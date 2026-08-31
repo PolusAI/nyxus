@@ -1130,19 +1130,29 @@ TEST(TEST_NYXUS, TEST_2D_INTENSITY_HISTOGRAM_DISPERSION_PERCENTILE_REGRESSION)
 	ASSERT_NO_THROW(test_2d_intensity_histogram_dispersion_percentile_regression());
 }
 
-TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_NORMALIZATION_CT_RANGE_ANALYTIC)
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_OFFSET_NEGATIVE_MIN_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_hu_uint_friendly_normalization_ct_range_analytic());
+	ASSERT_NO_THROW(test_hu_domain_map_offset_negative_min_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_RAWCAST_NONNEGATIVE_ANALYTIC)
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_IDENTITY_NONNEGATIVE_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_hu_uint_friendly_rawcast_nonnegative_analytic());
+	ASSERT_NO_THROW(test_hu_domain_map_identity_nonnegative_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_HU_UINT_FRIENDLY_PRESERVE_OFFSET_ANALYTIC)
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_QUANTIZED_FLOAT_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_hu_uint_friendly_preserve_offset_analytic());
+	ASSERT_NO_THROW(test_hu_domain_map_quantized_float_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_PRESERVE_HU_FLOAT_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_preserve_hu_float_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_ZARR_NATIVE_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_zarr_native_analytic());
 }
 
 TEST(TEST_NYXUS, TEST_2D_HU_FPIMAGE_OPTIONS_PARSE_MECHANICS)

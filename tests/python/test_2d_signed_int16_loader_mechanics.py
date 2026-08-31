@@ -3,8 +3,9 @@
 A signed int16 image (e.g. a CT with negative Hounsfield units) whose ROI contains negative values used
 to be cast straight to the unsigned pipeline type PixIntens, wrapping e.g. -1024 to ~4.29e9. That absurd
 maximum then sized the grey-bin / histogram allocation and segfaulted on macOS (Windows/Linux "survived"
-by allocator luck while emitting garbage MIN/MAX/MEAN). The loader now clamps negatives of signed integer
-file types to 0 (grayscale_tiff.h tile- and strip-loaders) as a safe fallback for the no-preserve-hu path.
+by allocator luck while emitting garbage MIN/MAX/MEAN). The loader now offsets such an image by its own
+floored minimum (grayscale_tiff.h tile- and strip-loaders) and the intensity family adds that offset
+back, so the negative values survive the load and are reported as themselves.
 
 This exercises the featurize_files (TIFF) path that the in-memory numpy path does not cover.
 """
@@ -33,16 +34,16 @@ def test_2d_signed_int16_loader_negatives_do_not_wrap_mechanics(tmp_path):
     nyx = nyxus.Nyxus(features=["MIN", "MAX", "MEAN", "RANGE"], n_feature_calc_threads=1)
     r = nyx.featurize_files(ifiles, sfiles, False).iloc[0]
 
-    # negatives clamped to 0 -> finite, non-wrapped features (was MAX/MEAN/RANGE ~4.29e9)
-    assert r["MAX"] < 1e6, f"MAX wrapped to a huge value: {r['MAX']}"
+    # offset at load, added back on the way out -> the image's own values, not a wrapped ~4.29e9
+    assert abs(r["MAX"]) < 1e6, f"MAX wrapped to a huge value: {r['MAX']}"
     assert r["MAX"] == 40.0
-    assert r["MIN"] == 0.0
-    assert r["RANGE"] == 40.0
-    assert r["MEAN"] == pytest.approx((0 * 240 + 40 * 16) / 256)
+    assert r["MIN"] == -1024.0
+    assert r["RANGE"] == 1064.0
+    assert r["MEAN"] == pytest.approx((-1024 * 240 + 40 * 16) / 256)
 
 
 def test_2d_signed_int16_loader_unsigned_unaffected_mechanics(tmp_path):
-    """The clamp must not touch valid unsigned data."""
+    """An image with no negative pixel takes no offset at all."""
     H, W = 16, 16
     inten = np.zeros((H, W), np.uint16)
     inten[4:12, 4:12] = 5000

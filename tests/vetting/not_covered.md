@@ -60,9 +60,9 @@ omission matters:
 | file | functions | what it asserts | why it matters |
 |---|---:|---|---|
 | ~~`test_neighbors_oracle.py`~~ | 2 | `PERCENT_TOUCHING`, `NUM_NEIGHBORS`, closest-neighbor distance on the production `featurize()` path | **CLOSED in Wave 15.** On inspection it asserts bounds and relations (`<= 100`, `> 0`, `== 100` for an enclosed ROI), not oracle values — so it is an `_invariant`, not the CellProfiler oracle assumed here. Renamed `test_2d_neighbor_invariant.py` and added to `current_test` on the 3 rows it covers. |
-| `test_2d_hu_regression.py` | 3 | first-order MIN/MAX/MEAN/INTEGRATED in `--preserve-hu` mode | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
+| `test_2d_hu_regression.py` | 4 | first-order MIN/MAX/MEAN/INTEGRATED on a CT slide in Hounsfield units | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
 | `test_3d_hu_nifti_regression.py` | 3 | the same on a 3D NIfTI volume with `scl_slope`/`scl_inter` | ditto, 3D |
-| `test_hu_analytic.h` | 3 | closed form of the HU offset mapping (`uint_friendly_inten`) | analytic assertion with no row |
+| `test_hu_analytic.h` | 5 | closed form of the load-time intensity map and its inverse | analytic assertion with no row |
 | `test_2d_hu_mechanics.h` | 8 | loader-level HU preservation (TIFF / DICOM / float) | plumbing, but it pins values |
 | `test_2d_signed_int16_loader_mechanics.py` | 2 | MIN/MAX/MEAN do not wrap for signed int16 | guards a wrap bug that silently corrupted values |
 | `test_2d_tiff_loader_mechanics.py` | 2 | pixel values and feature equality for uint32 strip TIFFs | guards a heap over-read that corrupted values |
@@ -506,16 +506,18 @@ not merely "unvetted", it is known-wrong, and the registry says so in `flag`.
 | 3D `3COVERED_IMAGE_INTENSITY_RANGE` | 1.0002043207290587 | ≤ 1 | the ratio compares two different intensity domains |
 
 `3d_intensity.cpp` computes it as `double(r.aux_max - r.aux_min) / (p.max_preroi_inten -
-p.min_preroi_inten)`. The numerator is the ROI in the loader's **truncated integer** domain —
-`NiftiLoader::unhounsfield` shifts a volume whose whole-volume minimum is negative by `-min`, and
-`ut_inten.nii` stores `[-1024, 2000]`, so the ROI spans `[1024, 3024]` and the range is exactly
-`2000`. The denominator is `SlideProps`, filled by `RawNiftiLoader::get_dpequiv_pixel` from the
-**raw stored** values, giving `2000 - 0.40855798 = 1999.5914`.
+p.min_preroi_inten)`, then multiplies the numerator by the slide's `inten_scale` so both ends are
+in the slide's own domain. That closes the half of the mismatch that came from a quantized
+floating-point slide, but not the **truncation**: the numerator is still a difference of integer
+grey levels. `ut_inten.nii` stores `[-1024, 2000]`, so the ROI's grey levels span `[1024, 3024]`
+and the numerator is exactly `2000`, while the denominator comes from `SlideProps` filled by
+`RawNiftiLoader::get_dpequiv_pixel` with the unrounded values, giving `2000 - 0.40855798 =
+1999.5914`.
 
-An ROI cannot span more than the slide containing it, so the bound is definitional and the excess is
-the domain mismatch, not a rounding artifact. Asserting the bound today would fail; a bound is an
-invariant rather than a snapshot and belongs in an `_invariant` file once the ratio is computed in
-one domain. Until then `test_3d_firstorder_regression.h` pins the current value and states why.
+An ROI cannot span more than the slide containing it, so the bound is definitional and the excess
+is the truncation, not a rounding artifact. Asserting the bound today would still fail; a bound is
+an invariant rather than a snapshot and belongs in an `_invariant` file once both ends are measured
+the same way. Until then `test_3d_firstorder_regression.h` pins the current value and states why.
 
 This supersedes the earlier registry note that the segmented workflow never sets `roi.slide_idx`.
 It is set on this path; the value is not the fallback `1`.
