@@ -202,7 +202,8 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 ## morphology.shape2d_native
 - The 8x8 `shape2d_morphology_{mask,intensity}` fixture (`test_data.h`) at
   `make_shape2d_settings()`: `PIXELSIZEUM=2.0`, `XYRES=1.0`, `GREYDEPTH=128`, `IBSI=false`, single
-  ROI, no anisotropy. Oracles: `matlab` (Octave `regionprops`), `skimage` (`regionprops`), `imea`
+  ROI, no anisotropy. Oracles: MATLAB R2026a (`regionprops`, `bweuler`), `skimage`
+  (`regionprops`), `imea`
   (the two DIN ISO 9276-6 macro transforms), `cellprofiler`, `analytic`. Used by:
   `test_2d_morphology_{matlab,skimage,imea,cellprofiler,analytic}.h`.
 - Coordinate frames differ per property and the conversion is part of the recipe: MATLAB centroids

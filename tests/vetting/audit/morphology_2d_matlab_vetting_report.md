@@ -1,87 +1,82 @@
-# 2D morphology vs MATLAB (GNU Octave) — vetting report
+# 2D morphology MATLAB R2026a vetting report
 
-Closes the 17 `oracle=matlab` rows that read `status=vetted` with no in-tree oracle assertion, plus
-the 16 `EXTREMA_*` rows that were already asserted here but never re-derived from a fresh tool run.
+This replaces the GNU Octave surrogate provenance for the 33 existing `oracle=matlab` assertions
+with a licensed MATLAB run. The assertion set is unchanged: MATLAB R2026a reproduces every pinned
+feature, with a maximum relative change of `3.40e-16` from the former Octave-generated literals.
 
-## Tool and configuration
+## Provenance
 
 | | |
 |---|---|
-| Tool | GNU Octave 11.3.0 + `image` package 2.20.0, as the license-free MATLAB stand-in (TOOLS.md) |
+| Tool | MATLAB R2026a, Image Processing Toolbox 26.1 |
 | Generator | `tests/vetting/oracles/gen_morphology_matlab.m` |
+| Fixture | `shape2d_morphology_{mask,intensity}` from `tests/test_data.h` on `PolusAI/nyxus` main |
 | Recipe | `morphology.shape2d_native` |
-| Fixture | `shape2d_morphology_{mask,intensity}`, read out of `tests/test_data.h` by the generator |
 | Nyxus config | `make_shape2d_settings()` — `PIXELSIZEUM=2.0`, `XYRES=1.0`, `GREYDEPTH=128`, `IBSI=false`, single ROI |
 | Test | `test_2d_morphology_matlab.h` |
-| Tolerance | `rel=1e-3` (SPEC §7 same-definition oracle) |
+| Tolerance | `rel=1e-3` (SPEC §7 same-definition oracle tier) |
 
-Reproduce, from the repository root:
+Run from the repository root:
 
+```text
+matlab -batch "run('tests/vetting/oracles/gen_morphology_matlab.m')"
 ```
-octave tests/vetting/oracles/gen_morphology_matlab.m
-```
 
-The generator prints the paste-ready table, then re-verifies **every** golden pinned in
-`test_2d_morphology_matlab.h` — both tables — and exits non-zero on any mismatch or on any pin it
-cannot produce. Current run: **33 verified, 0 failed, 0 unproducible**, every one at `rel = 0`.
+The generator downloads the fixture and the two C++ golden tables from the moving
+`PolusAI/nyxus` `main` tree, evaluates the named MATLAB built-ins, and checks the feature names in
+both directions. A pin that MATLAB does not produce, or a MATLAB value with no corresponding pin,
+is an error. The verified R2026a run produced **33 values**, with none missing and none outside
+`rel=1e-3`.
 
-## Results
+## What MATLAB computes
 
-| feature | Nyxus | Octave `regionprops` | rel |
-|---|---|---|---|
-| AREA_PIXELS_COUNT | 26 | 26 | 0 |
-| AREA_UM2 | 104 | 104 | 0 |
-| CENTROID_X | 2.6153846153846163 | 2.6153846153846163 | 0 |
-| CENTROID_Y | 2.8461538461538467 | 2.8461538461538467 | 0 |
-| WEIGHTED_CENTROID_X | 2.8416030534351147 | 2.8416030534351147 | 0 |
-| WEIGHTED_CENTROID_Y | 3.4389312977099236 | 3.4389312977099236 | 0 |
-| BBOX_XMIN / BBOX_YMIN | 0 / 0 | 0 / 0 | 0 |
-| BBOX_WIDTH / BBOX_HEIGHT | 6 / 7 | 6 / 7 | 0 |
-| ASPECT_RATIO | 0.8571428571428571 | 0.8571428571428571 | 0 |
-| EXTENT | 0.61904761904761907 | 0.61904761904761907 | 0 |
-| MAJOR_AXIS_LENGTH | 6.9688161689861872 | 6.9688161689861872 | 0 |
-| MINOR_AXIS_LENGTH | 5.4887099129573791 | 5.4887099129573791 | 0 |
-| ELONGATION | 0.78761008754746198 | 0.78761008754746198 | 0 |
-| ECCENTRICITY | 0.61617396082070786 | 0.61617396082070786 | 0 |
-| EULER_NUMBER | 0 | 0 (`bweuler` at both 4- and 8-connectivity) | 0 |
-| EXTREMA_P1..P8 _X/_Y (16) | see the test header | `regionprops('Extrema')` + the corner offset below | 0 |
+| Nyxus features | MATLAB source |
+|---|---|
+| `AREA_PIXELS_COUNT` | `regionprops(..., 'Area')` |
+| `CENTROID_X/Y` | `regionprops(..., 'Centroid')` |
+| `WEIGHTED_CENTROID_X/Y` | `regionprops(mask, intensity, 'WeightedCentroid')` |
+| `BBOX_XMIN/YMIN`, `BBOX_WIDTH/HEIGHT` | `regionprops(..., 'BoundingBox')` |
+| `EXTENT` | `regionprops(..., 'Extent')` |
+| `MAJOR_AXIS_LENGTH`, `MINOR_AXIS_LENGTH`, `ECCENTRICITY` | matching `regionprops` properties |
+| `EULER_NUMBER` | `bweuler(mask, 8)` |
+| `EXTREMA_P1..P8_X/Y` | `regionprops(..., 'Extrema')` |
 
-## Conventions applied, and why
+Three derived Nyxus definitions use only direct arithmetic over those built-in results:
 
-These are part of the recipe, not fudge factors — each is a documented frame difference.
+- `AREA_UM2 = Area * PIXELSIZEUM^2`
+- `ASPECT_RATIO = BoundingBox width / height`
+- `ELONGATION = MinorAxisLength / MajorAxisLength`
 
-- **Centroid / WeightedCentroid.** MATLAB reports 1-based pixel centres, Nyxus 0-based: subtract 1.
-- **BoundingBox.** MATLAB returns `[x_ul y_ul w h]` with the corner at `min - 0.5` in 1-based
-  coordinates, so the 0-based minimum index is `BoundingBox(1) - 0.5`. The widths need no change.
-- **AREA_UM2** is `Area * PIXELSIZEUM^2` = 26 × 4.
-- **ASPECT_RATIO** and **ELONGATION** are ratios of two `regionprops` outputs (bbox w/h, and
-  minor/major), not properties of their own.
-- **Extrema.** `regionprops('Extrema')` returns 8 sub-pixel *corner* points, 1-based, ordered
-  top-left, top-right, right-top, right-bottom, bottom-right, bottom-left, left-bottom, left-top.
-  Nyxus returns 0-based pixel *centres*, so the offset is direction-specific: a left or top
-  coordinate maps as `matlab - 0.5`, a right or bottom one as `matlab - 1.5`. That rule was
-  previously asserted only in a comment; the generator now derives all 16 values from a live
-  `regionprops` call and reproduces the pinned goldens exactly.
+No Nyxus feature algorithm is reproduced in the generator.
 
-## Why the ellipse triple vets here and not against scikit-image
+## Coordinate conventions
 
-`MAJOR_AXIS_LENGTH`, `MINOR_AXIS_LENGTH` and `ECCENTRICITY` match MATLAB to ~1e-15 but differ from
-scikit-image by ~1.4% (`axis_major` 6.872 vs 6.969; `eccentricity` 0.625 vs 0.616). The cause is the
-pixel finite-size correction: MATLAB and Nyxus both add 1/12 to the normalised second central
-moments to account for a pixel being a unit square rather than a point; scikit-image does not.
+- MATLAB centroids are 1-based pixel centres; Nyxus uses 0-based pixel centres, so the recipe
+  subtracts 1.
+- MATLAB `BoundingBox` begins at the upper-left sub-pixel corner. Subtracting 0.5 from its 1-based
+  origin gives the Nyxus minimum pixel index; width and height are unchanged.
+- MATLAB `Extrema` returns eight 1-based sub-pixel corners in its documented fixed order. Mapping
+  them to 0-based pixel centres subtracts 0.5 for a left/top edge and 1.5 for a right/bottom edge.
 
-This is why the registry pins these three to `oracle=matlab`. `ORIENTATION` is the exception that
-proves the rule — the correction shifts `mu20` and `mu02` equally, leaving `mu20-mu02` and `mu11`
-unchanged, so the *angle* is invariant to it and vets against scikit-image instead. Octave
-independently confirms that value: it returns `-70.417394498420691` against the Nyxus
-`+70.4173944984207`, the same magnitude to 13 digits with the sign carrying the y-axis-direction
-convention.
+These are coordinate-frame conversions, not tuned offsets.
 
-## What did not hold up
+## Measured agreement
 
-`test_2d_morphology_perimeter_matlab()` asserted `PERIMETER = 999.26` against a documented recipe of
-`nnz(bwperim(imfill(circles.png)))`. Run fresh, that recipe returns **846** — it counts perimeter
-*pixels* — and MATLAB's actual `regionprops('Perimeter')` returns **952.848**. Neither is the pinned
-number. The golden turned out to be scikit-image's `measure.perimeter` (999.259018078045, agreeing
-with Nyxus to 3.8e-15), so the assertion moved to `test_2d_morphology_skimage.h` and the registry row
-now names the oracle that actually backs it. See `morphology_2d_skimage_vetting_report.md`.
+Twenty-eight values are bit-for-bit identical to the former pins. The remaining five differ only
+at the final floating-point digit:
+
+| Feature | MATLAB R2026a | former pin | relative difference |
+|---|---:|---:|---:|
+| `CENTROID_X` | 2.6153846153846154 | 2.6153846153846163 | 3.40e-16 |
+| `CENTROID_Y` | 2.8461538461538463 | 2.8461538461538467 | 1.56e-16 |
+| `MINOR_AXIS_LENGTH` | 5.48870991295738 | 5.4887099129573791 | 1.62e-16 |
+| `ELONGATION` | 0.78761008754746209 | 0.78761008754746198 | 1.41e-16 |
+| `ECCENTRICITY` | 0.61617396082070774 | 0.61617396082070786 | 1.80e-16 |
+
+All are many orders of magnitude inside `rel=1e-3`.
+
+## Why these ellipse features use MATLAB
+
+MATLAB and Nyxus apply the same `+1/12` finite-pixel correction to the normalized second central
+moments. Therefore `MAJOR_AXIS_LENGTH`, `MINOR_AXIS_LENGTH`, and `ECCENTRICITY` have matching
+definitions here; scikit-image omits that correction and differs by about 1.4% on this fixture.

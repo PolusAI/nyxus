@@ -75,13 +75,11 @@ NOTE = {
     "PERCENT_TOUCHING": "neighbor family convention; documented divergence from CellProfiler",
 }
 
-# The SPEC 4 token names the reference semantics (MATLAB regionprops), not the vendor product that
-# ran them: every golden under it in this family came from GNU Octave standing in for MATLAB. A row
-# that presents the oracle says which tool produced the numbers, so "matlab" is not read as a
-# licensed run.
+# The SPEC 4 token names the reference semantics and the note records the product that produced the
+# pins. This family now uses licensed MATLAB rather than the former Octave surrogate.
 ORACLE_NOTE = {
-    "matlab": ("matlab oracle run as GNU Octave 11.3.0 + image 2.20.0, the license-free "
-               "MATLAB stand-in (gen_morphology_matlab.m); see "
+    "matlab": ("licensed MATLAB R2026a + Image Processing Toolbox 26.1 "
+               "(gen_morphology_matlab.m); all 33 C++ pins verified; see "
                "morphology_2d_matlab_vetting_report.md"),
 }
 

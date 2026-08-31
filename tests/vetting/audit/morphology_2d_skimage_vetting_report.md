@@ -50,10 +50,11 @@ candidates on the fixture:
 | `nnz(bwperim(M, 4))` | 846 |
 | `nnz(bwperim(M, 8))` | 1216 |
 
-The three MATLAB-side rows are an Octave run, not a licensed MATLAB one: re-running GNU Octave
+These three historical MATLAB-side candidate rows are an Octave run, not a licensed MATLAB one:
+re-running GNU Octave
 11.3.0 + `image` 2.20.0 on this fixture reproduces all three exactly (`regionprops('Perimeter')`
-952.848, `nnz(bwperim(M,4))` 846, `nnz(bwperim(M,8))` 1216). That is what the `matlab` token means
-throughout this tree (SPEC 4).
+952.848, `nnz(bwperim(M,4))` 846, `nnz(bwperim(M,8))` 1216). They are perimeter-rejection evidence,
+not the licensed MATLAB R2026a provenance now attached to the 33 current morphology assertions.
 
 The pinned 999.26 was a truncated copy of the scikit-image value, filed under a MATLAB recipe that
 computes a different quantity entirely. Nyxus' chain-code contour walk and scikit-image's
