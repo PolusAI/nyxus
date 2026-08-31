@@ -185,6 +185,69 @@ def test_2d_ooc_2d_morphology_matches_in_ram_invariant(tmp_path):
     _ooc_vs_ram_2d(tmp_path, ["*ALL_MORPHOLOGY*"])
 
 
+# The fixture every _ooc_vs_ram_2d test above uses is a full-image RECTANGLE, and that shape cannot
+# discriminate the contour features: every step around a rectangle's boundary is an axis-aligned unit
+# step, so the contour pixel COUNT and the sum of Euclidean step lengths are the same number. The
+# out-of-core path computes PERIMETER the first way and the in-RAM path the second
+# (contour.cpp: osized_calculate sets fval_PERIMETER = K.size(), calculate sums sqrt(sqdist)), and on
+# a rectangle that difference is invisible. It stayed invisible here for as long as this file has
+# existed. A disk has a genuinely diagonal boundary, so the two definitions separate.
+def _disk_pair(tmp_path):
+    """A 64x64 image with one disk ROI: the boundary is diagonal, so contour pixel count and
+    Euclidean step sum differ. ram_limit=0 forces the oversized branch for any ROI, so the fixture
+    does not have to be large to reach the out-of-core path."""
+    Y = X = 64
+    yy, xx = np.mgrid[0:Y, 0:X]
+    mask = (((yy - 32) ** 2 + (xx - 32) ** 2) <= 20 * 20).astype(np.uint32)
+    inten = ((1 + xx + yy * 7) * mask).astype(np.uint32)
+    intdir = tmp_path / "dint"
+    segdir = tmp_path / "dseg"
+    intdir.mkdir()
+    segdir.mkdir()
+    tifffile.imwrite(str(intdir / "img.tif"), inten)
+    tifffile.imwrite(str(segdir / "img.tif"), mask)
+    return str(intdir) + os.sep, str(segdir) + os.sep
+
+
+# The contour statistics that DO agree across the two paths, measured on the disk. Both paths feed
+# the same calc_min_max_mean_stddev_intensity helper, so agreement here says the two contour builders
+# select the same pixels -- which is the part a rectangle could not establish either.
+OOC_AGREEING_CONTOUR_FEATURES = [
+    "MASS_DISPLACEMENT", "EDGE_MEAN_INTENSITY", "EDGE_STDDEV_INTENSITY",
+    "EDGE_MAX_INTENSITY", "EDGE_MIN_INTENSITY", "EDGE_INTEGRATED_INTENSITY",
+]
+
+
+def test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invariant(tmp_path):
+    """The five EDGE_* statistics and MASS_DISPLACEMENT must agree out-of-core on a shape whose
+    boundary is diagonal, not only on the rectangle the other tests use.
+
+    This is the cell tests/vetting/matrix/morphology.md records for the out-of-core contour path.
+    PERIMETER is deliberately NOT in the list: it does NOT agree, and that divergence is pinned as a
+    known defect in test_2d_ooc_regression.py rather than hidden by leaving this fixture rectangular.
+    """
+    intdir, segdir = _disk_pair(tmp_path)
+    feats = ["*ALL_MORPHOLOGY*", "*BASIC_MORPHOLOGY*"]
+
+    n_ram = nyxus.Nyxus(feats)
+    _set_ram_limit_mb(n_ram, RAM_LIMIT_LARGE_MB)
+    df_ram = n_ram.featurize_directory(intdir, segdir)
+
+    n_ooc = nyxus.Nyxus(feats)
+    _set_ram_limit_mb(n_ooc, 0)          # 0 forces the oversized branch for any ROI
+    df_ooc = n_ooc.featurize_directory(intdir, segdir)
+
+    bad = []
+    for c in OOC_AGREEING_CONTOUR_FEATURES:
+        assert c in df_ram.columns, "%s missing from the frame" % c
+        a = float(df_ram[c].iloc[0])
+        b = float(df_ooc[c].iloc[0])
+        # same build, same helper, different pixel visit order -> float summation order only
+        if abs(a - b) > 1e-6 * max(abs(a), abs(b), 1.0) + 1e-9:
+            bad.append((c, a, b))
+    assert not bad, "out-of-core contour intensity diverges from in-RAM: %r" % (bad,)
+
+
 def test_2d_ooc_2d_zernike_matches_in_ram_invariant(tmp_path):
     """Zernike out-of-core must match in-RAM on an ordinary ROI as well as on the degenerate one
     covered below (its streaming variant lacked calculate()'s constant-ROI guard)."""
