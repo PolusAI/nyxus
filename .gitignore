@@ -566,3 +566,8 @@ cython_debug/
 # setuptools-scm generated version file
 src/nyx/python/nyxus/_version.py
 .planning/
+
+# Feature tables written into the working directory by the test suites. NyxusFeatures is the
+# default result filename stem (Environment::nyxus_result_fname); the extension follows whichever
+# writer ran, so pytest leaves .arrow and .parquet behind on every run of tests/python/.
+NyxusFeatures.*
