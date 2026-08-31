@@ -522,6 +522,37 @@ It is set on this path; the value is not the fallback `1`.
 
 ---
 
+## G. Code paths whose two implementations are required to agree and do not
+
+`CLAUDE.md` states the rule these rows are measured against: "the in-RAM path and the out-of-core
+path must produce identical values." Where they do not, the gap is a defect rather than a
+convention, and the registry says so in `flag=impl-defect`.
+
+| feature | in-RAM | out-of-core | gap |
+|---|---:|---:|---|
+| 2D `PERIMETER` | 131.88225099390849 | 112.0 | 15%, and the out-of-core value is an integer |
+
+`ContourFeature::calculate()` sums Euclidean step lengths around the contour;
+`ContourFeature::osized_calculate()` sets `fval_PERIMETER = (StatsInt) K.size()`, the contour pixel
+**count**. Measured on a 64×64 single-disk ROI. The out-of-core value being exactly an integer is
+what identifies the definition, rather than accumulation order, as the cause.
+
+**Why no test saw it.** `tests/python/test_2d_ooc_invariant.py` has asserted `*ALL_MORPHOLOGY*`
+equality across the two paths since it was written, and it passes. Its fixture is a full-image
+**rectangle**, and around a rectangle every contour step is an axis-aligned unit step — so the pixel
+count and the Euclidean sum are the same number, and the one feature that differs cannot show up.
+The invariant is sound; the shape could not discriminate. This is the general lesson for path-equality
+tests: a fixture that is symmetric in the axis under test proves nothing about it.
+
+The five `EDGE_*` statistics and `MASS_DISPLACEMENT` were measured on the same disk and **do** agree
+exactly, so the defect is `PERIMETER` alone rather than the contour builder as a whole.
+`test_2d_ooc_invariant.py` now asserts that agreement on the disk as well, and
+`tests/python/test_2d_ooc_regression.py` pins the divergence — a correct fix to `osized_calculate()`
+must break it, at which point `PERIMETER` folds back into the invariant's feature list. The fix is a
+`src/nyx` change and is not made here. Cell table: `matrix/morphology.md`.
+
+---
+
 ## Summary
 
 | | count |
