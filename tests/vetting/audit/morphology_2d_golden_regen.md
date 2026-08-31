@@ -8,23 +8,23 @@ or on any pin it cannot produce. Run them from the repository root.
 
 | generator | interpreter | how to get it |
 |---|---|---|
-| `gen_morphology_matlab.m` | GNU Octave 11.3.0 + `image` 2.20.0 | the license-free MATLAB stand-in; see TOOLS.md for the launcher caveats |
+| `gen_morphology_matlab.m` | MATLAB R2026a + Image Processing Toolbox 26.1 | licensed offline oracle; see TOOLS.md |
 | `gen_morphology_skimage.py` | conda env `nyxus_mirp` (scikit-image 0.26.0, numpy) | `conda create -n nyxus_mirp -c conda-forge python=3.12 scikit-image numpy opencv` |
 | `gen_morphology_imea.py` | conda env `nyxus_mirp` + `pip install imea==0.3.5` | imea pulls opencv and pandas |
 
-Fixtures are **not** copied into the generators. All three parse `tests/test_data.h` for the
-`{x, y, value}` pixel arrays, so the generator and the C++ tests share one copy of the pixels — the
-same discipline as `oracles/ibsi_phantom.py`. The ellipse benchmark is the one exception: it is
-generated arithmetically from `a=20, b=10, cx=26, cy=16`, mirroring
-`calculate_ellipse_caliper_values()` in `test_2d_morphology_common.h`.
+Fixtures are **not** copied into the generators. The MATLAB generator downloads `tests/test_data.h`
+from the moving `PolusAI/nyxus` main tree; the Python generators read the same checked-in file
+locally. The ellipse benchmark is the one exception: it is generated arithmetically from
+`a=20, b=10, cx=26, cy=16`, mirroring `calculate_ellipse_caliper_values()` in
+`test_2d_morphology_common.h`.
 
-## MATLAB / Octave — `test_2d_morphology_matlab.h`
+## MATLAB — `test_2d_morphology_matlab.h`
 
 ```
-octave tests/vetting/oracles/gen_morphology_matlab.m
+matlab -batch "run('tests/vetting/oracles/gen_morphology_matlab.m')"
 ```
 
-Expect `33 verified, 0 failed, 0 unproducible`.
+Expect all 33 values to agree within `rel=1e-3`.
 
 Mapping `regionprops` output to Nyxus names, all of it part of recipe `morphology.shape2d_native`:
 
