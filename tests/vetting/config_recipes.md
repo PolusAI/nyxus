@@ -24,6 +24,33 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 ## firstorder.pyradiomics_default
 - Non-discretised intensity statistics. Oracle: `pyradiomics` firstorder. Used by: `test_2d_firstorder_pyradiomics.h`.
 
+## firstorder2d.matlab_native
+- `bench_irregular13x18_intensity`, with default 2D first-order settings. The one slide-relative
+  feature uses the same ROI with slide range 0..65535.
+- MATLAB R2026a uses the named built-ins directly; derived statistics apply only their defining
+  normalization to those results. MATLAB sample percentiles and Nyxus' fixed 100-bin CDF agree at
+  `rel=3e-2` (worst measured residual 2.75%); all other comparisons use `rel=1e-3`.
+- Used by: `test_2d_firstorder_matlab.h`. Generator:
+  `oracles/gen_firstorder2d_matlab.m`.
+
+## firstorder2d.ibsi_digital_phantom
+- The four-slice IBSI digital phantom is treated as one ROI under default 2D first-order settings.
+  The assertions compare with the published three-significant-figure IBSI reference values at
+  `rel=1e-2`.
+- Used by: `test_2d_firstorder_ibsi.h`.
+
+## firstorder2d.regression_default
+- `bench_irregular13x18_intensity`, with default settings. Snapshot-only coverage for
+  `MEDIAN_ABSOLUTE_DEVIATION` and `ROBUST_MEAN`, whose Nyxus semantics do not match MATLAB's native
+  `mad(...,1)` and `trimmean` semantics.
+- Used by: `test_2d_firstorder_regression.h`.
+
+## firstorder2d.regression_greydepth20
+- `bench_irregular13x18_intensity`, with `GREYDEPTH=20`, `IBSI=false`, and `USEGPU=false`.
+  Snapshot-only coverage for the production histogram entropy point; the PyRadiomics oracle uses
+  a distinct 64-bin recipe.
+- Used by: `test_2d_firstorder_regression.h`.
+
 ## firstorder3d.pyradiomics_bincount20
 - `bench_compat_liver_3d`, label 1, with PyRadiomics 3.0.1 `binCount=20`, no resampling and no
   weighting. Nyxus uses `GREYDEPTH=-20`; the negative value selects the corresponding radiomics
