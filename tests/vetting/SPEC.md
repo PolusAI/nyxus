@@ -164,7 +164,7 @@ Notes:
   MATLAB license-free (TOOLS.md; MIGRATION 5.13). Therefore every table's provenance header, and
   every artifact presenting the token — registry `notes`, audit coverage CSVs, and vetting reports
   — states whether licensed MATLAB or an Octave surrogate produced its numbers.
-  `test_2d_morphology_matlab.h`,
+  `test_2d_firstorder_matlab.h`, `test_2d_morphology_matlab.h`,
   `test_3d_morphology_matlab.h`, and `test_3d_firstorder_matlab.h` are licensed-run exceptions:
   their provenance pins MATLAB R2026a and their generators call the named native functions.
   `graycoprops` is the one gap: Octave's `image` has no equivalent, so GLCM has no Octave path
