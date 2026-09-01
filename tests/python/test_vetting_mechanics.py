@@ -63,14 +63,22 @@ def test_vetting_coverage_stats_and_report_mechanics(tmp_path):
         {"dim":"2D","feature":"A","family":"glcm","status":"vetted","oracle":"matlab"},
         {"dim":"2D","feature":"B","family":"glcm","status":"regression","oracle":""},
         {"dim":"2D","feature":"C","family":"moments","status":"untested","oracle":""},
+        # D is covered only by a path-equality assertion: it must land in its own bucket rather
+        # than raise the headline, because an invariant relates two Nyxus paths and names no oracle
+        {"dim":"2D","feature":"D","family":"moments","status":"invariant","oracle":""},
     ])
     rows = cc.load_registry(path)
     s = cc.coverage_stats(rows)
-    assert s["total"] == 3 and s["vetted"] == 1 and s["regression"] == 1 and s["untested"] == 1
-    assert s["by_family"]["glcm"] == {"total":2,"vetted":1,"regression":1,"untested":0}
+    assert s["total"] == 4 and s["vetted"] == 1 and s["regression"] == 1
+    assert s["invariant"] == 1 and s["untested"] == 1
+    assert s["by_family"]["glcm"] == {"total":2,"vetted":1,"regression":1,"invariant":0,"untested":0}
+    assert s["by_family"]["moments"] == {"total":2,"vetted":0,"regression":0,"invariant":1,
+                                         "untested":1}
     rep = cc.render_report(rows)
     assert rep.startswith("# Nyxus Oracle-Vetting Coverage")
-    assert "Features vetted by >=1 oracle: 1/3" in rep
+    # an invariant does NOT count as vetted
+    assert "Features vetted by >=1 oracle: 1/4" in rep
+    assert "invariant: 1" in rep
 
 def test_vetting_drift_and_main_write_mechanics(tmp_path):
     path = _write(tmp_path, [
@@ -192,6 +200,22 @@ def test_vetting_unknown_source_flagged_mechanics(tmp_path):
     errs = [e for e in cc.validate_rows(cc.load_registry(path)) if "source" in e]
     assert len(errs) == 1 and "'generator'" in errs[0] and errs[0].startswith("B:"), errs
 
+
+
+def test_vetting_invariant_status_is_allowed_and_takes_no_oracle_mechanics(tmp_path):
+    """SPEC 3 lists `invariant` among the outcome values and the checker did not accept it, so a cell
+    backed by a path-equality assertion had to be written `vetted` -- which claims an external tool
+    agreed, when none was involved. It is accepted now, and carries the same no-oracle rule as
+    `regression`: an invariant relates two Nyxus code paths to each other."""
+    ok = _write(tmp_path, [
+        {"dim":"2D","feature":"A","family":"x","status":"invariant","oracle":""},
+    ])
+    assert cc.validate_rows(cc.load_registry(ok)) == []
+    bad = _write(tmp_path, [
+        {"dim":"2D","feature":"B","family":"x","status":"invariant","oracle":"cellprofiler"},
+    ])
+    errs = cc.validate_rows(cc.load_registry(bad))
+    assert len(errs) == 1 and "has oracle" in errs[0], errs
 
 # ---- SPEC 6.1/6.2 test-naming conventions (tests/vetting/check_test_names.py) ----
 

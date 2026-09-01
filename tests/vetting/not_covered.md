@@ -531,11 +531,21 @@ convention, and the registry says so in `flag=impl-defect`.
 | feature | in-RAM | out-of-core | gap |
 |---|---:|---:|---|
 | 2D `PERIMETER` | 131.88225099390849 | 112.0 | 15%, and the out-of-core value is an integer |
+| 2D `DIAMETER_EQUAL_PERIMETER` | 41.97942430353313 | 35.65070725258456 | the same ratio, inherited |
 
 `ContourFeature::calculate()` sums Euclidean step lengths around the contour;
 `ContourFeature::osized_calculate()` sets `fval_PERIMETER = (StatsInt) K.size()`, the contour pixel
-**count**. Measured on a 64×64 single-disk ROI. The out-of-core value being exactly an integer is
-what identifies the definition, rather than accumulation order, as the cause.
+**count**. Measured on `bench_disk64_diagonal_boundary`. The out-of-core value being exactly an
+integer — and equal to that fixture's 112 edge pixels — is what identifies the definition, rather
+than accumulation order, as the cause.
+
+**It is one defect with two public consequences.** `DIAMETER_EQUAL_PERIMETER` is computed as
+`fval_PERIMETER / M_PI` on *both* paths (`contour.cpp` lines 976 and 1000), so it carries the same
+ratio and cannot be right wherever `PERIMETER` is not. Pinning only `PERIMETER` would leave a second
+public value diverging with nothing in the tree to say so.
+`tests/python/test_2d_ooc_regression.py` asserts the derivation as an identity on both paths, so a
+fix to `PERIMETER` alone must fix this one too — and if the two ratios ever stop matching, that is a
+new finding rather than this one.
 
 **Why no test saw it.** `tests/python/test_2d_ooc_invariant.py` has asserted `*ALL_MORPHOLOGY*`
 equality across the two paths since it was written, and it passes. Its fixture is a full-image
@@ -545,7 +555,7 @@ The invariant is sound; the shape could not discriminate. This is the general le
 tests: a fixture that is symmetric in the axis under test proves nothing about it.
 
 The five `EDGE_*` statistics and `MASS_DISPLACEMENT` were measured on the same disk and **do** agree
-exactly, so the defect is `PERIMETER` alone rather than the contour builder as a whole.
+exactly, so the defect is the perimeter pair rather than the contour builder as a whole.
 `test_2d_ooc_invariant.py` now asserts that agreement on the disk as well, and
 `tests/python/test_2d_ooc_regression.py` pins the divergence — a correct fix to `osized_calculate()`
 must break it, at which point `PERIMETER` folds back into the invariant's feature list. The fix is a
