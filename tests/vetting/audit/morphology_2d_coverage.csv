@@ -23,7 +23,7 @@ Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
 2D,morphology,PERIMETER,skimage,test_2d_morphology_perimeter_skimage,Y,test_2d_morphology_contour_regression,
 2D,morphology,DIAMETER_EQUAL_PERIMETER,imea,test_2d_morphology_diameter_equal_perimeter_imea,N,,
 2D,morphology,EDGE_MEAN_INTENSITY,cellprofiler,test_2d_morphology_edge_intensity_cellprofiler,N,,
-2D,morphology,EDGE_STDDEV_INTENSITY,cellprofiler,test_2d_morphology_edge_intensity_cellprofiler,N,,
+2D,morphology,EDGE_STDDEV_INTENSITY,,,Y,test_2d_morphology_contour_regression,
 2D,morphology,EDGE_MAX_INTENSITY,cellprofiler,test_2d_morphology_edge_intensity_cellprofiler,N,,
 2D,morphology,EDGE_MIN_INTENSITY,cellprofiler,test_2d_morphology_edge_intensity_cellprofiler,N,,
 2D,morphology,EDGE_INTEGRATED_INTENSITY,cellprofiler,test_2d_morphology_edge_intensity_cellprofiler,N,,
