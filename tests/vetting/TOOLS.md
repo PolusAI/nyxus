@@ -365,41 +365,18 @@ stay statements about the shipped `sharpness.cpp`.
 - **Reproducibility rule** (all tools): pin the exact version *and* record the resolved dependency
   set (Docker `@sha256`, `pip freeze`, `mvn dependency:tree`) alongside each golden, plus the
   discretisation/aggregation config used.
-- **`octave` (license-free MATLAB substitute — no Docker needed).** A conda env with GNU Octave +
-  the `statistics` package is a near-drop-in replacement for `matlab-ind/`'s stats-toolbox calls
-  (`regionprops`, `graycomatrix`, `mean`/`median`/`std`/`var`/`skewness`/`kurtosis`/`prctile`/
-  `quantile` all match within a few %; the one real gap is `graycoprops`, absent in Octave, needing
-  a ~15-line reimplementation from the normalized GLCM — not relevant to firstorder).
-
-  **Setup** (one-time):
+- **Licensed MATLAB first-order generators.** Both dimensions are pinned from MATLAB R2026a,
+  Statistics and Machine Learning Toolbox 26.1:
   ```
-  conda create -n octave_verify -c conda-forge octave octave-statistics
+  matlab -batch "run('tests/vetting/oracles/gen_firstorder2d_matlab.m')"
+  matlab -batch "run('tests/vetting/oracles/gen_firstorder3d_matlab.m')"
   ```
-  (`octave-io` is not a real conda-forge package name despite showing up in some notes — don't try
-  to install it; core Octave already reads flat files via `dlmread`/`csvread`, which is all a
-  first-order vetting script needs.)
-
-  **Use** (headless, one-shot eval):
-  ```
-  source <conda-base>/bin/activate octave_verify
-  octave-cli -q --eval "pkg load statistics; x = dlmread('intensities.csv'); disp(prctile(x, 10))"
-  ```
-  or point `octave-cli -q` at a `.m` script for a multi-statistic dump (`printf('P10=%.15g\n',
-  prctile(x,10));` etc. — see `tests/vetting/audit/firstorder_2d_golden_regen.md` for a fuller
-  example script).
-
-  **Known gotcha, found the hard way (see `tests/vetting/audit/firstorder_2d_matlab_vetting_report.md`):**
-  Octave's default `skewness()`/`kurtosis()` use the same biased/population moment convention Nyxus
-  does, so those two land close enough to look "MATLAB-vetted" even when they were never checked
-  against a real MATLAB/Octave run. But `prctile()`/`quantile()` use standard order-statistic
-  interpolation, which is a **different algorithm** from Nyxus's own percentile method (a fixed
-  100-bin histogram with linear interpolation *within* the containing bin —
-  `TrivialHistogram::calc_percentiles` in `src/nyx/features/histogram.h`). The two converge only
-  when bins are densely populated; on a 150-pixel fixture they diverged by 1–2.5%. Conclusion: don't
-  assume a percentile-derived Nyxus feature (`P*`, `INTERQUARTILE_RANGE`, `QCOD`, `ROBUST_MEAN*`) is
-  oracle-vetted just because its golden matches Nyxus's own output — always cross-check against a
-  real `prctile()`/`quantile()` call on the same fixture before trusting a `matlab`-labeled golden
-  for these.
+  The generators consume the checked-in fixtures and call native statistics built-ins directly;
+  derived values use only their defining arithmetic. Nyxus' percentile family uses a fixed 100-bin
+  CDF while MATLAB evaluates the raw sample, so the measured tolerance is fixture-specific and
+  recorded in each family's recipe and report. Neither generator recreates that CDF. Historical
+  Octave measurements remain useful audit evidence, but they are not the provenance for either
+  checked-in first-order table.
 
   **`regionprops` (2D morphology).** The checked-in oracle is generated with licensed MATLAB
   R2026a and Image Processing Toolbox 26.1:

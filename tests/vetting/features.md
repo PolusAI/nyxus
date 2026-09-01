@@ -8,12 +8,12 @@ what [`oracle_coverage.csv`](oracle_coverage.csv) CLAIMS to what the test tree A
 
 ## Coverage
 
-Features vetted by >=1 oracle: 639/758 (84%)
-regression: 119  invariant: 0  untested: 0
+Features vetted by >=1 oracle: 637/758 (84%)
+regression: 121  invariant: 0  untested: 0
 
 | family | total | vetted | regression | invariant | untested |
 |---|---|---|---|---|---|
-| firstorder | 72 | 69 | 3 | 0 | 0 |
+| firstorder | 72 | 67 | 5 | 0 | 0 |
 | gabor | 1 | 1 | 0 | 0 | 0 |
 | glcm | 118 | 118 | 0 | 0 | 0 |
 | gldm | 28 | 28 | 0 | 0 | 0 |
@@ -32,12 +32,12 @@ regression: 119  invariant: 0  untested: 0
 
 ## Verdicts
 
-806 of 984 assertion rows agree with the tree.
+806 of 1012 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
 | `agree` | 806 | the claim and the tree say the same thing |
-| `unscanned` | 178 | no scanner covers this family x dim yet |
+| `unscanned` | 206 | no scanner covers this family x dim yet |
 
 ### How far each verdict reaches
 
@@ -47,20 +47,20 @@ regression: 119  invariant: 0  untested: 0
 | scope | rows | what was compared |
 |---|---:|---|
 | `feature` | 441 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
+| `none` | 206 | no scanner for this family x dim, so nothing was read at all |
 | `row+config` | 205 | the case named in `test_name` asserts this feature at this `config_recipe` |
-| `none` | 178 | no scanner for this family x dim, so nothing was read at all |
 | `row` | 160 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 
 ## Families with no scanner
 
-**178 of 984 rows (18%) cannot be checked against the tree at all.** These families have an
+**206 of 1012 rows (20%) cannot be checked against the tree at all.** These families have an
 `audit/<family>_<dim>_coverage.csv`, but nothing regenerates it from the test
 sources, so the artifact records what someone believed rather than what the tree
 asserts. Writing the 5 missing scanners is what closes this.
 
 | dim | family | rows | features | why |
 |---|---|---:|---:|---|
-| 2D | firstorder | 36 | 36 | no scan_firstorder_coverage.py; artifact predates the scanner series |
+| 2D | firstorder | 64 | 36 | no scan_firstorder_coverage.py; artifact predates the scanner series |
 | 2D | gabor | 2 | 1 | no scan_gabor_coverage.py; one feature, artifact written by hand |
 | 2D | glcm | 59 | 59 | no scan_glcm_coverage.py, though the 3D twin has one |
 | 2D | glrlm | 32 | 32 | no scan_glrlm_coverage.py, though the 3D twin has one |
@@ -74,7 +74,7 @@ that alone understates every family that corroborates.
 
 | dim | family | analytic | cellprofiler | fraclac | ibsi | imea | matlab | mirp | opencv | pyradiomics | skimage | none |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 2D | firstorder | . | . | . | . | . | 33 | . | . | 3 | . | . |
+| 2D | firstorder | . | . | . | 12 | . | 31 | . | . | 18 | . | 3 |
 | 2D | gabor | . | . | . | . | . | . | . | . | . | 1 | . |
 | 2D | glcm | . | . | . | 21 | . | . | 10 | . | 28 | . | . |
 | 2D | gldm | . | . | . | 14 | . | . | . | . | 14 | . | . |
@@ -99,13 +99,13 @@ that alone understates every family that corroborates.
 | 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | . | . | 5 | . | . |
 | IMQ | imq | . | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **38** | **9** | **2** | **115** | **20** | **98** | **127** | **2** | **208** | **127** | **119** |
+| | **all** | **38** | **9** | **2** | **127** | **20** | **96** | **127** | **2** | **223** | **127** | **122** |
 
 ## By dimensionality
 
 | dim | features | vetted | scanned | no oracle assertion | unscanned |
 |---|---:|---:|---:|---:|---:|
-| 2D | 539 | 436 | 411 | 103 | 128 |
+| 2D | 539 | 434 | 411 | 103 | 128 |
 | 3D | 213 | 199 | 177 | 11 | 36 |
 | IMQ | 6 | 4 | 6 | 2 | 0 |
 
