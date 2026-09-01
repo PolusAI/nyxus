@@ -84,10 +84,15 @@ def test_2d_morphology_whole_slide_edge_intensity_is_degenerate_regression(tmp_p
     """
     ip, sp = _fixture(tmp_path)
     df = _featurize(ip, sp, True)
-
     got = {c: float(df[c].iloc[0]) for c in WHOLE_SLIDE}
-    for c, want in WHOLE_SLIDE.items():
-        assert got[c] == pytest.approx(want, rel=1e-9), c
+
+    assert got["PERIMETER"] == pytest.approx(WHOLE_SLIDE["PERIMETER"], rel=1e-9)
+    assert got["MASS_DISPLACEMENT"] == pytest.approx(WHOLE_SLIDE["MASS_DISPLACEMENT"], rel=1e-9)
+    assert got["EDGE_MEAN_INTENSITY"] == pytest.approx(WHOLE_SLIDE["EDGE_MEAN_INTENSITY"], rel=1e-9)
+    assert got["EDGE_STDDEV_INTENSITY"] == pytest.approx(WHOLE_SLIDE["EDGE_STDDEV_INTENSITY"], rel=1e-9)
+    assert got["EDGE_MAX_INTENSITY"] == pytest.approx(WHOLE_SLIDE["EDGE_MAX_INTENSITY"], rel=1e-9)
+    assert got["EDGE_MIN_INTENSITY"] == pytest.approx(WHOLE_SLIDE["EDGE_MIN_INTENSITY"], rel=1e-9)
+    assert got["EDGE_INTEGRATED_INTENSITY"] == pytest.approx(WHOLE_SLIDE["EDGE_INTEGRATED_INTENSITY"], rel=1e-9)
 
     # the degeneracy stated as relations, not just numbers
     assert got["EDGE_MIN_INTENSITY"] == got["EDGE_MAX_INTENSITY"] == got["EDGE_MEAN_INTENSITY"]
@@ -108,8 +113,13 @@ def test_2d_morphology_whole_slide_differs_from_segmented_regression(tmp_path):
     seg = _featurize(ip, sp, False)
     ws = _featurize(ip, sp, True)
 
-    for c, want in SEGMENTED.items():
-        assert float(seg[c].iloc[0]) == pytest.approx(want, rel=1e-9), c
+    assert float(seg["PERIMETER"].iloc[0]) == pytest.approx(SEGMENTED["PERIMETER"], rel=1e-9)
+    assert float(seg["MASS_DISPLACEMENT"].iloc[0]) == pytest.approx(SEGMENTED["MASS_DISPLACEMENT"], rel=1e-9)
+    assert float(seg["EDGE_MEAN_INTENSITY"].iloc[0]) == pytest.approx(SEGMENTED["EDGE_MEAN_INTENSITY"], rel=1e-9)
+    assert float(seg["EDGE_STDDEV_INTENSITY"].iloc[0]) == pytest.approx(SEGMENTED["EDGE_STDDEV_INTENSITY"], rel=1e-9)
+    assert float(seg["EDGE_MAX_INTENSITY"].iloc[0]) == pytest.approx(SEGMENTED["EDGE_MAX_INTENSITY"], rel=1e-9)
+    assert float(seg["EDGE_MIN_INTENSITY"].iloc[0]) == pytest.approx(SEGMENTED["EDGE_MIN_INTENSITY"], rel=1e-9)
+    assert float(seg["EDGE_INTEGRATED_INTENSITY"].iloc[0]) == pytest.approx(SEGMENTED["EDGE_INTEGRATED_INTENSITY"], rel=1e-9)
 
     same = [c for c in SEGMENTED
             if float(seg[c].iloc[0]) == pytest.approx(float(ws[c].iloc[0]), rel=1e-6)]
