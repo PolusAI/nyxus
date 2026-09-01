@@ -1,3 +1,29 @@
-src/nyx/python/nyxus/_version.py export-subst
-*.sh text eol=lf
+# Nyxus line-ending standard: LF, everywhere, in the repository and in the working
+# tree. Git normalises on check-in, so a CRLF cannot reach the remote whatever the
+# contributor's editor or core.autocrlf setting does locally.
+* text=auto eol=lf
+
+# Windows-run scripts are the one exception, and only in the working tree: the stored
+# blob is still LF, git converts it to CRLF on checkout because cmd.exe and the
+# PowerShell 5.1 host want it that way.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Restated so the intent survives a future edit of the wildcard above.
+*.sh  text eol=lf
 *.csv text eol=lf
+
+# Binary fixtures: pinned rather than left to git's NUL heuristic, so a fixture whose
+# first 8 KiB happen to hold no NUL byte cannot be silently rewritten.
+*.tif  binary
+*.tiff binary
+*.nii  binary
+*.gz   binary
+*.dcm  binary
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+tests/data/omezarr/**/[0-9]*.[0-9]* binary
+
+src/nyx/python/nyxus/_version.py export-subst
