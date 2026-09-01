@@ -50,10 +50,14 @@ inheritance.
 | `EDGE_MIN_INTENSITY` | 117.0 | 117.0 | 397.0 |
 | `EDGE_INTEGRATED_INTENSITY` | 28784.0 | 28784.0 | 1588.0 |
 
-Assertions: `test_2d_ooc_invariant.py`
-(`test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invariant`),
-`test_2d_ooc_regression.py`, `test_2d_morphology_regression.py`, and for the oracle cell
-`test_2d_morphology_cellprofiler.h`.
+**What backs each column, because they are not backed the same way.** The segmented and
+whole-slide columns are pinned literally, in `SEGMENTED` and `WHOLE_SLIDE` in
+`test_2d_morphology_regression.py`. In the out-of-core column only `PERIMETER` is pinned to a
+literal (`test_2d_ooc_regression.py`); the other six cells are asserted **equal to the segmented
+column** by
+`test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invariant`, not pinned
+independently — so a change that moved both paths together would keep those six agreeing while the
+segmented pin caught it. The oracle cell is `test_2d_morphology_cellprofiler.h`.
 
 ## The out-of-core PERIMETER divergence is a defect, not a convention
 
