@@ -20,6 +20,8 @@ import pytest
 
 import nyxus
 
+import test_data
+
 tifffile = pytest.importorskip("tifffile")
 
 # The "large" ram_limit for the in-RAM side of these comparisons. The biggest fixture here has a
@@ -193,20 +195,10 @@ def test_2d_ooc_2d_morphology_matches_in_ram_invariant(tmp_path):
 # a rectangle that difference is invisible. It stayed invisible here for as long as this file has
 # existed. A disk has a genuinely diagonal boundary, so the two definitions separate.
 def _disk_pair(tmp_path):
-    """A 64x64 image with one disk ROI: the boundary is diagonal, so contour pixel count and
-    Euclidean step sum differ. ram_limit=0 forces the oversized branch for any ROI, so the fixture
+    """bench_disk64_diagonal_boundary, built by test_data.disk64_arrays() so the three modules that
+    read this fixture cannot drift apart. ram_limit=0 forces the oversized branch for any ROI, so it
     does not have to be large to reach the out-of-core path."""
-    Y = X = 64
-    yy, xx = np.mgrid[0:Y, 0:X]
-    mask = (((yy - 32) ** 2 + (xx - 32) ** 2) <= 20 * 20).astype(np.uint32)
-    inten = ((1 + xx + yy * 7) * mask).astype(np.uint32)
-    intdir = tmp_path / "dint"
-    segdir = tmp_path / "dseg"
-    intdir.mkdir()
-    segdir.mkdir()
-    tifffile.imwrite(str(intdir / "img.tif"), inten)
-    tifffile.imwrite(str(segdir / "img.tif"), mask)
-    return str(intdir) + os.sep, str(segdir) + os.sep
+    return test_data.write_disk64_pair(tmp_path, tifffile, as_dirs=True)
 
 
 def assert_ooc_agrees(df_ram, df_ooc, feature):

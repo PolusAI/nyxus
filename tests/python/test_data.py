@@ -75,3 +75,51 @@ ct_zslice_hounsfeld_inten = np.array([
 # trivial mask matching dimensions of 'ct_zslice_hounsfeld_inten'
 ct_zslice_hounsfeld_mask = np.ones((16, 16), dtype=np.int32)
 
+
+
+# ---------------------------------------------------------------------------------------------
+# bench_disk64_diagonal_boundary (tests/vetting/benchmarks.md)
+#
+# One 64x64 disk. The boundary is genuinely DIAGONAL, which is the property the other out-of-core
+# fixtures lack: around a rectangle every contour step is an axis-aligned unit step, so the contour
+# pixel COUNT and the sum of Euclidean step lengths are the same number and the two contour
+# implementations agree by construction rather than by correctness. On this disk they separate.
+#
+# Built here rather than copied into each test: three modules read it, and three copies would drift
+# independently -- the pins in one would stop describing the image another builds.
+DISK64_SIDE = 64
+DISK64_CENTRE = 32
+DISK64_RADIUS = 20
+
+
+def disk64_arrays():
+    """-> (intensity, mask) for bench_disk64_diagonal_boundary.
+
+    1257 ROI pixels, intensity 117..397, total 323049; 112 of them lie on the 4-neighbour inner
+    boundary -- and 112 is exactly what the out-of-core path returns for PERIMETER, which is what
+    identifies that divergence as a difference of definition rather than of accumulation.
+    """
+    y, x = np.mgrid[0:DISK64_SIDE, 0:DISK64_SIDE]
+    mask = (((y - DISK64_CENTRE) ** 2 + (x - DISK64_CENTRE) ** 2) <= DISK64_RADIUS ** 2)
+    inten = (1 + x + y * 7) * mask
+    return inten.astype(np.uint32), mask.astype(np.uint32)
+
+
+def write_disk64_pair(tmp_path, tifffile, as_dirs=True):
+    """Write the fixture as a TIFF pair. as_dirs -> (intdir, segdir) for featurize_directory;
+    otherwise -> (intensity_path, mask_path) for featurize_files."""
+    inten, mask = disk64_arrays()
+    if as_dirs:
+        intdir = tmp_path / "disk_int"
+        segdir = tmp_path / "disk_seg"
+        intdir.mkdir()
+        segdir.mkdir()
+        tifffile.imwrite(str(intdir / "img.tif"), inten)
+        tifffile.imwrite(str(segdir / "img.tif"), mask)
+        import os
+        return str(intdir) + os.sep, str(segdir) + os.sep
+    ip = tmp_path / "disk_img.tif"
+    sp = tmp_path / "disk_seg.tif"
+    tifffile.imwrite(str(ip), inten)
+    tifffile.imwrite(str(sp), mask)
+    return str(ip), str(sp)

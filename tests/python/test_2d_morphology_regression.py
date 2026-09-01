@@ -16,6 +16,14 @@ statistic of four synthetic corner points at one value, and is degenerate by con
     EDGE_STDDEV                        == 0            (four identical values)
     EDGE_INTEGRATED                    == 4 * maximum
     PERIMETER                          == the AABB perimeter, not the object's
+    DIAMETER_EQUAL_PERIMETER           == that perimeter / pi
+
+`MASS_DISPLACEMENT` is pinned here too but reaches none of the above: it is computed by
+`BasicMorphologyFeatures::calculate()` from the geometric and intensity-weighted centroids, never
+touches `buildWholeSlideContour()`, and at this cell it is the displacement over the whole image.
+CellProfiler reproduces it (see `test_2d_morphology_wholeslide_cellprofiler.py`), so it is the one
+whole-slide value that is oracle-backed rather than a snapshot; the pin here is the same number,
+kept so this file's fixture and the oracle's stay tied.
 
 That is a different quantity from the per-object edge statistics the segmented cell computes and
 CellProfiler vets (test_2d_morphology_cellprofiler.h), which is why the vetted rows state their
@@ -30,6 +38,8 @@ import pytest
 
 import nyxus
 
+import test_data
+
 tifffile = pytest.importorskip("tifffile")
 
 # 64x64 image, one disk ROI, intensities 1 + x + 7y inside it -> maximum 397 at the far corner of
@@ -38,6 +48,7 @@ tifffile = pytest.importorskip("tifffile")
 IMAGE_MAX = 397.0
 SEGMENTED = {
     "PERIMETER": 131.88225099390849,
+    "DIAMETER_EQUAL_PERIMETER": 41.97942430353313,
     "MASS_DISPLACEMENT": 2.7526140113386943,
     "EDGE_MEAN_INTENSITY": 257.0,
     "EDGE_STDDEV_INTENSITY": 98.12659593009853,
@@ -47,6 +58,7 @@ SEGMENTED = {
 }
 WHOLE_SLIDE = {
     "PERIMETER": 256.0,                 # 4 * 64, the AABB walk
+    "DIAMETER_EQUAL_PERIMETER": 81.48733086305042,   # = 256/pi, derived on both paths
     "MASS_DISPLACEMENT": 3.3453118163885427,
     "EDGE_MEAN_INTENSITY": 397.0,
     "EDGE_STDDEV_INTENSITY": 0.0,
@@ -59,16 +71,11 @@ FEATURES = ["*ALL_MORPHOLOGY*", "*BASIC_MORPHOLOGY*"]
 
 
 def _fixture(tmp_path):
-    Y = X = 64
-    yy, xx = np.mgrid[0:Y, 0:X]
-    mask = (((yy - 32) ** 2 + (xx - 32) ** 2) <= 20 * 20).astype(np.uint32)
-    inten = ((1 + xx + yy * 7) * mask).astype(np.uint32)
+    """bench_disk64_diagonal_boundary, built by test_data.disk64_arrays() so the three modules that
+    read this fixture cannot drift apart."""
+    inten, _ = test_data.disk64_arrays()
     assert inten.max() == IMAGE_MAX, "fixture maximum moved; the pins below are keyed to it"
-    ip = tmp_path / "img.tif"
-    sp = tmp_path / "seg.tif"
-    tifffile.imwrite(str(ip), inten)
-    tifffile.imwrite(str(sp), mask)
-    return str(ip), str(sp)
+    return test_data.write_disk64_pair(tmp_path, tifffile, as_dirs=False)
 
 
 def _featurize(ip, sp, single_roi):
@@ -87,6 +94,7 @@ def test_2d_morphology_whole_slide_edge_intensity_is_degenerate_regression(tmp_p
     got = {c: float(df[c].iloc[0]) for c in WHOLE_SLIDE}
 
     assert got["PERIMETER"] == pytest.approx(WHOLE_SLIDE["PERIMETER"], rel=1e-9)
+    assert got["DIAMETER_EQUAL_PERIMETER"] == pytest.approx(WHOLE_SLIDE["DIAMETER_EQUAL_PERIMETER"], rel=1e-9)
     assert got["MASS_DISPLACEMENT"] == pytest.approx(WHOLE_SLIDE["MASS_DISPLACEMENT"], rel=1e-9)
     assert got["EDGE_MEAN_INTENSITY"] == pytest.approx(WHOLE_SLIDE["EDGE_MEAN_INTENSITY"], rel=1e-9)
     assert got["EDGE_STDDEV_INTENSITY"] == pytest.approx(WHOLE_SLIDE["EDGE_STDDEV_INTENSITY"], rel=1e-9)
@@ -114,6 +122,7 @@ def test_2d_morphology_whole_slide_differs_from_segmented_regression(tmp_path):
     ws = _featurize(ip, sp, True)
 
     assert float(seg["PERIMETER"].iloc[0]) == pytest.approx(SEGMENTED["PERIMETER"], rel=1e-9)
+    assert float(seg["DIAMETER_EQUAL_PERIMETER"].iloc[0]) == pytest.approx(SEGMENTED["DIAMETER_EQUAL_PERIMETER"], rel=1e-9)
     assert float(seg["MASS_DISPLACEMENT"].iloc[0]) == pytest.approx(SEGMENTED["MASS_DISPLACEMENT"], rel=1e-9)
     assert float(seg["EDGE_MEAN_INTENSITY"].iloc[0]) == pytest.approx(SEGMENTED["EDGE_MEAN_INTENSITY"], rel=1e-9)
     assert float(seg["EDGE_STDDEV_INTENSITY"].iloc[0]) == pytest.approx(SEGMENTED["EDGE_STDDEV_INTENSITY"], rel=1e-9)

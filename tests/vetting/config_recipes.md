@@ -962,3 +962,50 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   divergence is structural, not numerical, and is enumerated in
   `audit/imq_pydom_sharpness_vetting_report.md`. The pin is a change detector; the feature is not
   vetted.
+
+## morphology.disk64_segmented_inram
+- `bench_disk64_diagonal_boundary` featurised through the Python API at the default `ram_limit`
+  (64 MB here), `single_roi=False` — i.e. `ContourFeature::calculate()` at `SINGLEROI=false`, the
+  in-RAM segmented contour, and `BasicMorphologyFeatures::calculate()` for `MASS_DISPLACEMENT`.
+  Oracles: none — this recipe backs snapshots and the reference side of a path-equality invariant.
+  Used by: `tests/python/test_2d_morphology_regression.py`, `test_2d_ooc_regression.py`,
+  `test_2d_ooc_invariant.py`.
+- It exists as its own id because the three cells below differ only in run mode, and a single
+  fixture-named recipe could not say which of them a row was measured at.
+
+## morphology.disk64_forced_ooc
+- The same fixture at `ram_limit=0`, which forces the oversized branch for any ROI, so
+  `ContourFeature::osized_calculate()` (`buildRegularContour_nontriv`) and
+  `BasicMorphologyFeatures::osized_calculate()` run instead. Oracles: none. Used by:
+  `tests/python/test_2d_ooc_invariant.py`, `test_2d_ooc_regression.py`.
+- `MASS_DISPLACEMENT` and the five `EDGE_*` statistics are measured **equal** to
+  `morphology.disk64_segmented_inram` and carry `status=invariant` rows. `PERIMETER` and
+  `DIAMETER_EQUAL_PERIMETER` are **not** equal — `osized_calculate()` returns the contour pixel
+  count where `calculate()` sums Euclidean step lengths — and carry `flag=impl-defect`
+  regression rows. See `matrix/morphology.md` and `not_covered.md` §G.
+
+## morphology.disk64_wholeslide
+- The same fixture at `single_roi=True`, so the ROI is the whole frame:
+  `ContourFeature::calculate()` takes the `SINGLEROI` branch into `buildWholeSlideContour()`.
+  Oracles: `cellprofiler`, for `MASS_DISPLACEMENT` only — see the next recipe. Used by:
+  `tests/python/test_2d_morphology_regression.py`.
+- `buildWholeSlideContour()` does not trace a boundary: it pushes the four AABB corners, each
+  carrying `aux_max`. Every edge statistic is therefore degenerate by construction and no external
+  tool reproduces it, so the five `EDGE_*` plus `PERIMETER` and `DIAMETER_EQUAL_PERIMETER` are
+  VALID-BUT-PRODUCTION-ONLY snapshots at this cell.
+
+## morphology.cellprofiler_wholeslide_massdisp
+- CellProfiler `MeasureObjectIntensity` on `bench_disk64_diagonal_boundary` with a label image of
+  **all ones** — one object covering the full 64×64 frame, which is what `single_roi=True` makes
+  Nyxus featurise. All module settings at their defaults. Oracle: `cellprofiler`. Used by:
+  `tests/python/test_2d_morphology_regression.py`. Generator:
+  `oracles/gen_morphology_wholeslide_cellprofiler.py`.
+- It vets **`MASS_DISPLACEMENT` and nothing else**, measured: 3.345311793150965 against Nyxus'
+  3.3453118163885427, `rel=7e-9`. That feature is computed from the geometric and
+  intensity-weighted centroids and reads no contour, so it is the same quantity in both tools
+  whether the object is a disk or a full frame.
+- The `EDGE_*` statistics are **not** comparable at this recipe, and the generator asserts the
+  reason rather than leaving it as prose: an all-ones label image has an empty
+  `find_boundaries(mode="inner")` set, so CellProfiler returns exactly 0 for each of them while
+  Nyxus reports statistics of four synthesised corner pixels. A tool that emits a number under a
+  matching name is not thereby an oracle for it.
