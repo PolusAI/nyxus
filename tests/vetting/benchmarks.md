@@ -14,6 +14,21 @@ lists are what this tree shows today — the recipe ids are the stable half.
 
 ---
 
+## `bench_irregular13x18_intensity` — the canonical 2D first-order ROI
+
+| | |
+|---|---|
+| Fixture | `pixelIntensityFeaturesTestData` in `tests/test_data.h` |
+| ROI | 154 foreground pixels in a 13x18 bounding box |
+| Intensity domain | integer values 11079..64090; sum 5015224 |
+| Why it exists | an irregular, nonuniform ROI that exercises extrema, moments, percentiles and slide-relative range without image-loader transformations |
+
+Recipes: `firstorder2d.matlab_native`, `firstorder.pyradiomics_default`,
+`firstorder2d.regression_default`, and `firstorder2d.regression_greydepth20`.
+Tests: `test_2d_firstorder_{matlab,pyradiomics,regression}.h`.
+
+---
+
 ## `bench_ut57_3d` — the segmented `ut_` phantom
 
 | | |
@@ -116,7 +131,8 @@ thirds of the volume, which is why `n_1 = 32` dominates the matrix.
 | Shape | four 2D slices; grey levels are already discrete 1..6, so no binning is applied |
 | Why it exists | the fixture the published IBSI consensus values are defined on, so it is the only benchmark on which an `ibsi` assertion means anything |
 
-Recipes: `glcm.ibsi_identity`, `ih.ibsi_fbn`, `gldm.ibsi_phantom_2d`, `gldzm.ibsi_phantom_2d`,
+Recipes: `firstorder2d.ibsi_digital_phantom`, `glcm.ibsi_identity`, `ih.ibsi_fbn`,
+`gldm.ibsi_phantom_2d`, `gldzm.ibsi_phantom_2d`,
 `glszm.ibsi_phantom_2d`, `ngldm.ibsi_phantom_2d`, `ngtdm.ibsi_phantom_2d`, `ngtdm.default_fbn100`.
 
 Tests reaching it today: `test_2d_{firstorder,glcm,gldm,gldzm,glszm,ngldm,ngtdm}_ibsi.h`,
