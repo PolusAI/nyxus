@@ -13,7 +13,10 @@ the actual test migration/rollout happens after the spec is approved and merged.
 | [`check_test_names.py`](check_test_names.py) | Enforces the SPEC §6.1 file-name and §6.2 function-name conventions over the whole test tree, including gtest case names. `--check` fails in CI. |
 | [`benchmarks.md`](benchmarks.md) | The fixtures assertions run on (SPEC §6.3): what each one is, why it exists, and which recipes and tests use it. A `benchmark` id in the registry must be defined here, which `check_coverage.py` enforces — as it does for `test_name`, which must resolve to a gtest case in `test_all.cc`. |
 | [`matrix/`](matrix/) | Per-family config matrices (SPEC §5.1): the settings a family actually reads, the config points they produce, and each point's verdict. |
-| [`audit/`](audit/) | Baseline coverage audit of the current test tree (see below). Seeds the registry. |
+| [`report_features.py`](report_features.py) | Generates [`features.csv`](features.csv) and [`features.md`](features.md) — the whole report, one row per (dim, feature, oracle, config_recipe), joining what the registry CLAIMS to what the tree ASSERTS. Its `verdict` column is the join; `--check` fails in CI on any row that disagrees without an allowlisted reason. **This is the artifact to read.** |
+| [`features.md`](features.md) | The generated report: coverage, verdicts, the families no scanner covers, the family × oracle matrix, the dimensionality split. Never edit by hand. |
+| [`audit/`](audit/) | Baseline coverage audit of the current test tree (see below), and the per-family coverage scanners that keep it current. |
+| [`audit/scanlib.py`](audit/scanlib.py) | The scanners' shared machinery: the coverage rule, the acceptance checks and the artifact rendering, in one place. Each `audit/scan_*_coverage.py` is the family's declaration on top of it — which files to read, how the family spells its feature names in C++, which checks apply. |
 | [`oracles/`](oracles/) | Oracle golden-generators. Currently `fraclac/` (headless shifting-grid box-count macro). Grows per tool during rollout. |
 
 ## `audit/` — baseline snapshot
@@ -32,6 +35,19 @@ Tracked artifacts (the rest are regenerable — see below):
   pivot as a table)
 - `extract_features.py` → `scan_tests.py` → `merge.py` → `report.py` (+ `candidate_oracles.py`) —
   the pipeline (repo-relative paths); `audit_1..4.txt` are the raw per-feature agent-evidence inputs.
+
+### The per-family scanners
+
+`audit/scan_<family>_coverage.py` regenerates `audit/<family>_<dim>_coverage.csv` by reading the test
+sources, so a coverage artifact cannot drift from the tree. `--check` reports drift instead of
+rewriting and runs that family's acceptance checks against `oracle_coverage.csv`. All twenty share
+`scanlib.py`; a family whose tests genuinely read differently (2D moments resolves golden tables, not
+assertion lines) or which judges differently (2D NGTDM, IMQ, 3D GLDM and 3D GLSZM check each row
+against the tests of its own KIND) overrides that part in its own file, where the difference is
+visible.
+
+All twenty run in CI, in one loop, beside `check_coverage.py`, `check_test_names.py` and
+`report_features.py --check`.
 
 Regenerable byproducts (git-ignored, rebuilt by the pipeline): `features.csv`, `audit_scan.txt`,
 `vetting_pivot.csv`, `gap_not_tested.csv`, `gap_claimed_3p.csv`, `gap_regression.csv`. Run
