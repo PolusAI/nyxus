@@ -4,29 +4,23 @@
 
 The feature -> test mapping is read out of the test sources rather than written by hand, so the
 artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance check from PR423-family-plan: every `vetted` row in oracle_coverage.csv must be asserted
-by an oracle test, that test's oracle must be the one the row names, and `current_test` must name
-exactly the files that cover the feature.
+acceptance checks. The checks and the rendering live in scanlib.py.
 
-Coverage rule: a feature is covered by a test function when its name appears on an assertion line in
-that function, on the line that reads it out of the feature buffer, or in a literal list the
-function loops over while asserting. Comments are stripped first - several of them name features
-they do not assert, and one quotes an `fvals[(int)...]` subscript. The kind of coverage comes from
-the function-name suffix, per SPEC 2 naming, so only an oracle-suffixed function contributes an
-oracle token.
+This family overrides scanlib's collect for two reasons, one sound and one not:
+
+* Sound: its features are matched by shape (`IH_*`, plus `HISTOGRAM`) rather than by the registry's
+  name list, and its golden tables key some entries without the `IH_` prefix, which is re-added.
+* NOT sound: it also counts a bare READOUT line (`fvals[(int)...]`) as coverage. Every other
+  scanner here refuses to, because a readout-counts rule credits an oracle test with vetting
+  features it never checks -- that is the defect that made report_feature_tests.py unusable. It is
+  preserved here only so this refactor changes no behaviour; removing it is tracked in PR/todo.md
+  and needs its own pass, because it will drop coverage this family currently claims.
 """
-import argparse
-import csv
-import io
 import os
 import re
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-VETTING = os.path.dirname(HERE)
-TESTS = os.path.dirname(VETTING)
-OUT = os.path.join(HERE, "intensity_histogram_2d_coverage.csv")
-REGISTRY = os.path.join(VETTING, "oracle_coverage.csv")
+import scanlib
 
 SOURCES = [
     "test_2d_intensity_histogram_ibsi.h",
@@ -53,14 +47,8 @@ ORACLE_SUFFIX = {"analytic": "analytic", "mirp": "mirp", "ibsi": "ibsi",
                  "pyradiomics": "pyradiomics", "skimage": "skimage"}
 
 FEATURE = re.compile(r"\b(IH_[A-Z0-9_]+|HISTOGRAM)\b")
-FUNC = re.compile(r"^(?:void|def)\s+(test_\w+)|^\s+def\s+(test_\w+)", re.M)
 ASSERTION = re.compile(r"\b(ASSERT_|EXPECT_|assert\b)")
 READOUT = re.compile(r"fvals\s*\[\s*\(int\)")
-# C++    for (auto fc : { Feature2D::IH_A, Feature2D::IH_B }) { ... ASSERT ... }
-# Python for col in ["IH_A", "IH_B"]: assert ...
-LOOP_LIST = re.compile(r"for\s*\([^)]*:\s*\{([^}]*)\}\s*\)"
-                       r"|for\s+\w+\s+in\s*[\[(]([^\])]*)[\])]\s*:", re.S)
-COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
 
 NOTE = {
     "IH_ROBUST_MEAN_IDX": ("no MIRP or IBSI counterpart; exempted by name from the MIRP test's "
@@ -85,8 +73,7 @@ for _f in ["IH_MAX_GRADIENT", "IH_MIN_GRADIENT"]:
 def scan(path):
     """-> {test function name: {features it covers}}."""
     with open(path, encoding="utf-8", errors="replace") as fh:
-        text = fh.read()
-    text = COMMENT.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+        text = scanlib.strip_comments(fh.read())
     hits = {}
 
     for table, owner in TABLE_OWNER.items():
@@ -99,7 +86,7 @@ def scan(path):
                 name if name.startswith(("IH_", "HISTO")) else "IH_" + name)
         text = text.replace(body, "")   # keep the table out of the block scan below
 
-    marks = [(m.start(), m.group(1) or m.group(2)) for m in FUNC.finditer(text)]
+    marks = [(m.start(), m.group(1) or m.group(2)) for m in scanlib.FUNC.finditer(text)]
     for i, (pos, fn) in enumerate(marks):
         block = text[pos:marks[i + 1][0] if i + 1 < len(marks) else len(text)]
         if not ASSERTION.search(block):
@@ -107,16 +94,16 @@ def scan(path):
         for line in block.splitlines():
             if ASSERTION.search(line) or READOUT.search(line):
                 hits.setdefault(fn, set()).update(FEATURE.findall(line))
-        for m in LOOP_LIST.finditer(block):
+        for m in scanlib.LOOP_LIST.finditer(block):
             hits.setdefault(fn, set()).update(FEATURE.findall(m.group(1) or m.group(2) or ""))
     return hits
 
 
-def collect():
-    """-> (oracle fns, oracle tokens, regression fns, other-kind fns, fn -> file)."""
+def collect(fam, feat_re):
+    """-> the five coverage maps. feat_re is unused: features are matched by shape, not by name."""
     asserted, oracles, regression, other, where = {}, {}, {}, {}, {}
-    for rel in SOURCES:
-        for fn, feats in scan(os.path.join(TESTS, rel)).items():
+    for rel in fam.sources:
+        for fn, feats in scan(os.path.join(scanlib.TESTS, rel)).items():
             where[fn] = os.path.basename(rel)
             kind = fn.rsplit("_", 1)[-1]
             for feat in feats:
@@ -130,87 +117,13 @@ def collect():
     return asserted, oracles, regression, other, where
 
 
-def registry_rows():
-    with open(REGISTRY, newline="", encoding="utf-8") as fh:
-        return [r for r in csv.DictReader(fh)
-                if r["dim"] == "2D" and r["family"] == "intensity_histogram"]
-
-
-def render(rows, asserted, oracles, regression):
-    buf = io.StringIO()
-    w = csv.writer(buf, lineterminator="\n")
-    w.writerow(["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
-                "Regression", "Reg_Test_Name", "Notes"])
-    for r in rows:
-        f = r["feature"]
-        w.writerow(["2D", "intensity_histogram", f,
-                    ";".join(sorted(oracles.get(f, ()))),
-                    ";".join(sorted(asserted.get(f, ()))),
-                    "Y" if f in regression else "N",
-                    ";".join(sorted(regression.get(f, ()))),
-                    NOTE.get(f, "")])
-    return buf.getvalue()
-
-
-def unregistered_tests(where):
-    """gtest functions that exist but no TEST() in test_all.cc calls - they never run.
-
-    Only the C++ headers are checked; pytest collects the .py functions by name.
-    """
-    with open(os.path.join(TESTS, "test_all.cc"), encoding="utf-8", errors="replace") as fh:
-        registered = set(re.findall(r"(test_2d_intensity_histogram_\w+)\s*\(\s*\)", fh.read()))
-    return sorted(fn for fn, src in where.items()
-                  if src.endswith(".h") and fn not in registered)
-
-
-def disagreements(rows, asserted, oracles, regression, other, where):
-    out = []
-    for r in rows:
-        f = r["feature"]
-        covering = asserted.get(f, set()) | regression.get(f, set()) | other.get(f, set())
-        files = {where[fn] for fn in covering}
-        claimed = {t for t in r["current_test"].split(";") if t}
-        if r["status"] == "vetted" and not asserted.get(f):
-            out.append(f"{f}: status=vetted but no oracle test asserts it")
-        if r["oracle"] and r["oracle"] not in oracles.get(f, set()):
-            out.append(f"{f}: registry oracle={r['oracle']!r} but the tests asserting it are "
-                       f"{sorted(oracles.get(f, ())) or 'none'}")
-        for stale in sorted(claimed - files):
-            out.append(f"{f}: current_test names {stale}, which covers nothing for it")
-        for gap in sorted(files - claimed):
-            out.append(f"{f}: {gap} covers it but current_test omits it")
-    return out
-
-
-def main(argv=None):
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--check", action="store_true",
-                    help="report drift and registry disagreements instead of rewriting")
-    a = ap.parse_args(argv)
-
-    asserted, oracles, regression, other, where = collect()
-    rows = registry_rows()
-    text = render(rows, asserted, oracles, regression)
-    problems = disagreements(rows, asserted, oracles, regression, other, where)
-    problems += [f"{fn}: defined but no TEST() in test_all.cc calls it, so it never runs"
-                 for fn in unregistered_tests(where)]
-
-    if a.check:
-        with open(OUT, newline="", encoding="utf-8") as fh:
-            if fh.read() != text:
-                problems.insert(0, f"{os.path.basename(OUT)} is stale; rerun without --check")
-        for p in problems:
-            print("ERROR:", p)
-        print(f"checked {len(rows)} rows: {'clean' if not problems else str(len(problems)) + ' problem(s)'}")
-        return 1 if problems else 0
-
-    with open(OUT, "w", newline="", encoding="utf-8") as fh:
-        fh.write(text)
-    print(f"wrote {OUT} ({len(rows)} rows)")
-    for p in problems:
-        print("WARNING:", p)
-    return 0
-
+FAMILY = scanlib.Family(
+    dim="2D", family="intensity_histogram", out="intensity_histogram_2d_coverage.csv",
+    sources=SOURCES,
+    oracle_suffix=ORACLE_SUFFIX,
+    notes=NOTE,
+    collect_override=collect,
+)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(scanlib.run(FAMILY))
