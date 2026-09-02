@@ -32,7 +32,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_2d_glcm_mechanics.h` | 1 | guards the `GLCM_OFFSET` default (a setting, not a value) |
 | `test_2d_radial_mechanics.h` | 3 | contour frame, centre pixel and normalising radius — the wiring the radial goldens depend on. **Uncredited by decision, not by construction:** see the note below the table |
 | `test_initialization_mechanics.h` | 1 | environment init |
-| `test_2d_omezarr_mechanics.h` | 6 | OME-Zarr tile/raw loader |
+| `test_2d_omezarr_mechanics.h` | 11 | OME-Zarr tile/raw loader, including the load-time intensity map on signed and real-valued stores |
 | `test_roi_blacklist_mechanics.h` | 1 | ROI blacklisting |
 | `test_2d_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
 | `test_2d_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
@@ -203,7 +203,7 @@ so a green local run is not a green matrix.
 | flag | cases |
 |---|---|
 | `USE_ARROW` | `TEST_ARROW_IPC_MECHANICS`, `TEST_ARROW_PARQUET_MECHANICS`, `TEST_ARROW_FILE_NAMING_MECHANICS` |
-| `OMEZARR_SUPPORT` | `TEST_2D_OMEZARR_TILELOADER_{GEOMETRY,CONTENT,MULTITILE}_MECHANICS`, `TEST_2D_OMEZARR_RAW_{GEOMETRY,CONTENT,MULTITILE}_MECHANICS` |
+| `OMEZARR_SUPPORT` | `TEST_2D_OMEZARR_TILELOADER_{GEOMETRY,CONTENT,MULTITILE,SIGNED_OFFSET_MAP,FLOAT_QUANTIZED_MAP,UNSIGNED_UNAFFECTED}_MECHANICS`, `TEST_2D_OMEZARR_RAW_{GEOMETRY,CONTENT,MULTITILE,SIGNED_SOURCE_DOMAIN,FLOAT_SOURCE_DOMAIN}_MECHANICS` |
 | `DICOM_SUPPORT` | `TEST_2D_HU_LOADER_DICOM_{U16,I16}_PRESERVE_MECHANICS`, `TEST_2D_HU_LOADER_DICOM_CT_SMALL_{PRESERVE,BASELINE}_MECHANICS` |
 
 ### B.4 Python tests skipped at runtime

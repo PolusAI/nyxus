@@ -216,4 +216,124 @@ void test_2d_omezarr_raw_multitile_mechanics()
     ASSERT_EQ(total, 12681000000ull);
 }
 
+// ---------------------------------------------------------------------------
+// Signed and real-valued datasets: the load-time intensity map
+//
+// Both loaders used to narrow every sample into the unsigned pipeline type -- an
+// explicit static_cast in RawOmezarrLoader, an implicit one in the std::copy of
+// NyxusOmeZarrLoader -- so a signed dataset's negatives wrapped and a real-valued
+// dataset's fractions were dropped. Nothing recorded that conversion, so the prescan
+// measured the slide's extrema on the converted values and no offset derived from them
+// could undo it. The prescan now reads the sample as the file states it, and the tile
+// loader applies the same offset / quantization map every other backend takes.
+//
+//   signed.ome.zarr : 32x32 int16,   value = -1013 + (row + col)   [-1013 .. -951]
+//   float.ome.zarr  : 32x32 float32, value = -10.5 + 0.25*(row+col) [-10.5 .. 5.0]
+// ---------------------------------------------------------------------------
+
+// The prescan sees a signed dataset's negatives, rather than the ~4.29e9 they wrapped to.
+void test_2d_omezarr_raw_signed_source_domain_mechanics()
+{
+    fs::path ds = omezarr_data_path("signed.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds));
+
+    auto ldr = RawOmezarrLoader(ds.string());
+    const size_t tw = ldr.tileWidth(0);
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+
+    // The slide minimum, and what an offset would have to be derived from
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(0 * tw + 0), -1013.0);
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(0 * tw + 31), -982.0);
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(31 * tw + 31), -951.0);
+
+    double mn = ldr.get_dpequiv_pixel(0), mx = mn, sum = 0.0;
+    for (size_t r = 0; r < ldr.fullHeight(0); ++r)
+        for (size_t c = 0; c < ldr.fullWidth(0); ++c)
+        {
+            double v = ldr.get_dpequiv_pixel(r * tw + c);
+            mn = std::min(mn, v);
+            mx = std::max(mx, v);
+            sum += v;
+        }
+    ASSERT_DOUBLE_EQ(mn, -1013.0);
+    ASSERT_DOUBLE_EQ(mx, -951.0);
+    ASSERT_DOUBLE_EQ(sum, -1005568.0);
+}
+
+// The prescan sees a real-valued dataset's fractions, and flags the dataset real-valued
+// so the recorder reaches its quantization branch at all.
+void test_2d_omezarr_raw_float_source_domain_mechanics()
+{
+    fs::path ds = omezarr_data_path("float.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds));
+
+    auto ldr = RawOmezarrLoader(ds.string());
+    const size_t tw = ldr.tileWidth(0);
+    ASSERT_TRUE(ldr.get_fp_pixels());
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(0 * tw + 0), -10.5);   // not truncated to -10, nor to 0
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(0 * tw + 1), -10.25);  // the fraction survives
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(31 * tw + 31), 5.0);
+}
+
+// The tile loader shifts a signed dataset by the recorded offset instead of wrapping it,
+// so 1 grey level == 1 intensity unit and the inverse recovers the source value.
+void test_2d_omezarr_tileloader_signed_offset_map_mechanics()
+{
+    fs::path ds = omezarr_data_path("signed.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds));
+
+    // The offset ImageLoader::open hands over for this slide: floor(min) == -1013
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, ds.string(), -1013.0);
+
+    const size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
+    auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
+    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    const std::vector<uint32_t>& buf = *tile;
+
+    ASSERT_EQ(buf[0 * tw + 0], 0u);      // the minimum lands on grey level 0, not on 4294966283
+    ASSERT_EQ(buf[0 * tw + 1], 1u);      // 1 HU == 1 grey level
+    ASSERT_EQ(buf[31 * tw + 31], 62u);   // the maximum spans the range
+}
+
+// A real-valued dataset takes the same min-max quantization a real-valued TIFF takes.
+void test_2d_omezarr_tileloader_float_quantized_map_mechanics()
+{
+    fs::path ds = omezarr_data_path("float.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds));
+
+    // [fpmin, fpmax] = [-10.5, 5.0] onto [0, 10000], as the recorder derives them
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, ds.string(), -10.5, 5.0, 1e4, true);
+
+    const size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
+    auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
+    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    const std::vector<uint32_t>& buf = *tile;
+
+    ASSERT_EQ(buf[0 * tw + 0], 0u);         // min endpoint -> 0
+    ASSERT_EQ(buf[31 * tw + 31], 10000u);   // max endpoint -> the target dynamic range
+    // (row+col) == 31 is the exact midpoint of the 62-step ramp -> DR/2
+    ASSERT_EQ(buf[0 * tw + 31], 5000u);
+}
+
+// An unsigned dataset is opened with no offset and no quantization, so its grey levels
+// are still its own values -- the case the blanket exemption did get right.
+void test_2d_omezarr_tileloader_unsigned_unaffected_mechanics()
+{
+    fs::path ds = omezarr_data_path("test.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds));
+
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, ds.string());
+
+    const size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
+    auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
+    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    const std::vector<uint32_t>& buf = *tile;
+
+    ASSERT_EQ(buf[0 * tw + 0], 0u);
+    ASSERT_EQ(buf[100 * tw + 50], 150u);
+    ASSERT_EQ(buf[511 * tw + 511], 1022u);
+}
+
 #endif // OMEZARR_SUPPORT

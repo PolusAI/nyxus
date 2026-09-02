@@ -1150,9 +1150,29 @@ TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_PRESERVE_HU_FLOAT_ANALYTIC)
 	ASSERT_NO_THROW(test_hu_domain_map_preserve_hu_float_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_ZARR_NATIVE_ANALYTIC)
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_ZARR_FLOAT_QUANTIZED_ANALYTIC)
 {
-	ASSERT_NO_THROW(test_hu_domain_map_zarr_native_analytic());
+	ASSERT_NO_THROW(test_hu_domain_map_zarr_float_quantized_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_ZARR_SIGNED_OFFSET_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_zarr_signed_offset_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_ZARR_UNSIGNED_IDENTITY_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_zarr_unsigned_identity_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_CONSTANT_FLOAT_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_constant_float_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_CONSTANT_NEGATIVE_FLOAT_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_constant_negative_float_analytic());
 }
 
 TEST(TEST_NYXUS, TEST_2D_HU_FPIMAGE_OPTIONS_PARSE_MECHANICS)
@@ -3543,6 +3563,26 @@ TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_CONTENT_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_MULTITILE_MECHANICS) {
 	ASSERT_NO_THROW (test_2d_omezarr_raw_multitile_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_SIGNED_SOURCE_DOMAIN_MECHANICS) {
+	ASSERT_NO_THROW (test_2d_omezarr_raw_signed_source_domain_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_FLOAT_SOURCE_DOMAIN_MECHANICS) {
+	ASSERT_NO_THROW (test_2d_omezarr_raw_float_source_domain_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_OMEZARR_TILELOADER_SIGNED_OFFSET_MAP_MECHANICS) {
+	ASSERT_NO_THROW (test_2d_omezarr_tileloader_signed_offset_map_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_OMEZARR_TILELOADER_FLOAT_QUANTIZED_MAP_MECHANICS) {
+	ASSERT_NO_THROW (test_2d_omezarr_tileloader_float_quantized_map_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_OMEZARR_TILELOADER_UNSIGNED_UNAFFECTED_MECHANICS) {
+	ASSERT_NO_THROW (test_2d_omezarr_tileloader_unsigned_unaffected_mechanics());
 }
 
 #endif // OMEZARR_SUPPORT

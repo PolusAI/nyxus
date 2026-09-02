@@ -185,8 +185,12 @@ void PixelIntensityFeatures::calculate_grey_levels (LR& r, const Fsettings & fse
 	// --Standard error
 	val_STANDARD_ERROR = val_STANDARD_DEVIATION / sqrt(n);
 
-	//==== Do not calculate features of all-blank intensities (to avoid NANs)
-	if (r.aux_min == 0 && r.aux_max == 0)
+	// An ROI with no pixels has no distribution to describe. A populated ROI whose grey levels are
+	// all 0 does, and used to be turned away by the same test: the offset map puts the slide's
+	// minimum on grey level 0, so an ROI sitting at that minimum -- an all-air CT ROI at -1013 HU,
+	// say -- reaches here constant and zero, and its histogram, percentiles, entropy and UNIFORMITY
+	// are all well defined.
+	if (r.raw_pixels.empty())
 		return;
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
@@ -330,8 +334,8 @@ void PixelIntensityFeatures::osized_calculate_grey_levels (LR& r, const Fsetting
 	// --Standard error
 	val_STANDARD_ERROR = val_STANDARD_DEVIATION / sqrt(n);
 
-	//==== Do not calculate features of all-blank intensities (to avoid NANs)
-	if (r.aux_min == 0 && r.aux_max == 0)
+	// Emptiness, not zero-valuedness -- as in the in-RAM path above.
+	if (r.raw_pixels_NT.size() == 0)
 		return;
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity

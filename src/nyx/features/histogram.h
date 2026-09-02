@@ -69,7 +69,11 @@ public:
 		binWcust_ = double(valRange) / double(n_custBins-1);
 		for (auto s : raw_data)
 		{
-			HistoItem h = Nyxus::to_grayscale(s.inten, minVal_, valRange, n_custBins);
+			// A constant ROI has no range to bin over. to_grayscale() would divide by it and cast
+			// the resulting NaN to a bin index, which is undefined and only happens to land on 0 on
+			// the toolchains in use. Every sample of a constant ROI belongs to the first bin, which
+			// is what the percentile histogram above already says through its NaN guard.
+			HistoItem h = valRange ? Nyxus::to_grayscale(s.inten, minVal_, valRange, n_custBins) : 0;
 			bins_cust_[h] = bins_cust_[h] + 1;
 		}
 
