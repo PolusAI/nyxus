@@ -21,7 +21,12 @@
 //                  the all-pixel minimum, not the within-mask one.
 //   * quantized  : a real-valued slide clamped to [min, max] then mapped onto
 //                  [0, target dynamic range] (keeps shape, not absolute intensities).
-//   * native     : carried as it is (OME-Zarr, in-memory montage input).
+//   * native     : carried as it is (in-memory montage input, which never went through
+//                  a tile loader at all).
+//
+// The map is chosen from what the slide holds, not from the file format it arrived in:
+// every backend applies the recorded map at load time, so OME-Zarr takes the same
+// branches TIFF, NIfTI and DICOM do.
 //
 // to_source_intensity() is the inverse the intensity families report through, so each
 // case also asserts the round trip that makes a reported feature absolute again.
@@ -121,9 +126,12 @@ void test_hu_domain_map_preserve_hu_float_analytic()
     EXPECT_DOUBLE_EQ(p.to_source_intensity(1024.0), 0.0);
 }
 
-// OME-Zarr is copied into the pipeline untouched, so no inverse may be applied to it
-// however negative or real-valued its voxels are.
-void test_hu_domain_map_zarr_native_analytic()
+// A real-valued OME-Zarr takes the quantization every other real-valued slide takes.
+// It used to be excused from the recorder on the grounds that its tile loader copied
+// voxels untouched, but that loader narrowed each sample into the unsigned destination
+// type -- dropping the fraction and wrapping the negatives -- so "untouched" was never
+// true and the identity inverse reported the converted grey levels as source values.
+void test_hu_domain_map_zarr_float_quantized_analytic()
 {
     SlideProps p ("vol.zarr", "");
     p.fp_phys_pivoxels = true;
@@ -132,8 +140,82 @@ void test_hu_domain_map_zarr_native_analytic()
     FpImageOptions fpo;
     Nyxus::record_intensity_domain_map (p, fpo);
 
-    EXPECT_EQ((int)p.inten_map, (int)IntenMap::native);
+    EXPECT_EQ((int)p.inten_map, (int)IntenMap::quantized);
+    EXPECT_DOUBLE_EQ(p.inten_scale, 4095.0 / 10000.0);
+    EXPECT_DOUBLE_EQ(p.inten_offset, -1024.0);
+    EXPECT_DOUBLE_EQ(p.to_source_intensity(0.0), -1024.0);
+    EXPECT_DOUBLE_EQ(p.to_source_intensity(10000.0), 3071.0);
+}
+
+// A signed-integer OME-Zarr takes the offset map, so its negatives survive the load
+// instead of wrapping, and are reported back as the values the file states.
+void test_hu_domain_map_zarr_signed_offset_analytic()
+{
+    SlideProps p ("vol.zarr", "");
+    p.min_allpix_inten = -1024.0;
+    p.min_preroi_inten = -1024.0;
+    p.max_preroi_inten = 3071.0;
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    EXPECT_EQ((int)p.inten_map, (int)IntenMap::offset);
+    EXPECT_DOUBLE_EQ(p.inten_scale, 1.0);
+    EXPECT_DOUBLE_EQ(p.inten_offset, -1024.0);
+    EXPECT_EQ(p.to_grey_level(-1024.0), 0u);
+    EXPECT_DOUBLE_EQ(p.to_source_intensity(0.0), -1024.0);
+}
+
+// An unsigned OME-Zarr holds no negative value, so it takes the identity and its grey
+// levels are its own values -- the case the previous blanket exemption did get right.
+void test_hu_domain_map_zarr_unsigned_identity_analytic()
+{
+    SlideProps p ("vol.zarr", "");
+    p.min_allpix_inten = 0.0;
+    p.min_preroi_inten = 3.0;
+    p.max_preroi_inten = 255.0;
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
     EXPECT_DOUBLE_EQ(p.inten_scale, 1.0);
     EXPECT_DOUBLE_EQ(p.inten_offset, 0.0);
+    EXPECT_EQ(p.to_grey_level(42.0), 42u);
     EXPECT_DOUBLE_EQ(p.to_source_intensity(42.0), 42.0);
+}
+
+// A constant real-valued slide has no range to quantize into. The offset map carries it
+// instead, at the exact minimum rather than its floor, so the loader's truncation cannot
+// eat the fraction: a constant 0.5 slide is stored as grey level 0 and read back as 0.5.
+// Recording the identity here instead reported that 0 as the source value.
+void test_hu_domain_map_constant_float_analytic()
+{
+    SlideProps p ("flat.tif", "");
+    p.fp_phys_pivoxels = true;
+    p.min_preroi_inten = 0.5;
+    p.max_preroi_inten = 0.5;
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    EXPECT_EQ((int)p.inten_map, (int)IntenMap::offset);
+    EXPECT_DOUBLE_EQ(p.inten_scale, 1.0);
+    EXPECT_DOUBLE_EQ(p.inten_offset, 0.5);
+
+    EXPECT_EQ(p.to_grey_level(0.5), 0u);
+    EXPECT_DOUBLE_EQ(p.to_source_intensity(0.0), 0.5);
+}
+
+// The same, on a negative constant: the offset is the value itself, so it neither wraps
+// on the unsigned cast nor loses its sign.
+void test_hu_domain_map_constant_negative_float_analytic()
+{
+    SlideProps p ("flat.tif", "");
+    p.fp_phys_pivoxels = true;
+    p.min_preroi_inten = -0.5;
+    p.max_preroi_inten = -0.5;
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    EXPECT_EQ((int)p.inten_map, (int)IntenMap::offset);
+    EXPECT_DOUBLE_EQ(p.inten_offset, -0.5);
+    EXPECT_EQ(p.to_grey_level(-0.5), 0u);
+    EXPECT_DOUBLE_EQ(p.to_source_intensity(0.0), -0.5);
 }

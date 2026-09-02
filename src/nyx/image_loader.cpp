@@ -24,10 +24,22 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 	{
 		std::string ext = Nyxus::get_big_extension (int_fpath);
 
+		// The map the scan recorded, in the terms every tile loader takes. The quantized branch
+		// spans [inten_offset, inten_offset + inten_scale*DR], which is the [fpmin, fpmax] the scan
+		// recorded (the fp overrides included). The offset branch ignores fpmax and shifts by
+		// inten_offset alone. Derived once so no backend can drift from another.
+		bool quantize = p.inten_map == IntenMap::quantized;
+		double dr = fpopts.target_dyn_range(),
+			fpmin = p.inten_offset,
+			fpmax = quantize ? p.inten_offset + p.inten_scale * dr : p.max_preroi_inten;
+
 		if (ext == ".zarr" || ext == ".ome.zarr")
 		{
 			#ifdef OMEZARR_SUPPORT
-				intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath);
+				// Zarr takes the same map as TIFF. It used to copy each sample straight into the
+				// unsigned destination type, which wrapped a signed dataset's negatives and dropped
+				// a real-valued one's fraction.
+				intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath, fpmin, fpmax, dr, quantize);
 			#else
 				std::string erm = "This version of Nyxus was not build with OmeZarr support";
 				#ifdef WITH_PYTHON_H
@@ -62,14 +74,6 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 				else 
 				{
 					// flavors of TIFF (TIFF, OME.TIFF)
-					
-					// The quantized branch spans [inten_offset, inten_offset + inten_scale*DR],
-					// which is the [fpmin, fpmax] the scan recorded (the fp overrides included).
-					// The offset branch ignores both and shifts by inten_offset alone.
-					bool quantize = p.inten_map == IntenMap::quantized;
-					double dr = fpopts.target_dyn_range(),
-						fpmin = p.inten_offset,
-						fpmax = quantize ? p.inten_offset + p.inten_scale * dr : p.max_preroi_inten;
 
 					if (Nyxus::check_tile_status(int_fpath))
 					{
@@ -129,7 +133,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 		if (ext == ".zarr")
 		{
 			#ifdef OMEZARR_SUPPORT
-				segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);
+				segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);		// a mask carries labels, not physical units: offset 0, no quantization
 			#else
 				std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
 			#endif

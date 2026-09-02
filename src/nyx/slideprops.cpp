@@ -534,12 +534,6 @@ namespace Nyxus
 		if (p.fname_int.empty())
 			return;
 
-		std::string ext = Nyxus::get_big_extension (p.fname_int);
-
-		// OME-Zarr is carried natively; it has no offset or rescale branch to invert.
-		if (ext == ".zarr" || ext == ".ome.zarr")
-			return;
-
 		// A floating-point slide is hard-clamped to a range and quantized into
 		// [0, target dynamic range], unless preserve_hu asks for the offset map instead.
 		if (p.fp_phys_pivoxels && ! p.preserve_hu)
@@ -557,7 +551,17 @@ namespace Nyxus
 				p.inten_map = IntenMap::quantized;
 				p.inten_scale = (fpmax - fpmin) / dr;
 				p.inten_offset = fpmin;
+				return;
 			}
+
+			// There is no range to quantize into: the slide is constant, or the requested dynamic
+			// range is empty. The loader falls back on the offset map either way, so the offset has
+			// to be recorded -- leaving it at 0 let the loader truncate a constant 0.5 slide to
+			// grey level 0 and the identity inverse then reported 0 as the source value. Unlike the
+			// integer branch below, the offset is the real minimum rather than its floor, so a
+			// fractional constant survives the round trip exactly.
+			p.inten_map = IntenMap::offset;
+			p.inten_offset = fpmin;
 			return;
 		}
 
