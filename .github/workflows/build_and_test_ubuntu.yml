@@ -91,3 +91,14 @@ jobs:
     - name: Validate test naming conventions
       working-directory: ${{github.workspace}}
       run: python3 tests/vetting/check_test_names.py --check
+
+    - name: Validate coverage artifacts against the test tree
+      working-directory: ${{github.workspace}}
+      run: |
+        for s in tests/vetting/audit/scan_*_coverage.py; do
+          python3 "$s" --check || exit 1
+        done
+
+    - name: Validate the feature report
+      working-directory: ${{github.workspace}}
+      run: python3 tests/vetting/report_features.py --check
