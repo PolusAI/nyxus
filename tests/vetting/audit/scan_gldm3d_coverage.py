@@ -3,61 +3,33 @@
     python tests/vetting/audit/scan_gldm3d_coverage.py [--check]
 
 The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks below.
+artifact cannot drift from the tree. `--check` reports drift instead of rewriting. The scan, the
+rendering and the run loop live in scanlib.py; the reading rules and the acceptance model below are
+this family's own.
 
-Coverage rule: a feature is covered by a test function when its name appears on an ASSERTION line in
-that function, or in a golden table that a function loops over while asserting. Comments are
-stripped first -- several of them name features they do not assert.
+WHAT THIS FAMILY DOES DIFFERENTLY, and why each one is here rather than in scanlib:
 
-THIS FAMILY HAS TWO ROWS PER FEATURE, so a row is checked against the tests of ITS OWN KIND. A
-vetted row is answered only by an oracle file, a regression row only by the snapshot file. Checking
-each row against the union of everything covering the feature is what lets a registry that has
-stopped meaning anything still go green: with an oracle row and a snapshot row side by side, the
-union satisfies both no matter which file actually carries which.
-
-TWO FUNCTIONS ARE EXCLUDED FROM ORACLE ATTRIBUTION BY NAME, deliberately. `test_3d_gldm_dump_*` wear
-a kind suffix but assert no reference value -- they print a table for regeneration. Every scanner in
-this tree reads the oracle token off the function-name suffix (revet.txt 9), so without this
-exclusion a dump would credit all fourteen features with coverage from a case that compares nothing.
-They are reported under Notes instead, and no registry row names them.
-
-THE PYTEST IS MAPPED EXPLICITLY, for the opposite reason. `test_3d_gldm_compatibility` in
-tests/python/test_nyxus.py asserts the same PyRadiomics goldens at the same recipe as the C++ oracle
-file, but its name carries no oracle token, so the suffix rule would file a genuine oracle assertion
-under "other". Its siblings in that file share the `_compatibility` shape, so it is mapped here
-rather than renamed in isolation.
-
-Beyond the coverage table, `--check` runs the THREE-WAY KEY / READER / REGISTRATION check: every key
-of a golden table must be read by a test function, that function's name must agree with the feature
-it passes, and a TEST() in test_all.cc must call it. A pinned key that nothing reads is where a bad
-number lives, because no assertion ever evaluates it -- which is how this family shipped 3GLDM_LGLE
-pinned to 3GLDM_SDE's value, off by a factor of 353, under a function that asserted 3GLDM_SDE.
-
-AND IT RESOLVES EACH ROW'S `test_name`. The two checks above answer different questions -- which
-files cover a feature, and which functions read a table -- and neither looks at the column that says
-which assertion the row IS. check_coverage.py looks, but only asks whether the name is *a* gtest
-case, so between the three a row could name an unrelated existing case and stay green; that is how
-the per-feature rows here came to name TEST_3D_GLDM_SMALLMATRIX_PYRADIOMICS, a case asserting
-dependence cells on a hand-written unbinned volume rather than the feature on the row's benchmark.
-Each name is now resolved through test_all.cc to the function it runs, and that function has to
-carry an assertion of the row's own feature, at the row's own kind, in a file current_test names,
-and at the row's own config_recipe -- the last because this family has two regression recipes over
-the same fourteen features in the same file, so feature, kind and file alone cannot tell them apart.
+  dump helpers        `test_3d_gldm_dump_*` print a table for regeneration; they never compare. They
+                      are excluded from the kind buckets so a regenerator cannot read as coverage.
+  a pytest oracle     `test_3d_gldm_compatibility` asserts against PyRadiomics goldens through the
+                      Python API, so its oracle token cannot come from a name-suffix.
+  per-kind rows       a vetted row answers to the oracle files, a regression row to the snapshot
+                      one -- so `current_test` must name the files that cover the feature AT THAT
+                      ROW'S KIND, not merely somewhere.
+  recipe readers      feature, kind and file are all identical between this family's two regression
+                      recipes -- one file, one kind, the same fourteen features at GLDM_GREYDEPTH
+                      64 and 0 -- so without RECIPE_READER the two sets of rows could be swapped and
+                      every other check would stay green.
+  keys vs readers     every key of a golden table is resolved to the function its OWN NAME implies,
+                      so a missing reader is as loud as a mismatched one. That is how this family
+                      shipped 3GLDM_LGLE pinned to 3GLDM_SDE's value, off by a factor of 353, under
+                      a function that asserted 3GLDM_SDE.
 """
-import argparse
-import csv
-import io
 import os
 import re
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-VETTING = os.path.dirname(HERE)
-TESTS = os.path.dirname(VETTING)
-OUT = os.path.join(HERE, "gldm_3d_coverage.csv")
-REGISTRY = os.path.join(VETTING, "oracle_coverage.csv")
-TEST_ALL = os.path.join(TESTS, "test_all.cc")
+import scanlib
 
 SOURCES = [
     "test_3d_gldm_pyradiomics.h",
@@ -65,11 +37,6 @@ SOURCES = [
     "test_3d_gldm_common.h",
     os.path.join("python", "test_nyxus.py"),
 ]
-
-# table -> the function that loops it while asserting. The matrix tables are keyed by {level, dep,
-# count} triples and carry no feature names, so only the two scalar tables need an owner, and each
-# is read by the per-feature helper in its own file rather than by a loop.
-TABLE_OWNER = {}
 
 ORACLE_SUFFIX = {"pyradiomics": "pyradiomics"}
 # see the module docstring
@@ -82,27 +49,13 @@ REGRESSION_FILES = {"test_3d_gldm_regression.h"}
 
 # recipe -> the function that asserts AT that recipe. A row's config_recipe is the configuration its
 # numbers were taken at, and the function name is where that configuration lives in the tree, so the
-# two have to agree. Feature, kind and file are all identical between the family's two regression
-# recipes -- one file, one kind, the same fourteen features at GLDM_GREYDEPTH 64 and 0 -- so without
-# this the two sets of rows could be swapped and every other check would stay green.
+# two have to agree.
 RECIPE_READER = {
     "gldm3d.pyradiomics_bincount20": re.compile(r"^test_3d_gldm_[a-z0-9]+_pyradiomics$"),
     "gldm3d.regression_ut_phantom": re.compile(r"^test_3d_gldm_[a-z0-9]+_regression$"),
     "gldm3d.regression_ut_phantom_nobinning": re.compile(r"^test_3d_gldm_[a-z0-9]+_nobinning_regression$"),
     "gldm3d.regression_constant_roi": re.compile(r"^test_3d_gldm_constant_roi_regression$"),
 }
-
-FUNC = re.compile(r"^(?:inline\s+)?(?:void|def)\s+(test_\w+)|^\s+def\s+(test_\w+)", re.M)
-HELPER = re.compile(r"^def\s+(_\w+)\s*\(", re.M)
-# Every top-level def, helper or test. A helper's body ends at the NEXT TOP-LEVEL DEF OF ANY KIND,
-# which is what bounds it correctly -- ending it at the next *helper* instead lets the last helper in
-# a file swallow every test function below it, so the helper picks up every feature name in the file
-# and each test that calls it inherits the lot.
-TOPLEVEL_DEF = re.compile(r"^def\s+\w+\s*\(", re.M)
-ASSERTION = re.compile(r"\b(ASSERT_|EXPECT_|assert)")
-LOOP_LIST = re.compile(r"for\s*\([^)]*:\s*\{([^}]*)\}\s*\)"
-                       r"|for\s+\w+\s+in\s*[\[(]([^\])]*)[\])]\s*:", re.S)
-COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/|^\s*#[^\n]*", re.S | re.M)
 
 # the scalar tables: the file each lives in, and the suffix its per-feature reader wears. The suffix
 # is what attributes readers PER TABLE rather than per file -- two tables now share the regression
@@ -121,19 +74,9 @@ NOTE = {
                    "0.00073572), under a function that asserted 3GLDM_SDE; both halves regenerated"),
 }
 
-
-def registry_rows():
-    with open(REGISTRY, newline="", encoding="utf-8") as fh:
-        return [r for r in csv.DictReader(fh)
-                if r["dim"] == "3D" and r["family"] == "gldm"]
-
-
-def feature_names():
-    return sorted({r["feature"] for r in registry_rows()}, key=len, reverse=True)
-
-
-def feature_re(names):
-    return re.compile(r"(?<![A-Z0-9_])(" + "|".join(re.escape(n) for n in names) + r")\b")
+# Filled by collect() and reported by the rewrite summary: features a dump helper names, which are
+# deliberately not coverage.
+_DUMPS = {}
 
 
 def read(path):
@@ -141,62 +84,21 @@ def read(path):
         return fh.read()
 
 
-def scan(path, feat_re):
-    """-> {test function name: {features it covers}}."""
-    text = COMMENT.sub(lambda m: "\n" * m.group(0).count("\n"), read(path))
-    hits = {}
-
-    for table, owner in TABLE_OWNER.items():
-        if table not in text:
-            continue
-        body = text.split(table, 1)[1].split("};", 1)[0]
-        for m in re.finditer(r'\{"([A-Z0-9_]+)"', body):
-            hits.setdefault(owner, set()).add(m.group(1))
-        text = text.replace(body, "")
-
-    helpers = helper_features(text, feat_re)
-
-    marks = [(m.start(), m.group(1) or m.group(2)) for m in FUNC.finditer(text)]
-    for i, (pos, fn) in enumerate(marks):
-        block = text[pos:marks[i + 1][0] if i + 1 < len(marks) else len(text)]
-        if not ASSERTION.search(block):
-            continue
-        for line in block.splitlines():
-            if ASSERTION.search(line):
-                hits.setdefault(fn, set()).update(feat_re.findall(line))
-        for m in LOOP_LIST.finditer(block):
-            hits.setdefault(fn, set()).update(feat_re.findall(m.group(1) or m.group(2) or ""))
-        for name, feats in helpers.items():
-            if re.search(r"\b" + re.escape(name) + r"\s*\(", block):
-                hits.setdefault(fn, set()).update(feats)
-    return {fn: f for fn, f in hits.items() if f}
-
-
-def helper_features(text, feat_re):
-    """-> {module-level python helper name: features it reads out of the result frame}."""
-    out = {}
-    bounds = [m.start() for m in TOPLEVEL_DEF.finditer(text)]
-    for m in HELPER.finditer(text):
-        pos = m.start()
-        after = [b for b in bounds if b > pos]
-        block = text[pos:after[0] if after else len(text)]
-        feats = set(feat_re.findall(block))
-        if feats:
-            out[m.group(1)] = feats
-    return out
-
-
-def collect(feat_re):
-    """-> (oracle fns, oracle tokens, regression fns, other-kind fns, fn -> file, dump fns)."""
-    asserted, oracles, regression, other, where, dumps = {}, {}, {}, {}, {}, {}
-    for rel in SOURCES:
-        for fn, feats in scan(os.path.join(TESTS, rel), feat_re).items():
+def collect(fam, feat_re):
+    """-> the five coverage maps, with dump helpers excluded and the pytest oracle credited."""
+    asserted, oracles, regression, other, where = {}, {}, {}, {}, {}
+    _DUMPS.clear()
+    for rel in fam.sources:
+        hits = scanlib.scan(fam, os.path.join(scanlib.TESTS, rel), feat_re)
+        for fn, feats in hits.items():
+            if not feats:
+                continue
             where[fn] = os.path.basename(rel)
             if EXCLUDE_FROM_KIND.match(fn):
                 for feat in feats:
-                    dumps.setdefault(feat, set()).add(fn)
+                    _DUMPS.setdefault(feat, set()).add(fn)
                 continue
-            token = PYTEST_ORACLE.get(fn) or ORACLE_SUFFIX.get(fn.rsplit("_", 1)[-1])
+            token = scanlib.oracle_token(fam, fn)
             kind = fn.rsplit("_", 1)[-1]
             for feat in feats:
                 if token:
@@ -206,30 +108,23 @@ def collect(feat_re):
                     regression.setdefault(feat, set()).add(fn)
                 else:                   # invariant / mechanics - coverage, never vetting
                     other.setdefault(feat, set()).add(fn)
-    return asserted, oracles, regression, other, where, dumps
+    return asserted, oracles, regression, other, where
 
 
-def render(rows, asserted, oracles, regression, other):
-    buf = io.StringIO()
-    w = csv.writer(buf, lineterminator="\n")
-    w.writerow(["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
-                "Regression", "Reg_Test_Name", "Invariant", "Notes"])
-    for f in sorted({r["feature"] for r in rows}):
-        w.writerow(["3D", "gldm", f,
-                    ";".join(sorted(oracles.get(f, ()))),
-                    ";".join(sorted(asserted.get(f, ()))),
-                    "Y" if f in regression else "N",
-                    ";".join(sorted(regression.get(f, ()))),
-                    ";".join(sorted(other.get(f, ()))),
-                    NOTE.get(f, "")])
-    return buf.getvalue()
+def dump_summary(cov):
+    """The write line counts rows; this family's artifact is read per feature, so say both."""
+    out = [f"{len(cov.features(FAMILY.order))} features"]
+    if _DUMPS:
+        out.append(f"note: {len(_DUMPS)} feature(s) also appear in dump helpers, "
+                   f"excluded from coverage")
+    return "\n".join(out)
 
 
 def registered_calls():
     """-> {gtest case name: the function its body calls}."""
-    text = read(TEST_ALL)
     return {f"{s}.{c}": fn for s, c, fn in re.findall(
-        r"TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{\s*ASSERT_NO_THROW\s*\(\s*(\w+)\s*\(", text)}
+        r"TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{\s*ASSERT_NO_THROW\s*\(\s*(\w+)\s*\(",
+        read(scanlib.TEST_ALL))}
 
 
 def table_body(text, table):
@@ -246,10 +141,7 @@ def table_body(text, table):
 def key_reader_problems():
     """Every key of a golden table against the function named for it and the TEST() that runs it.
 
-    A key nothing reads is where a bad number lives, because no assertion ever evaluates it -- which
-    is how this family shipped 3GLDM_LGLE pinned to 3GLDM_SDE's value, off by a factor of 353, under
-    a function that asserted 3GLDM_SDE. The key is resolved to the function its own name implies
-    rather than to whatever happens to read it, so a missing reader is as loud as a mismatched one.
+    A key nothing reads is where a bad number lives, because no assertion ever evaluates it.
 
     The reader's feature token is [a-z0-9]+ with no underscore, which is what keeps the tables apart:
     `_regression` is a suffix of `_nobinning_regression` too, and matching on the suffix alone would
@@ -258,7 +150,7 @@ def key_reader_problems():
     out = []
     registered = set(registered_calls().values())
     for table, (rel, suffix) in TABLES.items():
-        text = read(os.path.join(TESTS, rel))
+        text = read(os.path.join(scanlib.TESTS, rel))
         body = table_body(text, table)
         if body is None:
             out.append(f"{table}: not found in {rel}")
@@ -325,31 +217,29 @@ def test_name_problems(r, f, st, covering, claimed, cases, where):
     return out
 
 
-def disagreements(rows, asserted, oracles, regression, where):
+def disagreements(fam, cov):
     """Each registry row against the tests of ITS OWN KIND - see the module docstring."""
     out = []
     cases = registered_calls()
-    for r in rows:
+    for r in cov.rows:
         f, st = r["feature"], r["status"].strip()
         claimed = {t for t in r["current_test"].split(";") if t}
         if st == "vetted":
-            covering = asserted.get(f, set())
+            covering = cov.asserted.get(f, set())
             if not covering:
                 out.append(f"{f}: status=vetted but no oracle test asserts it")
-            if r["oracle"] and r["oracle"] not in oracles.get(f, set()):
+            if r["oracle"] and r["oracle"] not in cov.oracles.get(f, set()):
                 out.append(f"{f}: registry oracle={r['oracle']!r} but the tests asserting it are "
-                           f"{sorted(oracles.get(f, ())) or 'none'}")
-            allowed = ORACLE_FILES
+                           f"{sorted(cov.oracles.get(f, ())) or 'none'}")
         elif st == "regression":
-            covering = regression.get(f, set())
+            covering = cov.regression.get(f, set())
             if not covering:
                 out.append(f"{f}: status=regression but no snapshot test asserts it")
             if r["oracle"].strip():
                 out.append(f"{f}: status=regression but names oracle {r['oracle']!r}")
-            allowed = REGRESSION_FILES
         else:
             continue
-        files = {where[fn] for fn in covering}
+        files = {cov.where[fn] for fn in covering}
         for stale in sorted(claimed - files):
             out.append(f"{f} ({st}): current_test names {stale}, which carries no assertion of "
                        f"this kind for it")
@@ -357,44 +247,32 @@ def disagreements(rows, asserted, oracles, regression, where):
             out.append(f"{f} ({st}): {gap} asserts it but current_test omits it")
         for bad in sorted(t for t in claimed if "mechanics" in t or "coverage" in t):
             out.append(f"{f} ({st}): current_test names {bad}, which pins no reference value")
-        out += test_name_problems(r, f, st, covering, claimed, cases, where)
-    return out
+        out += test_name_problems(r, f, st, covering, claimed, cases, cov.where)
+    return out + key_reader_problems()
 
 
-def main(argv=None):
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--check", action="store_true",
-                    help="report drift and registry disagreements instead of rewriting")
-    a = ap.parse_args(argv)
-
-    rows = registry_rows()
-    feat_re = feature_re(feature_names())
-    asserted, oracles, regression, other, where, dumps = collect(feat_re)
-    text = render(rows, asserted, oracles, regression, other)
-    problems = disagreements(rows, asserted, oracles, regression, where)
-    problems += key_reader_problems()
-
-    if a.check:
-        if not os.path.exists(OUT):
-            problems.insert(0, f"{os.path.basename(OUT)} is missing; run without --check")
-        elif read(OUT) != text:
-            problems.insert(0, f"{os.path.basename(OUT)} is stale; rerun without --check")
-        for p in problems:
-            print("ERROR:", p)
-        print(f"checked {len(rows)} rows: "
-              f"{'clean' if not problems else str(len(problems)) + ' problem(s)'}")
-        return 1 if problems else 0
-
-    with open(OUT, "w", newline="", encoding="utf-8") as fh:
-        fh.write(text)
-    print(f"wrote {OUT} ({len(rows)} rows, "
-          f"{len({r['feature'] for r in rows})} features)")
-    if dumps:
-        print(f"note: {len(dumps)} feature(s) also appear in dump helpers, excluded from coverage")
-    for p in problems:
-        print("WARNING:", p)
-    return 0
-
+FAMILY = scanlib.Family(
+    dim="3D", family="gldm", out="gldm_3d_coverage.csv",
+    sources=SOURCES,
+    oracle_suffix=ORACLE_SUFFIX,
+    notes=NOTE,
+    scan_helpers=True,
+    # a name must not match at the tail of a longer one; see scanlib.feature_re
+    boundary="strict",
+    extra_column="Invariant",
+    order="sorted",
+    collect_override=collect,
+    extra_summary=dump_summary,
+    # declared here as well as read by test_name_problems above, so the tree-wide report can make
+    # the same config-aware check rather than a feature-wide one
+    # the pytest oracle's name carries no oracle suffix, so the token has to be declared or
+    # nothing outside this file can tell what it asserts against
+    fn_oracle=PYTEST_ORACLE,
+    recipe_reader=RECIPE_READER,
+    # every built-in check is replaced by the per-kind model above, registration included
+    checks=frozenset(),
+    extra_problems=disagreements,
+)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(scanlib.run(FAMILY))

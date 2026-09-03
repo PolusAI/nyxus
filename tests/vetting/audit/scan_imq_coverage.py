@@ -3,16 +3,13 @@
     python tests/vetting/audit/scan_imq_coverage.py [--check]
 
 The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance check from the family plan: every `vetted` row in oracle_coverage.csv must be asserted by
-an oracle test, that test's oracle must be the one the row names, and `current_test` must name
-exactly the files that cover the feature AT THAT ROW'S CONFIG. Each row is checked against the tests
-of its OWN kind -- a vetted row against the oracle files, a regression row against the snapshot one.
+artifact cannot drift from the tree. `--check` reports drift instead of rewriting. The rendering and
+the run loop live in scanlib.py; the reading and the acceptance model below are this family's own.
 
-Coverage rule: a feature is covered by a test function when its name appears on an ASSERTION line in
-that function. Comments are stripped first -- several of them name features they do not assert.
-The kind of coverage comes from the function-name suffix, per SPEC 2 naming, so only an
-oracle-suffixed function contributes an oracle token.
+Each row is checked against the tests of its OWN kind -- a vetted row against the oracle files, a
+regression row against the snapshot one -- so `current_test` must name exactly the files that cover
+the feature AT THAT ROW'S CONFIG. That is stricter than scanlib's per-feature reading, which is why
+this family replaces the shared checks rather than configuring them.
 
 THREE CHECKS BEYOND THE ROW MAPPING, all set differences and all cheap:
 
@@ -27,20 +24,13 @@ THREE CHECKS BEYOND THE ROW MAPPING, all set differences and all cheap:
                          cannot see a swap, and a braced list's last entry has no trailing comma,
                          so counting by comma is off by one to begin with.
 """
-import argparse
-import csv
-import io
 import os
 import re
 import sys
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-VETTING = os.path.dirname(HERE)
-TESTS = os.path.dirname(VETTING)
-REPO = os.path.dirname(TESTS)
-OUT = os.path.join(HERE, "imq_coverage.csv")
-REGISTRY = os.path.join(VETTING, "oracle_coverage.csv")
-FEATURESET = os.path.join(REPO, "src", "nyx", "featureset.cpp")
+import scanlib
+
+FEATURESET = os.path.join(os.path.dirname(scanlib.TESTS), "src", "nyx", "featureset.cpp")
 
 SOURCES = [
     "test_imq_opencv.h",
@@ -66,6 +56,8 @@ PIN_KEY = re.compile(r'"([A-Z][A-Z0-9_]*)"')
 # SCOPED_TRACE labels are the other SCREAMING_SNAKE literal in these functions and pin nothing, so
 # they are dropped before the keys are read - otherwise every trace label reads as an unpinned key.
 TRACE = re.compile(r"SCOPED_TRACE\s*\(.*?\)\s*;", re.S)
+# Block comments only: these headers carry no `#` comments, and stripping `#` lines would take the
+# preprocessor directives with them.
 COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/", re.S)
 
 NOTE = {
@@ -81,23 +73,10 @@ NOTE = {
                  "audit/imq_pydom_sharpness_vetting_report.md",
 }
 
-
-def registry_rows():
-    with open(REGISTRY, newline="", encoding="utf-8") as fh:
-        return [r for r in csv.DictReader(fh) if r["dim"] == "IMQ" and r["family"] == "imq"]
-
-
-def feature_names():
-    """The family's feature names, longest first so a name that prefixes another cannot win."""
-    return sorted({r["feature"] for r in registry_rows()}, key=len, reverse=True)
-
-
-def feature_re(names):
-    return re.compile(r"\b(" + "|".join(re.escape(n) for n in names) + r")\b")
-
-
-def strip_comments(text):
-    return COMMENT.sub(lambda m: "\n" * m.group(0).count("\n"), text)
+# Filled by collect() and read by disagreements(). The two run one after the other inside
+# scanlib.run, and the key/reader sets are a by-product of the scan that the five coverage maps
+# have nowhere to carry.
+_KEYS, _READ_KEYS = {}, {}
 
 
 def table_keys(text, table):
@@ -118,7 +97,7 @@ def table_keys(text, table):
 def scan(path, feat_re):
     """-> ({test fn: {features it covers}}, {test fn: {pin keys it names}}, {keys the table pins})."""
     with open(path, encoding="utf-8", errors="replace") as fh:
-        text = strip_comments(fh.read())
+        text = COMMENT.sub(lambda m: "\n" * m.group(0).count("\n"), fh.read())
     keys = table_keys(text, TABLE_OF[os.path.basename(path)])
 
     hits, read = {}, {}
@@ -139,14 +118,15 @@ def scan(path, feat_re):
     return hits, read, keys
 
 
-def collect(feat_re):
-    """-> (oracle fns, oracle tokens, regression fns, other-kind fns, fn -> file, file -> keys)."""
-    asserted, oracles, regression, other, where, keys = {}, {}, {}, {}, {}, {}
-    read_keys = {}
-    for rel in SOURCES:
-        hits, read, table = scan(os.path.join(TESTS, rel), feat_re)
-        keys[rel] = table
-        read_keys[rel] = set().union(*read.values()) if read else set()
+def collect(fam, feat_re):
+    """-> the five coverage maps, recording each file's pinned and read keys on the way through."""
+    asserted, oracles, regression, other, where = {}, {}, {}, {}, {}
+    _KEYS.clear()
+    _READ_KEYS.clear()
+    for rel in fam.sources:
+        hits, read, table = scan(os.path.join(scanlib.TESTS, rel), feat_re)
+        _KEYS[rel] = table
+        _READ_KEYS[rel] = set().union(*read.values()) if read else set()
         for fn, feats in hits.items():
             where[fn] = os.path.basename(rel)
             kind = fn.rsplit("_", 1)[-1]
@@ -158,23 +138,7 @@ def collect(feat_re):
                     regression.setdefault(feat, set()).add(fn)
                 else:                   # invariant / mechanics - coverage, never vetting
                     other.setdefault(feat, set()).add(fn)
-    return asserted, oracles, regression, other, where, keys, read_keys
-
-
-def render(rows, asserted, oracles, regression, other):
-    buf = io.StringIO()
-    w = csv.writer(buf, lineterminator="\n")
-    w.writerow(["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
-                "Regression", "Reg_Test_Name", "Mechanics", "Notes"])
-    for f in dict.fromkeys(r["feature"] for r in rows):
-        w.writerow(["IMQ", "imq", f,
-                    ";".join(sorted(oracles.get(f, ()))),
-                    ";".join(sorted(asserted.get(f, ()))),
-                    "Y" if f in regression else "N",
-                    ";".join(sorted(regression.get(f, ()))),
-                    ";".join(sorted(other.get(f, ()))),
-                    NOTE.get(f, "")])
-    return buf.getvalue()
+    return asserted, oracles, regression, other, where
 
 
 def registered_cases():
@@ -183,7 +147,7 @@ def registered_cases():
     Every registered name, not just this family's, so a scanner later pointed at another family's
     file does not report that file's cases as never running.
     """
-    with open(os.path.join(TESTS, "test_all.cc"), encoding="utf-8", errors="replace") as fh:
+    with open(scanlib.TEST_ALL, encoding="utf-8", errors="replace") as fh:
         text = fh.read()
     out = {}
     for case, body in re.findall(r"TEST\s*\(\s*\w+\s*,\s*(\w+)\s*\)\s*\{(.*?)\n\}", text, re.S):
@@ -198,7 +162,7 @@ def enum_features():
         return set(re.findall(r'\{\s*"(\w+)"\s*,\s*FeatureIMQ::\w+\s*\}', fh.read()))
 
 
-def key_reader_problems(keys, read_keys):
+def key_reader_problems():
     """A pinned key nothing reads, and an assertion with nothing pinned for it.
 
     Two set differences per file. The first direction is the one that matters: an assertion never
@@ -210,13 +174,12 @@ def key_reader_problems(keys, read_keys):
     than one cell per feature -- MIN_SATURATION alone is pinned at three.
     """
     out = []
-    read_by_file = dict(read_keys)
-    for rel, pinned in keys.items():
+    for rel, pinned in _KEYS.items():
         if pinned is None:
             out.append(f"{rel}: golden table {TABLE_OF[rel]} not found - the scanner cannot check "
                        f"its keys against the assertions that read them")
             continue
-        read = read_by_file.get(rel, set())
+        read = _READ_KEYS.get(rel, set())
         for k in sorted(pinned - read):
             out.append(f"{rel}: {TABLE_OF[rel]} pins {k} but no assertion in the file reads it, "
                        f"so nothing ever evaluates that number")
@@ -225,23 +188,23 @@ def key_reader_problems(keys, read_keys):
     return out
 
 
-def disagreements(rows, asserted, oracles, regression, other, where, keys, read_keys):
+def disagreements(fam, cov):
     """Each row is answerable for the tests of its own kind."""
     out = []
-    for r in rows:
+    for r in cov.rows:
         f = r["feature"]
         claimed = {t for t in r["current_test"].split(";") if t}
         if r["status"] == "vetted":
-            files = {where[fn] for fn in asserted.get(f, ())}
-            if not asserted.get(f):
+            files = {cov.where[fn] for fn in cov.asserted.get(f, ())}
+            if not cov.asserted.get(f):
                 out.append(f"{f}: status=vetted but no oracle test asserts it")
-            if r["oracle"] and r["oracle"] not in oracles.get(f, set()):
+            if r["oracle"] and r["oracle"] not in cov.oracles.get(f, set()):
                 out.append(f"{f}: registry oracle={r['oracle']!r} but the tests asserting it are "
-                           f"{sorted(oracles.get(f, ())) or 'none'}")
+                           f"{sorted(cov.oracles.get(f, ())) or 'none'}")
             if not r["oracle"]:
                 out.append(f"{f}: status=vetted but the row names no oracle")
         else:
-            files = {where[fn] for fn in regression.get(f, ())}
+            files = {cov.where[fn] for fn in cov.regression.get(f, ())}
             if r["oracle"]:
                 out.append(f"{f}: status={r['status']} but the row names oracle {r['oracle']!r}")
         for stale in sorted(claimed - files):
@@ -251,21 +214,22 @@ def disagreements(rows, asserted, oracles, regression, other, where, keys, read_
             out.append(f"{f}: {gap} covers it but current_test omits it")
 
     # the reverse gap: a kind of test with no row to answer for it
-    for f in sorted(asserted):
-        if not any(r["feature"] == f and r["status"] == "vetted" for r in rows):
-            out.append(f"{f}: {sorted(asserted[f])} assert it but no registry row is vetted")
-    for f in sorted(regression):
-        if not any(r["feature"] == f and r["status"] == "regression" for r in rows):
-            out.append(f"{f}: {sorted(regression[f])} pin it but no registry row is a regression one")
+    for f in sorted(cov.asserted):
+        if not any(r["feature"] == f and r["status"] == "vetted" for r in cov.rows):
+            out.append(f"{f}: {sorted(cov.asserted[f])} assert it but no registry row is vetted")
+    for f in sorted(cov.regression):
+        if not any(r["feature"] == f and r["status"] == "regression" for r in cov.rows):
+            out.append(f"{f}: {sorted(cov.regression[f])} pin it but no registry row is a "
+                       f"regression one")
 
-    out += key_reader_problems(keys, read_keys)
+    out += key_reader_problems()
 
     # registration, both directions
     registered = registered_cases()
-    for fn, src in sorted(where.items()):
+    for fn, src in sorted(cov.where.items()):
         if src.endswith(".h") and fn not in registered:
             out.append(f"{fn}: defined but no TEST() in test_all.cc calls it, so it never runs")
-    for r in rows:
+    for r in cov.rows:
         for name in (t.strip() for t in r["test_name"].split(";") if t.strip()):
             case = name.split(".")[-1]
             if case not in set(registered.values()):
@@ -274,7 +238,7 @@ def disagreements(rows, asserted, oracles, regression, other, where, keys, read_
 
     # the registry and the enum must name the same features, in BOTH directions
     enum = enum_features()
-    rowset = {r["feature"] for r in rows}
+    rowset = {r["feature"] for r in cov.rows}
     for f in sorted(rowset - enum):
         out.append(f"{f}: a registry row names it but featureset.cpp maps no FeatureIMQ of that name")
     for f in sorted(enum - rowset):
@@ -282,36 +246,19 @@ def disagreements(rows, asserted, oracles, regression, other, where, keys, read_
     return out
 
 
-def main(argv=None):
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--check", action="store_true",
-                    help="report drift and registry disagreements instead of rewriting")
-    a = ap.parse_args(argv)
-
-    rows = registry_rows()
-    feat_re = feature_re(feature_names())
-    asserted, oracles, regression, other, where, keys, read_keys = collect(feat_re)
-    text = render(rows, asserted, oracles, regression, other)
-    problems = disagreements(rows, asserted, oracles, regression, other, where, keys,
-                             read_keys)
-
-    if a.check:
-        with open(OUT, newline="", encoding="utf-8") as fh:
-            if fh.read() != text:
-                problems.insert(0, f"{os.path.basename(OUT)} is stale; rerun without --check")
-        for p in problems:
-            print("ERROR:", p)
-        print(f"checked {len(rows)} rows: "
-              f"{'clean' if not problems else str(len(problems)) + ' problem(s)'}")
-        return 1 if problems else 0
-
-    with open(OUT, "w", newline="", encoding="utf-8") as fh:
-        fh.write(text)
-    print(f"wrote {OUT} ({len(rows)} rows)")
-    for p in problems:
-        print("WARNING:", p)
-    return 0
-
+FAMILY = scanlib.Family(
+    dim="IMQ", family="imq", out="imq_coverage.csv",
+    sources=SOURCES,
+    oracle_suffix=ORACLE_SUFFIX,
+    notes=NOTE,
+    collect_override=collect,
+    # the mechanics guards are neither oracle nor regression, and this family names them in a
+    # column of their own rather than folding them into the notes
+    extra_column="Mechanics",
+    # every built-in check is replaced by the per-kind model above, registration included
+    checks=frozenset(),
+    extra_problems=disagreements,
+)
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(scanlib.run(FAMILY))

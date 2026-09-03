@@ -91,3 +91,19 @@ jobs:
     - name: Validate test naming conventions
       working-directory: ${{github.workspace}}
       run: python3 tests/vetting/check_test_names.py --check
+
+    - name: Check the coverage rule against its own negative controls
+      working-directory: ${{github.workspace}}
+      run: python3 tests/vetting/audit/scanlib_selftest.py
+
+    - name: Validate coverage artifacts against the test tree
+      working-directory: ${{github.workspace}}
+      # every family runs, then the step fails once and names the ones that failed: the twenty
+      # scanners share one library, so a change that breaks it should report all twenty families
+      # rather than stopping at the first. The accumulation is in the runner rather than in a shell
+      # loop -- the shell form failed this step twice with twenty clean scanners logged under it.
+      run: python3 tests/vetting/audit/run_scanners.py
+
+    - name: Validate the feature report
+      working-directory: ${{github.workspace}}
+      run: python3 tests/vetting/report_features.py --check
