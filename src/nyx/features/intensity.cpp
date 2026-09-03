@@ -56,6 +56,84 @@ PixelIntensityFeatures::PixelIntensityFeatures() : FeatureMethod("PixelIntensity
 
 void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Dataset & ds)
 {
+	calculate_grey_levels (r, fsett, ds);
+	report_in_source_domain (r, ds);
+}
+
+// Reports every location statistic in the slide's own intensity domain. The loader stored grey
+// levels u for intensities x = inten_offset + inten_scale * u, so a CT read in Hounsfield units
+// is reported in Hounsfield units instead of in the offset the unsigned pixel type needed, and a
+// real-valued slide is reported in its own float range instead of in quantization steps. Which
+// correction each feature takes follows from that map: the location statistics are affine in it,
+// the dispersions and ranges take the scale alone, the standardized moments and the histogram
+// shape are invariant, and the ratios are recomputed from their already-mapped parts. Nothing
+// moves on the identity map, which is every ordinary non-negative integer image.
+void PixelIntensityFeatures::report_in_source_domain (const LR& r, const Dataset& ds)
+{
+	double s, o;
+	ds.intensity_domain_map (r.slide_idx, s, o);
+	if (s == 1.0 && o == 0.0)
+		return;
+
+	double n = r.aux_area;
+
+	// ENERGY is quadratic in the map: sum (o + s*u)^2 == n*o^2 + 2*o*s*sum(u) + s^2*sum(u^2).
+	// Both sums are still on hand as INTEGRATED_INTENSITY and ENERGY, so no second pass over
+	// the pixel cloud is needed. It has to run before INTEGRATED_INTENSITY is mapped.
+	val_ENERGY = n * o * o + 2.0 * o * s * val_INTEGRATED_INTENSITY + s * s * val_ENERGY;
+	val_ROOT_MEAN_SQUARED = sqrt (val_ENERGY / n);
+	val_INTEGRATED_INTENSITY = n * o + s * val_INTEGRATED_INTENSITY;
+
+	// Affine in the map
+	val_MIN = o + s * val_MIN;
+	val_MAX = o + s * val_MAX;
+	val_MEAN = o + s * val_MEAN;
+	val_MEDIAN = o + s * val_MEDIAN;
+	val_MODE = o + s * val_MODE;
+	val_P01 = o + s * val_P01;
+	val_P10 = o + s * val_P10;
+	val_P25 = o + s * val_P25;
+	val_P75 = o + s * val_P75;
+	val_P90 = o + s * val_P90;
+	val_P99 = o + s * val_P99;
+	val_ROBUST_MEAN = o + s * val_ROBUST_MEAN;
+
+	// Offset-invariant, linear in the scale
+	val_RANGE *= s;
+	val_INTERQUARTILE_RANGE *= s;
+	val_MEAN_ABSOLUTE_DEVIATION *= s;
+	val_MEDIAN_ABSOLUTE_DEVIATION *= s;
+	val_ROBUST_MEAN_ABSOLUTE_DEVIATION *= s;
+	val_STANDARD_DEVIATION *= s;
+	val_STANDARD_DEVIATION_BIASED *= s;
+	val_STANDARD_ERROR *= s;
+	val_VARIANCE *= s * s;
+	val_VARIANCE_BIASED *= s * s;
+
+	// The ROI range was measured in grey levels while the slide range it is divided by was
+	// measured in the slide's own domain; the scale is what reconciles the two.
+	val_COVERED_IMAGE_INTENSITY_RANGE *= s;
+
+	// Ratios: same definitions as above, recomputed from the mapped parts. None of them is
+	// invariant, and QCOD and PIU are not even meaningful once intensities can be negative --
+	// which is a property of the measure, not something the domain should hide.
+	// The two guarded quotients take the same zero-denominator convention the grey-level pass
+	// takes, so neither path can hand out a NaN. The two need not arrive at the same number,
+	// and should not: an ROI of one intensity is degenerate in grey levels -- MIN, MAX and both
+	// quartiles all land on 0, which is what trips the guard -- and perfectly ordinary in the
+	// slide's own domain, where those parts sit at the offset and each ratio is defined. PIU
+	// there reads 100, which is the honest answer for a uniform ROI. COV is the same story with
+	// no guard on either path: its denominator, the mean, is zero only in grey levels.
+	// Both guards test a sum rather than degeneracy, so a signed ROI symmetric about zero takes
+	// them too. Neither measure is defined on signed intensities anyway, and 0 is a better
+	// answer for one than the infinity the division would produce.
+	val_COV = val_STANDARD_DEVIATION / val_MEAN;
+	val_QCOD = (val_P75 + val_P25) != 0.0 ? (val_P75 - val_P25) / (val_P75 + val_P25) : 0.0;
+	val_UNIFORMITY_PIU = (val_MAX + val_MIN) != 0.0 ? (1.0 - (val_MAX - val_MIN) / (val_MAX + val_MIN)) * 100.0 : 0.0;
+}
+
+void PixelIntensityFeatures::calculate_grey_levels (LR& r, const Fsettings & fsett, const Dataset & ds)
+{
 	// A constant-intensity ROI (aux_max == aux_min) used to be intercepted here, keeping only
 	// MEAN/MEDIAN/MIN/MAX/RANGE and setting every other feature to the soft-NAN sentinel. That
 	// discarded values which are perfectly well defined on a constant ROI (INTEGRATED_INTENSITY,
@@ -117,8 +195,12 @@ void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Da
 	// --Standard error
 	val_STANDARD_ERROR = val_STANDARD_DEVIATION / sqrt(n);
 
-	//==== Do not calculate features of all-blank intensities (to avoid NANs)
-	if (r.aux_min == 0 && r.aux_max == 0)
+	// An ROI with no pixels has no distribution to describe. A populated ROI whose grey levels are
+	// all 0 does, and used to be turned away by the same test: the offset map puts the slide's
+	// minimum on grey level 0, so an ROI sitting at that minimum -- an all-air CT ROI at -1013 HU,
+	// say -- reaches here constant and zero, and its histogram, percentiles, entropy and UNIFORMITY
+	// are all well defined.
+	if (r.raw_pixels.empty())
 		return;
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
@@ -134,7 +216,10 @@ void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Da
 	val_P75 = p75_;
 	val_P90 = p90_;
 	val_P99 = p99_;
-	val_QCOD = (p75_ - p25_) / (p75_ + p25_);
+	// Both quartiles of a single-valued ROI at grey level 0 are 0, so the ratio is 0/0. The
+	// blank-ROI guard used to turn such an ROI away before it reached here; it now describes
+	// the distribution, and the quotient is what has to say what a zero denominator means.
+	val_QCOD = (p75_ + p25_) != 0.0 ? (p75_ - p25_) / (p75_ + p25_) : 0.0;
 	val_INTERQUARTILE_RANGE = iqr_;
 	double robustMean = 0.0;
 	size_t robustCount = 0;
@@ -159,7 +244,8 @@ void PixelIntensityFeatures::calculate (LR& r, const Fsettings & fsett, const Da
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
 	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
-	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
+	// An ROI whose grey levels are all 0 puts 0 in the denominator, as for QCOD above.
+	double piu = (r.aux_max + r.aux_min) != 0 ? (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0 : 0.0;
 	val_UNIFORMITY_PIU = piu;
 
 	// Skewness
@@ -195,6 +281,12 @@ void PixelIntensityFeatures::osized_add_online_pixel(size_t x, size_t y, uint32_
 {}
 
 void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, const Dataset& ds, ImageLoader& imloader)
+{
+	osized_calculate_grey_levels (r, stng, ds, imloader);
+	report_in_source_domain (r, ds);
+}
+
+void PixelIntensityFeatures::osized_calculate_grey_levels (LR& r, const Fsettings& stng, const Dataset& ds, ImageLoader& imloader)
 {
 	// --MIN, MAX
 	val_MIN = r.aux_min;
@@ -256,8 +348,8 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	// --Standard error
 	val_STANDARD_ERROR = val_STANDARD_DEVIATION / sqrt(n);
 
-	//==== Do not calculate features of all-blank intensities (to avoid NANs)
-	if (r.aux_min == 0 && r.aux_max == 0)
+	// Emptiness, not zero-valuedness -- as in the in-RAM path above.
+	if (r.raw_pixels_NT.size() == 0)
 		return;
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
@@ -273,7 +365,10 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	val_P75 = p75_;
 	val_P90 = p90_;
 	val_P99 = p99_;
-	val_QCOD = (p75_ - p25_) / (p75_ + p25_);
+	// Both quartiles of a single-valued ROI at grey level 0 are 0, so the ratio is 0/0. The
+	// blank-ROI guard used to turn such an ROI away before it reached here; it now describes
+	// the distribution, and the quotient is what has to say what a zero denominator means.
+	val_QCOD = (p75_ + p25_) != 0.0 ? (p75_ - p25_) / (p75_ + p25_) : 0.0;
 	val_INTERQUARTILE_RANGE = iqr_;
 	double robustMean = 0.0;
 	size_t robustCount = 0;
@@ -305,7 +400,8 @@ void PixelIntensityFeatures::osized_calculate (LR& r, const Fsettings& stng, con
 	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
 	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
 	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
-	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
+	// An ROI whose grey levels are all 0 puts 0 in the denominator, as for QCOD above.
+	double piu = (r.aux_max + r.aux_min) != 0 ? (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0 : 0.0;
 	val_UNIFORMITY_PIU = piu;
 
 	// Skewness

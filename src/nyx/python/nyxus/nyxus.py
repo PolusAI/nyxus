@@ -118,21 +118,24 @@ class Nyxus:
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
     preserve_hu: bool (optional, default False)
-        CT/Hounsfield mode. Preserve absolute pixel intensities (1 grey level = 1
-        intensity unit, offset by each slide's floored minimum) instead of the min-max
-        rescaling controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield
-        Units intact for CT, fixes the signed-integer wraparound of negative values, and
-        applies DICOM RescaleSlope/RescaleIntercept. The offset is PER-SLIDE (each slide's
-        own floored minimum, not a dataset-global minimum), so offset-domain values are not
-        directly comparable across slides. How features are reported:
-          * Intensity Histogram (IH_*) features: directly in true HU.
+        NOT needed for CT: Hounsfield units are preserved and reported either way,
+        despite this option's name. What it actually does:
+        Carry a FLOATING-POINT slide on the offset-preserving map (1 grey level = 1
+        intensity unit, offset by the slide's floored minimum) instead of the min-max
+        rescaling controlled by dynamic_range/min_intensity/max_intensity. Integer, DICOM
+        and NIfTI slides take that map regardless of this flag, and DICOM
+        RescaleSlope/RescaleIntercept and NIfTI scl_slope/scl_inter are always applied, so
+        CT Hounsfield Units survive the load either way and negative values never wrap.
+        Whichever map a slide takes is recorded and undone on the way out:
+          * Every intensity feature -- location (mean, median, mode, percentiles, min, max),
+            dispersion, the sum/energy family, and the Intensity Histogram (IH_*) features --
+            is reported in the slide's own intensity domain. A CT read in Hounsfield units is
+            reported in Hounsfield units, negatives included.
           * Shift-invariant intensity features (variance, standard deviation, skewness,
             kurtosis, range, interquartile range) and all shape/texture features: unaffected.
-          * Location intensity features (mean, median, mode, percentiles, min, max): in the
-            offset domain; recover true HU by adding that slide's floored minimum back.
-          * Sum/energy intensity features (integrated intensity, energy, root-mean-squared,
-            total energy): NOT recoverable by simply adding the minimum back — they also
-            depend on the pixel count and the offset.
+          * Sub-unit precision is not preserved: grey levels are integers, so a slide whose
+            values are not integer-valued is reported rounded down to the grey level it was
+            stored as. Hounsfield units are integer-valued, so CT is unaffected.
     ram_limit: int (optional)
         Maximum amount of ram to be used by Nyxus in megabytes
     verbose: int (optional, default 0)
@@ -975,21 +978,24 @@ class Nyxus3D:
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
     preserve_hu: bool (optional, default False)
-        CT/Hounsfield mode. Preserve absolute pixel intensities (1 grey level = 1
-        intensity unit, offset by each slide's floored minimum) instead of the min-max
-        rescaling controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield
-        Units intact for CT, fixes the signed-integer wraparound of negative values, and
-        applies DICOM RescaleSlope/RescaleIntercept. The offset is PER-SLIDE (each slide's
-        own floored minimum, not a dataset-global minimum), so offset-domain values are not
-        directly comparable across slides. How features are reported:
-          * Intensity Histogram (IH_*) features: directly in true HU.
+        NOT needed for CT: Hounsfield units are preserved and reported either way,
+        despite this option's name. What it actually does:
+        Carry a FLOATING-POINT slide on the offset-preserving map (1 grey level = 1
+        intensity unit, offset by the slide's floored minimum) instead of the min-max
+        rescaling controlled by dynamic_range/min_intensity/max_intensity. Integer, DICOM
+        and NIfTI slides take that map regardless of this flag, and DICOM
+        RescaleSlope/RescaleIntercept and NIfTI scl_slope/scl_inter are always applied, so
+        CT Hounsfield Units survive the load either way and negative values never wrap.
+        Whichever map a slide takes is recorded and undone on the way out:
+          * Every intensity feature -- location (mean, median, mode, percentiles, min, max),
+            dispersion, the sum/energy family, and the Intensity Histogram (IH_*) features --
+            is reported in the slide's own intensity domain. A CT read in Hounsfield units is
+            reported in Hounsfield units, negatives included.
           * Shift-invariant intensity features (variance, standard deviation, skewness,
             kurtosis, range, interquartile range) and all shape/texture features: unaffected.
-          * Location intensity features (mean, median, mode, percentiles, min, max): in the
-            offset domain; recover true HU by adding that slide's floored minimum back.
-          * Sum/energy intensity features (integrated intensity, energy, root-mean-squared,
-            total energy): NOT recoverable by simply adding the minimum back — they also
-            depend on the pixel count and the offset.
+          * Sub-unit precision is not preserved: grey levels are integers, so a slide whose
+            values are not integer-valued is reported rounded down to the grey level it was
+            stored as. Hounsfield units are integer-valued, so CT is unaffected.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)
@@ -1537,21 +1543,24 @@ class ImageQuality:
     max_intensity: (optional, default 1.0)
         Maximum intensity of voxels of a floating point TIFF image.
     preserve_hu: bool (optional, default False)
-        CT/Hounsfield mode. Preserve absolute pixel intensities (1 grey level = 1
-        intensity unit, offset by each slide's floored minimum) instead of the min-max
-        rescaling controlled by dynamic_range/min_intensity/max_intensity. Keeps Hounsfield
-        Units intact for CT, fixes the signed-integer wraparound of negative values, and
-        applies DICOM RescaleSlope/RescaleIntercept. The offset is PER-SLIDE (each slide's
-        own floored minimum, not a dataset-global minimum), so offset-domain values are not
-        directly comparable across slides. How features are reported:
-          * Intensity Histogram (IH_*) features: directly in true HU.
+        NOT needed for CT: Hounsfield units are preserved and reported either way,
+        despite this option's name. What it actually does:
+        Carry a FLOATING-POINT slide on the offset-preserving map (1 grey level = 1
+        intensity unit, offset by the slide's floored minimum) instead of the min-max
+        rescaling controlled by dynamic_range/min_intensity/max_intensity. Integer, DICOM
+        and NIfTI slides take that map regardless of this flag, and DICOM
+        RescaleSlope/RescaleIntercept and NIfTI scl_slope/scl_inter are always applied, so
+        CT Hounsfield Units survive the load either way and negative values never wrap.
+        Whichever map a slide takes is recorded and undone on the way out:
+          * Every intensity feature -- location (mean, median, mode, percentiles, min, max),
+            dispersion, the sum/energy family, and the Intensity Histogram (IH_*) features --
+            is reported in the slide's own intensity domain. A CT read in Hounsfield units is
+            reported in Hounsfield units, negatives included.
           * Shift-invariant intensity features (variance, standard deviation, skewness,
             kurtosis, range, interquartile range) and all shape/texture features: unaffected.
-          * Location intensity features (mean, median, mode, percentiles, min, max): in the
-            offset domain; recover true HU by adding that slide's floored minimum back.
-          * Sum/energy intensity features (integrated intensity, energy, root-mean-squared,
-            total energy): NOT recoverable by simply adding the minimum back — they also
-            depend on the pixel count and the offset.
+          * Sub-unit precision is not preserved: grey levels are integers, so a slide whose
+            values are not integer-valued is reported rounded down to the grey level it was
+            stored as. Hounsfield units are integer-valued, so CT is unaffected.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)

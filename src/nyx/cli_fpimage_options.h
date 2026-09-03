@@ -48,8 +48,8 @@ public:
 		target_dyn_range_ = target_dyn_range;
 	}
 
-	// CT/HU preservation mode: keep 1 grey level == 1 intensity unit (offset by the
-	// floored global min) instead of min-max rescaling; see SlideProps::uint_friendly_inten.
+	// Asks a floating-point slide for 1 grey level == 1 intensity unit (offset by the slide's
+	// floored minimum) instead of min-max rescaling; see Nyxus::record_intensity_domain_map.
 	bool preserve_hu() const {
 		return preserve_hu_;
 	}
@@ -65,5 +65,5 @@ private:
 	float min_intensity_ = 0.0,
 		max_intensity_ = 1.0,
 		target_dyn_range_ = 1e4;
-	bool preserve_hu_ = false;			// HU mode off by default
+	bool preserve_hu_ = false;			// float slides are min-max rescaled by default
 };

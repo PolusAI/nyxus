@@ -3,6 +3,7 @@
 #ifdef OMEZARR_SUPPORT
 
 #include <algorithm>
+#include <cmath>
 #include "abs_tile_loader.h"
 #include "nlohmann/json.hpp"
 
@@ -30,10 +31,22 @@ public:
     /// @brief NyxusOmeZarrLoader constructor
     /// @param numberThreads Number of threads associated
     /// @param filePath Path of zarr file
+    /// @param _inten_offset Offset of the load-time map (SlideProps::inten_offset)
+    /// @param _inten_max Upper end of the clamp, used only when _quantize is set
+    /// @param _target_dyn_range Grey levels the rescale spans, used only when _quantize is set
+    /// @param _quantize Min-max rescale a real-valued dataset, instead of the offset map
     NyxusOmeZarrLoader(
         size_t numberThreads,
-        std::string const& filePath)
-        : AbstractTileLoader<DataType>("NyxusOmeZarrLoader", numberThreads, filePath)
+        std::string const& filePath,
+        double _inten_offset = 0.0,
+        double _inten_max = 1.0,
+        double _target_dyn_range = 1e4,
+        bool _quantize = false)
+        : AbstractTileLoader<DataType>("NyxusOmeZarrLoader", numberThreads, filePath),
+        inten_offset_(_inten_offset),
+        inten_max_(_inten_max),
+        target_dyn_range_(_target_dyn_range),
+        quantize_(_quantize)
     {
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
@@ -157,11 +170,14 @@ public:
         // Read subarray from the cached z5 dataset
         z5::multiarray::readSubarray<FileType>(*ds_, view, offset.begin());
         
-        // Copy from buffer to destination tile, handling partial tiles
+        // Copy from buffer to destination tile, handling partial tiles. The sample goes through the
+        // same load-time map every other backend applies: a plain std::copy narrowed each sample to
+        // the unsigned destination type, so a signed dataset wrapped its negatives and a real-valued
+        // one lost its fraction, with nothing recorded that could undo either.
         for (size_t k = 0; k < data_height; ++k) {
-            std::copy(buffer.begin() + k * data_width, 
-                     buffer.begin() + (k + 1) * data_width, 
-                     dest->begin() + k * tile_width_);
+            for (size_t j = 0; j < data_width; ++j) {
+                *(dest->begin() + k * tile_width_ + j) = map_intensity ((double) buffer[k * data_width + j]);
+            }
         }
     }
 
@@ -212,5 +228,35 @@ private:
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;
     std::string ds_name_;
     std::unique_ptr<z5::Dataset> ds_;   ///< Cached dataset handle (opened once)
+
+    double inten_offset_ = 0.0,
+        inten_max_ = 1.0,
+        target_dyn_range_ = 1e4;
+
+    // Whether this dataset is min-max rescaled into [0, target_dyn_range] (a real-valued dataset
+    // left in its default mode) or carried on the offset map. SlideProps::inten_map is where the
+    // choice is made and recorded; ImageLoader::open passes it here, exactly as it does for TIFF.
+    bool quantize_ = false;
+
+    // The offset map, shared by the real-valued and native-integer paths: u = trunc(x - offset),
+    // keeping 1 grey level == 1 intensity unit and clamping sub-minimum outliers to 0 instead of
+    // wrapping on the unsigned cast. The intensity families add the offset back, so reported
+    // statistics are in the dataset's own domain. A mask is opened with offset 0 and no quantize,
+    // which leaves its labels untouched.
+    DataType map_intensity (double x) const
+    {
+        // As in the TIFF loaders: a non-finite sample takes grey level 0 rather than an
+        // undefined conversion.
+        if (! std::isfinite (x)) return (DataType) 0;
+        if (! quantize_)
+        {
+            double y = x - inten_offset_;
+            if (y < 0.0) y = 0.0;
+            return (DataType) y;
+        }
+        double t = x < inten_offset_ ? inten_offset_ : x;
+        t = t > inten_max_ ? inten_max_ : t;
+        return (DataType)(target_dyn_range_ * (t - inten_offset_) / (inten_max_ - inten_offset_));
+    }
 };
 #endif //OMEZARR_SUPPORT

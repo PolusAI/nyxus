@@ -37,9 +37,10 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   See `audit/firstorder_3d_pyradiomics_vetting_report.md`.
 
 ## firstorder3d.matlab_native
-- `bench_ut57_3d`, label 57, with default 3D first-order settings. The fixture is put in the same
-  integer domain as Nyxus' default float-NIfTI loader: shift the negative volume minimum to zero,
-  then truncate nonnegative values to integers.
+- `bench_ut57_3d`, label 57, with default 3D first-order settings. The fixture is put in the domain
+  Nyxus reports: the loader offsets a volume holding negative values by its floored minimum and
+  truncates to integer grey levels, and the intensity family adds that offset back, so the reference
+  is the volume's own float domain with the truncation kept.
 - MATLAB R2026a uses the named built-ins directly; derived statistics apply only their defining
   normalization to those results. `prctile(..., Method="midpoint")` and `iqr`
   use raw samples; Nyxus' percentile family uses its fixed 100-bin CDF, so that group uses `rel=1e-2`.
@@ -53,11 +54,13 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 - Used by: `test_3d_firstorder_regression.h`.
 
 ## firstorder.preserve_hu
-- `--preserve-hu` (CT/Hounsfield mode): the loader applies a slope-1 offset (`value - floor(HU_min)`)
-  instead of min-max rescaling, so first-order intensity features are reported in true Hounsfield units.
-  Not a new feature — a config mode; adds absolute-HU corroboration to the existing MIN/MAX/MEAN/
-  INTEGRATED_INTENSITY features. Oracle: `pydicom` (RescaleSlope/Intercept → HU on a real CT slice).
-  Used by: `test_2d_hu_ct_small_pydicom.py`.
+- A CT slice in Hounsfield units. The loader carries it on the slope-1 offset map
+  (`value - floor(slide min)`) rather than min-max rescaling it, and the intensity family adds the
+  offset back, so first-order features are reported in true Hounsfield units. `--preserve-hu` selects
+  that map for a REAL-VALUED slide; a slide holding negative values takes it either way, so this
+  recipe no longer depends on the flag. Not a new feature — a config; adds absolute-HU corroboration
+  to the existing MIN/MAX/MEAN/INTEGRATED_INTENSITY features. Oracle: `pydicom`
+  (RescaleSlope/Intercept → HU on a real CT slice). Used by: `test_2d_hu_ct_small_pydicom.py`.
 
 ## ih.ibsi_fbn
 - Fixed-bin-number discretised intensity histogram (IBSI IH family 3.4) on the IBSI digital

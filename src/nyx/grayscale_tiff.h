@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include "abs_tile_loader.h"
 
 #ifdef __APPLE__
@@ -10,9 +11,7 @@
 #else
     #include <tiffio.h>
 #endif
-#include <cmath>    // HU mode: std::floor / std::llround for the offset map
 #include <cstring>
-#include <type_traits>	// std::is_signed_v to guard signed->unsigned wraparound in loadTile
 #include <sstream>
 #include <limits.h> // for INT_MAX 
 
@@ -34,16 +33,16 @@ public:
         size_t numberThreads, 
         std::string const& filePath, 
         bool permit_fp,
-        float _floatpt_image_min_intensity,
-        float _floatpt_image_max_intensity,
-        float _floatpt_image_target_dyn_range,
-        bool _preserve_hu = false)			// CT/HU mode: offset-preserving map instead of min-max rescale
+        double _floatpt_image_min_intensity,
+        double _floatpt_image_max_intensity,
+        double _floatpt_image_target_dyn_range,
+        bool _quantize = false)			// min-max rescale a real-valued image, instead of the offset map
         : AbstractTileLoader<DataType>("NyxusGrayscaleTiffTileLoader", numberThreads, filePath),
         permit_floatpt_pixels (permit_fp),
         floatpt_image_min_intensity(_floatpt_image_min_intensity),
         floatpt_image_max_intensity(_floatpt_image_max_intensity),
         floatpt_image_target_dyn_range(_floatpt_image_target_dyn_range),
-        preserve_hu(_preserve_hu)
+        quantize(_quantize)
     {
         short samplesPerPixel = 0;
 
@@ -272,20 +271,13 @@ private:
                 {
                     size_t logOffs = r * tileWidth_ + c,
                         physOffs = r * tileWidth_ + c;
-                    // HU mode: offset-preserve (fixes signed int16 CT wraparound); else native cast.
-                    // FIX(#373): in the native-cast branch, clamp negatives of a signed integer file type to 0
-                    // before the cast to the unsigned pipeline type PixIntens, else int16 CT (negative HU) wraps
-                    // (-1024 -> ~4.29e9), blowing up the max-intensity-driven grey-bin/histogram allocation
-                    // (macOS segfault; garbage MIN/MAX/MEAN elsewhere). Keep the clamp confined to the else
-                    // branch so preserve_hu still retains negatives via hu_offset.
+                    // Integer pixels go through the offset map, whose offset is 0 for a slide
+                    // whose own minimum is non-negative (so an ordinary image is copied
+                    // unchanged) and the floored minimum otherwise. That is what keeps int16 CT
+                    // from wrapping (-1024 -> ~4.29e9), which used to blow up the
+                    // max-intensity-driven grey-bin/histogram allocation (#373).
                     FileType v = *(((FileType*)src) + physOffs);
-                    if (preserve_hu)
-                        *(dest + logOffs) = hu_offset ((double)v);
-                    else
-                    {
-                        if constexpr (std::is_signed_v<FileType>) if (v < 0) v = 0;
-                        *(dest + logOffs) = (DataType) v;
-                    }
+                    *(dest + logOffs) = offset_map ((double)v);
                 }
         }
         else
@@ -294,18 +286,9 @@ private:
                 size_t n = tileHeight_ * tileWidth_;
                 for (size_t i = 0; i < n; i++)
                 {
-                    // HU mode: offset-preserve; else native cast with the signed-int clamp (see tiled branch).
-                    // FIX(#373): clamp negatives of a signed integer file type before the unsigned cast so int16
-                    // CT (negative HU) doesn't wrap to ~4.29e9; confined to the else branch so preserve_hu keeps
-                    // negatives via hu_offset.
+                    // Offset map, as in the tiled branch above (#373).
                     FileType v = *(((FileType*)src) + i);
-                    if (preserve_hu)
-                        *(dest + i) = hu_offset ((double)v);
-                    else
-                    {
-                        if constexpr (std::is_signed_v<FileType>) if (v < 0) v = 0;
-                        *(dest + i) = (DataType) v;
-                    }
+                    *(dest + i) = offset_map ((double)v);
                 }
             }
     }
@@ -368,33 +351,38 @@ private:
 
     bool permit_floatpt_pixels = true;  // whether image pixels can be real-valued (intensity image files) or not (mask image files)
 
-    float floatpt_image_min_intensity = 0.0,
+    double floatpt_image_min_intensity = 0.0,
         floatpt_image_max_intensity = 1.0,
         floatpt_image_target_dyn_range = 1e4;
 
-    // CT/HU raw-intensity mode: keep 1 grey level == 1 intensity unit (offset by
-    // floor(min)) so absolute Hounsfield values survive. See SlideProps::uint_friendly_inten.
-    bool preserve_hu = false;
+    // Whether this slide is min-max rescaled into [0, target_dyn_range] (a real-valued image
+    // left in its default mode) or carried on the offset map below. SlideProps::inten_map is
+    // where the choice is made and recorded; ImageLoader::open passes it here.
+    bool quantize = false;
 
-    // HU offset map shared by the float and native-integer paths:
-    // u = round(x - floor(min)), preserving 1 grey level == 1 intensity unit and
-    // clamping sub-min outliers (incl. negative CT values) to 0 instead of wrapping.
-    DataType hu_offset (double x) const
+    // The offset map, shared by the real-valued and native-integer paths: u = trunc(x - min),
+    // keeping 1 grey level == 1 intensity unit and clamping sub-minimum outliers (negative CT
+    // values among them) to 0 instead of wrapping on the unsigned cast. The intensity families
+    // add the offset back, so reported statistics are in the slide's own domain.
+    DataType offset_map (double x) const
     {
-        double y = x - std::floor ((double)floatpt_image_min_intensity);
+        // A non-finite sample carries no intensity, and converting one to an unsigned integer
+        // is undefined; it takes the same grey level as a sub-minimum outlier. The scan leaves
+        // such samples out of the slide extrema for the same reason.
+        if (! std::isfinite (x)) return (DataType) 0;
+        double y = x - floatpt_image_min_intensity;
         if (y < 0.0) y = 0.0;
-        return (DataType) std::llround (y);
+        return (DataType) y;
     }
 
-    // Map one real-valued pixel to the integer feature domain, honoring HU mode.
-    // Non-HU: hard-clamp to [min,max] then min-max rescale into [0, target_dyn_range].
-    // HU: slope-1 offset (preserves absolute intensities, e.g. Hounsfield units).
+    // Map one real-valued pixel to the integer feature domain.
     DataType map_real_intensity (double x) const
     {
-        if (preserve_hu)
-            return hu_offset (x);
-        double t = x < floatpt_image_min_intensity ? (double)floatpt_image_min_intensity : x;
-        t = t > floatpt_image_max_intensity ? (double)floatpt_image_max_intensity : t;
+        if (! quantize)
+            return offset_map (x);
+        if (! std::isfinite (x)) return (DataType) 0;
+        double t = x < floatpt_image_min_intensity ? floatpt_image_min_intensity : x;
+        t = t > floatpt_image_max_intensity ? floatpt_image_max_intensity : t;
         return (DataType)(floatpt_image_target_dyn_range * (t - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity));
     }
 
@@ -407,13 +395,25 @@ class NyxusGrayscaleTiffStripLoader : public AbstractTileLoader<DataType>
 {
 public:
 
-    /// @brief NyxusGrayscaleTiffTileLoader constructor
+    /// @brief NyxusGrayscaleTiffStripLoader constructor
     /// @param numberThreads Number of threads associated
     /// @param filePath Path of tiff file
+    /// @param _inten_offset Offset of the load-time map (SlideProps::inten_offset)
+    /// @param _inten_max Upper end of the min-max rescale, used only when _quantize is set
+    /// @param _target_dyn_range Grey levels the rescale spans, used only when _quantize is set
+    /// @param _quantize Min-max rescale a real-valued image, instead of the offset map
     NyxusGrayscaleTiffStripLoader(
         size_t numberThreads,
-        std::string const& filePath)
-        : AbstractTileLoader<DataType>("NyxusGrayscaleTiffStripLoader", numberThreads, filePath) 
+        std::string const& filePath,
+        double _inten_offset = 0.0,
+        double _inten_max = 1.0,
+        double _target_dyn_range = 1e4,
+        bool _quantize = false)
+        : AbstractTileLoader<DataType>("NyxusGrayscaleTiffStripLoader", numberThreads, filePath),
+        inten_offset_(_inten_offset),
+        inten_max_(_inten_max),
+        target_dyn_range_(_target_dyn_range),
+        quantize_(_quantize)
     {
         short samplesPerPixel = 0;
 
@@ -660,13 +660,11 @@ private:
             // - Informative zone of the strip
             if (layer < fullDepth_ && row < fullHeight_ && col < fullWidth_)
             {
-                // Clamp negatives of a signed integer file type (e.g. int16 CT / negative HU) to 0 before
-                // the cast to the unsigned pipeline type, so -1024 doesn't wrap to ~4.29e9 and blow up the
-                // max-intensity-sized grey-bin/histogram allocation (macOS segfault). This is the
-                // strip-loader twin of the tile-loader guard; proper HU handling is the preserve_hu path.
-                FileType v = ((FileType*)(src))[col];
-                if constexpr (std::is_signed_v<FileType>) if (v < 0) v = 0;
-                dataItem = (DataType) v;
+                // The same load-time map the tile loader applies: an offset by the slide's floored
+                // minimum, which is what keeps a signed int16 CT pixel from wrapping to ~4.29e9 and
+                // blowing up the max-intensity-sized grey-bin/histogram allocation (#373), or the
+                // min-max rescale when the slide is real-valued.
+                dataItem = map_intensity ((double)((FileType*)(src))[col]);
             }
             
             // - Save the informative or zero-filled value
@@ -692,4 +690,25 @@ private:
         sampleFormat_ = 0,        ///< Sample format as defined by libtiff
         bitsPerSample_ = 0;       ///< Bit Per Sample as defined by libtiff
 
+    // The load-time map recorded for this slide; see the tile loader's twin of these.
+    double inten_offset_ = 0.0,
+        inten_max_ = 1.0,
+        target_dyn_range_ = 1e4;
+    bool quantize_ = false;
+
+    DataType map_intensity (double x) const
+    {
+        // As in the tile loader above: a non-finite sample takes grey level 0 rather than an
+        // undefined conversion.
+        if (! std::isfinite (x)) return (DataType) 0;
+        if (! quantize_)
+        {
+            double y = x - inten_offset_;
+            if (y < 0.0) y = 0.0;
+            return (DataType) y;
+        }
+        double t = x < inten_offset_ ? inten_offset_ : x;
+        t = t > inten_max_ ? inten_max_ : t;
+        return (DataType)(target_dyn_range_ * (t - inten_offset_) / (inten_max_ - inten_offset_));
+    }
 };

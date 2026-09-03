@@ -48,7 +48,10 @@ void test_3d_nifti_data_access_consistency_mechanics()
     fs::path data1_p = (pp.string() + f.make_preferred().string());
     ASSERT_TRUE(fs::exists(data1_p));
 
-    auto ldr1 = NiftiLoader<uint32_t>(data1_p.string());
+    // The volume spans -1024..2000, so the offset the scan records for it -- and hands the
+    // loader -- is -1024; the loader no longer reads a minimum of its own, since a shift it
+    // discovered by itself would be one nothing downstream could undo (SlideProps::inten_offset).
+    auto ldr1 = NiftiLoader<uint32_t>(data1_p.string(), -1024.0);
 
     size_t h = 0, w = 0, d = 0;
     ASSERT_NO_THROW(d = ldr1.fullDepth(0));
@@ -64,4 +67,15 @@ void test_3d_nifti_data_access_consistency_mechanics()
     for (auto x : databuf)
         tot += x;
     ASSERT_TRUE(tot == 544286216);
+
+    // Without that offset the same volume clamps its sub-zero voxels instead of shifting them,
+    // which is what keeps a stray negative from wrapping when no slide props are available.
+    auto ldr0 = NiftiLoader<uint32_t>(data1_p.string());
+    auto t0 = std::make_shared<std::vector<uint32_t>> (d*w*h);
+    ASSERT_NO_THROW (ldr0.loadTileFromFile (t0, 0, 0, 0, 0));
+    double tot0 = 0;
+    for (auto x : *t0)
+        tot0 += x;
+    ASSERT_TRUE(tot0 < tot);
+    ASSERT_TRUE(tot0 > 0);
 }

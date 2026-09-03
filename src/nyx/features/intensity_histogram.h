@@ -108,9 +108,9 @@ private:
 	              double nan_val, double pscale, double poffset);
 	void fill_invalid (double nan_val);
 
-	// Derive the affine (pscale,poffset) that maps stored uint intensities back to the
-	// original float domain for float images (no-op for integer images / no slide).
-	static void float_domain_map (LR& r, const Fsettings& s, const Dataset& ds,
+	// The affine (pscale,poffset) that maps stored grey levels back to the slide's own
+	// intensity domain (no-op when the loader stored them natively).
+	static void float_domain_map (const LR& r, const Dataset& ds,
 	                              double& pscale, double& poffset);
 
 	// (feature code, value) pairs in the order produced by compute(); written out

@@ -140,6 +140,11 @@ namespace Nyxus
 
 			// temp SlideProps object
 			SlideProps sprp (ifpath, mfpath);
+			// carry over what the prescan measured and recorded for this slide, so this pass's
+			// grey levels land in the same domain the features will report them in
+			const SlideProps * scanned = env.dataset.scanned_slide ((int)sidx);
+			if (scanned)
+				sprp.inherit_intensity_domain (*scanned);
 
 			// Extract features from this intensity-mask pair 
 			if (env.theImLoader.open(sprp, env.fpimageOptions) == false)

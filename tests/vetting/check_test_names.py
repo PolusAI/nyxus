@@ -79,7 +79,7 @@ DIM_AGNOSTIC = {
     "test_initialization_mechanics.h": "environment init",
     "test_feature_manager_mechanics.h": "FeatureManager registration/dependency compile, both dims at once",
     "test_roi_blacklist_mechanics.h": "ROI blacklist parsing",
-    "test_hu_analytic.h": "closed form of the scalar SlideProps::uint_friendly_inten map",
+    "test_hu_analytic.h": "closed form of the scalar load-time intensity map on SlideProps",
     "test_feature_calculation_common.h": "the assert_feature template, used from both dims",
     "test_vetting_mechanics.py": "self-test of check_coverage.py / check_test_names.py",
     "test_environment_lifecycle_mechanics.py":
