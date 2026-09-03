@@ -35,6 +35,9 @@ FAMILY = scanlib.Family(
     # the invariant and mechanics guards are neither oracle nor regression; this family names them
     # in a column of their own rather than folding them into the notes
     extra_column="Invariant_Mechanics",
+    # this family carries rows that claim no oracle, so the reverse of oracle_mismatch
+    # applies: an oracle-suffixed test asserting one of them is a claim gone stale
+    checks=scanlib.DEFAULT_CHECKS | scanlib.NO_ORACLE_CLAIMED_CHECK,
 )
 
 if __name__ == "__main__":

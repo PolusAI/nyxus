@@ -44,6 +44,9 @@ FAMILY = scanlib.Family(
     # morphology cases as never running when test_all.cc registers all of them
     fn_prefix="test",
     scan_helpers=True,
+    # this family carries rows that claim no oracle, so the reverse of oracle_mismatch
+    # applies: an oracle-suffixed test asserting one of them is a claim gone stale
+    checks=scanlib.DEFAULT_CHECKS | scanlib.NO_ORACLE_CLAIMED_CHECK,
 )
 
 if __name__ == "__main__":

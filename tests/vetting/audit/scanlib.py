@@ -79,8 +79,9 @@ SET_CHECKS = frozenset({"missing_current"})
 # where a feature carries several oracle rows -- otherwise `missing_current` already says it.
 ORACLE_FILE_CHECK = frozenset({"oracle_file"})
 # The reverse of oracle_mismatch: an oracle-suffixed test asserts the feature while the row claims
-# no oracle at all. Only 2D radial runs it today, where it is the guard that would catch an oracle
-# quietly appearing for a family the registry still calls untested.
+# no oracle at all. 2D neighbor, 2D radial and 2D zernike run it -- the families carrying rows that
+# claim no oracle, where it is the guard that would catch an oracle quietly appearing for a feature
+# the registry still calls untested.
 NO_ORACLE_CLAIMED_CHECK = frozenset({"no_oracle_claimed"})
 IDENTITY_CHECKS = frozenset({"missing_test_name", "unresolved_test_name", "test_name_file"})
 ALL_CHECKS = (CORE_CHECKS | SET_CHECKS | ORACLE_FILE_CHECK | NO_ORACLE_CLAIMED_CHECK

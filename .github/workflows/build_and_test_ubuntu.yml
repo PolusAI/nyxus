@@ -95,9 +95,13 @@ jobs:
     - name: Validate coverage artifacts against the test tree
       working-directory: ${{github.workspace}}
       run: |
+        # every family runs, then the step fails once: the twenty scanners share one library, so a
+        # change that breaks it should report all twenty families rather than only the first
+        rc=0
         for s in tests/vetting/audit/scan_*_coverage.py; do
-          python3 "$s" --check || exit 1
+          python3 "$s" --check || rc=1
         done
+        exit $rc
 
     - name: Validate the feature report
       working-directory: ${{github.workspace}}

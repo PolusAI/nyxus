@@ -44,7 +44,7 @@ regression: 153  invariant: 0  untested: 0
 **178 of 923 rows (19%) cannot be checked against the tree at all.** These families have an
 `audit/<family>_<dim>_coverage.csv`, but nothing regenerates it from the test
 sources, so the artifact records what someone believed rather than what the tree
-asserts. Writing the five missing scanners is what closes this.
+asserts. Writing the 5 missing scanners is what closes this.
 
 | dim | family | rows | features | why |
 |---|---|---:|---:|---|
@@ -57,28 +57,37 @@ asserts. Writing the five missing scanners is what closes this.
 ## Every oracle a feature was matched against
 
 The union of the promoting oracle and the oracles the tree asserts against, counted
-per (dim, feature). The registry names only the oracle that PROMOTED a feature, so
-counting that alone understates every family that corroborates.
+per feature. The registry names only the oracle that PROMOTED a feature, so counting
+that alone understates every family that corroborates.
 
-| family | analytic | cellprofiler | fraclac | ibsi | imea | matlab | mirp | opencv | pyradiomics | skimage | none |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| firstorder | . | . | . | . | . | 62 | . | . | 20 | . | 3 |
-| gabor | . | . | . | . | . | . | . | . | . | 1 | . |
-| glcm | . | . | . | 21 | . | . | 10 | . | 87 | . | . |
-| gldm | . | . | . | 14 | . | . | . | . | 28 | . | . |
-| gldzm | . | . | . | 14 | . | . | 16 | . | . | . | 20 |
-| glrlm | . | . | . | 12 | . | . | . | . | 52 | . | . |
-| glszm | . | . | . | 16 | . | . | 16 | . | 16 | . | . |
-| imq | . | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| intensity_histogram | 26 | . | . | 16 | . | . | 23 | . | . | . | 4 |
-| moments | . | . | . | . | . | . | . | . | . | 118 | 62 |
-| morphology | 4 | 5 | 2 | . | 20 | 36 | 8 | . | . | 6 | 37 |
-| neighbor | 6 | 2 | . | . | . | . | . | . | . | . | 1 |
-| ngldm | . | . | . | 17 | . | . | 17 | . | . | . | 21 |
-| ngtdm | . | . | . | 5 | . | . | 5 | . | 5 | . | . |
-| radial | . | . | . | . | . | . | . | . | . | . | 3 |
-| zernike | 1 | . | . | . | . | . | . | . | . | . | . |
-| **all** | **37** | **9** | **2** | **115** | **20** | **98** | **95** | **2** | **208** | **125** | **153** |
+| dim | family | analytic | cellprofiler | fraclac | ibsi | imea | matlab | mirp | opencv | pyradiomics | skimage | none |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 2D | firstorder | . | . | . | . | . | 33 | . | . | 3 | . | . |
+| 2D | gabor | . | . | . | . | . | . | . | . | . | 1 | . |
+| 2D | glcm | . | . | . | 21 | . | . | 10 | . | 28 | . | . |
+| 2D | gldm | . | . | . | 14 | . | . | . | . | 14 | . | . |
+| 2D | gldzm | . | . | . | 14 | . | . | 16 | . | . | . | 2 |
+| 2D | glrlm | . | . | . | 12 | . | . | . | . | 20 | . | . |
+| 2D | glszm | . | . | . | 16 | . | . | 16 | . | . | . | . |
+| 2D | intensity_histogram | 26 | . | . | 16 | . | . | 23 | . | . | . | 4 |
+| 2D | moments | . | . | . | . | . | . | . | . | . | 118 | 62 |
+| 2D | morphology | 4 | 5 | 2 | . | 20 | 33 | . | . | . | 6 | 31 |
+| 2D | neighbor | 6 | 2 | . | . | . | . | . | . | . | . | 1 |
+| 2D | ngldm | . | . | . | 17 | . | . | 17 | . | . | . | 2 |
+| 2D | ngtdm | . | . | . | 5 | . | . | 5 | . | . | . | . |
+| 2D | radial | . | . | . | . | . | . | . | . | . | . | 3 |
+| 2D | zernike | 1 | . | . | . | . | . | . | . | . | . | . |
+| 3D | firstorder | . | . | . | . | . | 29 | . | . | 17 | . | 3 |
+| 3D | glcm | . | . | . | . | . | . | . | . | 59 | . | . |
+| 3D | gldm | . | . | . | . | . | . | . | . | 14 | . | . |
+| 3D | gldzm | . | . | . | . | . | . | . | . | . | . | 18 |
+| 3D | glrlm | . | . | . | . | . | . | . | . | 32 | . | . |
+| 3D | glszm | . | . | . | . | . | . | . | . | 16 | . | . |
+| 3D | morphology | . | . | . | . | . | 3 | 8 | . | . | . | 6 |
+| 3D | ngldm | . | . | . | . | . | . | . | . | . | . | 19 |
+| 3D | ngtdm | . | . | . | . | . | . | . | . | 5 | . | . |
+| IMQ | imq | . | 2 | . | . | . | . | . | 2 | . | . | 2 |
+| | **all** | **37** | **9** | **2** | **115** | **20** | **98** | **95** | **2** | **208** | **125** | **153** |
 
 ## By dimensionality
 
