@@ -47,8 +47,9 @@ assertion lines) or which judges differently (2D NGTDM, IMQ, 3D GLDM and 3D GLSZ
 against the tests of its own KIND) overrides that part in its own file, where the difference is
 visible.
 
-All twenty run in CI, in one loop, beside `check_coverage.py`, `check_test_names.py`,
-`scanlib_selftest.py` and `report_features.py --check`.
+All twenty run in CI through [`audit/run_scanners.py`](audit/run_scanners.py), which runs
+every family before failing and names the ones that failed, beside `check_coverage.py`,
+`check_test_names.py`, `scanlib_selftest.py` and `report_features.py --check`.
 
 Regenerable byproducts of the retired pipeline, all git-ignored and all under `audit/`:
 `audit/features.csv`, `audit_scan.txt`, `vetting_pivot.csv`, `gap_not_tested.csv`,

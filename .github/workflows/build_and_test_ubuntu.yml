@@ -98,14 +98,11 @@ jobs:
 
     - name: Validate coverage artifacts against the test tree
       working-directory: ${{github.workspace}}
-      run: |
-        # every family runs, then the step fails once: the twenty scanners share one library, so a
-        # change that breaks it should report all twenty families rather than only the first
-        rc=0
-        for s in tests/vetting/audit/scan_*_coverage.py; do
-          python3 "$s" --check || rc=1
-        done
-        exit $rc
+      # every family runs, then the step fails once and names the ones that failed: the twenty
+      # scanners share one library, so a change that breaks it should report all twenty families
+      # rather than stopping at the first. The accumulation is in the runner rather than in a shell
+      # loop -- the shell form failed this step twice with twenty clean scanners logged under it.
+      run: python3 tests/vetting/audit/run_scanners.py
 
     - name: Validate the feature report
       working-directory: ${{github.workspace}}
