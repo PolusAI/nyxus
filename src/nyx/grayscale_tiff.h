@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include "abs_tile_loader.h"
 
 #ifdef __APPLE__
@@ -365,6 +366,10 @@ private:
     // add the offset back, so reported statistics are in the slide's own domain.
     DataType offset_map (double x) const
     {
+        // A non-finite sample carries no intensity, and converting one to an unsigned integer
+        // is undefined; it takes the same grey level as a sub-minimum outlier. The scan leaves
+        // such samples out of the slide extrema for the same reason.
+        if (! std::isfinite (x)) return (DataType) 0;
         double y = x - floatpt_image_min_intensity;
         if (y < 0.0) y = 0.0;
         return (DataType) y;
@@ -375,6 +380,7 @@ private:
     {
         if (! quantize)
             return offset_map (x);
+        if (! std::isfinite (x)) return (DataType) 0;
         double t = x < floatpt_image_min_intensity ? floatpt_image_min_intensity : x;
         t = t > floatpt_image_max_intensity ? floatpt_image_max_intensity : t;
         return (DataType)(floatpt_image_target_dyn_range * (t - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity));
@@ -692,6 +698,9 @@ private:
 
     DataType map_intensity (double x) const
     {
+        // As in the tile loader above: a non-finite sample takes grey level 0 rather than an
+        // undefined conversion.
+        if (! std::isfinite (x)) return (DataType) 0;
         if (! quantize_)
         {
             double y = x - inten_offset_;

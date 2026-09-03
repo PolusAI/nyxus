@@ -117,9 +117,11 @@ void PixelIntensityFeatures::report_in_source_domain (const LR& r, const Dataset
 	// Ratios: same definitions as above, recomputed from the mapped parts. None of them is
 	// invariant, and QCOD and PIU are not even meaningful once intensities can be negative --
 	// which is a property of the measure, not something the domain should hide.
+	// The two quotients take the same zero-denominator convention as the grey-level pass they
+	// are recomputed from, so the mapped and the identity-map paths agree.
 	val_COV = val_STANDARD_DEVIATION / val_MEAN;
-	val_QCOD = (val_P75 - val_P25) / (val_P75 + val_P25);
-	val_UNIFORMITY_PIU = (1.0 - (val_MAX - val_MIN) / (val_MAX + val_MIN)) * 100.0;
+	val_QCOD = (val_P75 + val_P25) != 0.0 ? (val_P75 - val_P25) / (val_P75 + val_P25) : 0.0;
+	val_UNIFORMITY_PIU = (val_MAX + val_MIN) != 0.0 ? (1.0 - (val_MAX - val_MIN) / (val_MAX + val_MIN)) * 100.0 : 0.0;
 }
 
 void PixelIntensityFeatures::calculate_grey_levels (LR& r, const Fsettings & fsett, const Dataset & ds)
@@ -206,7 +208,10 @@ void PixelIntensityFeatures::calculate_grey_levels (LR& r, const Fsettings & fse
 	val_P75 = p75_;
 	val_P90 = p90_;
 	val_P99 = p99_;
-	val_QCOD = (p75_ - p25_) / (p75_ + p25_);
+	// Both quartiles of a single-valued ROI at grey level 0 are 0, so the ratio is 0/0. The
+	// blank-ROI guard used to turn such an ROI away before it reached here; it now describes
+	// the distribution, and the quotient is what has to say what a zero denominator means.
+	val_QCOD = (p75_ + p25_) != 0.0 ? (p75_ - p25_) / (p75_ + p25_) : 0.0;
 	val_INTERQUARTILE_RANGE = iqr_;
 	double robustMean = 0.0;
 	size_t robustCount = 0;
@@ -231,7 +236,8 @@ void PixelIntensityFeatures::calculate_grey_levels (LR& r, const Fsettings & fse
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
 	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
-	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
+	// An ROI whose grey levels are all 0 puts 0 in the denominator, as for QCOD above.
+	double piu = (r.aux_max + r.aux_min) != 0 ? (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0 : 0.0;
 	val_UNIFORMITY_PIU = piu;
 
 	// Skewness
@@ -351,7 +357,10 @@ void PixelIntensityFeatures::osized_calculate_grey_levels (LR& r, const Fsetting
 	val_P75 = p75_;
 	val_P90 = p90_;
 	val_P99 = p99_;
-	val_QCOD = (p75_ - p25_) / (p75_ + p25_);
+	// Both quartiles of a single-valued ROI at grey level 0 are 0, so the ratio is 0/0. The
+	// blank-ROI guard used to turn such an ROI away before it reached here; it now describes
+	// the distribution, and the quotient is what has to say what a zero denominator means.
+	val_QCOD = (p75_ + p25_) != 0.0 ? (p75_ - p25_) / (p75_ + p25_) : 0.0;
 	val_INTERQUARTILE_RANGE = iqr_;
 	double robustMean = 0.0;
 	size_t robustCount = 0;
@@ -383,7 +392,8 @@ void PixelIntensityFeatures::osized_calculate_grey_levels (LR& r, const Fsetting
 	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
 	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
 	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
-	double piu = (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0;
+	// An ROI whose grey levels are all 0 puts 0 in the denominator, as for QCOD above.
+	double piu = (r.aux_max + r.aux_min) != 0 ? (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0 : 0.0;
 	val_UNIFORMITY_PIU = piu;
 
 	// Skewness

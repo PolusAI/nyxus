@@ -155,20 +155,31 @@ namespace Nyxus
 					// the offset the loader will apply is driven by every pixel, so this runs
 					// before the mask filter below
 					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
-					allpix_I_min = (std::min)(allpix_I_min, dxequiv_I);
+
+					// A real-valued slide may hold a non-finite sample. It carries no intensity
+					// to measure, and letting one into the extrema takes the whole slide with it:
+					// a single infinity gives the quantized map an infinite span, on which every
+					// finite pixel maps to NaN. The extrema describe the finite samples; the
+					// loaders store a non-finite one as grey level 0.
+					bool finite_I = std::isfinite (dxequiv_I);
+					if (finite_I)
+						allpix_I_min = (std::min)(allpix_I_min, dxequiv_I);
 
 					// Mask
 					uint32_t msk = 1; // wholeslide by default
 					if (!wholeslide)
 						msk = ilo.get_cur_tile_seg_pixel(i);
 
-					// Skip non-mask pixels					
+					// Skip non-mask pixels
 					if (!msk)
 						continue;
 
 					// dynamic range within- and off-ROI
-					slide_I_max = (std::max)(slide_I_max, dxequiv_I);
-					slide_I_min = (std::min)(slide_I_min, dxequiv_I);
+					if (finite_I)
+					{
+						slide_I_max = (std::max)(slide_I_max, dxequiv_I);
+						slide_I_min = (std::min)(slide_I_min, dxequiv_I);
+					}
 
 					// Update pixel's ROI metrics
 					//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
@@ -328,20 +339,28 @@ namespace Nyxus
 			// the offset the loader will apply is driven by every voxel, so this runs before
 			// the mask filter below
 			double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
-			allpix_I_min = (std::min)(allpix_I_min, dxequiv_I);
+
+			// Non-finite voxels stay out of the extrema, as in the 2D scan above: one infinity
+			// would give the quantized map an infinite span and map every finite voxel to NaN.
+			bool finite_I = std::isfinite (dxequiv_I);
+			if (finite_I)
+				allpix_I_min = (std::min)(allpix_I_min, dxequiv_I);
 
 			// Mask
 			uint32_t msk = 1; // wholeslide by default
 			if (!wholeslide)
 				msk = ilo.get_cur_tile_seg_pixel(i);
 
-			// Skip non-mask voxels					
+			// Skip non-mask voxels
 			if (!msk)
 				continue;
 
 			// dynamic range within- and off-ROI
-			slide_I_max = (std::max)(slide_I_max, dxequiv_I);
-			slide_I_min = (std::min)(slide_I_min, dxequiv_I);
+			if (finite_I)
+			{
+				slide_I_max = (std::max)(slide_I_max, dxequiv_I);
+				slide_I_min = (std::min)(slide_I_min, dxequiv_I);
+			}
 
 			// Update pixel's ROI metrics
 			//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
@@ -527,6 +546,7 @@ namespace Nyxus
 		// Default: the loader stores this slide's values as they are.
 		p.inten_scale = 1.0;
 		p.inten_offset = 0.0;
+		p.inten_top_grey = 0.0;
 		p.inten_map = IntenMap::native;
 
 		// A slide handed over in memory (montage / numpy input) never went through a tile
@@ -551,6 +571,7 @@ namespace Nyxus
 				p.inten_map = IntenMap::quantized;
 				p.inten_scale = (fpmax - fpmin) / dr;
 				p.inten_offset = fpmin;
+				p.inten_top_grey = dr;		// where the loaders' upper clamp lands, for the forward map
 				return;
 			}
 

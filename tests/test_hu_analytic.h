@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <limits>
 #include "../src/nyx/cli_fpimage_options.h"
 #include "../src/nyx/slideprops.h"
 
@@ -104,6 +105,145 @@ void test_hu_domain_map_quantized_float_analytic()
 
     EXPECT_DOUBLE_EQ(p.to_source_intensity(0.0), -1024.0);
     EXPECT_DOUBLE_EQ(p.to_source_intensity(5000.0), 1023.5);
+}
+
+// --fpimgmin / --fpimgmax may name a window narrower than the slide's own range, and the loaders
+// hard-clamp to it at BOTH ends. The forward map has to clamp above as well, or an intensity past
+// the window maps beyond the top grey level the loader can store: the whole-slide workflows read
+// to_grey_level(max_preroi_inten) straight into the vROI's aux_max, which sets the binning range
+// for the intensity and every texture family downstream.
+void test_hu_domain_map_quantized_window_clamps_above_analytic()
+{
+    SlideProps p ("real.tif", "");
+    p.fp_phys_pivoxels = true;
+    p.min_preroi_inten = -1024.0;       // the slide holds more than the window asks for
+    p.max_preroi_inten = 3071.0;
+
+    FpImageOptions fpo;
+    fpo.raw_min_intensity = "0";        // the window: [0, 1000], well inside the slide
+    fpo.raw_max_intensity = "1000";
+    ASSERT_TRUE(fpo.parse_input());
+    ASSERT_FALSE(fpo.empty());
+
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    EXPECT_EQ((int)p.inten_map, (int)IntenMap::quantized);
+    EXPECT_DOUBLE_EQ(p.inten_offset, 0.0);
+    EXPECT_DOUBLE_EQ(p.inten_scale, 1000.0 / 10000.0);
+    EXPECT_DOUBLE_EQ(p.inten_top_grey, 10000.0);
+
+    EXPECT_EQ(p.to_grey_level(0.0), 0u);            // window minimum -> 0
+    EXPECT_EQ(p.to_grey_level(500.0), 5000u);       // window midpoint -> DR/2
+    EXPECT_EQ(p.to_grey_level(1000.0), 10000u);     // window maximum -> exactly DR
+
+    // Above the window the loader still stores DR, so the forward map must not run past it
+    EXPECT_EQ(p.to_grey_level(3071.0), 10000u);     // the slide's own maximum
+    EXPECT_EQ(p.to_grey_level(1e9), 10000u);
+
+    // Below the window, unchanged: clamped to 0 rather than wrapping
+    EXPECT_EQ(p.to_grey_level(-1024.0), 0u);
+}
+
+// Malformed --fpimg* input is rejected at parse time rather than reaching the recorder, where
+// an inverted or unparseable window would put the quantization endpoints the wrong way round.
+void test_hu_fpimage_options_reject_malformed_analytic()
+{
+    // an inverted window
+    FpImageOptions inverted;
+    inverted.raw_min_intensity = "1000";
+    inverted.raw_max_intensity = "10";
+    EXPECT_FALSE(inverted.parse_input());
+    EXPECT_FALSE(inverted.get_last_er_msg().empty());
+
+    // a window of zero width -- the minimum must be strictly below the maximum
+    FpImageOptions degenerate;
+    degenerate.raw_min_intensity = "5";
+    degenerate.raw_max_intensity = "5";
+    EXPECT_FALSE(degenerate.parse_input());
+
+    // a non-numeric endpoint
+    FpImageOptions notanumber;
+    notanumber.raw_min_intensity = "abc";
+    notanumber.raw_max_intensity = "10";
+    EXPECT_FALSE(notanumber.parse_input());
+
+    // a target dynamic range that spans nothing
+    FpImageOptions zerodr;
+    zerodr.raw_min_intensity = "0";
+    zerodr.raw_max_intensity = "10";
+    zerodr.raw_target_dyn_range = "0";
+    EXPECT_FALSE(zerodr.parse_input());
+
+    FpImageOptions negdr;
+    negdr.raw_min_intensity = "0";
+    negdr.raw_max_intensity = "10";
+    negdr.raw_target_dyn_range = "-100";
+    EXPECT_FALSE(negdr.parse_input());
+
+    // the well-formed control, so the rejections above are not vacuous
+    FpImageOptions ok;
+    ok.raw_min_intensity = "0";
+    ok.raw_max_intensity = "10";
+    ok.raw_target_dyn_range = "1000";
+    EXPECT_TRUE(ok.parse_input());
+    EXPECT_FLOAT_EQ(ok.min_intensity(), 0.0f);
+    EXPECT_FLOAT_EQ(ok.max_intensity(), 10.0f);
+    EXPECT_FLOAT_EQ(ok.target_dyn_range(), 1000.0f);
+}
+
+// A slide whose scan found no finite sample at all leaves the recorder with the range it
+// started from. The map must stay usable rather than carrying an infinity into the loaders.
+void test_hu_domain_map_nonfinite_slide_range_analytic()
+{
+    SlideProps p ("real.tif", "");
+    p.fp_phys_pivoxels = true;
+    p.min_preroi_inten = std::numeric_limits<double>::infinity();
+    p.max_preroi_inten = -std::numeric_limits<double>::infinity();
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    // max <= min, so there is no range to quantize into and the offset map carries it
+    EXPECT_EQ((int)p.inten_map, (int)IntenMap::offset);
+
+    // whatever the recorded map, a non-finite intensity takes grey level 0 rather than an
+    // undefined conversion -- the same convention the loaders use
+    EXPECT_EQ(p.to_grey_level(std::numeric_limits<double>::quiet_NaN()), 0u);
+    EXPECT_EQ(p.to_grey_level(std::numeric_limits<double>::infinity()), 0u);
+    EXPECT_EQ(p.to_grey_level(-std::numeric_limits<double>::infinity()), 0u);
+}
+
+// The same convention on a well-formed quantized map: a non-finite sample does not saturate
+// to the top grey level, it maps to 0.
+void test_hu_domain_map_nonfinite_pixel_quantized_analytic()
+{
+    SlideProps p ("real.tif", "");
+    p.fp_phys_pivoxels = true;
+    p.min_preroi_inten = 0.0;
+    p.max_preroi_inten = 10.0;
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    ASSERT_EQ((int)p.inten_map, (int)IntenMap::quantized);
+    EXPECT_EQ(p.to_grey_level(10.0), 10000u);       // the finite maximum still saturates
+    EXPECT_EQ(p.to_grey_level(std::numeric_limits<double>::quiet_NaN()), 0u);
+    EXPECT_EQ(p.to_grey_level(std::numeric_limits<double>::infinity()), 0u);
+}
+
+// The offset map has no upper clamp -- its loaders have none either -- so the forward map must
+// keep mapping above the slide maximum rather than saturating with the quantized branch.
+void test_hu_domain_map_offset_has_no_upper_clamp_analytic()
+{
+    SlideProps p ("ct.nii", "");
+    p.min_allpix_inten = -1024.0;
+    p.min_preroi_inten = -1024.0;
+    p.max_preroi_inten = 3071.0;
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    EXPECT_EQ((int)p.inten_map, (int)IntenMap::offset);
+    EXPECT_DOUBLE_EQ(p.inten_top_grey, 0.0);        // unused on this branch
+    EXPECT_EQ(p.to_grey_level(3071.0), 4095u);
+    EXPECT_EQ(p.to_grey_level(9000.0), 10024u);     // past the slide maximum, still 1:1
 }
 
 // preserve_hu is what a real-valued slide sets to take the offset map instead of the
