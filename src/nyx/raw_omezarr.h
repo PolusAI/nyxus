@@ -129,12 +129,16 @@ public:
     {
     }
 
-    // Only a mask is read through this accessor, and a mask carries non-negative integer labels,
-    // so the narrowing is exact there.
+    // Sub-zero samples clamp to 0 rather than converting, which is undefined for a negative
+    // double: the buffer holds the sample as the file states it, so a signed dataset reaching
+    // this accessor would otherwise convert out of range. The clamp is what makes that safe,
+    // not the fact that only a mask -- non-negative integer labels -- is read through it today.
+    // Both tile loaders clamp the same way before their own cast.
     uint32_t get_uint32_pixel (size_t idx) const
     {
-        uint32_t rv = (uint32_t) dest[idx];
-        return rv;
+        double y = dest[idx];
+        if (y < 0.0) y = 0.0;
+        return (uint32_t) y;
     }
 
     double get_dpequiv_pixel (size_t idx) const

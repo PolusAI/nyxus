@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include <string>
 #include "cli_anisotropy_options.h"
 #include "cli_fpimage_options.h"
@@ -6,7 +7,7 @@
 // How a loader turned a slide's own intensities into the unsigned grey levels the pipeline stores.
 enum class IntenMap
 {
-	native,		// stored as they are (in-memory montage input, OME-Zarr)
+	native,		// stored as they are (in-memory montage input, which no tile loader ever mapped)
 	offset,		// shifted by the floored slide minimum so negatives survive the unsigned cast
 	quantized	// a floating-point range hard-clamped and rescaled into [0, target dynamic range]
 };
@@ -32,6 +33,7 @@ public:
 		preserve_hu = false;			// float slides: offset map instead of min-max rescale
 		inten_scale = 1.0;			// identity until the scan records the load-time map
 		inten_offset = 0.0;
+		inten_top_grey = 0.0;
 		inten_map = IntenMap::native;
 		slide_w = slide_h = volume_d = 0;
 		max_roi_area = 0;
@@ -71,16 +73,36 @@ public:
 	// are in the slide's own domain (Hounsfield units for CT) rather than in grey levels.
 	double inten_scale, inten_offset;
 
+	// The highest grey level the quantized map can store -- the target dynamic range the scan
+	// was given. Unused (0) on the other two maps, which have no upper end. The forward map
+	// needs it because the quantized loaders clamp above as well as below, and the inverse
+	// alone cannot say where that clamp sits.
+	double inten_top_grey;
+
 	// Which of the three load-time maps produced them. The inverse above is all the feature
 	// side needs; the loaders need the branch itself, since the quantized map also clamps at
 	// its upper end while the offset map only clamps below.
 	IntenMap inten_map;
 
-	// The forward map: one intensity of this slide -> the grey level the loader stores for it.
-	// Sub-minimum outliers clamp to 0 rather than wrapping on the unsigned cast; the truncating
-	// cast is the loaders' own, so this stays their exact mirror.
+	// The forward map: one intensity of this slide -> the grey level the loader stores for it,
+	// mirroring each loader map branch for branch. The quantized branch hard-clamps to
+	// [fpmin, fpmax] and rescales, exactly as NyxusGrayscaleTiffTileLoader::map_real_intensity
+	// and NyxusOmeZarrLoader::map_intensity do -- clamping only below would let an intensity
+	// above fpmax map past the top grey level the loader can actually store. The offset branch
+	// clamps below only, since that is all its loaders do. The truncating cast is theirs too.
 	unsigned int to_grey_level (double x) const
 	{
+		// The loaders store a non-finite sample as grey level 0; so does this.
+		if (! std::isfinite (x))
+			return 0u;
+		if (inten_map == IntenMap::quantized)
+		{
+			// fpmax as ImageLoader::open reconstructs it, so both sides clamp at the same value
+			double fpmax = inten_offset + inten_scale * inten_top_grey;
+			double t = x < inten_offset ? inten_offset : x;
+			t = t > fpmax ? fpmax : t;
+			return (unsigned int)(inten_top_grey * (t - inten_offset) / (fpmax - inten_offset));
+		}
 		double y = (x - inten_offset) / inten_scale;
 		if (y < 0.0) y = 0.0;
 		return (unsigned int) y;
@@ -105,6 +127,7 @@ public:
 		preserve_hu = scanned.preserve_hu;
 		inten_scale = scanned.inten_scale;
 		inten_offset = scanned.inten_offset;
+		inten_top_grey = scanned.inten_top_grey;
 		inten_map = scanned.inten_map;
 	}
 

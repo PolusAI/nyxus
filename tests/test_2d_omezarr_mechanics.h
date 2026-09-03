@@ -260,6 +260,40 @@ void test_2d_omezarr_raw_signed_source_domain_mechanics()
     ASSERT_DOUBLE_EQ(sum, -1005568.0);
 }
 
+// The unsigned accessor clamps a negative sample rather than converting it. The buffer holds the
+// sample as the file states it, and converting a negative double to an unsigned integer is
+// undefined -- so the clamp, not the fact that only a mask is read through this accessor today,
+// is what makes it safe. Both tile loaders clamp the same way before their own cast.
+void test_2d_omezarr_raw_uint32_accessor_clamps_negative_mechanics()
+{
+    fs::path ds = omezarr_data_path("signed.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds));
+
+    auto ldr = RawOmezarrLoader(ds.string());
+    const size_t tw = ldr.tileWidth(0);
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+
+    // every sample of this store is negative, so the whole tile exercises the clamp
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(0 * tw + 0), -1013.0);
+    ASSERT_EQ(ldr.get_uint32_pixel(0 * tw + 0), 0u);
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(31 * tw + 31), -951.0);
+    ASSERT_EQ(ldr.get_uint32_pixel(31 * tw + 31), 0u);
+}
+
+// A non-negative store is unaffected: the clamp never fires and the labels come back exactly.
+void test_2d_omezarr_raw_uint32_accessor_unsigned_exact_mechanics()
+{
+    fs::path ds = omezarr_data_path("test.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds));
+
+    auto ldr = RawOmezarrLoader(ds.string());
+    const size_t tw = ldr.tileWidth(0);
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+
+    ASSERT_EQ(ldr.get_uint32_pixel(100 * tw + 50), 150u);
+    ASSERT_EQ(ldr.get_uint32_pixel(511 * tw + 511), 1022u);
+}
+
 // The prescan sees a real-valued dataset's fractions, and flags the dataset real-valued
 // so the recorder reaches its quantization branch at all.
 void test_2d_omezarr_raw_float_source_domain_mechanics()

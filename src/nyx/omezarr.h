@@ -3,6 +3,7 @@
 #ifdef OMEZARR_SUPPORT
 
 #include <algorithm>
+#include <cmath>
 #include "abs_tile_loader.h"
 #include "nlohmann/json.hpp"
 
@@ -244,6 +245,9 @@ private:
     // which leaves its labels untouched.
     DataType map_intensity (double x) const
     {
+        // As in the TIFF loaders: a non-finite sample takes grey level 0 rather than an
+        // undefined conversion.
+        if (! std::isfinite (x)) return (DataType) 0;
         if (! quantize_)
         {
             double y = x - inten_offset_;

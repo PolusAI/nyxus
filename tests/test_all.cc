@@ -9,6 +9,7 @@
 #include "test_2d_firstorder_regression.h"
 #include "test_2d_firstorder_matlab.h"
 #include "test_2d_intensity_histogram_regression.h"
+#include "test_2d_intensity_degenerate_roi_mechanics.h"
 #include "test_2d_radial_invariant.h"
 #include "test_2d_radial_mechanics.h"
 #include "test_2d_radial_regression.h"
@@ -1130,6 +1131,16 @@ TEST(TEST_NYXUS, TEST_2D_INTENSITY_HISTOGRAM_DISPERSION_PERCENTILE_REGRESSION)
 	ASSERT_NO_THROW(test_2d_intensity_histogram_dispersion_percentile_regression());
 }
 
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_ZERO_VALUED_ROI_RATIOS_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_intensity_zero_valued_roi_ratios_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_NONZERO_ROI_RATIOS_UNAFFECTED_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_intensity_nonzero_roi_ratios_unaffected_mechanics());
+}
+
 TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_OFFSET_NEGATIVE_MIN_ANALYTIC)
 {
 	ASSERT_NO_THROW(test_hu_domain_map_offset_negative_min_analytic());
@@ -1148,6 +1159,36 @@ TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_QUANTIZED_FLOAT_ANALYTIC)
 TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_PRESERVE_HU_FLOAT_ANALYTIC)
 {
 	ASSERT_NO_THROW(test_hu_domain_map_preserve_hu_float_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_QUANTIZED_WINDOW_CLAMPS_ABOVE_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_quantized_window_clamps_above_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_FPIMAGE_OPTIONS_REJECT_MALFORMED_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_fpimage_options_reject_malformed_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_NONFINITE_SLIDE_RANGE_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_nonfinite_slide_range_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_NONFINITE_PIXEL_QUANTIZED_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_nonfinite_pixel_quantized_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_INTENSITY_EMPTY_ROI_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_intensity_empty_roi_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_OFFSET_HAS_NO_UPPER_CLAMP_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_offset_has_no_upper_clamp_analytic());
 }
 
 TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_ZARR_FLOAT_QUANTIZED_ANALYTIC)
@@ -3571,6 +3612,14 @@ TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_SIGNED_SOURCE_DOMAIN_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_FLOAT_SOURCE_DOMAIN_MECHANICS) {
 	ASSERT_NO_THROW (test_2d_omezarr_raw_float_source_domain_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_UINT32_ACCESSOR_CLAMPS_NEGATIVE_MECHANICS) {
+	ASSERT_NO_THROW (test_2d_omezarr_raw_uint32_accessor_clamps_negative_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_UINT32_ACCESSOR_UNSIGNED_EXACT_MECHANICS) {
+	ASSERT_NO_THROW (test_2d_omezarr_raw_uint32_accessor_unsigned_exact_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_2D_OMEZARR_TILELOADER_SIGNED_OFFSET_MAP_MECHANICS) {
