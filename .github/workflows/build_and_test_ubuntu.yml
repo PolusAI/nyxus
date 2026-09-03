@@ -92,6 +92,10 @@ jobs:
       working-directory: ${{github.workspace}}
       run: python3 tests/vetting/check_test_names.py --check
 
+    - name: Check the coverage rule against its own negative controls
+      working-directory: ${{github.workspace}}
+      run: python3 tests/vetting/audit/scanlib_selftest.py
+
     - name: Validate coverage artifacts against the test tree
       working-directory: ${{github.workspace}}
       run: |

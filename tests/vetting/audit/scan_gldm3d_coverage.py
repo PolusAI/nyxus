@@ -263,6 +263,9 @@ FAMILY = scanlib.Family(
     order="sorted",
     collect_override=collect,
     extra_summary=dump_summary,
+    # declared here as well as read by test_name_problems above, so the tree-wide report can make
+    # the same config-aware check rather than a feature-wide one
+    recipe_reader=RECIPE_READER,
     # every built-in check is replaced by the per-kind model above, registration included
     checks=frozenset(),
     extra_problems=disagreements,
