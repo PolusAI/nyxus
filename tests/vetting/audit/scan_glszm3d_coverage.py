@@ -38,6 +38,20 @@ TABLE_OWNER = {
 
 ORACLE_SUFFIX = {"pyradiomics": "pyradiomics"}
 
+# recipe -> the function that asserts AT that recipe. Five recipes read the same sixteen features,
+# three of them out of one file at one kind, so feature, kind and file together still do not say
+# which configuration a row records -- only the function name does. The feature token is
+# `[a-z0-9]+` with no underscore, which is what keeps the per-feature sweeps apart from the
+# whole-family cases: `_regression` is a suffix of `_constant_roi_regression` too.
+RECIPE_READER = {
+    "glszm3d.pyradiomics_bincount20": re.compile(r"^test_3d_glszm_[a-z0-9]+_pyradiomics$"),
+    "glszm3d.pyradiomics_ibsi_gapped": re.compile(r"^test_3d_glszm_ibsi_gapped_pyradiomics$"),
+    "glszm3d.regression_ut_phantom": re.compile(r"^test_3d_glszm_[a-z0-9]+_regression$"),
+    "glszm3d.regression_ut_phantom_nobinning":
+        re.compile(r"^test_3d_glszm_default_greydepth_regression$"),
+    "glszm3d.regression_constant_roi": re.compile(r"^test_3d_glszm_constant_roi_regression$"),
+}
+
 # `for (auto fc : D3_GLSZM_feature::featureset)` -- a function that range-loops the calculator's own
 # featureset asserts every feature of the family while naming none of them, so no other pattern sees
 # it. It is not a table this file could own either: the list comes from the featureset at runtime.
@@ -183,6 +197,7 @@ FAMILY = scanlib.Family(
     # is the one built-in this family keeps
     checks={"unregistered"},
     extra_problems=disagreements,
+    recipe_reader=RECIPE_READER,
 )
 
 if __name__ == "__main__":

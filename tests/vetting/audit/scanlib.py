@@ -52,13 +52,20 @@ TEST_ALL = os.path.join(TESTS, "test_all.cc")
 FUNC = re.compile(r"^(?:inline\s+)?(?:void|def)\s+(test_\w+)|^\s+def\s+(test_\w+)", re.M)
 # A module-level helper in the pytest files, e.g. `def _fd(label)`. The python tests read the
 # dataframe column inside such a helper and assert on the returned scalar, so the feature name never
-# appears in the test body -- credit the helper's features to every test function that calls it.
+# appears in the test body -- credit the helper's features to the test functions that call it, minus
+# the returned values a caller discards (see helper_credit).
 HELPER = re.compile(r"^def\s+(_\w+)\s*\(", re.M)
 # Every top-level def, helper or test. A helper's body ends at the NEXT TOP-LEVEL DEF OF ANY KIND,
 # which is what bounds it correctly -- ending it at the next *helper* instead lets the last helper in
 # a file swallow every test function below it, so the helper picks up every feature name in the file
 # and each test that calls it inherits the lot.
 TOPLEVEL_DEF = re.compile(r"^def\s+\w+\s*\(", re.M)
+# `return bc, pf` at the tail of such a helper, and the `bc = ...` that named the column above it:
+# together they say which of the features the helper reads reaches which returned position, which
+# is what lets a caller be credited with the half it asserts rather than with both.
+PY_RETURN = re.compile(r"^[ \t]+return\s+(.+?)\s*$", re.M)
+PY_ASSIGN = re.compile(
+    r"^[ \t]*([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*=(?!=)\s*(.+)$", re.M)
 # No trailing \b after `assert`: these families assert through per-oracle helpers
 # (assert_gldzm_feature_mirp, assert_caliper_imea, ...), so the call line that names the feature is
 # `assert_<something>(fvals, Feature2D::X, "X")`, not a bare ASSERT_ macro.
@@ -149,6 +156,16 @@ class Family:
                       own `current_test`; "feature" is the union over the feature's rows, reported
                       once at the end. A family whose registry carries several oracle rows per
                       feature needs "feature", or every row is faulted for the files the others name.
+    recipe_reader     {config_recipe: a pattern the asserting function's name must match}. This is
+                      the only thing in the tree that answers a row's CONFIGURATION: a recipe names
+                      the configuration the numbers were taken at, and the function name is where
+                      that configuration lives, so a row pairing one with the other is checkable.
+                      Nothing else here can see a config -- without this map a row's recipe can be
+                      swapped for another of the family's and every check still passes. 3D gldm, 3D
+                      glszm and 3D ngtdm declare one -- the families whose recipes are told apart
+                      by the function name rather than by the file or the kind. A family that
+                      declares none is config-unchecked, which `report_features.py` reports per row
+                      rather than leaving to be assumed.
     """
 
     def __init__(self, dim, family, out, sources, oracle_suffix, notes=None, table_owner=None,
@@ -157,15 +174,20 @@ class Family:
                  other_note=None, order="registry", count_noun="rows", checks=None,
                  scan_helpers=False, loop_tables=False, py_loop_tables=False, featureset_loop=None,
                  extra_problems=None, collect_override=None, boundary="word", extra_summary=None,
-                 current_scope="row",
+                 current_scope="row", recipe_reader=None,
                  current_exempt=(), uncredited=None):
         self.dim, self.family, self.out = dim, family, out
         self.sources, self.oracle_suffix = sources, oracle_suffix
         self.notes, self.table_owner = notes or {}, table_owner or {}
         self.table_dialect = table_dialect
         self.enum_dim_prefix, self.enum_alias = enum_dim_prefix, enum_alias
-        self.fn_prefix = fn_prefix or f"test_{'3d_' if dim == '3D' else '2d_'}{family}"
+        # imq names its own dimension and its functions carry no dim token, so the default follows
+        # the dim token rather than assuming 2D whenever the dim is not 3D -- `test_2d_imq_*`
+        # matches nothing in the tree, and a prefix that matches nothing makes every registration
+        # check pass by finding no registrations at all.
+        self.fn_prefix = fn_prefix or f"test_{ {'2D': '2d_', '3D': '3d_'}.get(dim, '') }{family}"
         self.extra_column, self.other_note = extra_column, other_note
+        self.recipe_reader = recipe_reader or {}
         self.current_exempt = frozenset(current_exempt)
         self.uncredited = uncredited or {}
         self.order, self.count_noun = order, count_noun
@@ -226,7 +248,16 @@ def strip_comments(text):
 
 
 def helper_features(text, feat_re):
-    """-> {module-level python helper name: features it reads out of the result frame}."""
+    """-> {module-level python helper name: (features it reads, features per returned position)}.
+
+    The second half is what stops a helper from crediting a caller with a value the caller throws
+    away: `_fd()` in test_2d_morphology_fraclac.py reads both fractal dimensions and returns them as
+    a pair, and each of its three callers asserts exactly one of them. Crediting the whole helper to
+    every caller says the box-count case vets the perimeter dimension, which it does not -- coverage
+    is an assertion, and that is the rule this module exists to hold. `helper_credit` below reads
+    the caller's unpacking against these positions. It is None for anything but a single
+    tuple return, and the whole set is then credited as it was before.
+    """
     out = {}
     bounds = [m.start() for m in TOPLEVEL_DEF.finditer(text)]
     for m in HELPER.finditer(text):
@@ -235,18 +266,103 @@ def helper_features(text, feat_re):
         block = text[pos:after[0] if after else len(text)]
         feats = set(feat_re.findall(block))
         if feats:
-            out[m.group(1)] = feats
+            out[m.group(1)] = (feats, helper_positions(block, feat_re))
+    return out
+
+
+def _split_top(text):
+    """`text` split on its top-level commas, so a comma inside a call or a subscript does not."""
+    parts, depth, start = [], 0, 0
+    for i, ch in enumerate(text):
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif ch == "," and not depth:
+            parts.append(text[start:i])
+            start = i + 1
+    return parts + [text[start:]]
+
+
+def helper_positions(block, feat_re):
+    """-> [features per returned position] for a helper returning a tuple, else None.
+
+    A returned element rarely names the feature itself -- `_fd` returns `float(row[bc])`, and `bc`
+    is the local the column lookup named -- so the local assignments in the body are followed one
+    hop back. A name assigned several features at once stays ambiguous and carries all of them,
+    which over- rather than under-credits, the same direction every other concession here takes.
+    """
+    rets = [m.group(1) for m in PY_RETURN.finditer(block)]
+    if len(rets) != 1:
+        return None
+    parts = _split_top(rets[0])
+    if len(parts) < 2:
+        return None
+
+    assigned = {}
+    for m in PY_ASSIGN.finditer(block):
+        feats = set(feat_re.findall(m.group(2)))
+        if not feats:
+            continue
+        for name in m.group(1).split(","):
+            assigned.setdefault(name.strip(), set()).update(feats)
+
+    out = []
+    for part in parts:
+        feats = set(feat_re.findall(part))
+        for name in PY_IDENT.findall(part):
+            feats |= assigned.get(name, set())
+        out.append(feats)
+    return out
+
+
+def helper_credit(block, helper, feats, positions, asserted_names):
+    """Which of a helper's features THIS caller asserts.
+
+    Only the positions the caller both binds to a name and asserts on. `_` is the discard the
+    language already spells, and a bound name that never reaches an assertion line is the same
+    thing said less plainly. A caller that does not unpack the helper -- it takes the tuple whole,
+    or passes the call along -- says nothing about which half it uses, so it keeps the whole set,
+    as does any feature the return positions do not account for.
+    """
+    if not positions:
+        return feats
+    selected, matched = set(), False
+    call = re.compile(r"^[ \t]*([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*=\s*"
+                      + re.escape(helper) + r"\s*\(", re.M)
+    for targets in call.findall(block):
+        names = [t.strip() for t in targets.split(",")]
+        if len(names) != len(positions):
+            continue
+        matched = True
+        for name, at_position in zip(names, positions):
+            if name != "_" and name in asserted_names:
+                selected |= at_position
+    if not matched:
+        return feats
+    return selected | (feats - set().union(*positions))
+
+
+def asserted_names(block):
+    """-> the identifiers this function names on an assertion line."""
+    out = set()
+    for line in block.splitlines():
+        if ASSERTION.search(line):
+            out.update(PY_IDENT.findall(line))
     return out
 
 
 
 # `cols = [...]` / `ellipse = (...)` at the top of a pytest case: the literal is the whole
 # right-hand side, so a call that merely takes a list argument (`row = _one([...], label)`) is not
-# one of these.
-PY_ASSIGN_LITERAL = re.compile(r"^[ 	]*\w+\s*=\s*[\[(]", re.M)
-# `for c in cols:` -- a loop over a local NAME, which is what says the literal above is iterated
-# rather than merely held.
-PY_LOOP_NAME = re.compile(r"for\s+\w+\s+in\s+\w+\s*:")
+# one of these. The name is captured because it, not the literal, is what the loop below names.
+PY_ASSIGN_LITERAL = re.compile(r"^[ 	]*(\w+)\s*=\s*[\[(]", re.M)
+# `for c in cols:` -- a loop over a local NAME, which is what says WHICH literal is iterated rather
+# than merely held.
+PY_LOOP_NAME = re.compile(r"for\s+\w+\s+in\s+(\w+)\s*:")
+# an identifier inside a literal, so `cols = [... if c in ellipse]` can be followed back to
+# `ellipse`. Deliberately not a feature pattern: this is the reference graph, not the payload.
+PY_IDENT = re.compile(r"[A-Za-z_]\w*")
 
 
 def _bracketed(text, start):
@@ -264,19 +380,35 @@ def _bracketed(text, start):
 
 
 def py_literal_features(block, feat_re):
-    """Feature names in the local sequence literals of a case that loops one of them while asserting.
+    """Feature names in the local sequence literals a case actually iterates while asserting.
 
     A pytest case can name every feature it compares in a list it builds and then iterates -- the
     ellipse tuple in test_2d_ooc_invariant.py is the case -- so no name ever reaches an assertion
     line and the shared rule sees nothing. This is the same concession loop_tables makes for the C++
-    equivalence tests, and it is gated the same way: the function has to both assert and range-loop,
-    so a plain lookup list is not mistaken for coverage.
+    equivalence tests, and it is gated the same way: the function has to both assert and range-loop.
+
+    Only the literals the loop REACHES are credited, resolved by name. A literal the function holds
+    but never iterates is not coverage, and reading every local literal because the function happens
+    to loop somewhere would credit it anyway -- which is the false positive this rule exists to
+    refuse. The reach is transitive because the case builds one list from another
+    (`cols = [c for c in df if c in ellipse]`, then `for c in cols:`), so a literal named inside a
+    reached literal is reached too.
     """
-    if not PY_LOOP_NAME.search(block):
-        return set()
-    out = set()
+    literals = {}
     for m in PY_ASSIGN_LITERAL.finditer(block):
-        out.update(feat_re.findall(_bracketed(block, m.end() - 1)))
+        literals.setdefault(m.group(1), []).append(_bracketed(block, m.end() - 1))
+    reached = {n for n in PY_LOOP_NAME.findall(block) if n in literals}
+    frontier = list(reached)
+    while frontier:
+        for text in literals[frontier.pop()]:
+            for name in PY_IDENT.findall(text):
+                if name in literals and name not in reached:
+                    reached.add(name)
+                    frontier.append(name)
+    out = set()
+    for name in reached:
+        for text in literals[name]:
+            out.update(feat_re.findall(text))
     return out
 
 
@@ -324,9 +456,14 @@ def scan(fam, path, feat_re, all_names=()):
         if fam.loop_tables and re.search(r"for\s*\([^)]*:\s*\w+\s*\)", block):
             for m in re.finditer(r"=\s*\{(.*?)\};", block, re.S):
                 hits.setdefault(fn, set()).update(feat_re.findall(m.group(1)))
-        for name, feats in helpers.items():
-            if re.search(r"\b" + re.escape(name) + r"\s*\(", block):
-                hits.setdefault(fn, set()).update(feats)
+        named = None
+        for name, (feats, positions) in helpers.items():
+            if not re.search(r"\b" + re.escape(name) + r"\s*\(", block):
+                continue
+            if named is None:
+                named = asserted_names(block)
+            hits.setdefault(fn, set()).update(
+                helper_credit(block, name, feats, positions, named))
     return hits
 
 
@@ -418,21 +555,46 @@ def unregistered_tests(fam, cov):
                   if src.endswith(".h") and fn not in registered)
 
 
+def _braced(text, start):
+    """The body of the block whose opening `{` is at `start`."""
+    depth, i = 1, start + 1
+    while i < len(text) and depth:
+        depth += (text[i] == "{") - (text[i] == "}")
+        i += 1
+    return text[start + 1:i - 1]
+
+
+def case_to_fns(fam, cov):
+    """-> {gtest case name: the scanned functions its body calls}.
+
+    test_all.cc registers `TEST(SUITE, CASE) { ASSERT_NO_THROW(fn()); }`, and `where` already maps a
+    test function to the file that defines it, so the two compose into case -> function -> file.
+    That is what lets a row's test_name be read as the assertion it names rather than as a string.
+
+    The body is brace-matched rather than read to the first newline-then-`}`: a fifth of the
+    registrations are written on one line, and a pattern that has to reach a `}` at the start of a
+    line runs straight past those into the next multi-line case, so the case resolves to a function
+    it never calls. The families reading this today all register over several lines, so nothing was
+    mis-resolved; a family that registered on one line would have been, and silently.
+    """
+    text = _test_all()
+    out = {}
+    for m in re.finditer(r"TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{", text):
+        fns = [fn for fn in re.findall(r"(" + fam.fn_prefix + r"_\w+)\s*\(\s*\)",
+                                       _braced(text, m.end() - 1))
+               if fn in cov.where]
+        if fns:
+            out[f"{m.group(1)}.{m.group(2)}"] = fns
+    return out
+
+
 def case_to_file(fam, cov):
     """-> {gtest case name: the source file defining the function it calls}.
 
-    test_all.cc registers `TEST(SUITE, CASE) { ASSERT_NO_THROW(fn()); }`, and `where` already maps a
-    test function to the file that defines it, so the two compose into case -> file. That is what
-    lets the identity checks confirm a row's test_name and its current_test describe the same
-    assertion rather than merely both being true of the feature.
+    A case registers one function in this tree; where several are called the last one wins, as it
+    always has.
     """
-    out = {}
-    for suite, case, body in re.findall(
-            r"TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{(.*?)\n\}", _test_all(), re.S):
-        for fn in re.findall(r"(" + fam.fn_prefix + r"_\w+)\s*\(\s*\)", body):
-            if fn in cov.where:
-                out[f"{suite}.{case}"] = cov.where[fn]
-    return out
+    return {case: cov.where[fns[-1]] for case, fns in case_to_fns(fam, cov).items()}
 
 
 def disagreements(fam, cov):

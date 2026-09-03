@@ -39,6 +39,18 @@ regression: 153  invariant: 0  untested: 0
 | `agree` | 745 | the claim and the tree say the same thing |
 | `unscanned` | 178 | no scanner covers this family x dim yet |
 
+### How far each verdict reaches
+
+`verdict_scope` is the evidence behind the verdict, not a second verdict. Only
+`row+config` checks the configuration cell that the report's own key is built on.
+
+| scope | rows | what was compared |
+|---|---:|---|
+| `feature` | 438 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
+| `none` | 178 | no scanner for this family x dim, so nothing was read at all |
+| `row` | 156 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
+| `row+config` | 151 | the case named in `test_name` asserts this feature at this `config_recipe` |
+
 ## Families with no scanner
 
 **178 of 923 rows (19%) cannot be checked against the tree at all.** These families have an
@@ -101,7 +113,9 @@ that alone understates every family that corroborates.
 
 `claim_*` comes from `oracle_coverage.csv` and is human-authored, reviewed in a PR.
 `scan_*` is what the family's scanner reads out of the test tree, and is a fact about
-the tree at generation time. `verdict` is the join. The three pointer columns name the
-narrative report, the regeneration recipe and the config matrix for the row, where
-each exists.
+the tree at generation time. `scan_row_tests` is the narrower of the two: the
+functions this row's OWN `test_name` runs, where it names one. `verdict` is the join
+and `verdict_scope` says which of the two it was made against. The three pointer
+columns name the narrative report, the regeneration recipe and the config matrix for
+the row, where each exists.
 

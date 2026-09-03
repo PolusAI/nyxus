@@ -19,6 +19,24 @@ assertion, not a note on it: a feature vetted at `ibsi=true` can diverge by two 
 at `ibsi=false` (measured on glrlm, glszm and gldm), so "vetted" without the cell it was vetted in is
 not a fact. That key is already unique across the registry; (dim, feature, oracle) is not.
 
+## How far the verdict reaches, which is not everywhere
+
+Being the key is not the same as being checked, and `verdict_scope` says which of the three a row
+got, per row, rather than leaving the strongest to be assumed of all of them:
+
+  `feature`     the tree was read for the FEATURE. The row claims an oracle and some oracle test
+                asserts that feature -- not necessarily the assertion this row describes. Every row
+                whose `test_name` is empty gets this, and 438 of them are.
+  `row`         `test_name` named a gtest case, the case resolved through test_all.cc to the
+                function it runs, and THAT function asserts the feature at the row's own kind.
+  `row+config`  and the function is one the family's `recipe_reader` says asserts at the row's
+                `config_recipe`. This is the only scope in which the config cell is checked at all:
+                a recipe is a claim about how the calculator was configured, and nothing in the
+                tree records a configuration except which function the numbers were read in. In a
+                family that declares no reader, swapping a row's recipe for another of that
+                family's changes no verdict -- which is why the scope is a column and not a
+                footnote.
+
 ## Provenance is visible in the row
 
 Columns are grouped `claim_*` / `scan_*` / derived, so a reader can see which side of the join a
@@ -60,8 +78,10 @@ COLUMNS = [
     # the tree, from the family's scanner
     "scan_oracles", "scan_oracle_tests", "scan_regression_tests", "scan_other_tests",
     "scan_n_oracle", "scan_n_regression",
+    # the tree, scoped to THIS row: the functions its own test_name runs
+    "scan_row_tests",
     # the join
-    "verdict",
+    "verdict", "verdict_scope",
     # where to read more
     "vetting_report", "golden_regen", "matrix",
     "claim_notes",
@@ -109,15 +129,28 @@ def families():
     return out
 
 
+class Scanned:
+    """A family's coverage, with the two things a ROW-scoped read of it needs.
+
+    `cov` answers "what covers this feature"; `cases` answers "what does THIS row's test_name run",
+    and `fam` carries the declaration the config check reads. Coverage alone can only ever be
+    feature-wide, which is why it is not the whole of what the report joins against.
+    """
+
+    def __init__(self, fam, cov):
+        self.fam, self.cov = fam, cov
+        self.cases = scanlib.case_to_fns(fam, cov)
+
+
 def scan_all():
-    """-> {(dim, family): Coverage} for every family that has a scanner."""
+    """-> {(dim, family): Scanned} for every family that has a scanner."""
     cov = {}
     for fam in families():
         rows = scanlib.registry_rows(fam)
         names = {r["feature"] for r in rows}
         feat_re = scanlib.feature_re(names, fam.boundary)
         gather = fam.collect_override or (lambda f, r: scanlib.collect(f, r, names))
-        cov[(fam.dim, fam.family)] = scanlib.Coverage(rows, *gather(fam, feat_re))
+        cov[(fam.dim, fam.family)] = Scanned(fam, scanlib.Coverage(rows, *gather(fam, feat_re)))
     return cov
 
 
@@ -165,6 +198,24 @@ def pointers(family, dim, oracles):
     return report, regen, mat
 
 
+def row_assertions(row, s):
+    """-> (scope, the functions the ROW's own test_name runs, unresolved names).
+
+    `test_name` is the only registry column that identifies an assertion rather than a feature, so
+    it is the only thing that can narrow the read from the feature to the row. Where it is empty
+    the read stays feature-wide, and `verdict_scope` says so on the row rather than letting a
+    feature-wide agreement read as if the row itself had been checked.
+    """
+    names = [t.strip() for t in row["test_name"].split(";") if t.strip()]
+    if not names:
+        return "feature", [], []
+    fns, unresolved = [], []
+    for name in names:
+        got = s.cases.get(name)
+        fns.extend(got) if got else unresolved.append(name)
+    return "row", fns, unresolved
+
+
 def verdict_of(row, cov, vetted_features):
     """The one fact neither side holds: does the claim match the tree?
 
@@ -172,26 +223,53 @@ def verdict_of(row, cov, vetted_features):
     row and a drift-guard row, and the guard is not at fault for the oracle test the other row
     records -- they are two assertions about the same feature. Only the FEATURE-level question
     "an oracle asserts this and no row anywhere says vetted" is a real gap.
+
+    The feature-wide questions come first because they are the ones every row can be asked. The
+    row-scoped ones follow, and only a row naming its assertion can be asked them at all -- what
+    `verdict_scope` records, so the two are never confused for each other.
     """
     key = (row["dim"], row["family"])
     if key not in cov:
-        return "unscanned"
-    c = cov[key]
+        return "unscanned", "none"
+    s = cov[key]
+    c = s.cov
     f, status, oracle = row["feature"], row["status"].strip(), row["oracle"].strip()
+    scope, fns, unresolved = row_assertions(row, s)
 
     if status == "vetted":
         if not c.asserted.get(f):
-            return "claim-without-assertion"
+            return "claim-without-assertion", scope
         if oracle and oracle not in c.oracles.get(f, set()):
-            return "oracle-mismatch"
-        return "agree"
+            return "oracle-mismatch", scope
+    else:
+        # a regression or invariant row claims a drift guard, so that is what it is checked against
+        if c.oracles.get(f) and (row["dim"], f) not in vetted_features:
+            return "assertion-without-claim", scope
+        if not (c.regression.get(f) or c.other.get(f) or c.asserted.get(f)):
+            return "no-assertion-at-all", scope
 
-    # a regression or invariant row claims a drift guard, so that is what it is checked against
-    if c.oracles.get(f) and (row["dim"], f) not in vetted_features:
-        return "assertion-without-claim"
-    if not (c.regression.get(f) or c.other.get(f) or c.asserted.get(f)):
-        return "no-assertion-at-all"
-    return "agree"
+    if scope == "feature":
+        return "agree", scope
+
+    if unresolved:
+        return "test-name-unresolved", scope
+    # the row's own assertion, at the row's own kind: a vetted row answers to an oracle-suffixed
+    # function, and a feature-wide `asserted` set does not say that THIS case is one of them
+    covering = c.asserted.get(f, set()) if status == "vetted" else (
+        c.regression.get(f, set()) | c.other.get(f, set()) | c.asserted.get(f, set()))
+    if not set(fns) & covering:
+        return "row-test-lacks-feature", scope
+
+    # the configuration, where the family declares how to read one off a function name
+    readers = s.fam.recipe_reader
+    if not readers:
+        return "agree", scope
+    recipe = row["config_recipe"].strip()
+    if recipe not in readers:
+        return "recipe-unreadable", "row+config"
+    if not any(readers[recipe].match(fn) for fn in fns):
+        return "recipe-mismatch", "row+config"
+    return "agree", "row+config"
 
 
 def build(cov, rows):
@@ -199,7 +277,8 @@ def build(cov, rows):
     out = []
     for r in rows:
         key = (r["dim"], r["family"])
-        c = cov.get(key)
+        s = cov.get(key)
+        c = s.cov if s else None
         f = r["feature"]
         oracle = r["oracle"].strip()
         # the claimed oracle first, then the tree's, so a row claiming none still reaches its report
@@ -208,6 +287,8 @@ def build(cov, rows):
         asserted = sorted(c.asserted.get(f, ())) if c else []
         regress = sorted(c.regression.get(f, ())) if c else []
         other = sorted(c.other.get(f, ())) if c else []
+        row_tests = sorted(set(row_assertions(r, s)[1])) if s else []
+        verdict, scope = verdict_of(r, cov, vetted_features)
         out.append({
             "dim": r["dim"], "family": r["family"], "feature": f,
             "claim_status": r["status"].strip(), "claim_oracle": oracle,
@@ -225,7 +306,8 @@ def build(cov, rows):
             "scan_other_tests": ";".join(other),
             "scan_n_oracle": str(len(asserted)),
             "scan_n_regression": str(len(regress)),
-            "verdict": verdict_of(r, cov, vetted_features),
+            "scan_row_tests": ";".join(row_tests),
+            "verdict": verdict, "verdict_scope": scope,
             "vetting_report": report, "golden_regen": regen, "matrix": mat,
             "claim_notes": r["notes"],
         })
@@ -296,6 +378,12 @@ def render_md(recs):
         "oracle-mismatch": "both sides name an oracle, but not the same one",
         "assertion-without-claim": "an oracle test asserts it while the row claims no oracle",
         "no-assertion-at-all": "nothing in the tree covers the feature, of any kind",
+        "test-name-unresolved": "test_name names a case that no TEST() in test_all.cc registers",
+        "row-test-lacks-feature": "the case test_name names carries no assertion of this feature "
+                                  "at this row's kind",
+        "recipe-mismatch": "the case test_name names does not assert at this row's config_recipe",
+        "recipe-unreadable": "the family declares a recipe reader, but not for this recipe, so the "
+                             "configuration cannot be checked",
         "unscanned": "no scanner covers this family x dim yet",
     }
     lines += ["", "## Verdicts", "",
@@ -303,6 +391,25 @@ def render_md(recs):
               "| verdict | rows | meaning |", "|---|---:|---|"]
     for v, n in counts.most_common():
         lines.append(f"| `{v}` | {n} | {meaning.get(v, '')} |")
+
+    # how far each verdict reaches. An `agree` is only as strong as the evidence behind it, and the
+    # three scopes are three different claims -- listing them keeps the weakest from being read as
+    # the strongest, which is the whole reason the column exists.
+    scopes = collections.Counter(r["verdict_scope"] for r in recs)
+    scope_meaning = {
+        "row+config": "the case named in `test_name` asserts this feature at this `config_recipe`",
+        "row": "the case named in `test_name` asserts this feature, at this row's kind; its "
+               "configuration is unchecked, the family declaring no recipe reader",
+        "feature": "`test_name` is empty, so the tree was read for the feature and not for this "
+                   "row's own assertion",
+        "none": "no scanner for this family x dim, so nothing was read at all",
+    }
+    lines += ["", "### How far each verdict reaches", "",
+              "`verdict_scope` is the evidence behind the verdict, not a second verdict. Only",
+              "`row+config` checks the configuration cell that the report's own key is built on.",
+              "", "| scope | rows | what was compared |", "|---|---:|---|"]
+    for v, n in scopes.most_common():
+        lines.append(f"| `{v}` | {n} | {scope_meaning.get(v, '')} |")
 
     offenders = [r for r in recs if r["verdict"] not in ("agree", "unscanned")]
     if offenders:
@@ -377,9 +484,11 @@ def render_md(recs):
     lines += ["", "## Reading a row", "",
               "`claim_*` comes from `oracle_coverage.csv` and is human-authored, reviewed in a PR.",
               "`scan_*` is what the family's scanner reads out of the test tree, and is a fact about",
-              "the tree at generation time. `verdict` is the join. The three pointer columns name the",
-              "narrative report, the regeneration recipe and the config matrix for the row, where",
-              "each exists.", ""]
+              "the tree at generation time. `scan_row_tests` is the narrower of the two: the",
+              "functions this row's OWN `test_name` runs, where it names one. `verdict` is the join",
+              "and `verdict_scope` says which of the two it was made against. The three pointer",
+              "columns name the narrative report, the regeneration recipe and the config matrix for",
+              "the row, where each exists.", ""]
     return "\n".join(lines) + "\n"
 
 
