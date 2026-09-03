@@ -156,6 +156,11 @@ class Family:
                       own `current_test`; "feature" is the union over the feature's rows, reported
                       once at the end. A family whose registry carries several oracle rows per
                       feature needs "feature", or every row is faulted for the files the others name.
+    fn_oracle         {function: oracle token}, for a function whose oracle its NAME cannot say --
+                      3D gldm asserts against PyRadiomics through the Python API in
+                      `test_3d_gldm_compatibility`, whose suffix is no oracle suffix. Without it
+                      `oracle_token` reads such a function as carrying no oracle, and a row naming
+                      it could not be checked against the oracle it claims.
     recipe_reader     {config_recipe: a pattern the asserting function's name must match}. This is
                       the only thing in the tree that answers a row's CONFIGURATION: a recipe names
                       the configuration the numbers were taken at, and the function name is where
@@ -174,7 +179,7 @@ class Family:
                  other_note=None, order="registry", count_noun="rows", checks=None,
                  scan_helpers=False, loop_tables=False, py_loop_tables=False, featureset_loop=None,
                  extra_problems=None, collect_override=None, boundary="word", extra_summary=None,
-                 current_scope="row", recipe_reader=None,
+                 current_scope="row", recipe_reader=None, fn_oracle=None,
                  current_exempt=(), uncredited=None):
         self.dim, self.family, self.out = dim, family, out
         self.sources, self.oracle_suffix = sources, oracle_suffix
@@ -188,6 +193,7 @@ class Family:
         self.fn_prefix = fn_prefix or f"test_{ {'2D': '2d_', '3D': '3d_'}.get(dim, '') }{family}"
         self.extra_column, self.other_note = extra_column, other_note
         self.recipe_reader = recipe_reader or {}
+        self.fn_oracle = fn_oracle or {}
         self.current_exempt = frozenset(current_exempt)
         self.uncredited = uncredited or {}
         self.order, self.count_noun = order, count_noun
@@ -357,9 +363,14 @@ def asserted_names(block):
 # right-hand side, so a call that merely takes a list argument (`row = _one([...], label)`) is not
 # one of these. The name is captured because it, not the literal, is what the loop below names.
 PY_ASSIGN_LITERAL = re.compile(r"^[ 	]*(\w+)\s*=\s*[\[(]", re.M)
-# `for c in cols:` -- a loop over a local NAME, which is what says WHICH literal is iterated rather
-# than merely held.
-PY_LOOP_NAME = re.compile(r"for\s+\w+\s+in\s+(\w+)\s*:")
+# `for c in cols:` -- a loop over a local NAME, which is what says WHICH literal is iterated
+# rather than merely held. The indent is captured because the loop's BODY is what has to do the
+# comparing: a loop that only prints its list asserts nothing about it.
+PY_LOOP_NAME = re.compile(r"^([ \t]*)for\s+\w+\s+in\s+(\w+)\s*:", re.M)
+# `bad.append(...)`, `p = float(...)` -- what a loop that compares without asserting hands to the
+# assertion after it. `=[^=]` so a comparison is not read as a binding.
+PY_ACCUMULATE = re.compile(
+    r"^[ \t]*(\w+)\s*(?:\.\s*(?:append|add|extend|update)\s*\(|[-+|&]?=[^=])", re.M)
 # an identifier inside a literal, so `cols = [... if c in ellipse]` can be followed back to
 # `ellipse`. Deliberately not a feature pattern: this is the reference graph, not the payload.
 PY_IDENT = re.compile(r"[A-Za-z_]\w*")
@@ -379,6 +390,27 @@ def _bracketed(text, start):
     return text[start + 1:i - 1] if not depth else ""
 
 
+def loop_bodies(block):
+    """-> [(the name a `for` iterates, the lines indented under it)].
+
+    Indentation is the only structure available here -- this module reads text, not an AST -- and it
+    is enough for the question being asked: does THIS loop compare, or does it merely run.
+    """
+    lines = block.expandtabs().splitlines()
+    out = []
+    for i, line in enumerate(lines):
+        m = PY_LOOP_NAME.match(line)
+        if not m:
+            continue
+        indent, body = len(m.group(1)), []
+        for nxt in lines[i + 1:]:
+            if nxt.strip() and len(nxt) - len(nxt.lstrip()) <= indent:
+                break
+            body.append(nxt)
+        out.append((m.group(2), "\n".join(body)))
+    return out
+
+
 def py_literal_features(block, feat_re):
     """Feature names in the local sequence literals a case actually iterates while asserting.
 
@@ -393,11 +425,21 @@ def py_literal_features(block, feat_re):
     refuse. The reach is transitive because the case builds one list from another
     (`cols = [c for c in df if c in ellipse]`, then `for c in cols:`), so a literal named inside a
     reached literal is reached too.
+
+    The LOOP has to do the comparing, not merely exist. A function that loops a list to print it and
+    asserts something unrelated below satisfies "asserts somewhere and range-loops somewhere" while
+    asserting nothing about the list -- the same false positive one level up. So the loop body must
+    either assert, or accumulate into a name the function later asserts on: the
+    `bad.append(...)` / `assert not bad` shape these cases actually use, where the assertion is
+    outside the loop by construction.
     """
     literals = {}
     for m in PY_ASSIGN_LITERAL.finditer(block):
         literals.setdefault(m.group(1), []).append(_bracketed(block, m.end() - 1))
-    reached = {n for n in PY_LOOP_NAME.findall(block) if n in literals}
+    asserted = asserted_names(block)
+    reached = {name for name, body in loop_bodies(block)
+               if name in literals
+               and (ASSERTION.search(body) or set(PY_ACCUMULATE.findall(body)) & asserted)}
     frontier = list(reached)
     while frontier:
         for text in literals[frontier.pop()]:
@@ -562,6 +604,17 @@ def _braced(text, start):
         depth += (text[i] == "{") - (text[i] == "}")
         i += 1
     return text[start + 1:i - 1]
+
+
+def oracle_token(fam, fn):
+    """-> the oracle a function asserts against, or None if its kind is not an oracle at all.
+
+    SPEC 2 puts the kind in the name suffix, so the suffix is the answer for all but the handful of
+    functions a family has to name outright. This is what lets a row's CLAIMED oracle be checked
+    against the function its `test_name` resolves to: the feature-wide `oracles` set says some test
+    asserts the feature under that oracle, which is a different statement and a weaker one.
+    """
+    return fam.fn_oracle.get(fn) or fam.oracle_suffix.get(fn.rsplit("_", 1)[-1])
 
 
 def case_to_fns(fam, cov):

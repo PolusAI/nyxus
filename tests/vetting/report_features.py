@@ -216,6 +216,32 @@ def row_assertions(row, s):
     return "row", fns, unresolved
 
 
+def row_covering(row, s, feature):
+    """The functions that could be THIS row's evidence: its own kind, and its own oracle.
+
+    A row is one assertion -- feature x config x reference -- so the tree has to be read at that
+    reference, not at any. The feature-wide sets cannot do it: `asserted` holds every oracle case for
+    the feature whatever tool it names, and unioning the buckets for a non-vetted row lets an oracle
+    case satisfy a regression claim, which says the snapshot guard exists when it does not. Both were
+    reachable, and both looked like agreement.
+
+    A `vetted` row that names no oracle keeps the whole oracle bucket -- there is nothing to match
+    against, and `vetted_no_oracle` is the check that faults that row.
+    """
+    c = s.cov
+    status = row["status"].strip()
+    if status == "vetted":
+        fns = c.asserted.get(feature, set())
+        oracle = row["oracle"].strip()
+        if oracle:
+            fns = {fn for fn in fns if scanlib.oracle_token(s.fam, fn) == oracle}
+        return fns
+    if status == "regression":
+        return c.regression.get(feature, set())
+    # invariant, and anything else that claims a guard rather than a vetting
+    return c.other.get(feature, set())
+
+
 def verdict_of(row, cov, vetted_features):
     """The one fact neither side holds: does the claim match the tree?
 
@@ -253,12 +279,22 @@ def verdict_of(row, cov, vetted_features):
 
     if unresolved:
         return "test-name-unresolved", scope
-    # the row's own assertion, at the row's own kind: a vetted row answers to an oracle-suffixed
-    # function, and a feature-wide `asserted` set does not say that THIS case is one of them
-    covering = c.asserted.get(f, set()) if status == "vetted" else (
-        c.regression.get(f, set()) | c.other.get(f, set()) | c.asserted.get(f, set()))
-    if not set(fns) & covering:
-        return "row-test-lacks-feature", scope
+
+    # ONE resolved function has to answer the whole row. Splitting the questions -- does any named
+    # case assert the feature, does any named case run at the recipe -- lets two individually wrong
+    # cases combine into an agreement neither supports, so each test below narrows the same set.
+    hits = [fn for fn in fns if fn in row_covering(row, s, f)]
+    if not hits:
+        # say WHICH way it misses: a case that asserts nothing about the feature is a different
+        # mistake from one that asserts it under the wrong tool or as the wrong kind of guard, and
+        # the two are fixed differently
+        elsewhere = [fn for fn in fns if fn in (c.asserted.get(f, set()) | c.regression.get(f, set())
+                                                | c.other.get(f, set()))]
+        if not elsewhere:
+            return "row-test-lacks-feature", scope
+        if status == "vetted" and oracle and any(fn in c.asserted.get(f, set()) for fn in elsewhere):
+            return "row-test-wrong-oracle", scope
+        return "row-test-wrong-kind", scope
 
     # the configuration, where the family declares how to read one off a function name
     readers = s.fam.recipe_reader
@@ -267,7 +303,7 @@ def verdict_of(row, cov, vetted_features):
     recipe = row["config_recipe"].strip()
     if recipe not in readers:
         return "recipe-unreadable", "row+config"
-    if not any(readers[recipe].match(fn) for fn in fns):
+    if not any(readers[recipe].match(fn) for fn in hits):
         return "recipe-mismatch", "row+config"
     return "agree", "row+config"
 
@@ -379,8 +415,12 @@ def render_md(recs):
         "assertion-without-claim": "an oracle test asserts it while the row claims no oracle",
         "no-assertion-at-all": "nothing in the tree covers the feature, of any kind",
         "test-name-unresolved": "test_name names a case that no TEST() in test_all.cc registers",
-        "row-test-lacks-feature": "the case test_name names carries no assertion of this feature "
-                                  "at this row's kind",
+        "row-test-lacks-feature": "the case test_name names asserts nothing about this feature",
+        "row-test-wrong-oracle": "the case test_name names asserts this feature against a "
+                                 "different oracle than the row claims",
+        "row-test-wrong-kind": "the case test_name names asserts this feature, but not as the kind "
+                               "of evidence this row claims -- an oracle case under a regression "
+                               "row, or the reverse",
         "recipe-mismatch": "the case test_name names does not assert at this row's config_recipe",
         "recipe-unreadable": "the family declares a recipe reader, but not for this recipe, so the "
                              "configuration cannot be checked",

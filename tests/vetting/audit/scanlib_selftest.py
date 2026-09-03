@@ -6,11 +6,16 @@ The per-family `--check` compares an artifact to the tree; nothing there can say
 that produced the artifact is right, because both sides of that comparison come from the same rule.
 These are the other direction: a fixture where the answer is known, and a fault injected into it.
 
-Every case here is a shape that once read as coverage and is not:
+Every case here is a shape that once read as evidence and is not:
 
   a literal the function holds but never loops     the loop says WHICH list is compared
+  a loop that reads its list without comparing     the loop has to do the asserting, or feed it
   a returned value the caller discards             coverage is an assertion, not a read
   a case registered on one line                    the body must be brace-matched, not line-matched
+  an oracle case under a regression row            a row answers to evidence of its own kind
+  the wrong tool's case under a vetted row         and to the oracle it actually claims
+  the feature from one case, the recipe from       one function has to answer the whole row
+    another
 
 Each is written twice, once where the feature IS covered and once where the same text stops just
 short of covering it, because a check that only ever sees the passing half is not a check.
@@ -77,6 +82,25 @@ def literals():
 
     check("the concession is opt-in",
           scanned(LITERALS, names)["test_2d_selftest_reach_analytic"], set())
+
+    # the shape the tree actually uses: the loop collects and the assertion is below it, outside
+    accumulating = LITERALS.replace(
+        "    for c in cols:\n        assert frame[c] == other[c]\n",
+        "    bad = []\n"
+        "    for c in cols:\n"
+        "        if frame[c] != other[c]:\n"
+        "            bad.append(c)\n"
+        "    assert not bad, bad\n")
+    check("a loop that collects for an assertion below it is credited",
+          scanned(accumulating, names, py_loop_tables=True)["test_2d_selftest_reach_analytic"],
+          {"ECCENTRICITY", "EROSIONS_2_VANISH"})
+
+    # the control: the same loop, doing nothing with what it iterates, beside a real assertion
+    logging = LITERALS.replace(
+        "    for c in cols:\n        assert frame[c] == other[c]\n",
+        "    for c in cols:\n        print(c)\n    assert frame is not other\n")
+    check("a loop that only reads its list is NOT credited",
+          scanned(logging, names, py_loop_tables=True)["test_2d_selftest_reach_analytic"], set())
 
 
 # ---------------------------------------------------------------- helper attribution
@@ -206,6 +230,35 @@ def verdicts():
     bogus = dict(row, test_name="TEST_NYXUS.TEST_3D_GLSZM_NO_SUCH_CASE")
     check("test_name naming no registered case",
           [rf.verdict_of(bogus, cov, vetted)], [("test-name-unresolved", "row")])
+
+    # the feature and the recipe have to be answered by the SAME case. The first of these asserts
+    # GLN at the wrong recipe and the second asserts SAE at the right one, so each question has an
+    # answer and the row still has no evidence.
+    split = dict(row, test_name="TEST_NYXUS.TEST_3D_GLSZM_IBSI_GAPPED_PYRADIOMICS;"
+                                "TEST_NYXUS.TEST_3D_GLSZM_SAE_PYRADIOMICS")
+    check("feature proven by one case and recipe by another",
+          [rf.verdict_of(split, cov, vetted)], [("recipe-mismatch", "row+config")])
+
+    # a regression row answers to the snapshot guard, not to an oracle case that happens to assert
+    # the same feature
+    guard = next(r for r in rows
+                 if r["dim"] == "2D" and r["feature"] == "NGTDM_COARSENESS"
+                 and r["status"].strip() == "regression")
+    check("the regression row as it stands", [rf.verdict_of(guard, cov, vetted)], [("agree", "row")])
+    check("a regression row pointed at an oracle case",
+          [rf.verdict_of(dict(guard, test_name="TEST_NYXUS.TEST_2D_NGTDM_COARSENESS_IBSI"),
+                         cov, vetted)],
+          [("row-test-wrong-kind", "row")])
+
+    # and a vetted row answers to the oracle it claims, not to whichever tool the tree asserts
+    claim = next(r for r in rows
+                 if r["dim"] == "2D" and r["feature"] == "NGTDM_COARSENESS"
+                 and r["status"].strip() == "vetted")
+    check("the vetted row as it stands", [rf.verdict_of(claim, cov, vetted)], [("agree", "row")])
+    check("oracle=mirp with only the IBSI case named",
+          [rf.verdict_of(dict(claim, test_name="TEST_NYXUS.TEST_2D_NGTDM_COARSENESS_IBSI"),
+                         cov, vetted)],
+          [("row-test-wrong-oracle", "row")])
 
     blank = dict(row, test_name="")
     check("a row naming no assertion falls back to the feature",

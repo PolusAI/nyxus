@@ -98,7 +98,7 @@ def collect(fam, feat_re):
                 for feat in feats:
                     _DUMPS.setdefault(feat, set()).add(fn)
                 continue
-            token = PYTEST_ORACLE.get(fn) or ORACLE_SUFFIX.get(fn.rsplit("_", 1)[-1])
+            token = scanlib.oracle_token(fam, fn)
             kind = fn.rsplit("_", 1)[-1]
             for feat in feats:
                 if token:
@@ -265,6 +265,9 @@ FAMILY = scanlib.Family(
     extra_summary=dump_summary,
     # declared here as well as read by test_name_problems above, so the tree-wide report can make
     # the same config-aware check rather than a feature-wide one
+    # the pytest oracle's name carries no oracle suffix, so the token has to be declared or
+    # nothing outside this file can tell what it asserts against
+    fn_oracle=PYTEST_ORACLE,
     recipe_reader=RECIPE_READER,
     # every built-in check is replaced by the per-kind model above, registration included
     checks=frozenset(),
