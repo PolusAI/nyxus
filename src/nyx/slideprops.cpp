@@ -29,7 +29,8 @@ namespace Nyxus
 		bool wholeslide = false;
 
 		double slide_I_max = (std::numeric_limits<double>::lowest)(),
-			slide_I_min = (std::numeric_limits<double>::max)();
+			slide_I_min = (std::numeric_limits<double>::max)(),
+			allpix_I_min = (std::numeric_limits<double>::max)();
 
 		std::unordered_set<int> U;	// unique ROI mask labels
 		std::unordered_map <int, LR> R;	// ROI data
@@ -72,8 +73,8 @@ namespace Nyxus
 		p.slide_w = 2;
 		p.slide_h = 2;
 
-		p.max_preroi_inten = slide_I_max;		// in case fp_phys_pivoxels==true, max/min _preroi_inten 
-		p.min_preroi_inten = slide_I_min;		// needs adjusting (grey-binning) before using in wsi scenarios (assigning ROI's min and max)
+		// a montage never went through a tile loader, so no sample was ever measured
+		record_scanned_intensity_range (p, slide_I_min, slide_I_max, allpix_I_min);
 
 		p.max_roi_area = maxArea;
 		p.n_rois = R.size();
@@ -265,9 +266,7 @@ namespace Nyxus
 		p.slide_w = fullwidth;
 		p.slide_h = fullheight;
 
-		p.max_preroi_inten = slide_I_max;		// in case fp_phys_pivoxels==true, max/min _preroi_inten 
-		p.min_preroi_inten = slide_I_min;		// needs adjusting (grey-binning) before using in wsi scenarios (assigning ROI's min and max)
-		p.min_allpix_inten = allpix_I_min;		// drives the load-time offset (see record_intensity_domain_map)
+		record_scanned_intensity_range (p, slide_I_min, slide_I_max, allpix_I_min);
 
 		p.max_roi_area = maxArea;
 		p.n_rois = R.size();
@@ -446,9 +445,7 @@ namespace Nyxus
 		p.slide_h = fullH;
 		p.volume_d = fullD;
 
-		p.max_preroi_inten = slide_I_max;		// in case fp_phys_pivoxels==true, max/min _preroi_inten 
-		p.min_preroi_inten = slide_I_min;		// needs adjusting (grey-binning) before using in wsi scenarios (assigning ROI's min and max)
-		p.min_allpix_inten = allpix_I_min;		// drives the load-time offset (see record_intensity_domain_map)
+		record_scanned_intensity_range (p, slide_I_min, slide_I_max, allpix_I_min);
 
 		p.max_roi_area = maxArea;
 		p.n_rois = R.size();
@@ -534,6 +531,29 @@ namespace Nyxus
 
 
 		return true;
+	}
+
+	void record_scanned_intensity_range (SlideProps & p, double slide_I_min, double slide_I_max, double allpix_I_min)
+	{
+		// No finite sample reached the extrema, so neither was ever assigned and both still hold
+		// the sentinel they started from -- the one way the maximum can sit below the minimum. A
+		// flat zero range is what such a slide has, and it settles every consumer: the recorded
+		// map comes out as the identity, the forward map lands on grey level 0 (which is where
+		// the loaders put a non-finite sample), and the ROI range is divided by a zero rather
+		// than by an infinity.
+		if (slide_I_max < slide_I_min)
+			slide_I_min = slide_I_max = 0.0;
+
+		// The all-pixel minimum is measured off the whole buffer rather than off the mask, so it
+		// survives an empty mask and is settled separately -- only a reduction that never ran can
+		// leave it on its sentinel, and zero is the right offset for a slide with no negative in
+		// it either way.
+		if (allpix_I_min == (std::numeric_limits<double>::max)())
+			allpix_I_min = 0.0;
+
+		p.max_preroi_inten = slide_I_max;		// in case fp_phys_pivoxels==true, max/min _preroi_inten
+		p.min_preroi_inten = slide_I_min;		// needs adjusting (grey-binning) before using in wsi scenarios (assigning ROI's min and max)
+		p.min_allpix_inten = allpix_I_min;		// drives the load-time offset (see record_intensity_domain_map)
 	}
 
 	//

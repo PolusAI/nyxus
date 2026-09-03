@@ -4,6 +4,8 @@
 
 #ifdef OMEZARR_SUPPORT
 
+#include <cmath>
+#include <cstdint>
 #include <memory>
 #include <vector>
 #include "../src/nyx/omezarr.h"
@@ -229,6 +231,9 @@ void test_2d_omezarr_raw_multitile_mechanics()
 //
 //   signed.ome.zarr : 32x32 int16,   value = -1013 + (row + col)   [-1013 .. -951]
 //   float.ome.zarr  : 32x32 float32, value = -10.5 + 0.25*(row+col) [-10.5 .. 5.0]
+//   nonfinite.ome.zarr : 32x32 float32, row 0 opens with NaN, +Inf, -Inf, 5e9, -7.5, 3.75
+//                        and every other sample is 1.0 -- one sample per class the unsigned
+//                        accessor cannot convert, plus finite controls
 // ---------------------------------------------------------------------------
 
 // The prescan sees a signed dataset's negatives, rather than the ~4.29e9 they wrapped to.
@@ -292,6 +297,40 @@ void test_2d_omezarr_raw_uint32_accessor_unsigned_exact_mechanics()
 
     ASSERT_EQ(ldr.get_uint32_pixel(100 * tw + 50), 150u);
     ASSERT_EQ(ldr.get_uint32_pixel(511 * tw + 511), 1022u);
+}
+
+// The remaining classes the unsigned conversion cannot take: a NaN, either infinity, and a
+// finite sample above UINT32_MAX. A real-valued store may hold any of them, and this accessor
+// is the one a float32 mask is read through -- converting one straight to an unsigned integer
+// is undefined, not merely lossy. A non-finite sample carries no label, so it takes grey level
+// 0, the convention every load-time map uses; the finite over-range end saturates.
+void test_2d_omezarr_raw_uint32_accessor_nonfinite_mechanics()
+{
+    fs::path ds = omezarr_data_path("nonfinite.ome.zarr");
+    ASSERT_TRUE(fs::exists(ds));
+
+    auto ldr = RawOmezarrLoader(ds.string());
+    const size_t tw = ldr.tileWidth(0);
+    ASSERT_TRUE(ldr.get_fp_pixels());
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+
+    // the buffer holds each sample as the file states it, which is what makes the cast unsafe
+    ASSERT_TRUE(std::isnan(ldr.get_dpequiv_pixel(0)));
+    ASSERT_TRUE(std::isinf(ldr.get_dpequiv_pixel(1)) && ldr.get_dpequiv_pixel(1) > 0.0);
+    ASSERT_TRUE(std::isinf(ldr.get_dpequiv_pixel(2)) && ldr.get_dpequiv_pixel(2) < 0.0);
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(3), 5.0e9);      // exact in float32, and above UINT32_MAX
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(4), -7.5);
+    ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(5), 3.75);
+
+    // the unsigned accessor: nothing undefined leaves it
+    ASSERT_EQ(ldr.get_uint32_pixel(0), 0u);                 // NaN
+    ASSERT_EQ(ldr.get_uint32_pixel(1), 0u);                 // +Inf
+    ASSERT_EQ(ldr.get_uint32_pixel(2), 0u);                 // -Inf
+    ASSERT_EQ(ldr.get_uint32_pixel(3), (uint32_t)UINT32_MAX);   // saturates rather than wrapping
+    ASSERT_EQ(ldr.get_uint32_pixel(4), 0u);                 // negative, as on the signed store
+    ASSERT_EQ(ldr.get_uint32_pixel(5), 3u);                 // in range: the loaders' truncating cast
+    ASSERT_EQ(ldr.get_uint32_pixel(6), 1u);                 // the finite control every other sample holds
+    ASSERT_EQ(ldr.get_uint32_pixel(31 * tw + 31), 1u);
 }
 
 // The prescan sees a real-valued dataset's fractions, and flags the dataset real-valued

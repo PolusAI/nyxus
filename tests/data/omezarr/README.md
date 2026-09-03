@@ -19,6 +19,7 @@ and `chunks[2..4]` as the tile sizes.
 | `multi.ome.zarr`   | 1500x1200  | uint16  | 1024x1024 | 2x2*      | `(row*7 + col*3) % 65536`   |
 | `signed.ome.zarr`  |     32x32  | int16   | 32x32     | 1x1       | `-1013 + (row + col)`       |
 | `float.ome.zarr`   |     32x32  | float32 | 32x32     | 1x1       | `-10.5 + 0.25*(row + col)`  |
+| `nonfinite.ome.zarr` |   32x32  | float32 | 32x32     | 1x1       | see below                   |
 
 \* `multi.ome.zarr` has partial edge tiles (1500 = 1024 + 476, 1200 = 1024 + 176),
 so it also exercises the loaders' partial-tile clipping path.
@@ -29,6 +30,12 @@ every sample of the real-valued store is fractional and straddles zero (range `[
 so a loader that narrows either into the unsigned pipeline type is caught rather than
 silently returning wrapped or truncated grey levels. They are uncompressed and 32x32, which
 keeps each store a few kB.
+
+`nonfinite.ome.zarr` covers the classes the unsigned accessor cannot convert at all. Row 0
+opens with `NaN`, `+Inf`, `-Inf`, `5e9` (exact in float32, and above `UINT32_MAX`), `-7.5`
+and `3.75`; every other sample is `1.0`. A real-valued store is free to hold any of them, and
+`RawOmezarrLoader::get_uint32_pixel` is what a float32 *mask* is read through -- converting a
+non-finite or an out-of-range double to an unsigned integer is undefined, not merely lossy.
 
 Deterministic checksums asserted by the tests:
 
@@ -63,8 +70,8 @@ with BioWriter("multi.ome.zarr", X=W, Y=H, Z=1, C=1, T=1, dtype=np.uint16) as bw
 bfio's default tile size (1024) determines the chunk size; the image dimensions
 above were chosen so `multi.ome.zarr` produces a 2x2 grid with partial edges.
 
-`signed.ome.zarr` and `float.ome.zarr` are written directly rather than through bfio, so
-they stay uncompressed and depend on no codec. Each is a root group whose `.zattrs` names
+`signed.ome.zarr`, `float.ome.zarr` and `nonfinite.ome.zarr` are written directly rather than
+through bfio, so they stay uncompressed and depend on no codec. Each is a root group whose `.zattrs` names
 one 5D `(T, C, Z, Y, X)` dataset, plus a single full-size chunk `0/0.0.0.0.0` holding the
 raw little-endian samples:
 
@@ -90,4 +97,8 @@ H = W = 32
 r, c = np.meshgrid(np.arange(H), np.arange(W), indexing="ij")
 write_store("signed.ome.zarr", (-1013 + (r + c)).astype("<i2"), "<i2")
 write_store("float.ome.zarr", (-10.5 + 0.25 * (r + c)).astype("<f4"), "<f4")
+
+nonfinite = np.full((H, W), 1.0, dtype="<f4")
+nonfinite[0, :6] = [np.nan, np.inf, -np.inf, 5.0e9, -7.5, 3.75]
+write_store("nonfinite.ome.zarr", nonfinite, "<f4")
 ```

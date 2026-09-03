@@ -17,9 +17,12 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 
 ---
 
-## A. Test files no registry row references — 25 files, 61 test functions
+## A. Test files no registry row references — 29 files, 94 test functions
 
-### A.1 Correctly absent — plumbing, fixtures and framework self-tests (18 files)
+Both totals are the sum of the two tables below, counting each distinct file once and
+skipping any row struck through as closed, so they can be recomputed from the tables.
+
+### A.1 Correctly absent — plumbing, fixtures and framework self-tests (22 files)
 
 These assert no feature value, so they have no `(feature × config × oracle)` row by construction
 (SPEC §1). Recording them here so their absence is a documented decision, not an oversight.
@@ -32,9 +35,10 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_2d_glcm_mechanics.h` | 1 | guards the `GLCM_OFFSET` default (a setting, not a value) |
 | `test_2d_radial_mechanics.h` | 3 | contour frame, centre pixel and normalising radius — the wiring the radial goldens depend on. **Uncredited by decision, not by construction:** see the note below the table |
 | `test_initialization_mechanics.h` | 1 | environment init |
-| `test_2d_omezarr_mechanics.h` | 13 | OME-Zarr tile/raw loader, including the load-time intensity map on signed and real-valued stores |
+| `test_2d_omezarr_mechanics.h` | 14 | OME-Zarr tile/raw loader, including the load-time intensity map on signed and real-valued stores, and the unsigned accessor on every sample class it cannot convert |
 | `test_2d_intensity_degenerate_roi_mechanics.h` | 3 | the intensity ratios on a populated ROI of one grey level, read before the output NaN substitution, and the empty-ROI guard |
-| `test_2d_nonfinite_pixels_mechanics.py` | 5 | a real-valued slide holding NaN or an infinity; spans the scan and every load-time map, so per-feature rows would be meaningless |
+| `test_2d_nonfinite_pixels_mechanics.py` | 6 | a real-valued slide holding NaN or an infinity, segmented and whole-slide; spans the scan and every load-time map, so per-feature rows would be meaningless |
+| `test_2d_intensity_constant_roi_mechanics.py` | 4 | an ROI of one intensity end to end, on a mapped and on an identity-map slide, through the in-RAM and the out-of-core paths; pins the reported values, not an oracle |
 | `test_roi_blacklist_mechanics.h` | 1 | ROI blacklisting |
 | `test_2d_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
 | `test_2d_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
@@ -64,7 +68,7 @@ omission matters:
 | ~~`test_neighbors_oracle.py`~~ | 2 | `PERCENT_TOUCHING`, `NUM_NEIGHBORS`, closest-neighbor distance on the production `featurize()` path | **CLOSED in Wave 15.** On inspection it asserts bounds and relations (`<= 100`, `> 0`, `== 100` for an enclosed ROI), not oracle values — so it is an `_invariant`, not the CellProfiler oracle assumed here. Renamed `test_2d_neighbor_invariant.py` and added to `current_test` on the 3 rows it covers. |
 | `test_2d_hu_regression.py` | 4 | first-order MIN/MAX/MEAN/INTEGRATED on a CT slide in Hounsfield units | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
 | `test_3d_hu_nifti_regression.py` | 3 | the same on a 3D NIfTI volume with `scl_slope`/`scl_inter` | ditto, 3D |
-| `test_hu_analytic.h` | 5 | closed form of the load-time intensity map and its inverse | analytic assertion with no row |
+| `test_hu_analytic.h` | 16 | closed form of the load-time intensity map and its inverse, the range the scan records, and the `--fpimg*` rejections | analytic assertion with no row |
 | `test_2d_hu_mechanics.h` | 8 | loader-level HU preservation (TIFF / DICOM / float) | plumbing, but it pins values |
 | `test_2d_signed_int16_loader_mechanics.py` | 2 | MIN/MAX/MEAN do not wrap for signed int16 | guards a wrap bug that silently corrupted values |
 | `test_2d_tiff_loader_mechanics.py` | 2 | pixel values and feature equality for uint32 strip TIFFs | guards a heap over-read that corrupted values |
@@ -205,7 +209,7 @@ so a green local run is not a green matrix.
 | flag | cases |
 |---|---|
 | `USE_ARROW` | `TEST_ARROW_IPC_MECHANICS`, `TEST_ARROW_PARQUET_MECHANICS`, `TEST_ARROW_FILE_NAMING_MECHANICS` |
-| `OMEZARR_SUPPORT` | `TEST_2D_OMEZARR_TILELOADER_{GEOMETRY,CONTENT,MULTITILE,SIGNED_OFFSET_MAP,FLOAT_QUANTIZED_MAP,UNSIGNED_UNAFFECTED}_MECHANICS`, `TEST_2D_OMEZARR_RAW_{GEOMETRY,CONTENT,MULTITILE,SIGNED_SOURCE_DOMAIN,FLOAT_SOURCE_DOMAIN,UINT32_ACCESSOR_CLAMPS_NEGATIVE,UINT32_ACCESSOR_UNSIGNED_EXACT}_MECHANICS` |
+| `OMEZARR_SUPPORT` | `TEST_2D_OMEZARR_TILELOADER_{GEOMETRY,CONTENT,MULTITILE,SIGNED_OFFSET_MAP,FLOAT_QUANTIZED_MAP,UNSIGNED_UNAFFECTED}_MECHANICS`, `TEST_2D_OMEZARR_RAW_{GEOMETRY,CONTENT,MULTITILE,SIGNED_SOURCE_DOMAIN,FLOAT_SOURCE_DOMAIN,UINT32_ACCESSOR_CLAMPS_NEGATIVE,UINT32_ACCESSOR_UNSIGNED_EXACT,UINT32_ACCESSOR_NONFINITE}_MECHANICS` |
 | `DICOM_SUPPORT` | `TEST_2D_HU_LOADER_DICOM_{U16,I16}_PRESERVE_MECHANICS`, `TEST_2D_HU_LOADER_DICOM_CT_SMALL_{PRESERVE,BASELINE}_MECHANICS` |
 
 ### B.4 Python tests skipped at runtime
