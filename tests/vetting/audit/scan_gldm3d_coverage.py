@@ -112,10 +112,12 @@ def collect(fam, feat_re):
 
 
 def dump_summary(cov):
+    """The write line counts rows; this family's artifact is read per feature, so say both."""
+    out = [f"{len(cov.features(FAMILY.order))} features"]
     if _DUMPS:
-        return (f"note: {len(_DUMPS)} feature(s) also appear in dump helpers, "
-                f"excluded from coverage")
-    return None
+        out.append(f"note: {len(_DUMPS)} feature(s) also appear in dump helpers, "
+                   f"excluded from coverage")
+    return "\n".join(out)
 
 
 def registered_calls():

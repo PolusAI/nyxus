@@ -131,25 +131,37 @@ def dim_token(dim):
     return {"2D": "2d", "3D": "3d"}.get(dim, "")
 
 
-def pointers(family, dim, oracle):
-    """-> (vetting_report, golden_regen, matrix), each a repo-relative path or ""."""
+def pointers(family, dim, oracles):
+    """-> (vetting_report, golden_regen, matrix), each a repo-relative path or "".
+
+    `oracles` is the row's claimed oracle first, then whatever the tree asserts against. The claim
+    is a preference rather than the key: a family whose oracle DISAGREES with Nyxus deliberately
+    claims none -- 3D gldzm and 3D ngldm both do -- and the report that recorded the disagreement is
+    still the document to read for those rows.
+    """
     d = dim_token(dim)
     stem = f"{family}_{d}" if d else family
 
     report = ""
-    for cand in ([f"{stem}_{oracle}_vetting_report.md"] if oracle else []):
+    for cand in (f"{stem}_{o}_vetting_report.md" for o in oracles if o):
         if os.path.exists(os.path.join(AUDIT, cand)):
             report = f"audit/{cand}"
+            break
+    if not report:
+        # neither side names an oracle. One report for the family x dim is unambiguously the one to
+        # read; several are not, and an arbitrary pick would read as a considered pointer.
+        found = sorted(glob.glob(os.path.join(AUDIT, f"{stem}_*_vetting_report.md")))
+        if len(found) == 1:
+            report = f"audit/{os.path.basename(found[0])}"
 
     regen = f"{stem}_golden_regen.md"
     regen = f"audit/{regen}" if os.path.exists(os.path.join(AUDIT, regen)) else ""
 
-    # matrix files are named by family, with 3D families suffixed rather than separated
-    mat = ""
-    for cand in ([f"{family}3d.md"] if dim == "3D" else []) + [f"{family}.md"]:
-        if os.path.exists(os.path.join(HERE, "matrix", cand)):
-            mat = f"matrix/{cand}"
-            break
+    # matrix files are named by family, with 3D families suffixed rather than separated. A 3D row
+    # never falls back to the 2D file: that file documents the 2D calculator, so an empty cell is
+    # the honest reading of "no 3D matrix exists yet".
+    mat = f"{family}3d.md" if dim == "3D" else f"{family}.md"
+    mat = f"matrix/{mat}" if os.path.exists(os.path.join(HERE, "matrix", mat)) else ""
     return report, regen, mat
 
 
@@ -190,7 +202,9 @@ def build(cov, rows):
         c = cov.get(key)
         f = r["feature"]
         oracle = r["oracle"].strip()
-        report, regen, mat = pointers(r["family"], r["dim"], oracle)
+        # the claimed oracle first, then the tree's, so a row claiming none still reaches its report
+        report, regen, mat = pointers(r["family"], r["dim"],
+                                      [oracle] + (sorted(c.oracles.get(f, ())) if c else []))
         asserted = sorted(c.asserted.get(f, ())) if c else []
         regress = sorted(c.regression.get(f, ())) if c else []
         other = sorted(c.other.get(f, ())) if c else []
@@ -227,16 +241,19 @@ def render_csv(recs):
 
 
 def oracle_matrix(recs):
-    """family x oracle, counting the union of claimed and scanned oracles per (dim, feature).
+    """(dim, family) x oracle, counting the union of claimed and scanned oracles per feature.
 
     The union is the honest count: a feature is often checked against more than one tool, and the
     registry records only the one that PROMOTED it. Counting the promoting oracle alone understates
     every family that corroborates.
+
+    Keyed by dim as well as family: nine family names exist in both dims against different oracles,
+    so merging them puts the 2D vetting and the 3D one in one cell.
     """
     per = collections.defaultdict(lambda: collections.defaultdict(set))
     tools = set()
     for r in recs:
-        fam, feat = r["family"], (r["dim"], r["feature"])
+        fam, feat = (r["dim"], r["family"]), r["feature"]
         got = {t for t in r["scan_oracles"].split(";") if t}
         if r["claim_oracle"]:
             got.add(r["claim_oracle"])
@@ -313,7 +330,8 @@ def render_md(recs):
                   f"cannot be checked against the tree at all.** These families have an",
                   "`audit/<family>_<dim>_coverage.csv`, but nothing regenerates it from the test",
                   "sources, so the artifact records what someone believed rather than what the tree",
-                  "asserts. Writing the five missing scanners is what closes this.", "",
+                  f"asserts. Writing the {len(KNOWN_UNSCANNED)} missing scanners is what closes "
+                  "this.", "",
                   "| dim | family | rows | features | why |", "|---|---|---:|---:|---|"]
         for (d, fam), n in sorted(un.items()):
             why = KNOWN_UNSCANNED.get((d, fam), "**not recorded**")
@@ -323,21 +341,21 @@ def render_md(recs):
     per, tools = oracle_matrix(recs)
     lines += ["", "## Every oracle a feature was matched against", "",
               "The union of the promoting oracle and the oracles the tree asserts against, counted",
-              "per (dim, feature). The registry names only the oracle that PROMOTED a feature, so",
-              "counting that alone understates every family that corroborates.", "",
-              "| family | " + " | ".join(tools) + " | none |",
-              "|---" * (len(tools) + 2) + "|"]
+              "per feature. The registry names only the oracle that PROMOTED a feature, so counting",
+              "that alone understates every family that corroborates.", "",
+              "| dim | family | " + " | ".join(tools) + " | none |",
+              "|---" * (len(tools) + 3) + "|"]
     totals = collections.Counter()
-    for fam in sorted(per):
+    for d, fam in sorted(per):
         cells = []
         for t in tools:
-            n = len(per[fam].get(t, ()))
+            n = len(per[(d, fam)].get(t, ()))
             totals[t] += n
             cells.append(str(n) if n else ".")
-        none = len(per[fam].get("-", ()))
+        none = len(per[(d, fam)].get("-", ()))
         totals["-"] += none
-        lines.append(f"| {fam} | " + " | ".join(cells) + f" | {none or '.'} |")
-    lines.append("| **all** | " + " | ".join(f"**{totals[t]}**" for t in tools)
+        lines.append(f"| {d} | {fam} | " + " | ".join(cells) + f" | {none or '.'} |")
+    lines.append("| | **all** | " + " | ".join(f"**{totals[t]}**" for t in tools)
                  + f" | **{totals['-']}** |")
 
     # by dimensionality. "no oracle assertion" is counted only over SCANNED features -- in an

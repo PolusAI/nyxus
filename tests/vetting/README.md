@@ -49,8 +49,10 @@ visible.
 All twenty run in CI, in one loop, beside `check_coverage.py`, `check_test_names.py` and
 `report_features.py --check`.
 
-Regenerable byproducts (git-ignored, rebuilt by the pipeline): `features.csv`, `audit_scan.txt`,
-`vetting_pivot.csv`, `gap_not_tested.csv`, `gap_claimed_3p.csv`, `gap_regression.csv`. Run
+Regenerable byproducts of the retired pipeline, all git-ignored and all under `audit/`:
+`audit/features.csv`, `audit_scan.txt`, `vetting_pivot.csv`, `gap_not_tested.csv`,
+`gap_claimed_3p.csv`, `gap_regression.csv`. `audit/features.csv` is not the tracked
+`tests/vetting/features.csv` the table above links; the two share a basename and nothing else. Run
 `extract_features.py && scan_tests.py && merge.py && report.py` from this folder to rebuild them
 (and to refresh `vetting_report.csv`).
 
