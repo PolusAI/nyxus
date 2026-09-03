@@ -191,14 +191,18 @@ void test_hu_fpimage_options_reject_malformed_analytic()
     EXPECT_FLOAT_EQ(ok.target_dyn_range(), 1000.0f);
 }
 
-// A slide whose scan found no finite sample at all leaves the recorder with the range it
-// started from. The map must stay usable rather than carrying an infinity into the loaders.
+// The recorder handed the extrema of a scan that measured nothing. Nyxus::
+// record_scanned_intensity_range() settles those to a flat zero range before they get here
+// (see the two cases below it), so this is the recorder's own floor: the seeds are the
+// sentinels the scan starts from -- numeric_limits max / lowest, not the infinities an
+// earlier version of this case used, which happen to be substituted at output and so hid
+// what an unsettled range actually reports. The map must stay usable either way.
 void test_hu_domain_map_nonfinite_slide_range_analytic()
 {
     SlideProps p ("real.tif", "");
     p.fp_phys_pivoxels = true;
-    p.min_preroi_inten = std::numeric_limits<double>::infinity();
-    p.max_preroi_inten = -std::numeric_limits<double>::infinity();
+    p.min_preroi_inten = (std::numeric_limits<double>::max)();
+    p.max_preroi_inten = (std::numeric_limits<double>::lowest)();
     FpImageOptions fpo;
     Nyxus::record_intensity_domain_map (p, fpo);
 
@@ -358,4 +362,60 @@ void test_hu_domain_map_constant_negative_float_analytic()
     EXPECT_DOUBLE_EQ(p.inten_offset, -0.5);
     EXPECT_EQ(p.to_grey_level(-0.5), 0u);
     EXPECT_DOUBLE_EQ(p.to_source_intensity(0.0), -0.5);
+}
+
+// The scan's own guard, ahead of the recorder. A slide with no finite sample in it -- an
+// all-NaN real-valued TIFF, or a montage, which never scans a tile at all -- leaves both
+// extrema on the sentinels they started from, which is the only way the maximum can end up
+// below the minimum. Left there they reach the recorded offset, and the intensity families
+// add that offset back: MIN, MAX and MEAN come out as DBL_MAX, which is finite, so the
+// output sanitizer passes 1.797e308 straight into the dataframe. They also reach
+// COVERED_IMAGE_INTENSITY_RANGE's divisor, which becomes -Inf, and to_grey_level() in both
+// whole-slide workflows, which sets the vROI's grey range for every family -- benign where
+// the recorded offset is the sentinel too and cancels, an undefined conversion of DBL_MAX
+// where it is not (--preserve-hu leaves the offset at 0, the sentinel not being negative).
+// A flat zero range is what such a slide has, and it settles all three consumers.
+void test_hu_scanned_range_degenerate_slide_settles_analytic()
+{
+    SlideProps p ("allnan.tif", "");
+    p.fp_phys_pivoxels = true;
+    Nyxus::record_scanned_intensity_range (p,
+        (std::numeric_limits<double>::max)(),       // slide_I_min, never assigned
+        (std::numeric_limits<double>::lowest)(),    // slide_I_max, never assigned
+        (std::numeric_limits<double>::max)());      // allpix_I_min, never assigned
+
+    EXPECT_DOUBLE_EQ(p.min_preroi_inten, 0.0);
+    EXPECT_DOUBLE_EQ(p.max_preroi_inten, 0.0);
+    EXPECT_DOUBLE_EQ(p.min_allpix_inten, 0.0);
+
+    // and the map that comes out of it is the identity, so nothing is added back on the way out
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+    EXPECT_DOUBLE_EQ(p.inten_scale, 1.0);
+    EXPECT_DOUBLE_EQ(p.inten_offset, 0.0);
+    EXPECT_EQ(p.to_grey_level(0.0), 0u);
+    EXPECT_DOUBLE_EQ(p.to_source_intensity(0.0), 0.0);
+}
+
+// A measured range passes through untouched -- the guard tests for max below min, which a
+// real scan cannot produce. The all-pixel minimum is measured off the whole buffer rather
+// than off the mask, so it survives an empty mask on its own and is settled separately:
+// here the mask covered nothing while the buffer held a CT air value, and that value is what
+// the load-time offset has to be derived from.
+void test_hu_scanned_range_passthrough_analytic()
+{
+    SlideProps p ("ct.nii", "");
+    Nyxus::record_scanned_intensity_range (p, -1024.0, 3071.0, -1024.0);
+    EXPECT_DOUBLE_EQ(p.min_preroi_inten, -1024.0);
+    EXPECT_DOUBLE_EQ(p.max_preroi_inten, 3071.0);
+    EXPECT_DOUBLE_EQ(p.min_allpix_inten, -1024.0);
+
+    SlideProps q ("emptymask.nii", "");
+    Nyxus::record_scanned_intensity_range (q,
+        (std::numeric_limits<double>::max)(),       // no masked voxel reached the extrema
+        (std::numeric_limits<double>::lowest)(),
+        -1024.0);                                   // but every voxel reached this one
+    EXPECT_DOUBLE_EQ(q.min_preroi_inten, 0.0);
+    EXPECT_DOUBLE_EQ(q.max_preroi_inten, 0.0);
+    EXPECT_DOUBLE_EQ(q.min_allpix_inten, -1024.0);
 }

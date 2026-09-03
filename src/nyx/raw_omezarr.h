@@ -3,6 +3,8 @@
 #ifdef OMEZARR_SUPPORT
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include "nlohmann/json.hpp"
 
 // factory functions to create files, groups and datasets
@@ -129,15 +131,21 @@ public:
     {
     }
 
-    // Sub-zero samples clamp to 0 rather than converting, which is undefined for a negative
-    // double: the buffer holds the sample as the file states it, so a signed dataset reaching
-    // this accessor would otherwise convert out of range. The clamp is what makes that safe,
-    // not the fact that only a mask -- non-negative integer labels -- is read through it today.
-    // Both tile loaders clamp the same way before their own cast.
+    // Every sample the unsigned pipeline type cannot hold is clamped or zeroed rather than
+    // converted: the buffer holds the sample as the file states it, and converting a negative,
+    // a non-finite or an above-UINT32_MAX double to an unsigned integer is undefined. A
+    // non-finite sample carries no label to keep, so it takes grey level 0 -- the convention
+    // every load-time map uses; the finite out-of-range ends saturate. The clamps are what make
+    // the accessor safe, not the fact that only a mask -- non-negative integer labels -- is read
+    // through it today. Both tile loaders zero a non-finite sample and clamp below in the same
+    // way before their own cast; the upper clamp is this accessor's alone, since a tile loader
+    // reads intensities through a recorded map rather than raw samples.
     uint32_t get_uint32_pixel (size_t idx) const
     {
         double y = dest[idx];
+        if (! std::isfinite (y)) return 0u;
         if (y < 0.0) y = 0.0;
+        if (y > (double) UINT32_MAX) y = (double) UINT32_MAX;
         return (uint32_t) y;
     }
 

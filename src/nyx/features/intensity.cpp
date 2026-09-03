@@ -117,8 +117,16 @@ void PixelIntensityFeatures::report_in_source_domain (const LR& r, const Dataset
 	// Ratios: same definitions as above, recomputed from the mapped parts. None of them is
 	// invariant, and QCOD and PIU are not even meaningful once intensities can be negative --
 	// which is a property of the measure, not something the domain should hide.
-	// The two quotients take the same zero-denominator convention as the grey-level pass they
-	// are recomputed from, so the mapped and the identity-map paths agree.
+	// The two guarded quotients take the same zero-denominator convention the grey-level pass
+	// takes, so neither path can hand out a NaN. The two need not arrive at the same number,
+	// and should not: an ROI of one intensity is degenerate in grey levels -- MIN, MAX and both
+	// quartiles all land on 0, which is what trips the guard -- and perfectly ordinary in the
+	// slide's own domain, where those parts sit at the offset and each ratio is defined. PIU
+	// there reads 100, which is the honest answer for a uniform ROI. COV is the same story with
+	// no guard on either path: its denominator, the mean, is zero only in grey levels.
+	// Both guards test a sum rather than degeneracy, so a signed ROI symmetric about zero takes
+	// them too. Neither measure is defined on signed intensities anyway, and 0 is a better
+	// answer for one than the infinity the division would produce.
 	val_COV = val_STANDARD_DEVIATION / val_MEAN;
 	val_QCOD = (val_P75 + val_P25) != 0.0 ? (val_P75 - val_P25) / (val_P75 + val_P25) : 0.0;
 	val_UNIFORMITY_PIU = (val_MAX + val_MIN) != 0.0 ? (1.0 - (val_MAX - val_MIN) / (val_MAX + val_MIN)) * 100.0 : 0.0;

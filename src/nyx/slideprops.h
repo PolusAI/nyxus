@@ -159,6 +159,16 @@ namespace Nyxus
 	// Scans segmented slide p.fname_int / p.fname_seg and fills other fields of 'p'
 	bool scan_slide_props (SlideProps & p, int dim, const AnisotropyOptions & aniso, const FpImageOptions & fpo, bool need_annotations);
 
+	// Writes the intensity range a scan measured onto 'p'. A scan that met no finite sample --
+	// an all-NaN real-valued slide, or a montage, which never scans at all -- leaves its extrema
+	// at the sentinels it started from, which is the one way max can end up below min. Such a
+	// slide holds no intensity to describe, so a flat zero range is recorded rather than the
+	// sentinels: they would otherwise reach the recorded map (whose offset the intensity
+	// families add back, reporting DBL_MAX as MIN, MAX and MEAN -- finite, so the output
+	// sanitizer passes it through), the whole-slide vROI's grey-level range via
+	// to_grey_level(), and COVERED_IMAGE_INTENSITY_RANGE's divisor.
+	void record_scanned_intensity_range (SlideProps & p, double slide_I_min, double slide_I_max, double allpix_I_min);
+
 	// Fills p.inten_scale / p.inten_offset with the map the tile loader will apply to this slide.
 	// Reads p.fname_int (the loader is picked from the same extension), p.fp_phys_pivoxels,
 	// p.preserve_hu and the range the scan just measured, so it runs after scan_slide_props().
