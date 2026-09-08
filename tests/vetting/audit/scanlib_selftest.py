@@ -16,6 +16,9 @@ Every case here is a shape that once read as evidence and is not:
   the wrong tool's case under a vetted row         and to the oracle it actually claims
   the feature from one case, the recipe from       one function has to answer the whole row
     another
+  an assertion beside the loop, not about it       the loop variable has to reach the assertion
+  an oracle case under a regression row, with      a row without a test_name still has a kind
+    no test_name to scope it
 
 Each is written twice, once where the feature IS covered and once where the same text stops just
 short of covering it, because a check that only ever sees the passing half is not a check.
@@ -101,6 +104,15 @@ def literals():
         "    for c in cols:\n        print(c)\n    assert frame is not other\n")
     check("a loop that only reads its list is NOT credited",
           scanned(logging, names, py_loop_tables=True)["test_2d_selftest_reach_analytic"], set())
+
+    # and the control one step in: the loop body DOES assert, but about something the loop never
+    # iterates. The asserted name is credited by the ordinary line rule; the list is not.
+    unrelated = LITERALS.replace(
+        "        assert frame[c] == other[c]\n",
+        '        assert frame["PERIMETER"] == other["PERIMETER"]\n')
+    check("an assertion inside the loop that ignores the iterator credits only what it names",
+          scanned(unrelated, names, py_loop_tables=True)["test_2d_selftest_reach_analytic"],
+          {"PERIMETER"})
 
 
 # ---------------------------------------------------------------- helper attribution
@@ -263,6 +275,18 @@ def verdicts():
     blank = dict(row, test_name="")
     check("a row naming no assertion falls back to the feature",
           [rf.verdict_of(blank, cov, vetted)], [("agree", "feature")])
+
+    # ...and that fallback still reads the row's own KIND. A regression row whose feature is
+    # covered only by an oracle case records a drift guard that does not exist, and the union of
+    # the buckets used to call that agreement.
+    mesh = next(r for r in rows
+                if r["dim"] == "3D" and r["feature"] == "3MESH_VOLUME"
+                and r["oracle"].strip() == "mirp")
+    check("the vetted 3D morphology row as it stands",
+          [rf.verdict_of(mesh, cov, vetted)], [("agree", "feature")])
+    check("the same row demoted to a guard nothing guards",
+          [rf.verdict_of(dict(mesh, status="regression", oracle=""), cov, vetted)],
+          [("wrong-kind", "feature")])
 
 
 def main():
