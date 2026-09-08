@@ -1,54 +1,78 @@
-"""OFFLINE MIRP oracle for the 3D GLDZM features, on the segmented phantom.
+"""OFFLINE MIRP oracle for the 3D GLDZM features.
 
     python tests/vetting/oracles/gen_gldzm3d_mirp.py     (from the repository root)
 
-This generator pins nothing, because no 3D GLDZM row is vetted. Its job is to make the measurement
-behind tests/vetting/audit/gldzm_3d_mirp_vetting_report.md reproducible in one command, and to
-establish -- rather than assert -- what the correct answer is.
+Runs MIRP three times and re-verifies everything the tree quotes from it, exiting non-zero on any
+mismatch, on any quoted feature it cannot produce, and on any feature it produces that nothing
+quotes.
 
-It does three things:
+  1. `gldzm3d.mirp_compat_phantom` -- the VETTED cell, and the only one whose numbers are pinned.
+     The GLDZM compatibility phantom this file also builds, read by both tools as grey levels 1..8
+     directly: MIRP with `base_discretisation_method="none"`, Nyxus at `IBSI=true`, which switches
+     the family's binning off. Verified against the pins in tests/test_3d_gldzm_mirp.h.
+  2. `gldzm3d.mirp_fbn64` -- the drift guard's configuration on the segmented phantom, with MIRP
+     discretising the ROI itself at `fixed_bin_number` n=64. The two sides land on different grey
+     levels (below), so this table measures the discretisation gap and NOT the GLDZM.
+  3. `gldzm3d.mirp_samelevels` -- the same fixture with MIRP handed the grey levels Nyxus bins to,
+     so the GLDZM itself is what is compared there too.
 
-  1. Runs MIRP, which implements IBSI GLDZM. PyRadiomics has no GLDZM at all, so MIRP is the only
-     mainstream oracle for this family.
-  2. Recomputes the same 16 features from scratch with an independent implementation: zones are the
-     26-connected components of each discretised grey level, and the distance to the ROI border is
-     a city-block distance transform. This is a different route to the same definition, not a
-     re-derivation of Nyxus' steps (SPEC 5.2), and it reproduces MIRP -- which is what licenses the
-     claim that the definition is reachable and that Nyxus is not computing it.
-  3. Recomputes them once more with Nyxus' straight-ray distance in place of the distance
-     transform, to show that the ray metric is NOT the source of Nyxus' disagreement: it moves the
-     features by well under a percent.
+Runs 2 and 3 pin nothing. The artifact they feed is ../audit/gldzm_3d_mirp_vetting_report.md, and
+that is what this generator checks them against.
 
-Recipe `gldzm3d.mirp_fbn64`: the segmented phantom (tests/data/nifti/phantoms/ut_inten.nii +
-ut_mask57.nii, label 57) at native 1x1x1 spacing, `by_slice=False`, fixed_bin_number with 64 bins.
-On the Nyxus side that is GREYDEPTH=64 with IBSI=false, which is what test_3d_gldzm_regression.h
-sets, so the two are binned alike and the comparison is config-matched.
+MIRP is the only mainstream oracle for this family: PyRadiomics implements no GLDZM at all.
 
-Provenance: tool=mirp 2.6.0 (numpy 2.4.6, scipy 1.17.1, Python 3.11); env=nyxus_mirp (conda-forge:
+3GLDZM_GLM (grey level mean) and 3GLDZM_ZDM (zone distance mean) have no MIRP counterpart at any
+recipe -- its GLDZM emits no dzm_gl_mean / dzm_zd_mean column and IBSI defines neither -- so they
+cannot be vetted here and stay drift guards.
+
+THE COMPATIBILITY PHANTOM IS BUILT HERE. `--write-phantom` writes
+tests/data/nifti/{compat_int/compat_int_gldzm_3d.nii, compat_seg/compat_seg_gldzm_3d.nii}; every
+other run rebuilds the same volumes in memory and fails if the checked-in files differ from them, so
+the fixture cannot drift away from the rule that describes it. The rule, and what each of its three
+choices separates, is in tests/test_3d_gldzm_common.h beside the phantom's accessor.
+
+NIFTI WITHOUT A NIFTI LIBRARY: the mirp env has neither SimpleITK nor nibabel. The phantoms are
+uncompressed single-file NIfTI-1 (magic "n+1"), so the header is parsed and written directly below
+and the generator stays single-env. Same approach as gen_ngldm3d_mirp.py.
+
+Provenance of the run behind the pins and the report -- the printed header names whatever mirp is
+actually installed, so a run under another version says so rather than repeating this line:
+tool=mirp 2.6.0 (numpy 2.4.6, Python 3.11); env=nyxus_mirp (conda-forge:
 `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy scipy`);
 generator=tests/vetting/oracles/gen_gldzm3d_mirp.py. Run offline; CI never invokes it.
 """
 import logging
 import os
+import re
 import sys
+from importlib import metadata
 
 import numpy as np
-from scipy import ndimage
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 TESTS = os.path.dirname(os.path.dirname(HERE))
-PHANTOMS = os.path.join(TESTS, "data", "nifti", "phantoms")
+DATA = os.path.join(TESTS, "data", "nifti")
+PHANTOMS = os.path.join(DATA, "phantoms")
 INTEN = os.path.join(PHANTOMS, "ut_inten.nii")
 MASK = os.path.join(PHANTOMS, "ut_mask57.nii")
+COMPAT_INTEN = os.path.join(DATA, "compat_int", "compat_int_gldzm_3d.nii")
+COMPAT_MASK = os.path.join(DATA, "compat_seg", "compat_seg_gldzm_3d.nii")
+HEADER = os.path.join(TESTS, "test_3d_gldzm_mirp.h")
+REPORT = os.path.join(TESTS, "vetting", "audit", "gldzm_3d_mirp_vetting_report.md")
 
 LABEL = 57
 NBINS = 64
-SUFFIX = f"_3d_fbn_n{NBINS}"
-RELTOL = 1e-9
 
-NIFTI_DTYPE = {2: np.uint8, 4: np.int16, 8: np.int32, 16: np.float32, 64: np.float64}
+# The header pins MIRP's values in full, so they are held to the exact tier the assertions use.
+PIN_RELTOL = 1e-12
+# The report quotes its comparison to six significant figures, so that is the precision the
+# re-verification can hold it to. It is a staleness check on a published table, not a vetting band.
+REPORT_RELTOL = 1e-5
 
-# Nyxus feature -> MIRP GLDZM column stem.
+# Nyxus feature -> MIRP GLDZM column stem. MIRP suffixes every column with the dimensionality and
+# the discretisation it was computed at (`_3d_fbn_n64` when it discretises, `_3d` when it does not),
+# so match on the stem and assert the suffix separately -- otherwise a changed bin count silently
+# reads a column from another config.
 MIRP = {
     "3GLDZM_SDE": "dzm_sde",
     "3GLDZM_LDE": "dzm_lde",
@@ -68,8 +92,43 @@ MIRP = {
     "3GLDZM_ZDE": "dzm_zd_entr",
 }
 
-# No MIRP counterpart and no IBSI definition: MIRP emits no dzm_gl_mean or dzm_zd_mean.
-NO_COUNTERPART = ("3GLDZM_GLM", "3GLDZM_ZDM")
+SUFFIX_NONE = "_3d"                     # MIRP drops the discretisation stem when there is none
+SUFFIX_FBN = "_3d_fbn_n%d" % NBINS
+
+NIFTI_DTYPE = {2: np.uint8, 4: np.int16, 8: np.int32, 16: np.float32, 64: np.float64,
+               768: np.uint32}
+
+# --- the compatibility phantom -------------------------------------------------------------------
+
+VOL = 16        # volume side
+MARGIN = 2      # background voxels on every side
+CUBE = 12       # the ROI cube's side, an exact number of bricks
+BRICK = 2
+NOTCH = 3       # bricks cut out of the cube's low corner, in each axis
+IMPLANT = (3, 3, 3)
+
+
+def build_compat_phantom():
+    """-> (intensities, mask), both shaped (z,y,x).
+
+    A 12x12x12 cube of 2x2x2 bricks with a 6x6x6 corner cut out of it, inside a two-voxel background
+    margin. A brick's grey level is 1 + 4*(bz%2) + 2*(by%2) + (bx%2) over its brick coordinates,
+    except the brick at (3,3,3), which carries 1 instead of the 8 that rule gives it.
+    """
+    inten = np.zeros((VOL, VOL, VOL), np.float32)
+    mask = np.zeros((VOL, VOL, VOL), np.uint32)
+    for bz in range(CUBE // BRICK):
+        for by in range(CUBE // BRICK):
+            for bx in range(CUBE // BRICK):
+                if bz < NOTCH and by < NOTCH and bx < NOTCH:
+                    continue
+                level = 1 + (bz % 2) * 4 + (by % 2) * 2 + (bx % 2)
+                if (bz, by, bx) == IMPLANT:
+                    level = 1
+                z, y, x = (MARGIN + b * BRICK for b in (bz, by, bx))
+                inten[z:z + BRICK, y:y + BRICK, x:x + BRICK] = level
+                mask[z:z + BRICK, y:y + BRICK, x:x + BRICK] = LABEL
+    return inten, mask
 
 
 def read_nifti(path):
@@ -77,175 +136,273 @@ def read_nifti(path):
     with open(path, "rb") as fh:
         raw = fh.read()
     if int(np.frombuffer(raw, np.int32, 1, 0)[0]) != 348 or raw[344:347] != b"n+1":
-        raise RuntimeError(f"{path} is not an uncompressed single-file NIfTI-1")
+        raise RuntimeError(path + " is not an uncompressed single-file NIfTI-1")
     dim = np.frombuffer(raw, np.int16, 8, 40)
     datatype = int(np.frombuffer(raw, np.int16, 1, 70)[0])
     pixdim = np.frombuffer(raw, np.float32, 8, 76)
     vox_offset = int(np.frombuffer(raw, np.float32, 1, 108)[0])
     if datatype not in NIFTI_DTYPE:
-        raise RuntimeError(f"{path}: unsupported NIfTI datatype {datatype}")
+        raise RuntimeError("%s: unsupported NIfTI datatype %d" % (path, datatype))
     nx, ny, nz = int(dim[1]), int(dim[2]), int(dim[3])
     vol = np.frombuffer(raw, NIFTI_DTYPE[datatype], nx * ny * nz, vox_offset).reshape((nz, ny, nx))
     return vol, (float(pixdim[3]), float(pixdim[2]), float(pixdim[1]))
 
 
-def discretise(inten, mask):
-    """fixed_bin_number: levels 1..NBINS over the ROI's own range."""
-    v = inten[mask].astype(np.float64)
-    lo, hi = v.min(), v.max()
-    b = np.floor((v - lo) / (hi - lo) * NBINS).astype(np.int32) + 1
-    b[b > NBINS] = NBINS
-    out = np.zeros(inten.shape, np.int32)
-    out[mask] = b
-    return out
+def write_nifti(path, vol, datatype):
+    """Writes 'vol' as an uncompressed single-file NIfTI-1 at 1x1x1 spacing."""
+    nz, ny, nx = vol.shape
+    hdr = bytearray(352)
+    hdr[0:4] = np.array([348], np.int32).tobytes()
+    hdr[40:56] = np.array([3, nx, ny, nz, 1, 1, 1, 1], np.int16).tobytes()
+    hdr[70:72] = np.array([datatype], np.int16).tobytes()
+    hdr[72:74] = np.array([32], np.int16).tobytes()
+    hdr[76:108] = np.array([0, 1, 1, 1, 1, 1, 1, 1], np.float32).tobytes()
+    hdr[108:112] = np.array([352.0], np.float32).tobytes()
+    hdr[148:228] = b"nyxus 3d gldzm compatibility phantom".ljust(80, b"\0")
+    hdr[254:256] = np.array([1], np.int16).tobytes()               # sform_code
+    hdr[280:296] = np.array([1, 0, 0, 0], np.float32).tobytes()    # srow_x
+    hdr[296:312] = np.array([0, 1, 0, 0], np.float32).tobytes()    # srow_y
+    hdr[312:328] = np.array([0, 0, 1, 0], np.float32).tobytes()    # srow_z
+    hdr[344:348] = b"n+1\0"
+    with open(path, "wb") as fh:
+        fh.write(bytes(hdr))
+        fh.write(vol.tobytes())
 
 
-def ray_distance(mask):
-    """Nyxus' metric: walk each of the 6 axis rays until it leaves the ROI, take the shortest."""
-    d = np.full(mask.shape, 1 << 30, np.int64)
-    for axis in range(3):
-        for direction in (1, -1):
-            m = np.moveaxis(mask, axis, 0)
-            if direction == -1:
-                m = m[::-1]
-            run = np.zeros(m.shape[1:], np.int64)
-            acc = np.empty(m.shape, np.int64)
-            for i in range(m.shape[0]):
-                run = np.where(m[i], run + 1, 0)
-                acc[i] = run
-            if direction == -1:
-                acc = acc[::-1]
-            d = np.minimum(d, np.moveaxis(acc, 0, axis))
-    return d
+def check_compat_phantom(write):
+    """Writes the phantom, or checks the checked-in files still hold what the rule produces."""
+    inten, mask = build_compat_phantom()
+    roi = mask == LABEL
+    levels = sorted(int(v) for v in np.unique(inten[roi]))
+    print("# compat phantom %s, roi %d voxels, grey levels %s"
+          % (inten.shape, int(roi.sum()), levels))
+    if write:
+        write_nifti(COMPAT_INTEN, inten, 16)
+        write_nifti(COMPAT_MASK, mask, 768)
+        print("# wrote " + COMPAT_INTEN)
+        print("# wrote " + COMPAT_MASK)
+        return inten, mask, 0
 
-
-def gldzm_features(binned, distance, n_roi):
-    """IBSI GLDZM from 26-connected zones and the given distance-to-border map."""
-    struct = np.ones((3, 3, 3), dtype=bool)          # 26-connectivity
-    zones = []
-    for g in range(1, NBINS + 1):
-        sel = binned == g
-        if not sel.any():
-            continue
-        lab, n = ndimage.label(sel, structure=struct)
-        if n == 0:
-            continue
-        idx = range(1, n + 1)
-        mins = ndimage.minimum(distance, lab, index=idx)
-        for dmin in np.atleast_1d(mins):
-            zones.append((g, int(dmin)))
-
-    Nd = max(z[1] for z in zones)
-    P = np.zeros((NBINS, Nd), dtype=np.float64)
-    for g, dmin in zones:
-        P[g - 1, dmin - 1] += 1.0
-
-    Ns = P.sum()
-    p = P / Ns
-    g = np.arange(1, NBINS + 1)
-    d = np.arange(1, Nd + 1)
-    gi, di = g[:, None], d[None, :]
-    Mg, Md = p.sum(axis=1), p.sum(axis=0)
-    mu_g, mu_d = (Mg * g).sum(), (Md * d).sum()
-    nz = p[p > 0]
-    return len(zones), {
-        "dzm_sde": (Md / d ** 2).sum(),
-        "dzm_lde": (Md * d ** 2).sum(),
-        "dzm_lgze": (Mg / g ** 2).sum(),
-        "dzm_hgze": (Mg * g ** 2).sum(),
-        "dzm_sdlge": (p / (gi ** 2 * di ** 2)).sum(),
-        "dzm_sdhge": (p * gi ** 2 / di ** 2).sum(),
-        "dzm_ldlge": (p * di ** 2 / gi ** 2).sum(),
-        "dzm_ldhge": (p * gi ** 2 * di ** 2).sum(),
-        "dzm_glnu": (P.sum(axis=1) ** 2).sum() / Ns,
-        "dzm_glnu_norm": (Mg ** 2).sum(),
-        "dzm_zdnu": (P.sum(axis=0) ** 2).sum() / Ns,
-        "dzm_zdnu_norm": (Md ** 2).sum(),
-        "dzm_z_perc": Ns / n_roi,
-        "dzm_gl_var": (Mg * (g - mu_g) ** 2).sum(),
-        "dzm_zd_var": (Md * (d - mu_d) ** 2).sum(),
-        "dzm_zd_entr": -(nz * np.log2(nz)).sum(),
-    }
-
-
-def run_mirp(inten, mask, spacing):
-    import mirp
-    logging.disable(logging.INFO)
-    res = mirp.extract_features(
-        image=inten.astype(np.float64), mask=mask.astype(np.int32),
-        image_spacing=spacing,
-        by_slice=False,
-        base_feature_families="gldzm",
-        base_discretisation_method="fixed_bin_number",
-        base_discretisation_n_bins=NBINS,
-    )
-    df = res[0] if isinstance(res, list) else res
-    row = df.iloc[0]
-    out = {}
-    for stem in set(MIRP.values()):
-        col = stem + SUFFIX
-        if col not in df.columns:
-            raise RuntimeError(f"MIRP produced no {col}; dzm columns present: "
-                               f"{sorted(c for c in df.columns if c.startswith('dzm_'))}")
-        out[stem] = float(row[col])
-    return out
-
-
-def compare(title, ref, got, tol):
-    print(f"\n=== {title} ===")
-    print("%-16s %20s %20s %12s" % ("mirp column", "mirp", "computed", "rel"))
-    worst, bad = 0.0, 0
-    for stem in sorted(ref):
-        a, b = ref[stem], got[stem]
-        denom = max(abs(a), abs(b))
-        rel = 0.0 if denom == 0 else abs(a - b) / denom
-        worst = max(worst, rel)
-        flag = "" if rel <= tol else "   <-- differs"
-        if rel > tol:
+    bad = 0
+    for path, want in ((COMPAT_INTEN, inten), (COMPAT_MASK, mask)):
+        name = os.path.basename(path)
+        if not os.path.exists(path):
+            print("  FAIL %s is missing; rerun with --write-phantom" % name)
             bad += 1
-        print("%-16s %20.12g %20.12g %12.3e%s" % (stem, a, b, rel, flag))
-    print("worst rel = %.3e over %d features" % (worst, len(ref)))
-    return worst, bad
+            continue
+        got = read_nifti(path)[0]
+        if got.shape != want.shape or not np.array_equal(got, want.astype(got.dtype)):
+            print("  FAIL %s does not hold what build_compat_phantom() produces" % name)
+            bad += 1
+        else:
+            print("  OK   %s is what build_compat_phantom() produces" % name)
+    return inten, mask, bad
+
+
+# --- the grey levels Nyxus reaches on the segmented phantom --------------------------------------
+
+def nyxus_grey_levels(inten, mask, roi_max):
+    """-> the volume of grey levels Nyxus' GREYDEPTH=64 binning produces, off-ROI voxels at 0.
+
+    Two steps, both Nyxus-side and both visible in its output: the loader shifts every voxel by the
+    volume minimum, and the family's MATLAB-style binning maps i to floor(64 * i / ROI max) + 1,
+    clipped into [1, 64]. Handing the result to MIRP with the discretisation switched off is what
+    makes the samelevels run comparable.
+    """
+    # widen before subtracting: NIfTI datatype 4 is int16, and a volume spanning more than 32767
+    # would wrap in the file's own dtype and stop reproducing Nyxus' binning
+    shifted = inten.astype(np.int64) - int(inten.min())
+    levels = np.floor(NBINS * shifted.astype(np.float64) / float(roi_max)) + 1.0
+    levels = np.clip(levels, 1.0, float(NBINS))
+    return np.where(mask, levels, 0.0)
+
+
+# --- verification --------------------------------------------------------------------------------
+
+def parse_header_pins():
+    """-> {feature: pinned MIRP value} from gldzm_3d_mirp_ref_vals in test_3d_gldzm_mirp.h.
+
+    Counts braces rather than matching a non-greedy body, which would swallow the last entry's
+    closing brace and silently drop it.
+    """
+    txt = open(HEADER, encoding="utf-8", errors="replace").read()
+    at = txt.index("gldzm_3d_mirp_ref_vals")
+    at = txt.index("{", at)
+    depth, end = 0, None
+    for i in range(at, len(txt)):
+        if txt[i] == "{":
+            depth += 1
+        elif txt[i] == "}":
+            depth -= 1
+            if depth == 0:
+                end = i
+                break
+    if end is None:
+        raise RuntimeError("gldzm_3d_mirp_ref_vals is not brace-balanced")
+    rows = re.findall(r'\{\s*"(3GLDZM_[A-Z0-9_]+)"\s*,\s*([-0-9.eE+]+)\s*\}', txt[at:end + 1])
+    if not rows:
+        raise RuntimeError("no pins found in gldzm_3d_mirp_ref_vals")
+    return dict((n, float(v)) for n, v in rows)
+
+
+def parse_report(txt, heading):
+    """-> {feature: MIRP value} from the comparison table under `heading`.
+
+    Rows look like | `3GLDZM_GLNU` | 1349.4 | 1433.45 | 0.94x | -- Nyxus, MIRP, ratio. Only the MIRP
+    column is this generator's to verify; the Nyxus column is the program's own output and the ratio
+    is derived from the two. The report carries one such table per run, so the section is located
+    first and the search stops at the next heading of the same level.
+    """
+    m = re.search("^" + re.escape(heading) + r"\s*$", txt, re.M)
+    if not m:
+        raise RuntimeError("no %r section in %s" % (heading, os.path.basename(REPORT)))
+    rest = txt[m.end():]
+    nxt = re.search(r"^##\s", rest, re.M)
+    section = rest[: nxt.start()] if nxt else rest
+    rows = re.findall(
+        r"^\|\s*`(3GLDZM_[A-Z0-9_]+)`\s*\|\s*[-0-9.eE+]+\s*\|\s*([-0-9.eE+]+)\s*\|",
+        section, re.M)
+    if not rows:
+        raise RuntimeError("no comparison rows under %r in %s"
+                           % (heading, os.path.basename(REPORT)))
+    return dict((n, float(v)) for n, v in rows)
+
+
+def verify(got, quoted, what, tol):
+    """-> (n verified, n failed, n unproducible, [unquoted]) for one table of quoted values."""
+    print("\n# verifying the %d MIRP values quoted in %s against this run, at rel<=%g"
+          % (len(quoted), what, tol))
+    nok = nfail = nmiss = 0
+    for name in sorted(quoted):
+        want = quoted[name]
+        if name not in got:
+            print("  MISSING %s: %s quotes %r but MIRP reports no counterpart" % (name, what, want))
+            nmiss += 1
+            continue
+        have = got[name]
+        rel = abs(have - want) / max(abs(want), 1e-12)
+        if rel <= tol:
+            print("  OK   %s: mirp=%r quoted=%r rel=%.3g" % (name, have, want, rel))
+            nok += 1
+        else:
+            print("  FAIL %s: mirp=%r quoted=%r rel=%.3g" % (name, have, want, rel))
+            nfail += 1
+
+    # the reverse direction: a feature this run produces that nothing quotes
+    unquoted = sorted(set(got) - set(quoted))
+    for name in unquoted:
+        print("  UNQUOTED %s: MIRP reports %r and %s does not quote it" % (name, got[name], what))
+    return nok, nfail, nmiss, unquoted
 
 
 def main():
+    write = "--write-phantom" in sys.argv[1:]
     for p in (INTEN, MASK):
         if not os.path.exists(p):
-            print(f"missing phantom: {p}")
+            print("missing phantom: " + p)
             return 1
 
+    compat_inten, compat_mask, bad_phantom = check_compat_phantom(write)
+    if write:
+        return 0
+
+    import mirp
+    logging.disable(logging.INFO)
+
+    def features(image, mask, spacing, suffix, **discretisation):
+        res = mirp.extract_features(
+            image=image, mask=mask, image_spacing=spacing,
+            by_slice=False, base_feature_families="gldzm", **discretisation)
+        df = res[0] if isinstance(res, list) else res
+        row = df.iloc[0]
+        out = {}
+        for nyx, stem in MIRP.items():
+            col = stem + suffix
+            if col not in df.columns:
+                raise RuntimeError("MIRP produced no %s (for %s); dzm columns present: %s"
+                                   % (col, nyx,
+                                      sorted(c for c in df.columns if c.startswith("dzm_"))))
+            out[nyx] = float(row[col])
+        return out
+
+    compat = features(compat_inten.astype(np.float64),
+                      (compat_mask == LABEL).astype(np.int32),
+                      (1.0, 1.0, 1.0), SUFFIX_NONE, base_discretisation_method="none")
+
     inten, spacing = read_nifti(INTEN)
-    mask = read_nifti(MASK)[0] == LABEL
-    n_roi = int(mask.sum())
-    print(f"# volume {inten.shape}, roi voxels {n_roi}, spacing zyx {spacing}")
-    print(f"# mirp 2.6.0, label={LABEL}, by_slice=False, fixed_bin_number n={NBINS}")
+    roi = read_nifti(MASK)[0] == LABEL
+    m32 = roi.astype(np.int32)
+    shifted_roi_max = int((inten.astype(np.int64) - int(inten.min()))[roi].max())
+    print("# segmented phantom %s, roi %d voxels, spacing zyx %s"
+          % (inten.shape, int(roi.sum()), spacing))
 
-    binned = discretise(inten, mask)
-    dt = ndimage.distance_transform_cdt(mask, metric="taxicab").astype(np.int64)
-    rd = ray_distance(mask)
-    print("# distance to border, over ROI voxels: "
-          f"transform mean {dt[mask].mean():.4f} max {dt[mask].max()}, "
-          f"straight-ray mean {rd[mask].mean():.4f} max {rd[mask].max()}")
+    levels = nyxus_grey_levels(inten, roi, shifted_roi_max)
+    lv = levels[roi]
+    span = (int(lv.min()), int(lv.max()), int(np.unique(lv).size))
+    print("# nyxus grey levels over the roi: %d-%d, %d distinct; mirp fixed_bin_number n=%d "
+          "spreads the same roi over 1-%d" % (span[0], span[1], span[2], NBINS, NBINS))
 
-    oracle = run_mirp(inten, mask, spacing)
+    fbn = features(inten.astype(np.float64), m32, spacing, SUFFIX_FBN,
+                   base_discretisation_method="fixed_bin_number",
+                   base_discretisation_n_bins=NBINS)
+    same = features(levels, m32, spacing, SUFFIX_NONE, base_discretisation_method="none")
 
-    n_dt, f_dt = gldzm_features(binned, dt, n_roi)
-    worst_dt, bad_dt = compare(
-        f"26-connected zones + city-block distance transform ({n_dt} zones)", oracle, f_dt, RELTOL)
+    try:
+        version = metadata.version("mirp")       # mirp exposes no __version__
+    except metadata.PackageNotFoundError:
+        version = "unknown"
 
-    n_rd, f_rd = gldzm_features(binned, rd, n_roi)
-    compare(f"the same, with Nyxus' straight-ray distance ({n_rd} zones)", oracle, f_rd, 5e-2)
+    # the installed mirp, read from the distribution rather than written in: this line is the
+    # provenance of the values printed below it, so a run under another version has to say so.
+    print("# mirp %s, numpy %s, label=%d, by_slice=False" % (version, np.__version__, LABEL))
+    for title, got, suffix in (("gldzm3d.mirp_compat_phantom", compat, SUFFIX_NONE),
+                               ("gldzm3d.mirp_fbn64", fbn, SUFFIX_FBN),
+                               ("gldzm3d.mirp_samelevels", same, SUFFIX_NONE)):
+        print("\n# " + title)
+        for name in sorted(got):
+            print(('\t{"%s", %r},' % (name, got[name])).ljust(56)
+                  + "// " + MIRP[name] + suffix)
+    print("\n# no MIRP counterpart at any recipe: 3GLDZM_GLM, 3GLDZM_ZDM")
 
-    print("\n# no MIRP or IBSI counterpart, cannot be vetted here: " + ", ".join(NO_COUNTERPART))
+    nok = nmiss = 0
+    nfail = bad_phantom
+    unquoted = []
+    a, b, c, d = verify(compat, parse_header_pins(), "test_3d_gldzm_mirp.h", PIN_RELTOL)
+    nok += a
+    nfail += b
+    nmiss += c
+    unquoted += d
 
-    if bad_dt:
-        print(f"\nFAILED: the independent implementation does not reproduce MIRP "
-              f"({bad_dt} feature(s) above rel={RELTOL})")
+    if not os.path.exists(REPORT):
+        print("\n# %s is missing -- there is nothing the two segmented-phantom runs can be "
+              "checked against, which is a failure, not a pass" % os.path.basename(REPORT))
         return 1
-    print(f"\nALL CHECKS PASSED: the independent implementation reproduces MIRP to "
-          f"rel={worst_dt:.1e}, so the IBSI GLDZM definition is reachable on this fixture.")
+    txt = open(REPORT, encoding="utf-8", errors="replace").read()
+    for heading, got in (("## Result at `gldzm3d.mirp_fbn64` -- MIRP discretises", fbn),
+                         ("## Result at `gldzm3d.mirp_samelevels` -- the same grey levels", same)):
+        a, b, c, d = verify(got, parse_report(txt, heading), heading.split("`")[1], REPORT_RELTOL)
+        nok += a
+        nfail += b
+        nmiss += c
+        unquoted += d
+
+    # the grey-level span is the report's explanation of the fbn64 gap, so it is checked too
+    span_txt = "%d-%d, %d distinct" % span
+    if span_txt not in txt:
+        print("\nFAIL grey-level span: this run measures %s, which the report does not state"
+              % span_txt)
+        nfail += 1
+    else:
+        print("\nOK   grey-level span: report states " + span_txt)
+
+    print("\n%d verified, %d failed, %d unproducible, %d unquoted"
+          % (nok, nfail, nmiss, len(unquoted)))
+    if nfail or nmiss or unquoted:
+        print("SOME CHECKS FAILED -- the tree is out of step with the tool")
+        return 1
+    print("ALL CHECKS PASSED")
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    raise SystemExit(main())

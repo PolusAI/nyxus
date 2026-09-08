@@ -633,23 +633,47 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   so the divergence is reproducible and so the promotion can be re-run against a fixed
   implementation. `3NGLDM_GLM` and `3NGLDM_DCM` have no MIRP counterpart at all.
 
+## gldzm3d.mirp_compat_phantom
+- The GLDZM compatibility phantom (`compat_int/compat_int_gldzm_3d.nii` +
+  `compat_seg/compat_seg_gldzm_3d.nii`, label 57) at `IBSI=true`, which switches the family's
+  binning off, so the phantom's voxel values 1..8 are the grey levels. Oracle: `mirp` 2.6.0
+  (`by_slice=False`, `base_discretisation_method="none"`). Generator: `oracles/gen_gldzm3d_mirp.py`.
+  Used by `test_3d_gldzm_mirp.h`.
+- **Neither side discretises, so the two grey-level scales cannot disagree.** That is the whole
+  reason this recipe exists rather than one on `bench_ut57_3d`: a `fixed_bin_number` comparison on a
+  CT-like fixture measures the discretisation gap and not the GLDZM (`gldzm3d.mirp_fbn64` below).
+- The phantom is constructed so that each of the family's three definition choices is separated -
+  the ROI mask, 26-connectivity and the city-block distance transform. `benchmarks.md` and
+  `audit/gldzm_3d_mirp_vetting_report.md` carry the construction and the negative controls.
+- `3GLDZM_GLM` and `3GLDZM_ZDM` are not backed here: MIRP emits no `dzm_gl_mean` / `dzm_zd_mean`
+  column and IBSI defines neither.
+
 ## gldzm3d.regression_ut_phantom
 - The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at
   `GREYDEPTH=64`, `IBSI=false`. **No oracle** - pinned Nyxus output as drift guards in
   `test_3d_gldzm_regression.h`, at full `%.17g` precision and `rel=1e-9`.
-- The pins are a change detector, not an endorsement: at this recipe Nyxus disagrees with MIRP on
-  every one of the 16 features MIRP computes. See `gldzm3d.mirp_fbn64` below.
+- This is the family's default mode, and it cannot be compared with MIRP: the two tools do not
+  discretise this ROI alike. See `gldzm3d.mirp_fbn64` below. The vetting the family does have is at
+  `gldzm3d.mirp_compat_phantom` above.
 
 ## gldzm3d.mirp_fbn64
-- The same phantom and binning through MIRP 2.6.0: `by_slice=False`,
-  `base_discretisation_method="fixed_bin_number"`, `base_discretisation_n_bins=64` - the same 64
-  grey levels the Nyxus side uses, so the two are directly comparable. Generator
+- The same phantom through MIRP 2.6.0: `by_slice=False`,
+  `base_discretisation_method="fixed_bin_number"`, `base_discretisation_n_bins=64`. Generator
   `oracles/gen_gldzm3d_mirp.py`.
-- **Referenced but not asserted against.** No registry row is vetted at this recipe: Nyxus'
-  disagreement reaches 67x, and the generator shows why it is a defect rather than a convention -
-  an independent implementation with 26-connected zones and a city-block distance transform
-  reproduces MIRP to rel=3.2e-16 on the same fixture. `3GLDZM_GLM` and `3GLDZM_ZDM` have no MIRP
-  counterpart at all.
+- **Referenced but not asserted against, and it cannot be.** The two sides land on different grey
+  levels - MIRP spreads the ROI over 1-64, Nyxus' `GREYDEPTH=64` binning lands it on 22-64, 43 of
+  them distinct - so the residual measures the binning rather than the GLDZM. The shape of the
+  residual says so: the grey-level-weighted features are the ones far from 1 and `GLNU`, which
+  weights nothing by grey level, is 0.94x. `matrix/gldzm3d.md` records the cell INVALID.
+
+## gldzm3d.mirp_samelevels
+- The same phantom with MIRP handed the grey levels Nyxus bins to and told
+  `base_discretisation_method="none"`, so both compute the GLDZM over identical levels. Generator
+  `oracles/gen_gldzm3d_mirp.py`.
+- **Referenced but not asserted against.** It takes a MIRP invocation the Nyxus command line has no
+  counterpart for, so it is a measurement rather than a configuration a user can reach. What it
+  establishes is that the agreement at `gldzm3d.mirp_compat_phantom` is not an artifact of that
+  phantom's size: on a 274,432-voxel ROI the worst residual is rel=1.0e-14.
 
 ## ngtdm3d.pyradiomics_binwidth1
 - The 4x4x3 NGTDM phantom (`compat_int/compat_int_ngtdm_3d.nii` +

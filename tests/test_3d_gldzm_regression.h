@@ -1,72 +1,60 @@
 #pragma once
 
-#include <gtest/gtest.h>
-#include <iomanip>
-#include <tuple>
-#include "../src/nyx/environment.h"           // Environment
-#include "../src/nyx/feature_settings.h"      // Fsettings, NyxSetting
-#include "../src/nyx/featureset.h"            // Nyxus::Feature3D
-#include "../src/nyx/globals.h"               // clear_slide_rois, gatherRoisMetrics_3D, scanTrivialRois_3D, allocateTrivialRoisBuffers_3D
-#include "../src/nyx/roi_cache.h"             // LR
-#include "../src/nyx/slideprops.h"            // SlideProps, scan_slide_props
-#include "../src/nyx/features/3d_gldzm.h"     // D3_GLDZM_feature
-#include "../src/nyx/helpers/fsystem.h"       // fs::exists
-#include "test_main_nyxus.h"                  // agrees_gt
-#include "test_ref_vals.h"                    // ref_vals_map, and the <string> / <vector> it already includes
-
-// 3D GLDZM drift guards. These are NOT oracle values and this family is NOT vetted: every row in
-// oracle_coverage.csv is status=regression, and passing these establishes nothing (SPEC 1).
+// 3D GLDZM drift guards on bench_ut57_3d, the family's default-mode configuration.
 //
-// PROVENANCE: pinned Nyxus output on tests/data/nifti/phantoms/ut_inten.nii + ut_mask57.nii,
-// label 57, at GREYDEPTH=64 and IBSI=false -- the settings the helper below applies. Recorded at
-// full %.17g precision so the guard detects movement rather than absorbing it: a pin rounded to a
-// few significant figures spends most of its band before the test starts.
+// These are NOT oracle values: they are pinned Nyxus output on tests/data/nifti/phantoms/ut_inten.nii
+// + ut_mask57.nii, label 57, at GREYDEPTH=64 and IBSI=false, and passing them establishes nothing
+// (SPEC 1). Recorded at full %.17g precision so the guard detects movement rather than absorbing it.
 //
-// WHAT THESE VALUES ARE NOT. MIRP implements IBSI GLDZM (PyRadiomics has no GLDZM at all) and
-// disagrees with every one of the 16 features it computes, several by more than an order of
-// magnitude -- LDE 314.01 against 11.23, ZDV 79.72 against 3.25, LDHGLE 734618 against 10882. The
-// disagreement is not a tolerance question: an independent implementation that grows zones with
-// 26-connectivity and measures distance with a city-block distance transform reproduces MIRP to
-// ratio 1.0000 on 14 of 16 features, so the definition MIRP computes is reachable and Nyxus is not
-// computing it. tests/vetting/audit/gldzm_3d_mirp_vetting_report.md carries the measurements and
-// the three defects behind them.
+// The family IS vetted, at a different configuration: test_3d_gldzm_mirp.h pins MIRP on the
+// compatibility phantom at IBSI=true, where the two tools read the same grey levels and agree to an
+// absolute 5.7e-15. This configuration cannot be compared with MIRP because the two sides do not
+// discretise alike -- MIRP's fixed_bin_number spreads this ROI over levels 1-64 and Nyxus' GREYDEPTH
+// binning lands it on 22-64, 43 of them distinct. That gap is a property of the binning, not of the
+// GLDZM, and it is the same one every Nyxus texture family meets on a CT-like fixture;
+// tests/vetting/audit/gldzm_3d_mirp_vetting_report.md sizes it on this phantom.
 //
-// So these pins are a change detector for the eventual fix, not an endorsement. Do not promote any
-// row to status=vetted on the strength of them.
+// 3GLDZM_GLM and 3GLDZM_ZDM are pinned here and nowhere else: MIRP emits no dzm_gl_mean or
+// dzm_zd_mean column and IBSI defines neither, so no oracle reaches them at any configuration.
 //
-// 3GLDZM_GLM and 3GLDZM_ZDM have no counterpart in MIRP or IBSI at all (MIRP emits no dzm_gl_mean
-// or dzm_zd_mean), so they stay regression-only whatever happens to the rest.
+// Regenerate the table with test_3d_gldzm_dump_regression() below.
 //
-// This file holds the family's only pin table, and test_3d_coverage_common.h reads its keys to
-// satisfy SPEC 1. Hence const: a default-insert here would both pass a bogus assertion against a 0
+// This file holds the family's default-mode pin table, and test_3d_coverage_common.h reads its keys
+// to satisfy SPEC 1. Hence const: a default-insert here would both pass a bogus assertion against a 0
 // golden and add a phantom feature name to that set.
+
+// Only what the fixture header does not already supply: <iomanip> for the precision the failure
+// message and the regeneration dump print at. gtest, <iostream>, <string>, <vector> and the
+// Environment / roi_cache graph arrive through it.
+#include <iomanip>
+
+#include "test_3d_gldzm_common.h"   // bench_ut57_3d, make_gldzm3d_settings, extract_3d_gldzm, agrees_gt
+#include "test_ref_vals.h"          // ref_vals_map
+
 static const ref_vals_map<double> gldzm_3d_regression_ref_vals{
-	{"3GLDZM_SDE",        0.022387420258025731},
-	{"3GLDZM_LDE",          314.01248309662088},
-	{"3GLDZM_LGLZE",     0.0005581993242951194},
-	{"3GLDZM_HGLZE",        2342.4734665801629},
-	{"3GLDZM_SDLGLE",   1.8362515436029654e-05},
-	{"3GLDZM_SDHGLE",       61.230746106573264},
-	{"3GLDZM_LDLGLE",      0.16729167507144088},
-	{"3GLDZM_LDHGLE",       734618.35720259824},
-	{"3GLDZM_GLNU",         3435.1800942680934},
-	{"3GLDZM_GLNUN",      0.026851399515903585},
-	{"3GLDZM_ZDNU",         4330.2817177741472},
-	{"3GLDZM_ZDNUN",      0.033848043255251946},
-	{"3GLDZM_ZP",          0.46617376982276121},
-	{"3GLDZM_GLM",          47.230300235279401},
-	{"3GLDZM_GLV",          111.77220626552925},
-	{"3GLDZM_ZDM",          15.306504185784746},
-	{"3GLDZM_ZDV",          79.723412707174901},
-	{"3GLDZM_ZDE",          10.230312642315166},
+	{"3GLDZM_SDE",        0.47006537949579702},
+	{"3GLDZM_LDE",         7.4337854742574017},
+	{"3GLDZM_LGLZE",   0.00043490836742224412},
+	{"3GLDZM_HGLZE",       2685.0693909588167},
+	{"3GLDZM_SDLGLE", 0.00015407786939386234},
+	{"3GLDZM_SDHGLE",      1540.7841395501789},
+	{"3GLDZM_LDLGLE",  0.0045802962960003408},
+	{"3GLDZM_LDHGLE",      14203.744217420099},
+	{"3GLDZM_GLNU",        1349.3969192278446},
+	{"3GLDZM_GLNUN",     0.033098602350507607},
+	{"3GLDZM_ZDNU",        10424.140327209399},
+	{"3GLDZM_ZDNUN",      0.25568790814612574},
+	{"3GLDZM_ZP",         0.14855774836753732},
+	{"3GLDZM_GLM",         50.994186759547695},
+	{"3GLDZM_GLV",         84.66230769118728 },
+	{"3GLDZM_ZDM",         2.3107753440113812},
+	{"3GLDZM_ZDV",         2.0941027837664841},
+	{"3GLDZM_ZDE",         6.4697858656991167},
 };
 // rel=1e-9. A drift guard compares the program against its own recorded output, so the only thing
 // it can catch is movement, and the band should be as tight as the value is reproducible.
 // agrees_gt divides the golden by this, so a larger argument is a tighter band.
 static const double gldzm_3d_regression_frac_tolerance = 1.e9;
-
-
-static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
 void assert_3d_gldzm_feature_regression (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
 {
@@ -74,66 +62,42 @@ void assert_3d_gldzm_feature_regression (const Nyxus::Feature3D& expecting_fcode
 	// default-inserted as a 0 golden and compared against; check it up front to fail by name
 	ASSERT_TRUE(gldzm_3d_regression_ref_vals.count(fname) > 0) << fname;
 
-	// get segment info
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();
-	ASSERT_TRUE(fs::exists(ipath));
-	ASSERT_TRUE(fs::exists(mpath));
 
-	// mock the 3D workflow
+	// make it find the feature code by name ... and that it's the feature we expect
 	Environment e;
-	// (1) slide -> dataset -> prescan 
-	e.dataset.dataset_props.reserve(1);
-	SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-	ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
-	e.dataset.update_dataset_props_extrema();
-	// (2) properties of specific ROIs sitting in 'e.uniqueLabels'
-	clear_slide_rois(e.uniqueLabels, e.roiData);
-	ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
-	// (3) voxel clouds
-	std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-	ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
-	// (4) buffers
-	ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
-
-	// (5) feature settings
-	Fsettings s;
-	s.resize((int)NyxSetting::__COUNT__);
-	s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-	s[(int)NyxSetting::TINY].rval = 0.0;
-	s[(int)NyxSetting::SINGLEROI].bval = false;
-	s[(int)NyxSetting::GREYDEPTH].ival = 64;
-	s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-	s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-	s[(int)NyxSetting::USEGPU].bval = false;
-	s[(int)NyxSetting::VERBOSLVL].ival = 0;
-	s[(int)NyxSetting::IBSI].bval = false;
-	//
-
-	// (6) feature extraction
-
-	// make it find the feature code by name
 	int fcode = -1;
 	ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
-	// ... and that it's the feature we expect
 	ASSERT_TRUE((int)expecting_fcode == fcode);
 
-	// extract the feature
-	LR& r = e.roiData[label];
-	ASSERT_NO_THROW(r.initialize_fvals());
-	D3_GLDZM_feature f;
-	ASSERT_NO_THROW(f.calculate(r, s));
+	std::vector<std::vector<double>> fvals;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_gldzm(fvals, ipath, mpath, label, make_gldzm3d_settings(64, false)));
 
-	// (6) saving values
+	ASSERT_TRUE(agrees_gt(fvals[fcode][0], gldzm_3d_regression_ref_vals.at(fname), gldzm_3d_regression_frac_tolerance))
+		<< fname << " actual=" << std::setprecision(17) << fvals[fcode][0];
+}
 
-	f.save_value(r.fvals);
+// Regenerates every golden in gldzm_3d_regression_ref_vals at full precision, in the exact shape the
+// table wants. Run it with
+//     runAllTests --gtest_filter=*3D_GLDZM_DUMP_REGRESSION*
+// and paste the output over the table above. It goes through the same extract_3d_gldzm helper and
+// the same settings the assert helper uses, so the two cannot drift apart.
+void test_3d_gldzm_dump_regression()
+{
+	auto [ipath, mpath, label] = get_3d_segmented_phantom();
 
-	// we have just 1 value, no need to aggregate subfeatures
-	double atot = r.fvals[fcode][0];
+	Environment e;
+	std::vector<std::vector<double>> fvals;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_gldzm(fvals, ipath, mpath, label, make_gldzm3d_settings(64, false)));
 
-	// verdict
-	ASSERT_TRUE(agrees_gt(atot, gldzm_3d_regression_ref_vals.at(fname), gldzm_3d_regression_frac_tolerance))
-		<< fname << " actual=" << std::setprecision(17) << atot;
-
+	std::cout << "[3DGLDZM-REGEN]\n";
+	for (const auto& nv : gldzm_3d_regression_ref_vals)
+	{
+		int fcode = -1;
+		ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(nv.first, fcode));
+		std::cout << "[3DGLDZM-REGEN]\t{\"" << nv.first << "\",\t"
+		          << std::setprecision(17) << fvals[fcode][0] << "},\n";
+	}
 }
 
 void test_3d_gldzm_sde_regression() {
