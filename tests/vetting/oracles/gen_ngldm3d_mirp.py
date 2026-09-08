@@ -141,7 +141,9 @@ def nyxus_grey_levels(inten, mask):
     volume minimum, and `to_grayscale(i, 0, ROI max, 64)` truncates i / (ROI max) * 64. Handing the
     result to MIRP with the discretisation switched off is what makes the samelevels run comparable.
     """
-    shifted = (inten - inten.min()).astype(np.uint32)
+    # widen before subtracting: NIfTI datatype 4 is int16, and a volume spanning more than 32767
+    # would wrap in the file's own dtype and stop reproducing Nyxus' binning
+    shifted = (inten.astype(np.int64) - int(inten.min())).astype(np.uint32)
     roi_max = float(shifted[mask].max())
     levels = (shifted.astype(np.float64) / roi_max * NBINS).astype(np.uint32)
     return np.where(mask, levels, 0).astype(np.float64)

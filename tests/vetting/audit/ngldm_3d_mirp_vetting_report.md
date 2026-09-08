@@ -142,9 +142,9 @@ include rule below applies to it with no `_common.h` to lean on.
 NIfTI-1 phantom with numpy so a MIRP generator stays single-env — is recorded by the 3D morphology
 PR, and `gen_ngldm3d_mirp.py` reuses it rather than duplicating the entry.
 
-As with the other 3D families, `tests/vetting/matrix/ngldm.md` (SPEC §5.1) and
-`tests/vetting/benchmarks.md` (SPEC §6.3) do not exist, and exist for no family but GLCM. A repo-wide
-gap, not closed here.
+The 3D config matrix is `matrix/ngldm3d.md` (SPEC §5.1) and the benchmark `bench_ut57_3d` the 19
+rows cite is defined in `benchmarks.md` (SPEC §6.3). The **2D** family still has no
+`matrix/ngldm.md`, which is a gap in the 2D family's paperwork rather than this one's.
 
 ## Reproduction
 
