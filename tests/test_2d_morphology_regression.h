@@ -196,8 +196,19 @@ static const ref_vals_map<double> morphology_2d_regression_ref_vals
 	{"CIRCULARITY", 0.671081973229055},
 	{"EULER_NUMBER", 0.0},
 	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 6.32475519180298},
-	{"ROI_RADIUS_MEAN", 1.07692307692308},
-	{"ROI_RADIUS_MAX", 4.0},
+	// Re-derived when RoiRadiusFeature stopped reporting SQUARED distances and stopped taking the
+	// minimum with the approximate hill-descent (src/nyx/features/roi_radius.cpp). Two of the three
+	// moved: 1.0769 -> 0.6247 and 4 -> 1.4142. MEDIAN did NOT -- it was 1, and sqrt(1) is 1, so this
+	// fixture's median is one of the values a units bug cannot show up in, which is part of why the
+	// vetting claim lives on disks instead. MAX shows both halves of the fix: 4 was 2 squared, and
+	// 2 was itself the approximation overshooting an exact minimum of sqrt(2).
+	//
+	// MAX and MEDIAN are vetted on disks -- against skimage in test_2d_morphology_skimage.h and, for
+	// MAX, against the closed form in test_2d_morphology_analytic.h. These three rows stay snapshots
+	// on shape2d, where the reference disagrees for a reason that is not this family's (see the disk
+	// table in test_2d_morphology_skimage.h).
+	{"ROI_RADIUS_MEAN", 0.62471694950458789},
+	{"ROI_RADIUS_MAX", 1.4142135623730951},
 	{"ROI_RADIUS_MEDIAN", 1.0},
 	// Its five siblings are vetted against CellProfiler in test_2d_morphology_cellprofiler.h; this
 	// one cannot be. Both tools take the same 18 edge pixels, then Nyxus divides the variance by
