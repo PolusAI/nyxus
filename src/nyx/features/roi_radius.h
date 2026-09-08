@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include "../dataset.h"
 #include "../roi_cache.h"
-#include "histogram.h"
 #include "moments.h"
 #include "pixel.h"
 #include "../feature_method.h"
