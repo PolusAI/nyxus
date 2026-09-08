@@ -19,17 +19,24 @@ Two cells here are none of those and are labelled accordingly:
   it cannot be dropped with a reason.
 
 **Scope.** This file covers the features `ContourFeature` produces — `PERIMETER`,
-`DIAMETER_EQUAL_PERIMETER` and the five `EDGE_*` statistics — plus `MASS_DISPLACEMENT`, which has
-its own producer and its own axis. The rest of the family (hull, caliper, moments-fit ellipse,
-fractal) has no rows here yet; its recipes are in `config_recipes.md` and that gap is stated rather
-than left to read as covered.
+`DIAMETER_EQUAL_PERIMETER` and the five `EDGE_*` statistics — plus `MASS_DISPLACEMENT` and
+`ROI_RADIUS_*`, which have their own producers and their own axes. The rest of the family (hull,
+caliper, moments-fit ellipse, fractal) has no rows here yet; its recipes are in `config_recipes.md`
+and that gap is stated rather than left to read as covered.
 
-## Two producers, two axes
+## Three producers, three axes
 
 `MASS_DISPLACEMENT` does **not** inherit a contour-builder cell, and no statement about
 `buildWholeSlideContour()` or `buildRegularContour_nontriv()` applies to it. It is computed by
 `BasicMorphologyFeatures::calculate()` from the geometric and intensity-weighted centroids, reads no
 contour at any setting, and has its own `BasicMorphologyFeatures::osized_calculate()`.
+
+`ROI_RADIUS_*` is a third producer, `RoiRadiusFeature`. It *does* consume the contour, but it is not
+`ContourFeature`'s output feature, and it consumes the contour differently — as a set of positions
+measured against every ROI pixel, rather than as a walk. That distinction is what makes its
+out-of-core cell a separate finding from `PERIMETER`'s rather than the same one: `PERIMETER` diverges
+because the two builders *summarise* the contour differently, `ROI_RADIUS_*` because they return
+different pixels. Its section is below.
 
 ### `ContourFeature` — the axis is which contour builder runs
 
@@ -77,6 +84,59 @@ are asserted **equal to the segmented column** by
 `test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invariant`, not pinned
 independently — so a change that moved both paths together would keep those six agreeing while the
 segmented pin caught it. Every cell has its own registry row naming its recipe.
+
+## `RoiRadiusFeature` — the axis is the run mode, and the contour it is handed
+
+`ROI_RADIUS_MEAN`, `ROI_RADIUS_MAX` and `ROI_RADIUS_MEDIAN` are statistics of the ROI's inradius
+map: every ROI pixel's distance to the nearest contour pixel. The feature reads no setting of its
+own, so its only axis is the run mode — which decides which contour builder fills `K` — and, for the
+oracle cell, which fixture it is measured on.
+
+| run mode | fixture | verdict | oracle / reason |
+|---|---|---|---|
+| in-RAM (`calculate`) | disks R = 10, 20, 40 | **VALID** | `skimage` on `morphology.radius_disks`, and `analytic` for `MAX` on the same recipe |
+| in-RAM (`calculate`) | 8×8 `shape2d` | **VALID-BUT-PRODUCTION-ONLY** | no tool reproduces it *on this fixture*; recipe `morphology.shape2d_native`, drift guard only |
+| out-of-core (`osized_calculate`) | disk64 | **impl-defect** | the two paths disagree; recipe `morphology.disk64_forced_ooc` |
+| whole-slide (`SINGLEROI=true`) | — | not reached | `buildWholeSlideContour()` pushes four AABB corners, so the inradius map is a corner artefact; no row claimed and none asserted |
+
+**Why the shape2d cell is production-only and the disk cell is not.** The reference —
+`find_boundaries(connectivity=1, mode='inner')` plus a minimum over it — reproduces `MAX` and
+`MEDIAN` on a disk to double precision and reproduces nothing on the 8×8 raster. The difference is
+`buildRegularContour`, which reports every contour pixel one pixel right and one pixel down of where
+it is: on the 8×8 mask the traced contour **is** the skimage inner boundary shifted by (+1, +1), all
+18 pixels, and shifting the reference the same way reproduces all three Nyxus values. On a disk
+`MAX` and `MEDIAN` are unmoved by that shift because the pixel attaining them moves with it, so they
+promote there and `MEAN` does not, at either fixture.
+
+### The out-of-core cell is a defect, measured on the same disk that exposed `PERIMETER`
+
+Both paths take `sqrt(exact_min_sqdist(K))` over the same ROI pixels, so the only input that can
+differ is `K`. Measured on `bench_disk64_diagonal_boundary`:
+
+| | in-RAM | out-of-core | |
+|---|---|---|---|
+| contour pixels | 112 | 112 | same size |
+| `ROI_RADIUS_MEAN` | 6.087109772358636 | 7.169174091182726 | **+17.8%** |
+| `ROI_RADIUS_MEDIAN` | 5.0 | 6.708203932499369 | **+34%** |
+| `ROI_RADIUS_MAX` | 19.026297590440446 | 19.026297590440446 | bit-identical |
+
+Same count, different pixels: `buildRegularContour_nontriv` and `buildRegularContour` do not return
+the same 112. `MEAN` and `MEDIAN` rise, so some ROI pixels are farther from the out-of-core contour,
+and `MAX` is unchanged, so the pixel attaining it is not among them. No translation of the inner
+boundary reproduces the out-of-core numbers — searched over every shift in ±4 — so this is pinned as
+a characterization rather than explained as an offset, and the explanation is left to whoever
+corrects the builder.
+
+`impl-defect` rather than `INVALID`, for the reason the `PERIMETER` cell already gives: the config is
+legitimate and reachable production code, and `CLAUDE.md` requires the two paths to return identical
+values. Asserted by `test_2d_ooc_roi_radius_diverges_from_in_ram_regression` in
+`test_2d_ooc_regression.py`, which pins both sides *and* the inequality, so a partial fix cannot
+pass, and pins `MAX`'s equality so a fix that moves the whole contour cannot break the part that
+already works.
+
+**It was invisible for the same reason `PERIMETER`'s was.** `test_2d_ooc_invariant.py` runs
+`*ALL_MORPHOLOGY*` — which includes these three — and requires every column to agree, but on a
+full-image rectangle, where the two contour builders coincide. The disk is what separates them.
 
 ## The out-of-core contour divergence is a defect, not a convention
 

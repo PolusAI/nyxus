@@ -532,6 +532,8 @@ convention, and the registry says so in `flag=impl-defect`.
 |---|---:|---:|---|
 | 2D `PERIMETER` | 131.88225099390849 | 112.0 | 15%, and the out-of-core value is an integer |
 | 2D `DIAMETER_EQUAL_PERIMETER` | 41.97942430353313 | 35.65070725258456 | the same ratio, inherited |
+| 2D `ROI_RADIUS_MEAN` | 6.087109772358636 | 7.169174091182726 | +17.8% |
+| 2D `ROI_RADIUS_MEDIAN` | 5.0 | 6.708203932499369 | +34% |
 
 `ContourFeature::calculate()` sums Euclidean step lengths around the contour;
 `ContourFeature::osized_calculate()` sets `fval_PERIMETER = (StatsInt) K.size()`, the contour pixel
@@ -546,6 +548,18 @@ public value diverging with nothing in the tree to say so.
 `tests/python/test_2d_ooc_regression.py` asserts the derivation as an identity on both paths, so a
 fix to `PERIMETER` alone must fix this one too — and if the two ratios ever stop matching, that is a
 new finding rather than this one.
+
+**`ROI_RADIUS_*` is a second, distinct defect on the same contour.** `RoiRadiusFeature` takes
+`sqrt(exact_min_sqdist(K))` over every ROI pixel on **both** paths, so the arithmetic is identical and
+the only differing input is `K`. On the same fixture both builders return **112** contour pixels — so
+unlike `PERIMETER`, this is not a count-versus-length difference — and the statistics still move. They
+are not the same 112 pixels. `ROI_RADIUS_MAX` is bit-identical at 19.026297590440446 on both paths,
+so the ROI pixels that end up farther from the out-of-core contour do not include the one attaining
+the maximum. Every translation of the inner boundary in ±4 was searched and none reproduces the
+out-of-core values, so it is recorded as a characterization rather than explained as an offset.
+`tests/python/test_2d_ooc_regression.py` pins both sides, the two inequalities, and `MAX`'s equality —
+the last so that a fix which moves the whole contour cannot repair the mean and quietly break the
+maximum.
 
 **Why no test saw it.** `tests/python/test_2d_ooc_invariant.py` has asserted `*ALL_MORPHOLOGY*`
 equality across the two paths since it was written, and it passes. Its fixture is a full-image
