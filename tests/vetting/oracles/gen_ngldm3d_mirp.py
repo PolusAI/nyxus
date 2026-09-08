@@ -2,28 +2,34 @@
 
     python tests/vetting/oracles/gen_ngldm3d_mirp.py     (from the repository root)
 
-Prints the paste-ready goldens AND re-verifies every MIRP value quoted in the vetting report,
-exiting non-zero on any mismatch, on any quoted feature it cannot produce, and on any feature it
-produces that the report does not quote.
+Runs MIRP twice and re-verifies both comparison tables in the vetting report, exiting non-zero on
+any mismatch, on any quoted feature it cannot produce, and on any feature it produces that the report
+does not quote.
 
-Nothing in the tree PINS these numbers: the family is regression-only and this oracle is deliberately
-unasserted (see the warning below), so the artifact this generator feeds is
-../audit/ngldm_3d_mirp_vetting_report.md rather than a header. That is what it verifies. A generator
-that has nothing to check exits 0 without checking anything, and its "ALL CHECKS PASSED" then means
-only that it ran -- which is the state this one was in while it pointed at a test_3d_ngldm_mirp.h
-that has never existed.
+- `ngldm3d.mirp_fbn64` -- MIRP discretises the ROI itself, `fixed_bin_number` n=64. The two sides
+  land on different grey levels (below), so this table measures the discretisation gap.
+- `ngldm3d.mirp_samelevels` -- MIRP is handed the grey levels Nyxus bins to and told
+  `base_discretisation_method="none"`, so both compute the NGLDM over identical levels and the table
+  measures the NGLDM itself. Nyxus agrees here to machine precision.
 
-Recipe `ngldm3d.mirp_fbn64`: the segmented phantom (tests/data/nifti/phantoms/ut_inten.nii +
-ut_mask57.nii, label 57) at native 1x1x1 spacing, `by_slice=False`, fixed_bin_number with 64 bins,
-distance 1, difference level (alpha) 0 -- the IBSI NGLDM coarseness. On the Nyxus side that is
-GREYDEPTH=64 and IBSI=false, which is what test_3d_ngldm_regression.h sets, so the two are binned
-alike and the comparison is config-matched.
+Nothing in the tree PINS these numbers: the family is regression-only, so the artifact this generator
+feeds is ../audit/ngldm_3d_mirp_vetting_report.md rather than a header. That is what it verifies. A
+generator that has nothing to check exits 0 without checking anything, and its "ALL CHECKS PASSED"
+then means only that it ran.
 
-READ THIS BEFORE PINNING ANYTHING FROM THIS RUN: Nyxus' 3D NGLDM disagrees with MIRP on 16 of the 17
-comparable features, several by an order of magnitude, and two concrete causes are visible in
-src/nyx/features/3d_ngldm.cpp -- see ../audit/ngldm_3d_mirp_vetting_report.md. Only 3NGLDM_DCP
-matches, and it matches at the degenerate value 1.0. Treat this generator as the measurement behind
-that report, not as a licence to promote rows.
+The fixture for both runs is the segmented phantom (tests/data/nifti/phantoms/ut_inten.nii +
+ut_mask57.nii, label 57) at native 1x1x1 spacing, `by_slice=False`, distance 1, difference level
+(alpha) 0 -- the IBSI NGLDM coarseness. The Nyxus side is GREYDEPTH=64, IBSI=false, which is what
+test_3d_ngldm_regression.h sets.
+
+The grey levels the two tools reach are NOT the same, which is why there are two runs. MIRP's
+fixed_bin_number spreads this ROI over levels 1-64. Nyxus bins with `to_grayscale(i, 0, ROI max, 64)`
+over a volume whose minimum has been shifted to 0, so the ROI -- which occupies the upper two thirds
+of that shifted range -- lands on levels 21-64, 44 of them distinct. `nyxus_grey_levels()` below
+reproduces that mapping; the agreement of the samelevels run is what confirms the reproduction.
+
+READ THIS BEFORE PINNING ANYTHING FROM THE fbn64 RUN: it is not a config-matched comparison. The
+matched one is samelevels.
 
 3NGLDM_GLM (grey level mean) and 3NGLDM_DCM (dependence count mean) have no MIRP counterpart -- its
 NGLDM emits no gl_mean / dc_mean column -- so they cannot be vetted here at all.
@@ -60,8 +66,9 @@ LABEL = 57
 NBINS = 64
 
 # Nyxus feature -> MIRP NGLDM column stem. MIRP suffixes every column with the neighbourhood and
-# discretisation it was computed at (`_d1_a0.0_3d_fbn_n64`), so match on the stem and assert the
-# suffix separately -- otherwise a changed bin count silently reads a column from another config.
+# discretisation it was computed at (`_d1_a0.0_3d_fbn_n64` when it discretises, `_d1_a0.0_3d` when it
+# does not), so match on the stem and assert the suffix separately -- otherwise a changed bin count
+# silently reads a column from another config.
 MIRP = {
     "3NGLDM_LDE": "ngl_lde",
     "3NGLDM_HDE": "ngl_hde",
@@ -82,7 +89,8 @@ MIRP = {
     "3NGLDM_DCENE": "ngl_dc_energy",
 }
 
-SUFFIX = f"_d1_a0.0_3d_fbn_n{NBINS}"
+SUFFIX_FBN = f"_d1_a0.0_3d_fbn_n{NBINS}"
+SUFFIX_SAMELEVELS = "_d1_a0.0_3d"   # MIRP drops the discretisation stem when there is none
 
 NIFTI_DTYPE = {2: np.uint8, 4: np.int16, 8: np.int32, 16: np.float32, 64: np.float64}
 
@@ -104,80 +112,85 @@ def read_nifti(path):
     return vol, (float(pixdim[3]), float(pixdim[2]), float(pixdim[1]))
 
 
-def parse_report(txt):
-    """-> {feature: MIRP value} from the report's comparison table.
+def parse_report(txt, heading):
+    """-> {feature: MIRP value} from the comparison table under `heading`.
 
-    Rows look like | `3NGLDM_GLNU` | 115443 | 4350.27 | **26.5x** | -- Nyxus, MIRP, ratio. Only
-    the MIRP column is this generator's to verify; the Nyxus column is the program's own output and
-    the ratio is derived from the two.
+    Rows look like | `3NGLDM_GLNU` | 5636.02 | 4350.27 | 1.30x | -- Nyxus, MIRP, ratio. Only the
+    MIRP column is this generator's to verify; the Nyxus column is the program's own output and the
+    ratio is derived from the two. The report carries one such table per run, so the section is
+    located first and the search stops at the next heading of the same level.
     """
+    m = re.search(r"^" + re.escape(heading) + r"\s*$", txt, re.M)
+    if not m:
+        raise RuntimeError(f"no {heading!r} section in " + os.path.basename(REPORT))
+    rest = txt[m.end():]
+    nxt = re.search(r"^##\s", rest, re.M)
+    section = rest[: nxt.start()] if nxt else rest
     rows = re.findall(
         r"^\|\s*`(3NGLDM_[A-Z0-9_]+)`\s*\|\s*[-0-9.eE+]+\s*\|\s*([-0-9.eE+]+)\s*\|",
-        txt, re.M)
+        section, re.M)
     if not rows:
-        raise RuntimeError("no comparison rows found in " + os.path.basename(REPORT))
+        raise RuntimeError(f"no comparison rows under {heading!r} in " + os.path.basename(REPORT))
     return {n: float(v) for n, v in rows}
 
 
+def nyxus_grey_levels(inten, mask):
+    """-> the volume of grey levels Nyxus' GREYDEPTH=64 binning produces, off-ROI voxels at 0.
+
+    Two steps, both Nyxus-side and both visible in its output: the loader shifts every voxel by the
+    volume minimum, and `to_grayscale(i, 0, ROI max, 64)` truncates i / (ROI max) * 64. Handing the
+    result to MIRP with the discretisation switched off is what makes the samelevels run comparable.
+    """
+    shifted = (inten - inten.min()).astype(np.uint32)
+    roi_max = float(shifted[mask].max())
+    levels = (shifted.astype(np.float64) / roi_max * NBINS).astype(np.uint32)
+    return np.where(mask, levels, 0).astype(np.float64)
+
+
 def run():
+    """-> ((fbn64 features, samelevels features), the grey-level span of the Nyxus binning)."""
     import mirp
     logging.disable(logging.INFO)
 
     inten, spacing = read_nifti(INTEN)
     mask_vol, _ = read_nifti(MASK)
-    mask = (mask_vol == LABEL).astype(np.int32)
+    m = mask_vol == LABEL
+    mask = m.astype(np.int32)
     print(f"# volume {inten.shape}, roi voxels {int(mask.sum())}, spacing zyx {spacing}")
 
-    res = mirp.extract_features(
-        image=inten.astype(np.float64), mask=mask,
-        image_spacing=spacing,
-        by_slice=False,
-        base_feature_families="ngldm",
-        base_discretisation_method="fixed_bin_number",
-        base_discretisation_n_bins=NBINS,
-    )
-    df = res[0] if isinstance(res, list) else res
-    row = df.iloc[0]
-    out = {}
-    for nyx, stem in MIRP.items():
-        col = stem + SUFFIX
-        if col not in df.columns:
-            raise RuntimeError(f"MIRP produced no {col} (for {nyx}); columns present: "
-                               f"{sorted(c for c in df.columns if c.startswith('ngl_'))}")
-        out[nyx] = float(row[col])
-    return out
+    levels = nyxus_grey_levels(inten, m)
+    lv_roi = levels[m]
+    span = (int(lv_roi.min()), int(lv_roi.max()), int(np.unique(lv_roi).size))
+    print(f"# nyxus grey levels over the roi: {span[0]}-{span[1]}, {span[2]} distinct; "
+          f"mirp fixed_bin_number n={NBINS} spreads the same roi over 1-{NBINS}")
+
+    def features(image, suffix, **discretisation):
+        res = mirp.extract_features(
+            image=image, mask=mask, image_spacing=spacing,
+            by_slice=False, base_feature_families="ngldm", **discretisation)
+        df = res[0] if isinstance(res, list) else res
+        row = df.iloc[0]
+        out = {}
+        for nyx, stem in MIRP.items():
+            col = stem + suffix
+            if col not in df.columns:
+                raise RuntimeError(f"MIRP produced no {col} (for {nyx}); columns present: "
+                                   f"{sorted(c for c in df.columns if c.startswith('ngl_'))}")
+            out[nyx] = float(row[col])
+        return out
+
+    fbn = features(inten.astype(np.float64), SUFFIX_FBN,
+                   base_discretisation_method="fixed_bin_number",
+                   base_discretisation_n_bins=NBINS)
+    same = features(levels, SUFFIX_SAMELEVELS, base_discretisation_method="none")
+    return (fbn, same), span
 
 
-def main():
-    for p in (INTEN, MASK):
-        if not os.path.exists(p):
-            print(f"missing phantom: {p}")
-            return 1
-
-    got = run()
-
-    try:
-        version = metadata.version("mirp")       # mirp exposes no __version__
-    except metadata.PackageNotFoundError:
-        version = "unknown"
-
-    # the installed mirp, read from the distribution rather than written in: this line is the
-    # provenance of the goldens printed below it, so a run under another version has to say so.
-    print(f"# mirp {version}, numpy {np.__version__}, label={LABEL}, by_slice=False, "
-          f"fixed_bin_number n={NBINS}, distance=1, alpha=0")
-    print("# paste-ready goldens")
-    for name in sorted(got):
-        print(f'\t{{"{name}", {got[name]!r}}},'.ljust(56) + f"// {MIRP[name]}{SUFFIX}")
-    print("\n# no MIRP counterpart, cannot be vetted here: 3NGLDM_GLM, 3NGLDM_DCM")
-
-    if not os.path.exists(REPORT):
-        print(f"\n# {os.path.basename(REPORT)} is missing -- there is nothing this run can be "
-              f"checked against, which is a failure, not a pass")
-        return 1
-
-    quoted = parse_report(open(REPORT, encoding="utf-8", errors="replace").read())
-    print(f"\n# verifying the {len(quoted)} MIRP values quoted in "
-          f"{os.path.basename(REPORT)} against this run, at rel<={RELTOL:g}")
+def verify(got, heading, txt):
+    """-> (n verified, n failed, n unproducible, [unquoted]) for one of the report's tables."""
+    quoted = parse_report(txt, heading)
+    print(f"\n# verifying the {len(quoted)} MIRP values quoted under {heading!r} "
+          f"against this run, at rel<={RELTOL:g}")
     nok = nfail = nmiss = 0
     for name in sorted(quoted):
         want = quoted[name]
@@ -198,6 +211,53 @@ def main():
     unquoted = sorted(set(got) - set(quoted))
     for name in unquoted:
         print(f"  UNQUOTED {name}: MIRP reports {got[name]!r} and the report does not quote it")
+    return nok, nfail, nmiss, unquoted
+
+
+def main():
+    for p in (INTEN, MASK):
+        if not os.path.exists(p):
+            print(f"missing phantom: {p}")
+            return 1
+
+    (fbn, same), span = run()
+
+    try:
+        version = metadata.version("mirp")       # mirp exposes no __version__
+    except metadata.PackageNotFoundError:
+        version = "unknown"
+
+    # the installed mirp, read from the distribution rather than written in: this line is the
+    # provenance of the values printed below it, so a run under another version has to say so.
+    print(f"# mirp {version}, numpy {np.__version__}, label={LABEL}, by_slice=False, "
+          f"distance=1, alpha=0")
+    for title, got, suffix in (("ngldm3d.mirp_fbn64", fbn, SUFFIX_FBN),
+                               ("ngldm3d.mirp_samelevels", same, SUFFIX_SAMELEVELS)):
+        print(f"\n# {title}")
+        for name in sorted(got):
+            print(f'\t{{"{name}", {got[name]!r}}},'.ljust(56) + f"// {MIRP[name]}{suffix}")
+    print("\n# no MIRP counterpart at either recipe: 3NGLDM_GLM, 3NGLDM_DCM")
+
+    if not os.path.exists(REPORT):
+        print(f"\n# {os.path.basename(REPORT)} is missing -- there is nothing this run can be "
+              f"checked against, which is a failure, not a pass")
+        return 1
+
+    txt = open(REPORT, encoding="utf-8", errors="replace").read()
+    nok = nfail = nmiss = 0
+    unquoted = []
+    for heading, got in (("## Result at `ngldm3d.mirp_fbn64` -- MIRP discretises", fbn),
+                         ("## Result at `ngldm3d.mirp_samelevels` -- the same grey levels", same)):
+        a, b, c, d = verify(got, heading, txt)
+        nok += a; nfail += b; nmiss += c; unquoted += d
+
+    # the grey-level span is the report's explanation of the fbn64 gap, so it is checked too
+    span_txt = f"{span[0]}-{span[1]}, {span[2]} distinct"
+    if span_txt not in txt:
+        print(f"\nFAIL grey-level span: this run measures {span_txt}, which the report does not state")
+        nfail += 1
+    else:
+        print(f"\nOK   grey-level span: report states {span_txt}")
 
     print(f"\n{nok} verified, {nfail} failed, {nmiss} unproducible, {len(unquoted)} unquoted")
     if nfail or nmiss or unquoted:

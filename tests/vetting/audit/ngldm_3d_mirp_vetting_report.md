@@ -1,128 +1,122 @@
 # 3D NGLDM vs MIRP — vetting report
 
-The last family in the per-family series, and the only one that closes its gap row by **demoting**
-it. `3NGLDM_DCP` read `status=vetted, oracle=mirp` from an offline run; running that oracle shows the
-claim should never have been made, and shows why the other 18 rows are right to be `regression`.
+The family's NGLD matrix and its feature formulas agree with MIRP 2.6.0 to machine precision when
+both tools are given the same grey levels. They are not asserted against MIRP, because at MIRP's own
+`fixed_bin_number` discretisation the two tools do not land on the same grey levels, and that gap is
+not the family's to close.
 
 ## Tool and configuration
 
 | | |
 |---|---|
 | Tool | mirp 2.6.0 (numpy 2.4.6, pandas 3.0.3) |
-| Recipe | `ngldm3d.mirp_fbn64` |
+| Recipes | `ngldm3d.mirp_fbn64`, `ngldm3d.mirp_samelevels` |
 | Fixture | the segmented phantom, `phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57 |
-| MIRP config | `by_slice=False`, `fixed_bin_number` n=64, distance 1, difference level (alpha) 0 |
+| MIRP config | `by_slice=False`, distance 1, difference level (alpha) 0; discretisation per recipe |
 | Nyxus config | `GREYDEPTH=64`, `IBSI=false` — what `test_3d_ngldm_regression.h` sets |
 | Generator | `tests/vetting/oracles/gen_ngldm3d_mirp.py` |
 | Tolerance | n/a — nothing is asserted against MIRP |
 
-**The configs are matched, and that is the point.** `D3_NGLDM_feature` bins on `STNGS_NGREYS`, the
-generic grey depth, which the test sets to 64; MIRP is told `fixed_bin_number n=64`. Both use
-distance 1 and alpha 0. There is no binning mismatch to explain the results below.
+## The two tools discretise this ROI differently
 
-## Result
+MIRP's `fixed_bin_number` n=64 spreads the ROI over levels 1-64. Nyxus reaches its levels in two
+steps, both outside `3d_ngldm.cpp`: the loader shifts every voxel by the volume minimum, which for
+this CT phantom is -1024, and `to_grayscale(i, 0, ROI max, 64)` then truncates `i / (ROI max) * 64`.
+The ROI occupies the upper two thirds of the shifted range, so it lands on levels **21-64, 44
+distinct** — a 44-level ladder starting at 21 against MIRP's 64-level ladder starting at 1.
+
+Two independent things produce that: the lower bin edge is 0 rather than the ROI minimum, and the
+volume-wide shift moves the ROI up the scale. Neither is an NGLDM question, and no band over the
+NGLDM features can absorb them, so the family carries no `vetted` row at `ngldm3d.mirp_fbn64`.
+
+## Result at `ngldm3d.mirp_fbn64` -- MIRP discretises
+
+Nyxus at `GREYDEPTH=64` against MIRP at `fixed_bin_number` n=64. This table measures the
+discretisation gap above, not the NGLDM.
 
 | feature | Nyxus | MIRP | Nyxus/MIRP |
 |---|---|---|---|
 | `3NGLDM_DCP` | 1 | 1 | 1x |
-| `3NGLDM_LDE` | 0.1016 | 0.25594 | 0.397x |
-| `3NGLDM_HDE` | 261.018 | 28.0738 | **9.3x** |
-| `3NGLDM_LGLCE` | 0.000359684 | 0.0321849 | **0.0112x** |
-| `3NGLDM_HGLCE` | 740.436 | 1323.96 | 0.559x |
-| `3NGLDM_LDLGLE` | 5.83375e-05 | 0.000684901 | 0.0852x |
-| `3NGLDM_LDHGLE` | 73.9199 | 474.82 | 0.156x |
-| `3NGLDM_HDLGLE` | 0.0252015 | 8.71408 | **0.00289x** |
-| `3NGLDM_HDHGLE` | 20099.8 | 14942.8 | 1.35x |
-| `3NGLDM_GLNU` | 115443 | 4350.27 | **26.5x** |
-| `3NGLDM_GLNUN` | 0.225757 | 0.0158519 | **14.2x** |
-| `3NGLDM_DCNU` | 85056.8 | 40745 | 2.09x |
-| `3NGLDM_DCNUN` | 0.166335 | 0.14847 | 1.12x |
-| `3NGLDM_GLV` | 190.082 | 350.171 | 0.543x |
-| `3NGLDM_DCV` | 86.1706 | 11.9476 | **7.21x** |
-| `3NGLDM_DCENT` | 5.22774 | 8.67597 | 0.603x |
-| `3NGLDM_DCENE` | 0.143484 | 0.00287482 | **49.9x** |
+| `3NGLDM_LDE` | 0.15365 | 0.25594 | 0.6003x |
+| `3NGLDM_HDE` | 40.6394 | 28.0738 | 1.448x |
+| `3NGLDM_LGLCE` | 0.000783908 | 0.0321849 | 0.02436x |
+| `3NGLDM_HGLCE` | 1873.25 | 1323.96 | 1.415x |
+| `3NGLDM_LDLGLE` | 7.80276e-05 | 0.000684901 | 0.1139x |
+| `3NGLDM_LDHGLE` | 375.708 | 474.82 | 0.7913x |
+| `3NGLDM_HDLGLE` | 0.056243 | 8.71408 | 0.006454x |
+| `3NGLDM_HDHGLE` | 44248.7 | 14942.8 | 2.961x |
+| `3NGLDM_GLNU` | 6480.48 | 4350.27 | 1.49x |
+| `3NGLDM_GLNUN` | 0.0236142 | 0.0158519 | 1.49x |
+| `3NGLDM_DCNU` | 32085.4 | 40745 | 0.7875x |
+| `3NGLDM_DCNUN` | 0.116916 | 0.14847 | 0.7875x |
+| `3NGLDM_GLV` | 153.096 | 350.171 | 0.4372x |
+| `3NGLDM_DCV` | 14.6164 | 11.9476 | 1.223x |
+| `3NGLDM_DCENT` | 8.40569 | 8.67597 | 0.9688x |
+| `3NGLDM_DCENE` | 0.00347501 | 0.00287482 | 1.209x |
 
-`3NGLDM_GLM` and `3NGLDM_DCM` are absent: MIRP's NGLDM emits no `gl_mean` / `dc_mean` column, so no
-oracle exists for them at all.
+The features weighted by the grey level rather than by the dependence count carry the largest ratios,
+which is the signature of a level-ladder difference: `LGLCE` sums the reciprocal square of the level
+and Nyxus' smallest level is 21 where MIRP's is 1, so it reads 0.024x; `HDLGLE` divides by the same
+square for the same reason. The purely dependence-side `DCNU`/`DCNUN` sit at 0.79x, and `DCP` is 1 on
+both sides on any input where every voxel has a same-level neighbour.
 
-## Two causes, both in the source
+## Result at `ngldm3d.mirp_samelevels` -- the same grey levels
 
-### 1. Off-ROI voxels are included in the NGLD matrix
+MIRP handed the grey levels Nyxus bins to, with `base_discretisation_method="none"`, so both compute
+the NGLDM over identical levels. The fourth column is the relative difference.
 
-`calc_ngld_matrix` iterates the whole ROI **bounding box** and explicitly declines to skip
-background:
+| feature | Nyxus | MIRP | rel |
+|---|---|---|---|
+| `3NGLDM_DCP` | 1 | 1 | 0 |
+| `3NGLDM_LDE` | 0.15365 | 0.15365 | 7.2e-16 |
+| `3NGLDM_HDE` | 40.6394 | 40.6394 | 0 |
+| `3NGLDM_LGLCE` | 0.000783908 | 0.000783908 | 0 |
+| `3NGLDM_HGLCE` | 1873.25 | 1873.25 | 0 |
+| `3NGLDM_LDLGLE` | 7.80276e-05 | 7.80276e-05 | 8.7e-16 |
+| `3NGLDM_LDHGLE` | 375.708 | 375.708 | 1.5e-16 |
+| `3NGLDM_HDLGLE` | 0.056243 | 0.056243 | 6.2e-16 |
+| `3NGLDM_HDHGLE` | 44248.7 | 44248.7 | 0 |
+| `3NGLDM_GLNU` | 6480.48 | 6480.48 | 0 |
+| `3NGLDM_GLNUN` | 0.0236142 | 0.0236142 | 0 |
+| `3NGLDM_DCNU` | 32085.4 | 32085.4 | 0 |
+| `3NGLDM_DCNUN` | 0.116916 | 0.116916 | 0 |
+| `3NGLDM_GLV` | 153.096 | 153.096 | 1.9e-16 |
+| `3NGLDM_DCV` | 14.6164 | 14.6164 | 8.5e-16 |
+| `3NGLDM_DCENT` | 8.40569 | 8.40569 | 4.2e-16 |
+| `3NGLDM_DCENE` | 0.00347501 | 0.00347501 | 1.2e-16 |
 
-```cpp
-// Do not skip off-ROI pixels
-//	if (cpi == 0)
-//		continue;
-```
+Worst relative difference over the seventeen: **8.7e-16**. `3NGLDM_GLM` and `3NGLDM_DCM` are absent
+from both tables: MIRP's NGLDM emits no `gl_mean` / `dc_mean` column, so no oracle exists for them.
 
-Measured on this phantom: the bounding box is 82×96×70 = **551,040** voxels against an ROI of
-**274,432**. IBSI NGLDM is defined over ROI voxels only, and MIRP computes it that way.
+**What this agreement covers.** The NGLD matrix — which voxels are centres, which neighbours count,
+how dependence maps to a matrix column — and all seventeen feature formulas over that matrix. It does
+not cover the discretisation, because the levels are an input to the comparison rather than a result
+of it: the generator reproduces Nyxus' binning in Python to feed MIRP. That reproduction is not taken
+on trust. Its agreement to 8.7e-16 across seventeen features with different sensitivities is what
+confirms it, and the generator additionally checks the measured level span (21-64, 44 distinct)
+against this report.
 
-**How many voxels the matrix actually counts is measurable from the pinned values alone**, without
-instrumenting anything. `f_GLNU /= Ns` and `f_GLNUN /= (Ns*Ns)` in `3d_ngldm.cpp`, so `GLNU/GLNUN`
-is exactly `Ns`, the number of voxels that contributed an entry; `DCNU/DCNUN` is the same quantity by
-the same construction. Both ratios agree on **Ns = 511,360** (to rel 2.3e-16) — the same `Ns` local
-divides both, so that agreement checks the arithmetic rather than confirming the number from a second
-source. The confirmation is the factorisation: 511,360 = 68×80×94 is precisely the *interior* of the
-82×96×70 box measured off the mask above — the one-voxel shell, whose 26-neighbourhood would leave
-the box, is skipped.
+**What it discriminates.** Every one of these seventeen moves by orders of magnitude under an
+implementation that treats the bounding box rather than the ROI as the set of NGLDM centres, that
+visits 24 of the 26 Chebyshev-1 neighbours, that reads the dependence count off the matrix column
+without counting the centre voxel, or that aggregates `GLNU` over anything but the grey-level row
+marginal.
 
-So the over-count against the ROI is **511,360 / 274,432 = 1.8633×**, not the 2.008× the raw
-bounding box suggests. The distinction matters for reading the table above: it is the denominator the
-near-linear features should be compared against.
+## The family's own settings
 
-This predicts the error pattern, which is the reason to believe it is the dominant cause rather than
-a coincidence. Background voxels all bin to the same grey level and each sees ~24 identical
-neighbours, so they pile into a single grey row at maximum dependence. That inflates a
-sum-of-squares over grey rows far more than linearly (`GLNU` 26.5×), raises energy sharply
-(`DCENE` 49.9×), lowers entropy (`DCENT` 0.60×), and pushes the dependence distribution to its top
-end (`HDE` 9.3×, `LDE` 0.40×). `DCNU`, which scales closer to linearly with the voxel count, comes
-out at 2.09× — the nearest of the seventeen to the 1.8633× voxel-count ratio derived above, and still
-12% above it.
+`D3_NGLDM_feature` reads two: `GREYDEPTH` and `IBSI`. The neighbourhood distance *d* and the
+coarseness parameter *alpha* are not settable — *d* is fixed by the `shifts` table in
+`3d_ngldm.cpp` and *alpha* is fixed at 0, an exact grey-level match. Both are therefore matched to
+MIRP by construction at `d1_a0.0`, and the config matrix (`matrix/ngldm3d.md`) has no further
+dimensions to sweep.
 
-### 2. The neighbourhood has 24 voxels, not 26
+## Why `3NGLDM_DCP` is `regression` and not `vetted`
 
-The `shifts` table lists 8 in-plane, 8 at `dz=+1` and 8 at `dz=-1`. Enumerating it against a full 3D
-Chebyshev-distance-1 neighbourhood shows the two pure-axial neighbours missing:
-`(dx,dy,dz) = (0,0,+1)` and `(0,0,-1)` — the voxels directly above and below the centre. So `nsh` is
-24, and `int maxNr = nsh + 1;` carries a comment reading "max dependence 8 (due to 8 neighbors)",
-which is the 2D count.
-
-This is smaller in effect than cause 1 but not negligible: it changes every dependence count and
-caps the matrix two columns short.
-
-## Why `3NGLDM_DCP` is demoted rather than promoted
-
-It is the family's only agreement, and it agrees at **1.0 on both sides**. Dependence-count
-percentage is the fraction of voxels having at least one dependency; on any input where every voxel
-has a same-binned neighbour it is exactly 1, which is true of this phantom under both the correct and
-the incorrect neighbourhood, and with or without background voxels. It is an assertion that cannot
-fail for the reasons we would want it to fail.
-
-Promoting it would have produced the shape this whole series exists to remove: a family whose single
-`vetted` row is a degenerate constant, standing next to sixteen features that disagree with the same
-tool by up to 50×, and reading in the registry as though 3D NGLDM had been checked. The row now reads
-`status=regression` with `candidate_oracle=mirp` and `flag=implementation-defect`, which is what is
-actually true.
-
-That leaves the family with **zero vetted rows** — the only one in the series. That is the honest
-count, not a regression in coverage: it was zero before too, and the difference is that the registry
-now says so.
-
-## What this PR does and does not change
-
-**Does not** change any feature value. Both causes are behaviour changes across 19 public features
-and belong on their own branch; the fix plan is recorded outside this PR.
-
-**Does** pin all 19 goldens at full precision and tighten the assertion from a 10% band to
-`rel=1e-9`. The old pins were two- and three-significant-figure numbers (`0.1`, `261`, `740`,
-`0.00036`) with a ±10% band — which cannot detect the very fix these values are waiting for. A drift
-guard's job is to notice change, and these will change; when the implementation is corrected,
-`test_3d_ngldm_dump_regression()` regenerates the table and this report's comparison should be re-run
-to promote the family properly.
+Dependence-count percentage is the fraction of voxels having at least one dependency. On any input
+where every voxel has a same-binned neighbour it is exactly 1, which holds for this phantom under
+every neighbourhood and every level ladder, and both tools report 1. It is an agreement that cannot
+fail for the reasons an assertion would want it to fail, so it is not on its own grounds for a
+`vetted` row, and the family has no other candidate while the discretisation gap stands.
 
 ## Include hygiene and file-level observations
 
@@ -131,29 +125,22 @@ and `test_3d_ngldm_coverage.h` has since been retired — see `ngldm_3d_golden_r
 coverage sweep". That makes the regression header the family's fixture as well as its table, so the
 include rule below applies to it with no `_common.h` to lean on.
 
-- **`test_3d_ngldm_regression.h` carried a dead `#if 0` block** — a superseded copy of the assert
-  body. Removed. It also relied transitively on `<iomanip>`, `<iostream>`, `<string>`, `<tuple>`,
-  `<vector>` and `helpers/fsystem.h` (for `fs::exists`); all now direct. Its golden lookup used
-  `operator[]`, which default-inserts a missing key as 0 and then compares against a fabricated
-  reference; now guarded with `find()`.
-- Its header comment carried the 2026-07 MIRP comparison inline. That measurement is now in this
-  report, at full precision and with causes attached, and the header keeps a short current-state
-  statement plus a pointer.
+- Its includes are all direct: `<iomanip>`, `<tuple>` and `helpers/fsystem.h` (for `fs::exists`)
+  alongside the four headers the mocked 3D workflow needs, and `<iostream>` is left to
+  `test_main_nyxus.h`, which supplies it. Its golden lookup is guarded with `find()` rather than
+  `operator[]`, which would default-insert a missing key as 0 and compare against a fabricated
+  reference.
 - **`test_3d_ngldm_coverage.h`** kept its single include of `test_3d_coverage_common.h`, as the 3D
   `_coverage.h` files do (SPEC §6.3.1). That file is now retired.
-- Being the family's fixture as well as its table, `test_3d_ngldm_regression.h` also used
-  `Fsettings`/`NyxSetting`, `SlideProps`/`scan_slide_props`, the four `globals.h` ROI-gathering
-  functions and `agrees_gt` without including `feature_settings.h`, `slideprops.h`, `globals.h` or
-  `test_main_nyxus.h` — every one reached it transitively. All four are now direct, and `<iostream>`
-  is dropped because `test_main_nyxus.h` supplies it.
-- The 19 tests in `test_3d_ngldm_regression.h` **do** assert. An earlier note in this series claimed
-  the file's body was `#if 0` and its tests therefore vacuous; that was wrong, and was verified by
-  negative control — perturbing `3NGLDM_DCENE` from 0.14 to 0.99 makes
-  `TEST_3D_NGLDM_DCENE_REGRESSION` fail at the assertion.
+- The 19 tests in `test_3d_ngldm_regression.h` do assert, verified by negative control on two pins:
+  perturbing `3NGLDM_DCENE` from 0.0035 to 0.99 fails `TEST_3D_NGLDM_DCENE_REGRESSION`, and pinning
+  `3NGLDM_GLNU` at 115443.18172715895 — the value an NGLDM built over the bounding box produces —
+  fails `TEST_3D_NGLDM_GLNU_REGRESSION`. The second is the one with teeth: it is the assertion that
+  would catch a regression to counting background voxels as centres.
 
 `tests/vetting/TOOLS.md` gains nothing here. The one trick worth recording — reading an uncompressed
-NIfTI-1 phantom with numpy so a MIRP generator stays single-env — is added by the 3D morphology PR,
-and `gen_ngldm3d_mirp.py` reuses it rather than duplicating the entry.
+NIfTI-1 phantom with numpy so a MIRP generator stays single-env — is recorded by the 3D morphology
+PR, and `gen_ngldm3d_mirp.py` reuses it rather than duplicating the entry.
 
 As with the other 3D families, `tests/vetting/matrix/ngldm.md` (SPEC §5.1) and
 `tests/vetting/benchmarks.md` (SPEC §6.3) do not exist, and exist for no family but GLCM. A repo-wide
@@ -162,7 +149,7 @@ gap, not closed here.
 ## Reproduction
 
 ```
-# MIRP side (conda env with mirp 2.6.0)
+# MIRP side, both runs (conda env with mirp 2.6.0)
 python tests/vetting/oracles/gen_ngldm3d_mirp.py
 
 # Nyxus side
