@@ -12,10 +12,11 @@ does not quote.
   `base_discretisation_method="none"`, so both compute the NGLDM over identical levels and the table
   measures the NGLDM itself. Nyxus agrees here to machine precision.
 
-Nothing in the tree PINS these numbers: the family is regression-only, so the artifact this generator
-feeds is ../audit/ngldm_3d_mirp_vetting_report.md rather than a header. That is what it verifies. A
-generator that has nothing to check exits 0 without checking anything, and its "ALL CHECKS PASSED"
-then means only that it ran.
+It feeds two artifacts and verifies both. ../../test_3d_ngldm_mirp.h pins the samelevels values as
+oracle goldens, and ../audit/ngldm_3d_mirp_vetting_report.md publishes both comparison tables. Every
+column of both tables is checked, not just MIRP's: the Nyxus column against the goldens pinned in the
+C++ headers, and the derived column recomputed from the two. A generator that verifies only the half
+it produced would let the other half drift while still printing "ALL CHECKS PASSED".
 
 The fixture for both runs is the segmented phantom (tests/data/nifti/phantoms/ut_inten.nii +
 ut_mask57.nii, label 57) at native 1x1x1 spacing, `by_slice=False`, distance 1, difference level
@@ -32,7 +33,10 @@ READ THIS BEFORE PINNING ANYTHING FROM THE fbn64 RUN: it is not a config-matched
 matched one is samelevels.
 
 3NGLDM_GLM (grey level mean) and 3NGLDM_DCM (dependence count mean) have no MIRP counterpart -- its
-NGLDM emits no gl_mean / dc_mean column -- so they cannot be vetted here at all.
+NGLDM emits no gl_mean / dc_mean column -- so they cannot be vetted here at all. 3NGLDM_DCP is
+computed by both and deliberately not pinned: Nyxus hard-codes it to 1 and MIRP returns 1 on any
+input where every voxel has a same-level neighbour, so the check below allows exactly that one
+omission and fails on any other.
 
 NIFTI READING WITHOUT A NIFTI LIBRARY: the mirp env has neither SimpleITK nor nibabel. The phantoms
 are uncompressed single-file NIfTI-1 (magic "n+1"), so the header is parsed directly below and the
@@ -58,6 +62,8 @@ PHANTOMS = os.path.join(TESTS, "data", "nifti", "phantoms")
 INTEN = os.path.join(PHANTOMS, "ut_inten.nii")
 MASK = os.path.join(PHANTOMS, "ut_mask57.nii")
 REPORT = os.path.join(TESTS, "vetting", "audit", "ngldm_3d_mirp_vetting_report.md")
+REGRESSION_H = os.path.join(TESTS, "test_3d_ngldm_regression.h")
+MIRP_H = os.path.join(TESTS, "test_3d_ngldm_mirp.h")
 
 # The report quotes the comparison to six significant figures, so that is the precision the
 # re-verification can hold it to. It is a staleness check on a published table, not a vetting band.
@@ -113,12 +119,17 @@ def read_nifti(path):
 
 
 def parse_report(txt, heading):
-    """-> {feature: MIRP value} from the comparison table under `heading`.
+    """-> {feature: (nyxus, reference, derived)} from the comparison table under `heading`.
 
-    Rows look like | `3NGLDM_GLNU` | 5636.02 | 4350.27 | 1.30x | -- Nyxus, MIRP, ratio. Only the
-    MIRP column is this generator's to verify; the Nyxus column is the program's own output and the
-    ratio is derived from the two. The report carries one such table per run, so the section is
-    located first and the search stops at the next heading of the same level.
+    Rows are | `3NGLDM_GLNU` | 6480.48 | 4350.27 | 1.49x | -- Nyxus, MIRP, and a derived column that
+    is a ratio in one table and a relative difference in the other. ALL THREE are returned, because
+    all three are claims: the reference column is checked against a fresh MIRP run, the Nyxus column
+    against the pins checked into the C++ headers, and the derived column is recomputed from the two.
+    Verifying only the reference column would let every Nyxus number and every ratio in the report
+    drift while this generator still printed success.
+
+    The report carries one such table per run, so the section is located first and the search stops
+    at the next heading of the same level.
     """
     m = re.search(r"^" + re.escape(heading) + r"\s*$", txt, re.M)
     if not m:
@@ -127,11 +138,29 @@ def parse_report(txt, heading):
     nxt = re.search(r"^##\s", rest, re.M)
     section = rest[: nxt.start()] if nxt else rest
     rows = re.findall(
-        r"^\|\s*`(3NGLDM_[A-Z0-9_]+)`\s*\|\s*[-0-9.eE+]+\s*\|\s*([-0-9.eE+]+)\s*\|",
+        r"^\|\s*`(3NGLDM_[A-Z0-9_]+)`\s*\|\s*([-0-9.eE+]+)\s*\|\s*([-0-9.eE+]+)\s*\|"
+        r"\s*([-0-9.eE+]+)x?\s*\|",
         section, re.M)
     if not rows:
         raise RuntimeError(f"no comparison rows under {heading!r} in " + os.path.basename(REPORT))
-    return {n: float(v) for n, v in rows}
+    return {n: (float(a), float(b), float(c)) for n, a, b, c in rows}
+
+
+def parse_pins(path, table):
+    """-> {feature: value} from a `ref_vals_map<double> <table>` initialiser in a C++ header.
+
+    These are the checked-in goldens -- what Nyxus is actually asserted against -- so they are the
+    source the report's Nyxus column has to agree with. Reading them here is what ties the prose to
+    the tests rather than to a run nobody can reproduce.
+    """
+    src = open(path, encoding="utf-8", errors="replace").read()
+    m = re.search(r"ref_vals_map<double>\s+" + re.escape(table) + r"\s*\{(.*?)\n\}", src, re.S)
+    if not m:
+        raise RuntimeError(f"no {table} initialiser in {os.path.basename(path)}")
+    pins = re.findall(r'\{\s*"(3NGLDM_[A-Z0-9_]+)"\s*,\s*([-0-9.eE+]+)\s*\}', m.group(1))
+    if not pins:
+        raise RuntimeError(f"{table} in {os.path.basename(path)} holds no 3NGLDM pins")
+    return {n: float(v) for n, v in pins}
 
 
 def nyxus_grey_levels(inten, mask):
@@ -188,25 +217,52 @@ def run():
     return (fbn, same), span
 
 
-def verify(got, heading, txt):
-    """-> (n verified, n failed, n unproducible, [unquoted]) for one of the report's tables."""
+def verify(got, heading, txt, pins, derived, bound):
+    """-> (n verified, n failed, n unproducible, [unquoted]) for one of the report's tables.
+
+    Three checks per row, because a comparison table makes three claims:
+      1. the MIRP column against this run,
+      2. the Nyxus column against the goldens checked into the C++ headers,
+      3. the derived column recomputed from the two by `derived`.
+    A row passes only if all three do.
+    """
     quoted = parse_report(txt, heading)
-    print(f"\n# verifying the {len(quoted)} MIRP values quoted under {heading!r} "
-          f"against this run, at rel<={RELTOL:g}")
+    print(f"\n# verifying the {len(quoted)} rows quoted under {heading!r} -- MIRP column against "
+          f"this run, Nyxus column against the C++ pins, derived column recomputed; rel<={RELTOL:g}")
     nok = nfail = nmiss = 0
     for name in sorted(quoted):
-        want = quoted[name]
+        want_ny, want_mirp, want_d = quoted[name]
         if name not in got:
-            print(f"  MISSING {name}: report quotes {want!r} but MIRP reports no counterpart")
+            print(f"  MISSING {name}: report quotes {want_mirp!r} but MIRP reports no counterpart")
             nmiss += 1
             continue
-        have = got[name]
-        rel = abs(have - want) / max(abs(want), 1e-12)
-        if rel <= RELTOL:
-            print(f"  OK   {name}: mirp={have!r} report={want!r} rel={rel:.3g}")
+        if name not in pins:
+            print(f"  MISSING {name}: report quotes a Nyxus value but no C++ pin backs it")
+            nmiss += 1
+            continue
+        have_mirp, have_ny = got[name], pins[name]
+        rel_mirp = abs(have_mirp - want_mirp) / max(abs(want_mirp), 1e-12)
+        rel_ny = abs(have_ny - want_ny) / max(abs(want_ny), 1e-12)
+        have_d = derived(have_ny, have_mirp)
+        bad = [n for n, r in (("mirp", rel_mirp), ("nyxus", rel_ny)) if r > RELTOL]
+        # The two derived columns are different kinds of claim and are checked differently. The
+        # fbn64 ratio is a value, quoted at six significant figures and verified as one. The
+        # samelevels column is a residual whose magnitude is float noise -- comparing 8.7e-16
+        # against 9e-16 as a value would be checking the report's rounding, not the tool -- so it
+        # is quoted as a bound rounded UP and verified as one: the run must not exceed it.
+        if bound:
+            if have_d > want_d:
+                bad.append("derived")
+        elif abs(have_d - want_d) / max(abs(want_d), 1e-12) > RELTOL:
+            bad.append("derived")
+        if not bad:
+            print(f"  OK   {name}: mirp={have_mirp!r} nyxus={have_ny!r} "
+                  f"derived={have_d:.6g} {'<=' if bound else '=='} {want_d!r}")
             nok += 1
         else:
-            print(f"  FAIL {name}: mirp={have!r} report={want!r} rel={rel:.3g}")
+            print(f"  FAIL {name} [{','.join(bad)}]: mirp={have_mirp!r} vs {want_mirp!r} "
+                  f"(rel {rel_mirp:.3g}); nyxus={have_ny!r} vs {want_ny!r} (rel {rel_ny:.3g}); "
+                  f"derived={have_d:.6g} vs {want_d!r}")
             nfail += 1
 
     # the reverse direction: a feature this run produces that the report says nothing about
@@ -246,12 +302,44 @@ def main():
         return 1
 
     txt = open(REPORT, encoding="utf-8", errors="replace").read()
+
+    # The Nyxus half of both tables is one run at GREYDEPTH=64 / IBSI=false, so both are backed by
+    # the regression pins. The oracle header's own pins are checked against this MIRP run separately
+    # below -- they are goldens, not a report column.
+    pins = parse_pins(REGRESSION_H, "ngldm_3d_regression_ref_vals")
+
     nok = nfail = nmiss = 0
     unquoted = []
-    for heading, got in (("## Result at `ngldm3d.mirp_fbn64` -- MIRP discretises", fbn),
-                         ("## Result at `ngldm3d.mirp_samelevels` -- the same grey levels", same)):
-        a, b, c, d = verify(got, heading, txt)
+    for heading, got, derived, bound in (
+            ("## Result at `ngldm3d.mirp_fbn64` -- MIRP discretises", fbn,
+             lambda ny, ref: ny / ref, False),                  # a ratio: verified as a value
+            ("## Result at `ngldm3d.mirp_samelevels` -- the same grey levels", same,
+             lambda ny, ref: abs(ny - ref) / max(abs(ref), 1e-12), True)):   # a residual: a bound
+        a, b, c, d = verify(got, heading, txt, pins, derived, bound)
         nok += a; nfail += b; nmiss += c; unquoted += d
+
+    # The oracle header's goldens ARE this run's MIRP values -- that is what makes
+    # test_3d_ngldm_mirp.h an assertion against MIRP rather than against a number someone typed.
+    oracle_pins = parse_pins(MIRP_H, "ngldm_3d_mirp_ref_vals")
+    print(f"\n# verifying the {len(oracle_pins)} goldens pinned in {os.path.basename(MIRP_H)} "
+          f"against this run, at rel<={RELTOL:g}")
+    for name in sorted(oracle_pins):
+        if name not in same:
+            print(f"  MISSING {name}: pinned as a MIRP golden but MIRP reports no counterpart")
+            nmiss += 1
+            continue
+        rel = abs(oracle_pins[name] - same[name]) / max(abs(same[name]), 1e-12)
+        if rel <= RELTOL:
+            print(f"  OK   {name}: pin={oracle_pins[name]!r} mirp={same[name]!r} rel={rel:.3g}")
+            nok += 1
+        else:
+            print(f"  FAIL {name}: pin={oracle_pins[name]!r} mirp={same[name]!r} rel={rel:.3g}")
+            nfail += 1
+    # a feature MIRP can vet that the oracle header does not pin has to be a deliberate omission
+    for name in sorted(set(same) - set(oracle_pins)):
+        if name != "3NGLDM_DCP":
+            print(f"  FAIL {name}: MIRP computes it and {os.path.basename(MIRP_H)} does not pin it")
+            nfail += 1
 
     # the grey-level span is the report's explanation of the fbn64 gap, so it is checked too
     span_txt = f"{span[0]}-{span[1]}, {span[2]} distinct"

@@ -55,6 +55,7 @@ static const std::set<std::string>& externally_vetted_3d_feature_names()
 		add_keys(glszm_3d_pyradiomics_ref_vals);
 		add_keys(ngtdm_3d_pyradiomics_ref_vals);
 		add_keys(morphology_3d_mirp_volume_ref_vals);
+		add_keys(ngldm_3d_mirp_ref_vals);
 		return out;
 	}();
 	return names;
@@ -133,8 +134,11 @@ static const std::set<std::string>& individually_pinned_3d_feature_names()
 TEST(TEST_NYXUS, TEST_3D_FEATURE_COVERAGE_COUNTS)
 {
 	EXPECT_EQ(213u, Nyxus::UserFacing_3D_featureNames.size());
-	EXPECT_EQ(110u, feature_3d_cases(true).size());
-	EXPECT_EQ(103u, feature_3d_cases(false).size());
+	// 126 of the 213 have an external reference behind them; the 16 NGLDM features MIRP can
+	// discriminate are part of that count. The remaining 87 carry a named regression pin instead,
+	// which is what the loop below enforces.
+	EXPECT_EQ(126u, feature_3d_cases(true).size());
+	EXPECT_EQ(87u, feature_3d_cases(false).size());
 	EXPECT_EQ(Nyxus::UserFacing_3D_featureNames.size(), feature_3d_cases(true).size() + feature_3d_cases(false).size());
 
 	// SPEC 1: every public feature with no oracle behind it still has to have a named regression pin.

@@ -79,6 +79,7 @@
 #include "test_3d_morphology_matlab.h"
 #include "test_3d_morphology_mirp.h"
 #include "test_3d_gldzm_regression.h"
+#include "test_3d_ngldm_mirp.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
 #include "test_3d_firstorder_regression.h"
@@ -930,6 +931,73 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_ZP_REGRESSION) {
 
 TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDE_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_gldzm_zde_regression());
+}
+
+
+//***** 3D NGLDM vetted vs MIRP, at the recipe where both tools share a grey-level ladder *****
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LDE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_lde_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HDE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hde_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LGLCE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_lglce_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HGLCE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hglce_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LDLGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_ldlgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LDHGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_ldhgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HDLGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hdlgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HDHGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hdhgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_GLNU_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_glnu_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_GLNUN_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_glnun_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCNU_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcnu_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCNUN_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcnun_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_GLV_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_glv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCV_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENT_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcent_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcene_mirp());
 }
 
 

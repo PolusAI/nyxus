@@ -2,17 +2,8 @@
 
 #include <gtest/gtest.h>
 #include <iomanip>
-#include <tuple>
-#include "../src/nyx/environment.h"           // Environment
-#include "../src/nyx/feature_settings.h"      // Fsettings, NyxSetting
-#include "../src/nyx/featureset.h"            // Nyxus::Feature3D
-#include "../src/nyx/globals.h"               // clear_slide_rois, gatherRoisMetrics_3D, scanTrivialRois_3D, allocateTrivialRoisBuffers_3D
-#include "../src/nyx/roi_cache.h"             // LR
-#include "../src/nyx/slideprops.h"            // SlideProps, scan_slide_props
-#include "../src/nyx/features/3d_ngldm.h"     // D3_NGLDM_feature
-#include "../src/nyx/helpers/fsystem.h"       // fs::exists
-#include "test_main_nyxus.h"                  // agrees_gt, and the <iostream> for the dump below
-#include "test_ref_vals.h"                    // ref_vals_map, and the <string> / <vector> it already includes
+#include "test_3d_ngldm_common.h"        // the fixture, and the headers the mocked 3D workflow needs
+#include "test_ref_vals.h"               // ref_vals_map, and the <string> / <vector> it already includes
 
 // Drift guards on the segmented phantom (ut_inten.nii + ut_mask57.nii, label 57) at 64 grey levels,
 // ibsi=false. Nyxus' own output, so these claim no oracle (SPEC 1).
@@ -50,74 +41,19 @@ static const ref_vals_map<double> ngldm_3d_regression_ref_vals{
 		{ "3NGLDM_DCENE",	0.003475011603342024 }
 };
 
-static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
-
 void assert_3d_ngldm_feature_regression (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {
 	// the table is const and read through .at(), so a missing key throws rather than being
 	// default-inserted as a 0 golden and compared against; check it up front to fail by name
 	ASSERT_TRUE(ngldm_3d_regression_ref_vals.count(fname) > 0) << fname;
 
-	// get segment info
-	auto [ipath, mpath, label] = get_3d_segmented_phantom();
-	ASSERT_TRUE(fs::exists(ipath));
-	ASSERT_TRUE(fs::exists(mpath));
-
-	// mock the 3D workflow
-	Environment e;
-	// (1) slide -> dataset -> prescan 
-	e.dataset.dataset_props.reserve(1);
-	SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-	ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
-	e.dataset.update_dataset_props_extrema();
-	// (2) properties of specific ROIs sitting in 'e.uniqueLabels'
-	clear_slide_rois(e.uniqueLabels, e.roiData);
-	ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
-	// (3) voxel clouds
-	std::vector<int> batch = { label };   // expecting this roi label after metrics gathering
-	ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
-	// (4) buffers
-	ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
-
-	// (5) feature settings
-	Fsettings s;
-	s.resize((int)NyxSetting::__COUNT__);
-	s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-	s[(int)NyxSetting::TINY].rval = 0.0;
-	s[(int)NyxSetting::SINGLEROI].bval = false;
-	s[(int)NyxSetting::GREYDEPTH].ival = 64;
-	s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-	s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-	s[(int)NyxSetting::USEGPU].bval = false;
-	s[(int)NyxSetting::VERBOSLVL].ival = 0;
-	s[(int)NyxSetting::IBSI].bval = false;
-	//
-
-	// (6) feature extraction
-
-	// make it find the feature code by name
-	int fcode = -1;
-	ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
-	// ... and that it's the feature we expect
-	ASSERT_TRUE((int)expecting_fcode == fcode);
-
-	// extract the feature
-	LR& r = e.roiData[label];
-	ASSERT_NO_THROW(r.initialize_fvals());
-	D3_NGLDM_feature f;
-	ASSERT_NO_THROW(f.calculate(r, s));
-
-	// (6) saving values
-
-	f.save_value(r.fvals);
-
-	// we have just 1 value, no need to aggregate subfeatures
-	double atot = r.fvals[fcode][0];
+	double atot = 0.0;
+	calculate_3d_ngldm_feature_value (fname, expecting_fcode, atot);
 
 	// verdict. frac_tolerance = 1e9, i.e. rel=1e-9: Nyxus' own values pinned to full precision, so the
-	// guard catches any change at all. What it discriminates: an implementation that counts the
-	// background of the bounding box as NGLDM centers, or that visits 24 of the 26 neighbors, moves
-	// every value here by far more than the band. Why this band and not a looser one:
+	// guard catches any change at all. That is tighter than the rel=1e-3 the MIRP oracle beside it
+	// asserts, and deliberately so: an oracle band has to survive every CI platform's float, while a
+	// snapshot of this build's own output does not. Why this band and not a looser one:
 	// tests/vetting/audit/ngldm_3d_golden_regen.md, "Regression drift guards".
 	ASSERT_TRUE(agrees_gt(atot, ngldm_3d_regression_ref_vals.at(fname), 1e9))
 		<< fname << " actual=" << std::setprecision(17) << atot;

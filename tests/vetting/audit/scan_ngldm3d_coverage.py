@@ -13,28 +13,26 @@ import sys
 import scanlib
 
 SOURCES = [
+    "test_3d_ngldm_mirp.h",
     "test_3d_ngldm_regression.h",
     os.path.join("python", "test_nyxus.py"),
 ]
 
 NOTE = {
-    "3NGLDM_DCP": "was status=vetted/oracle=mirp from an offline run; demoted -- it agrees with MIRP "
-                  "only at the degenerate value 1.0, while every other comparable feature diverges",
+    "3NGLDM_DCP": "no oracle row: Nyxus hard-codes f_DCP = 1 and MIRP returns 1 on any input where "
+                  "every voxel has a same-level neighbour, so the agreement cannot fail",
     "3NGLDM_GLM": "no counterpart in any tool (MIRP's NGLDM emits no gl_mean column)",
     "3NGLDM_DCM": "no counterpart in any tool (MIRP's NGLDM emits no dc_mean column)",
-    "3NGLDM_GLNU": "26.5x from MIRP -- consistent with background voxels piling into one grey row",
-    "3NGLDM_DCENE": "49.9x from MIRP, the family's widest measured divergence",
-    "3NGLDM_HDE": "9.3x from MIRP -- background voxels each see ~24 identical neighbours",
 }
 
 FAMILY = scanlib.Family(
     dim="3D", family="ngldm", out="ngldm_3d_coverage.csv",
     sources=SOURCES,
-    # Deliberately empty: no oracle test exists for this family. MIRP is config-matched and
-    # reproducible (oracles/gen_ngldm3d_mirp.py) but disagrees with Nyxus on 16 of 17 features for
-    # implementation reasons, so nothing here is vetted and no function carries an oracle suffix.
-    # Add {"mirp": "mirp"} once the defects in the audit report are fixed.
-    oracle_suffix={},
+    # The family's oracle is MIRP at ngldm3d.mirp_samelevels, where both tools evaluate the NGLDM
+    # over one grey-level ladder (oracles/gen_ngldm3d_mirp.py, test_3d_ngldm_mirp.h). 16 of the 19
+    # features carry a vetted row there; 3NGLDM_DCP is a non-discriminating agreement and
+    # 3NGLDM_GLM / 3NGLDM_DCM have no MIRP counterpart, so those three stay regression-only.
+    oracle_suffix={"mirp": "mirp"},
     notes=NOTE,
     enum_dim_prefix=True,
     enum_alias="NGLDM",
