@@ -68,10 +68,10 @@ what recipe `morphology.perimeter_circles` records.
 
 ## ROI_RADIUS_MEDIAN: demoted, the feature reports squared distances
 
-> **Superseded.** Both defects below are fixed, and `ROI_RADIUS_MAX` and `ROI_RADIUS_MEDIAN`
-> are now `vetted` against scikit-image on filled disks. This section stands as the record of
-> the round that found them; the fix, the reference and the measurement that keeps
-> `ROI_RADIUS_MEAN` out are in `morphology_2d_radius_skimage_vetting_report.md`.
+> **Current status is in `morphology_2d_radius_skimage_vetting_report.md`.** `ROI_RADIUS_MAX` and
+> `ROI_RADIUS_MEDIAN` are vetted against scikit-image on filled disks; `ROI_RADIUS_MEAN` is a
+> regression row. This section is the record of the round that produced the verdict below, not the
+> current one.
 
 The claim could not be reproduced, and the reason is a defect rather than a convention gap.
 

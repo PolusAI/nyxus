@@ -273,9 +273,8 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   to agree, so no single implementation is taken on trust.
 - Disks and not `morphology.shape2d_native` for the reason `morphology.perimeter_circles` exists: on
   a 26-pixel object with a hole the two boundary conventions have nothing to converge to. Three radii
-  and not one because the defect these assertions were written for was a **units** error, and a
-  single disk cannot see units -- across R the reference grows 2.1x per doubling and a squared
-  distance grows 4.2x.
+  and not one because a single disk cannot distinguish a distance from its square -- either is just a
+  number on one fixture, while across a doubling of R a distance grows 2.1x and a square 4.2x.
 - The same recipe also carries an `analytic` row for `ROI_RADIUS_MAX`, asserted in
   `test_2d_morphology_analytic.h`, and it is an **exact** closed form rather than a band:
   `MAX == sqrt((R-1)^2 + 1)`, the centre's distance to the boundary pixel at offset `(1, R-1)` -- that

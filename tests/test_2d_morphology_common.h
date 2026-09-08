@@ -278,8 +278,8 @@ static void calculate_circle_shape_values(std::vector<std::vector<double>>& fval
 // every side -- with its contour and the three ROI_RADIUS_* statistics. The radius features are
 // vetted on disks rather than on the 8x8 shape2d raster for the reason PERIMETER is vetted on the
 // circles fixture above: on 26 pixels with a hole the two boundary conventions have nothing to
-// converge to. Three radii and not one because the defect these assertions were written for was a
-// UNITS error, and a single disk cannot see units.
+// converge to. Three radii and not one because a single disk cannot distinguish a distance from its
+// square -- only their growth across R can.
 // tests/vetting/oracles/gen_morphology_radius_skimage.py builds the same disk one line at a time.
 static void calculate_disk_radius_values (double R, std::vector<std::vector<double>>& fvals)
 {
