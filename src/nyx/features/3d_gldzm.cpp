@@ -1,5 +1,5 @@
+#include <array>
 #include <climits>
-#include <stack>
 #include "../environment.h"
 #include "3d_gldzm.h"
 #include "image_cube.h"
@@ -54,6 +54,74 @@ void D3_GLDZM_feature::clear_buffers()
 		f_GLE = 0;
 }
 
+// City-block distance from every ROI voxel to the nearest voxel outside the ROI, which is the
+// distance IBSI's GLDZM measures. A voxel touching the ROI's surface is at distance 1. Anything
+// outside the bounding box is outside the ROI, and that is exact because the box is tight.
+// Breadth-first from the surface inwards: the frontier holds the voxels settled at the current
+// distance, so every voxel is settled once, at its shortest distance.
+void D3_GLDZM_feature::calc_dist2border (SimpleCube<int>& dist, const SimpleCube<unsigned char>& roi_mask)
+{
+	const int w = roi_mask.width(),
+		h = roi_mask.height(),
+		d = roi_mask.depth();
+	const int UNSETTLED = INT_MAX;
+
+	dist.allocate (w, h, d);
+	dist.fill (0);	// off-ROI voxels stay at 0: they are the border this measures against
+
+	// the 6 city-block moves
+	static const int mv[6][3] = { {-1,0,0}, {+1,0,0}, {0,-1,0}, {0,+1,0}, {0,0,-1}, {0,0,+1} };
+
+	std::vector<std::array<int, 3>> frontier, next_frontier;	// x,y,z of the voxels settled last
+
+	// distance 1 is every ROI voxel with a move that leaves the ROI or leaves the box
+	for (int z = 0; z < d; z++)
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+			{
+				if (roi_mask.zyx(z, y, x) == 0)
+					continue;
+
+				dist.zyx(z, y, x) = UNSETTLED;
+
+				for (int i = 0; i < 6; i++)
+				{
+					int nx = x + mv[i][0],
+						ny = y + mv[i][1],
+						nz = z + mv[i][2];
+					if (!roi_mask.safe(nz, ny, nx) || roi_mask.zyx(nz, ny, nx) == 0)
+					{
+						dist.zyx(z, y, x) = 1;
+						frontier.push_back ({ x, y, z });
+						break;
+					}
+				}
+			}
+
+	// each round settles the ROI voxels one move further in
+	for (int step = 2; !frontier.empty(); step++)
+	{
+		next_frontier.clear();
+
+		for (const auto& v : frontier)
+			for (int i = 0; i < 6; i++)
+			{
+				int nx = v[0] + mv[i][0],
+					ny = v[1] + mv[i][1],
+					nz = v[2] + mv[i][2];
+				if (!roi_mask.safe(nz, ny, nx) || roi_mask.zyx(nz, ny, nx) == 0)
+					continue;
+				if (dist.zyx(nz, ny, nx) != UNSETTLED)
+					continue;
+
+				dist.zyx(nz, ny, nx) = step;
+				next_frontier.push_back ({ nx, ny, nz });
+			}
+
+		frontier.swap (next_frontier);
+	}
+}
+
 void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, int& Ng, int& Nd, std::vector<PixIntens>& greysLUT, LR& r, const Fsettings& s)
 {
 	//==== Compose the distance matrix
@@ -75,220 +143,118 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	auto& imR = r.aux_image_cube;
 	bin_intensities_3d (D, imR, r.aux_min, r.aux_max, greyInfo);
 
-	// allocate intensities matrix
+	// -- ROI mask over the bounding box. The binned cube cannot stand in for it: matlab binning
+	// sends intensity 0 to level 1, so after binning the background filling the rest of the box is
+	// indistinguishable from a genuine level-1 ROI voxel. The 2D twin gldzm.cpp masks for the same
+	// reason. A byte per bounding-box voxel is the cheapest element type that carries the answer.
+	SimpleCube<unsigned char> roi_mask;
+	roi_mask.allocate (D.width(), D.height(), D.depth());
+	roi_mask.fill (0);
+	auto xmin = r.aabb.get_xmin(),
+		ymin = r.aabb.get_ymin(),
+		zmin = r.aabb.get_zmin();
+	for (const auto& p : r.raw_pixels_3D)
+		roi_mask.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)) = 1;
+
+	// allocate intensities matrix. The grey levels are the ROI's, not the bounding box's.
 	std::vector<PixIntens> I;
 	if (ibsi_grey_binning(greyInfo))
 	{
-		auto n_ibsi_levels = *std::max_element(D.begin(), D.end());
-		I.resize(n_ibsi_levels);
-		for (int i = 0; i < n_ibsi_levels; i++)
+		PixIntens n_ibsi_levels = 0;
+		for (int z = 0; z < D.depth(); z++)
+			for (int y = 0; y < D.height(); y++)
+				for (int x = 0; x < D.width(); x++)
+					if (roi_mask.zyx(z, y, x))
+						n_ibsi_levels = std::max (n_ibsi_levels, D.zyx(z, y, x));
+		I.resize (n_ibsi_levels);
+		for (PixIntens i = 0; i < n_ibsi_levels; i++)
 			I[i] = i + 1;
 	}
 	else // radiomics and matlab
 	{
-		std::unordered_set<PixIntens> U(D.begin(), D.end());
+		std::unordered_set<PixIntens> U;
+		for (int z = 0; z < D.depth(); z++)
+			for (int y = 0; y < D.height(); y++)
+				for (int x = 0; x < D.width(); x++)
+					if (roi_mask.zyx(z, y, x))
+						U.insert (D.zyx(z, y, x));
 		U.erase(0);	// discard intensity '0'
 		I.assign(U.begin(), U.end());
 		std::sort(I.begin(), I.end());
 	}
 
+	//==== Distance of every ROI voxel to the ROI border. One pass over the box, not a lookup per
+	// zone member: a zone's metric is a minimum over its voxels, so every ROI voxel's distance is
+	// read at least once anyway.
+	SimpleCube<int> dist;
+	calc_dist2border (dist, roi_mask);
+
 	//==== Find zones
-	constexpr int huge = INT_MAX;	// Value greater than any pixel's distance to ROI border
-	const int VISITED = -1;
-	for (int row = 0; row < D.height(); row++)
-		for (int col = 0; col < D.width(); col++)
-			for (int dep = 0; dep < D.depth(); dep++)
-		{
-			auto inten = D.zyx (dep, row, col);
+	// A zone is a 26-connected component of one grey level within the ROI -- the connectivity IBSI
+	// defines for GLDZM and the one GLSZM uses for the same notion of a zone. The zone's distance
+	// metric is the smallest distance to the border any of its voxels has.
+	std::vector<std::array<int, 3>> stack;	// x,y,z of the zone voxels whose neighbourhood is still to be scanned
 
-			// Skip visited pixels
-			if (int(inten) == VISITED)
-				continue;
+	for (int dep = 0; dep < D.depth(); dep++)
+		for (int row = 0; row < D.height(); row++)
+			for (int col = 0; col < D.width(); col++)
+			{
+				// zones are grown over the ROI; the background filling the rest of the bounding box
+				// is not part of any of them
+				if (roi_mask.zyx(dep, row, col) == 0)
+					continue;
 
-			// Skip 0-intensity pixels (usually out of mask pixels)
-			if (ibsi_grey_binning(greyInfo))
+				auto inten = D.zyx (dep, row, col);
+
+				// Grey level 0 is the one level the LUT never carries -- the IBSI branch fills it
+				// with 1..max and the other erases 0 -- so a zone of it would have no row in the
+				// matrix. It reaches here only from the binning schemes that leave a zero at zero,
+				// which the MATLAB one does not.
 				if (inten == 0)
 					continue;
 
-			// Once found a nonblank pixel, explore its same-intensity neighbourhood (aka "zone") pixel's distance 
-			// to the image border and figure out the whole zone's metric - minimum member pixel's distance to the border.
-			std::stack<std::tuple<int, int, int>> parentstack;	// x,y,z
+				// Taking a voxel into a zone clears its mask bit. That both prevents rescanning and
+				// keeps "is this a zone member" one lookup: a voxel already in a zone is no longer
+				// available to another.
+				roi_mask.zyx(dep, row, col) = 0;
 
-			int x = col,
-				y = row,
-				z = dep;
+				int zoneSize = 1;
+				int zoneMetric = dist.zyx (dep, row, col);
 
-			// Initial zone size
-			int zoneSize = 1;	// once found a never-visited pixel, we already have a 1-pixel zone
+				stack.clear();
+				stack.push_back ({ col, row, dep });
 
-			// Prepare an initial approximation of zone's distance to border
-			int zoneMetric = dist2border <SimpleCube<PixIntens>>(D, x, y, z);
-
-			// Scan the neighborhood of pixel (x,y)
-			for (;;)
-			{
-				//==== Calculate the metric of this pixel. It may happen to be the only pixel of a zone
-
-				// Prevent rescanning: mark eroded pixels with 'VISITED'. (The goal is to erode the whole zone.)
-				D.zyx(z, y, x) = VISITED;
-
-				//==== Check if zone continues to the East
-				int _x = x + 1,
-					_y = y,
-					_z = z;
-				if (D.safe(_z, _y, _x) && D.zyx(_z, _y, _x) != VISITED && D.zyx(_z, _y, _x) == inten)
+				while (!stack.empty())
 				{
+					auto v = stack.back();
+					stack.pop_back();
 
-					// Store pixel (x+1,y)'s parent pixel pisition
-					parentstack.push({ x,y,z });
+					for (int dz = -1; dz <= 1; dz++)
+						for (int dy = -1; dy <= 1; dy++)
+							for (int dx = -1; dx <= 1; dx++)
+							{
+								if (dx == 0 && dy == 0 && dz == 0)
+									continue;
 
-					// Update zone's metric
-					int dist2roi = dist2border <SimpleCube<PixIntens>>(D, _x, _y, _z);
-					zoneMetric = std::min(zoneMetric, dist2roi);
+								int _x = v[0] + dx,
+									_y = v[1] + dy,
+									_z = v[2] + dz;
+								if (!roi_mask.safe(_z, _y, _x) || roi_mask.zyx(_z, _y, _x) == 0)
+									continue;
+								if (D.zyx(_z, _y, _x) != inten)
+									continue;
 
-					// Update zone size
-					zoneSize++;
-
-					// Make the new neighborhood pixel current parent
-					x = _x;
-					continue;
+								roi_mask.zyx(_z, _y, _x) = 0;
+								zoneSize++;
+								zoneMetric = std::min (zoneMetric, dist.zyx(_z, _y, _x));
+								stack.push_back ({ _x, _y, _z });
+							}
 				}
 
-				//==== Check if zone continues to the South
-				_x = x;
-				_y = y + 1;
-				_z = z;
-				if (D.safe(_z, _y, _x) && D.zyx(_z, _y, _x) != VISITED && D.zyx(_z, _y, _x) == inten)
-				{
-
-					// Store pixel (x,y+1)'s parent pixel pisition
-					parentstack.push({ x,y,z });
-
-					// Update zone's metric
-					int dist2roi = dist2border <SimpleCube<PixIntens>>(D, _x, _y, _z);
-					zoneMetric = std::min(zoneMetric, dist2roi);
-
-					// Update zone size
-					zoneSize++;
-
-					// Make the new neighborhood pixel current parent
-					y = _y;
-					continue;
-				}
-
-				//==== Check if zone continues to the West
-				_x = x - 1;
-				_y = y;
-				_z = z;
-				if (D.safe(_z, _y, _x) && D.zyx(_z, _y, _x) != VISITED && D.zyx(_z, _y, _x) == inten)
-				{
-					// Store pixel (x-1,y)'s parent pixel pisition
-					parentstack.push({ x,y,z });
-
-					// Update zone's metric
-					int dist2roi = dist2border <SimpleCube<PixIntens>>(D, _x, _y, _z);
-					zoneMetric = std::min(zoneMetric, dist2roi);
-
-					// Update zone size
-					zoneSize++;
-
-					// Make the new neighborhood pixel current parent
-					x = _x;
-					continue;
-				}
-
-				//==== Check if zone continues to the North
-				_x = x;
-				_y = y - 1;
-				_z = z;
-				if (D.safe(_z, _y, _x) && D.zyx(_z, _y, _x) != VISITED && D.zyx(_z, _y, _x) == inten)
-				{
-
-					// Store pixel (x,y-1)'s parent pixel pisition
-					parentstack.push({ x,y,z });
-
-					// Update zone's metric
-					int dist2roi = dist2border <SimpleCube<PixIntens>>(D, _x, _y, _z);
-					zoneMetric = std::min(zoneMetric, dist2roi);
-
-					// Update zone size
-					zoneSize++;
-
-					// Make the new neighborhood pixel current parent
-					y = _y;
-					continue;
-				}
-
-				//==== Check if zone continues upwards
-				_x = x;
-				_y = y;
-				_z = z+1;
-				if (D.safe(_z, _y, _x) && D.zyx(_z, _y, _x) != VISITED && D.zyx(_z, _y, _x) == inten)
-				{
-
-					// Store pixel (x+1,y)'s parent pixel pisition
-					parentstack.push({ x,y,z });
-
-					// Update zone's metric
-					int dist2roi = dist2border <SimpleCube<PixIntens>>(D, _x, _y, _z);
-					zoneMetric = std::min(zoneMetric, dist2roi);
-
-					// Update zone size
-					zoneSize++;
-
-					// Make the new neighborhood pixel current parent
-					z = _z;
-					continue;
-				}
-
-				//==== Check if zone continues downwards
-				_x = x;
-				_y = y;
-				_z = z-1;
-				if (D.safe(_z, _y, _x) && D.zyx(_z, _y, _x) != VISITED && D.zyx(_z, _y, _x) == inten)
-				{
-
-					// Store pixel (x,y+1)'s parent pixel pisition
-					parentstack.push({ x,y,z });
-
-					// Update zone's metric
-					int dist2roi = dist2border <SimpleCube<PixIntens>>(D, _x, _y, _z);
-					zoneMetric = std::min(zoneMetric, dist2roi);
-
-					// Update zone size
-					zoneSize++;
-
-					// Make the new neighborhood pixel current parent
-					z = _z;
-					continue;
-				}
-
-				// We are done exploring pixel's potential neighborhood. There might happen a zone or not (just this pixel)
-				if (parentstack.empty() == false)
-				{
-					// Not a trivial (single-pixel) zone
-
-					// Restore the last saved parent position as current
-					// in order to get ahold the terminal pixel's parent who hopefully has other children
-					auto parent_xy = parentstack.top();
-					parentstack.pop();
-					x = std::get<0>(parent_xy);
-					y = std::get<1>(parent_xy);
-					z = std::get<2>(parent_xy);
-				}
-				else
-					// Empty 'parentstack' indicates that no neighbors ("children") of pixel (x,y) are found or have all been ingested. 
-					// We are good to register this zone and proceed with searching another one.
-					break;
-			}
-
-			// At this point, 'parentstack' is expected to be empty
-			{
 				// Done scanning the whole zone. Register it
 				IDZ_cluster_indo clu = { inten, zoneMetric, zoneSize };
 				Z.push_back(clu);
 			}
-		}
 
 	//==== Fill the zonal metric matrix
 
@@ -325,53 +291,6 @@ void D3_GLDZM_feature::calc_gldzm_matrix (SimpleMatrix<unsigned int>& GLDZM, con
 		auto& k = GLDZM.yx(row, col);
 		k++;
 	}
-}
-
-template <class Cube> int D3_GLDZM_feature::dist2border (Cube & I, const int x, const int y, const int z)
-{
-	// scan left
-	int dist2l = 0;
-	for (int x0 = x - 1; x0 >= 0; x0--)
-		if (I.zyx(z, y, x0) == 0 || x0 == 0)	// we're at the ROI border or left margin (x0==0) 
-		{
-			dist2l = x - x0;
-			break;
-		}
-	// scan right
-	int dist2r = 0, w = I.width();
-	for (int x0 = x + 1; x0 < w; x0++)
-		if (I.zyx(z, y, x0) == 0 || x0 == w - 1)	// we're at the ROI border or right margin (x0==w-1)
-		{
-			dist2r = x0 - x;
-			break;
-		}
-	// scan up
-	int dist2t = 0;
-	for (int y0 = y - 1; y0 >= 0; y0--)
-		if (I.zyx(z, y0, x) == 0 || y0 == 0)	// we're at the ROI border or top margin (y0==0)
-		{
-			dist2t = y - y0;
-			break;
-		}
-	// scan down
-	int dist2b = 0, h = I.height();
-	for (int y0 = y + 1; y0 < h; y0++)
-		if (I.zyx(z, y0, x) == 0 || y0 == h - 1)	// we're at the ROI border or bottom margin (y0==h-1)
-		{
-			dist2b = y0 - y;
-			break;
-		}
-	// make distances 1-based
-	dist2l++;
-	dist2r++;
-	dist2t++;
-	dist2b++;
-
-	// result
-	int retval = std::min(std::min(std::min(dist2l, dist2r), dist2t), dist2b);
-	if (retval == 0)
-		retval = 1;	// Requirement of GLDZM: pixel on the border is within distance 1 from ROI border
-	return retval;
 }
 
 template <class Imgmatrx> void D3_GLDZM_feature::calc_row_and_column_sum_vectors (std::vector<double>& Mx, std::vector<double>& Md, Imgmatrx& P, const int Ng, const int Nd, const std::vector<PixIntens>& greysLUT)

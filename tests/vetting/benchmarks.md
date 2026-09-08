@@ -108,6 +108,36 @@ thirds of the volume, which is why `n_1 = 32` dominates the matrix.
 
 ---
 
+## `bench_compat_gldzm_3d` — the 16x16x16 GLDZM phantom
+
+| | |
+|---|---|
+| Files | `tests/data/nifti/compat_int/compat_int_gldzm_3d.nii` + `tests/data/nifti/compat_seg/compat_seg_gldzm_3d.nii` |
+| ROI | label **57**, 1512 voxels inside a two-voxel background margin |
+| Shape | 16x16x16 at 1x1x1 spacing; a 12x12x12 cube of 2x2x2 bricks with a 6x6x6 corner cut out of it, grey levels 1..8 |
+| Why it exists | its voxel values ARE the grey levels, so a MIRP run at `base_discretisation_method="none"` and a Nyxus run at `IBSI=true` compare the GLDZM and not the discretisation the two tools disagree about on a CT-like fixture |
+
+Recipes: `gldzm3d.mirp_compat_phantom`. Tests reaching it today: `test_3d_gldzm_mirp.h`.
+
+**Built by `oracles/gen_gldzm3d_mirp.py`, not by hand.** `--write-phantom` writes the pair; every
+other run of that generator rebuilds the same volumes in memory and fails if the checked-in files
+have drifted from the rule. A brick's grey level is `1 + 4*(bz%2) + 2*(by%2) + (bx%2)` over its
+brick coordinates, except the brick at `(3,3,3)`, which carries 1 instead of the 8 that rule gives
+it.
+
+**Three choices, each separating one thing the family can get wrong.** The background margin makes
+the ROI mask, rather than a binned intensity, the only thing that says which voxels are the ROI's.
+The corner cut makes the ROI non-convex, so near the cut the shortest way out is diagonal and a
+distance measured along the axes overstates it — enough to move `3GLDZM_LDE` by 15%. The `(3,3,3)`
+implant touches eight level-1 bricks at a corner and nowhere else, so it is one zone with them at
+26-connectivity and a zone of its own at 6- or 18-connectivity, which moves all sixteen features.
+`audit/gldzm_3d_mirp_vetting_report.md` carries the negative control for each.
+
+**The zone count is derivable without any tool**: 189 bricks less the seven the implant absorbs is
+182 zones, so `3GLDZM_ZP` is 182/1512.
+
+---
+
 ## `ibsi_digital_phantom` — the IBSI reference phantom, 4 slices
 
 | | |
