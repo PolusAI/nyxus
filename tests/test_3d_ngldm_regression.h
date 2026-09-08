@@ -15,44 +15,39 @@
 #include "test_ref_vals.h"                    // ref_vals_map, and the <string> / <vector> it already includes
 
 // Drift guards on the segmented phantom (ut_inten.nii + ut_mask57.nii, label 57) at 64 grey levels,
-// ibsi=false. Nyxus' own output, so these claim no oracle (SPEC 1) -- and unlike every other 3D
-// family, no feature here is vetted against one either.
+// ibsi=false. Nyxus' own output, so these claim no oracle (SPEC 1).
 //
 // Regenerate with test_3d_ngldm_dump_regression() below.
 //
-// THESE VALUES ARE KNOWN TO BE WRONG, and are pinned anyway. A config-matched MIRP 2.6.0 run
-// disagrees on 16 of the 17 features it can compute, by up to 50x, and two causes are visible in
-// src/nyx/features/3d_ngldm.cpp: the NGLD matrix is built over the ROI bounding box rather than the
-// ROI (background voxels included), and the neighbourhood table holds 24 shifts where a 3D
-// Chebyshev-1 neighbourhood has 26. A drift guard's job is to notice change, not to bless the
-// values, so they are pinned at full precision until the implementation is fixed -- at which point
-// every number below has to be regenerated.
-//
-// Measurements, both causes, and the reproduction:
-// tests/vetting/audit/ngldm_3d_mirp_vetting_report.md.
+// The NGLDM these come from agrees with MIRP 2.6.0 to machine precision (worst rel 8.7e-16 over the
+// 17 features MIRP computes) once both sides are given the same grey levels. They are not asserted
+// against MIRP here because the two discretisations differ: at `fixed_bin_number` n=64 MIRP spreads
+// this ROI over levels 1-64, while Nyxus bins it over [0, ROI max] of a volume whose minimum has
+// been shifted to 0, which places the ROI on levels 21-64. Measurements, both level sets, and the
+// reproduction: tests/vetting/audit/ngldm_3d_mirp_vetting_report.md.
 //
 // 3NGLDM_GLM and 3NGLDM_DCM have no counterpart in any tool -- MIRP's NGLDM emits no gl_mean /
-// dc_mean column -- so they cannot be vetted even once the implementation is corrected.
+// dc_mean column.
 static const ref_vals_map<double> ngldm_3d_regression_ref_vals{
-		{ "3NGLDM_LDE",	0.10159976999534079 },
-		{ "3NGLDM_HDE",	261.01822590738425 },
-		{ "3NGLDM_LGLCE",	0.00035968375469422158 },
-		{ "3NGLDM_HGLCE",	740.43602941176471 },
-		{ "3NGLDM_LDLGLE",	5.8337460459982142e-05 },
-		{ "3NGLDM_LDHGLE",	73.919882197712482 },
-		{ "3NGLDM_HDLGLE",	0.025201544837470152 },
-		{ "3NGLDM_HDHGLE",	20099.770197121401 },
-		{ "3NGLDM_GLNU",	115443.18172715895 },
-		{ "3NGLDM_GLNUN",	0.22575716076180957 },
-		{ "3NGLDM_DCNU",	85056.840050062572 },
-		{ "3NGLDM_DCNUN",	0.16633455892143026 },
+		{ "3NGLDM_LDE",	0.15365019670462546 },
+		{ "3NGLDM_HDE",	40.639400652985074 },
+		{ "3NGLDM_LGLCE",	0.00078390817616903633 },
+		{ "3NGLDM_HGLCE",	1873.2488631063434 },
+		{ "3NGLDM_LDLGLE",	7.8027556383287739e-05 },
+		{ "3NGLDM_LDHGLE",	375.70769342480037 },
+		{ "3NGLDM_HDLGLE",	0.056243030790977401 },
+		{ "3NGLDM_HDHGLE",	44248.655200559704 },
+		{ "3NGLDM_GLNU",	6480.4799440298511 },
+		{ "3NGLDM_GLNUN",	0.023614155579633027 },
+		{ "3NGLDM_DCNU",	32085.42817164179 },
+		{ "3NGLDM_DCNUN",	0.11691576846592887 },
 		{ "3NGLDM_DCP",	1.0 },
-		{ "3NGLDM_GLM",	16.955115769712151 },
-		{ "3NGLDM_GLV",	190.08150972702501 },
-		{ "3NGLDM_DCM",	13.485998122653307 },
-		{ "3NGLDM_DCV",	86.17064428912758 },
-		{ "3NGLDM_DCENT",	5.2277449211654039 },
-		{ "3NGLDM_DCENE",	0.14348407632898436 }
+		{ "3NGLDM_GLM",	41.474725979477633 },
+		{ "3NGLDM_GLV",	153.09596803358812 },
+		{ "3NGLDM_DCM",	5.10127098880597 },
+		{ "3NGLDM_DCV",	14.616434951751623 },
+		{ "3NGLDM_DCENT",	8.4056856003340421 },
+		{ "3NGLDM_DCENE",	0.003475011603342024 }
 };
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
@@ -119,9 +114,10 @@ void assert_3d_ngldm_feature_regression (const std::string& fname, const Nyxus::
 	// we have just 1 value, no need to aggregate subfeatures
 	double atot = r.fvals[fcode][0];
 
-	// verdict. frac_tolerance = 1e9, i.e. rel=1e-9: Nyxus' own values pinned to full precision, so
-	// the guard catches any change at all -- which is the point, because these values are waiting for
-	// an implementation fix that will move every one of them. Why this band and not a looser one:
+	// verdict. frac_tolerance = 1e9, i.e. rel=1e-9: Nyxus' own values pinned to full precision, so the
+	// guard catches any change at all. What it discriminates: an implementation that counts the
+	// background of the bounding box as NGLDM centers, or that visits 24 of the 26 neighbors, moves
+	// every value here by far more than the band. Why this band and not a looser one:
 	// tests/vetting/audit/ngldm_3d_golden_regen.md, "Regression drift guards".
 	ASSERT_TRUE(agrees_gt(atot, ngldm_3d_regression_ref_vals.at(fname), 1e9))
 		<< fname << " actual=" << std::setprecision(17) << atot;
@@ -131,8 +127,7 @@ void assert_3d_ngldm_feature_regression (const std::string& fname, const Nyxus::
 // table wants. Run it with
 //     runAllTests --gtest_filter=*3D_NGLDM_DUMP_REGRESSION*
 // and paste the output over the table above. It uses the same settings the shared assert helper
-// sets, so the two cannot drift apart. This is the function to re-run once the two defects recorded
-// in the audit report are fixed -- every pin above changes then.
+// sets, so the two cannot drift apart.
 void test_3d_ngldm_dump_regression()
 {
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();
