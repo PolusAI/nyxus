@@ -33,13 +33,13 @@ MAX/(R-1) = sqrt(1+1/(R-1)^2) then converges to 1 as 1/(2(R-1)^2): 0.62%, 0.14%,
 R = 10, 20, 40, i.e. LINEAR growth in R.
 
 WHAT IS VETTED AND WHAT IS NOT. MAX and MEDIAN agree with this reference to double precision.
-ROI_RADIUS_MEAN does not, and the residual is not this family's: ContourFeature::buildRegularContour
-returns every contour pixel one pixel right and one pixel down of where it is (the padding it traces
-in is never subtracted), so Nyxus measures its pixels against a shifted boundary. Shifting the
-reference boundary by (+1, +1) reproduces all three Nyxus values exactly, on the disks and on the
-shape2d raster alike -- this script prints that comparison as the standing evidence. MAX and MEDIAN
-survive the shift on a disk because the maximizing pixel simply moves with it; MEAN does not, and
-stays a regression row until the contour offset is fixed.
+ROI_RADIUS_MEAN does not, for a reason outside this family: ContourFeature::buildRegularContour
+reports every contour pixel one pixel right and one pixel down of where it is (it never subtracts the
+pad it traces in), so Nyxus measures its pixels against a shifted boundary. Shifting the reference
+boundary by (+1, +1) reproduces all three Nyxus values exactly, on the disks and on the shape2d
+raster alike -- this script prints that comparison on every run as the standing measurement. MAX and
+MEDIAN are unmoved by the shift on a disk because the pixel attaining them moves with it; MEAN is
+not, and is a regression row until the contour offset is corrected.
 
 Provenance: tool=scikit-image 0.26.0, scipy 1.17.1, numpy 2.4.6; env=nyxus_mirp (conda);
 generator=tests/vetting/oracles/gen_morphology_radius_skimage.py. Run offline; CI never invokes it.

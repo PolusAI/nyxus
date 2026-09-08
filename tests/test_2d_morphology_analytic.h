@@ -57,10 +57,11 @@ void test_2d_morphology_documented_formula_conformance_analytic()
 // nearest boundary pixel is at (1, R-1) at every one of them.
 //
 // That form is also why MAX/(R-1) = sqrt(1 + 1/(R-1)^2) converges to 1 from above as 1/(2(R-1)^2) --
-// 1.006154, 1.001384, 1.000329 at R = 10, 20, 40 -- i.e. MAX grows LINEARLY in R. This is the
-// assertion that catches the class of defect it was written for: ROI_RADIUS_* used to report SQUARED
-// distances (82, 362 and 1522 here), whose ratio to R-1 is 9.1, 19.1 and 39.0 -- growing, not
-// converging. A single disk could not have told the two apart; the exact form kills it at each one.
+// 1.006154, 1.001384, 1.000329 at R = 10, 20, 40 -- i.e. MAX grows LINEARLY in R.
+//
+// What the assertion discriminates: a squared distance would read 82, 362 and 1522 here, ratios to
+// R-1 of 9.1, 19.1 and 39.0 that grow instead of converging. One disk cannot tell a distance from
+// its square, since either is just a number; the exact form separates them at every radius.
 void test_2d_morphology_roi_radius_disk_closed_form_analytic()
 {
 	for (double R : {10.0, 20.0, 40.0})

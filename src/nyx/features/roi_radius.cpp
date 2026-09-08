@@ -22,9 +22,9 @@ namespace
 		mean_r = mom2.mean();
 		max_r = mom2.max__();
 
-		// Median of the distances themselves. They are real-valued, so the TrivialHistogram this
-		// used to go through would have rounded every radius to a whole pixel: its item type is
-		// 'unsigned int'.
+		// Median over the distances directly. They are real-valued, so this cannot go through
+		// TrivialHistogram, whose item type is 'unsigned int' and would round every radius to a
+		// whole pixel.
 		size_t n = dists.size();
 		std::sort (dists.begin(), dists.end());
 		median_r = n % 2 ? dists[n / 2] : (dists[n / 2 - 1] + dists[n / 2]) / 2.0;
@@ -47,13 +47,12 @@ void RoiRadiusFeature::calculate (LR& r, const Fsettings& s)
 	std::vector<double> dists;
 	dists.reserve (cloud.size());
 	for (auto& pxA : cloud)
-		// The distance to the contour, not its square: a radius is what the 3 feature names promise.
-		// Taken with exact_min_sqdist() rather than min_sqdist(), whose approximate hill-descent
-		// assumes a locally-unimodal ordered contour and can settle in the wrong basin on a closed
-		// one, overestimating the minimum. That is a deliberate trade of speed for the right answer:
-		// the scan is O(contour) per pixel where the descent was O(log contour), which on a filled
-		// disk measures 1.1x slower at 8k pixels and 8.2x at 500k. A distance transform would be
-		// both exact and O(pixels), and is the way to buy the speed back if a caller needs it.
+		// The pixel's distance to the contour. exact_min_sqdist() rather than min_sqdist(): the
+		// latter is an approximate hill-descent that assumes a locally-unimodal ordered contour and
+		// can settle in the wrong basin on a closed one, returning more than the true minimum. The
+		// exact scan is O(contour) per pixel against the descent's O(log contour), which on a filled
+		// disk is 1.1x the time at 8k pixels and 8.2x at 500k; a seeded distance transform would be
+		// exact at O(pixels) and is where to go if a caller needs that back.
 		dists.push_back (std::sqrt (pxA.exact_min_sqdist (K)));
 
 	radius_stats (dists, mean_r, max_r, median_r);
@@ -73,8 +72,8 @@ void RoiRadiusFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	for (size_t i=0; i<cloud.size(); i++) 
 	{
 		Pixel2 pxA = cloud.get_at(i);
-		// Same distance the in-RAM path takes. min_max_sqdist() was called here for its minimum
-		// alone, which came from the same approximate min_sqdist(), and squared.
+		// The same quantity calculate() takes, by the same call: the two paths are required to
+		// return identical values.
 		dists.push_back (std::sqrt (pxA.exact_min_sqdist (K)));
 	}
 

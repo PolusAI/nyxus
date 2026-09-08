@@ -196,17 +196,19 @@ static const ref_vals_map<double> morphology_2d_regression_ref_vals
 	{"CIRCULARITY", 0.671081973229055},
 	{"EULER_NUMBER", 0.0},
 	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 6.32475519180298},
-	// Re-derived when RoiRadiusFeature stopped reporting SQUARED distances and stopped taking the
-	// minimum with the approximate hill-descent (src/nyx/features/roi_radius.cpp). Two of the three
-	// moved: 1.0769 -> 0.6247 and 4 -> 1.4142. MEDIAN did NOT -- it was 1, and sqrt(1) is 1, so this
-	// fixture's median is one of the values a units bug cannot show up in, which is part of why the
-	// vetting claim lives on disks instead. MAX shows both halves of the fix: 4 was 2 squared, and
-	// 2 was itself the approximation overshooting an exact minimum of sqrt(2).
+	// The three ROI_RADIUS_* statistics on this ROI. RoiRadiusFeature measures every ROI pixel's
+	// distance to the ROI's contour and reports the mean, maximum and median of those distances.
 	//
-	// MAX and MEDIAN are vetted on disks -- against skimage in test_2d_morphology_skimage.h and, for
-	// MAX, against the closed form in test_2d_morphology_analytic.h. These three rows stay snapshots
-	// on shape2d, where the reference disagrees for a reason that is not this family's (see the disk
-	// table in test_2d_morphology_skimage.h).
+	// MAX and MEDIAN are vetted on filled disks -- against scikit-image in
+	// test_2d_morphology_skimage.h and, for MAX, against the closed form in
+	// test_2d_morphology_analytic.h. These three rows are drift guards on shape2d, where the
+	// reference disagrees for a reason outside this family: the traced contour is returned one pixel
+	// right and one pixel down of where it is, so the distances are measured against a shifted
+	// boundary. See the disk table in test_2d_morphology_skimage.h.
+	//
+	// MEDIAN is 1 here and would also be 1 if the feature reported squared distances, this ROI being
+	// small enough that its median distance is exactly one pixel. That is part of why the vetting
+	// claim lives on disks rather than on this fixture.
 	{"ROI_RADIUS_MEAN", 0.62471694950458789},
 	{"ROI_RADIUS_MAX", 1.4142135623730951},
 	{"ROI_RADIUS_MEDIAN", 1.0},

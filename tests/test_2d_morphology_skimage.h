@@ -56,17 +56,16 @@ static const ref_vals_map<double> morphology_2d_skimage_circles_ref_vals{
 //
 // Disks, not the shape2d raster, for the same reason PERIMETER is vetted on the circles benchmark:
 // on 26 pixels with a hole the two boundary conventions have nothing to converge to. A disk also has
-// an EXACT closed form for MAX -- sqrt((R-1)^2+1), the centre's distance to the boundary pixel at
-// offset (1, R-1) -- so MAX grows LINEARLY in R, which the squared-distance defect this table was
-// written for could never do: it reported 82, 362 and 1522 here. That closed form is a separate
-// oracle and is asserted as one, in test_2d_morphology_analytic.h.
+// an exact closed form for MAX -- sqrt((R-1)^2+1), the centre's distance to the boundary pixel at
+// offset (1, R-1) -- which test_2d_morphology_analytic.h asserts as a second oracle on this same
+// fixture.
 //
-// ROI_RADIUS_MEAN is deliberately absent. It is the one of the three that does not survive the
-// separate contour defect underneath: `buildRegularContour` reports every contour pixel one pixel
-// right and one pixel down of where it is, so Nyxus measures against a shifted boundary. Shifting
-// the reference boundary the same way reproduces all three Nyxus values exactly, and on a disk MAX
-// and MEDIAN come back unchanged -- the maximizing pixel just moves with the shift -- while MEAN
-// does not. MEAN stays a regression row until the contour offset is fixed.
+// ROI_RADIUS_MEAN is deliberately absent, because of a defect outside this family:
+// `buildRegularContour` reports every contour pixel one pixel right and one pixel down of where it
+// is, so Nyxus measures its pixels against a shifted boundary. Shifting the reference boundary the
+// same way reproduces all three Nyxus values exactly. On a disk MAX and MEDIAN are unmoved by that
+// shift -- the pixel attaining them moves with it -- while MEAN is not, so MEAN is a regression row
+// until the contour offset is corrected.
 static const ref_vals_map<double> morphology_2d_skimage_radius_disks_ref_vals{
 	// R=10: 317 pixels, 56 boundary pixels; MAX/(R-1) = 1.006154
 	{"ROI_RADIUS_MAX_R10", 9.055385138137417},
@@ -134,11 +133,10 @@ void test_2d_morphology_diameter_equal_area_skimage()
 }
 
 // ROI_RADIUS_MAX / ROI_RADIUS_MEDIAN vs the skimage inner boundary on three filled disks
-// (tests/vetting/oracles/gen_morphology_radius_skimage.py). Three radii rather than one because the
-// defect these replaced -- the features reported SQUARED distances -- is a units error, and one
-// radius cannot see units: 82 and 9.055 are both "a plausible number" on a single disk. Across
-// R = 10, 20, 40 the reference grows by 2.1x and 2.05x, and a squared distance grows by 4.4x and
-// 4.2x, so the ratios separate the two even before the values do.
+// (tests/vetting/oracles/gen_morphology_radius_skimage.py). Three radii rather than one because a
+// single disk cannot distinguish a distance from its square -- 9.055 and 82 are each just a number
+// on one fixture. Across R = 10, 20, 40 a distance grows by 2.1x and 2.05x and a square by 4.4x and
+// 4.2x, so the growth separates the two units before the values do.
 void test_2d_morphology_roi_radius_disks_skimage()
 {
 	for (double R : {10.0, 20.0, 40.0})
