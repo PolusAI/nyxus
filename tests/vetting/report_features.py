@@ -273,6 +273,12 @@ def verdict_of(row, cov, vetted_features):
             return "assertion-without-claim", scope
         if not (c.regression.get(f) or c.other.get(f) or c.asserted.get(f)):
             return "no-assertion-at-all", scope
+        # and against the guard's OWN kind. Unioning the buckets lets an oracle case stand in for a
+        # snapshot that does not exist -- the row reads as a drift guard while nothing guards drift,
+        # which is the claim a regression row is entirely made of. row_covering() draws this line
+        # for a row that names its assertion; a row that names none still has a kind to be read at.
+        if not (c.regression if status == "regression" else c.other).get(f):
+            return "wrong-kind", scope
 
     if scope == "feature":
         return "agree", scope
@@ -414,6 +420,8 @@ def render_md(recs):
         "oracle-mismatch": "both sides name an oracle, but not the same one",
         "assertion-without-claim": "an oracle test asserts it while the row claims no oracle",
         "no-assertion-at-all": "nothing in the tree covers the feature, of any kind",
+        "wrong-kind": "the tree covers this feature, but nothing of the kind this row claims -- an "
+                      "oracle case standing in for a drift guard that does not exist",
         "test-name-unresolved": "test_name names a case that no TEST() in test_all.cc registers",
         "row-test-lacks-feature": "the case test_name names asserts nothing about this feature",
         "row-test-wrong-oracle": "the case test_name names asserts this feature against a "

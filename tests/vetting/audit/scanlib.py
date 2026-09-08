@@ -364,9 +364,10 @@ def asserted_names(block):
 # one of these. The name is captured because it, not the literal, is what the loop below names.
 PY_ASSIGN_LITERAL = re.compile(r"^[ 	]*(\w+)\s*=\s*[\[(]", re.M)
 # `for c in cols:` -- a loop over a local NAME, which is what says WHICH literal is iterated
-# rather than merely held. The indent is captured because the loop's BODY is what has to do the
-# comparing: a loop that only prints its list asserts nothing about it.
-PY_LOOP_NAME = re.compile(r"^([ \t]*)for\s+\w+\s+in\s+(\w+)\s*:", re.M)
+# rather than merely held. The indent bounds the body, and the loop VARIABLE is captured because
+# an assertion in the body that never mentions it is not an assertion about the list -- a loop can
+# hold an unrelated check as easily as it can hold the real one.
+PY_LOOP_NAME = re.compile(r"^([ \t]*)for\s+(\w+)\s+in\s+(\w+)\s*:", re.M)
 # `bad.append(...)`, `p = float(...)` -- what a loop that compares without asserting hands to the
 # assertion after it. `=[^=]` so a comparison is not read as a binding.
 PY_ACCUMULATE = re.compile(
@@ -391,7 +392,7 @@ def _bracketed(text, start):
 
 
 def loop_bodies(block):
-    """-> [(the name a `for` iterates, the lines indented under it)].
+    """-> [(the loop variable, the name it iterates, the lines indented under it)].
 
     Indentation is the only structure available here -- this module reads text, not an AST -- and it
     is enough for the question being asked: does THIS loop compare, or does it merely run.
@@ -407,8 +408,28 @@ def loop_bodies(block):
             if nxt.strip() and len(nxt) - len(nxt.lstrip()) <= indent:
                 break
             body.append(nxt)
-        out.append((m.group(2), "\n".join(body)))
+        out.append((m.group(2), m.group(3), "\n".join(body)))
     return out
+
+
+def iterator_reaches_assertion(body, var, asserted):
+    """Does the loop over `var` compare what it iterates, or merely run beside an assertion?
+
+    Two shapes count, and only these two: the body asserts ON the loop variable, or the body feeds
+    the variable into something the function asserts on afterwards (`bad.append((lab, c, p, q))`
+    under `assert not bad`). An assertion in the body that never mentions the variable is an
+    assertion about something else that happens to sit inside the loop.
+    """
+    at = re.compile(r"(?<![A-Za-z0-9_])" + re.escape(var) + r"(?![A-Za-z0-9_])")
+    for line in body.splitlines():
+        if not at.search(line):
+            continue
+        if ASSERTION.search(line):
+            return True
+        m = PY_ACCUMULATE.match(line)
+        if m and m.group(1) in asserted:
+            return True
+    return False
 
 
 def py_literal_features(block, feat_re):
@@ -426,20 +447,21 @@ def py_literal_features(block, feat_re):
     (`cols = [c for c in df if c in ellipse]`, then `for c in cols:`), so a literal named inside a
     reached literal is reached too.
 
-    The LOOP has to do the comparing, not merely exist. A function that loops a list to print it and
-    asserts something unrelated below satisfies "asserts somewhere and range-loops somewhere" while
-    asserting nothing about the list -- the same false positive one level up. So the loop body must
-    either assert, or accumulate into a name the function later asserts on: the
-    `bad.append(...)` / `assert not bad` shape these cases actually use, where the assertion is
-    outside the loop by construction.
+    The LOOP has to do the comparing, not merely exist, and it has to compare what it ITERATES. A
+    function that loops a list to print it and asserts something unrelated below satisfies "asserts
+    somewhere and range-loops somewhere"; one whose loop body holds an assertion about a different
+    column satisfies "the body asserts". Neither says anything about the list. So the loop variable
+    itself has to reach an assertion -- on an assertion line in the body, or through the
+    accumulation the function asserts on afterwards, which is the `bad.append(..., c, ...)` /
+    `assert not bad` shape these cases actually use, where the assertion is outside the loop by
+    construction.
     """
     literals = {}
     for m in PY_ASSIGN_LITERAL.finditer(block):
         literals.setdefault(m.group(1), []).append(_bracketed(block, m.end() - 1))
     asserted = asserted_names(block)
-    reached = {name for name, body in loop_bodies(block)
-               if name in literals
-               and (ASSERTION.search(body) or set(PY_ACCUMULATE.findall(body)) & asserted)}
+    reached = {name for var, name, body in loop_bodies(block)
+               if name in literals and iterator_reaches_assertion(body, var, asserted)}
     frontier = list(reached)
     while frontier:
         for text in literals[frontier.pop()]:
