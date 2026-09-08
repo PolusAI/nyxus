@@ -320,6 +320,32 @@ have to add.
 
 ---
 
+## `bench_radius_disks` — three filled disks, R = 10, 20 and 40
+
+| | |
+|---|---|
+| Data | built by `calculate_disk_radius_values(R)` in `tests/test_2d_morphology_common.h`: mask `(x-c)² + (y-c)² <= R²`, `c = R + 3`, on a frame padded by 3 on every side |
+| ROI | one per disk — **317**, **1257** and **5025** pixels; **56**, **112** and **224** of them boundary pixels under the 4-neighbour inner boundary |
+| Shape | filled digital disks, intensity 1 everywhere (the radius features read the mask alone) |
+| Why it exists | the `ROI_RADIUS_*` features are a units claim, and one disk cannot see units |
+
+Recipes: `morphology.radius_disks`.
+
+Tests reaching it today: `test_2d_morphology_skimage.h`
+(`TEST_2D_MORPHOLOGY_ROI_RADIUS_DISKS_SKIMAGE`).
+
+**Three radii, not one.** The defect this fixture was added for had `ROI_RADIUS_MAX` reporting a
+squared distance — 82, 362 and 1522 where the radii are 9.055, 19.026 and 39.013. On a single disk
+both are just "a number"; across a doubling of R the reference grows 2.10x and 2.05x while a squared
+distance grows 4.41x and 4.20x, so the ratios separate the two before the values do. The closed form
+is legible for the same reason: the pixel farthest from the boundary is the centre, at R−1 plus a
+rasterization excess that falls off as 1/R² — measured 0.62%, 0.14% and 0.03%.
+
+**The r=20 disk is the same shape as `bench_disk64_diagonal_boundary`**, and its 112 boundary pixels
+are the count that fixture's row already records. It is rebuilt here rather than shared because that
+one is written to a TIFF pair by the pytest suite and this one is a C++ in-memory ROI, and because
+one radius would not be this benchmark.
+
 ## `bench_imq_quality_roi` — one 8×12 image-quality ROI
 
 | | |

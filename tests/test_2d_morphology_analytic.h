@@ -37,3 +37,49 @@ void test_2d_morphology_documented_formula_conformance_analytic()
 	// THICKNESS (the rectangle-model roots P/4 +- sqrt(P^2/16 - A)) are vetted the same way, against
 	// imea's geodeticlength_and_thickness, so they are not re-derived here either.
 }
+
+// ROI_RADIUS_MAX against the closed form for a filled digital disk (oracle=analytic, SPEC 4), on the
+// same `bench_radius_disks` fixture test_2d_morphology_skimage.h pins against scikit-image. Two
+// independent oracles for one feature is the redundancy SPEC 3.1 tracks, and here they check
+// genuinely different things: the skimage row says Nyxus agrees with a reference implementation of
+// the same definition, this one says the value obeys the geometry regardless of any tool.
+//
+// THE CLOSED FORM IS EXACT, not a band. ROI_RADIUS_MAX is the largest distance from any ROI pixel to
+// the ROI's boundary, and on a disk the centre attains it, so the value is the centre's distance to
+// the NEAREST boundary pixel. That pixel is not the axial (R, 0) at distance R -- it is the pixel at
+// offset (1, R-1):
+//
+//   it is inside      1 + (R-1)^2 <= R^2  <=>  2 <= 2R,  true for every R >= 1
+//   it is boundary    its neighbour (1, R) has 1 + R^2 > R^2, so that one is background
+//   and it is nearer  (R-1)^2 + 1 = R^2 - 2R + 2 < R^2  for every R > 1
+//
+// so  ROI_RADIUS_MAX == sqrt((R-1)^2 + 1)  exactly. Verified at R = 5, 10, 20, 40, 80 and 160: the
+// nearest boundary pixel is at (1, R-1) at every one of them.
+//
+// That form is also why MAX/(R-1) = sqrt(1 + 1/(R-1)^2) converges to 1 from above as 1/(2(R-1)^2) --
+// 1.006154, 1.001384, 1.000329 at R = 10, 20, 40 -- i.e. MAX grows LINEARLY in R. This is the
+// assertion that catches the class of defect it was written for: ROI_RADIUS_* used to report SQUARED
+// distances (82, 362 and 1522 here), whose ratio to R-1 is 9.1, 19.1 and 39.0 -- growing, not
+// converging. A single disk could not have told the two apart; the exact form kills it at each one.
+void test_2d_morphology_roi_radius_disk_closed_form_analytic()
+{
+	for (double R : {10.0, 20.0, 40.0})
+	{
+		std::vector<std::vector<double>> fvals;
+		calculate_disk_radius_values(R, fvals);
+
+		// The nearest boundary pixel to the centre, derived above. Both sides are the square root of
+		// the same integer, so this is an equality and not an approximation; the tolerance is
+		// float-representation slack, not a convention band.
+		const double expected = std::sqrt((R - 1.0) * (R - 1.0) + 1.0);
+
+		SCOPED_TRACE(std::string("ANALYTIC_ORACLE__ROI_RADIUS_MAX__R") + std::to_string((int)R));
+
+		// The feature is named on the assertion line rather than only on the readout:
+		// scan_morphology_coverage.py credits a feature from the ASSERTION line and deliberately
+		// does not count a line that merely reads a value out of the buffer.
+		ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::ROI_RADIUS_MAX)][0], expected, 1e-12 * expected)
+			<< "ROI_RADIUS_MAX is not sqrt((R-1)^2+1) = " << expected << " at R = " << R
+			<< " -- it is not the distance from the disk's centre to its boundary";
+	}
+}

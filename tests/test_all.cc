@@ -1279,6 +1279,16 @@ TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ORIENTATION_AND_EROSIONS_SKIMAGE)
 	ASSERT_NO_THROW(test_2d_morphology_orientation_and_erosions_skimage());
 }
 
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_DISK_CLOSED_FORM_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_morphology_roi_radius_disk_closed_form_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_DISKS_SKIMAGE)
+{
+	ASSERT_NO_THROW(test_2d_morphology_roi_radius_disks_skimage());
+}
+
 TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_EXTREMA_MATLAB)
 {
 	ASSERT_NO_THROW(test_2d_morphology_extrema_matlab());

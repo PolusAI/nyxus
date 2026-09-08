@@ -68,6 +68,11 @@ what recipe `morphology.perimeter_circles` records.
 
 ## ROI_RADIUS_MEDIAN: demoted, the feature reports squared distances
 
+> **Superseded.** Both defects below are fixed, and `ROI_RADIUS_MAX` and `ROI_RADIUS_MEDIAN`
+> are now `vetted` against scikit-image on filled disks. This section stands as the record of
+> the round that found them; the fix, the reference and the measurement that keeps
+> `ROI_RADIUS_MEAN` out are in `morphology_2d_radius_skimage_vetting_report.md`.
+
 The claim could not be reproduced, and the reason is a defect rather than a convention gap.
 
 `RoiRadiusFeature::calculate` (`src/nyx/features/roi_radius.cpp:22-36`) feeds `Pixel2::min_sqdist()`
