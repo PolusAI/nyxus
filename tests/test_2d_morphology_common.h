@@ -274,6 +274,48 @@ static void calculate_circle_shape_values(std::vector<std::vector<double>>& fval
 	fvals = roi.fvals;
 }
 
+// A filled digital disk of radius R -- {(x,y) : (x-c)^2 + (y-c)^2 <= R^2} on a frame padded by 3 on
+// every side -- with its contour and the three ROI_RADIUS_* statistics. The radius features are
+// vetted on disks rather than on the 8x8 shape2d raster for the reason PERIMETER is vetted on the
+// circles fixture above: on 26 pixels with a hole the two boundary conventions have nothing to
+// converge to. Three radii and not one because the defect these assertions were written for was a
+// UNITS error, and a single disk cannot see units.
+// tests/vetting/oracles/gen_morphology_radius_skimage.py builds the same disk one line at a time.
+static void calculate_disk_radius_values (double R, std::vector<std::vector<double>>& fvals)
+{
+	Fsettings s = make_shape2d_settings();
+
+	LR roi(3);
+	const int pad = 3, side = int(2.0 * R) + 2 * pad;
+	const double c = R + pad;
+	bool first = true;
+	for (int y = 0; y <= side; y++)
+		for (int x = 0; x <= side; x++)
+		{
+			double dx = x - c, dy = y - c;
+			if (dx * dx + dy * dy <= R * R)
+			{
+				if (first) { init_label_record_3(roi, x, y, 1); first = false; }
+				else update_label_record_3(roi, x, y, 1);
+				roi.raw_pixels.push_back(Pixel2(static_cast<size_t>(x), static_cast<size_t>(y), static_cast<PixIntens>(1)));
+			}
+		}
+	roi.make_nonanisotropic_aabb();
+	roi.aux_image_matrix = ImageMatrix(roi.raw_pixels);
+	roi.initialize_fvals();
+
+	// RoiRadiusFeature measures every ROI pixel against the contour, so the contour goes first
+	ContourFeature contour;
+	contour.calculate(roi, s);
+	contour.save_value(roi.fvals);
+
+	RoiRadiusFeature radius;
+	radius.calculate(roi, s);
+	radius.save_value(roi.fvals);
+
+	fvals = roi.fvals;
+}
+
 // Loads the large ROI mask tests/data/fractal_blob512_seg.ome.tif (path resolved relative to this
 // source file) into a single-ROI LR and computes the fractal features.
 static void calculate_fractal_blob512_feature_values(std::vector<std::vector<double>>& fvals)

@@ -255,6 +255,41 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   agree to 3.8e-15. Note `nnz(bwperim(...))` counts perimeter *pixels* (846 here) and MATLAB's
   `regionprops('Perimeter')` returns 952.848 - neither is this quantity.
 
+## morphology.radius_disks
+- Three filled digital disks, R = 10, 20 and 40, built by `calculate_disk_radius_values()`
+  (`test_2d_morphology_common.h`) at `make_shape2d_settings()` (`test_main_nyxus.h`):
+  `(x-c)^2 + (y-c)^2 <= R^2` on a frame padded by 3, so 317 / 1257 / 5025 pixels. Oracle: `skimage`
+  `segmentation.find_boundaries(connectivity=1, mode='inner')` plus a minimum over the pixels it
+  returns. Used by: `test_2d_morphology_skimage.h`. Generator:
+  `oracles/gen_morphology_radius_skimage.py`.
+- `find_boundaries(connectivity=1, mode='inner')` is the whole of the convention -- the foreground
+  pixels 4-adjacent to background, and it is CellProfiler's own edge definition, which is why
+  `gen_morphology_{,wholeslide_}cellprofiler.py` already reproduce the `EDGE_*` statistics through it.
+  On the 8x8 mask the Nyxus contour **is** this boundary shifted by (+1,+1) -- all 18 coordinates,
+  measured pixel by pixel, not merely the same count. On the r=20 disk it returns 112 boundary
+  pixels, the count `bench_disk64_diagonal_boundary` records for the same 1257-pixel shape. The distance step carries no
+  convention; the generator computes it twice, as an exhaustive minimum and as
+  `scipy.ndimage.distance_transform_edt` over the complement of the boundary, and requires the two
+  to agree, so no single implementation is taken on trust.
+- Disks and not `morphology.shape2d_native` for the reason `morphology.perimeter_circles` exists: on
+  a 26-pixel object with a hole the two boundary conventions have nothing to converge to. Three radii
+  and not one because the defect these assertions were written for was a **units** error, and a
+  single disk cannot see units -- across R the reference grows 2.1x per doubling and a squared
+  distance grows 4.2x.
+- The same recipe also carries an `analytic` row for `ROI_RADIUS_MAX`, asserted in
+  `test_2d_morphology_analytic.h`, and it is an **exact** closed form rather than a band:
+  `MAX == sqrt((R-1)^2 + 1)`, the centre's distance to the boundary pixel at offset `(1, R-1)` -- that
+  pixel is inside (`1+(R-1)^2 <= R^2`), is boundary (its neighbour `(1, R)` is not inside) and is
+  nearer than the axial `(R, 0)`. Matched to 1e-12 relative. Two oracles for one feature is SPEC 3.1's
+  redundancy, and they check different things -- the skimage row that Nyxus agrees with a reference
+  implementation of the definition, the analytic row that the value obeys the geometry with no tool
+  involved and so could not be fooled by a reference sharing a mistake.
+- `ROI_RADIUS_MAX` and `ROI_RADIUS_MEDIAN` agree to double precision. `ROI_RADIUS_MEAN` does **not**,
+  and stays a `regression` row: `ContourFeature::buildRegularContour` never subtracts the one-pixel
+  pad it traces in, so Nyxus measures against a boundary shifted (+1,+1). Shifting the reference the
+  same way reproduces all three values exactly; on a disk MAX and MEDIAN are unmoved by that shift
+  because the pixel attaining them moves with it, and MEAN is not.
+
 ## morphology.caliper_ellipse
 - The filled ellipse a=20, b=10 built by `calculate_ellipse_caliper_values()`
   (`test_2d_morphology_common.h`), at `make_shape2d_settings()` (`test_main_nyxus.h`). Oracle: `imea`
