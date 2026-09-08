@@ -334,11 +334,11 @@ features over the (1-based) bin indices.
    * - THICKNESS
      - Thickness approximated by a rectangle with the same area and perimeter: $ area = geodeticlength * thickness$; $perimeter = 2 * (geodetic_length + thickness) $
    * - ROI_RADIUS_MEAN
-     - Mean centroid to edge distance
+     - Mean over ROI pixels of the distance from a pixel to the nearest contour pixel
    * - ROI_RADIUS_MAX
-     - Maximum of centroid to edge distances
+     - Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel
    * - ROI_RADIUS_MEDIAN
-     - Median value of centroid to edge distances
+     - Median over ROI pixels of the distance from a pixel to the nearest contour pixel
 
 
 **2D texture features:**

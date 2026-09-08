@@ -206,11 +206,19 @@ we can express the following features as:
 GEODETIC_LENGTH :math:`\gets l_G = \frac{P}{4} + \sqrt{\max \left(\frac{P^2}{16}-S, 0\right)}`
 THICKNESS :math:`\gets t_G = \frac{P}{2} - l_G`
 
-Let :math:`O=o_X,o_Y` be the ROI centroid and :math:`OC_i` - segment connecting centroid to an edge pixel :math:`i`. Then
+Let :math:`C` be the ROI's contour and :math:`R` the set of all ROI pixels. For a pixel
+:math:`p \in R`, let :math:`r_p = \min_{c \in C} ||pc||` be its distance to the nearest contour
+pixel -- the radius of the largest disk centred on :math:`p` that reaches no further than the
+boundary. Then
 
-| ROI_RADIUS_MEAN :math:`\gets \mu_r =\frac{1}{card(C)}\sum_i ||OC_i||`
-| ROI_RADIUS_MAX = :math:`\max OC_i`
-| ROI_RADIUS_MEDIAN - median radius :math:`OC_i`
+| ROI_RADIUS_MEAN :math:`\gets \mu_r = \frac{1}{card(R)}\sum_{p \in R} r_p`
+| ROI_RADIUS_MAX = :math:`\max_{p \in R} r_p`
+| ROI_RADIUS_MEDIAN - median of :math:`\{r_p\}`
+
+These are statistics of the ROI's *inradius map*, taken over every ROI pixel rather than over the
+boundary; on a disk the maximum is attained at the centre. The distance from the centroid to each
+contour pixel is a different quantity, and its two extremes are already published above as
+DIAMETER_INSCRIBING_CIRCLE and DIAMETER_CIRCUMSCRIBING_CIRCLE.
 
 Caliper features
 ----------------

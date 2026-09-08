@@ -332,7 +332,9 @@ have to add.
 Recipes: `morphology.radius_disks`.
 
 Tests reaching it today: `test_2d_morphology_skimage.h`
-(`TEST_2D_MORPHOLOGY_ROI_RADIUS_DISKS_SKIMAGE`).
+(`TEST_2D_MORPHOLOGY_ROI_RADIUS_DISKS_SKIMAGE`) and `test_2d_morphology_analytic.h`
+(`TEST_2D_MORPHOLOGY_ROI_RADIUS_DISK_CLOSED_FORM_ANALYTIC`). Both call the same
+`calculate_disk_radius_values()` helper and both claim this benchmark in the registry.
 
 **Three radii, not one.** On a single disk a distance and its square are each just a number —
 9.055 against 82 at R = 10 — and no assertion on one fixture separates them. Across a doubling of R a

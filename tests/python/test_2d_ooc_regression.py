@@ -47,6 +47,16 @@ PERIMETER_OUT_OF_CORE = 112.0
 DIAMETER_EQUAL_PERIMETER_IN_RAM = 41.97942430353313
 DIAMETER_EQUAL_PERIMETER_OUT_OF_CORE = 35.65070725258456
 
+# The same contour reaches RoiRadiusFeature, which measures every ROI pixel against it. Both builders
+# return 112 contour pixels here, so the gap is not a count: it is which pixels they are. MAX is
+# unchanged to the last digit while MEAN and MEDIAN rise, i.e. some ROI pixels are farther from the
+# out-of-core contour and the one attaining the maximum is not among them.
+ROI_RADIUS_MEAN_IN_RAM = 6.087109772358636
+ROI_RADIUS_MEAN_OUT_OF_CORE = 7.169174091182726
+ROI_RADIUS_MEDIAN_IN_RAM = 5.0
+ROI_RADIUS_MEDIAN_OUT_OF_CORE = 6.708203932499369
+ROI_RADIUS_MAX_BOTH_PATHS = 19.026297590440446
+
 
 def _disk_pair(tmp_path):
     """bench_disk64_diagonal_boundary, built by test_data.disk64_arrays() so the three modules that
@@ -64,6 +74,20 @@ def _contour_values(intdir, segdir, ram_limit_mb):
     )
     df = n.featurize_directory(intdir, segdir)
     return (float(df["PERIMETER"].iloc[0]), float(df["DIAMETER_EQUAL_PERIMETER"].iloc[0]))
+
+
+def _radius_values(intdir, segdir, ram_limit_mb):
+    """(mean, max, median) of the ROI_RADIUS_* statistics at one ram_limit."""
+    n = nyxus.Nyxus(["*ALL_MORPHOLOGY*"])
+    n.set_params(ram_limit=ram_limit_mb)
+    got = n.get_params("ram_limit")["ram_limit"]
+    assert got == ram_limit_mb, (
+        "ram_limit=%d MB was not accepted (still %d MB); Nyxus refuses a limit above available RAM"
+        % (ram_limit_mb, got)
+    )
+    df = n.featurize_directory(intdir, segdir)
+    return tuple(float(df[c].iloc[0])
+                 for c in ("ROI_RADIUS_MEAN", "ROI_RADIUS_MAX", "ROI_RADIUS_MEDIAN"))
 
 
 def test_2d_ooc_perimeter_diverges_from_in_ram_regression(tmp_path):
@@ -119,3 +143,42 @@ def test_2d_ooc_diameter_equal_perimeter_inherits_the_divergence_regression(tmp_
     assert d_ooc == pytest.approx(p_ooc / np.pi, rel=1e-12)
     # and therefore the same ratio between the paths as PERIMETER has
     assert (d_ram / d_ooc) == pytest.approx(p_ram / p_ooc, rel=1e-12)
+
+
+def test_2d_ooc_roi_radius_diverges_from_in_ram_regression(tmp_path):
+    """ROI_RADIUS_MEAN and ROI_RADIUS_MEDIAN do not survive the out-of-core round trip.
+
+    Not a units or arithmetic difference: both paths take sqrt(exact_min_sqdist(K)) over the same
+    ROI pixels, so the only input that can differ is K, and it does. Both builders return 112 contour
+    pixels on this fixture -- the in-RAM count is measured in test_2d_morphology_skimage.h's disk
+    table and the out-of-core count is what PERIMETER reports there -- so the two contours are the
+    same size and different sets. No translation of the boundary reproduces the out-of-core numbers,
+    which is why this is pinned as a characterization rather than explained as an offset.
+
+    MAX is asserted EQUAL on both paths deliberately. It is the part that already agrees, so a fix
+    that repairs MEAN and MEDIAN by moving the whole contour would break it, and this test would say
+    so rather than quietly passing on two of three.
+
+    Like the PERIMETER assertions above: when the two paths are made to agree, delete this and fold
+    ROI_RADIUS_* into test_2d_ooc_invariant.py, where the equality belongs.
+    """
+    intdir, segdir = _disk_pair(tmp_path)
+
+    mean_ram, max_ram, med_ram = _radius_values(intdir, segdir, RAM_LIMIT_LARGE_MB)
+    mean_ooc, max_ooc, med_ooc = _radius_values(intdir, segdir, 0)
+
+    assert mean_ram == pytest.approx(ROI_RADIUS_MEAN_IN_RAM, rel=1e-9)
+    assert mean_ooc == pytest.approx(ROI_RADIUS_MEAN_OUT_OF_CORE, rel=1e-9)
+    assert med_ram == pytest.approx(ROI_RADIUS_MEDIAN_IN_RAM, rel=1e-9)
+    assert med_ooc == pytest.approx(ROI_RADIUS_MEDIAN_OUT_OF_CORE, rel=1e-9)
+
+    # the characterization proper, asserted as inequalities so a partial fix cannot pass
+    assert mean_ram != pytest.approx(mean_ooc, rel=1e-6), (
+        "in-RAM and out-of-core ROI_RADIUS_MEAN now agree (%r vs %r); if the two contour builders "
+        "were made to return the same pixels, remove this test and assert the equality in "
+        "test_2d_ooc_invariant.py instead" % (mean_ram, mean_ooc))
+    assert med_ram != pytest.approx(med_ooc, rel=1e-6)
+
+    # and the part that does agree, which any fix has to keep
+    assert max_ram == pytest.approx(ROI_RADIUS_MAX_BOTH_PATHS, rel=1e-9)
+    assert max_ooc == pytest.approx(max_ram, rel=1e-12)
