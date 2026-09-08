@@ -1,9 +1,9 @@
 # Regenerating the 3D NGLDM goldens
 
-One benchmark, and — uniquely in this series — no oracle goldens at all. Read
-`ngldm_3d_mirp_vetting_report.md` before touching anything here: the family agrees with MIRP to
-machine precision when both tools are handed the same grey levels, and the pinned values are Nyxus'
-own because the two tools' discretisations differ, not because the NGLDM does.
+Two golden tables on one benchmark: the MIRP oracle pins in `test_3d_ngldm_mirp.h` and the drift
+guards in `test_3d_ngldm_regression.h`. Read `ngldm_3d_mirp_vetting_report.md` before touching
+either — the oracle's scope is the NGLDM and not the discretisation, and that is what decides which
+of the two a given value belongs in.
 
 ## Regression drift guards — `test_3d_ngldm_regression.h`
 
@@ -59,17 +59,24 @@ Two recipes, one generator run:
   `base_discretisation_method="none"`, so both compute the NGLDM over identical levels. Worst
   relative difference over the seventeen comparable features: **8.7e-16**.
 
-Nothing in the tree asserts against either. `ngldm3d.mirp_samelevels` is the config-matched one, and
-the reason it does not carry `vetted` rows is that the levels it feeds MIRP are reproduced from
-Nyxus' binning rather than measured out of Nyxus — see the vetting report, "What this agreement
-covers".
+`ngldm3d.mirp_samelevels` is the config-matched one and carries the family's 16 `vetted` rows, pinned
+in `test_3d_ngldm_mirp.h` at `rel=1e-3`. `ngldm3d.mirp_fbn64` asserts nothing: it is the measurement
+of the discretisation gap. The oracle's scope — the NGLDM given a set of levels, not the levels — is
+in the vetting report under "What this agreement covers".
 
-**It verifies the report, because that is the artifact it feeds.** The generator parses both
-comparison tables in `ngldm_3d_mirp_vetting_report.md`, checks every MIRP value quoted there against
-a fresh run at `rel<=1e-5` (the six significant figures the report quotes), checks the reverse
-direction for a feature MIRP produces that the report omits, checks the measured grey-level span
-against the span the report states, and exits non-zero on any of those. Last run: 34 verified, 0
-failed, 0 unproducible, 0 unquoted.
+**It verifies every artifact it feeds, and every column of them.** For each of the two comparison
+tables in `ngldm_3d_mirp_vetting_report.md` it checks the MIRP column against a fresh run, the Nyxus
+column against the goldens pinned in the C++ headers, and the derived column recomputed from the two
+— the ratio as a value, the samelevels residual as an upper bound. It then checks the 16 goldens in
+`test_3d_ngldm_mirp.h` against the same run, fails on any feature MIRP can vet that the header does
+not pin (bar `3NGLDM_DCP`, the one deliberate omission), checks the reverse direction for a feature
+the report omits, and checks the measured grey-level span against the span the report states. Last
+run: **50 verified, 0 failed, 0 unproducible, 0 unquoted**.
+
+Verifying only the MIRP column would leave the other half of every published row unchecked — a
+perturbed Nyxus value or a perturbed ratio would both survive. Negative control: changing
+`3NGLDM_GLNU`'s Nyxus column to its pre-fix value and `3NGLDM_HDE`'s ratio to 9.99999 makes the run
+report `FAIL ... [nyxus]` and `FAIL ... [derived]` respectively.
 
 **`Ns` is readable off the pinned values, with nothing instrumented.** `GLNU/GLNUN` and `DCNU/DCNUN`
 are both exactly `Ns` by construction (`f_GLNU /= Ns`, `f_GLNUN /= (Ns*Ns)`), and both give
@@ -117,9 +124,9 @@ reintroduce a two-env `.npy` hand-off.
   oracle agreement — see the report.
 - `ngldm3d.mirp_samelevels` is the check with teeth: re-run the generator and confirm the seventeen
   are still at machine precision before pinning anything.
-- Promotion, if the discretisation gap is ever closed, means adding `test_3d_ngldm_mirp.h`, setting
-  `ORACLE_SUFFIX = {"mirp": "mirp"}` in `audit/scan_ngldm3d_coverage.py`, and moving the 17
-  comparable rows to `status=vetted`.
+- If the discretisation gap is ever closed, `ngldm3d.mirp_fbn64` becomes assertable and its rows go
+  beside the samelevels ones rather than replacing them: SPEC 1 counts vetting per assertion, and the
+  two recipes establish different things.
 
 ## Coverage artifact
 
@@ -128,5 +135,5 @@ python tests/vetting/audit/scan_ngldm3d_coverage.py           # rewrite
 python tests/vetting/audit/scan_ngldm3d_coverage.py --check   # drift + acceptance check
 ```
 
-Its `ORACLE_SUFFIX` is deliberately empty, so `--check` enforces only that no row claims `vetted`
-without an oracle test.
+`ORACLE_SUFFIX` maps `mirp` to the `_mirp` suffix, so `--check` credits `test_3d_ngldm_mirp.h`'s 16
+assertions as oracle coverage and still rejects any row claiming `vetted` without one.

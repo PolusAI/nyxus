@@ -1,9 +1,12 @@
 # 3D NGLDM vs MIRP — vetting report
 
 The family's NGLD matrix and its feature formulas agree with MIRP 2.6.0 to machine precision when
-both tools are given the same grey levels. They are not asserted against MIRP, because at MIRP's own
-`fixed_bin_number` discretisation the two tools do not land on the same grey levels, and that gap is
-not the family's to close.
+both tools are given the same grey levels. Sixteen of the nineteen features are `vetted` against MIRP
+on that basis, in `test_3d_ngldm_mirp.h` at recipe `ngldm3d.mirp_samelevels`.
+
+The scope of that oracle is narrower than the family, and stated rather than implied: it covers the
+NGLDM, not the discretisation. At MIRP's own `fixed_bin_number` the two tools do not land on the same
+grey levels, and that gap is not the family's to close.
 
 ## Tool and configuration
 
@@ -13,9 +16,9 @@ not the family's to close.
 | Recipes | `ngldm3d.mirp_fbn64`, `ngldm3d.mirp_samelevels` |
 | Fixture | the segmented phantom, `phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57 |
 | MIRP config | `by_slice=False`, distance 1, difference level (alpha) 0; discretisation per recipe |
-| Nyxus config | `GREYDEPTH=64`, `IBSI=false` — what `test_3d_ngldm_regression.h` sets |
+| Nyxus config | `GREYDEPTH=64`, `IBSI=false` — what `test_3d_ngldm_common.h`'s fixture sets, for both judging files |
 | Generator | `tests/vetting/oracles/gen_ngldm3d_mirp.py` |
-| Tolerance | n/a — nothing is asserted against MIRP |
+| Tolerance | `rel=1e-3` at `ngldm3d.mirp_samelevels` (SPEC 7 same-definition tier); `ngldm3d.mirp_fbn64` asserts nothing |
 
 ## The two tools discretise this ROI differently
 
@@ -27,7 +30,8 @@ distinct** — a 44-level ladder starting at 21 against MIRP's 64-level ladder s
 
 Two independent things produce that: the lower bin edge is 0 rather than the ROI minimum, and the
 volume-wide shift moves the ROI up the scale. Neither is an NGLDM question, and no band over the
-NGLDM features can absorb them, so the family carries no `vetted` row at `ngldm3d.mirp_fbn64`.
+NGLDM features can absorb them, so `ngldm3d.mirp_fbn64` carries no rows. The vetted rows sit at
+`ngldm3d.mirp_samelevels`, where the ladder is shared.
 
 ## Result at `ngldm3d.mirp_fbn64` -- MIRP discretises
 
@@ -36,23 +40,23 @@ discretisation gap above, not the NGLDM.
 
 | feature | Nyxus | MIRP | Nyxus/MIRP |
 |---|---|---|---|
-| `3NGLDM_DCP` | 1 | 1 | 1x |
-| `3NGLDM_LDE` | 0.15365 | 0.25594 | 0.6003x |
-| `3NGLDM_HDE` | 40.6394 | 28.0738 | 1.448x |
-| `3NGLDM_LGLCE` | 0.000783908 | 0.0321849 | 0.02436x |
-| `3NGLDM_HGLCE` | 1873.25 | 1323.96 | 1.415x |
-| `3NGLDM_LDLGLE` | 7.80276e-05 | 0.000684901 | 0.1139x |
-| `3NGLDM_LDHGLE` | 375.708 | 474.82 | 0.7913x |
-| `3NGLDM_HDLGLE` | 0.056243 | 8.71408 | 0.006454x |
-| `3NGLDM_HDHGLE` | 44248.7 | 14942.8 | 2.961x |
-| `3NGLDM_GLNU` | 6480.48 | 4350.27 | 1.49x |
-| `3NGLDM_GLNUN` | 0.0236142 | 0.0158519 | 1.49x |
-| `3NGLDM_DCNU` | 32085.4 | 40745 | 0.7875x |
-| `3NGLDM_DCNUN` | 0.116916 | 0.14847 | 0.7875x |
-| `3NGLDM_GLV` | 153.096 | 350.171 | 0.4372x |
-| `3NGLDM_DCV` | 14.6164 | 11.9476 | 1.223x |
-| `3NGLDM_DCENT` | 8.40569 | 8.67597 | 0.9688x |
-| `3NGLDM_DCENE` | 0.00347501 | 0.00287482 | 1.209x |
+| `3NGLDM_DCP` | 1 | 1 | 1 |
+| `3NGLDM_LDE` | 0.15365 | 0.25594 | 0.600338 |
+| `3NGLDM_HDE` | 40.6394 | 28.0738 | 1.44759 |
+| `3NGLDM_LGLCE` | 0.000783908 | 0.0321849 | 0.0243564 |
+| `3NGLDM_HGLCE` | 1873.25 | 1323.96 | 1.41488 |
+| `3NGLDM_LDLGLE` | 7.80276e-05 | 0.000684901 | 0.113925 |
+| `3NGLDM_LDHGLE` | 375.708 | 474.82 | 0.791263 |
+| `3NGLDM_HDLGLE` | 0.056243 | 8.71408 | 0.00645427 |
+| `3NGLDM_HDHGLE` | 44248.7 | 14942.8 | 2.96119 |
+| `3NGLDM_GLNU` | 6480.48 | 4350.27 | 1.48967 |
+| `3NGLDM_GLNUN` | 0.0236142 | 0.0158519 | 1.48967 |
+| `3NGLDM_DCNU` | 32085.4 | 40745 | 0.787469 |
+| `3NGLDM_DCNUN` | 0.116916 | 0.14847 | 0.787469 |
+| `3NGLDM_GLV` | 153.096 | 350.171 | 0.437203 |
+| `3NGLDM_DCV` | 14.6164 | 11.9476 | 1.22338 |
+| `3NGLDM_DCENT` | 8.40569 | 8.67597 | 0.968847 |
+| `3NGLDM_DCENE` | 0.00347501 | 0.00287482 | 1.20878 |
 
 The features weighted by the grey level rather than by the dependence count carry the largest ratios,
 which is the signature of a level-ladder difference: `LGLCE` sums the reciprocal square of the level
@@ -63,30 +67,35 @@ both sides on any input where every voxel has a same-level neighbour.
 ## Result at `ngldm3d.mirp_samelevels` -- the same grey levels
 
 MIRP handed the grey levels Nyxus bins to, with `base_discretisation_method="none"`, so both compute
-the NGLDM over identical levels. The fourth column is the relative difference.
+the NGLDM over identical levels. The fourth column is an upper bound on the relative difference, rounded up: the residuals are float
+noise, so quoting them as values would publish this build's rounding rather than the tools'
+agreement, and the generator verifies each run does not exceed its bound.
 
-| feature | Nyxus | MIRP | rel |
+| feature | Nyxus | MIRP | rel <= |
 |---|---|---|---|
 | `3NGLDM_DCP` | 1 | 1 | 0 |
-| `3NGLDM_LDE` | 0.15365 | 0.15365 | 7.2e-16 |
+| `3NGLDM_LDE` | 0.15365 | 0.15365 | 8e-16 |
 | `3NGLDM_HDE` | 40.6394 | 40.6394 | 0 |
 | `3NGLDM_LGLCE` | 0.000783908 | 0.000783908 | 0 |
 | `3NGLDM_HGLCE` | 1873.25 | 1873.25 | 0 |
-| `3NGLDM_LDLGLE` | 7.80276e-05 | 7.80276e-05 | 8.7e-16 |
-| `3NGLDM_LDHGLE` | 375.708 | 375.708 | 1.5e-16 |
-| `3NGLDM_HDLGLE` | 0.056243 | 0.056243 | 6.2e-16 |
+| `3NGLDM_LDLGLE` | 7.80276e-05 | 7.80276e-05 | 9e-16 |
+| `3NGLDM_LDHGLE` | 375.708 | 375.708 | 2e-16 |
+| `3NGLDM_HDLGLE` | 0.056243 | 0.056243 | 7e-16 |
 | `3NGLDM_HDHGLE` | 44248.7 | 44248.7 | 0 |
 | `3NGLDM_GLNU` | 6480.48 | 6480.48 | 0 |
 | `3NGLDM_GLNUN` | 0.0236142 | 0.0236142 | 0 |
 | `3NGLDM_DCNU` | 32085.4 | 32085.4 | 0 |
 | `3NGLDM_DCNUN` | 0.116916 | 0.116916 | 0 |
-| `3NGLDM_GLV` | 153.096 | 153.096 | 1.9e-16 |
-| `3NGLDM_DCV` | 14.6164 | 14.6164 | 8.5e-16 |
-| `3NGLDM_DCENT` | 8.40569 | 8.40569 | 4.2e-16 |
-| `3NGLDM_DCENE` | 0.00347501 | 0.00347501 | 1.2e-16 |
+| `3NGLDM_GLV` | 153.096 | 153.096 | 2e-16 |
+| `3NGLDM_DCV` | 14.6164 | 14.6164 | 9e-16 |
+| `3NGLDM_DCENT` | 8.40569 | 8.40569 | 5e-16 |
+| `3NGLDM_DCENE` | 0.00347501 | 0.00347501 | 2e-16 |
 
-Worst relative difference over the seventeen: **8.7e-16**. `3NGLDM_GLM` and `3NGLDM_DCM` are absent
-from both tables: MIRP's NGLDM emits no `gl_mean` / `dc_mean` column, so no oracle exists for them.
+Worst relative difference over the seventeen: **8.7e-16**. Sixteen of them are asserted in
+`test_3d_ngldm_mirp.h` at `rel=1e-3`, SPEC 7's same-definition tier -- a band far wider than the
+measurement, left there because it has to hold on every CI platform's float and not just this one's.
+`3NGLDM_GLM` and `3NGLDM_DCM` are absent from both tables: MIRP's NGLDM emits no `gl_mean` /
+`dc_mean` column, so no oracle exists for them.
 
 **What this agreement covers.** The NGLD matrix — which voxels are centres, which neighbours count,
 how dependence maps to a matrix column — and all seventeen feature formulas over that matrix. It does
@@ -96,11 +105,21 @@ on trust. Its agreement to 8.7e-16 across seventeen features with different sens
 confirms it, and the generator additionally checks the measured level span (21-64, 44 distinct)
 against this report.
 
-**What it discriminates.** Every one of these seventeen moves by orders of magnitude under an
-implementation that treats the bounding box rather than the ROI as the set of NGLDM centres, that
-visits 24 of the 26 Chebyshev-1 neighbours, that reads the dependence count off the matrix column
-without counting the centre voxel, or that aggregates `GLNU` over anything but the grey-level row
-marginal.
+**What it discriminates, per failure mode.** Not every assertion catches every defect, and the set is
+asserted rather than a representative few precisely because of that. `3NGLDM_DCP` catches **none** of
+them: Nyxus hard-codes `f_DCP = 1`, so it is a constant and cannot move — which is why it is the one
+comparable feature with no oracle row (below), and it is excluded from the sixteen counted here.
+
+| an implementation that... | fails |
+|---|---|
+| takes NGLDM centres over the bounding box rather than the ROI | **all sixteen** — `Ns` changes from 274,432 to 511,360, and `GLNU`/`GLNUN` and `DCNU`/`DCNUN` each equal `Ns` exactly |
+| visits 24 of the 26 Chebyshev-1 neighbours | the dependence-weighted ones: `LDE`, `HDE`, `LDLGLE`, `LDHGLE`, `HDLGLE`, `HDHGLE`, `DCNU`, `DCNUN`, `DCV`, `DCENT`, `DCENE` |
+| reads the dependence count as the matrix column `j` rather than `j+1` | `LDE`, `HDE`, `LDLGLE`, `DCV` — but **not** `LGLCE` or `HGLCE`, which weight by grey level only |
+| aggregates `GLNU` over anything but the grey-level row marginal | `GLNU`, `GLNUN` |
+| takes the grey level as the row index `i+1` rather than the LUT value `U[i]` | `GLV` by 2.7x, and every grey-level-weighted feature moves |
+
+The rows are not redundant: no single assertion in the table above catches all five, and two of the
+five are caught by fewer than half the set.
 
 ## The family's own settings
 
@@ -110,13 +129,22 @@ coarseness parameter *alpha* are not settable — *d* is fixed by the `shifts` t
 MIRP by construction at `d1_a0.0`, and the config matrix (`matrix/ngldm3d.md`) has no further
 dimensions to sweep.
 
+`IBSI` is not a second ladder: `to_grayscale` reads it as `disable_binning`, so `IBSI=true` turns
+binning off and makes the raw intensity the grey level. MIRP matches that by construction too, at
+`base_discretisation_method="none"` over the raw values. Measured on this fixture it reaches Ng =
+2001 distinct raw levels with **83.46% of ROI voxels having no matching neighbour** and a maximum
+dependence of 17 of a possible 26 — a valid config point and a weak discriminator, recorded in the
+matrix as owed an oracle round rather than claimed as one.
+
 ## Why `3NGLDM_DCP` is `regression` and not `vetted`
 
 Dependence-count percentage is the fraction of voxels having at least one dependency. On any input
 where every voxel has a same-binned neighbour it is exactly 1, which holds for this phantom under
 every neighbourhood and every level ladder, and both tools report 1. It is an agreement that cannot
-fail for the reasons an assertion would want it to fail, so it is not on its own grounds for a
-`vetted` row, and the family has no other candidate while the discretisation gap stands.
+fail for the reasons an assertion would want it to fail, so it is left out of
+`test_3d_ngldm_mirp.h` and stays a drift guard. It is the only comparable feature excluded on those
+grounds; the other two without oracle rows, `3NGLDM_GLM` and `3NGLDM_DCM`, are excluded because MIRP
+does not compute them.
 
 ## Include hygiene and file-level observations
 
