@@ -6,6 +6,12 @@ Runs MIRP three times and re-verifies everything the tree quotes from it, exitin
 mismatch, on any quoted feature it cannot produce, and on any feature it produces that nothing
 quotes.
 
+EVERY NUMBER THE REPORT PUBLISHES IS CHECKED, not only the MIRP column: each table's Nyxus column
+is verified against its source in the tree (the oracle pins for the vetted cell, the regression pins
+for the other two) and each table's ratio or relative-residual column is recomputed from the row's
+own two values and compared as the string the report writes. A corrupted Nyxus value or a corrupted
+ratio fails the run.
+
   1. `gldzm3d.mirp_compat_phantom` -- the VETTED cell, and the only one whose numbers are pinned.
      The GLDZM compatibility phantom this file also builds, read by both tools as grey levels 1..8
      directly: MIRP with `base_discretisation_method="none"`, Nyxus at `IBSI=true`, which switches
@@ -25,11 +31,16 @@ MIRP is the only mainstream oracle for this family: PyRadiomics implements no GL
 recipe -- its GLDZM emits no dzm_gl_mean / dzm_zd_mean column and IBSI defines neither -- so they
 cannot be vetted here and stay drift guards.
 
-THE COMPATIBILITY PHANTOM IS BUILT HERE. `--write-phantom` writes
-tests/data/nifti/{compat_int/compat_int_gldzm_3d.nii, compat_seg/compat_seg_gldzm_3d.nii}; every
-other run rebuilds the same volumes in memory and fails if the checked-in files differ from them, so
-the fixture cannot drift away from the rule that describes it. The rule, and what each of its three
-choices separates, is in tests/test_3d_gldzm_common.h beside the phantom's accessor.
+BOTH OF THE FAMILY'S FIXTURES ARE BUILT HERE. `--write-phantom` writes the MIRP compatibility
+phantom (compat_int/compat_int_gldzm_3d.nii + compat_seg/compat_seg_gldzm_3d.nii) and the zero-level
+phantom (phantoms/gldzm_zerolevel_{inten,mask}.nii); every other run rebuilds both in memory and
+fails if the checked-in files differ from them, so neither fixture can drift away from the rule that
+describes it. The rules, and what each of their choices separates, are in tests/test_3d_gldzm_common.h
+beside the phantoms' accessors.
+
+The zero-level phantom carries no MIRP goldens and never will: MIRP's GLDZM has the same problem
+with a grey level 0 in its input that Nyxus does, so it cannot be the judge of what to do with one.
+It is a mechanics fixture, and test_3d_gldzm_mechanics.h derives its expected values by hand.
 
 NIFTI WITHOUT A NIFTI LIBRARY: the mirp env has neither SimpleITK nor nibabel. The phantoms are
 uncompressed single-file NIfTI-1 (magic "n+1"), so the header is parsed and written directly below
@@ -57,7 +68,10 @@ INTEN = os.path.join(PHANTOMS, "ut_inten.nii")
 MASK = os.path.join(PHANTOMS, "ut_mask57.nii")
 COMPAT_INTEN = os.path.join(DATA, "compat_int", "compat_int_gldzm_3d.nii")
 COMPAT_MASK = os.path.join(DATA, "compat_seg", "compat_seg_gldzm_3d.nii")
+ZERO_INTEN = os.path.join(PHANTOMS, "gldzm_zerolevel_inten.nii")
+ZERO_MASK = os.path.join(PHANTOMS, "gldzm_zerolevel_mask.nii")
 HEADER = os.path.join(TESTS, "test_3d_gldzm_mirp.h")
+REGRESSION_HEADER = os.path.join(TESTS, "test_3d_gldzm_regression.h")
 REPORT = os.path.join(TESTS, "vetting", "audit", "gldzm_3d_mirp_vetting_report.md")
 
 LABEL = 57
@@ -131,6 +145,38 @@ def build_compat_phantom():
     return inten, mask
 
 
+# --- the zero-level fixture ----------------------------------------------------------------------
+
+ZERO_VOL = 8        # volume side
+ZERO_MARGIN = 2     # background voxels on every side
+ZERO_SIDE = 4       # the ROI cube's side
+ZERO_HIGH = 5       # the nonzero raw intensity inside the ROI
+
+
+def build_zero_level_phantom():
+    """-> (intensities, mask), both shaped (z,y,x).
+
+    A 4x4x4 ROI inside a two-voxel background margin, whose raw intensities are 0 on the voxels with
+    an even x+y+z and 5 on the rest. Its whole point is the zeros: they are ROI voxels, and the two
+    binning schemes that do not remap a zero -- IBSI (which bins nothing) and radiomics -- hand them
+    to the GLDZM as grey level 0, which is not a valid level. It is what separates a family that
+    lifts them onto a valid level from one that drops them, and MIRP cannot be the judge because it
+    has the same problem with a level 0 in its input.
+
+    Every number it produces is derivable by hand: each parity class is one 26-connected zone (two
+    voxels of one class always touch at least at a corner), every zone reaches the ROI surface so
+    both sit at distance 1, and the levels after the lift are 1 and 6.
+    """
+    inten = np.zeros((ZERO_VOL, ZERO_VOL, ZERO_VOL), np.float32)
+    mask = np.zeros((ZERO_VOL, ZERO_VOL, ZERO_VOL), np.uint32)
+    for z in range(ZERO_MARGIN, ZERO_MARGIN + ZERO_SIDE):
+        for y in range(ZERO_MARGIN, ZERO_MARGIN + ZERO_SIDE):
+            for x in range(ZERO_MARGIN, ZERO_MARGIN + ZERO_SIDE):
+                mask[z, y, x] = LABEL
+                inten[z, y, x] = 0 if (x + y + z) % 2 == 0 else ZERO_HIGH
+    return inten, mask
+
+
 def read_nifti(path):
     """-> (array shaped (z,y,x), spacing (z,y,x)). Uncompressed single-file NIfTI-1 only."""
     with open(path, "rb") as fh:
@@ -169,33 +215,43 @@ def write_nifti(path, vol, datatype):
         fh.write(vol.tobytes())
 
 
-def check_compat_phantom(write):
-    """Writes the phantom, or checks the checked-in files still hold what the rule produces."""
-    inten, mask = build_compat_phantom()
-    roi = mask == LABEL
-    levels = sorted(int(v) for v in np.unique(inten[roi]))
-    print("# compat phantom %s, roi %d voxels, grey levels %s"
-          % (inten.shape, int(roi.sum()), levels))
-    if write:
-        write_nifti(COMPAT_INTEN, inten, 16)
-        write_nifti(COMPAT_MASK, mask, 768)
-        print("# wrote " + COMPAT_INTEN)
-        print("# wrote " + COMPAT_MASK)
-        return inten, mask, 0
-
+def check_one_phantom(name_of_builder, pairs, write):
+    """Writes a phantom pair, or checks the checked-in files still hold what its rule produces."""
     bad = 0
-    for path, want in ((COMPAT_INTEN, inten), (COMPAT_MASK, mask)):
+    for path, vol, datatype in pairs:
         name = os.path.basename(path)
+        if write:
+            write_nifti(path, vol, datatype)
+            print("# wrote " + path)
+            continue
         if not os.path.exists(path):
             print("  FAIL %s is missing; rerun with --write-phantom" % name)
             bad += 1
             continue
         got = read_nifti(path)[0]
-        if got.shape != want.shape or not np.array_equal(got, want.astype(got.dtype)):
-            print("  FAIL %s does not hold what build_compat_phantom() produces" % name)
+        if got.shape != vol.shape or not np.array_equal(got, vol.astype(got.dtype)):
+            print("  FAIL %s does not hold what %s produces" % (name, name_of_builder))
             bad += 1
         else:
-            print("  OK   %s is what build_compat_phantom() produces" % name)
+            print("  OK   %s is what %s produces" % (name, name_of_builder))
+    return bad
+
+
+def check_phantoms(write):
+    """Both fixtures this family owns: the MIRP compatibility phantom and the zero-level one."""
+    inten, mask = build_compat_phantom()
+    roi = mask == LABEL
+    print("# compat phantom %s, roi %d voxels, grey levels %s"
+          % (inten.shape, int(roi.sum()), sorted(int(v) for v in np.unique(inten[roi]))))
+    bad = check_one_phantom("build_compat_phantom()",
+                            [(COMPAT_INTEN, inten, 16), (COMPAT_MASK, mask, 768)], write)
+
+    zi, zm = build_zero_level_phantom()
+    zroi = zm == LABEL
+    print("# zero-level phantom %s, roi %d voxels, raw levels %s"
+          % (zi.shape, int(zroi.sum()), sorted(int(v) for v in np.unique(zi[zroi]))))
+    bad += check_one_phantom("build_zero_level_phantom()",
+                             [(ZERO_INTEN, zi, 16), (ZERO_MASK, zm, 768)], write)
     return inten, mask, bad
 
 
@@ -219,14 +275,14 @@ def nyxus_grey_levels(inten, mask, roi_max):
 
 # --- verification --------------------------------------------------------------------------------
 
-def parse_header_pins():
-    """-> {feature: pinned MIRP value} from gldzm_3d_mirp_ref_vals in test_3d_gldzm_mirp.h.
+def parse_pins(path, table):
+    """-> {feature: pinned value} from a ref_vals_map in a test header.
 
     Counts braces rather than matching a non-greedy body, which would swallow the last entry's
     closing brace and silently drop it.
     """
-    txt = open(HEADER, encoding="utf-8", errors="replace").read()
-    at = txt.index("gldzm_3d_mirp_ref_vals")
+    txt = open(path, encoding="utf-8", errors="replace").read()
+    at = txt.index(table)
     at = txt.index("{", at)
     depth, end = 0, None
     for i in range(at, len(txt)):
@@ -238,20 +294,23 @@ def parse_header_pins():
                 end = i
                 break
     if end is None:
-        raise RuntimeError("gldzm_3d_mirp_ref_vals is not brace-balanced")
+        raise RuntimeError("%s is not brace-balanced" % table)
     rows = re.findall(r'\{\s*"(3GLDZM_[A-Z0-9_]+)"\s*,\s*([-0-9.eE+]+)\s*\}', txt[at:end + 1])
     if not rows:
-        raise RuntimeError("no pins found in gldzm_3d_mirp_ref_vals")
+        raise RuntimeError("no pins found in %s" % table)
     return dict((n, float(v)) for n, v in rows)
 
 
 def parse_report(txt, heading):
-    """-> {feature: MIRP value} from the comparison table under `heading`.
+    """-> {feature: (nyxus, mirp, third_as_written)} from the comparison table under `heading`.
 
-    Rows look like | `3GLDZM_GLNU` | 1349.4 | 1433.45 | 0.94x | -- Nyxus, MIRP, ratio. Only the MIRP
-    column is this generator's to verify; the Nyxus column is the program's own output and the ratio
-    is derived from the two. The report carries one such table per run, so the section is located
-    first and the search stops at the next heading of the same level.
+    Rows look like | `3GLDZM_GLNU` | 1349.4 | 1433.45 | 0.94x |. EVERY column comes back, because
+    every one of them is a numeric claim the report publishes: the MIRP column is this run's to
+    verify, the Nyxus column has a source in the tree, and the third is derived from the two. A
+    parser that kept only the MIRP column would let the other two be corrupted and still pass.
+
+    The report carries one such table per run, so the section is located first and the search stops
+    at the next heading of the same level.
     """
     m = re.search("^" + re.escape(heading) + r"\s*$", txt, re.M)
     if not m:
@@ -260,12 +319,76 @@ def parse_report(txt, heading):
     nxt = re.search(r"^##\s", rest, re.M)
     section = rest[: nxt.start()] if nxt else rest
     rows = re.findall(
-        r"^\|\s*`(3GLDZM_[A-Z0-9_]+)`\s*\|\s*[-0-9.eE+]+\s*\|\s*([-0-9.eE+]+)\s*\|",
+        r"^\|\s*`(3GLDZM_[A-Z0-9_]+)`\s*\|\s*([-0-9.eE+]+)\s*\|\s*([-0-9.eE+]+)\s*\|"
+        r"\s*([-0-9.eE+x]+)\s*\|",
         section, re.M)
     if not rows:
         raise RuntimeError("no comparison rows under %r in %s"
                            % (heading, os.path.basename(REPORT)))
-    return dict((n, float(v)) for n, v in rows)
+    return dict((n, (float(a), float(b), c.strip())) for n, a, b, c in rows)
+
+
+def rel_of(a, b):
+    denom = max(abs(a), abs(b))
+    return 0.0 if denom == 0 else abs(a - b) / denom
+
+
+def verify_table(quoted, mirp_run, nyxus_source, nyxus_tol, third_kind, what):
+    """-> (n verified, n failed, n unproducible, [unquoted]) for one published comparison table.
+
+    Three claims per row, each checked against its own source and each able to fail on its own:
+
+      the MIRP column    against this run of MIRP, at REPORT_RELTOL
+      the Nyxus column   against `nyxus_source` -- the regression pins for the segmented-phantom
+                         tables, the header's MIRP pins for the vetted cell, where what the tree
+                         actually asserts is agreement inside the oracle band
+      the third column   recomputed from the row's own two values and re-rendered with the format
+                         the report writes, so a corrupted ratio or residual fails as a string
+    """
+    print("\n# verifying the %d rows published in %s -- all three columns" % (len(quoted), what))
+    nok = nfail = nmiss = 0
+    for name in sorted(quoted):
+        nyxus, mirp, third = quoted[name]
+
+        if name not in mirp_run:
+            print("  MISSING %s: %s quotes MIRP %r but MIRP reports no counterpart"
+                  % (name, what, mirp))
+            nmiss += 1
+            continue
+
+        bad = []
+        rel_mirp = rel_of(mirp_run[name], mirp)
+        if rel_mirp > REPORT_RELTOL:
+            bad.append("mirp column %r against this run's %r (rel %.3g)"
+                       % (mirp, mirp_run[name], rel_mirp))
+
+        if name not in nyxus_source:
+            bad.append("nyxus column %r has no source to check against" % nyxus)
+        else:
+            want = nyxus_source[name]
+            off = abs(nyxus - want) if nyxus_tol[0] == "abs" else rel_of(nyxus, want)
+            if off > nyxus_tol[1]:
+                bad.append("nyxus column %r against %r (%s %.3g)"
+                           % (nyxus, want, nyxus_tol[0], off))
+
+        recomputed = ("%.1e" % rel_of(nyxus, mirp) if third_kind == "rel"
+                      else "%.3g" % (nyxus / mirp))
+        if recomputed != third:
+            bad.append("third column %r, recomputed from this row's own values as %r"
+                       % (third, recomputed))
+
+        if bad:
+            print("  FAIL %s: %s" % (name, "; ".join(bad)))
+            nfail += 1
+        else:
+            print("  OK   %s: nyxus=%r mirp=%r %s=%s" % (name, nyxus, mirp, third_kind, third))
+            nok += 1
+
+    unquoted = sorted(set(mirp_run) - set(quoted))
+    for name in unquoted:
+        print("  UNQUOTED %s: MIRP reports %r and %s does not quote it"
+              % (name, mirp_run[name], what))
+    return nok, nfail, nmiss, unquoted
 
 
 def verify(got, quoted, what, tol):
@@ -302,7 +425,7 @@ def main():
             print("missing phantom: " + p)
             return 1
 
-    compat_inten, compat_mask, bad_phantom = check_compat_phantom(write)
+    compat_inten, compat_mask, bad_phantom = check_phantoms(write)
     if write:
         return 0
 
@@ -367,20 +490,37 @@ def main():
     nok = nmiss = 0
     nfail = bad_phantom
     unquoted = []
-    a, b, c, d = verify(compat, parse_header_pins(), "test_3d_gldzm_mirp.h", PIN_RELTOL)
+
+    oracle_pins = parse_pins(HEADER, "gldzm_3d_mirp_ref_vals")
+    regression_pins = parse_pins(REGRESSION_HEADER, "gldzm_3d_regression_ref_vals")
+
+    a, b, c, d = verify(compat, oracle_pins, "test_3d_gldzm_mirp.h", PIN_RELTOL)
     nok += a
     nfail += b
     nmiss += c
     unquoted += d
 
     if not os.path.exists(REPORT):
-        print("\n# %s is missing -- there is nothing the two segmented-phantom runs can be "
-              "checked against, which is a failure, not a pass" % os.path.basename(REPORT))
+        print("\n# %s is missing -- there is nothing the published tables can be checked against, "
+              "which is a failure, not a pass" % os.path.basename(REPORT))
         return 1
     txt = open(REPORT, encoding="utf-8", errors="replace").read()
-    for heading, got in (("## Result at `gldzm3d.mirp_fbn64` -- MIRP discretises", fbn),
-                         ("## Result at `gldzm3d.mirp_samelevels` -- the same grey levels", same)):
-        a, b, c, d = verify(got, parse_report(txt, heading), heading.split("`")[1], REPORT_RELTOL)
+
+    # heading -> (this run's MIRP values, what the report's Nyxus column answers to, its tolerance,
+    #             what the third column holds). The vetted cell's Nyxus column answers to the oracle
+    #             pins within the band the assertions use, because agreement inside that band is the
+    #             claim; the other two answer to the regression pins exactly, being the same run.
+    tables = (
+        ("## Result at `gldzm3d.mirp_compat_phantom` -- the vetted cell",
+         compat, oracle_pins, ("abs", 1e-9), "rel"),
+        ("## Result at `gldzm3d.mirp_fbn64` -- MIRP discretises",
+         fbn, regression_pins, ("rel", 1e-12), "ratio"),
+        ("## Result at `gldzm3d.mirp_samelevels` -- the same grey levels",
+         same, regression_pins, ("rel", 1e-12), "rel"),
+    )
+    for heading, mirp_run, nyxus_source, nyxus_tol, third_kind in tables:
+        a, b, c, d = verify_table(parse_report(txt, heading), mirp_run, nyxus_source, nyxus_tol,
+                                  third_kind, heading.split("`")[1])
         nok += a
         nfail += b
         nmiss += c
