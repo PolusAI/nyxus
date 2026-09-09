@@ -1,36 +1,20 @@
 Dim,Family,FeatureName,List_of_Oracles,Test_Names,Regression,Reg_Test_Name,Notes
-3D,ngldm,3NGLDM_DCP,,,Y,test_3d_ngldm_dcp_regression,"was status=vetted/oracle=mirp from an offline run; demoted -- it agrees with MIRP only at the degenerate value 1.0, while every other comparable feature diverges"
+3D,ngldm,3NGLDM_DCP,,,Y,test_3d_ngldm_dcp_regression,"no oracle row: Nyxus hard-codes f_DCP = 1 and MIRP returns 1 on any input where every voxel has a same-level neighbour, so the agreement cannot fail"
 3D,ngldm,3NGLDM_GLM,,,Y,test_3d_ngldm_glm_regression,no counterpart in any tool (MIRP's NGLDM emits no gl_mean column)
 3D,ngldm,3NGLDM_DCM,,,Y,test_3d_ngldm_dcm_regression,no counterpart in any tool (MIRP's NGLDM emits no dc_mean column)
 3D,ngldm,3NGLDM_LDE,mirp,test_3d_ngldm_lde_ibsi_mirp;test_3d_ngldm_lde_mirp,N,,
-3D,ngldm,3NGLDM_HDE,mirp,test_3d_ngldm_hde_ibsi_mirp;test_3d_ngldm_hde_mirp,N,,9.3x from MIRP -- background voxels each see ~24 identical neighbours
+3D,ngldm,3NGLDM_HDE,mirp,test_3d_ngldm_hde_ibsi_mirp;test_3d_ngldm_hde_mirp,N,,
 3D,ngldm,3NGLDM_LGLCE,mirp,test_3d_ngldm_lglce_ibsi_mirp;test_3d_ngldm_lglce_mirp,N,,
 3D,ngldm,3NGLDM_HGLCE,mirp,test_3d_ngldm_hglce_ibsi_mirp;test_3d_ngldm_hglce_mirp,N,,
 3D,ngldm,3NGLDM_LDLGLE,mirp,test_3d_ngldm_ldlgle_ibsi_mirp;test_3d_ngldm_ldlgle_mirp,N,,
 3D,ngldm,3NGLDM_LDHGLE,mirp,test_3d_ngldm_ldhgle_ibsi_mirp;test_3d_ngldm_ldhgle_mirp,N,,
 3D,ngldm,3NGLDM_HDLGLE,mirp,test_3d_ngldm_hdlgle_ibsi_mirp;test_3d_ngldm_hdlgle_mirp,N,,
 3D,ngldm,3NGLDM_HDHGLE,mirp,test_3d_ngldm_hdhgle_ibsi_mirp;test_3d_ngldm_hdhgle_mirp,N,,
-3D,ngldm,3NGLDM_GLNU,mirp,test_3d_ngldm_glnu_ibsi_mirp;test_3d_ngldm_glnu_mirp,N,,26.5x from MIRP -- consistent with background voxels piling into one grey row
+3D,ngldm,3NGLDM_GLNU,mirp,test_3d_ngldm_glnu_ibsi_mirp;test_3d_ngldm_glnu_mirp,N,,
 3D,ngldm,3NGLDM_GLNUN,mirp,test_3d_ngldm_glnun_ibsi_mirp;test_3d_ngldm_glnun_mirp,N,,
 3D,ngldm,3NGLDM_DCNU,mirp,test_3d_ngldm_dcnu_ibsi_mirp;test_3d_ngldm_dcnu_mirp,N,,
 3D,ngldm,3NGLDM_DCNUN,mirp,test_3d_ngldm_dcnun_ibsi_mirp;test_3d_ngldm_dcnun_mirp,N,,
 3D,ngldm,3NGLDM_GLV,mirp,test_3d_ngldm_glv_ibsi_mirp;test_3d_ngldm_glv_mirp,N,,
 3D,ngldm,3NGLDM_DCV,mirp,test_3d_ngldm_dcv_ibsi_mirp;test_3d_ngldm_dcv_mirp,N,,
 3D,ngldm,3NGLDM_DCENT,mirp,test_3d_ngldm_dcent_ibsi_mirp;test_3d_ngldm_dcent_mirp,N,,
-3D,ngldm,3NGLDM_DCENE,mirp,test_3d_ngldm_dcene_ibsi_mirp;test_3d_ngldm_dcene_mirp,N,,"49.9x from MIRP, the family's widest measured divergence"
-3D,ngldm,3NGLDM_LDE,mirp,test_3d_ngldm_lde_ibsi_mirp;test_3d_ngldm_lde_mirp,N,,
-3D,ngldm,3NGLDM_HDE,mirp,test_3d_ngldm_hde_ibsi_mirp;test_3d_ngldm_hde_mirp,N,,9.3x from MIRP -- background voxels each see ~24 identical neighbours
-3D,ngldm,3NGLDM_LGLCE,mirp,test_3d_ngldm_lglce_ibsi_mirp;test_3d_ngldm_lglce_mirp,N,,
-3D,ngldm,3NGLDM_HGLCE,mirp,test_3d_ngldm_hglce_ibsi_mirp;test_3d_ngldm_hglce_mirp,N,,
-3D,ngldm,3NGLDM_LDLGLE,mirp,test_3d_ngldm_ldlgle_ibsi_mirp;test_3d_ngldm_ldlgle_mirp,N,,
-3D,ngldm,3NGLDM_LDHGLE,mirp,test_3d_ngldm_ldhgle_ibsi_mirp;test_3d_ngldm_ldhgle_mirp,N,,
-3D,ngldm,3NGLDM_HDLGLE,mirp,test_3d_ngldm_hdlgle_ibsi_mirp;test_3d_ngldm_hdlgle_mirp,N,,
-3D,ngldm,3NGLDM_HDHGLE,mirp,test_3d_ngldm_hdhgle_ibsi_mirp;test_3d_ngldm_hdhgle_mirp,N,,
-3D,ngldm,3NGLDM_GLNU,mirp,test_3d_ngldm_glnu_ibsi_mirp;test_3d_ngldm_glnu_mirp,N,,26.5x from MIRP -- consistent with background voxels piling into one grey row
-3D,ngldm,3NGLDM_GLNUN,mirp,test_3d_ngldm_glnun_ibsi_mirp;test_3d_ngldm_glnun_mirp,N,,
-3D,ngldm,3NGLDM_DCNU,mirp,test_3d_ngldm_dcnu_ibsi_mirp;test_3d_ngldm_dcnu_mirp,N,,
-3D,ngldm,3NGLDM_DCNUN,mirp,test_3d_ngldm_dcnun_ibsi_mirp;test_3d_ngldm_dcnun_mirp,N,,
-3D,ngldm,3NGLDM_GLV,mirp,test_3d_ngldm_glv_ibsi_mirp;test_3d_ngldm_glv_mirp,N,,
-3D,ngldm,3NGLDM_DCV,mirp,test_3d_ngldm_dcv_ibsi_mirp;test_3d_ngldm_dcv_mirp,N,,
-3D,ngldm,3NGLDM_DCENT,mirp,test_3d_ngldm_dcent_ibsi_mirp;test_3d_ngldm_dcent_mirp,N,,
-3D,ngldm,3NGLDM_DCENE,mirp,test_3d_ngldm_dcene_ibsi_mirp;test_3d_ngldm_dcene_mirp,N,,"49.9x from MIRP, the family's widest measured divergence"
+3D,ngldm,3NGLDM_DCENE,mirp,test_3d_ngldm_dcene_ibsi_mirp;test_3d_ngldm_dcene_mirp,N,,
