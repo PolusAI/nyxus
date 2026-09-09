@@ -1,4 +1,3 @@
-#include <array>
 #include <climits>
 #include "../environment.h"
 #include "3d_gldzm.h"
@@ -80,7 +79,10 @@ void D3_GLDZM_feature::calc_dist2border (SimpleCube<int>& dist)
 	// the 6 city-block moves
 	static const int mv[6][3] = { {-1,0,0}, {+1,0,0}, {0,-1,0}, {0,+1,0}, {0,0,-1}, {0,0,+1} };
 
-	std::vector<std::array<int, 3>> frontier, next_frontier;	// x,y,z of the voxels settled last
+	// The voxels settled last, and the ones this round settles, as x,y,z packed into one index each.
+	// A voxel is settled once, so it enters exactly one of these over the whole walk and the two
+	// together never hold more than the ROI's voxel count -- 4 bytes per ROI voxel at the peak.
+	std::vector<int> frontier, next_frontier;
 
 	// distance 1 is every ROI voxel with a move that leaves the ROI or leaves the box
 	for (int z = 0; z < d; z++)
@@ -98,7 +100,7 @@ void D3_GLDZM_feature::calc_dist2border (SimpleCube<int>& dist)
 					if (!dist.safe(nz, ny, nx) || dist.zyx(nz, ny, nx) == 0)
 					{
 						dist.zyx(z, y, x) = 1;
-						frontier.push_back ({ x, y, z });
+						frontier.push_back ((z * h + y) * w + x);
 						break;
 					}
 				}
@@ -109,18 +111,24 @@ void D3_GLDZM_feature::calc_dist2border (SimpleCube<int>& dist)
 	{
 		next_frontier.clear();
 
-		for (const auto& v : frontier)
+		for (int v : frontier)
+		{
+			int vx = v % w,
+				vy = (v / w) % h,
+				vz = v / (w * h);
+
 			for (int i = 0; i < 6; i++)
 			{
-				int nx = v[0] + mv[i][0],
-					ny = v[1] + mv[i][1],
-					nz = v[2] + mv[i][2];
+				int nx = vx + mv[i][0],
+					ny = vy + mv[i][1],
+					nz = vz + mv[i][2];
 				if (!dist.safe(nz, ny, nx) || dist.zyx(nz, ny, nx) != DIST_UNSETTLED)
 					continue;
 
 				dist.zyx(nz, ny, nx) = step;
-				next_frontier.push_back ({ nx, ny, nz });
+				next_frontier.push_back ((nz * h + ny) * w + nx);
 			}
+		}
 
 		frontier.swap (next_frontier);
 	}
@@ -161,6 +169,25 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	for (const auto& p : r.raw_pixels_3D)
 		dist.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)) = 1;
 
+	// -- a GLDZM grey level is 1-based, and two of the three binning schemes can hand back a 0 for a
+	// voxel that is genuinely the ROI's: the IBSI setting bins nothing at all, so a raw intensity of 0
+	// stays 0, and the radiomics scheme maps 0 to 0 by construction. Only the MATLAB scheme, which
+	// sends 0 to level 1, cannot. Lifting the ROI's levels by one where that happens is what keeps
+	// those voxels in a zone; dropping them instead would take them out of Ns, out of the zone map and
+	// out of the ZP denominator's numerator while they still counted in the ROI's voxel total.
+	// The lift is by one, not a re-map onto a dense ladder: it makes the levels valid and changes
+	// nothing else about their spacing, which the grey-level-weighted features are weighted by.
+	bool roi_has_zero_level = false;
+	for (const auto& p : r.raw_pixels_3D)
+		if (D.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)) == 0)
+		{
+			roi_has_zero_level = true;
+			break;
+		}
+	if (roi_has_zero_level)
+		for (const auto& p : r.raw_pixels_3D)
+			D.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)) += 1;
+
 	// allocate intensities matrix. The grey levels are the ROI's, not the bounding box's, so they are
 	// gathered over the voxel cloud too.
 	std::vector<PixIntens> I;
@@ -193,7 +220,10 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	// A zone is a 26-connected component of one grey level within the ROI -- the connectivity IBSI
 	// defines for GLDZM and the one GLSZM uses for the same notion of a zone. The zone's distance
 	// metric is the smallest distance to the border any of its voxels has.
-	std::vector<std::array<int, 3>> stack;	// x,y,z of the zone voxels whose neighbourhood is still to be scanned
+	// The zone voxels whose neighbourhood is still to be scanned, x,y,z packed into one index each.
+	// It never holds more than the largest zone, and it is cleared rather than freed between zones so
+	// the allocation is made once for the whole ROI.
+	std::vector<int> stack;
 
 	for (int dep = 0; dep < D.depth(); dep++)
 		for (int row = 0; row < D.height(); row++)
@@ -206,13 +236,6 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 
 				auto inten = D.zyx (dep, row, col);
 
-				// Grey level 0 is the one level the LUT never carries -- the IBSI branch fills it
-				// with 1..max and the other erases 0 -- so a zone of it would have no row in the
-				// matrix. It reaches here only from the binning schemes that leave a zero at zero,
-				// which the MATLAB one does not.
-				if (inten == 0)
-					continue;
-
 				// Taking a voxel into a zone zeroes its distance, which is the mark the background
 				// already carries: the voxel is no longer available to another zone, and the distance
 				// it held has been folded into this zone's metric.
@@ -221,12 +244,16 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 				dist.zyx(dep, row, col) = 0;
 
 				stack.clear();
-				stack.push_back ({ col, row, dep });
+				stack.push_back ((dep * D.height() + row) * D.width() + col);
 
 				while (!stack.empty())
 				{
-					auto v = stack.back();
+					int v = stack.back();
 					stack.pop_back();
+
+					int vx = v % D.width(),
+						vy = (v / D.width()) % D.height(),
+						vz = v / (D.width() * D.height());
 
 					for (int dz = -1; dz <= 1; dz++)
 						for (int dy = -1; dy <= 1; dy++)
@@ -235,9 +262,9 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 								if (dx == 0 && dy == 0 && dz == 0)
 									continue;
 
-								int _x = v[0] + dx,
-									_y = v[1] + dy,
-									_z = v[2] + dz;
+								int _x = vx + dx,
+									_y = vy + dy,
+									_z = vz + dz;
 								if (!dist.safe(_z, _y, _x) || dist.zyx(_z, _y, _x) == 0)
 									continue;
 								if (D.zyx(_z, _y, _x) != inten)
@@ -246,7 +273,7 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 								zoneSize++;
 								zoneMetric = std::min (zoneMetric, dist.zyx(_z, _y, _x));
 								dist.zyx(_z, _y, _x) = 0;
-								stack.push_back ({ _x, _y, _z });
+								stack.push_back ((_z * D.height() + _y) * D.width() + _x);
 							}
 				}
 
@@ -282,7 +309,12 @@ void D3_GLDZM_feature::calc_gldzm_matrix (SimpleMatrix<unsigned int>& GLDZM, con
 	int i = 0;
 	for (auto& z : Z)
 	{
-		// row. Gray tones are sparse so we need to find indices of tones in 'Z' and use them as rows of P-matrix
+		// row. Gray tones are sparse so we need to find indices of tones in 'Z' and use them as rows of P-matrix.
+		// Every zone's level is one the LUT carries: both are read off the same ROI voxels, and the
+		// zero-level lift in prepare_GLDZM_matrix_kit is what keeps 0 -- the one level the LUT cannot
+		// hold, since a GLDZM grey level is 1-based -- from reaching either of them. A level the LUT
+		// does not carry would index one row past the matrix, which SimpleMatrix's bounds-checked
+		// accessor throws on rather than corrupting.
 		auto iter = std::find(I.begin(), I.end(), std::get<0>(z));
 		int row = (int)(iter - I.begin());
 		// column (a distance). Distances are dense \in [1,Nd]

@@ -27,7 +27,7 @@ it and fails if the checked-in NIfTI pair no longer holds what that rule produce
 MIRP implements IBSI GLDZM. PyRadiomics has no GLDZM at all, so MIRP is the only mainstream oracle
 available for this family.
 
-## Result at `gldzm3d.mirp_compat_phantom` — the vetted cell
+## Result at `gldzm3d.mirp_compat_phantom` -- the vetted cell
 
 Both tools read the phantom's voxel values as grey levels 1..8 directly: MIRP with
 `base_discretisation_method="none"`, Nyxus at `IBSI=true`, which switches the family's binning off.
@@ -36,22 +36,22 @@ discretises.
 
 | feature | Nyxus | MIRP | rel |
 |---|---:|---:|---:|
-| `3GLDZM_SDE` | 0.8238705738705739 | 0.823870573871 | 0.0e+00 |
-| `3GLDZM_LDE` | 2.4615384615384617 | 2.46153846154 | 0.0e+00 |
-| `3GLDZM_LGLZE` | 0.13946884110787175 | 0.139468841108 | 0.0e+00 |
-| `3GLDZM_HGLZE` | 27.53846153846154 | 27.5384615385 | 0.0e+00 |
-| `3GLDZM_SDLGLE` | 0.12001901217090417 | 0.120019012171 | 0.0e+00 |
-| `3GLDZM_SDHGLE` | 23.23946886446887 | 23.2394688645 | 0.0e+00 |
-| `3GLDZM_LDLGLE` | 0.31127085357952711 | 0.31127085358 | 1.8e-16 |
-| `3GLDZM_LDHGLE` | 60.19230769230769 | 60.1923076923 | 0.0e+00 |
-| `3GLDZM_GLNU` | 23.384615384615383 | 23.3846153846 | 0.0e+00 |
-| `3GLDZM_GLNUN` | 0.12848689771766694 | 0.128486897718 | 0.0e+00 |
-| `3GLDZM_ZDNU` | 121.0 | 121 | 0.0e+00 |
-| `3GLDZM_ZDNUN` | 0.6648351648351648 | 0.664835164835 | 0.0e+00 |
-| `3GLDZM_ZP` | 0.12037037037037036 | 0.12037037037 | 0.0e+00 |
-| `3GLDZM_GLV` | 4.792899408284024 | 4.79289940828 | 0.0e+00 |
-| `3GLDZM_ZDV` | 0.57468904721651992 | 0.574689047217 | 3.9e-16 |
-| `3GLDZM_ZDE` | 3.7485223944249118 | 3.74852239442 | 1.5e-15 |
+| `3GLDZM_SDE` | 0.8238705738705739 | 0.8238705738705739 | 0.0e+00 |
+| `3GLDZM_LDE` | 2.4615384615384617 | 2.4615384615384617 | 0.0e+00 |
+| `3GLDZM_LGLZE` | 0.13946884110787175 | 0.13946884110787175 | 0.0e+00 |
+| `3GLDZM_HGLZE` | 27.53846153846154 | 27.53846153846154 | 0.0e+00 |
+| `3GLDZM_SDLGLE` | 0.12001901217090417 | 0.12001901217090417 | 0.0e+00 |
+| `3GLDZM_SDHGLE` | 23.23946886446887 | 23.23946886446887 | 0.0e+00 |
+| `3GLDZM_LDLGLE` | 0.3112708535795271 | 0.31127085357952705 | 1.8e-16 |
+| `3GLDZM_LDHGLE` | 60.19230769230769 | 60.19230769230769 | 0.0e+00 |
+| `3GLDZM_GLNU` | 23.384615384615383 | 23.384615384615383 | 0.0e+00 |
+| `3GLDZM_GLNUN` | 0.12848689771766694 | 0.12848689771766694 | 0.0e+00 |
+| `3GLDZM_ZDNU` | 121.0 | 121.0 | 0.0e+00 |
+| `3GLDZM_ZDNUN` | 0.6648351648351648 | 0.6648351648351648 | 0.0e+00 |
+| `3GLDZM_ZP` | 0.12037037037037036 | 0.12037037037037036 | 0.0e+00 |
+| `3GLDZM_GLV` | 4.792899408284024 | 4.792899408284024 | 0.0e+00 |
+| `3GLDZM_ZDV` | 0.5746890472165199 | 0.5746890472165197 | 3.9e-16 |
+| `3GLDZM_ZDE` | 3.7485223944249118 | 3.7485223944249175 | 1.5e-15 |
 
 **Thirteen of the sixteen are bit-identical to MIRP's doubles.** The three that are not differ in
 the last unit in the last place, worst 5.7e-15 absolute on `3GLDZM_ZDE` — the only one of the
@@ -97,12 +97,36 @@ implementation `ngldm.cpp` builds its mask from the pixel cloud for the same rea
 not** — `gldzm.cpp` still reads its grey levels off the whole bounding box and still tests
 `intensity == 0` in its own `dist2border`, so it carries defects 1 and 2; see "What is left open".
 
-**What the family allocates per bounding-box voxel is unchanged at 8 bytes** on top of
-`aux_image_cube`: the binned `PixIntens` cube (4) and the distance cube (4). The distance cube is
-also the ROI mask — it is nonzero exactly at the ROI's voxels before the transform runs and after a
-zone consumes one — so nothing was added to hold the mask, and `LR::get_ram_footprint_estimate_3D`,
-which budgets `sizeof(Pixel2)` per bounding-box voxel and is the only gate on whole-volume
-processing, still bounds the family.
+### What the family allocates, and what the admission gate actually covers
+
+`LR::get_ram_footprint_estimate_3D` budgets `sizeof(Pixel2)` per bounding-box voxel — 12 bytes where
+`StatsInt` is 4 — and is the only gate deciding whether a ROI is processed in RAM. Against that
+budget, per bounding-box voxel:
+
+| buffer | bytes | notes |
+|---|---:|---|
+| `aux_image_cube` | 4 | the ROI's cache, allocated before this family runs |
+| the binned cube `D` | 4 | |
+| the distance cube | 4 | **also the ROI mask** — nonzero exactly at the ROI's voxels before the transform runs, and zeroed again as each zone consumes one — so nothing is allocated to hold a mask separately |
+
+Twelve bytes of cubes against a twelve-byte budget, and then three buffers that scale with the ROI
+rather than with the box and are **not** in that budget:
+
+| buffer | worst case | |
+|---|---|---|
+| `frontier` + `next_frontier` | 4 bytes per ROI voxel | a voxel enters exactly one of the two over the whole walk, so together they never hold more than the ROI. They hold packed indices rather than `{x,y,z}` triples, which is what takes this from 12 bytes to 4 |
+| the zone stack | 4 bytes per voxel of the largest zone | packed the same way, and cleared rather than freed between zones so the allocation is made once |
+| `Z`, the zone list | 12 bytes per zone | predates this branch |
+
+**So the estimate does not bound this family's peak, and it never did.** `Z` and the zone-growing
+stack are in the pre-existing implementation and in the 2D twin, and the same is true of every
+texture family here: the estimate models the cubes a ROI needs, not the per-feature scratch on top of
+them. What this branch changed is the size of the scratch — the two index vectors are a third of what
+`{x,y,z}` triples would cost — not whether it is accounted for.
+
+Accounting for per-feature scratch in the admission gate is a repo-wide change: the estimate is
+per-ROI, every family would have to declare its own worst case, and the trivial/out-of-core decision
+would move for all of them. Deliberately not taken here, and filed instead.
 
 **2. `dist2border` measured the distance to the bounding box, not to the ROI.** It scanned rays until
 it hit a voxel of intensity 0 *or the margin of the box*. Since after MATLAB binning no voxel is 0,
@@ -165,22 +189,22 @@ fixture, and it is why the vetted cell uses a phantom on which neither tool disc
 
 | feature | Nyxus | MIRP | Nyxus / MIRP |
 |---|---:|---:|---:|
-| `3GLDZM_SDE` | 0.47006537949579702 | 0.381988292648 | 1.23 |
-| `3GLDZM_LDE` | 7.4337854742574017 | 11.2315087359 | 0.662 |
-| `3GLDZM_LGLZE` | 0.00043490836742224412 | 0.00149522435841 | 0.291 |
-| `3GLDZM_HGLZE` | 2685.0693909588167 | 1920.82497097 | 1.4 |
-| `3GLDZM_SDLGLE` | 0.00015407786939386234 | 0.00021623223212 | 0.713 |
-| `3GLDZM_SDHGLE` | 1540.7841395501789 | 1098.11250725 | 1.4 |
-| `3GLDZM_LDLGLE` | 0.0045802962960003408 | 0.0347909820736 | 0.132 |
-| `3GLDZM_LDHGLE` | 14203.744217420099 | 10881.7095947 | 1.31 |
-| `3GLDZM_GLNU` | 1349.3969192278446 | 1433.44562664 | 0.941 |
-| `3GLDZM_GLNUN` | 0.033098602350507607 | 0.0193546707709 | 1.71 |
-| `3GLDZM_ZDNU` | 10424.140327209399 | 14488.2767411 | 0.719 |
-| `3GLDZM_ZDNUN` | 0.25568790814612574 | 0.195623622655 | 1.31 |
-| `3GLDZM_ZP` | 0.14855774836753732 | 0.269873775653 | 0.55 |
-| `3GLDZM_GLV` | 84.66230769118728 | 227.689486006 | 0.372 |
-| `3GLDZM_ZDV` | 2.0941027837664841 | 3.24563048183 | 0.645 |
-| `3GLDZM_ZDE` | 6.4697858656991167 | 7.50462066483 | 0.862 |
+| `3GLDZM_SDE` | 0.470065379495797 | 0.3819882926480209 | 1.23 |
+| `3GLDZM_LDE` | 7.433785474257402 | 11.231508735923956 | 0.662 |
+| `3GLDZM_LGLZE` | 0.0004349083674222441 | 0.0014952243584138115 | 0.291 |
+| `3GLDZM_HGLZE` | 2685.0693909588167 | 1920.8249709702682 | 1.4 |
+| `3GLDZM_SDLGLE` | 0.00015407786939386234 | 0.0002162322321202084 | 0.713 |
+| `3GLDZM_SDHGLE` | 1540.784139550179 | 1098.1125072487994 | 1.4 |
+| `3GLDZM_LDLGLE` | 0.004580296296000341 | 0.03479098207358527 | 0.132 |
+| `3GLDZM_LDHGLE` | 14203.744217420099 | 10881.709594663931 | 1.31 |
+| `3GLDZM_GLNU` | 1349.3969192278446 | 1433.445626637142 | 0.941 |
+| `3GLDZM_GLNUN` | 0.03309860235050761 | 0.01935467077093708 | 1.71 |
+| `3GLDZM_ZDNU` | 10424.1403272094 | 14488.2767411088 | 0.719 |
+| `3GLDZM_ZDNUN` | 0.25568790814612574 | 0.19562362265546165 | 1.31 |
+| `3GLDZM_ZP` | 0.14855774836753732 | 0.2698737756529851 | 0.55 |
+| `3GLDZM_GLV` | 84.66230769118728 | 227.68948600566614 | 0.372 |
+| `3GLDZM_ZDV` | 2.094102783766484 | 3.2456304818289197 | 0.645 |
+| `3GLDZM_ZDE` | 6.469785865699117 | 7.504620664827702 | 0.862 |
 
 The residual has the shape a discretisation gap has: the grey-level-weighted features are the ones
 far from 1 (`LDLGLE` 0.132x, `LGLZE` 0.291x, `GLV` 0.372x) and `GLNU`, which sums a marginal over
@@ -195,22 +219,22 @@ ROI rather than the compatibility phantom's 1512:
 
 | feature | Nyxus | MIRP | rel |
 |---|---:|---:|---:|
-| `3GLDZM_SDE` | 0.47006537949579702 | 0.470065379496 | 2.4e-16 |
-| `3GLDZM_LDE` | 7.4337854742574017 | 7.43378547426 | 0.0e+00 |
-| `3GLDZM_LGLZE` | 0.00043490836742224412 | 0.000434908367422 | 0.0e+00 |
-| `3GLDZM_HGLZE` | 2685.0693909588167 | 2685.06939096 | 0.0e+00 |
-| `3GLDZM_SDLGLE` | 0.00015407786939386234 | 0.000154077869394 | 1.8e-16 |
-| `3GLDZM_SDHGLE` | 1540.7841395501789 | 1540.78413955 | 1.5e-16 |
-| `3GLDZM_LDLGLE` | 0.0045802962960003408 | 0.004580296296 | 3.8e-16 |
-| `3GLDZM_LDHGLE` | 14203.744217420099 | 14203.7442174 | 0.0e+00 |
-| `3GLDZM_GLNU` | 1349.3969192278446 | 1349.39691923 | 0.0e+00 |
-| `3GLDZM_GLNUN` | 0.033098602350507607 | 0.0330986023505 | 0.0e+00 |
-| `3GLDZM_ZDNU` | 10424.140327209399 | 10424.1403272 | 0.0e+00 |
-| `3GLDZM_ZDNUN` | 0.25568790814612574 | 0.255687908146 | 0.0e+00 |
-| `3GLDZM_ZP` | 0.14855774836753732 | 0.148557748368 | 0.0e+00 |
-| `3GLDZM_GLV` | 84.66230769118728 | 84.6623076912 | 3.4e-16 |
-| `3GLDZM_ZDV` | 2.0941027837664841 | 2.09410278377 | 0.0e+00 |
-| `3GLDZM_ZDE` | 6.4697858656991167 | 6.4697858657 | 1.0e-14 |
+| `3GLDZM_SDE` | 0.470065379495797 | 0.4700653794957969 | 2.4e-16 |
+| `3GLDZM_LDE` | 7.433785474257402 | 7.433785474257402 | 0.0e+00 |
+| `3GLDZM_LGLZE` | 0.0004349083674222441 | 0.0004349083674222441 | 0.0e+00 |
+| `3GLDZM_HGLZE` | 2685.0693909588167 | 2685.0693909588167 | 0.0e+00 |
+| `3GLDZM_SDLGLE` | 0.00015407786939386234 | 0.00015407786939386232 | 1.8e-16 |
+| `3GLDZM_SDHGLE` | 1540.784139550179 | 1540.7841395501787 | 1.5e-16 |
+| `3GLDZM_LDLGLE` | 0.004580296296000341 | 0.004580296296000339 | 3.8e-16 |
+| `3GLDZM_LDHGLE` | 14203.744217420099 | 14203.744217420099 | 0.0e+00 |
+| `3GLDZM_GLNU` | 1349.3969192278446 | 1349.3969192278446 | 0.0e+00 |
+| `3GLDZM_GLNUN` | 0.03309860235050761 | 0.03309860235050761 | 0.0e+00 |
+| `3GLDZM_ZDNU` | 10424.1403272094 | 10424.1403272094 | 0.0e+00 |
+| `3GLDZM_ZDNUN` | 0.25568790814612574 | 0.25568790814612574 | 0.0e+00 |
+| `3GLDZM_ZP` | 0.14855774836753732 | 0.14855774836753732 | 0.0e+00 |
+| `3GLDZM_GLV` | 84.66230769118728 | 84.66230769118725 | 3.4e-16 |
+| `3GLDZM_ZDV` | 2.094102783766484 | 2.094102783766484 | 0.0e+00 |
+| `3GLDZM_ZDE` | 6.469785865699117 | 6.469785865699184 | 1.0e-14 |
 
 Worst **1.0e-14**, on `3GLDZM_ZDE` again. This is not a pinned cell — it takes a MIRP invocation the
 Nyxus command line cannot produce, so it is a measurement rather than a configuration a user can
@@ -226,6 +250,9 @@ phantom's size.
 - **`3GLDZM_GLM` and `3GLDZM_ZDM`** have no counterpart in any tool — MIRP's GLDZM emits no
   `dzm_gl_mean` / `dzm_zd_mean` column and IBSI defines neither — so they stay drift guards at every
   recipe.
+- **The admission gate does not model per-feature scratch**, for this family or any other. Sized
+  above; filed as its own item, since fixing it means every family declaring a worst case and the
+  trivial/out-of-core decision moving repo-wide.
 - **The 2D twin carries defects 1 and 2**, and is vetted anyway because its recipe hides them.
   `gldzm.cpp` has the same "intensity is zero means outside the ROI" test in its `dist2border` and
   the same zero-skip only under `IBSI=true`; `gldzm.ibsi_phantom_2d` runs at `IBSI=true`, where the

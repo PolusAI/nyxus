@@ -79,6 +79,7 @@
 #include "test_3d_morphology_matlab.h"
 #include "test_3d_morphology_mirp.h"
 #include "test_3d_gldzm_common.h"
+#include "test_3d_gldzm_mechanics.h"
 #include "test_3d_gldzm_mirp.h"
 #include "test_3d_gldzm_regression.h"
 #include "test_3d_ngldm_regression.h"
@@ -857,6 +858,21 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_DUMP_REGRESSION) {
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COVMATRIX_AND_EIGENVALS_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_morphology_covmatrix_and_eigenvals_mechanics());
+}
+
+
+//***** 3D GLDZM mechanics *****
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZERO_LEVEL_VOXELS_ARE_ZONED_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_zero_level_voxels_are_zoned_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_NO_BINNING_SPELLINGS_AGREE_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_no_binning_spellings_agree_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_RADIOMICS_BINNING_IS_IDENTITY_HERE_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_radiomics_binning_is_identity_here_mechanics());
 }
 
 
