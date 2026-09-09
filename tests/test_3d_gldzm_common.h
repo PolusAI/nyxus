@@ -61,6 +61,35 @@ static std::tuple<std::string, std::string, int> get_3d_compat_gldzm_phantom()
 	return { ipath, mpath, 57 };
 }
 
+// bench_gldzm_zerolevel_3d -- an 8x8x8 volume whose 4x4x4 ROI carries raw intensity 0 on the voxels
+// with an even x+y+z and 5 on the rest, inside a two-voxel background margin. Its zeros are ROI
+// voxels, and the binning schemes that do not remap a zero hand them to the GLDZM as grey level 0,
+// which is not a valid level. It is the family's only fixture that reaches that case: the
+// compatibility phantom's levels are 1..8 and bench_ut57_3d is binned MATLAB-style, which sends 0 to
+// level 1.
+//
+// Built by oracles/gen_gldzm3d_mirp.py --write-phantom, like the compatibility phantom, and checked
+// against its rule on every ordinary run of that generator. It carries no oracle goldens: MIRP has
+// the same problem with a level 0 in its input, so test_3d_gldzm_mechanics.h derives what to expect
+// by hand instead.
+static std::tuple<std::string, std::string, int> get_3d_gldzm_zerolevel_phantom()
+{
+	// physical paths of the phantoms
+	fs::path this_fpath(__FILE__);
+	fs::path pp = this_fpath.parent_path();
+
+	fs::path f1("/data/nifti/phantoms/gldzm_zerolevel_inten.nii");
+	fs::path i_phys_path = (pp.string() + f1.make_preferred().string());
+
+	fs::path f2("/data/nifti/phantoms/gldzm_zerolevel_mask.nii");
+	fs::path m_phys_path = (pp.string() + f2.make_preferred().string());
+
+	std::string ipath = i_phys_path.string(),
+		mpath = m_phys_path.string();
+
+	return { ipath, mpath, 57 };
+}
+
 // The settings a 3D GLDZM assertion runs on. The family reads two of them, and they are not
 // independent: at IBSI=true prepare_GLDZM_matrix_kit overwrites the grey depth with 0 whatever was
 // passed, which is the no-binning reading of the raw levels. A settings vector built here starts
