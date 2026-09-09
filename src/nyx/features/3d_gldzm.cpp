@@ -7,6 +7,9 @@
 
 int D3_GLDZM_feature::n_levels = 0;
 
+// Marks a ROI voxel whose distance to the ROI border is not settled yet
+static const int DIST_UNSETTLED = INT_MAX;
+
 D3_GLDZM_feature::D3_GLDZM_feature() : FeatureMethod("D3_GLDZM_feature")
 {
 	provide_features (D3_GLDZM_feature::featureset);
@@ -57,17 +60,22 @@ void D3_GLDZM_feature::clear_buffers()
 // City-block distance from every ROI voxel to the nearest voxel outside the ROI, which is the
 // distance IBSI's GLDZM measures. A voxel touching the ROI's surface is at distance 1. Anything
 // outside the bounding box is outside the ROI, and that is exact because the box is tight.
+//
+// 'dist' arrives nonzero exactly at the ROI's voxels and 0 everywhere else, and leaves carrying each
+// ROI voxel's distance -- so it is the ROI mask as well as the metric, and zero keeps meaning "not
+// the ROI's" throughout. That is what lets the family hold one cube here rather than two.
+//
 // Breadth-first from the surface inwards: the frontier holds the voxels settled at the current
 // distance, so every voxel is settled once, at its shortest distance.
-void D3_GLDZM_feature::calc_dist2border (SimpleCube<int>& dist, const SimpleCube<unsigned char>& roi_mask)
+void D3_GLDZM_feature::calc_dist2border (SimpleCube<int>& dist)
 {
-	const int w = roi_mask.width(),
-		h = roi_mask.height(),
-		d = roi_mask.depth();
-	const int UNSETTLED = INT_MAX;
+	const int w = dist.width(),
+		h = dist.height(),
+		d = dist.depth();
 
-	dist.allocate (w, h, d);
-	dist.fill (0);	// off-ROI voxels stay at 0: they are the border this measures against
+	for (auto& v : dist)
+		if (v)
+			v = DIST_UNSETTLED;
 
 	// the 6 city-block moves
 	static const int mv[6][3] = { {-1,0,0}, {+1,0,0}, {0,-1,0}, {0,+1,0}, {0,0,-1}, {0,0,+1} };
@@ -79,17 +87,15 @@ void D3_GLDZM_feature::calc_dist2border (SimpleCube<int>& dist, const SimpleCube
 		for (int y = 0; y < h; y++)
 			for (int x = 0; x < w; x++)
 			{
-				if (roi_mask.zyx(z, y, x) == 0)
+				if (dist.zyx(z, y, x) == 0)
 					continue;
-
-				dist.zyx(z, y, x) = UNSETTLED;
 
 				for (int i = 0; i < 6; i++)
 				{
 					int nx = x + mv[i][0],
 						ny = y + mv[i][1],
 						nz = z + mv[i][2];
-					if (!roi_mask.safe(nz, ny, nx) || roi_mask.zyx(nz, ny, nx) == 0)
+					if (!dist.safe(nz, ny, nx) || dist.zyx(nz, ny, nx) == 0)
 					{
 						dist.zyx(z, y, x) = 1;
 						frontier.push_back ({ x, y, z });
@@ -109,9 +115,7 @@ void D3_GLDZM_feature::calc_dist2border (SimpleCube<int>& dist, const SimpleCube
 				int nx = v[0] + mv[i][0],
 					ny = v[1] + mv[i][1],
 					nz = v[2] + mv[i][2];
-				if (!roi_mask.safe(nz, ny, nx) || roi_mask.zyx(nz, ny, nx) == 0)
-					continue;
-				if (dist.zyx(nz, ny, nx) != UNSETTLED)
+				if (!dist.safe(nz, ny, nx) || dist.zyx(nz, ny, nx) != DIST_UNSETTLED)
 					continue;
 
 				dist.zyx(nz, ny, nx) = step;
@@ -143,29 +147,29 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	auto& imR = r.aux_image_cube;
 	bin_intensities_3d (D, imR, r.aux_min, r.aux_max, greyInfo);
 
-	// -- ROI mask over the bounding box. The binned cube cannot stand in for it: matlab binning
-	// sends intensity 0 to level 1, so after binning the background filling the rest of the box is
-	// indistinguishable from a genuine level-1 ROI voxel. The 2D twin gldzm.cpp masks for the same
-	// reason. A byte per bounding-box voxel is the cheapest element type that carries the answer.
-	SimpleCube<unsigned char> roi_mask;
-	roi_mask.allocate (D.width(), D.height(), D.depth());
-	roi_mask.fill (0);
+	// -- which voxels are the ROI's, marked in the cube that will go on to hold their distance to its
+	// border. The binned cube cannot answer this: matlab binning sends intensity 0 to level 1, so
+	// after binning the background filling the rest of the bounding box is indistinguishable from a
+	// genuine level-1 ROI voxel. The voxel cloud is what knows, and the 2D twin ngldm.cpp masks from
+	// it for the same reason.
+	SimpleCube<int> dist;
+	dist.allocate (D.width(), D.height(), D.depth());
+	dist.fill (0);
 	auto xmin = r.aabb.get_xmin(),
 		ymin = r.aabb.get_ymin(),
 		zmin = r.aabb.get_zmin();
 	for (const auto& p : r.raw_pixels_3D)
-		roi_mask.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)) = 1;
+		dist.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)) = 1;
 
-	// allocate intensities matrix. The grey levels are the ROI's, not the bounding box's.
+	// allocate intensities matrix. The grey levels are the ROI's, not the bounding box's, so they are
+	// gathered over the voxel cloud too.
 	std::vector<PixIntens> I;
 	if (ibsi_grey_binning(greyInfo))
 	{
 		PixIntens n_ibsi_levels = 0;
-		for (int z = 0; z < D.depth(); z++)
-			for (int y = 0; y < D.height(); y++)
-				for (int x = 0; x < D.width(); x++)
-					if (roi_mask.zyx(z, y, x))
-						n_ibsi_levels = std::max (n_ibsi_levels, D.zyx(z, y, x));
+		for (const auto& p : r.raw_pixels_3D)
+			n_ibsi_levels = std::max (n_ibsi_levels,
+				D.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)));
 		I.resize (n_ibsi_levels);
 		for (PixIntens i = 0; i < n_ibsi_levels; i++)
 			I[i] = i + 1;
@@ -173,11 +177,8 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	else // radiomics and matlab
 	{
 		std::unordered_set<PixIntens> U;
-		for (int z = 0; z < D.depth(); z++)
-			for (int y = 0; y < D.height(); y++)
-				for (int x = 0; x < D.width(); x++)
-					if (roi_mask.zyx(z, y, x))
-						U.insert (D.zyx(z, y, x));
+		for (const auto& p : r.raw_pixels_3D)
+			U.insert (D.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)));
 		U.erase(0);	// discard intensity '0'
 		I.assign(U.begin(), U.end());
 		std::sort(I.begin(), I.end());
@@ -186,8 +187,7 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	//==== Distance of every ROI voxel to the ROI border. One pass over the box, not a lookup per
 	// zone member: a zone's metric is a minimum over its voxels, so every ROI voxel's distance is
 	// read at least once anyway.
-	SimpleCube<int> dist;
-	calc_dist2border (dist, roi_mask);
+	calc_dist2border (dist);
 
 	//==== Find zones
 	// A zone is a 26-connected component of one grey level within the ROI -- the connectivity IBSI
@@ -200,8 +200,8 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 			for (int col = 0; col < D.width(); col++)
 			{
 				// zones are grown over the ROI; the background filling the rest of the bounding box
-				// is not part of any of them
-				if (roi_mask.zyx(dep, row, col) == 0)
+				// is not part of any of them, and neither is a voxel some zone already holds
+				if (dist.zyx(dep, row, col) == 0)
 					continue;
 
 				auto inten = D.zyx (dep, row, col);
@@ -213,13 +213,12 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 				if (inten == 0)
 					continue;
 
-				// Taking a voxel into a zone clears its mask bit. That both prevents rescanning and
-				// keeps "is this a zone member" one lookup: a voxel already in a zone is no longer
-				// available to another.
-				roi_mask.zyx(dep, row, col) = 0;
-
+				// Taking a voxel into a zone zeroes its distance, which is the mark the background
+				// already carries: the voxel is no longer available to another zone, and the distance
+				// it held has been folded into this zone's metric.
 				int zoneSize = 1;
 				int zoneMetric = dist.zyx (dep, row, col);
+				dist.zyx(dep, row, col) = 0;
 
 				stack.clear();
 				stack.push_back ({ col, row, dep });
@@ -239,14 +238,14 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 								int _x = v[0] + dx,
 									_y = v[1] + dy,
 									_z = v[2] + dz;
-								if (!roi_mask.safe(_z, _y, _x) || roi_mask.zyx(_z, _y, _x) == 0)
+								if (!dist.safe(_z, _y, _x) || dist.zyx(_z, _y, _x) == 0)
 									continue;
 								if (D.zyx(_z, _y, _x) != inten)
 									continue;
 
-								roi_mask.zyx(_z, _y, _x) = 0;
 								zoneSize++;
 								zoneMetric = std::min (zoneMetric, dist.zyx(_z, _y, _x));
+								dist.zyx(_z, _y, _x) = 0;
 								stack.push_back ({ _x, _y, _z });
 							}
 				}
