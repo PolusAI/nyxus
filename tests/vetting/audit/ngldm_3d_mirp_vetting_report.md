@@ -1,24 +1,31 @@
 # 3D NGLDM vs MIRP — vetting report
 
-The family's NGLD matrix and its feature formulas agree with MIRP 2.6.0 to machine precision when
-both tools are given the same grey levels. Sixteen of the nineteen features are `vetted` against MIRP
-on that basis, in `test_3d_ngldm_mirp.h` at recipe `ngldm3d.mirp_samelevels`.
+Sixteen of the family's nineteen features are `vetted` against MIRP 2.6.0, in
+`test_3d_ngldm_mirp.h`, at **both** of the family's config points:
 
-The scope of that oracle is narrower than the family, and stated rather than implied: it covers the
-NGLDM, not the discretisation. At MIRP's own `fixed_bin_number` the two tools do not land on the same
-grey levels, and that gap is not the family's to close.
+- `ngldm3d.mirp_samelevels` — `IBSI=false`, `GREYDEPTH=64`, worst residual **8.7e-16**. Scope-narrowed
+  per SPEC §4: it covers the NGLDM and not the discretisation, because the levels handed to MIRP are
+  reproduced from Nyxus' binning rather than measured out of it.
+- `ngldm3d.mirp_ibsi_rawlevels` — `IBSI=true`, worst residual **7.54e-15**. Not narrowed: binning is
+  off there, so the raw intensity is the grey level on both sides and there is nothing to reproduce.
+
+The remaining three — `3NGLDM_DCP`, `3NGLDM_GLM`, `3NGLDM_DCM` — are the whole of the family's
+regression table, and are the only ones no tool can judge.
+
+A third MIRP mapping is measured and asserts nothing: at MIRP's own `fixed_bin_number` the two tools
+do not land on the same grey levels, and that gap is not the family's to close.
 
 ## Tool and configuration
 
 | | |
 |---|---|
 | Tool | mirp 2.6.0 (numpy 2.4.6, pandas 3.0.3) |
-| Recipes | `ngldm3d.mirp_fbn64`, `ngldm3d.mirp_samelevels` |
+| Recipes | `ngldm3d.mirp_samelevels`, `ngldm3d.mirp_ibsi_rawlevels` (asserted); `ngldm3d.mirp_fbn64` (measured only) |
 | Fixture | the segmented phantom, `phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57 |
 | MIRP config | `by_slice=False`, distance 1, difference level (alpha) 0; discretisation per recipe |
-| Nyxus config | `GREYDEPTH=64`, `IBSI=false` — what `test_3d_ngldm_common.h`'s fixture sets, for both judging files |
+| Nyxus config | `GREYDEPTH=64` with `IBSI=false` and with `IBSI=true` — both from `test_3d_ngldm_common.h`'s fixture, which takes the flag |
 | Generator | `tests/vetting/oracles/gen_ngldm3d_mirp.py` |
-| Tolerance | `rel=1e-3` at `ngldm3d.mirp_samelevels` (SPEC 7 same-definition tier); `ngldm3d.mirp_fbn64` asserts nothing |
+| Tolerance | `rel=1e-3` at both asserted recipes (SPEC 7 same-definition tier); `ngldm3d.mirp_fbn64` asserts nothing |
 
 ## The two tools discretise this ROI differently
 
@@ -120,6 +127,45 @@ comparable feature with no oracle row (below), and it is excluded from the sixte
 
 The rows are not redundant: no single assertion in the table above catches all five, and two of the
 five are caught by fewer than half the set.
+
+## Result at `ngldm3d.mirp_ibsi_rawlevels` -- the IBSI=true config point
+
+The family's second config point. `IBSI` reaches `to_grayscale` as `disable_binning`, so nothing is
+binned: the raw loader-shifted intensity **is** the grey level, 2001 distinct of them here. MIRP at
+`base_discretisation_method="none"` over the same raw values is config-matched by construction, and
+unlike `mirp_samelevels` there is no binning step reproduced in numpy — so this recipe's rows carry
+no narrowed scope.
+
+| feature | Nyxus | MIRP | rel <= |
+|---|---|---|---|
+| `3NGLDM_DCP` | 1 | 1 | 0 |
+| `3NGLDM_LDE` | 0.869961 | 0.869961 | 2e-15 |
+| `3NGLDM_HDE` | 2.17252 | 2.17252 | 0 |
+| `3NGLDM_LGLCE` | 3.4001e-07 | 3.4001e-07 | 4e-15 |
+| `3NGLDM_HGLCE` | 4.27555e+06 | 4.27555e+06 | 0 |
+| `3NGLDM_LDLGLE` | 2.8075e-07 | 2.8075e-07 | 8e-16 |
+| `3NGLDM_LDHGLE` | 3.83157e+06 | 3.83157e+06 | 2e-16 |
+| `3NGLDM_HDLGLE` | 9.36244e-07 | 9.36244e-07 | 7e-16 |
+| `3NGLDM_HDHGLE` | 7.98772e+06 | 7.98772e+06 | 0 |
+| `3NGLDM_GLNU` | 157.972 | 157.972 | 0 |
+| `3NGLDM_GLNUN` | 0.000575631 | 0.000575631 | 0 |
+| `3NGLDM_DCNU` | 196011 | 196011 | 0 |
+| `3NGLDM_DCNUN` | 0.714242 | 0.714242 | 0 |
+| `3NGLDM_GLV` | 341996 | 341996 | 2e-15 |
+| `3NGLDM_DCV` | 0.611911 | 0.611911 | 4e-15 |
+| `3NGLDM_DCENT` | 11.4907 | 11.4907 | 5e-15 |
+| `3NGLDM_DCENE` | 0.000402376 | 0.000402376 | 8e-15 |
+
+Worst relative difference over the sixteen: **7.54e-15** — looser than `mirp_samelevels`' 8.7e-16
+because the sums run over 2001 grey rows rather than 44, and still four orders inside the `rel=1e-3`
+band the assertions use.
+
+**It is a weak discriminator, and that is measured.** At raw resolution **83.46% of ROI voxels have
+no matching neighbour** and the maximum dependence reached is 17 of a possible 26, so the dependence
+distribution piles into the first column. It is asserted anyway because SPEC §5.1 maps a VALID cell
+to an oracle assertion, and because it exercises the 26-neighbourhood and the ROI masking on a
+2001-wide ladder rather than a 44-wide one. `3NGLDM_DCP` is excluded here too: MIRP returns
+`ngl_dc_perc` = 1.0 at this config as well.
 
 ## The family's own settings
 

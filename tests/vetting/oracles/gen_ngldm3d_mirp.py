@@ -163,6 +163,15 @@ def parse_pins(path, table):
     return {n: float(v) for n, v in pins}
 
 
+def nyxus_raw_levels(inten):
+    """-> the volume Nyxus sees after the loader's shift, which IS the grey level when IBSI=true.
+
+    Widen before subtracting: NIfTI datatype 4 is int16, and a volume spanning more than 32767 would
+    wrap in the file's own dtype and stop reproducing what Nyxus sees.
+    """
+    return (inten.astype(np.int64) - int(inten.min())).astype(np.uint32)
+
+
 def nyxus_grey_levels(inten, mask):
     """-> the volume of grey levels Nyxus' GREYDEPTH=64 binning produces, off-ROI voxels at 0.
 
@@ -170,9 +179,7 @@ def nyxus_grey_levels(inten, mask):
     volume minimum, and `to_grayscale(i, 0, ROI max, 64)` truncates i / (ROI max) * 64. Handing the
     result to MIRP with the discretisation switched off is what makes the samelevels run comparable.
     """
-    # widen before subtracting: NIfTI datatype 4 is int16, and a volume spanning more than 32767
-    # would wrap in the file's own dtype and stop reproducing Nyxus' binning
-    shifted = (inten.astype(np.int64) - int(inten.min())).astype(np.uint32)
+    shifted = nyxus_raw_levels(inten)
     roi_max = float(shifted[mask].max())
     levels = (shifted.astype(np.float64) / roi_max * NBINS).astype(np.uint32)
     return np.where(mask, levels, 0).astype(np.float64)
@@ -214,7 +221,15 @@ def run():
                    base_discretisation_method="fixed_bin_number",
                    base_discretisation_n_bins=NBINS)
     same = features(levels, SUFFIX_SAMELEVELS, base_discretisation_method="none")
-    return (fbn, same), span
+
+    # The IBSI=true config point. IBSI reaches to_grayscale as disable_binning, so Nyxus does not bin
+    # at all there and the raw loader-shifted intensity is the grey level. Nothing is reproduced for
+    # MIRP beyond that shift -- there is no binning step to replicate -- which is why this recipe's
+    # rows are not scope-narrowed the way mirp_samelevels' are.
+    raw = np.where(m, nyxus_raw_levels(inten), 0).astype(np.float64)
+    ibsi = features(raw, SUFFIX_SAMELEVELS, base_discretisation_method="none")
+    print(f"# ibsi=true grey levels over the roi: {int(np.unique(raw[m]).size)} distinct raw values")
+    return (fbn, same, ibsi), span
 
 
 def verify(got, heading, txt, pins, derived, bound):
@@ -278,7 +293,7 @@ def main():
             print(f"missing phantom: {p}")
             return 1
 
-    (fbn, same), span = run()
+    (fbn, same, ibsi), span = run()
 
     try:
         version = metadata.version("mirp")       # mirp exposes no __version__
@@ -290,7 +305,8 @@ def main():
     print(f"# mirp {version}, numpy {np.__version__}, label={LABEL}, by_slice=False, "
           f"distance=1, alpha=0")
     for title, got, suffix in (("ngldm3d.mirp_fbn64", fbn, SUFFIX_FBN),
-                               ("ngldm3d.mirp_samelevels", same, SUFFIX_SAMELEVELS)):
+                               ("ngldm3d.mirp_samelevels", same, SUFFIX_SAMELEVELS),
+                               ("ngldm3d.mirp_ibsi_rawlevels", ibsi, SUFFIX_SAMELEVELS)):
         print(f"\n# {title}")
         for name in sorted(got):
             print(f'\t{{"{name}", {got[name]!r}}},'.ljust(56) + f"// {MIRP[name]}{suffix}")
@@ -306,7 +322,17 @@ def main():
     # The Nyxus half of both tables is one run at GREYDEPTH=64 / IBSI=false, so both are backed by
     # the regression pins. The oracle header's own pins are checked against this MIRP run separately
     # below -- they are goldens, not a report column.
-    pins = parse_pins(REGRESSION_H, "ngldm_3d_regression_ref_vals")
+    # The fbn64 and samelevels tables share one Nyxus run at GREYDEPTH=64 / IBSI=false; three of its
+    # nineteen values are pinned in the regression header and the other sixteen in the oracle header,
+    # so the Nyxus column is backed by whichever table owns the feature. The ibsi table is a
+    # different Nyxus run and is backed by its own oracle pins -- checked below in their own pass, so
+    # here the Nyxus column is compared against those same pins.
+    pins = dict(parse_pins(REGRESSION_H, "ngldm_3d_regression_ref_vals"))
+    pins.update(parse_pins(MIRP_H, "ngldm_3d_mirp_ref_vals"))
+    ibsi_pins = dict(parse_pins(MIRP_H, "ngldm_3d_mirp_ibsi_ref_vals"))
+    # 3NGLDM_DCP is quoted in every table but pinned only once: Nyxus hard-codes f_DCP = 1, so its
+    # value does not depend on the config point and the regression pin backs it at both.
+    ibsi_pins["3NGLDM_DCP"] = parse_pins(REGRESSION_H, "ngldm_3d_regression_ref_vals")["3NGLDM_DCP"]
 
     nok = nfail = nmiss = 0
     unquoted = []
@@ -314,32 +340,38 @@ def main():
             ("## Result at `ngldm3d.mirp_fbn64` -- MIRP discretises", fbn,
              lambda ny, ref: ny / ref, False),                  # a ratio: verified as a value
             ("## Result at `ngldm3d.mirp_samelevels` -- the same grey levels", same,
-             lambda ny, ref: abs(ny - ref) / max(abs(ref), 1e-12), True)):   # a residual: a bound
-        a, b, c, d = verify(got, heading, txt, pins, derived, bound)
+             lambda ny, ref: abs(ny - ref) / max(abs(ref), 1e-12), True),    # a residual: a bound
+            ("## Result at `ngldm3d.mirp_ibsi_rawlevels` -- the IBSI=true config point", ibsi,
+             lambda ny, ref: abs(ny - ref) / max(abs(ref), 1e-12), True)):
+        table_pins = ibsi_pins if "ibsi_rawlevels" in heading else pins
+        a, b, c, d = verify(got, heading, txt, table_pins, derived, bound)
         nok += a; nfail += b; nmiss += c; unquoted += d
 
-    # The oracle header's goldens ARE this run's MIRP values -- that is what makes
+    # The oracle headers' goldens ARE this run's MIRP values -- that is what makes
     # test_3d_ngldm_mirp.h an assertion against MIRP rather than against a number someone typed.
-    oracle_pins = parse_pins(MIRP_H, "ngldm_3d_mirp_ref_vals")
-    print(f"\n# verifying the {len(oracle_pins)} goldens pinned in {os.path.basename(MIRP_H)} "
-          f"against this run, at rel<={RELTOL:g}")
-    for name in sorted(oracle_pins):
-        if name not in same:
-            print(f"  MISSING {name}: pinned as a MIRP golden but MIRP reports no counterpart")
-            nmiss += 1
-            continue
-        rel = abs(oracle_pins[name] - same[name]) / max(abs(same[name]), 1e-12)
-        if rel <= RELTOL:
-            print(f"  OK   {name}: pin={oracle_pins[name]!r} mirp={same[name]!r} rel={rel:.3g}")
-            nok += 1
-        else:
-            print(f"  FAIL {name}: pin={oracle_pins[name]!r} mirp={same[name]!r} rel={rel:.3g}")
-            nfail += 1
-    # a feature MIRP can vet that the oracle header does not pin has to be a deliberate omission
-    for name in sorted(set(same) - set(oracle_pins)):
-        if name != "3NGLDM_DCP":
-            print(f"  FAIL {name}: MIRP computes it and {os.path.basename(MIRP_H)} does not pin it")
-            nfail += 1
+    # One table per config point, each checked against the run that produced it.
+    for table, got in (("ngldm_3d_mirp_ref_vals", same),
+                       ("ngldm_3d_mirp_ibsi_ref_vals", ibsi)):
+        oracle_pins = parse_pins(MIRP_H, table)
+        print(f"\n# verifying the {len(oracle_pins)} goldens pinned in {table} against this run, "
+              f"at rel<={RELTOL:g}")
+        for name in sorted(oracle_pins):
+            if name not in got:
+                print(f"  MISSING {name}: pinned as a MIRP golden but MIRP reports no counterpart")
+                nmiss += 1
+                continue
+            rel = abs(oracle_pins[name] - got[name]) / max(abs(got[name]), 1e-12)
+            if rel <= RELTOL:
+                print(f"  OK   {name}: pin={oracle_pins[name]!r} mirp={got[name]!r} rel={rel:.3g}")
+                nok += 1
+            else:
+                print(f"  FAIL {name}: pin={oracle_pins[name]!r} mirp={got[name]!r} rel={rel:.3g}")
+                nfail += 1
+        # a feature MIRP can vet that the header does not pin has to be a deliberate omission
+        for name in sorted(set(got) - set(oracle_pins)):
+            if name != "3NGLDM_DCP":
+                print(f"  FAIL {name}: MIRP computes it and {table} does not pin it")
+                nfail += 1
 
     # the grey-level span is the report's explanation of the fbn64 gap, so it is checked too
     span_txt = f"{span[0]}-{span[1]}, {span[2]} distinct"
