@@ -97,7 +97,7 @@ oracle cell, which fixture it is measured on.
 | in-RAM (`calculate`) | disks R = 10, 20, 40 | **VALID** | `skimage` on `morphology.radius_disks`, and `analytic` for `MAX` on the same recipe |
 | in-RAM (`calculate`) | 8×8 `shape2d` | **VALID-BUT-PRODUCTION-ONLY** | no tool reproduces it *on this fixture*; recipe `morphology.shape2d_native`, drift guard only |
 | out-of-core (`osized_calculate`) | disk64 | **impl-defect** | the two paths disagree; recipe `morphology.disk64_forced_ooc` |
-| whole-slide (`SINGLEROI=true`) | — | not reached | `buildWholeSlideContour()` pushes four AABB corners, so the inradius map is a corner artefact; no row claimed and none asserted |
+| whole-slide (`SINGLEROI=true`) | disk64 frame | **VALID-BUT-PRODUCTION-ONLY** | a real config no tool reproduces; recipe `morphology.disk64_wholeslide` |
 
 **Why the shape2d cell is production-only and the disk cell is not.** The reference —
 `find_boundaries(connectivity=1, mode='inner')` plus a minimum over it — reproduces `MAX` and
@@ -107,6 +107,38 @@ it is: on the 8×8 mask the traced contour **is** the skimage inner boundary shi
 18 pixels, and shifting the reference the same way reproduces all three Nyxus values. On a disk
 `MAX` and `MEDIAN` are unmoved by that shift because the pixel attaining them moves with it, so they
 promote there and `MEAN` does not, at either fixture.
+
+### The whole-slide cell is reached, and it is a distance-to-corner map
+
+`reduce_trivial_2d_wholeslide()` (`reduce_trivial_rois.cpp:415`) calls `ContourFeature::extract()`
+whenever `RoiRadiusFeature::required()` holds, and then `RoiRadiusFeature::extract()` — so this is
+production, not a configuration nobody reaches. What the feature is handed at `SINGLEROI=true` is
+`buildWholeSlideContour()`'s four AABB corners, so "distance to the nearest contour pixel" becomes
+"distance to the nearest corner", taken over every pixel of the frame rather than over an object.
+
+Measured on the 64×64 `bench_disk64_diagonal_boundary` frame, against the segmented cell on the same
+image:
+
+| | whole-slide | segmented |
+|---|---|---|
+| pixels measured | 4096 (the frame) | 1257 (the disk) |
+| `ROI_RADIUS_MEAN` | 24.490797504013532 | 6.087109772358636 |
+| `ROI_RADIUS_MAX` | 45.254833995939045 | 19.026297590440446 |
+| `ROI_RADIUS_MEDIAN` | 25.495097567963924 | 5.0 |
+
+All three follow in closed form from four corners on an AABB spanning **0..64** — one pixel past the
+image extent, which `BBOX_WIDTH`/`BBOX_HEIGHT` report as 65. The frame centre is `32√2` from a
+corner, and that is the maximum, to the last digit; the median is `√650`. Recomputing the same
+statistics from those four corner coordinates reproduces all three exactly, and from corners at
+0..63 it does not, which is what identifies the geometry rather than assuming it.
+
+**`VALID-BUT-PRODUCTION-ONLY`, not `INVALID`.** The config is real and reachable and the values are
+deterministic; no external tool computes "distance to the four corners of a bounding box" as a shape
+descriptor, so nothing can vet it, and it is kept as a snapshot. That is the same disposition the
+`EDGE_*` and `PERIMETER` whole-slide cells carry, for the same reason. Pinned by
+`test_2d_morphology_whole_slide_roi_radius_is_corner_distance_regression` in
+`test_2d_morphology_regression.py`, which asserts the closed forms alongside the literals so a change
+that made whole-slide mode trace the real slide boundary breaks all three.
 
 ### The out-of-core cell is a defect, measured on the same disk that exposed `PERIMETER`
 

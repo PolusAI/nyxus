@@ -30,6 +30,42 @@ distances. Both the in-RAM and the out-of-core path compute it the same way, thr
 hill-descent `min_sqdist()` beside it, which assumes a locally-unimodal ordered contour and can
 settle in the wrong basin on a closed one.
 
+### What the exact scan buys, measured
+
+`min_sqdist()` is a coarse-to-fine hill descent that assumes a locally-unimodal ordered contour, and
+its own header says it can settle in the wrong basin on a closed one and overestimate. Per ROI pixel,
+`sqrt(min_sqdist(K))` against `sqrt(exact_min_sqdist(K))` on the same contour:
+
+| fixture | pixels | contour | pixels overestimated | worst absolute | worst relative | on-contour pixels given a non-zero distance |
+|---|---:|---:|---:|---:|---:|---:|
+| `shape2d` | 26 | 18 | 5 (19.2%) | 1.414 | +41.4% | 4 of 11 |
+| disk R=10 | 317 | 56 | 7 (2.2%) | 1.414 | +123.6% | 1 of 33 |
+| disk R=20 | 1 257 | 112 | 146 (11.6%) | 10.440 | +1040% | 10 of 67 |
+| disk R=40 | 5 025 | 224 | 748 (14.9%) | 9.220 | +849% | 9 of 135 |
+| disk R=100 | 31 417 | 564 | 6 271 (20.0%) | 15.133 | +1403% | 15 of 340 |
+| disk R=200 | 125 629 | 1 128 | 29 012 (23.1%) | 4.325 | +300% | 3 of 681 |
+
+The share of wrong pixels grows with the ROI, from 2% to 23%, and a single pixel can be off by 14×.
+The last column is the sharpest statement of it: a pixel lying *on* the contour is at distance 0 by
+definition, and the descent returns a non-zero number for some of them.
+
+Carried into the published statistics, exact → approximate:
+
+| fixture | `ROI_RADIUS_MEAN` | `ROI_RADIUS_MAX` | `ROI_RADIUS_MEDIAN` |
+|---|---|---|---|
+| `shape2d` | 0.624717 → 0.864819 (+38.4%) | 1.414214 → 2.000000 (+41.4%) | unchanged |
+| disk R=10 | 2.833411 → 2.849871 (+0.58%) | unchanged | unchanged |
+| disk R=20 | 6.087110 → 6.397909 (+5.1%) | unchanged | 5.0 → 5.830952 |
+| disk R=40 | 12.705792 → 12.795812 (+0.71%) | unchanged | 11.045361 → 11.180340 |
+| disk R=100 | 32.631372 → 32.709646 (+0.24%) | unchanged | 28.600699 → 28.635642 |
+| disk R=200 | 65.914354 → 65.954533 (+0.06%) | 199.002513 → 199.077874 (+0.038%) | 57.801384 → 57.939624 |
+
+**This is why the two oracles are not redundant.** `MAX` on a disk is insensitive to the descent
+until R = 200, so the closed-form row alone would not detect it; the skimage `MEDIAN` pins at R = 20
+and R = 40 are the ones that fail (5.0 against 5.830952). `min_sqdist()` and its sibling
+`max_sqdist()` remain in use by other callers, so these numbers are a property of the tree and not
+only of this family.
+
 ## The reference
 
 The same quantity, from two library calls, with no part of Nyxus re-implemented:
