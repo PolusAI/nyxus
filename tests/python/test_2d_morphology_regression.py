@@ -65,6 +65,13 @@ WHOLE_SLIDE = {
     "EDGE_MAX_INTENSITY": 397.0,
     "EDGE_MIN_INTENSITY": 397.0,
     "EDGE_INTEGRATED_INTENSITY": 1588.0,  # 4 * 397
+    # RoiRadiusFeature measures every image pixel against that same four-corner contour, so the
+    # inradius map degenerates into a distance-to-nearest-corner map over the whole frame. The AABB
+    # spans 0..64 rather than 0..63 -- the bounding-box width and height report 65 -- so the corners sit one pixel
+    # outside the image, and all three values follow in closed form from that geometry.
+    "ROI_RADIUS_MEAN": 24.490797504013532,
+    "ROI_RADIUS_MAX": 45.254833995939045,      # = 32*sqrt(2), centre (32,32) to a corner
+    "ROI_RADIUS_MEDIAN": 25.495097567963924,   # = sqrt(650)
 }
 
 FEATURES = ["*ALL_MORPHOLOGY*", "*BASIC_MORPHOLOGY*"]
@@ -138,3 +145,44 @@ def test_2d_morphology_whole_slide_differs_from_segmented_regression(tmp_path):
         "expected only EDGE_MAX_INTENSITY to coincide between the whole-slide and segmented cells, "
         "got %r" % (same,)
     )
+
+
+def test_2d_morphology_whole_slide_roi_radius_is_corner_distance_regression(tmp_path):
+    """Whole-slide ROI_RADIUS_* is a distance-to-nearest-corner map, and is pinned as one.
+
+    `reduce_trivial_2d_wholeslide()` calls `ContourFeature::extract()` whenever ROI radius is
+    requested and then `RoiRadiusFeature::extract()`, so this is production and not a config no one
+    reaches. What the feature is handed at `SINGLEROI=true` is `buildWholeSlideContour()`'s four AABB
+    corners, so "distance to the nearest contour pixel" becomes "distance to the nearest corner",
+    over every pixel of the frame rather than over an object.
+
+    Asserted as closed forms as well as literals, so the pins say why each value is what it is. The
+    AABB spans 0..64 on this 64x64 image -- one pixel past the extent, which the bounding-box width
+    and height also report as 65 -- so the centre pixel is 32*sqrt(2) from a corner and that is the
+    maximum. A change that
+    made whole-slide mode trace the real slide boundary breaks all three, which is the intended
+    signal.
+    """
+    ip, sp = _fixture(tmp_path)
+    df = _featurize(ip, sp, True)
+    got = {c: float(df[c].iloc[0]) for c in
+           ("ROI_RADIUS_MEAN", "ROI_RADIUS_MAX", "ROI_RADIUS_MEDIAN")}
+
+    assert got["ROI_RADIUS_MEAN"] == pytest.approx(WHOLE_SLIDE["ROI_RADIUS_MEAN"], rel=1e-9)
+    assert got["ROI_RADIUS_MAX"] == pytest.approx(WHOLE_SLIDE["ROI_RADIUS_MAX"], rel=1e-9)
+    assert got["ROI_RADIUS_MEDIAN"] == pytest.approx(WHOLE_SLIDE["ROI_RADIUS_MEDIAN"], rel=1e-9)
+
+    # The geometry the three values come from, tied to the fixture rather than to another feature's
+    # output: the corners sit at 0 and `frame`, one pixel past the extent, so the frame centre is
+    # frame/2 from a corner along each axis. (The bounding-box width and height report 65 and
+    # corroborate it, but asserting them here would pin a second feature at a recipe its registry row
+    # does not describe.)
+    frame = float(test_data.disk64_arrays()[0].shape[0])        # 64
+    assert got["ROI_RADIUS_MAX"] == pytest.approx(frame / 2.0 * np.sqrt(2.0), rel=1e-12)
+    assert got["ROI_RADIUS_MEDIAN"] == pytest.approx(np.sqrt(650.0), rel=1e-12)
+
+    # and the degeneracy itself: measured against an object, these are an order of magnitude smaller
+    seg = {c: float(_featurize(ip, sp, False)[c].iloc[0])
+           for c in ("ROI_RADIUS_MEAN", "ROI_RADIUS_MAX", "ROI_RADIUS_MEDIAN")}
+    assert got["ROI_RADIUS_MEAN"] > 4.0 * seg["ROI_RADIUS_MEAN"]
+    assert got["ROI_RADIUS_MAX"] > 2.0 * seg["ROI_RADIUS_MAX"]
