@@ -23,7 +23,7 @@ static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 // what makes the two comparisons in
 // tests/vetting/audit/ngldm_3d_mirp_vetting_report.md comparisons of one number rather than of two
 // runs that could drift apart. Goldens stay in their respective oracle/regression files.
-void calculate_3d_ngldm_feature_value (const std::string& fname, const Nyxus::Feature3D& expecting_fcode, double& out)
+void calculate_3d_ngldm_feature_value (const std::string& fname, const Nyxus::Feature3D& expecting_fcode, double& out, bool ibsi = false)
 {
 	// get segment info
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();
@@ -46,8 +46,10 @@ void calculate_3d_ngldm_feature_value (const std::string& fname, const Nyxus::Fe
 	// (4) buffers
 	ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
-	// (5) feature settings -- recipe ngldm3d.regression_ut_phantom on the Nyxus side, and the Nyxus
-	// half of ngldm3d.mirp_samelevels
+	// (5) feature settings. IBSI is the family's second axis and reaches to_grayscale as
+	// disable_binning, so ibsi=false is the GREYDEPTH=64 ladder both mirp_samelevels and the
+	// regression pins use, and ibsi=true turns binning off and makes the raw intensity the grey
+	// level -- the Nyxus half of ngldm3d.mirp_ibsi_rawlevels.
 	Fsettings s;
 	s.resize((int)NyxSetting::__COUNT__);
 	s[(int)NyxSetting::SOFTNAN].rval = 0.0;
@@ -58,7 +60,7 @@ void calculate_3d_ngldm_feature_value (const std::string& fname, const Nyxus::Fe
 	s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
 	s[(int)NyxSetting::USEGPU].bval = false;
 	s[(int)NyxSetting::VERBOSLVL].ival = 0;
-	s[(int)NyxSetting::IBSI].bval = false;
+	s[(int)NyxSetting::IBSI].bval = ibsi;
 
 	// (6) feature extraction
 

@@ -158,3 +158,170 @@ void test_3d_ngldm_dcent_mirp() {
 void test_3d_ngldm_dcene_mirp() {
 	assert_3d_ngldm_feature_mirp ("3NGLDM_DCENE", Feature3D::NGLDM_DCENE);
 }
+
+
+// ---------------------------------------------------------------------------------------------------
+// The family's SECOND config point, IBSI=true, at recipe ngldm3d.mirp_ibsi_rawlevels.
+//
+// IBSI reaches to_grayscale as disable_binning, so this point does not bin at all: the raw
+// (loader-shifted) intensity IS the grey level, 2001 distinct of them on this fixture. That makes
+// MIRP config-matched by construction at base_discretisation_method="none" over the same raw
+// values -- there is no discretisation to disagree about, so unlike ngldm3d.mirp_samelevels above
+// this recipe needs no numpy reproduction of a Nyxus binning step and its scope is correspondingly
+// wider.
+//
+// It is a WEAK discriminator and that is measured, not assumed: 83.46% of ROI voxels have no
+// matching neighbour at raw resolution and the maximum dependence reached is 17 of a possible 26,
+// so the dependence distribution is concentrated in the first column. It is asserted anyway because
+// SPEC 5.1 maps a VALID cell to an oracle assertion, and because a weak discriminator is still a
+// second config point: the 26-neighbourhood and the ROI masking are exercised here on a level
+// ladder 2001 wide rather than 44.
+//
+// Provenance (SPEC 6.4): same tool, fixture and generator as the table above;
+//   config = by_slice=false, base_feature_families="ngldm", base_discretisation_method="none",
+//            distance 1, alpha 0, native 1x1x1 spacing; image = the raw shifted intensities
+//   recipe = ngldm3d.mirp_ibsi_rawlevels
+//
+// Measured agreement: worst rel 7.54e-15 over the sixteen -- looser than the samelevels run's
+// 8.7e-16 because the sums run over 2001 grey rows rather than 44, and still four orders inside
+// the rel=1e-3 band. 3NGLDM_DCP is excluded here for the same reason as above: MIRP returns
+// ngl_dc_perc = 1.0 at this config too.
+// ---------------------------------------------------------------------------------------------------
+static const ref_vals_map<double> ngldm_3d_mirp_ibsi_ref_vals{
+		{ "3NGLDM_LDE",	0.8699611118999319 },		// ngl_lde_d1_a0.0_3d
+		{ "3NGLDM_HDE",	2.1725163246268657 },		// ngl_hde_d1_a0.0_3d
+		{ "3NGLDM_LGLCE",	3.400101714136789e-07 },		// ngl_lgce_d1_a0.0_3d
+		{ "3NGLDM_HGLCE",	4275550.791365438 },		// ngl_hgce_d1_a0.0_3d
+		{ "3NGLDM_LDLGLE",	2.8075039742774145e-07 },		// ngl_ldlge_d1_a0.0_3d
+		{ "3NGLDM_LDHGLE",	3831567.8645316567 },		// ngl_ldhge_d1_a0.0_3d
+		{ "3NGLDM_HDLGLE",	9.362437020082865e-07 },		// ngl_hdlge_d1_a0.0_3d
+		{ "3NGLDM_HDHGLE",	7987719.3384444965 },		// ngl_hdhge_d1_a0.0_3d
+		{ "3NGLDM_GLNU",	157.9715485074627 },		// ngl_glnu_d1_a0.0_3d
+		{ "3NGLDM_GLNUN",	0.0005756309341019367 },		// ngl_glnu_norm_d1_a0.0_3d
+		{ "3NGLDM_DCNU",	196010.87360074627 },		// ngl_dcnu_d1_a0.0_3d
+		{ "3NGLDM_DCNUN",	0.7142420475773462 },		// ngl_dcnu_norm_d1_a0.0_3d
+		{ "3NGLDM_GLV",	341996.30156539247 },		// ngl_gl_var_d1_a0.0_3d
+		{ "3NGLDM_DCV",	0.6119105729315323 },		// ngl_dc_var_d1_a0.0_3d
+		{ "3NGLDM_DCENT",	11.490700886856692 },		// ngl_dc_entr_d1_a0.0_3d
+		{ "3NGLDM_DCENE",	0.00040237620509422337 }		// ngl_dc_energy_d1_a0.0_3d
+};
+
+// Same band and the same reasoning as the samelevels assertions above: SPEC 7's
+// same-definition tier, left at the tier rather than tightened to the measurement because it has
+// to hold on every CI platform's float.
+static void assert_3d_ngldm_feature_ibsi_mirp (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
+{
+	SCOPED_TRACE(std::string("MIRP_ORACLE_IBSI__") + fname);
+	ASSERT_TRUE(ngldm_3d_mirp_ibsi_ref_vals.count(fname) > 0) << fname;
+
+	double actual = 0.0;
+	calculate_3d_ngldm_feature_value (fname, expecting_fcode, actual, true/*ibsi*/);
+
+	ASSERT_TRUE(agrees_gt(actual, ngldm_3d_mirp_ibsi_ref_vals.at(fname), 1e3))
+		<< fname << " actual=" << std::setprecision(17) << actual
+		<< " mirp=" << ngldm_3d_mirp_ibsi_ref_vals.at(fname);
+}
+
+void test_3d_ngldm_lde_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_LDE", Feature3D::NGLDM_LDE);
+}
+
+void test_3d_ngldm_hde_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_HDE", Feature3D::NGLDM_HDE);
+}
+
+void test_3d_ngldm_lglce_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_LGLCE", Feature3D::NGLDM_LGLCE);
+}
+
+void test_3d_ngldm_hglce_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_HGLCE", Feature3D::NGLDM_HGLCE);
+}
+
+void test_3d_ngldm_ldlgle_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_LDLGLE", Feature3D::NGLDM_LDLGLE);
+}
+
+void test_3d_ngldm_ldhgle_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_LDHGLE", Feature3D::NGLDM_LDHGLE);
+}
+
+void test_3d_ngldm_hdlgle_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_HDLGLE", Feature3D::NGLDM_HDLGLE);
+}
+
+void test_3d_ngldm_hdhgle_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_HDHGLE", Feature3D::NGLDM_HDHGLE);
+}
+
+void test_3d_ngldm_glnu_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_GLNU", Feature3D::NGLDM_GLNU);
+}
+
+void test_3d_ngldm_glnun_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_GLNUN", Feature3D::NGLDM_GLNUN);
+}
+
+void test_3d_ngldm_dcnu_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_DCNU", Feature3D::NGLDM_DCNU);
+}
+
+void test_3d_ngldm_dcnun_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_DCNUN", Feature3D::NGLDM_DCNUN);
+}
+
+void test_3d_ngldm_glv_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_GLV", Feature3D::NGLDM_GLV);
+}
+
+void test_3d_ngldm_dcv_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_DCV", Feature3D::NGLDM_DCV);
+}
+
+void test_3d_ngldm_dcent_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_DCENT", Feature3D::NGLDM_DCENT);
+}
+
+void test_3d_ngldm_dcene_ibsi_mirp() {
+	assert_3d_ngldm_feature_ibsi_mirp ("3NGLDM_DCENE", Feature3D::NGLDM_DCENE);
+}
+
+// Regenerates the IBSI-mode goldens at full precision, in the shape ngldm_3d_mirp_ibsi_ref_vals
+// wants. Run with
+//     runAllTests --gtest_filter=*3D_NGLDM_DUMP_IBSI_MIRP*
+void test_3d_ngldm_dump_ibsi_mirp()
+{
+	std::cout << "[3DNGLDM-IBSI-REGEN]\n";
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_LDE", Feature3D::NGLDM_LDE, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_LDE\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_HDE", Feature3D::NGLDM_HDE, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_HDE\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_LGLCE", Feature3D::NGLDM_LGLCE, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_LGLCE\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_HGLCE", Feature3D::NGLDM_HGLCE, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_HGLCE\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_LDLGLE", Feature3D::NGLDM_LDLGLE, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_LDLGLE\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_LDHGLE", Feature3D::NGLDM_LDHGLE, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_LDHGLE\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_HDLGLE", Feature3D::NGLDM_HDLGLE, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_HDLGLE\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_HDHGLE", Feature3D::NGLDM_HDHGLE, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_HDHGLE\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_GLNU", Feature3D::NGLDM_GLNU, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_GLNU\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_GLNUN", Feature3D::NGLDM_GLNUN, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_GLNUN\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_DCNU", Feature3D::NGLDM_DCNU, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_DCNU\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_DCNUN", Feature3D::NGLDM_DCNUN, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_DCNUN\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_GLV", Feature3D::NGLDM_GLV, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_GLV\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_DCV", Feature3D::NGLDM_DCV, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_DCV\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_DCENT", Feature3D::NGLDM_DCENT, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_DCENT\",\t" << std::setprecision(17) << v << " },\n"; }
+	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_DCENE", Feature3D::NGLDM_DCENE, v, true);
+	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_DCENE\",\t" << std::setprecision(17) << v << " },\n"; }
+}
