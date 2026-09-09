@@ -91,15 +91,18 @@ after binning the background filling the rest of the bounding box was indistingu
 genuine level-1 ROI voxel, and there was no zero left to skip. On `bench_ut57_3d` the box is 551,040
 voxels against the ROI's 274,432.
 
-The fix is an explicit ROI mask over the bounding box, a `SimpleCube<unsigned char>` built from
-`r.raw_pixels_3D` — the cheapest correct element type. Masking by "intensity is zero" instead would
-allocate nothing, but it is exactly what was wrong. The MIRP-vetted 2D twin `gldzm.cpp` builds a
-mask for the same reason.
+The fix marks the ROI from `r.raw_pixels_3D`, which is the only thing that knows. Masking by
+"intensity is zero" instead would allocate nothing, but it is exactly what was wrong. The 2D NGLDM
+implementation `ngldm.cpp` builds its mask from the pixel cloud for the same reason. **2D GLDZM does
+not** — `gldzm.cpp` still reads its grey levels off the whole bounding box and still tests
+`intensity == 0` in its own `dist2border`, so it carries defects 1 and 2; see "What is left open".
 
-**What the family now allocates per bounding-box voxel**: the binned `PixIntens` cube it already
-allocated (4 bytes), the mask (1) and the distance transform (4). Nine bytes against four, on top of
-`aux_image_cube`. The distance cube is what buys the exactness: the alternative that allocates
-nothing is the per-voxel ray scan, and defect 2 below is what that cost.
+**What the family allocates per bounding-box voxel is unchanged at 8 bytes** on top of
+`aux_image_cube`: the binned `PixIntens` cube (4) and the distance cube (4). The distance cube is
+also the ROI mask — it is nonzero exactly at the ROI's voxels before the transform runs and after a
+zone consumes one — so nothing was added to hold the mask, and `LR::get_ram_footprint_estimate_3D`,
+which budgets `sizeof(Pixel2)` per bounding-box voxel and is the only gate on whole-volume
+processing, still bounds the family.
 
 **2. `dist2border` measured the distance to the bounding box, not to the ROI.** It scanned rays until
 it hit a voxel of intensity 0 *or the margin of the box*. Since after MATLAB binning no voxel is 0,
