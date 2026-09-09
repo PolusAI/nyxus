@@ -8,8 +8,8 @@ what [`oracle_coverage.csv`](oracle_coverage.csv) CLAIMS to what the test tree A
 
 ## Coverage
 
-Features vetted by >=1 oracle: 607/758 (80%)
-regression: 151  invariant: 0  untested: 0
+Features vetted by >=1 oracle: 623/758 (82%)
+regression: 135  invariant: 0  untested: 0
 
 | family | total | vetted | regression | invariant | untested |
 |---|---|---|---|---|---|
@@ -25,18 +25,18 @@ regression: 151  invariant: 0  untested: 0
 | moments | 180 | 118 | 62 | 0 | 0 |
 | morphology | 113 | 78 | 35 | 0 | 0 |
 | neighbor | 9 | 8 | 1 | 0 | 0 |
-| ngldm | 38 | 17 | 21 | 0 | 0 |
+| ngldm | 38 | 33 | 5 | 0 | 0 |
 | ngtdm | 10 | 10 | 0 | 0 | 0 |
 | radial | 3 | 0 | 3 | 0 | 0 |
 | zernike | 1 | 1 | 0 | 0 | 0 |
 
 ## Verdicts
 
-754 of 932 assertion rows agree with the tree.
+770 of 948 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 754 | the claim and the tree say the same thing |
+| `agree` | 770 | the claim and the tree say the same thing |
 | `unscanned` | 178 | no scanner covers this family x dim yet |
 
 ### How far each verdict reaches
@@ -48,12 +48,12 @@ regression: 151  invariant: 0  untested: 0
 |---|---:|---|
 | `feature` | 441 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
 | `none` | 178 | no scanner for this family x dim, so nothing was read at all |
-| `row` | 162 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
+| `row` | 178 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 | `row+config` | 151 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
 ## Families with no scanner
 
-**178 of 932 rows (19%) cannot be checked against the tree at all.** These families have an
+**178 of 948 rows (19%) cannot be checked against the tree at all.** These families have an
 `audit/<family>_<dim>_coverage.csv`, but nothing regenerates it from the test
 sources, so the artifact records what someone believed rather than what the tree
 asserts. Writing the 5 missing scanners is what closes this.
@@ -96,17 +96,17 @@ that alone understates every family that corroborates.
 | 3D | glrlm | . | . | . | . | . | . | . | . | 32 | . | . |
 | 3D | glszm | . | . | . | . | . | . | . | . | 16 | . | . |
 | 3D | morphology | . | . | . | . | . | 3 | 8 | . | . | . | 6 |
-| 3D | ngldm | . | . | . | . | . | . | . | . | . | . | 19 |
+| 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | . | . | 5 | . | . |
 | IMQ | imq | . | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **38** | **9** | **2** | **115** | **20** | **98** | **95** | **2** | **208** | **127** | **151** |
+| | **all** | **38** | **9** | **2** | **115** | **20** | **98** | **111** | **2** | **208** | **127** | **135** |
 
 ## By dimensionality
 
 | dim | features | vetted | scanned | no oracle assertion | unscanned |
 |---|---:|---:|---:|---:|---:|
 | 2D | 539 | 436 | 411 | 103 | 128 |
-| 3D | 213 | 167 | 177 | 43 | 36 |
+| 3D | 213 | 183 | 177 | 27 | 36 |
 | IMQ | 6 | 4 | 6 | 2 | 0 |
 
 ## Reading a row
