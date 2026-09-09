@@ -10,35 +10,19 @@
 //
 // Regenerate with test_3d_ngldm_dump_regression() below.
 //
-// The NGLDM these come from agrees with MIRP 2.6.0 to machine precision (worst rel 8.7e-16 over the
-// 17 features MIRP computes) once both sides are given the same grey levels. They are not asserted
-// against MIRP here because the two discretisations differ: at `fixed_bin_number` n=64 MIRP spreads
-// this ROI over levels 1-64, while Nyxus bins it over [0, ROI max] of a volume whose minimum has
-// been shifted to 0, which places the ROI on levels 21-64. Measurements, both level sets, and the
-// reproduction: tests/vetting/audit/ngldm_3d_mirp_vetting_report.md.
+// THREE features, not the family's nineteen. The other sixteen are asserted against MIRP in
+// test_3d_ngldm_mirp.h, on this same fixture and config, so a snapshot of them here would pin the
+// same Nyxus run to a second literal and add no path or config coverage. These three cannot be
+// judged by any tool:
 //
-// 3NGLDM_GLM and 3NGLDM_DCM have no counterpart in any tool -- MIRP's NGLDM emits no gl_mean /
-// dc_mean column.
+//   3NGLDM_DCP  -- Nyxus hard-codes f_DCP = 1, and MIRP returns 1 on any input where every voxel has
+//                  a same-level neighbour, so an oracle row would agree at a degenerate constant.
+//   3NGLDM_GLM  -- MIRP's NGLDM emits no gl_mean column.
+//   3NGLDM_DCM  -- MIRP's NGLDM emits no dc_mean column.
 static const ref_vals_map<double> ngldm_3d_regression_ref_vals{
-		{ "3NGLDM_LDE",	0.15365019670462546 },
-		{ "3NGLDM_HDE",	40.639400652985074 },
-		{ "3NGLDM_LGLCE",	0.00078390817616903633 },
-		{ "3NGLDM_HGLCE",	1873.2488631063434 },
-		{ "3NGLDM_LDLGLE",	7.8027556383287739e-05 },
-		{ "3NGLDM_LDHGLE",	375.70769342480037 },
-		{ "3NGLDM_HDLGLE",	0.056243030790977401 },
-		{ "3NGLDM_HDHGLE",	44248.655200559704 },
-		{ "3NGLDM_GLNU",	6480.4799440298511 },
-		{ "3NGLDM_GLNUN",	0.023614155579633027 },
-		{ "3NGLDM_DCNU",	32085.42817164179 },
-		{ "3NGLDM_DCNUN",	0.11691576846592887 },
 		{ "3NGLDM_DCP",	1.0 },
 		{ "3NGLDM_GLM",	41.474725979477633 },
-		{ "3NGLDM_GLV",	153.09596803358812 },
-		{ "3NGLDM_DCM",	5.10127098880597 },
-		{ "3NGLDM_DCV",	14.616434951751623 },
-		{ "3NGLDM_DCENT",	8.4056856003340421 },
-		{ "3NGLDM_DCENE",	0.003475011603342024 }
+		{ "3NGLDM_DCM",	5.10127098880597 }
 };
 
 void assert_3d_ngldm_feature_regression (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
@@ -111,54 +95,6 @@ void test_3d_ngldm_dump_regression()
 	}
 }
 
-void test_3d_ngldm_lde_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_LDE", Feature3D::NGLDM_LDE);
-}
-
-void test_3d_ngldm_hde_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_HDE", Feature3D::NGLDM_HDE);
-}
-
-void test_3d_ngldm_lglce_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_LGLCE", Feature3D::NGLDM_LGLCE);
-}
-
-void test_3d_ngldm_hglce_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_HGLCE", Feature3D::NGLDM_HGLCE);
-}
-
-void test_3d_ngldm_ldlgle_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_LDLGLE", Feature3D::NGLDM_LDLGLE);
-}
-
-void test_3d_ngldm_ldhgle_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_LDHGLE", Feature3D::NGLDM_LDHGLE);
-}
-
-void test_3d_ngldm_hdlgle_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_HDLGLE", Feature3D::NGLDM_HDLGLE);
-}
-
-void test_3d_ngldm_hdhgle_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_HDHGLE", Feature3D::NGLDM_HDHGLE);
-}
-
-void test_3d_ngldm_glnu_regression() {
-	assert_3d_ngldm_feature_regression("3NGLDM_GLNU", Feature3D::NGLDM_GLNU);
-}
-
-void test_3d_ngldm_glnun_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_GLNUN", Feature3D::NGLDM_GLNUN);
-}
-
-void test_3d_ngldm_dcnu_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_DCNU", Feature3D::NGLDM_DCNU);
-}
-
-void test_3d_ngldm_dcnun_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_DCNUN", Feature3D::NGLDM_DCNUN);
-}
-
 void test_3d_ngldm_dcp_regression() {
 	assert_3d_ngldm_feature_regression ("3NGLDM_DCP", Feature3D::NGLDM_DCP);
 }
@@ -167,25 +103,7 @@ void test_3d_ngldm_glm_regression() {
 	assert_3d_ngldm_feature_regression ("3NGLDM_GLM", Feature3D::NGLDM_GLM);
 }
 
-void test_3d_ngldm_glv_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_GLV", Feature3D::NGLDM_GLV);
-}
-
 void test_3d_ngldm_dcm_regression() {
 	assert_3d_ngldm_feature_regression ("3NGLDM_DCM", Feature3D::NGLDM_DCM);
 }
-
-void test_3d_ngldm_dcv_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_DCV", Feature3D::NGLDM_DCV);
-}
-
-void test_3d_ngldm_dcent_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_DCENT", Feature3D::NGLDM_DCENT);
-}
-
-void test_3d_ngldm_dcene_regression() {
-	assert_3d_ngldm_feature_regression ("3NGLDM_DCENE", Feature3D::NGLDM_DCENE);
-}
-
-
 

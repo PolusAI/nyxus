@@ -1,15 +1,18 @@
 # Regenerating the 3D NGLDM goldens
 
-Two golden tables on one benchmark: the MIRP oracle pins in `test_3d_ngldm_mirp.h` and the drift
-guards in `test_3d_ngldm_regression.h`. Read `ngldm_3d_mirp_vetting_report.md` before touching
-either — the oracle's scope is the NGLDM and not the discretisation, and that is what decides which
-of the two a given value belongs in.
+Three golden tables on one benchmark: two MIRP oracle tables in `test_3d_ngldm_mirp.h`, one per
+config point, and the three drift guards in `test_3d_ngldm_regression.h`. Read
+`ngldm_3d_mirp_vetting_report.md` before touching any of them — which table a value belongs in
+follows from which config point produced it and whether a tool can judge it.
 
 ## Regression drift guards — `test_3d_ngldm_regression.h`
 
 Recipe `ngldm3d.regression_ut_phantom`: the segmented phantom
 (`tests/data/nifti/phantoms/ut_inten.nii` + `ut_mask57.nii`, label 57) at `GREYDEPTH=64`,
-`IBSI=false`. No oracle — Nyxus' own values.
+`IBSI=false`. No oracle — Nyxus' own values, and only for the three features no tool can judge
+(`3NGLDM_DCP`, `3NGLDM_GLM`, `3NGLDM_DCM`). The other sixteen are asserted against MIRP on this same
+fixture and config, so a snapshot of them would pin one Nyxus run to a second literal and add no
+coverage.
 
 ```
 runAllTests --gtest_filter=*3D_NGLDM_DUMP_REGRESSION*
@@ -51,13 +54,16 @@ that guard was rebuilt to make true. Deleting a pin from the table now fails
 
 ## The MIRP comparison — `oracles/gen_ngldm3d_mirp.py`
 
-Two recipes, one generator run:
+Three recipes, one generator run:
 
 - `ngldm3d.mirp_fbn64` — MIRP discretises the ROI itself at `fixed_bin_number` n=64, landing on
   levels 1-64 against Nyxus' 21-64. The table this produces measures that gap.
 - `ngldm3d.mirp_samelevels` — MIRP is handed the levels Nyxus bins to, with
   `base_discretisation_method="none"`, so both compute the NGLDM over identical levels. Worst
   relative difference over the seventeen comparable features: **8.7e-16**.
+- `ngldm3d.mirp_ibsi_rawlevels` — the `IBSI=true` config point, where Nyxus does not bin at all and
+  the raw intensity is the grey level. Worst relative difference: **7.54e-15**, over 2001 grey rows
+  rather than 44.
 
 `ngldm3d.mirp_samelevels` is the config-matched one and carries the family's 16 `vetted` rows, pinned
 in `test_3d_ngldm_mirp.h` at `rel=1e-3`. `ngldm3d.mirp_fbn64` asserts nothing: it is the measurement
