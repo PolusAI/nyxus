@@ -25,6 +25,8 @@
 #include "test_2d_morphology_matlab.h"
 #include "test_2d_morphology_cellprofiler.h"
 #include "test_2d_morphology_fraclac.h"
+#include "test_2d_morphology_invariant.h"
+#include "test_2d_morphology_mechanics.h"
 #include "test_2d_moments_skimage.h"
 #include "test_2d_moments_regression.h"
 #include "test_2d_zernike_analytic.h"
@@ -1287,6 +1289,66 @@ TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_DISK_CLOSED_FORM_ANALYTIC)
 TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_DISKS_SKIMAGE)
 {
 	ASSERT_NO_THROW(test_2d_morphology_roi_radius_disks_skimage());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_EDT_EQUALS_EXHAUSTIVE_SCAN_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_morphology_edt_equals_exhaustive_scan_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_ENGINES_AGREE_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_morphology_roi_radius_engines_agree_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_ENGINE_CHOICE_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_morphology_roi_radius_engine_choice_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_PATHS_AGREE_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_morphology_roi_radius_paths_agree_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_EDT_NO_SITES_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_edt_no_sites_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_EDT_EMPTY_RASTER_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_edt_empty_raster_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_EDT_SINGLE_CELL_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_edt_single_cell_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_EDT_SINGLE_SITE_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_edt_single_site_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_EDT_BOUNDARY_SITES_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_edt_boundary_sites_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ROI_RADIUS_EMPTY_INPUTS_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_roi_radius_empty_inputs_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ROI_RADIUS_SINGLE_PIXEL_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_roi_radius_single_pixel_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ROI_RADIUS_CONTOUR_OUTSIDE_BBOX_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_roi_radius_contour_outside_bbox_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_EXTREMA_MATLAB)
