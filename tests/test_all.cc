@@ -78,6 +78,9 @@
 #include "test_3d_morphology_mechanics.h"
 #include "test_3d_morphology_matlab.h"
 #include "test_3d_morphology_mirp.h"
+#include "test_3d_gldzm_common.h"
+#include "test_3d_gldzm_mechanics.h"
+#include "test_3d_gldzm_mirp.h"
 #include "test_3d_gldzm_regression.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
@@ -858,6 +861,87 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COVMATRIX_AND_EIGENVALS_MECHANICS) {
 }
 
 
+//***** 3D GLDZM mechanics *****
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZERO_LEVEL_VOXELS_ARE_ZONED_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_zero_level_voxels_are_zoned_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_NO_BINNING_SPELLINGS_AGREE_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_no_binning_spellings_agree_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_RADIOMICS_BINNING_IS_IDENTITY_HERE_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_radiomics_binning_is_identity_here_mechanics());
+}
+
+
+//***** 3D GLDZM vs mirp *****
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_SDE_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_sde_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_LDE_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_lde_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_LGLZE_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_lglze_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_HGLZE_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_hglze_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_SDLGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_sdlgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_SDHGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_sdhgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_LDLGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_ldlgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_LDHGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_ldhgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_GLNU_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_glnu_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_GLNUN_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_glnun_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDNU_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zdnu_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDNUN_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zdnun_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZP_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zp_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_GLV_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_glv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDV_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zdv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDE_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zde_mirp());
+}
+
 //***** 3D GLDZM regression *****
 
 TEST(TEST_NYXUS, TEST_3D_GLDZM_GLM_REGRESSION) {
@@ -930,6 +1014,10 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_ZP_REGRESSION) {
 
 TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDE_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_gldzm_zde_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_DUMP_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_gldzm_dump_regression());
 }
 
 

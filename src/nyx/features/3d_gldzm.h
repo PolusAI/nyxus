@@ -56,7 +56,9 @@ public:
 private:
 
 	void clear_buffers();
-	template <class Cube> int dist2border (Cube& I, const int x, const int y, const int z);
+	// City-block distance from every ROI voxel to the nearest voxel outside the ROI. 'dist' comes in
+	// nonzero exactly at the ROI's voxels, so it carries the ROI mask as well as the metric.
+	void calc_dist2border (SimpleCube<int>& dist);
 	template <class Imgmatrx> void calc_row_and_column_sum_vectors(std::vector<double>& Mx, std::vector<double>& Md, Imgmatrx& P, const int Ng, const int Nd, const std::vector<PixIntens>& greysLUT);
 
 	using IDZ_cluster_indo = std::tuple<PixIntens, int, int>;	// <intensity, distance metric, zone size>
