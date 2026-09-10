@@ -1,7 +1,6 @@
 # Audit: `test_2d_firstorder_pyradiomics.h` goldens vs. a fresh PyRadiomics run
 
-**Verdict: all 18 mapped goldens + the standalone `ROBUST_MEAN_ABSOLUTE_DEVIATION` literal
-reproduce exactly.** No drift, no tolerance-tier violations.
+**Verdict: all 18 mapped goldens reproduce exactly.** No drift, no tolerance-tier violations.
 
 ## Provenance confirmed
 
@@ -54,7 +53,7 @@ correctness of the run since the recipe explicitly calls for `binCount=64`.
 
 All values below are the freshly-generated PyRadiomics v3.0.1.post2+g9ccbec1 output for this exact
 fixture/recipe, compared against the literals hardcoded in
-`firstorder_2d_pyradiomics_ref_vals` (and, for one row, the standalone test's own literal).
+`firstorder_2d_pyradiomics_ref_vals`.
 
 | Feature | Hardcoded | Fresh (PyRadiomics) | Rel. diff | Within declared tolerance? | Notes |
 |---|---|---|---|---|---|
@@ -76,12 +75,11 @@ fixture/recipe, compared against the literals hardcoded in
 | P90 | 53295.0 | 53295.0 | 0.0 | yes (well within the 5e-2 tier) | |
 | ENTROPY | 5.54700500819408 | 5.54700500819408 | 0.0 | yes (exact) | |
 | UNIFORMITY | 0.0252993759487266 | 0.0252993759487266 | 0.0 | yes (exact) | |
-| ROBUST_MEAN_ABSOLUTE_DEVIATION (standalone literal, `test_2d_firstorder_robust_mean_absolute_deviation_pyradiomics`) | 1.044061849600000e+04 | 10440.618496000001 | 1.74e-16 (float64 rounding only) | yes | Same PyRadiomics field as the table row above, restated as a bare literal in the standalone test. |
 
 ## Conclusion
 
-Every hardcoded golden in `firstorder_2d_pyradiomics_ref_vals` and the standalone
-`ROBUST_MEAN_ABSOLUTE_DEVIATION` literal reproduces byte-for-byte (to float64 printing precision)
+Every hardcoded golden in `firstorder_2d_pyradiomics_ref_vals` reproduces byte-for-byte
+(to float64 printing precision)
 from a fresh, independent run of the exact pinned PyRadiomics image against the documented fixture
 and recipe. No feature falls outside its own declared tolerance tier — nothing to flag as a vetting
 failure. The header's provenance block (version, digest, recipe, fixture) is accurate and the data

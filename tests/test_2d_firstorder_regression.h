@@ -7,13 +7,13 @@
 #include "test_ref_vals.h"
 
 static const ref_vals_map<double> firstorder_2d_regression_ref_vals {
-    {"ENTROPY",     4.12733},
-    {"P01",         1.189536940000000e+04},
-    {"P25",         1.907482583333333e+04},
-    {"P75",         4.580120500000000e+04},
-    {"P99",         6.341676030000000e+04},
-    {"QCOD",        4.119607630640470e-01},
-    {"ROBUST_MEAN", 3.142136800000000e+04},
+	{"ENTROPY", 4.12733},
+	// MATLAB mad(x,1) is the median absolute deviation; Nyxus takes the mean absolute
+	// deviation about its median. Keep regression-only until the intended definition is resolved.
+	{"MEDIAN_ABSOLUTE_DEVIATION", 1.269384415584416e+04},
+	// MATLAB trimmean removes samples by rank; Nyxus selects values through histogram-derived
+	// P10/P90 thresholds. Keep regression-only until the intended trimming semantics are resolved.
+	{"ROBUST_MEAN", 3.142136800000000e+04},
 };
 
 // Computes the canonical ROI once and compares one feature against its pinned Nyxus value.
@@ -41,25 +41,11 @@ void test_2d_firstorder_entropy_regression()
     assert_firstorder_feature_regression(Nyxus::Feature2D::ENTROPY, "ENTROPY", 1000., s);
 }
 
-void test_2d_firstorder_p01_regression()
+void test_2d_firstorder_median_absolute_deviation_regression()
 {
-    assert_firstorder_feature_regression(Nyxus::Feature2D::P01, "P01");
-}
-void test_2d_firstorder_p25_regression()
-{
-    assert_firstorder_feature_regression(Nyxus::Feature2D::P25, "P25");
-}
-void test_2d_firstorder_p75_regression()
-{
-    assert_firstorder_feature_regression(Nyxus::Feature2D::P75, "P75");
-}
-void test_2d_firstorder_p99_regression()
-{
-    assert_firstorder_feature_regression(Nyxus::Feature2D::P99, "P99");
-}
-void test_2d_firstorder_qcod_regression()
-{
-    assert_firstorder_feature_regression(Nyxus::Feature2D::QCOD, "QCOD");
+	assert_firstorder_feature_regression(
+		Nyxus::Feature2D::MEDIAN_ABSOLUTE_DEVIATION,
+		"MEDIAN_ABSOLUTE_DEVIATION");
 }
 void test_2d_firstorder_robust_mean_regression()
 {
