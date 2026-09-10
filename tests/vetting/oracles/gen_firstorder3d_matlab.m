@@ -21,10 +21,17 @@ mask = niftiread(mask_file);
 delete(intensity_file);
 delete(mask_file);
 
-% Match Nyxus' default float-NIfTI loader domain: shift a negative volume minimum to zero,
-% then cast the nonnegative values to integers. This is fixture setup, not a feature formula.
+% Match what Nyxus reports: the loader offsets a volume holding negative values by its floored
+% minimum and truncates to integer grey levels, and the intensity family adds that offset back,
+% so the reported domain is the volume's own with the truncation kept. Fixture setup, not a
+% feature formula.
 intensity = double(intensity);
-intensity = fix(intensity - min(intensity, [], 'all'));
+offset = floor(min(intensity, [], 'all'));
+if offset < 0
+    intensity = fix(intensity - offset) + offset;
+else
+    intensity = fix(intensity);
+end
 voxels = intensity(mask == 57);
 
 sample_mean = mean(voxels);

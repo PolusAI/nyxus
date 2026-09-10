@@ -67,22 +67,40 @@ static Fsettings ih_make_settings(int nbins, bool ibsi, double softnan = -7777.0
 }
 
 // Runs the IH feature on the test ROI and returns the populated fvals.
+// Builds the fp-image options a --fpimgmin/max/dr invocation would leave behind.
+static FpImageOptions ih_make_fp_options(double fpmin, double fpmax, int dr)
+{
+    FpImageOptions o;
+    o.raw_min_intensity = std::to_string(fpmin);
+    o.raw_max_intensity = std::to_string(fpmax);
+    o.raw_target_dyn_range = std::to_string(dr);
+    EXPECT_TRUE(o.parse_input());
+    return o;
+}
+
 static void run_intensity_histogram_fixture(std::vector<std::vector<double>>& fvals,
                    const Fsettings& s,
                    int slide_idx = -1,
                    bool fp_image = false,
                    double slide_min = -1.0,
                    double slide_max = -1.0,
-                   bool preserve_hu = false)
+                   bool preserve_hu = false,
+                   const FpImageOptions* fpo = nullptr)
 {
     Dataset ds;
     ds.dataset_props.push_back(SlideProps("", ""));
     if (slide_idx >= 0)
     {
-        ds.dataset_props[slide_idx].fp_phys_pivoxels = fp_image;
-        ds.dataset_props[slide_idx].preserve_hu = preserve_hu;
-        ds.dataset_props[slide_idx].min_preroi_inten = slide_min;
-        ds.dataset_props[slide_idx].max_preroi_inten = slide_max;
+        SlideProps& sp = ds.dataset_props[slide_idx];
+        sp.fname_int = "slide.tif";        // the recorder picks the loader from the extension
+        sp.fp_phys_pivoxels = fp_image;
+        sp.preserve_hu = preserve_hu;
+        sp.min_preroi_inten = slide_min;
+        sp.max_preroi_inten = slide_max;
+        sp.min_allpix_inten = slide_min;
+        FpImageOptions dflt;
+        // the load-time map the loader would have applied, recorded as the scan records it
+        Nyxus::record_intensity_domain_map (sp, fpo ? *fpo : dflt);
     }
 
     LR roidata(100);   // dummy label 100
@@ -172,13 +190,11 @@ void test_2d_intensity_histogram_index_and_percentile_bounds_regression()
 void test_2d_intensity_histogram_float_domain_regression()
 {
     Fsettings s = ih_make_settings(3, true);
-    s[(int)NyxSetting::FPIMG_ACTIVE].bval = true;
-    s[(int)NyxSetting::FPIMG_MIN].rval = 0.0;
-    s[(int)NyxSetting::FPIMG_MAX].rval = 1.0;
-    s[(int)NyxSetting::FPIMG_TARGET_DR].rval = 10.0;
+    FpImageOptions fpo = ih_make_fp_options(0.0, 1.0, 10);
 
     std::vector<std::vector<double>> fv;
-    run_intensity_histogram_fixture(fv, s, /*slide_idx*/ 0, /*fp_image*/ true, /*slide_min*/ 0.0, /*slide_max*/ 1.0);
+    run_intensity_histogram_fixture(fv, s, /*slide_idx*/ 0, /*fp_image*/ true, /*slide_min*/ 0.0, /*slide_max*/ 1.0,
+           /*preserve_hu*/ false, &fpo);
 
     // integer-domain pixels {1,7} -> float {0.1,0.7}; domain features scale by 1/10
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MINIMUM_VAL), 0.1));
@@ -201,13 +217,11 @@ void test_2d_intensity_histogram_float_domain_regression()
 void test_2d_intensity_histogram_float_domain_negative_min_regression()
 {
     Fsettings s = ih_make_settings(3, true);
-    s[(int)NyxSetting::FPIMG_ACTIVE].bval = true;
-    s[(int)NyxSetting::FPIMG_MIN].rval = -1000.0;
-    s[(int)NyxSetting::FPIMG_MAX].rval = 1000.0;
-    s[(int)NyxSetting::FPIMG_TARGET_DR].rval = 10.0;
+    FpImageOptions fpo = ih_make_fp_options(-1000.0, 1000.0, 10);
 
     std::vector<std::vector<double>> fv;
-    run_intensity_histogram_fixture(fv, s, /*slide_idx*/ 0, /*fp_image*/ true, /*slide_min*/ -1000.0, /*slide_max*/ 1000.0);
+    run_intensity_histogram_fixture(fv, s, /*slide_idx*/ 0, /*fp_image*/ true, /*slide_min*/ -1000.0, /*slide_max*/ 1000.0,
+           /*preserve_hu*/ false, &fpo);
 
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MINIMUM_VAL), -800.0));
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MAXIMUM_VAL), 400.0));
@@ -216,8 +230,8 @@ void test_2d_intensity_histogram_float_domain_negative_min_regression()
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_NUM_BINS), 3.0));
 }
 
-// 4c) HU offset-preserving reconstruction. With preserve_hu the load-time map is
-//     the slope-1 offset u = x - floor(min), so float_domain_map must invert it as
+// 4c) Offset-preserving reconstruction. With preserve_hu the load-time map is the
+//     slope-1 offset u = x - floor(min), so float_domain_map must invert it as
 //     reported = floor(min) + u (pscale=1). With min=-1024 and stored ROI mn/mx=1/7:
 //       IH_MINIMUM = -1024 + 1 = -1023 ; IH_MAXIMUM = -1024 + 7 = -1017
 //       IH_RANGE = 6 ; IH_BIN_SIZE = 6/3 = 2  (integer grey spacing preserved)
@@ -237,23 +251,20 @@ void test_2d_intensity_histogram_float_domain_preserve_hu_regression()
 }
 
 // 4d) Regression: preserve_hu combined with active fp-image options
-//     (--fpimgmin/max/dr). In HU mode the load-time offset base is ALWAYS the
-//     scanned slide min, so float_domain_map must IGNORE FPIMG_MIN. Here FPIMG is
-//     active with a misleading FPIMG_MIN=0 (the value --fpimgmin defaults to), yet
-//     the reconstruction must still recover absolute HU from slide_min=-1024:
+//     (--fpimgmin/max/dr). On the offset map the base is ALWAYS the slide's own
+//     minimum, so the recorder must IGNORE the fp min. Here fp options are supplied
+//     with a misleading min of 0 (the value --fpimgmin defaults to), yet the
+//     reconstruction must still recover absolute HU from slide_min=-1024:
 //       IH_MINIMUM = -1024 + 1 = -1023.
-//     Taking poffset from FPIMG_MIN instead would give 0 + 1 = 1, shifting every
+//     Taking the offset from the fp min instead would give 0 + 1 = 1, shifting every
 //     value up by 1024 and clamping negative HU to 0 at load time.
 void test_2d_intensity_histogram_float_domain_preserve_hu_fpactive_regression()
 {
     Fsettings s = ih_make_settings(3, true);
-    s[(int)NyxSetting::FPIMG_ACTIVE].bval = true;    // fp options supplied alongside --preserve-hu
-    s[(int)NyxSetting::FPIMG_MIN].rval = 0.0;        // default --fpimgmin; must be ignored in HU mode
-    s[(int)NyxSetting::FPIMG_MAX].rval = 1.0;
-    s[(int)NyxSetting::FPIMG_TARGET_DR].rval = 10.0;
+    FpImageOptions fpo = ih_make_fp_options(0.0, 1.0, 10);   // supplied alongside --preserve-hu
     std::vector<std::vector<double>> fv;
     run_intensity_histogram_fixture(fv, s, /*slide_idx*/ 0, /*fp_image*/ false,
-           /*slide_min*/ -1024.0, /*slide_max*/ 3071.0, /*preserve_hu*/ true);
+           /*slide_min*/ -1024.0, /*slide_max*/ 3071.0, /*preserve_hu*/ true, &fpo);
 
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MINIMUM_VAL), -1023.0));
     ASSERT_TRUE(agrees_gt(ih_get(fv, Feature2D::IH_MAXIMUM_VAL), -1017.0));

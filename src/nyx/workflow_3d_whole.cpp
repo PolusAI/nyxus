@@ -98,10 +98,11 @@ namespace Nyxus
 		vroi.aux_area = p.max_roi_area;
 		vroi.aabb.init_from_whd (p.max_roi_w, p.max_roi_h, p.max_roi_d);
 
-		// tell ROI the actual uint rynamic range or greybinned one depending on the slide's low-level properties
-		// with the Hounsfield adjustment
-		vroi.aux_min = (PixIntens) (p.min_preroi_inten - p.min_preroi_inten); // in CT datasets p.min_preroi_inten can be -1024.0
-		vroi.aux_max = (PixIntens) (p.max_preroi_inten - p.min_preroi_inten);
+		// tell ROI the grey levels the loader will store for this volume's range, through the same
+		// map the loader itself uses -- which offsets only when the volume's own minimum is
+		// negative, as a CT's is, instead of shifting every volume to a zero base.
+		vroi.aux_min = (PixIntens) p.to_grey_level (p.min_preroi_inten);
+		vroi.aux_max = (PixIntens) p.to_grey_level (p.max_preroi_inten);
 
 		// fix the AABB with respect to anisotropy
 		if (env.anisoOptions.customized() == false)
@@ -226,14 +227,14 @@ namespace Nyxus
 			// slide file names
 			SlideProps& p = env.dataset.dataset_props.emplace_back(intensFiles[i], "");
 
-			// CT/HU preservation is a global user option; record it on the slide so
-			// IntensityHistogramFeatures::float_domain_map reports features in true HU.
+			// A global user option, recorded per slide because it selects the slide's
+			// load-time map (see Nyxus::record_intensity_domain_map).
 			p.preserve_hu = env.fpimageOptions.preserve_hu();
 
 			// slide metrics
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "prescanning " << fs::path(p.fname_int).filename().string());
 
-			if (! scan_slide_props(p, 3, env.anisoOptions, env.resultOptions.need_annotation()))
+			if (! scan_slide_props(p, 3, env.anisoOptions, env.fpimageOptions, env.resultOptions.need_annotation()))
 				return { false, "error prescanning " + p.fname_int };
 
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << " " 

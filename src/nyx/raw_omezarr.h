@@ -3,6 +3,8 @@
 #ifdef OMEZARR_SUPPORT
 
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
 #include "nlohmann/json.hpp"
 
 // factory functions to create files, groups and datasets
@@ -59,8 +61,11 @@ public:
         else if (dtype_str == "<f8") { data_format_ = 10; fp_pixels_ = true; } //double
         else { data_format_ = 2; } //uint16_t
 
-        // allocate the buffer
-        dest = std::vector<uint32_t> (tile_height_ * tile_width_);
+        // Allocate the buffer. It holds the sample as the file states it: a uint32_t destination
+        // wrapped every negative sample of a signed dataset and truncated every fractional sample
+        // of a real-valued one, so the prescan measured the slide's extrema on converted values and
+        // no offset derived from them could undo the conversion.
+        dest = std::vector<double> (tile_height_ * tile_width_);
 
         // Open the dataset once and cache the handle. The dataset metadata is
         // immutable for the lifetime of this loader, so there is no need to
@@ -126,16 +131,28 @@ public:
     {
     }
 
+    // Every sample the unsigned pipeline type cannot hold is clamped or zeroed rather than
+    // converted: the buffer holds the sample as the file states it, and converting a negative,
+    // a non-finite or an above-UINT32_MAX double to an unsigned integer is undefined. A
+    // non-finite sample carries no label to keep, so it takes grey level 0 -- the convention
+    // every load-time map uses; the finite out-of-range ends saturate. The clamps are what make
+    // the accessor safe, not the fact that only a mask -- non-negative integer labels -- is read
+    // through it today. Both tile loaders zero a non-finite sample and clamp below in the same
+    // way before their own cast; the upper clamp is this accessor's alone, since a tile loader
+    // reads intensities through a recorded map rather than raw samples.
     uint32_t get_uint32_pixel (size_t idx) const
     {
-        uint32_t rv = dest[idx];
-        return rv;
+        double y = dest[idx];
+        if (! std::isfinite (y)) return 0u;
+        if (y < 0.0) y = 0.0;
+        if (y > (double) UINT32_MAX) y = (double) UINT32_MAX;
+        return (uint32_t) y;
     }
 
     double get_dpequiv_pixel (size_t idx) const
     {
-        double rv = (double) dest[idx];
-        return rv;    
+        double rv = dest[idx];
+        return rv;
     }
 
     template<typename FileType>
@@ -163,10 +180,12 @@ public:
         // zero-fill the buffer foreseeing its partial filling at incomplete (tail) tiles
         std::fill(dest.begin(), dest.end(), 0);
         
-        // Copy from buffer to destination tile, handling partial tiles and type conversion
+        // Copy from buffer to destination tile, handling partial tiles. The sample is widened to
+        // double rather than narrowed to an unsigned grey level, so a negative or fractional
+        // dataset reaches the prescan as it is written.
         for (size_t k = 0; k < data_height; ++k) {
             for (size_t j = 0; j < data_width; ++j) {
-                dest[k * tile_width_ + j] = static_cast<uint32_t>(buffer[k * data_width + j]);
+                dest[k * tile_width_ + j] = static_cast<double>(buffer[k * data_width + j]);
             }
         }
     }
@@ -219,6 +238,6 @@ private:
     std::string ds_name_;
     std::unique_ptr<z5::Dataset> ds_;   ///< Cached dataset handle (opened once)
 
-    std::vector<uint32_t> dest;
+    std::vector<double> dest;
 };
 #endif //OMEZARR_SUPPORT

@@ -1,14 +1,15 @@
-"""Python regression tests for the --preserve-hu / preserve_hu CT-Hounsfield mode.
+"""Python regression tests for CT-Hounsfield handling on 2D TIFF slides.
 
 Uses the committed TIFF fixtures in tests/data/hounsfield:
 ct_int16.tif is a signed int16 CT image with pixel(r,c) = -1024 + idx*8,
-idx = r*16 + c (values -1024..1016, crossing 0). preserve_hu must be exercised
-through the FILE loader (numpy input bypasses the load-time quantization), so
-these use featurize_files.
+idx = r*16 + c (values -1024..1016, crossing 0). The load-time map has to be exercised
+through the FILE loader (numpy input bypasses it), so these use featurize_files.
 
-In HU mode the loader maps value -> value - floor(min) = value + 1024 = idx*8, so
-the offset-domain feature pixels are 0..2040 (MEAN 1020). Without it, the negative
-int16 values wrap on the unsigned cast into billions.
+The loader offsets the image by its own floored minimum, u = value + 1024 = idx*8, and the
+intensity family adds that offset back, so the reported features are in Hounsfield units:
+MIN -1024, MAX 1016, MEAN -4. Nothing here depends on --preserve-hu any more: an image
+holding negative values is offset-preserved either way, and the flag now only decides whether
+a REAL-VALUED image is min-max rescaled or carried on that same offset map.
 """
 import os
 import pathlib
@@ -34,32 +35,41 @@ def _featurize(preserve_hu, inten=INTEN):
     return {c: float(df[c].iloc[0]) for c in FEATS}
 
 
-def test_2d_hu_preserve_offset_domain_values_regression():
-    # Offset-domain: pixel(idx) = idx*8, idx 0..255 -> MIN 0, MAX 2040, MEAN 1020.
+def test_2d_hu_absolute_hounsfield_values_regression():
+    # pixel(idx) = -1024 + idx*8, idx 0..255 -> MIN -1024, MAX 1016, MEAN -4.
     f = _featurize(True)
-    assert f["MIN"] == pytest.approx(0.0)
-    assert f["MAX"] == pytest.approx(2040.0)
-    assert f["MEAN"] == pytest.approx(1020.0)
-    assert f["INTEGRATED_INTENSITY"] == pytest.approx(1020.0 * 256)
+    assert f["MIN"] == pytest.approx(-1024.0)
+    assert f["MAX"] == pytest.approx(1016.0)
+    assert f["MEAN"] == pytest.approx(-4.0)
+    assert f["INTEGRATED_INTENSITY"] == pytest.approx(-4.0 * 256)
 
 
 def test_2d_hu_preserve_no_wraparound_regression():
     # The whole point: negative CT values must not wrap into billions.
     f = _featurize(True)
-    assert f["MIN"] < f["MAX"] < 1e6
-    assert f["MEAN"] < 1e6
+    assert -2000.0 < f["MIN"] < f["MAX"] < 1e6
+    assert abs(f["MEAN"]) < 1e6
 
 
-def test_2d_hu_preserve_differs_from_default_mapping_regression():
-    # On a FLOAT CT image both mappings are well-defined and must DIFFER:
-    #   preserve_hu=True  -> slope-1 offset domain          (MEAN 1020)
-    #   preserve_hu=False -> min-max rescale into [0, DR]    (MEAN ~5000)
-    # We compare on the float fixture on purpose: the signed-int16 no-flag path
-    # instead casts -1024 to unsigned and wraps to ~4.29e9, and pushing those absurd
-    # intensities through the pipeline can SEGFAULT on some platforms (macOS) -- which
-    # is exactly the breakage --preserve-hu exists to prevent. So we do NOT featurize
-    # that path here; the correct-HU values are pinned in test_2d_hu_preserve_offset_domain_values_regression.
+def test_2d_hu_signed_int_needs_no_flag_regression():
+    # A signed image is offset-preserved whether or not --preserve-hu is given, so both
+    # invocations report the same absolute Hounsfield values. Before the load-time map was
+    # recorded and inverted, the no-flag path clamped every negative pixel to 0 instead.
+    on = _featurize(True)
+    off = _featurize(False)
+    assert off["MIN"] == pytest.approx(on["MIN"])
+    assert off["MEAN"] == pytest.approx(on["MEAN"])
+    assert off["MIN"] == pytest.approx(-1024.0)
+
+
+def test_2d_hu_float_mappings_agree_after_inversion_regression():
+    # On a FLOAT CT image the two modes still take DIFFERENT load-time maps --
+    #   preserve_hu=True  -> slope-1 offset (1 grey level == 1 HU)
+    #   preserve_hu=False -> min-max rescale into [0, DR]
+    # -- but both are now inverted on the way out, so the reported values agree to within one
+    # quantization step of the coarser map ((1016+1024)/10000 = 0.204 HU).
     on = _featurize(True, FLOAT)
     off = _featurize(False, FLOAT)
-    assert on["MEAN"] != pytest.approx(off["MEAN"])
-    assert on["MEAN"] < 1e6 and off["MEAN"] < 1e6   # both stay sane, no wraparound
+    assert off["MEAN"] == pytest.approx(on["MEAN"], abs=1.0)
+    assert off["MIN"] == pytest.approx(on["MIN"], abs=1.0)
+    assert on["MIN"] == pytest.approx(-1024.0)

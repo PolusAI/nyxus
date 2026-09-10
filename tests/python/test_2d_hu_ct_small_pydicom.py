@@ -1,4 +1,4 @@
-"""Oracle test: Nyxus `preserve_hu` HU feature values vs an INDEPENDENT pydicom reference.
+"""Oracle test: Nyxus first-order HU feature values vs an INDEPENDENT pydicom reference.
 
 Unlike the synthetic Hounsfield fixtures (whose expected values are recomputed from the
 same offset formula the loader uses — self-consistency, SPEC.md §5.2), this test vets the
@@ -8,10 +8,10 @@ actual first-order HU features against numbers derived by pydicom from a REAL sc
             (128x128, HU range -896..1167).
   oracle  : pydicom 3.0.2 — HU = RescaleSlope*stored + RescaleIntercept, then numpy stats.
 
-Nyxus preserve_hu emits the OFFSET domain u = HU - floor(HU_min); floor(HU_min) == HU_MIN
-because HU is integer-valued. Reconstructing absolute HU = offset + HU_MIN must equal the
-pinned pydicom goldens. This is the first `vetted-by-oracle` assertion on HU *feature*
-outputs (docs/vetting SPEC.md §3.1); the other HU tests are analytic / mechanics / invariant.
+The loader carries the slice on the offset map u = HU - floor(HU_min) and the intensity family
+adds that offset back, so Nyxus reports absolute Hounsfield units directly and they must equal
+the pinned pydicom goldens. This is the `vetted-by-oracle` assertion on HU *feature* outputs
+(docs/vetting SPEC.md §3.1); the other HU tests are analytic / mechanics / invariant.
 
 Provenance (record at the golden site, SPEC.md §6.4):
   tool    : pydicom 3.0.2, get_testdata_file('CT_small.dcm')
@@ -37,7 +37,6 @@ HU_MIN = -896
 HU_MAX = 1167
 HU_MEAN = -119.0738525390625
 HU_INTEGRATED = -1950906
-OFFSET_BASE = HU_MIN          # floor(HU_min); HU is integer-valued so floor(min) == min
 N = 128 * 128                 # ROI voxel count (whole 128x128 image)
 
 FEATS = ["MIN", "MAX", "MEAN", "INTEGRATED_INTENSITY"]
@@ -50,21 +49,26 @@ def _featurize():
 
 
 def test_2d_hu_ct_small_values_pydicom():
-    """Reconstructed absolute HU (offset + floor(HU_min)) == pydicom HU stats."""
+    """Reported absolute HU == pydicom HU stats, with no reconstruction by the caller."""
     o = _featurize()
 
-    # Nyxus reports the offset domain; the minimum HU maps to 0 by construction.
-    assert o["MIN"] == pytest.approx(0.0)
-
-    # Reconstruct absolute HU and compare to the independent pydicom goldens.
-    assert o["MIN"] + OFFSET_BASE == pytest.approx(HU_MIN)
-    assert o["MAX"] + OFFSET_BASE == pytest.approx(HU_MAX)
-    assert o["MEAN"] + OFFSET_BASE == pytest.approx(HU_MEAN, rel=1e-6)
-    assert o["INTEGRATED_INTENSITY"] + N * OFFSET_BASE == pytest.approx(HU_INTEGRATED)
+    assert o["MIN"] == pytest.approx(HU_MIN)
+    assert o["MAX"] == pytest.approx(HU_MAX)
+    assert o["MEAN"] == pytest.approx(HU_MEAN, rel=1e-6)
+    assert o["INTEGRATED_INTENSITY"] == pytest.approx(HU_INTEGRATED)
 
 
 def test_2d_hu_ct_small_no_wraparound_pydicom():
     """Real signed CT (negative HU) must not wrap into billions on the unsigned cast."""
     o = _featurize()
-    assert 0.0 <= o["MIN"] < o["MAX"] < 1e6
-    assert o["MEAN"] < 1e6
+    assert -1e6 < o["MIN"] < o["MAX"] < 1e6
+    assert HU_MIN <= o["MEAN"] <= HU_MAX
+
+
+def test_2d_hu_ct_small_min_is_the_true_hounsfield_minimum_pydicom():
+    """The invariant the reported defect would have failed: for a CT read in Hounsfield units
+    MIN is the ROI's true minimum in Hounsfield units, not that minimum displaced by whatever
+    offset the loader needed to keep the buffer unsigned. Needs no oracle beyond the range."""
+    o = _featurize()
+    assert o["MIN"] == pytest.approx(HU_MIN)
+    assert o["MIN"] <= o["MEAN"] <= o["MAX"]

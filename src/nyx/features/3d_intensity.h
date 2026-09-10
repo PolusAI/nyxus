@@ -65,6 +65,13 @@ public:
 	};
 
 private:
+	// calculate() and osized_calculate(), computed in the grey levels the loader stored.
+	void calculate_grey_levels (LR& r, const Fsettings& s, const Dataset& ds);
+	void osized_calculate_grey_levels (LR& r, const Fsettings& s, const Dataset& ds, ImageLoader& ldr);
+
+	// Maps what they produced back into the volume's own intensity domain.
+	void report_in_source_domain (const LR& r, const Dataset& ds);
+
 	double
 		val_INTEGRATED_INTENSITY = 0,
 		val_MEAN = 0,

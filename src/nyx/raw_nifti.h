@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cmath>          // FIX: HU mode: std::floor / std::llround for the offset map
 #include <stdexcept>
 #include <tuple>
 #include <vector>
@@ -12,8 +11,8 @@ class RawNiftiLoader : public RawFormatLoader
 {
 public:
 
-    RawNiftiLoader (std::string const& filePath, bool preserve_hu = false)		// FIX: HU mode flag so the slide scan runs in the Hounsfield domain
-        : RawFormatLoader("RawNiftiLoader", filePath), preserve_hu_(preserve_hu)		// FIX: remember whether to rescale to true HU
+    RawNiftiLoader (std::string const& filePath)
+        : RawFormatLoader("RawNiftiLoader", filePath)
     {
         slide_path_ = filePath;
 
@@ -25,8 +24,9 @@ public:
             throw (std::runtime_error(erm));
         }
 
-        // FIX: HU rescale (used only in preserve_hu mode): true value = slope*stored + intercept.
-        // Per NIfTI spec scl_slope==0 means "no scaling", so fall back to an identity transform.
+        // A NIfTI stores values the header rescales into physical units (Hounsfield for CT):
+        // true value = slope*stored + intercept. Per the spec scl_slope==0 means "no scaling",
+        // so fall back to an identity transform.
         scl_slope_ = (nii_->scl_slope != 0.0) ? (double)nii_->scl_slope : 1.0;
         scl_inter_ = (nii_->scl_slope != 0.0) ? (double)nii_->scl_inter : 0.0;
 
@@ -41,7 +41,6 @@ public:
                 get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint16_t>;
                 break;
         case 768: // NIFTI_TYPE_UINT32
-                //unhounsfield <uint32_t, uint32_t>(dataCache, static_cast<uint32_t*> (nii->data), nr_voxels);
                 get_uint32_pixel_typeresolved = get_uint32_pixel_imp <uint32_t>;
                 get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <uint32_t>;
                 break;
@@ -129,11 +128,9 @@ public:
     double get_dpequiv_pixel (size_t idx) const
     {
         double rv = get_dpequiv_pixel_typeresolved (nii_->data, idx);
-        // FIX: HU mode: return the true Hounsfield value so the scan's slide min/max is in the
-        // HU domain (matches the NiftiLoader offset + float_domain_map reconstruction).
-        if (preserve_hu_)
-            rv = scl_slope_ * rv + scl_inter_;
-        return rv;
+        // Report the rescaled physical value so the scanned slide min/max — and hence the offset
+        // recorded for this slide — are in the same domain the features report.
+        return scl_slope_ * rv + scl_inter_;
     }
 
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
@@ -163,9 +160,7 @@ private:
     double (*get_dpequiv_pixel_typeresolved) (const void* src, size_t idx) = nullptr;
     uint32_t(*get_uint32_pixel_typeresolved) (const void* src, size_t idx) = nullptr;
 
-    // FIX: HU/CT preservation (scan side): when set, get_dpequiv_pixel reports true Hounsfield
-    // values (slope*stored + intercept) so the slide min/max is Hounsfield-domain, not raw stored.
-    bool preserve_hu_ = false;
+    // Header rescale applied by get_dpequiv_pixel so the scanned slide min/max are physical.
     double scl_slope_ = 1.0, scl_inter_ = 0.0;
 
     size_t
@@ -190,9 +185,12 @@ class NiftiLoader : public AbstractTileLoader<DataType>
 {
 public:
 
-    NiftiLoader (std::string const& slide_path, double hu_min_base = 0.0, bool preserve_hu = false)		// FIX: HU mode: offset base (floored global HU min) + flag
+    NiftiLoader (
+        std::string const& slide_path,
+        double inten_offset = 0.0,		// the offset the scan recorded for this volume
+        bool rescale_to_physical = true)		// off for a mask volume, whose voxels are labels
         : AbstractTileLoader<DataType>("NiftiLoader", 1/*numberThreads*/, slide_path),
-          preserve_hu_(preserve_hu), hu_min_base_(hu_min_base)		// FIX: remember whether/where to offset-preserve
+          inten_offset_(inten_offset), rescale_(rescale_to_physical)
     {
         slide_path_ = slide_path;
 
@@ -240,40 +238,40 @@ public:
 #endif
         }
 
-        // FIX: HU rescale for this read (used only in preserve_hu mode); scl_slope==0 => identity.
-        cur_scl_slope_ = (nii->scl_slope != 0.0) ? (double)nii->scl_slope : 1.0;
-        cur_scl_inter_ = (nii->scl_slope != 0.0) ? (double)nii->scl_inter : 0.0;
+        // Header rescale for this read; scl_slope==0 means "no scaling" per the NIfTI spec.
+        cur_scl_slope_ = (rescale_ && nii->scl_slope != 0.0) ? (double)nii->scl_slope : 1.0;
+        cur_scl_inter_ = (rescale_ && nii->scl_slope != 0.0) ? (double)nii->scl_inter : 0.0;
 
         // cache
         if (nii->datatype == 2) {  // NIFTI_TYPE_UINT8
-            unhounsfield <uint32_t, uint8_t>(dataCache, static_cast<uint8_t*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, uint8_t>(dataCache, static_cast<uint8_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 512) {  // NIFTI_TYPE_UINT16
-            unhounsfield <uint32_t, uint16_t>(dataCache, static_cast<uint16_t*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, uint16_t>(dataCache, static_cast<uint16_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 768) {  // NIFTI_TYPE_UINT32
-            unhounsfield <uint32_t, uint32_t>(dataCache, static_cast<uint32_t*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, uint32_t>(dataCache, static_cast<uint32_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 1280) {  // NIFTI_TYPE_UINT64
-            unhounsfield <uint32_t, uint64_t>(dataCache, static_cast<uint64_t*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, uint64_t>(dataCache, static_cast<uint64_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 256) {  // NIFTI_TYPE_INT8
-            unhounsfield <uint32_t, int8_t>(dataCache, static_cast<int8_t*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, int8_t>(dataCache, static_cast<int8_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 4) {  // NIFTI_TYPE_INT16
-            unhounsfield <uint32_t, int16_t>(dataCache, static_cast<int16_t*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, int16_t>(dataCache, static_cast<int16_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 8) {  // NIFTI_TYPE_INT32
-            unhounsfield <uint32_t, int32_t>(dataCache, static_cast<int32_t*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, int32_t>(dataCache, static_cast<int32_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 1024) {  // NIFTI_TYPE_INT64
-            unhounsfield <uint32_t, int64_t>(dataCache, static_cast<int64_t*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, int64_t>(dataCache, static_cast<int64_t*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 16) {  // NIFTI_TYPE_FLOAT32
-            unhounsfield <uint32_t, float>(dataCache, static_cast<float*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, float>(dataCache, static_cast<float*> (nii->data), nii->nvox);
         }
         else if (nii->datatype == 64) {  // NIFTI_TYPE_FLOAT64
-            unhounsfield <uint32_t, double> (dataCache, static_cast<double*> (nii->data), nii->nvox);
+            rescale_offset <uint32_t, double> (dataCache, static_cast<double*> (nii->data), nii->nvox);
         }
         else 
         {
@@ -323,54 +321,27 @@ private:
     std::vector<uint32_t> tile;
     std::string slide_path_;
 
-    // FIX: HU/CT preservation (featurization side). When set, loaded voxels are rescaled to true
-    // HU then offset by floor(hu_min_base_) (the scanned Hounsfield-domain slide min). cur_scl_*
-    // hold the current read's rescale (from the NIfTI header) shared with unhounsfield().
-    bool preserve_hu_ = false;
-    double hu_min_base_ = 0.0;
+    // The offset this volume's grey levels carry: voxels are rescaled to physical units and then
+    // shifted by inten_offset_ (SlideProps::inten_offset, 0 unless the volume's own minimum is
+    // negative). The intensity families add it back, so reported statistics are in the volume's
+    // own domain. cur_scl_* hold the current read's header rescale, shared with rescale_offset().
+    double inten_offset_ = 0.0;
+    bool rescale_ = true;
     double cur_scl_slope_ = 1.0, cur_scl_inter_ = 0.0;
 
    template <class til, class fra>
-   void unhounsfield (std::vector<til>& nyxbuf, const fra* houbuf, size_t n)
+   void rescale_offset (std::vector<til>& nyxbuf, const fra* houbuf, size_t n)
    {
-       // FIX: HU/CT mode: rescale stored -> true HU (slope*stored + intercept), then slope-1 offset
-       // by floor(global HU min) so 1 grey level == 1 HU and sub-min voxels (incl. negative CT
-       // values) clamp to 0 instead of wrapping on the unsigned cast. Inverted for reporting by
-       // IntensityHistogramFeatures::float_domain_map (uses SlideProps::min_preroi_inten).
-       if (preserve_hu_)
+       // Rescale stored -> physical (slope*stored + intercept), then shift by the recorded offset
+       // so 1 grey level == 1 intensity unit and sub-minimum voxels (negative CT values among
+       // them) clamp to 0 instead of wrapping on the unsigned cast. Reading the volume's own
+       // minimum here instead would produce a shift nothing downstream could undo.
+       for (size_t i = 0; i < n; ++i)
        {
-           double base = std::floor (hu_min_base_);
-           for (size_t i = 0; i < n; ++i)
-           {
-               double hu = cur_scl_slope_ * (double)houbuf[i] + cur_scl_inter_;
-               double y = hu - base;
-               if (y < 0.0) y = 0.0;
-               nyxbuf[i] = static_cast<til>(std::llround(y));
-           }
-           return;
+           double v = cur_scl_slope_ * (double)houbuf[i] + cur_scl_inter_;
+           double y = v - inten_offset_;
+           if (y < 0.0) y = 0.0;
+           nyxbuf[i] = static_cast<til>(y);
        }
-
-       // -- widest typed min and max expecting min to be the background radiodensity or so
-       double mi = houbuf[0],
-           mx = mi;
-       for (size_t i = 0; i < n; i++)
-       {
-           double a = *(houbuf + i);
-           mi = (std::min)(mi, a);
-           mx = (std::max)(mx, a);
-       }
-
-       // -- convert
-       if (mi < 0.0)
-           for (int i = 0; i < n; ++i)
-           {
-               double a = *(houbuf + i) - mi;
-               nyxbuf[i] = static_cast<til>(a);
-           }
-       else
-           for (int i = 0; i < n; ++i)
-           {
-               nyxbuf[i] = static_cast<til>(houbuf[i]);
-           }
    }
 };

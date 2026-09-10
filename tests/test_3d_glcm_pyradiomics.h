@@ -537,7 +537,7 @@ void assert_3d_glcm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode
     // slide -> dataset -> prescan 
     e.dataset.dataset_props.reserve(1);
     SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
     e.dataset.update_dataset_props_extrema();
 
     // properties of specific ROIs sitting in 'e.uniqueLabels'
@@ -621,7 +621,7 @@ void test_3d_glcm_equivalence_dump_pyradiomics()
     Environment e;
     e.dataset.dataset_props.reserve(1);
     SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
     e.dataset.update_dataset_props_extrema();
     clear_slide_rois(e.uniqueLabels, e.roiData);
     ASSERT_TRUE(gatherRoisMetrics_3D(e, 0, ipath, mpath, 0));
@@ -817,7 +817,7 @@ void assert_3d_glcm_ave_feature_pyradiomics (const Nyxus::Feature3D& ave_fcode,
     Environment e;
     e.dataset.dataset_props.reserve(1);
     SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
     e.dataset.update_dataset_props_extrema();
 
     clear_slide_rois(e.uniqueLabels, e.roiData);
@@ -982,7 +982,7 @@ void test_3d_glcm_ave_equivalence_pyradiomics()
     Environment e;
     e.dataset.dataset_props.reserve(1);
     SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
     e.dataset.update_dataset_props_extrema();
 
     clear_slide_rois(e.uniqueLabels, e.roiData);

@@ -125,7 +125,7 @@ void assert_3d_firstorder_feature_pyradiomics (const Nyxus::Feature3D &expected_
     // slide -> dataset -> prescan 
     e.dataset.dataset_props.reserve(1);
     SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-    ASSERT_TRUE (scan_slide_props(sp, 3, e.anisoOptions, e.resultOptions.need_annotation()));
+    ASSERT_TRUE (scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
     e.dataset.update_dataset_props_extrema();
 
     // properties of specific ROIs sitting in 'e.uniqueLabels'

@@ -7,15 +7,16 @@
 // Nyxus snapshots only: these values guard current behavior and establish no oracle vetting.
 static const ref_vals_map<double> firstorder_3d_regression_ref_vals
 {
-    // The ROI range is measured in the loader's integer domain while the slide range is measured
-    // in the stored float domain, so this ratio currently exceeds its implied upper bound of one.
+    // Both ends are now in the volume's own domain, but the ROI range is a difference of integer
+    // grey levels while the volume range keeps its fraction, so this ratio still exceeds its
+    // implied upper bound of one by that truncation.
     { "3COVERED_IMAGE_INTENSITY_RANGE", 1.0002043207290587 },
     // MATLAB mad(x,1) takes the median absolute deviation; Nyxus takes the mean absolute
     // deviation about its median. Keep regression-only until the intended definition is resolved.
     { "3MEDIAN_ABSOLUTE_DEVIATION", 507.12380480410445 },
     // MATLAB trimmean removes samples by rank; Nyxus selects values through histogram-derived
     // P10/P90 thresholds. Keep regression-only until the intended trimming semantics are resolved.
-    { "3ROBUST_MEAN", 1977.5189642596645 }
+    { "3ROBUST_MEAN", 953.51896425966447 }
 };
 
 static void assert_3d_firstorder_feature_regression(

@@ -92,7 +92,7 @@ void initialize_environment(
     float aniso_y,
     float aniso_z,
     bool merge_labels = false,
-    bool preserve_hu = false)		// CT/HU: preserve absolute Hounsfield intensities
+    bool preserve_hu = false)		// float slides: offset map instead of min-max rescale
 {
     Environment & theEnvironment = Nyxus::findenv (instid);
 
