@@ -136,6 +136,7 @@ set(SOURCE
 	src/nyx/features/circle.cpp
 	src/nyx/features/contour.cpp
 	src/nyx/features/convex_hull_nontriv.cpp
+	src/nyx/features/edt.cpp
 	src/nyx/features/ellipse_fitting.cpp
 	src/nyx/features/erosion.cpp
 	src/nyx/features/euler_number.cpp

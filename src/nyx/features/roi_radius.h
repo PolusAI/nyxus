@@ -28,6 +28,15 @@ public:
 	static void extract (LR& roi, const Fsettings& s);
 	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
+	/// @brief Whether a distance transform over the ROI's bounding box beats scanning the contour
+	/// per pixel. Both engines are exact and return the same distances, so this decides only how
+	/// long a ROI takes to measure, never what it reports. Its three inputs are counts known before
+	/// any distance is computed, so reaching the decision costs nothing.
+	/// @param cells Bounding box area in raster cells.
+	/// @param n_pixels ROI pixel count.
+	/// @param n_contour Contour pixel count.
+	static bool edt_is_cheaper (size_t cells, size_t n_pixels, size_t n_contour);
+
 	// Compatibility with manual reduce
 	static bool required (const FeatureSet& fs) 
 	{
