@@ -79,6 +79,7 @@
 #include "test_3d_morphology_matlab.h"
 #include "test_3d_morphology_mirp.h"
 #include "test_3d_gldzm_regression.h"
+#include "test_3d_ngldm_mirp.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
 #include "test_3d_firstorder_regression.h"
@@ -102,7 +103,6 @@
     #include "test_arrow_file_name_mechanics.h"
 #endif
 
-
 //***** 2D contour and multicontour *****
 
 TEST(TEST_NYXUS, TEST_2D_CONTOUR_MULTI_DISCONNECTED_ANALYTIC) {
@@ -124,7 +124,6 @@ TEST(TEST_NYXUS, TEST_2D_CONTOUR_VOID_ANALYTIC) {
 TEST(TEST_NYXUS, TEST_2D_CONTOUR_MULTI_CONNECTED_ANALYTIC) {
 	ASSERT_NO_THROW(test_2d_contour_multi_connected_analytic());
 }
-
 
 //***** first-order compatibility *****
 
@@ -212,7 +211,6 @@ TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROBUST_MEAN_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_firstorder_robust_mean_regression());
 }
 
-
 //***** 3D NGTDM compatibility *****
 
 TEST(TEST_NYXUS, TEST_3D_NGTDM_BUSYNESS_PYRADIOMICS) {
@@ -299,7 +297,6 @@ TEST(TEST_NYXUS, TEST_3D_NGTDM_DEFAULT_RADIUS_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_ngtdm_default_radius_mechanics());
 }
 
-
 //***** 3D GLRLM compatibility *****
 
 TEST(TEST_NYXUS, TEST_3D_GLRLM_MATRIX_CORRECTNESS_PYRADIOMICS) {
@@ -373,7 +370,6 @@ TEST(TEST_NYXUS, TEST_3D_GLRLM_SRLGLE_PYRADIOMICS) {
 TEST(TEST_NYXUS, TEST_3D_GLRLM_AVE_PYRADIOMICS) {
 	ASSERT_NO_THROW(test_3d_glrlm_ave_pyradiomics());
 }
-
 
 //***** 3D GLSZM compatibility *****
 
@@ -540,7 +536,6 @@ TEST(TEST_NYXUS, TEST_3D_GLSZM_DEFAULT_GREYDEPTH_MECHANICS) {
 TEST(TEST_NYXUS, TEST_3D_GLSZM_IBSI_EQUALS_NO_BINNING_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_glszm_ibsi_equals_no_binning_mechanics());
 }
-
 
 //***** 3D GLDM compatibility *****
 
@@ -748,7 +743,6 @@ TEST(TEST_NYXUS, TEST_3D_GLCM_SUM_ENTROPY_PYRADIOMICS) {
 	ASSERT_NO_THROW(test_3d_glcm_sum_entropy_pyradiomics());
 }
 
-
 //***** Apache I/O tests *****
 
 #ifdef USE_ARROW
@@ -766,7 +760,6 @@ TEST(TEST_NYXUS, TEST_ARROW_PARQUET_MECHANICS) {
 }
 
 #endif
-
 
 //***** 3D shape *****
 
@@ -857,7 +850,6 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COVMATRIX_AND_EIGENVALS_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_morphology_covmatrix_and_eigenvals_mechanics());
 }
 
-
 //***** 3D GLDZM regression *****
 
 TEST(TEST_NYXUS, TEST_3D_GLDZM_GLM_REGRESSION) {
@@ -932,56 +924,140 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDE_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_gldzm_zde_regression());
 }
 
+//***** 3D NGLDM vetted vs MIRP, at the recipe where both tools share a grey-level ladder *****
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LDE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_lde_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HDE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hde_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LGLCE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_lglce_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HGLCE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hglce_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LDLGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_ldlgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LDHGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_ldhgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HDLGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hdlgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HDHGLE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hdhgle_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_GLNU_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_glnu_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_GLNUN_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_glnun_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCNU_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcnu_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCNUN_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcnun_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_GLV_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_glv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCV_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcv_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENT_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcent_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENE_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcene_mirp());
+}
+
+//***** 3D NGLDM vetted vs MIRP at IBSI=true, where the raw intensity is the grey level *****
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LDE_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_lde_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HDE_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hde_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LGLCE_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_lglce_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HGLCE_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hglce_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LDLGLE_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_ldlgle_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_LDHGLE_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_ldhgle_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HDLGLE_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hdlgle_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_HDHGLE_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_hdhgle_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_GLNU_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_glnu_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_GLNUN_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_glnun_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCNU_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcnu_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCNUN_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcnun_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_GLV_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_glv_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCV_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcv_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENT_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcent_ibsi_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENE_IBSI_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_dcene_ibsi_mirp());
+}
+
 
 //***** 3D NGLDM regression *****
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_LDE_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_lde_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_HDE_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_hde_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_LGLCE_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_lglce_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_HGLCE_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_hglce_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_LDLGLE_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_ldlgle_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_LDHGLE_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_ldhgle_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_HDLGLE_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_hdlgle_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_HDHGLE_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_hdhgle_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_GLNU_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_glnu_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_GLNUN_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_glnun_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_DCNU_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_dcnu_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_DCNUN_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_dcnun_regression());
-}
 
 TEST(TEST_NYXUS, TEST_3D_NGLDM_DCP_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_ngldm_dcp_regression());
@@ -991,26 +1067,9 @@ TEST(TEST_NYXUS, TEST_3D_NGLDM_GLM_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_ngldm_glm_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3D_NGLDM_GLV_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_glv_regression());
-}
-
 TEST(TEST_NYXUS, TEST_3D_NGLDM_DCM_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_ngldm_dcm_regression());
 }
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_DCV_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_dcv_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENT_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_dcent_regression());
-}
-
-TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENE_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_ngldm_dcene_regression());
-}
-
 
 //***** Gabor (vetted vs scikit-image, plus the GPU path's plumbing guard) *****
 
@@ -1025,7 +1084,6 @@ TEST(TEST_NYXUS, TEST_2D_GABOR_PYTHON_RAW_DEFAULTS_SKIMAGE){
 TEST(TEST_NYXUS, TEST_2D_GABOR_GPU_RUNS_MECHANICS){
     test_2d_gabor_gpu_runs_mechanics();
 }
-
 
 //***** helper functionality ***** 
 
@@ -1046,7 +1104,6 @@ TEST(TEST_NYXUS, TEST_INITIALIZATION_MECHANICS) {
 TEST(TEST_NYXUS, TEST_FEATURE_MANAGER_MECHANICS) {
 	test_feature_manager_mechanics();
 }
-
 
 //***** Pixel intensity features ***** 
 
@@ -1586,7 +1643,6 @@ TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_SECOND_DISTANCE_AND_ANGLES_ANALYTIC)
 	ASSERT_NO_THROW(test_2d_neighbor_second_distance_and_angles_analytic());
 }
 
-
 //***** IBSI tests of NGTDM
 
 TEST(TEST_NYXUS, TEST_2D_NGTDM_COARSENESS_IBSI)
@@ -1652,7 +1708,6 @@ TEST(TEST_NYXUS, TEST_2D_NGTDM_SLICE_HELPER_RESTORES_N_LEVELS_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_ngtdm_slice_helper_restores_n_levels_mechanics());
 }
-
 
 //***** IBSI tests of GLCM ***** 
 
@@ -1931,7 +1986,6 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_VARIANCE_AVE_IBSI)
 	ASSERT_NO_THROW(test_2d_glcm_variance_ave_ibsi());
 }
 
-
 //***** 2D GLCM vs the third-party tools *****
 
 TEST(TEST_NYXUS, TEST_2D_GLCM_FAMILY_PYRADIOMICS)
@@ -1943,7 +1997,6 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_FAMILY_MIRP)
 {
 	ASSERT_NO_THROW(test_2d_glcm_family_mirp());
 }
-
 
 //***** 2D GLCM regression *****
 
@@ -2393,7 +2446,6 @@ TEST(TEST_NYXUS, TEST_2D_GLDM_DE_IBSI)
 	ASSERT_NO_THROW(test_2d_gldm_de_ibsi());
 }
 
-
 //***** IBSI tests of GLRLM ***** 
 
 TEST(TEST_NYXUS, TEST_2D_GLRLM_SRE_IBSI)
@@ -2566,7 +2618,6 @@ TEST(TEST_NYXUS, TEST_2D_GLRLM_RE_IBSI)
 	ASSERT_NO_THROW(test_2d_glrlm_re_ibsi());
 }
 
-
 //***** IBSI tests of GLSZM ***** 
 
 TEST(TEST_NYXUS, TEST_2D_GLSZM_SAE_IBSI) {
@@ -2699,7 +2750,6 @@ TEST(TEST_NYXUS, TEST_2D_GLSZM_ZE_MIRP) {
 	ASSERT_NO_THROW(test_2d_glszm_ze_mirp());
 }
 
-
 //***** IBSI tests of NGLDM ***** 
 
 TEST(TEST_NYXUS, TEST_2D_NGLDM_MATRIX_CORRECTNESS_IBSI)
@@ -2825,7 +2875,6 @@ TEST(TEST_NYXUS, TEST_2D_NGLDM_DCV_MIRP)    { ASSERT_NO_THROW(test_2d_ngldm_dcv_
 TEST(TEST_NYXUS, TEST_2D_NGLDM_DCENT_MIRP)  { ASSERT_NO_THROW(test_2d_ngldm_dcent_mirp()); }
 TEST(TEST_NYXUS, TEST_2D_NGLDM_DCENE_MIRP)  { ASSERT_NO_THROW(test_2d_ngldm_dcene_mirp()); }
 
-
 //***** 2D intensity ***** 
 
 TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_MEAN_IBSI) 
@@ -2887,7 +2936,6 @@ TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_ROOT_MEAN_SQUARED_IBSI)
 {
 	ASSERT_NO_THROW(test_2d_firstorder_root_mean_squared_ibsi());
 }
-
 
 //***** 2D first-order vs MATLAB (oracle_coverage.csv: oracle=matlab, target_test=test_2d_firstorder_matlab.h) *****
 
@@ -3082,7 +3130,6 @@ TEST(TEST_NYXUS, TEST_2D_GLDM_BUG_BACKGROUND_EXCLUDED_MECHANICS)
 	ASSERT_NO_THROW(test_2d_gldm_bug_background_excluded_mechanics());
 }
 
-
 //***** 2D GLRLM regression ***** 
 
 TEST(TEST_NYXUS, TEST_2D_GLRLM_SRE_REGRESSION)
@@ -3244,7 +3291,6 @@ TEST(TEST_NYXUS, TEST_2D_GLRLM_LRHGLE_AVE_REGRESSION)
 {
 	ASSERT_NO_THROW(test_2d_glrlm_lrhgle_ave_regression());
 }
-
 
 //***** mirp tests of 2D GLDZM *****
 
@@ -3417,7 +3463,6 @@ TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDE_IBSI)
 	ASSERT_NO_THROW(test_2d_gldzm_zde_ibsi());
 }
 
-
 //***** 2D GLSZM regression ***** 
 
 TEST(TEST_NYXUS, TEST_2D_GLSZM_SAE_REGRESSION) {
@@ -3483,7 +3528,6 @@ TEST(TEST_NYXUS, TEST_2D_GLSZM_ZV_REGRESSION) {
 TEST(TEST_NYXUS, TEST_2D_GLSZM_ZE_REGRESSION) {
 	ASSERT_NO_THROW(test_2d_glszm_ze_regression());
 }
-
 
 //***** 2D NGTDM regression ***** 
 
@@ -3567,7 +3611,6 @@ TEST(TEST_NYXUS, TEST_IMQ_POWER_SPECTRUM_SLOPE_LARGE_ROI_REGRESSION)
 	ASSERT_NO_THROW(test_imq_power_spectrum_slope_large_roi_regression());
 }
 
-
 //***** 3D i/o ***** 
 
 TEST(TEST_NYXUS, TEST_3D_NIFTI_LOADER_MECHANICS) {
@@ -3577,7 +3620,6 @@ TEST(TEST_NYXUS, TEST_3D_NIFTI_LOADER_MECHANICS) {
 TEST(TEST_NYXUS, TEST_3D_NIFTI_DATA_ACCESS_CONSISTENCY_MECHANICS) {
 	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency_mechanics());
 }
-
 
 //***** OME-Zarr i/o *****
 
@@ -3608,7 +3650,6 @@ TEST(TEST_NYXUS, TEST_2D_OMEZARR_RAW_MULTITILE_MECHANICS) {
 }
 
 #endif // OMEZARR_SUPPORT
-
 
 int main(int argc, char **argv)
 {
@@ -3714,7 +3755,6 @@ TEST(TEST_NYXUS, TEST_3D_GLCM_SUMAVERAGE_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test
 TEST(TEST_NYXUS, TEST_3D_GLCM_SUMENTROPY_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_sumentropy_ave_pyradiomics()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_AVE_EQUIVALENCE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_ave_equivalence_pyradiomics()); }
 
-
 // JVAR had a complete assertion that no TEST() ever called (not_covered.md B.2)
 TEST(TEST_NYXUS, TEST_3D_GLCM_JVAR_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_jvar_pyradiomics()); }
 // 3D GLRLM drift guards on the ut_ segmented phantom. The header forward-declares
@@ -3775,3 +3815,4 @@ TEST(TEST_NYXUS, TEST_3D_GLRLM_SRLGLE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(t
 TEST(TEST_NYXUS, TEST_3D_GLRLM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_dump_regression()); }
 
 TEST(TEST_NYXUS, TEST_3D_NGLDM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_ngldm_dump_regression()); }
+TEST(TEST_NYXUS, TEST_3D_NGLDM_DUMP_IBSI_MIRP) { ASSERT_NO_THROW(test_3d_ngldm_dump_ibsi_mirp()); }

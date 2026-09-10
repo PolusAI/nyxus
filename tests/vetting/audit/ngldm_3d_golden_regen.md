@@ -1,14 +1,18 @@
 # Regenerating the 3D NGLDM goldens
 
-One benchmark, and — uniquely in this series — no oracle goldens at all. Read
-`ngldm_3d_mirp_vetting_report.md` before touching anything here: the pinned values are known to be
-wrong, and are pinned deliberately as a change detector.
+Three golden tables on one benchmark: two MIRP oracle tables in `test_3d_ngldm_mirp.h`, one per
+config point, and the three drift guards in `test_3d_ngldm_regression.h`. Read
+`ngldm_3d_mirp_vetting_report.md` before touching any of them — which table a value belongs in
+follows from which config point produced it and whether a tool can judge it.
 
 ## Regression drift guards — `test_3d_ngldm_regression.h`
 
 Recipe `ngldm3d.regression_ut_phantom`: the segmented phantom
 (`tests/data/nifti/phantoms/ut_inten.nii` + `ut_mask57.nii`, label 57) at `GREYDEPTH=64`,
-`IBSI=false`. No oracle — Nyxus' own values.
+`IBSI=false`. No oracle — Nyxus' own values, and only for the three features no tool can judge
+(`3NGLDM_DCP`, `3NGLDM_GLM`, `3NGLDM_DCM`). The other sixteen are asserted against MIRP on this same
+fixture and config, so a snapshot of them would pin one Nyxus run to a second literal and add no
+coverage.
 
 ```
 runAllTests --gtest_filter=*3D_NGLDM_DUMP_REGRESSION*
@@ -18,10 +22,9 @@ runAllTests --gtest_filter=*3D_NGLDM_DUMP_REGRESSION*
 `ngldm_3d_regression_ref_vals` wants; paste it over the table. It uses the same settings the
 assertions use, so the two cannot drift apart.
 
-**Expect to run this once the implementation is fixed.** Two defects — the NGLD matrix built over the
-ROI bounding box instead of the ROI, and a 24-shift neighbourhood where 3D Chebyshev-1 has 26 — mean
-every number in the table changes when they are corrected. That is the intended trigger, not a
-surprise.
+Every value in the table moves if the NGLD matrix stops being built over the ROI, if the
+neighbourhood stops holding all 26 Chebyshev-1 shifts, or if the dependence count stops counting the
+centre voxel. That is what the `rel=1e-9` band is for.
 
 ## The retired coverage sweep
 
@@ -51,22 +54,40 @@ that guard was rebuilt to make true. Deleting a pin from the table now fails
 
 ## The MIRP comparison — `oracles/gen_ngldm3d_mirp.py`
 
-Recipe `ngldm3d.mirp_fbn64`. Nothing in the tree asserts against it today; it exists so the
-divergence stays reproducible and so the promotion can be re-run against a fixed implementation.
+Three recipes, one generator run:
 
-**It verifies the report, because that is the artifact it feeds.** The generator used to point its
-re-verification at `test_3d_ngldm_mirp.h`, a header that has never existed, so it always took the
-"nothing to verify" branch and exited 0 — its `ALL CHECKS PASSED` meant only that the script ran. It
-now parses the comparison table in `ngldm_3d_mirp_vetting_report.md`, checks every MIRP value quoted
-there against a fresh run at `rel<=1e-5` (the six significant figures the report quotes), checks the
-reverse direction for a feature MIRP produces that the report omits, and exits non-zero on either.
-Last run: 17 verified, 0 failed, 0 unproducible, 0 unquoted.
+- `ngldm3d.mirp_fbn64` — MIRP discretises the ROI itself at `fixed_bin_number` n=64, landing on
+  levels 1-64 against Nyxus' 21-64. The table this produces measures that gap.
+- `ngldm3d.mirp_samelevels` — MIRP is handed the levels Nyxus bins to, with
+  `base_discretisation_method="none"`, so both compute the NGLDM over identical levels. Worst
+  relative difference over the seventeen comparable features: **8.7e-16**.
+- `ngldm3d.mirp_ibsi_rawlevels` — the `IBSI=true` config point, where Nyxus does not bin at all and
+  the raw intensity is the grey level. Worst relative difference: **7.54e-15**, over 2001 grey rows
+  rather than 44.
 
-**The over-count is measurable without instrumenting anything.** `GLNU/GLNUN` and `DCNU/DCNUN` are
-both exactly `Ns` by construction (`f_GLNU /= Ns`, `f_GLNUN /= (Ns*Ns)`), and both give
-**Ns = 511,360** — so the matrix counts 1.8633× the ROI's 274,432 voxels, not the 2.008× the raw
-82×96×70 bounding box suggests. See the vetting report for why the difference is the box's one-voxel
-shell.
+`ngldm3d.mirp_samelevels` is the config-matched one and carries the family's 16 `vetted` rows, pinned
+in `test_3d_ngldm_mirp.h` at `rel=1e-3`. `ngldm3d.mirp_fbn64` asserts nothing: it is the measurement
+of the discretisation gap. The oracle's scope — the NGLDM given a set of levels, not the levels — is
+in the vetting report under "What this agreement covers".
+
+**It verifies every artifact it feeds, and every column of them.** For each of the two comparison
+tables in `ngldm_3d_mirp_vetting_report.md` it checks the MIRP column against a fresh run, the Nyxus
+column against the goldens pinned in the C++ headers, and the derived column recomputed from the two
+— the ratio as a value, the samelevels residual as an upper bound. It then checks the 16 goldens in
+`test_3d_ngldm_mirp.h` against the same run, fails on any feature MIRP can vet that the header does
+not pin (bar `3NGLDM_DCP`, the one deliberate omission), checks the reverse direction for a feature
+the report omits, and checks the measured grey-level span against the span the report states. Last
+run: **50 verified, 0 failed, 0 unproducible, 0 unquoted**.
+
+Verifying only the MIRP column would leave the other half of every published row unchecked — a
+perturbed Nyxus value or a perturbed ratio would both survive. Negative control: changing
+`3NGLDM_GLNU`'s Nyxus column to its pre-fix value and `3NGLDM_HDE`'s ratio to 9.99999 makes the run
+report `FAIL ... [nyxus]` and `FAIL ... [derived]` respectively.
+
+**`Ns` is readable off the pinned values, with nothing instrumented.** `GLNU/GLNUN` and `DCNU/DCNUN`
+are both exactly `Ns` by construction (`f_GLNU /= Ns`, `f_GLNUN /= (Ns*Ns)`), and both give
+**Ns = 274,432** — the ROI's voxel count, so every ROI voxel is a matrix entry and nothing outside the
+ROI is. It is the cheapest check that the matrix is built over the right set of centres.
 
 ```
 python tests/vetting/oracles/gen_ngldm3d_mirp.py
@@ -74,16 +95,12 @@ python tests/vetting/oracles/gen_ngldm3d_mirp.py
 
 Needs mirp 2.6.0: `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy`; the run's
 header line prints the mirp version actually installed, so the provenance is the run's own rather
-than this document's. The generator prints a paste-ready golden table and then verifies the MIRP
-values quoted in `ngldm_3d_mirp_vetting_report.md` — every quoted value against a fresh run at
-`rel<=1e-5`, plus the reverse direction, exiting non-zero on a mismatch and on a missing report.
-There is no `test_3d_ngldm_mirp.h` to check: the goldens above are printed for the day the
-implementation is fixed, not pinned today, and such a header should only be created when Nyxus
-actually agrees.
+than this document's.
 
 **Name mapping** — MIRP suffixes every NGLDM column with the neighbourhood and discretisation
-(`_d1_a0.0_3d_fbn_n64`). Match on the stem and check the suffix separately, or a changed bin count
-silently reads a column computed at another config:
+(`_d1_a0.0_3d_fbn_n64` when it discretises, `_d1_a0.0_3d` when it does not). Match on the stem and
+check the suffix separately, or a changed bin count silently reads a column computed at another
+config:
 
 | Nyxus | MIRP stem | | Nyxus | MIRP stem |
 |---|---|---|---|---|
@@ -97,8 +114,8 @@ silently reads a column computed at another config:
 | `3NGLDM_HDHGLE` | `ngl_hdhge` | | `3NGLDM_DCENT` | `ngl_dc_entr` |
 | | | | `3NGLDM_DCENE` | `ngl_dc_energy` |
 
-`3NGLDM_GLM` and `3NGLDM_DCM` have **no** MIRP counterpart and never will — MIRP's NGLDM emits no
-`gl_mean` / `dc_mean` column. They cannot be vetted against this tool even after the fix.
+`3NGLDM_GLM` and `3NGLDM_DCM` have **no** MIRP counterpart — MIRP's NGLDM emits no `gl_mean` /
+`dc_mean` column — so they cannot be vetted against this tool at any recipe.
 
 It reads the `.nii` with no NIfTI library (the mirp env has neither SimpleITK nor nibabel) by parsing
 the uncompressed NIfTI-1 header with numpy — the same approach as `gen_morphology3d_mirp.py`. Do not
@@ -106,14 +123,16 @@ reintroduce a two-env `.npy` hand-off.
 
 ## Sanity checks on any regenerated set
 
-- `3NGLDM_DCP` ≤ 1 by construction. It is currently exactly 1, which is why it is *not* useful as an
+- `GLNU/GLNUN` and `DCNU/DCNUN` are both `Ns`, and `Ns` is the ROI's voxel count, 274,432 on this
+  phantom. A set where they read the bounding box's 551,040 — or its 511,360-voxel interior — has the
+  matrix built over the wrong set of centres.
+- `3NGLDM_DCP` ≤ 1 by construction. It is exactly 1 here, which is why it is *not* useful as an
   oracle agreement — see the report.
-- The bounding-box-to-ROI ratio is the number to watch. On this phantom it is 551040/274432 = 2.008,
-  and `3NGLDM_DCNU` currently sits 2.09× above MIRP. If a future change fixes the ROI masking, that
-  ratio should collapse toward 1 across the family — a quick way to confirm the fix landed.
-- After the fix, re-run **both** commands above and compare feature by feature before promoting
-  anything. Promotion means adding `test_3d_ngldm_mirp.h`, setting `ORACLE_SUFFIX = {"mirp": "mirp"}`
-  in `audit/scan_ngldm3d_coverage.py`, and moving the 17 comparable rows to `status=vetted`.
+- `ngldm3d.mirp_samelevels` is the check with teeth: re-run the generator and confirm the seventeen
+  are still at machine precision before pinning anything.
+- If the discretisation gap is ever closed, `ngldm3d.mirp_fbn64` becomes assertable and its rows go
+  beside the samelevels ones rather than replacing them: SPEC 1 counts vetting per assertion, and the
+  two recipes establish different things.
 
 ## Coverage artifact
 
@@ -122,5 +141,5 @@ python tests/vetting/audit/scan_ngldm3d_coverage.py           # rewrite
 python tests/vetting/audit/scan_ngldm3d_coverage.py --check   # drift + acceptance check
 ```
 
-Its `ORACLE_SUFFIX` is deliberately empty, so `--check` currently enforces only that no row claims
-`vetted` without an oracle test. That is exactly the condition this PR restores.
+`ORACLE_SUFFIX` maps `mirp` to the `_mirp` suffix, so `--check` credits `test_3d_ngldm_mirp.h`'s 16
+assertions as oracle coverage and still rejects any row claiming `vetted` without one.

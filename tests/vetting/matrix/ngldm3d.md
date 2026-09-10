@@ -9,45 +9,79 @@ prepare_NGLDM_matrix_kit (NGLDM, greyLevelsLUT, Ng, Nr, r, STNGS_NGREYS(s), STNG
 ```
 
 Two, therefore: **grey binning** (`GREYDEPTH`, reaching the feature as `n_greys`) and **IBSI mode**
-(`IBSI`, which decides whether grey levels are the 1..Ng ladder or the ROI's distinct values).
-Everything else in `Fsettings` is ignored by this family, so it is not an axis and the matrix stays
-small.
+(`IBSI`, which `to_grayscale` reads as `disable_binning` — so it does not select a different ladder,
+it turns binning off and makes the raw intensity the grey level).
 
-Two things that would be axes in the IBSI definition are **not settable** here, and that is itself
-part of the verdict below:
+Two things that would be axes in the IBSI definition are **not settable** here, and that is part of
+the dispositions below:
 
-- the **neighbourhood distance** *d* is fixed by the `shifts` table in `3d_ngldm.cpp`;
+- the **neighbourhood distance** *d* is fixed by the `shifts` table in `3d_ngldm.cpp`, at the 26
+  voxels of Chebyshev distance 1;
 - the **coarseness parameter** *alpha* is fixed at 0 (an exact grey-level match is required).
+
+Both therefore match MIRP's `d1_a0.0` by construction, and the cross-product has no further
+dimensions to sweep.
 
 ## Config points
 
-| GREYDEPTH | IBSI | verdict | recipe / oracle |
+One row per Nyxus config point, verdict per SPEC §5.1.
+
+| GREYDEPTH | IBSI | verdict | oracle / reason |
 |---|---|---|---|
-| 64 | false | **VALID-prod-only** → regression | `ngldm3d.regression_ut_phantom`; all 19 features pinned in `test_3d_ngldm_regression.h` on `bench_ut57_3d` at `rel=1e-9` |
-| 64 | false | **VALID(mirp) in principle, FAILING in fact** | `ngldm3d.mirp_fbn64` — MIRP at `fixed_bin_number`, n=64, d=1, alpha=0 is config-matched to the row above, and disagrees on 16 of the 17 features it computes |
-| 0 (IBSI ladder) | true | **not exercised** | no 3D NGLDM assertion runs IBSI mode; the 2D family does (`ngldm.ibsi_phantom_2d`), the 3D one has no published consensus values to run against |
-| any | any | **INVALID** — no such point | *d* and *alpha* cannot be varied from settings (see above), so the cross-product has no further dimensions to sweep |
+| 64 | false | **VALID** | `mirp` at recipe `ngldm3d.mirp_samelevels` — 16 features `vetted` in `test_3d_ngldm_mirp.h` at `rel=1e-3`. The same point carries the family's three remaining drift guards, `3NGLDM_DCP` / `3NGLDM_GLM` / `3NGLDM_DCM`, on `bench_ut57_3d` at `rel=1e-9` (`ngldm3d.regression_ut_phantom`) — the only three no tool can judge |
+| any other | false | **VALID** — same cell | `GREYDEPTH` sets the ladder's height, not its kind. Every depth reaches MIRP the way `ngldm3d.mirp_samelevels` does, so it is one cell exercised at the depth the tests pin (64), not a family of cells |
+| any | true | **VALID** | `mirp` at recipe `ngldm3d.mirp_ibsi_rawlevels` — 16 features `vetted` in `test_3d_ngldm_mirp.h` at `rel=1e-3`, worst measured residual 7.54e-15. `IBSI` reaches `to_grayscale` as `disable_binning`, so this point does not bin: the raw intensity is the grey level (2001 distinct here) and MIRP at `base_discretisation_method="none"` matches by construction. `GREYDEPTH` is not read when `IBSI=true`, which is why the cell spans every depth |
 
-## Why the measured cell is a defect rather than a convention
+`d` and `alpha` add no rows: neither can be varied from settings, so there is no further cross-product
+and no `INVALID` cell to record.
 
-SPEC §5.2 says verdicts are measured, and the measurement here does not produce an agreement. The
-config-matched MIRP run disagrees by factors from 0.003x to 50x, and the cause is in Nyxus and
-identified — not a definitional difference that a band could honestly cover:
+## The two MIRP mappings of the `IBSI=false` point
 
-- `calc_ngld_matrix` iterates the ROI **bounding box** and explicitly does not skip background
-  voxels (`// Do not skip off-ROI pixels`), so 551 040 box voxels enter a matrix that IBSI defines
-  over the ROI's 274 432;
-- the 3D neighbourhood in `shifts` has **24** members, not 26 — the two pure-axial voxels
-  `(0,0,±1)` are absent, and `int maxNr = nsh + 1;` still carries a comment describing the 2D
-  count of 8.
+These are *mappings onto the reference tool*, not config points — the Nyxus side of both is the one
+`GREYDEPTH=64, IBSI=false` run in the first row above.
 
-So this family has no `vetted` row, every feature is a snapshot on the first cell, and
-`ngldm3d.mirp_fbn64` exists so the divergence stays reproducible and the promotion can be re-run
-against a fixed implementation. Evidence: `audit/ngldm_3d_mirp_vetting_report.md`. The defect is
-tracked for its own branch; pinning Nyxus' current numbers is a change detector, not an endorsement.
+| recipe | how MIRP is set | equivalent? |
+|---|---|---|
+| `ngldm3d.mirp_samelevels` | `base_discretisation_method="none"` over the grey levels Nyxus bins to | **Yes** — one ladder on both sides. This is what the 16 `vetted` rows assert, agreeing to a worst 8.7e-16 |
+| `ngldm3d.mirp_fbn64` | `fixed_bin_number` n=64, MIRP discretising the ROI itself | **No** — MIRP puts this ROI on levels 1-64 and Nyxus on 21-64, 44 distinct. Non-equivalent, so it carries no rows; kept because it is the measurement of that gap |
 
-## What would move a cell to VALID
+Nyxus reaches its levels through the loader's shift by the volume minimum (−1024 on this CT phantom)
+and then `to_grayscale(i, 0, ROI max, 64)`. The lower bin edge is 0 rather than the ROI minimum, and
+the shift shifts the ROI up the ladder — neither an NGLDM question, which is why the non-equivalence
+is recorded here rather than absorbed by a band.
 
-Fixing the two implementation defects above, then re-running `oracles/gen_ngldm3d_mirp.py`: the
-recipe, the fixture and the generator are already in place, so promotion is a re-measurement rather
-than new plumbing.
+## The two VALID cells establish different things
+
+`ngldm3d.mirp_samelevels` (the `IBSI=false` cell) is **scope-narrowed**, per SPEC §4, and the notes
+say so on the assertion, the registry row and the recipe. It covers the NGLD matrix — which voxels
+are centres, which neighbours count, how a dependence count maps to a matrix column — and the sixteen
+feature formulas over it. It does **not** cover the discretisation: the levels are an input to the
+comparison rather than a result of it, since the generator reproduces Nyxus' binning in numpy.
+
+`ngldm3d.mirp_ibsi_rawlevels` (the `IBSI=true` cell) is **not** narrowed, because there is no binning
+step to reproduce — `disable_binning` makes the raw intensity the grey level on both sides. It is the
+weaker discriminator of the two (83.46% of ROI voxels have no matching neighbour, maximum dependence
+17 of 26) and the wider in scope. Between them the family's whole config axis is asserted, and
+Nyxus' `GREYDEPTH` binning itself remains judged nowhere.
+
+## The three features with no oracle row
+
+- **`3NGLDM_DCP`** — Nyxus hard-codes `f_DCP = 1`, and MIRP returns 1 on any input where every voxel
+  has a same-level neighbour, at both config points. The agreement is real and cannot fail for the
+  reasons an assertion should fail, so it is a drift guard only.
+- **`3NGLDM_GLM`, `3NGLDM_DCM`** — MIRP's NGLDM emits no `gl_mean` / `dc_mean` column, so no tool
+  reproduces them at any recipe.
+
+These three are the whole of `ngldm3d.regression_ut_phantom`. The other sixteen keep no snapshot:
+they are asserted against MIRP on the same fixture and config, so a second literal for the same Nyxus
+run would add no path or config coverage.
+
+## What is left
+
+Every config point above is VALID and asserted. What remains is the non-equivalent MIRP mapping:
+making Nyxus' texture binning span the ROI's own intensity range would put both tools on one ladder
+at `fixed_bin_number` and make `ngldm3d.mirp_fbn64` assertable too. The recipe, the fixture and the
+generator are already in place, so that is a re-measurement rather than new plumbing, and its rows
+would sit beside the existing ones rather than replacing them (SPEC §1 counts vetting per assertion).
+
+Evidence for every measurement on this page: `audit/ngldm_3d_mirp_vetting_report.md`.
