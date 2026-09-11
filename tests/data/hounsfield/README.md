@@ -26,12 +26,52 @@ loader path (`RawNiftiLoader`/`NiftiLoader`).
 | File | Type | Notes |
 |---|---|---|
 | `ct3d_int16.nii` | 8×8×8 signed int16, `scl_slope=2`, `scl_inter=-1024` | stored `idx-200` (−200..311, crosses 0); true HU = 2·stored−1024 |
-| `mask3d.nii` | 8×8×8 uint8, all ones | single ROI over the whole volume |
+| `ct3d_frac.nii` | 8×8×8 signed int16, `scl_slope=0.5`, `scl_inter=-1024` | stored `idx` (0..511); physical = 0.5·idx−1024 over −1024..−768.5, half the voxels fractional |
+| `ct3d_nan.nii` | 8×8×8 float32, no rescale | `v(idx) = idx`, with NaN at 3, +Inf at 5, −Inf at 7 |
+| `mask3d.nii` | 8×8×8 uint8, all ones | single ROI over the whole volume, shared by all three |
 
 The non-unit `scl_slope` makes the HU rescale observable: in HU mode the loader maps each voxel to
 `u = round((2·stored − 1024) − floor(HU min)) = 2·stored + 400` (offset domain 0..1022, mean 511),
 whereas with the flag off it keeps the raw-stored (shifted) values (MAX 511). The 348-byte
 NIfTI-1 header was written by hand, so the fixtures carry no `nibabel` dependency.
+
+`ct3d_frac.nii` and `ct3d_nan.nii` are consumed by
+`tests/python/test_3d_nifti_offset_map_mechanics.py`, which pins the two properties of the offset
+map that `ct3d_int16.nii` cannot show:
+
+- **Which way the map narrows, and when.** A `scl_slope` of 2 makes every rescaled value integral,
+  so rounding and truncation agree on it. At 0.5 they do not: the offset is `floor(−1024) = −1024`
+  and the stored grey level is `round(0.5·idx)` under `--preserve-hu` (MAX −768, MEAN −896) against
+  `trunc(0.5·idx)` without it (MAX −769, MEAN −896.5). Both directions are pinned. The flag is what
+  selects the narrowing because `inten_scale` is 1 on the offset branch — a fraction dropped there
+  is unrecoverable — while a real-valued volume read *without* the flag has always truncated, which
+  is what the 3D texture goldens encode.
+- **Non-finite voxels.** They are left out of the scanned extrema and stored as grey level 0, so the
+  finite range stays `[0, 511]` and the mean is `(130816 − 3 − 5 − 7)/512 = 255.470703125`.
+
+Both were produced by patching `ct3d_int16.nii`'s own 352-byte header block — its `datatype`
+(offset 70), `bitpix` (72), `scl_slope` (112), `scl_inter` (116), `cal_max` (124) and `cal_min`
+(128) — and appending new little-endian payload, so every field the loader does not read stays
+byte-identical to the fixture already in the tree:
+
+```python
+import struct, math, pathlib
+hdr = bytearray(pathlib.Path("ct3d_int16.nii").read_bytes()[:352])   # 348 header + 4 extender
+
+def write(name, datatype, bitpix, slope, inter, payload, cal_min, cal_max):
+    h = bytearray(hdr)
+    struct.pack_into("<h", h, 70, datatype); struct.pack_into("<h", h, 72, bitpix)
+    struct.pack_into("<f", h, 112, slope);   struct.pack_into("<f", h, 116, inter)
+    struct.pack_into("<f", h, 124, cal_max); struct.pack_into("<f", h, 128, cal_min)
+    pathlib.Path(name).write_bytes(bytes(h) + payload)
+
+write("ct3d_frac.nii", 4, 16, 0.5, -1024.0,
+      struct.pack("<512h", *range(512)), -1024.0, -768.5)
+
+v = [float(i) for i in range(512)]
+v[3], v[5], v[7] = math.nan, math.inf, -math.inf
+write("ct3d_nan.nii", 16, 32, 1.0, 0.0, struct.pack("<512f", *v), 0.0, 511.0)
+```
 
 ## Real-scanner fixture
 

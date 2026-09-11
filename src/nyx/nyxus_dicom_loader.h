@@ -1,5 +1,6 @@
 #ifdef DICOM_SUPPORT
 #pragma once
+#include <cmath>
 #include "dcmtk/dcmdata/dctk.h"
 #include "dcmtk/dcmjpeg/djdecode.h"  /* for JPEG decoders */
 #include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
@@ -26,9 +27,10 @@ public:
         size_t numberThreads,
         std::string const& filePath,
         double inten_offset = 0.0,		// the offset the scan recorded for this slide
-        bool rescale_to_physical = true)		// off for a mask slide, whose pixels are labels
+        bool rescale_to_physical = true,		// off for a mask slide, whose pixels are labels
+        bool round_offset = false)		// offset map: round to nearest instead of truncating
         : AbstractTileLoader<DataType>("NyxusGrayscaleDicomLoader", numberThreads, filePath),
-        inten_offset_(inten_offset), rescale_(rescale_to_physical)
+        inten_offset_(inten_offset), rescale_(rescale_to_physical), round_offset_(round_offset)
     {
         // register JPEG decoder
         DJDecoderRegistration::registerCodecs();
@@ -265,10 +267,16 @@ private:
                 for (size_t i=0; i<data_length; i++){
                     // Rescale stored -> physical units, then shift by the recorded offset;
                     // sub-minimum values clamp to 0 instead of wrapping on the unsigned cast.
+                    // RescaleSlope / RescaleIntercept come straight off the tags, so an unusual
+                    // file can make this non-finite, and converting one is undefined: it takes
+                    // grey level 0, the convention every load-time map uses. round_offset_ rounds
+                    // to nearest under --preserve-hu, where a fractional slope (PET, SUV) would
+                    // otherwise be truncated away with a scale-1 inverse unable to recover it.
                     double hu = rescaleSlope_ * (double)buffer[i] + rescaleIntercept_;
                     double y = hu - inten_offset_;
+                    if (! std::isfinite (y)) y = 0.0;
                     if (y < 0.0) y = 0.0;
-                    *(dest+i) = (DataType) y;
+                    *(dest+i) = round_offset_ ? (DataType) std::llround (y) : (DataType) y;
                 }
             } else {
                 std::stringstream message;
@@ -337,5 +345,6 @@ private:
     double rescaleSlope_ = 1.0, rescaleIntercept_ = 0.0;
     double inten_offset_ = 0.0;
     bool rescale_ = true;
+    bool round_offset_ = false;		// offset map: round to nearest (--preserve-hu) instead of truncating
 };
 #endif // DICOM_SUPPORT

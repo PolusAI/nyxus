@@ -105,17 +105,16 @@ void D3_VoxelIntensityFeatures::report_in_source_domain (const LR& r, const Data
 	// Ratios: same definitions as above, recomputed from the mapped parts. None of them is
 	// invariant, and QCOD and PIU are not even meaningful once intensities can be negative --
 	// which is a property of the measure, not something the domain should hide.
-	// The two guarded quotients take the same zero-denominator convention the grey-level pass
-	// takes, so neither path can hand out a NaN. The two need not arrive at the same number,
-	// and should not: an ROI of one intensity is degenerate in grey levels -- MIN, MAX and both
-	// quartiles all land on 0, which is what trips the guard -- and perfectly ordinary in the
-	// slide's own domain, where those parts sit at the offset and each ratio is defined. PIU
-	// there reads 100, which is the honest answer for a uniform ROI. COV is the same story with
-	// no guard on either path: its denominator, the mean, is zero only in grey levels.
-	// Both guards test a sum rather than degeneracy, so a signed ROI symmetric about zero takes
-	// them too. Neither measure is defined on signed intensities anyway, and 0 is a better
-	// answer for one than the infinity the division would produce.
-	val_COV = val_STANDARD_DEVIATION / val_MEAN;
+	// All three take the same zero-denominator convention the grey-level pass takes, so neither
+	// path can hand out a NaN. They need not arrive at the same number, and should not: an ROI of
+	// one intensity is degenerate in grey levels -- MIN, MAX, the mean and both quartiles all land
+	// on 0, which is what trips the guards -- and perfectly ordinary in the volume's own domain,
+	// where those parts sit at the offset and each ratio is defined. PIU there reads 100, which is
+	// the honest answer for a uniform ROI.
+	// Each guard tests its denominator rather than degeneracy, so a signed ROI whose parts cancel
+	// takes it too. None of the three is defined on signed intensities anyway, and 0 is a better
+	// answer than the infinity or NaN the division would produce.
+	val_COV = val_MEAN != 0.0 ? val_STANDARD_DEVIATION / val_MEAN : 0.0;
 	val_QCOD = (val_P75 + val_P25) != 0.0 ? (val_P75 - val_P25) / (val_P75 + val_P25) : 0.0;
 	val_UNIFORMITY_PIU = (val_MAX + val_MIN) != 0.0 ? (1.0 - (val_MAX - val_MIN) / (val_MAX + val_MIN)) * 100.0 : 0.0;
 }
@@ -180,7 +179,12 @@ void D3_VoxelIntensityFeatures::calculate_grey_levels (LR &r, const Fsettings& s
 	val_VARIANCE_BIASED = n > 1 ? var / n : 0.0;
 	val_STANDARD_DEVIATION = sqrt(val_VARIANCE);
 	val_STANDARD_DEVIATION_BIASED = sqrt(val_VARIANCE_BIASED);
-	val_COV = val_STANDARD_DEVIATION / mean_;
+	// An ROI whose grey levels are all 0 leaves the mean at 0, exactly as it leaves the QCOD and
+	// PIU denominators below. That is an ordinary ROI once a load-time offset is in play -- the
+	// map puts the volume's own minimum on grey level 0 -- and on an identity-mapped volume it is
+	// any ROI that is uniformly 0. The quotient says what a zero denominator means rather than
+	// emitting a NaN the output sanitizer would silently turn into the no-value substitute.
+	val_COV = mean_ != 0.0 ? val_STANDARD_DEVIATION / mean_ : 0.0;
 
 	// --Standard error
 	val_STANDARD_ERROR = val_STANDARD_DEVIATION / sqrt(n);
@@ -331,7 +335,12 @@ void D3_VoxelIntensityFeatures::osized_calculate_grey_levels (LR & r, const Fset
 	val_VARIANCE_BIASED = n > 1 ? var / n : 0.0;
 	val_STANDARD_DEVIATION = sqrt(val_VARIANCE);
 	val_STANDARD_DEVIATION_BIASED = sqrt(val_VARIANCE_BIASED);
-	val_COV = val_STANDARD_DEVIATION / mean_;
+	// An ROI whose grey levels are all 0 leaves the mean at 0, exactly as it leaves the QCOD and
+	// PIU denominators below. That is an ordinary ROI once a load-time offset is in play -- the
+	// map puts the volume's own minimum on grey level 0 -- and on an identity-mapped volume it is
+	// any ROI that is uniformly 0. The quotient says what a zero denominator means rather than
+	// emitting a NaN the output sanitizer would silently turn into the no-value substitute.
+	val_COV = mean_ != 0.0 ? val_STANDARD_DEVIATION / mean_ : 0.0;
 
 	// --Standard error
 	val_STANDARD_ERROR = val_STANDARD_DEVIATION / sqrt(n);

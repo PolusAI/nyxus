@@ -41,12 +41,14 @@ public:
         double _inten_offset = 0.0,
         double _inten_max = 1.0,
         double _target_dyn_range = 1e4,
-        bool _quantize = false)
+        bool _quantize = false,
+        bool _round_offset = false)
         : AbstractTileLoader<DataType>("NyxusOmeZarrLoader", numberThreads, filePath),
         inten_offset_(_inten_offset),
         inten_max_(_inten_max),
         target_dyn_range_(_target_dyn_range),
-        quantize_(_quantize)
+        quantize_(_quantize),
+        round_offset_(_round_offset)
     {
         // Open the file
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
@@ -237,6 +239,7 @@ private:
     // left in its default mode) or carried on the offset map. SlideProps::inten_map is where the
     // choice is made and recorded; ImageLoader::open passes it here, exactly as it does for TIFF.
     bool quantize_ = false;
+    bool round_offset_ = false;		// offset map: round to nearest (--preserve-hu) instead of truncating
 
     // The offset map, shared by the real-valued and native-integer paths: u = trunc(x - offset),
     // keeping 1 grey level == 1 intensity unit and clamping sub-minimum outliers to 0 instead of
@@ -246,13 +249,13 @@ private:
     DataType map_intensity (double x) const
     {
         // As in the TIFF loaders: a non-finite sample takes grey level 0 rather than an
-        // undefined conversion.
+        // undefined conversion, and the offset branch rounds only under --preserve-hu.
         if (! std::isfinite (x)) return (DataType) 0;
         if (! quantize_)
         {
             double y = x - inten_offset_;
             if (y < 0.0) y = 0.0;
-            return (DataType) y;
+            return round_offset_ ? (DataType) std::llround (y) : (DataType) y;
         }
         double t = x < inten_offset_ ? inten_offset_ : x;
         t = t > inten_max_ ? inten_max_ : t;

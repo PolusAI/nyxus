@@ -17,12 +17,12 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 
 ---
 
-## A. Test files no registry row references — 29 files, 94 test functions
+## A. Test files no registry row references — 30 files, 98 test functions
 
 Both totals are the sum of the two tables below, counting each distinct file once and
 skipping any row struck through as closed, so they can be recomputed from the tables.
 
-### A.1 Correctly absent — plumbing, fixtures and framework self-tests (22 files)
+### A.1 Correctly absent — plumbing, fixtures and framework self-tests (23 files)
 
 These assert no feature value, so they have no `(feature × config × oracle)` row by construction
 (SPEC §1). Recording them here so their absence is a documented decision, not an oversight.
@@ -39,6 +39,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_2d_intensity_degenerate_roi_mechanics.h` | 3 | the intensity ratios on a populated ROI of one grey level, read before the output NaN substitution, and the empty-ROI guard |
 | `test_2d_nonfinite_pixels_mechanics.py` | 6 | a real-valued slide holding NaN or an infinity, segmented and whole-slide; spans the scan and every load-time map, so per-feature rows would be meaningless |
 | `test_2d_intensity_constant_roi_mechanics.py` | 4 | an ROI of one intensity end to end, on a mapped and on an identity-map slide, through the in-RAM and the out-of-core paths; pins the reported values, not an oracle |
+| `test_3d_nifti_offset_map_mechanics.py` | 4 | the NIfTI offset map's narrowing — a fractional `scl_slope` rounds under `--preserve-hu` and truncates without it, and a non-finite voxel takes grey level 0 either way; loader plumbing, no oracle |
 | `test_roi_blacklist_mechanics.h` | 1 | ROI blacklisting |
 | `test_2d_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
 | `test_2d_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |

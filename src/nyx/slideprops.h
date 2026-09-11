@@ -89,7 +89,10 @@ public:
 	// [fpmin, fpmax] and rescales, exactly as NyxusGrayscaleTiffTileLoader::map_real_intensity
 	// and NyxusOmeZarrLoader::map_intensity do -- clamping only below would let an intensity
 	// above fpmax map past the top grey level the loader can actually store. The offset branch
-	// clamps below only, since that is all its loaders do. The truncating cast is theirs too.
+	// clamps below only, since that is all its loaders do, and narrows the way they narrow:
+	// rounding to nearest under preserve_hu, truncating otherwise. A forward map that rounded
+	// where its loader truncates would put the vROI's grey range a level away from the levels
+	// actually stored.
 	unsigned int to_grey_level (double x) const
 	{
 		// The loaders store a non-finite sample as grey level 0; so does this.
@@ -105,7 +108,7 @@ public:
 		}
 		double y = (x - inten_offset) / inten_scale;
 		if (y < 0.0) y = 0.0;
-		return (unsigned int) y;
+		return preserve_hu ? (unsigned int) std::llround (y) : (unsigned int) y;
 	}
 
 	// The inverse: one stored grey level -> this slide's own intensity domain.
