@@ -36,13 +36,15 @@ public:
         double _floatpt_image_min_intensity,
         double _floatpt_image_max_intensity,
         double _floatpt_image_target_dyn_range,
-        bool _quantize = false)			// min-max rescale a real-valued image, instead of the offset map
+        bool _quantize = false,			// min-max rescale a real-valued image, instead of the offset map
+        bool _round_offset = false)		// offset map: round to nearest instead of truncating
         : AbstractTileLoader<DataType>("NyxusGrayscaleTiffTileLoader", numberThreads, filePath),
         permit_floatpt_pixels (permit_fp),
         floatpt_image_min_intensity(_floatpt_image_min_intensity),
         floatpt_image_max_intensity(_floatpt_image_max_intensity),
         floatpt_image_target_dyn_range(_floatpt_image_target_dyn_range),
-        quantize(_quantize)
+        quantize(_quantize),
+        round_offset(_round_offset)
     {
         short samplesPerPixel = 0;
 
@@ -359,11 +361,18 @@ private:
     // left in its default mode) or carried on the offset map below. SlideProps::inten_map is
     // where the choice is made and recorded; ImageLoader::open passes it here.
     bool quantize = false;
+    bool round_offset = false;		// offset map: round to nearest (--preserve-hu) instead of truncating
 
-    // The offset map, shared by the real-valued and native-integer paths: u = trunc(x - min),
-    // keeping 1 grey level == 1 intensity unit and clamping sub-minimum outliers (negative CT
-    // values among them) to 0 instead of wrapping on the unsigned cast. The intensity families
-    // add the offset back, so reported statistics are in the slide's own domain.
+    // The offset map, shared by the real-valued and native-integer paths, keeping 1 grey level ==
+    // 1 intensity unit and clamping sub-minimum outliers (negative CT values among them) to 0
+    // instead of wrapping on the unsigned cast. The intensity families add the offset back, so
+    // reported statistics are in the slide's own domain.
+    //
+    // round_offset selects the narrowing. Under --preserve-hu it rounds to nearest: that mode
+    // exists to carry absolute intensities, inten_scale is 1 so the inverse cannot recover a
+    // dropped fraction, and a fractional sample is what a non-integer DICOM RescaleSlope or NIfTI
+    // scl_slope produces. Otherwise it truncates, which is what a real-valued slide read without
+    // the flag has always done.
     DataType offset_map (double x) const
     {
         // A non-finite sample carries no intensity, and converting one to an unsigned integer
@@ -372,7 +381,7 @@ private:
         if (! std::isfinite (x)) return (DataType) 0;
         double y = x - floatpt_image_min_intensity;
         if (y < 0.0) y = 0.0;
-        return (DataType) y;
+        return round_offset ? (DataType) std::llround (y) : (DataType) y;
     }
 
     // Map one real-valued pixel to the integer feature domain.
@@ -408,12 +417,14 @@ public:
         double _inten_offset = 0.0,
         double _inten_max = 1.0,
         double _target_dyn_range = 1e4,
-        bool _quantize = false)
+        bool _quantize = false,
+        bool _round_offset = false)
         : AbstractTileLoader<DataType>("NyxusGrayscaleTiffStripLoader", numberThreads, filePath),
         inten_offset_(_inten_offset),
         inten_max_(_inten_max),
         target_dyn_range_(_target_dyn_range),
-        quantize_(_quantize)
+        quantize_(_quantize),
+        round_offset_(_round_offset)
     {
         short samplesPerPixel = 0;
 
@@ -695,17 +706,19 @@ private:
         inten_max_ = 1.0,
         target_dyn_range_ = 1e4;
     bool quantize_ = false;
+    bool round_offset_ = false;		// offset map: round to nearest (--preserve-hu) instead of truncating
 
     DataType map_intensity (double x) const
     {
         // As in the tile loader above: a non-finite sample takes grey level 0 rather than an
-        // undefined conversion.
+        // undefined conversion, and the offset branch rounds only under --preserve-hu, so a
+        // tiled and a stripped read of the same slide store the same grey levels.
         if (! std::isfinite (x)) return (DataType) 0;
         if (! quantize_)
         {
             double y = x - inten_offset_;
             if (y < 0.0) y = 0.0;
-            return (DataType) y;
+            return round_offset_ ? (DataType) std::llround (y) : (DataType) y;
         }
         double t = x < inten_offset_ ? inten_offset_ : x;
         t = t > inten_max_ ? inten_max_ : t;

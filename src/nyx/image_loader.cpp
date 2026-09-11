@@ -33,13 +33,20 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			fpmin = p.inten_offset,
 			fpmax = quantize ? p.inten_offset + p.inten_scale * dr : p.max_preroi_inten;
 
+		// How the offset branch narrows. preserve_hu exists to carry absolute intensities, so it
+		// rounds to nearest: inten_scale is 1 there and the inverse cannot recover a fraction a
+		// truncating cast drops, which is what a fractional DICOM RescaleSlope or NIfTI scl_slope
+		// produces. Without the flag a real-valued slide truncates, as it always has.
+		// SlideProps::to_grey_level() reads p.preserve_hu directly and narrows the same way.
+		bool round_offset = p.preserve_hu;
+
 		if (ext == ".zarr" || ext == ".ome.zarr")
 		{
 			#ifdef OMEZARR_SUPPORT
 				// Zarr takes the same map as TIFF. It used to copy each sample straight into the
 				// unsigned destination type, which wrapped a signed dataset's negatives and dropped
 				// a real-valued one's fraction.
-				intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath, fpmin, fpmax, dr, quantize);
+				intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath, fpmin, fpmax, dr, quantize, round_offset);
 			#else
 				std::string erm = "This version of Nyxus was not build with OmeZarr support";
 				#ifdef WITH_PYTHON_H
@@ -55,7 +62,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 					// A DICOM slide always carries physical units, so it always takes the
 					// offset map recorded by the scan: rescale to true intensities, then shift
 					// by p.inten_offset (0 unless the slide's own minimum is negative).
-					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath, p.inten_offset);
+					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath, p.inten_offset, true, round_offset);
 				#else
 					std::string erm = "This version of Nyxus was not build with DICOM support";
 					#ifdef WITH_PYTHON_H
@@ -69,7 +76,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 				{
 					// Same as DICOM: rescale to true intensities, then shift by the offset the
 					// scan recorded, so a CT volume reaches the features in Hounsfield units.
-					intFL = new NiftiLoader<uint32_t> (int_fpath, p.inten_offset);
+					intFL = new NiftiLoader<uint32_t> (int_fpath, p.inten_offset, true, round_offset);
 				}
 				else 
 				{
@@ -84,11 +91,12 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 							fpmin,
 							fpmax,
 							dr,
-							quantize);
+							quantize,
+							round_offset);
 					} 
 					else 
 					{
-						intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, fpmin, fpmax, dr, quantize);
+						intFL = new NyxusGrayscaleTiffStripLoader<uint32_t>(n_threads, int_fpath, fpmin, fpmax, dr, quantize, round_offset);
 					}
 				}
 	}
