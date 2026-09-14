@@ -27,8 +27,8 @@ public:
     NyxusGrayscaleDicomLoader(
         size_t numberThreads,
         std::string const& filePath,
-        double inten_offset = 0.0,		// the offset the scan recorded for this slide
-        bool rescale_to_physical = true,		// off for a mask slide, whose pixels are labels
+        double inten_offset = 0.0,		// the shift the scan recorded: physical units, or stored units with the rescale off
+        bool rescale_to_physical = true,		// off for a mask slide, whose pixels are labels, and on the stored map
         bool round_offset = false)		// offset map: round to nearest instead of truncating
         : AbstractTileLoader<DataType>("NyxusGrayscaleDicomLoader", numberThreads, filePath),
         inten_offset_(inten_offset), rescale_(rescale_to_physical), round_offset_(round_offset)
@@ -266,7 +266,9 @@ private:
             // Get ahold of the raw pointer
                 DataType* dest = dest_as_vector.data();
                 for (size_t i=0; i<data_length; i++){
-                    // Rescale stored -> physical units, then shift by the recorded offset.
+                    // Rescale stored -> physical units, then shift by the recorded offset. With
+                    // the rescale off (a mask, or the stored map) the slope and intercept are the
+                    // identity and the stored integers are shifted exactly.
                     // RescaleSlope / RescaleIntercept come straight off the tags, so an unusual
                     // file can put a non-finite or out-of-range value here; Nyxus::grey_level()
                     // takes the first to 0 and saturates the second, as every load-time map does.
@@ -338,8 +340,9 @@ private:
     int32_t numFrames_ = 0;
     bool isSigned_ = false;
 
-    // Physical-unit rescale, and the offset the features add back (SlideProps::inten_offset,
-    // 0 unless this slide's own minimum is negative).
+    // Physical-unit rescale, and the shift the recorded map applies: SlideProps::inten_offset on the
+    // offset map (0 unless this slide's own minimum is negative), or SlideProps::inten_stored_shift
+    // on the stored map, where the rescale is off and lives in the recorded inverse instead.
     double rescaleSlope_ = 1.0, rescaleIntercept_ = 0.0;
     double inten_offset_ = 0.0;
     bool rescale_ = true;

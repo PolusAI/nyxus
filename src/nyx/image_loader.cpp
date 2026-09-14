@@ -40,6 +40,13 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 		// SlideProps::to_grey_level() reads p.preserve_hu directly and narrows the same way.
 		bool round_offset = p.preserve_hu;
 
+		// The header-rescaled formats take one of two maps. On the stored map the loader leaves the
+		// rescale off and shifts the stored integers by inten_stored_shift, so nothing is narrowed;
+		// on the offset map it rescales to physical units and shifts by inten_offset.
+		bool stored = p.inten_map == IntenMap::stored;
+		double medical_shift = stored ? p.inten_stored_shift : p.inten_offset;
+		bool medical_rescale = ! stored;
+
 		if (ext == ".zarr" || ext == ".ome.zarr")
 		{
 			#ifdef OMEZARR_SUPPORT
@@ -59,10 +66,9 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			if (ext == ".dcm" || ext == ".dicom")
 			{
 				#ifdef DICOM_SUPPORT
-					// A DICOM slide always carries physical units, so it always takes the
-					// offset map recorded by the scan: rescale to true intensities, then shift
-					// by p.inten_offset (0 unless the slide's own minimum is negative).
-					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath, p.inten_offset, true, round_offset);
+					// A DICOM slide carries physical units through its rescale tags, so it takes the
+					// stored map, or the offset map under preserve_hu.
+					intFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, int_fpath, medical_shift, medical_rescale, round_offset);
 				#else
 					std::string erm = "This version of Nyxus was not build with DICOM support";
 					#ifdef WITH_PYTHON_H
@@ -74,9 +80,9 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 			else
 				if (ext == ".nii" || ext == ".nii.gz")
 				{
-					// Same as DICOM: rescale to true intensities, then shift by the offset the
-					// scan recorded, so a CT volume reaches the features in Hounsfield units.
-					intFL = new NiftiLoader<uint32_t> (int_fpath, p.inten_offset, true, round_offset);
+					// Same as DICOM for an integer volume. A real-valued one never takes the stored
+					// map, so it rescales and shifts by the offset the scan recorded.
+					intFL = new NiftiLoader<uint32_t> (int_fpath, medical_shift, medical_rescale, round_offset);
 				}
 				else 
 				{

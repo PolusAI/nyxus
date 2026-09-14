@@ -22,17 +22,18 @@ against stays auditable.
 ### `ct_frac.dcm` — the one DICOM fixture that does not encode that field
 
 Every other DICOM fixture has an integral `RescaleSlope`, so after the rescale and the offset
-every value is an integer, and rounding and truncation store the same grey level. That leaves
-the loader's narrowing invisible on DICOM — which matters because a PET or SUV series routinely
-carries a fractional slope, and `inten_scale` is 1 on the offset map, so a fraction the narrowing
-drops cannot be recovered on the way out.
+every value is an integer, and the loader's narrowing is invisible on them. A PET or SUV series
+routinely carries a fractional slope, and that is where the two load-time maps part.
 
 `ct_frac.dcm` is 16×16 uint16 with stored `idx` (0..255), `RescaleSlope=0.5` and
 `RescaleIntercept=-1024`, so the physical value is `0.5·idx − 1024` over −1024..−896.5 and half
-the pixels are fractional. With the scanned minimum floored as the offset the loader narrows
-`y = 0.5·idx`: under `--preserve-hu` it rounds (idx 1 → 1, idx 3 → 2, idx 255 → 128), without it
-it truncates (0, 1, 127). `tests/test_2d_hu_mechanics.h` pins both directions against the same
-pixels, with idx 2 (`y = 1`) as the control where the two agree.
+the pixels are fractional. Without `--preserve-hu` the slide takes the stored map: the grey level
+is `idx` itself and the recorded inverse `−1024 + 0.5·u` reads every pixel back exactly. Under
+`--preserve-hu` it takes the offset map, where `inten_scale` is 1: with the scanned minimum floored
+as the offset the loader narrows `y = 0.5·idx` to the nearest integer (idx 1 → 1, idx 3 → 2,
+idx 255 → 128). `tests/test_2d_hu_mechanics.h` pins both maps end to end, and pins the loader's
+rescale-then-shift narrowing both ways — rounding, and truncating (0, 1, 127) with rounding off —
+against the same pixels, with idx 2 (`y = 1`) as the control where the two agree.
 
 It was derived from `ct_u16.dcm` with pydicom, which keeps every tag the loader does not read
 byte-for-byte as in the fixture already in the tree:
@@ -60,22 +61,23 @@ loader path (`RawNiftiLoader`/`NiftiLoader`).
 
 The non-unit `scl_slope` makes the HU rescale observable: in HU mode the loader maps each voxel to
 `u = round((2·stored − 1024) − floor(HU min)) = 2·stored + 400` (offset domain 0..1022, mean 511),
-whereas with the flag off it keeps the raw-stored (shifted) values (MAX 511). The 348-byte
-NIfTI-1 header was written by hand, so the fixtures carry no `nibabel` dependency.
+whereas with the flag off it takes the stored map and keeps the stored values shifted by their
+minimum, `u = stored + 200` (0..511), with the slope carried in the recorded inverse. Both report
+the same Hounsfield values. The 348-byte NIfTI-1 header was written by hand, so the fixtures carry
+no `nibabel` dependency.
 
 `ct3d_frac.nii` and `ct3d_nan.nii` are consumed by
-`tests/python/test_3d_nifti_offset_map_mechanics.py`, which pins the two properties of the offset
-map that `ct3d_int16.nii` cannot show:
+`tests/python/test_3d_nifti_offset_map_mechanics.py`, which pins the two properties of the load-time
+maps that `ct3d_int16.nii` cannot show:
 
-- **Which way the map narrows, and when.** A `scl_slope` of 2 makes every rescaled value integral,
-  so rounding and truncation agree on it. At 0.5 they do not: the offset is `floor(−1024) = −1024`
-  and the stored grey level is `round(0.5·idx)` under `--preserve-hu` (MAX −768, MEAN −896) against
-  `trunc(0.5·idx)` without it (MAX −769, MEAN −896.5). Both directions are pinned. The flag is what
-  selects the narrowing because `inten_scale` is 1 on the offset branch — a fraction dropped there
-  is unrecoverable — while a real-valued volume read *without* the flag has always truncated, which
-  is what the 3D texture goldens encode.
-- **Non-finite voxels.** They are left out of the scanned extrema and stored as grey level 0, so the
-  finite range stays `[0, 511]` and the mean is `(130816 − 3 − 5 − 7)/512 = 255.470703125`.
+- **What a fractional value reads back as.** A `scl_slope` of 2 makes every rescaled value integral.
+  At 0.5 it is not. Under `--preserve-hu` the offset is `floor(−1024) = −1024` and the stored grey
+  level is `round(0.5·idx)` (MAX −768, MEAN −896): `inten_scale` is 1 on the offset map, so a
+  fraction dropped there is unrecoverable. Without the flag the stored map keeps `idx` as the grey
+  level and reports the fractions exactly (MAX −768.5, MEAN −896.25). Both are pinned.
+- **Non-finite voxels.** `ct3d_nan.nii` is float32, so it takes the offset map either way. They are
+  left out of the scanned extrema and stored as grey level 0, so the finite range stays `[0, 511]`
+  and the mean is `(130816 − 3 − 5 − 7)/512 = 255.470703125`.
 
 Both were produced by patching `ct3d_int16.nii`'s own 352-byte header block — its `datatype`
 (offset 70), `bitpix` (72), `scl_slope` (112), `scl_inter` (116), `cal_max` (124) and `cal_min`

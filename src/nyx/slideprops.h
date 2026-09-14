@@ -10,7 +10,8 @@ enum class IntenMap
 {
 	native,		// stored as they are (in-memory montage input, which no tile loader ever mapped)
 	offset,		// shifted by the floored slide minimum so negatives survive the unsigned cast
-	quantized	// a floating-point range hard-clamped and rescaled into [0, target dynamic range]
+	quantized,	// a floating-point range hard-clamped and rescaled into [0, target dynamic range]
+	stored		// a header-rescaled integer slide's stored samples, shifted; the rescale lives in the inverse
 };
 
 class SlideProps
@@ -35,7 +36,11 @@ public:
 		inten_scale = 1.0;			// identity until the scan records the load-time map
 		inten_offset = 0.0;
 		inten_top_grey = 0.0;
+		inten_stored_shift = 0.0;
 		inten_map = IntenMap::native;
+		integer_rescale = false;
+		rescale_slope = 1.0;
+		rescale_intercept = 0.0;
 		slide_w = slide_h = volume_d = 0;
 		max_roi_area = 0;
 		n_rois = 0;
@@ -59,11 +64,17 @@ public:
 	// unsigned int grey-minning
 	bool fp_phys_pivoxels;
 
-	// Asks a floating-point slide to be carried as 1 grey level == 1 intensity unit
-	// (offset by the floored slide minimum) instead of being min-max rescaled into
-	// [0, target dynamic range], so absolute intensities survive the load. Integer
-	// slides and medical volumes (DICOM, NIfTI) are offset-preserved regardless.
+	// Asks a slide to be carried as 1 grey level == 1 intensity unit (offset by the floored
+	// slide minimum). A floating-point slide takes that map instead of being min-max rescaled
+	// into [0, target dynamic range]; a header-rescaled integer slide (DICOM, NIfTI) takes it
+	// instead of the stored map. Other integer slides take the offset map regardless.
 	bool preserve_hu;
+
+	// Set by the scan when the slide stores integer samples that a header rescale carries into
+	// physical units: physical = rescale_slope * stored + rescale_intercept (DICOM RescaleSlope /
+	// RescaleIntercept, NIfTI scl_slope / scl_inter). The scanned extrema are physical either way.
+	bool integer_rescale;
+	double rescale_slope, rescale_intercept;
 
 	// The load-time map that turned this slide's own intensities into the unsigned grey
 	// levels the pipeline stores, held as its inverse: intensity = inten_offset +
@@ -80,9 +91,14 @@ public:
 	// alone cannot say where that clamp sits.
 	double inten_top_grey;
 
-	// Which of the three load-time maps produced them. The inverse above is all the feature
-	// side needs; the loaders need the branch itself, since the quantized map also clamps at
-	// its upper end while the offset map only clamps below.
+	// The stored map's shift, in stored units: the loader keeps grey level = stored - shift, with
+	// the header rescale left off. Unused (0) on the other maps, whose loaders shift by
+	// inten_offset in the slide's own domain.
+	double inten_stored_shift;
+
+	// Which of the load-time maps produced them. The inverse above is all the feature side needs;
+	// the loaders need the branch itself, since the quantized map also clamps at its upper end,
+	// the offset map only clamps below, and the stored map shifts before any rescale.
 	IntenMap inten_map;
 
 	// The forward map: one intensity of this slide -> the grey level the loader stores for it,
@@ -93,13 +109,16 @@ public:
 	// clamps below only, since that is all its loaders do, and narrows the way they narrow:
 	// rounding to nearest under preserve_hu, truncating otherwise. A forward map that rounded
 	// where its loader truncates would put the vROI's grey range a level away from the levels
-	// actually stored.
+	// actually stored. The stored branch rounds: its loaders store exact integers, and dividing a
+	// physical value by the slope recovers one only to within floating-point error.
 	unsigned int to_grey_level (double x) const
 	{
 		// The loaders store a non-finite sample as grey level 0; so does this. It has to run ahead of
 		// the quantized clamp, which would otherwise store +Inf as the top grey level.
 		if (! std::isfinite (x))
 			return 0u;
+		if (inten_map == IntenMap::stored)
+			return Nyxus::grey_level_rounded<unsigned int> ((x - inten_offset) / inten_scale);
 		if (inten_map == IntenMap::quantized)
 		{
 			// fpmax as ImageLoader::open reconstructs it, so both sides clamp at the same value
@@ -129,9 +148,13 @@ public:
 		min_allpix_inten = scanned.min_allpix_inten;
 		fp_phys_pivoxels = scanned.fp_phys_pivoxels;
 		preserve_hu = scanned.preserve_hu;
+		integer_rescale = scanned.integer_rescale;
+		rescale_slope = scanned.rescale_slope;
+		rescale_intercept = scanned.rescale_intercept;
 		inten_scale = scanned.inten_scale;
 		inten_offset = scanned.inten_offset;
 		inten_top_grey = scanned.inten_top_grey;
+		inten_stored_shift = scanned.inten_stored_shift;
 		inten_map = scanned.inten_map;
 	}
 
@@ -175,6 +198,7 @@ namespace Nyxus
 
 	// Fills p.inten_scale / p.inten_offset with the map the tile loader will apply to this slide.
 	// Reads p.fname_int (the loader is picked from the same extension), p.fp_phys_pivoxels,
-	// p.preserve_hu and the range the scan just measured, so it runs after scan_slide_props().
+	// p.preserve_hu, the header rescale and the range the scan just measured, so it runs after
+	// scan_slide_props().
 	void record_intensity_domain_map (SlideProps & p, const FpImageOptions & fpo);
 }

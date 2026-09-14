@@ -207,6 +207,14 @@ public:
         return rv;
     }
 
+    // DICOM pixel data is integer on every path this loader decodes.
+    bool get_integer_rescale (double & slope, double & intercept) const override
+    {
+        slope = rescaleSlope_;
+        intercept = rescaleIntercept_;
+        return true;
+    }
+
     /// @brief Tiff file height
     /// @param level Tiff level [not used]
     /// @return Full height

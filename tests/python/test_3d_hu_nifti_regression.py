@@ -5,11 +5,11 @@ ct3d_int16.nii is an 8x8x8 signed int16 volume with stored pixel(idx) = idx - 20
 so stored values run -200..311 and cross zero. Its header sets scl_slope=2, scl_inter=-1024, i.e.
 true HU = 2*stored - 1024 (range -1424..-402). mask3d.nii is an all-ones ROI over the whole volume.
 
-The NIfTI loader always rescales to those true Hounsfield values, then offsets the volume by its
-own floored minimum so the negatives survive the unsigned cast; the intensity family adds the
-offset back. Reported features are therefore absolute HU: MIN -1424, MAX -402, MEAN -913. The
-non-unit scl_slope is what makes the rescale observable, and it no longer depends on
---preserve-hu: a volume in physical units is read in physical units either way.
+Under --preserve-hu the NIfTI loader rescales to those true Hounsfield values, then offsets the
+volume by its own floored minimum so the negatives survive the unsigned cast. Without the flag it
+keeps the stored integers, shifted by their minimum, and records the rescale in the inverse map.
+Either way the intensity family applies the recorded inverse, so reported features are absolute
+HU: MIN -1424, MAX -402, MEAN -913. The non-unit scl_slope is what makes the rescale observable.
 """
 import os
 import pathlib
@@ -51,9 +51,9 @@ def test_3d_hu_nifti_preserve_no_wraparound_regression():
 
 
 def test_3d_hu_nifti_rescale_needs_no_flag_regression():
-    # scl_slope/scl_inter are part of what the file means, so they are applied whether or not
-    # --preserve-hu is given. The flag used to gate them, which left the default path reporting
-    # raw stored values shifted by an offset nothing undid.
+    # scl_slope/scl_inter are part of what the file means, so they reach the reported values
+    # whether or not --preserve-hu is given: applied at load under the flag, and carried in the
+    # recorded inverse without it.
     on = _featurize(True)
     off = _featurize(False)
     assert off["3MAX"] == pytest.approx(on["3MAX"])

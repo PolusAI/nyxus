@@ -40,7 +40,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_3d_intensity_degenerate_roi_mechanics.h` | 2 | the 3D twin: the same three ratios on a populated ROI of one grey level, read before the output NaN substitution |
 | `test_2d_nonfinite_pixels_mechanics.py` | 6 | a real-valued slide holding NaN or an infinity, segmented and whole-slide; spans the scan and every load-time map, so per-feature rows would be meaningless |
 | `test_2d_intensity_constant_roi_mechanics.py` | 4 | an ROI of one intensity end to end, on a mapped and on an identity-map slide, through the in-RAM and the out-of-core paths; pins the reported values, not an oracle |
-| `test_3d_nifti_offset_map_mechanics.py` | 4 | the NIfTI offset map's narrowing — a fractional `scl_slope` rounds under `--preserve-hu` and truncates without it, and a non-finite voxel takes grey level 0 either way; loader plumbing, no oracle |
+| `test_3d_nifti_offset_map_mechanics.py` | 4 | the NIfTI load-time maps on a fractional `scl_slope` — rounded on the offset map under `--preserve-hu`, exact on the stored map without it — and a non-finite voxel taking grey level 0 either way; loader plumbing, no oracle |
 | `test_roi_blacklist_mechanics.h` | 1 | ROI blacklisting |
 | `test_2d_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
 | `test_2d_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
@@ -70,8 +70,8 @@ omission matters:
 | ~~`test_neighbors_oracle.py`~~ | 2 | `PERCENT_TOUCHING`, `NUM_NEIGHBORS`, closest-neighbor distance on the production `featurize()` path | **CLOSED in Wave 15.** On inspection it asserts bounds and relations (`<= 100`, `> 0`, `== 100` for an enclosed ROI), not oracle values — so it is an `_invariant`, not the CellProfiler oracle assumed here. Renamed `test_2d_neighbor_invariant.py` and added to `current_test` on the 3 rows it covers. |
 | `test_2d_hu_regression.py` | 4 | first-order MIN/MAX/MEAN/INTEGRATED on a CT slide in Hounsfield units | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
 | `test_3d_hu_nifti_regression.py` | 3 | the same on a 3D NIfTI volume with `scl_slope`/`scl_inter` | ditto, 3D |
-| `test_hu_analytic.h` | 19 | closed form of the load-time intensity map and its inverse, the range the scan records, the `--fpimg*` rejections, and the shared grey-level narrowing including its saturation at both maps' upper ends | analytic assertion with no row |
-| `test_2d_hu_mechanics.h` | 10 | loader-level HU preservation (TIFF / DICOM / float), and a fractional DICOM `RescaleSlope` narrowing both ways | plumbing, but it pins values |
+| `test_hu_analytic.h` | 24 | closed form of the load-time intensity map and its inverse — the stored map's shift, slope and fallbacks included — the range the scan records, the `--fpimg*` rejections, and the shared grey-level narrowing including its saturation at both maps' upper ends | analytic assertion with no row |
+| `test_2d_hu_mechanics.h` | 11 | loader-level HU preservation (TIFF / DICOM / float), the loader's rescale-then-shift narrowing both ways on a fractional DICOM `RescaleSlope`, and that slide's whole load path on the stored and offset maps | plumbing, but it pins values |
 | `test_2d_signed_int16_loader_mechanics.py` | 2 | MIN/MAX/MEAN do not wrap for signed int16 | guards a wrap bug that silently corrupted values |
 | `test_2d_tiff_loader_mechanics.py` | 2 | pixel values and feature equality for uint32 strip TIFFs | guards a heap over-read that corrupted values |
 | `test_2d_contour_analytic.h` | 5 | contour tracing (pixel counts / connectivity) | underlies `PERIMETER`, but asserts geometry rather than a feature |
@@ -212,7 +212,7 @@ so a green local run is not a green matrix.
 |---|---|
 | `USE_ARROW` | `TEST_ARROW_IPC_MECHANICS`, `TEST_ARROW_PARQUET_MECHANICS`, `TEST_ARROW_FILE_NAMING_MECHANICS` |
 | `OMEZARR_SUPPORT` | `TEST_2D_OMEZARR_TILELOADER_{GEOMETRY,CONTENT,MULTITILE,SIGNED_OFFSET_MAP,FLOAT_QUANTIZED_MAP,UNSIGNED_UNAFFECTED}_MECHANICS`, `TEST_2D_OMEZARR_RAW_{GEOMETRY,CONTENT,MULTITILE,SIGNED_SOURCE_DOMAIN,FLOAT_SOURCE_DOMAIN,UINT32_ACCESSOR_CLAMPS_NEGATIVE,UINT32_ACCESSOR_UNSIGNED_EXACT,UINT32_ACCESSOR_NONFINITE}_MECHANICS` |
-| `DICOM_SUPPORT` | `TEST_2D_HU_LOADER_DICOM_{U16,I16}_PRESERVE_MECHANICS`, `TEST_2D_HU_LOADER_DICOM_CT_SMALL_{PRESERVE,BASELINE}_MECHANICS`, `TEST_2D_HU_LOADER_DICOM_FRACTIONAL_SLOPE_{ROUNDS_UNDER_PRESERVE_HU,TRUNCATES_BY_DEFAULT}_MECHANICS` |
+| `DICOM_SUPPORT` | `TEST_2D_HU_LOADER_DICOM_{U16,I16}_PRESERVE_MECHANICS`, `TEST_2D_HU_LOADER_DICOM_CT_SMALL_{PRESERVE,BASELINE}_MECHANICS`, `TEST_2D_HU_LOADER_DICOM_FRACTIONAL_SLOPE_{ROUNDS_UNDER_PRESERVE_HU,TRUNCATES_WITHOUT_ROUND_OFFSET}_MECHANICS`, `TEST_2D_HU_DICOM_FRACTIONAL_SLOPE_LOAD_PATH_MECHANICS` |
 
 ### B.4 Python tests skipped at runtime
 

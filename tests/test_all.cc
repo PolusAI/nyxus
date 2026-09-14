@@ -1252,6 +1252,31 @@ TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_QUANTIZED_SATURATES_ABOVE_GREY_RANGE_ANALYTI
 	ASSERT_NO_THROW(test_hu_domain_map_quantized_saturates_above_grey_range_analytic());
 }
 
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_STORED_SMALL_SLOPE_KEEPS_EVERY_LEVEL_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_stored_small_slope_keeps_every_level_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_STORED_UNIT_SLOPE_MATCHES_OFFSET_MAP_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_stored_unit_slope_matches_offset_map_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_STORED_SIGNED_AND_FRACTIONAL_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_stored_signed_and_fractional_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_STORED_NONNEGATIVE_SHIFT_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_stored_nonnegative_shift_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_STORED_FALLS_BACK_TO_OFFSET_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_stored_falls_back_to_offset_analytic());
+}
+
 TEST(TEST_NYXUS, TEST_2D_HU_FPIMAGE_OPTIONS_PARSE_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_hu_fpimage_options_parse_mechanics());
@@ -1298,9 +1323,14 @@ TEST(TEST_NYXUS, TEST_2D_HU_LOADER_DICOM_FRACTIONAL_SLOPE_ROUNDS_UNDER_PRESERVE_
 	ASSERT_NO_THROW(test_2d_hu_loader_dicom_fractional_slope_rounds_under_preserve_hu_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_2D_HU_LOADER_DICOM_FRACTIONAL_SLOPE_TRUNCATES_BY_DEFAULT_MECHANICS)
+TEST(TEST_NYXUS, TEST_2D_HU_LOADER_DICOM_FRACTIONAL_SLOPE_TRUNCATES_WITHOUT_ROUND_OFFSET_MECHANICS)
 {
-	ASSERT_NO_THROW(test_2d_hu_loader_dicom_fractional_slope_truncates_by_default_mechanics());
+	ASSERT_NO_THROW(test_2d_hu_loader_dicom_fractional_slope_truncates_without_round_offset_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_HU_DICOM_FRACTIONAL_SLOPE_LOAD_PATH_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_hu_dicom_fractional_slope_load_path_mechanics());
 }
 #endif
 

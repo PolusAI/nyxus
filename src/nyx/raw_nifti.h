@@ -135,15 +135,26 @@ public:
         return scl_slope_ * rv + scl_inter_;
     }
 
+    // Every integer datatype; a real-valued volume's samples carry fractions of their own, so it has
+    // no stored integers to keep.
+    bool get_integer_rescale (double & slope, double & intercept) const override
+    {
+        if (nii_->datatype == 16 || nii_->datatype == 64)	// NIFTI_TYPE_FLOAT32, NIFTI_TYPE_FLOAT64
+            return false;
+        slope = scl_slope_;
+        intercept = scl_inter_;
+        return true;
+    }
+
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
 
     [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return fullWidth_; }
 
     [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return fullDepth_; }
 
-    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override 
-    { 
-        return numTimeFrames_; 
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override
+    {
+        return numTimeFrames_;
     }
 
     [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tileWidth_; }
@@ -189,8 +200,8 @@ public:
 
     NiftiLoader (
         std::string const& slide_path,
-        double inten_offset = 0.0,		// the offset the scan recorded for this volume
-        bool rescale_to_physical = true,		// off for a mask volume, whose voxels are labels
+        double inten_offset = 0.0,		// the shift the scan recorded: physical units, or stored units with the rescale off
+        bool rescale_to_physical = true,		// off for a mask volume, whose voxels are labels, and on the stored map
         bool round_offset = false)		// offset map: round to nearest instead of truncating
         : AbstractTileLoader<DataType>("NiftiLoader", 1/*numberThreads*/, slide_path),
           inten_offset_(inten_offset), rescale_(rescale_to_physical), round_offset_(round_offset)
@@ -324,10 +335,12 @@ private:
     std::vector<uint32_t> tile;
     std::string slide_path_;
 
-    // The offset this volume's grey levels carry: voxels are rescaled to physical units and then
-    // shifted by inten_offset_ (SlideProps::inten_offset, 0 unless the volume's own minimum is
-    // negative). The intensity families add it back, so reported statistics are in the volume's
-    // own domain. cur_scl_* hold the current read's header rescale, shared with rescale_offset().
+    // The shift this volume's grey levels carry. On the offset map voxels are rescaled to physical
+    // units and shifted by SlideProps::inten_offset (0 unless the volume's own minimum is
+    // negative). On the stored map rescale_ is off, so the stored integers are shifted by
+    // SlideProps::inten_stored_shift and the rescale lives in the recorded inverse instead. The
+    // intensity families apply that inverse, so reported statistics are in the volume's own domain
+    // either way. cur_scl_* hold the current read's header rescale, shared with rescale_offset().
     double inten_offset_ = 0.0;
     bool rescale_ = true;
     bool round_offset_ = false;		// offset map: round to nearest (--preserve-hu) instead of truncating
@@ -336,10 +349,11 @@ private:
    template <class til, class fra>
    void rescale_offset (std::vector<til>& nyxbuf, const fra* houbuf, size_t n)
    {
-       // Rescale stored -> physical (slope*stored + intercept), then shift by the recorded offset
-       // so 1 grey level == 1 intensity unit and sub-minimum voxels (negative CT values among
-       // them) clamp to 0 instead of wrapping on the unsigned cast. Reading the volume's own
-       // minimum here instead would produce a shift nothing downstream could undo.
+       // Rescale stored -> physical (slope*stored + intercept) unless the rescale is off, then shift
+       // by the recorded offset so sub-minimum voxels (negative CT values among them) clamp to 0
+       // instead of wrapping on the unsigned cast. With the rescale off the stored integers are
+       // shifted as they are, and the narrowing below is exact. Reading the volume's own minimum
+       // here instead would produce a shift nothing downstream could undo.
        //
        // Nyxus::grey_level() carries the narrowing every load-time map shares. A non-finite voxel
        // takes grey level 0 -- a float volume is free to hold NaN, a masked-out background most
@@ -347,7 +361,8 @@ private:
        // large scl_slope can reach. round_offset_ rounds to nearest under --preserve-hu, where
        // scl_slope is routinely fractional on a PET-derived volume and the scale-1 inverse could
        // not recover a truncated fraction; a volume read without the flag truncates, which is what
-       // a real-valued NIfTI has always done.
+       // a real-valued NIfTI has always done. An integer volume read without the flag takes the
+       // stored map, where there is no fraction to narrow.
        for (size_t i = 0; i < n; ++i)
        {
            double v = cur_scl_slope_ * (double)houbuf[i] + cur_scl_inter_;
