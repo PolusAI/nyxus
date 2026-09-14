@@ -52,7 +52,8 @@ static const ref_vals_map<double> gldzm_3d_mirp_ref_vals{
 // five orders wider than that, so nothing about it is doing work a looser one would hide.
 static const double gldzm_3d_mirp_abs_tolerance = 1.e-9;
 
-void assert_3d_gldzm_feature_mirp (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+void assert_3d_gldzm_feature_mirp (const Nyxus::Feature3D& expecting_fcode, const std::string& fname,
+	const Fsettings& s)
 {
 	// the table is const and read through .at(), so a missing key throws rather than being
 	// default-inserted as a 0 golden and compared against; check it up front to fail by name
@@ -67,72 +68,168 @@ void assert_3d_gldzm_feature_mirp (const Nyxus::Feature3D& expecting_fcode, cons
 	ASSERT_TRUE((int)expecting_fcode == fcode);
 
 	std::vector<std::vector<double>> fvals;
-	ASSERT_NO_FATAL_FAILURE(extract_3d_gldzm(fvals, ipath, mpath, label, make_gldzm3d_settings(64, true)));
+	ASSERT_NO_FATAL_FAILURE(extract_3d_gldzm(fvals, ipath, mpath, label, s));
 
 	ASSERT_NEAR(fvals[fcode][0], gldzm_3d_mirp_ref_vals.at(fname), gldzm_3d_mirp_abs_tolerance)
 		<< fname << " actual=" << std::setprecision(17) << fvals[fcode][0];
 }
 
 void test_3d_gldzm_sde_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_SDE, "3GLDZM_SDE");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_SDE, "3GLDZM_SDE",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_lde_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LDE, "3GLDZM_LDE");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LDE, "3GLDZM_LDE",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_lglze_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LGLZE, "3GLDZM_LGLZE");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LGLZE, "3GLDZM_LGLZE",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_hglze_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_HGLZE, "3GLDZM_HGLZE");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_HGLZE, "3GLDZM_HGLZE",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_sdlgle_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_SDLGLE, "3GLDZM_SDLGLE");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_SDLGLE, "3GLDZM_SDLGLE",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_sdhgle_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_SDHGLE, "3GLDZM_SDHGLE");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_SDHGLE, "3GLDZM_SDHGLE",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_ldlgle_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LDLGLE, "3GLDZM_LDLGLE");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LDLGLE, "3GLDZM_LDLGLE",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_ldhgle_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LDHGLE, "3GLDZM_LDHGLE");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LDHGLE, "3GLDZM_LDHGLE",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_glnu_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_GLNU, "3GLDZM_GLNU");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_GLNU, "3GLDZM_GLNU",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_glnun_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_GLNUN, "3GLDZM_GLNUN");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_GLNUN, "3GLDZM_GLNUN",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_zdnu_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDNU, "3GLDZM_ZDNU");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDNU, "3GLDZM_ZDNU",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_zdnun_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDNUN, "3GLDZM_ZDNUN");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDNUN, "3GLDZM_ZDNUN",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_zp_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZP, "3GLDZM_ZP");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZP, "3GLDZM_ZP",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_glv_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_GLV, "3GLDZM_GLV");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_GLV, "3GLDZM_GLV",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_zdv_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDV, "3GLDZM_ZDV");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDV, "3GLDZM_ZDV",
+		make_gldzm3d_settings(64, true));
 }
 
 void test_3d_gldzm_zde_mirp() {
-	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDE, "3GLDZM_ZDE");
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDE, "3GLDZM_ZDE",
+		make_gldzm3d_settings(64, true));
+}
+
+// The same sixteen goldens at the family's third binning point. `GREYDEPTH` negative selects the
+// radiomics scheme, and at a bin count of 8 it is the IDENTITY on this fixture's levels --
+// `to_grayscale_radiomix` maps 1..8 over a bin width of 7/8 back onto 1..8, the top level clipping
+// into the last bin -- so the point computes the GLDZM of the same grey levels the no-binning point
+// does and MIRP's goldens for it apply here unchanged.
+//
+// Asserted against MIRP directly rather than against the other point's output: a config cell earns
+// a `vetted` row from a feature-by-feature comparison with the tool at that cell's settings, not
+// from an equivalence with a cell that has one (SPEC 5.2). The equivalence is asserted too, in
+// test_3d_gldzm_radiomics_binning_is_identity_here_mechanics, because it is the reason the goldens
+// transfer -- but it is the mechanism, not the coverage.
+//
+// Recipe `gldzm3d.mirp_compat_phantom_radiomics`. It does NOT generalise to a bin count that
+// actually re-bins; tests/vetting/matrix/gldzm3d.md records that limit.
+
+void test_3d_gldzm_sde_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_SDE, "3GLDZM_SDE",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_lde_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LDE, "3GLDZM_LDE",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_lglze_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LGLZE, "3GLDZM_LGLZE",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_hglze_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_HGLZE, "3GLDZM_HGLZE",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_sdlgle_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_SDLGLE, "3GLDZM_SDLGLE",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_sdhgle_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_SDHGLE, "3GLDZM_SDHGLE",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_ldlgle_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LDLGLE, "3GLDZM_LDLGLE",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_ldhgle_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_LDHGLE, "3GLDZM_LDHGLE",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_glnu_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_GLNU, "3GLDZM_GLNU",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_glnun_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_GLNUN, "3GLDZM_GLNUN",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_zdnu_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDNU, "3GLDZM_ZDNU",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_zdnun_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDNUN, "3GLDZM_ZDNUN",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_zp_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZP, "3GLDZM_ZP",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_glv_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_GLV, "3GLDZM_GLV",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_zdv_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDV, "3GLDZM_ZDV",
+		make_gldzm3d_settings(-8, false));
+}
+void test_3d_gldzm_zde_radiomics_mirp() {
+	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDE, "3GLDZM_ZDE",
+		make_gldzm3d_settings(-8, false));
 }

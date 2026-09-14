@@ -677,8 +677,29 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - The phantom is constructed so that each of the family's three definition choices is separated -
   the ROI mask, 26-connectivity and the city-block distance transform. `benchmarks.md` and
   `audit/gldzm_3d_mirp_vetting_report.md` carry the construction and the negative controls.
-- `3GLDZM_GLM` and `3GLDZM_ZDM` are not backed here: MIRP emits no `dzm_gl_mean` / `dzm_zd_mean`
-  column and IBSI defines neither.
+- `3GLDZM_GLM` and `3GLDZM_ZDM` have no oracle here, or anywhere: MIRP emits no `dzm_gl_mean` /
+  `dzm_zd_mean` column and IBSI defines neither. They are Nyxus outputs at this cell all the same,
+  so they carry drift guards in `test_3d_gldzm_regression.h` rather than leaving the cell uncovered
+  for them.
+
+## gldzm3d.mirp_compat_phantom_radiomics
+- The same GLDZM compatibility phantom as the recipe above, at the family's **radiomics** binning
+  point: `GREYDEPTH=-8`, `IBSI=false`. Oracle: `mirp` 2.6.0 (`by_slice=False`,
+  `base_discretisation_method="none"`). Generator: `oracles/gen_gldzm3d_mirp.py`. Used by
+  `test_3d_gldzm_mirp.h`.
+- **At this bin count the scheme is the identity on the fixture's levels.**
+  `to_grayscale_radiomix` maps 1..8 over a bin width of 7/8 back onto 1..8, the top level clipping
+  into the last bin, so the point computes the GLDZM of the same grey levels the no-binning recipe
+  does and MIRP's goldens for it apply unchanged.
+- **Asserted feature by feature against the tool at these settings**, not inferred from the
+  no-binning recipe: a config cell earns its rows from a comparison run at that cell (SPEC 5.2). The
+  identity itself is held by `test_3d_gldzm_radiomics_binning_is_identity_here_mechanics`, which is
+  the reason the goldens transfer rather than the coverage that they do.
+- **It does not generalise to a bin count that actually re-bins.** There the scheme is a Nyxus
+  convention with the same lower-bin-edge question the MATLAB one has, and the fixture to measure it
+  does not exist yet. `matrix/gldzm3d.md` records the limit.
+- `3GLDZM_GLM` and `3GLDZM_ZDM` are drift guards here, as at every cell: MIRP emits no counterpart
+  column for either.
 
 ## gldzm3d.regression_ut_phantom
 - The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at

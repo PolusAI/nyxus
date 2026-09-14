@@ -7,6 +7,7 @@ artifact cannot drift from the tree. `--check` reports drift instead of rewritin
 acceptance checks. The coverage rule, the checks and the rendering all live in scanlib.py; this file
 is the family's declaration.
 """
+import re
 import sys
 
 import scanlib
@@ -27,6 +28,17 @@ NOTE = {
                   "in IBSI, so it is a drift guard at every recipe",
 }
 
+# recipe -> the function that asserts AT that recipe. The family has four config cells and two of
+# them are asserted against the same oracle on the same fixture, so feature, kind and oracle are
+# identical between them and only the function name says which cell a row records.
+RECIPE_READER = {
+    "gldzm3d.mirp_compat_phantom": re.compile(
+        r"^test_3d_gldzm_[a-z0-9]+_(mirp|compat_regression)$"),
+    "gldzm3d.mirp_compat_phantom_radiomics": re.compile(
+        r"^test_3d_gldzm_[a-z0-9]+_radiomics_(mirp|regression)$"),
+    "gldzm3d.regression_ut_phantom": re.compile(r"^test_3d_gldzm_[a-z0-9]+_regression$"),
+}
+
 FAMILY = scanlib.Family(
     dim="3D", family="gldzm", out="gldzm_3d_coverage.csv",
     sources=SOURCES,
@@ -40,6 +52,7 @@ FAMILY = scanlib.Family(
     other_note="asserted",
     loop_tables=True,
     checks=scanlib.CORE_CHECKS | scanlib.IDENTITY_CHECKS,
+    recipe_reader=RECIPE_READER,
 )
 
 if __name__ == "__main__":
