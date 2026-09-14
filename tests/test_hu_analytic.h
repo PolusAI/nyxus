@@ -1,8 +1,11 @@
 #pragma once
 
 #include <gtest/gtest.h>
+#include <cmath>
+#include <cstdint>
 #include <limits>
 #include "../src/nyx/cli_fpimage_options.h"
+#include "../src/nyx/grey_level_cast.h"
 #include "../src/nyx/slideprops.h"
 
 // ---------------------------------------------------------------------------
@@ -418,4 +421,106 @@ void test_hu_scanned_range_passthrough_analytic()
     EXPECT_DOUBLE_EQ(q.min_preroi_inten, 0.0);
     EXPECT_DOUBLE_EQ(q.max_preroi_inten, 0.0);
     EXPECT_DOUBLE_EQ(q.min_allpix_inten, -1024.0);
+}
+
+// The one narrowing every load-time map now shares. Converting a double to an unsigned integer
+// is undefined -- not a wrapping cast -- when the value is non-finite, negative, or above the
+// destination's maximum, so each of those has a stated answer here, and the two narrowings
+// differ only in their last step.
+void test_hu_grey_level_cast_analytic()
+{
+    const double nan = std::numeric_limits<double>::quiet_NaN(),
+        inf = std::numeric_limits<double>::infinity();
+    const uint32_t top = (std::numeric_limits<uint32_t>::max)();
+
+    // the one step they differ in
+    EXPECT_EQ(Nyxus::grey_level_rounded<uint32_t>(2.4), 2u);
+    EXPECT_EQ(Nyxus::grey_level_rounded<uint32_t>(2.5), 3u);         // llround: half away from zero
+    EXPECT_EQ(Nyxus::grey_level_rounded<uint32_t>(0.5), 1u);
+    EXPECT_EQ(Nyxus::grey_level_truncated<uint32_t>(2.9), 2u);
+    EXPECT_EQ(Nyxus::grey_level_truncated<uint32_t>(3.75), 3u);
+
+    for (bool round_to_nearest : { false, true })
+    {
+        auto g = [round_to_nearest] (double y) { return Nyxus::grey_level<uint32_t> (y, round_to_nearest); };
+
+        // a non-finite value carries no intensity
+        EXPECT_EQ(g(nan), 0u);
+        EXPECT_EQ(g(inf), 0u);
+        EXPECT_EQ(g(-inf), 0u);
+
+        // below the destination
+        EXPECT_EQ(g(-7.5), 0u);
+        EXPECT_EQ(g(-0.0), 0u);
+
+        // above it: saturate rather than convert out of range
+        EXPECT_EQ(g(5.0e9), top);
+        EXPECT_EQ(g(1.0e300), top);
+        EXPECT_EQ(g((double) top), top);                             // exactly representable
+    }
+
+    // just under the top the two narrowings part: rounding lands on it, truncation stays below
+    EXPECT_EQ(Nyxus::grey_level_rounded<uint32_t>(4294967294.6), top);
+    EXPECT_EQ(Nyxus::grey_level_truncated<uint32_t>(4294967294.6), top - 1u);
+
+    // grey_level() dispatches on the flag and nothing else
+    EXPECT_EQ(Nyxus::grey_level<uint32_t>(2.5, true), Nyxus::grey_level_rounded<uint32_t>(2.5));
+    EXPECT_EQ(Nyxus::grey_level<uint32_t>(2.5, false), Nyxus::grey_level_truncated<uint32_t>(2.5));
+}
+
+// A slide whose range exceeds the grey type's reaches the offset map's upper end through the
+// forward map, which sets the whole-slide vROI's grey range. It used to convert out of range there;
+// it saturates now, on both narrowings -- rounding under preserve_hu and truncating without it.
+void test_hu_domain_map_offset_saturates_above_grey_range_analytic()
+{
+    const uint32_t top = (std::numeric_limits<uint32_t>::max)();
+
+    // a real-valued slide carried on the offset map by preserve_hu, spanning past UINT32_MAX
+    SlideProps p ("wide.tif", "");
+    p.fp_phys_pivoxels = true;
+    p.preserve_hu = true;
+    p.min_allpix_inten = 0.0;
+    p.min_preroi_inten = 0.0;
+    p.max_preroi_inten = 1.0e10;
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    ASSERT_EQ((int)p.inten_map, (int)IntenMap::offset);
+    EXPECT_EQ(p.to_grey_level(1.0e10), top);                          // saturates
+    EXPECT_EQ(p.to_grey_level(100.5), 101u);                          // and still rounds in range
+
+    // an integer slide takes the offset map without the flag, and truncates
+    SlideProps q ("wide.nii", "");
+    q.min_allpix_inten = 0.0;
+    q.min_preroi_inten = 0.0;
+    q.max_preroi_inten = 1.0e10;
+    Nyxus::record_intensity_domain_map (q, fpo);
+
+    ASSERT_EQ((int)q.inten_map, (int)IntenMap::offset);
+    EXPECT_EQ(q.to_grey_level(1.0e10), top);
+    EXPECT_EQ(q.to_grey_level(100.5), 100u);
+}
+
+// The quantized map clamps its input to [fpmin, fpmax], so its output is bounded by the target
+// dynamic range -- which --fpimgdr can set above UINT32_MAX. The narrowing saturates there too, and
+// the non-finite check has to stay ahead of the clamp: left to the narrowing, +Inf would clamp to
+// fpmax first and come back as the top grey level instead of 0.
+void test_hu_domain_map_quantized_saturates_above_grey_range_analytic()
+{
+    const uint32_t top = (std::numeric_limits<uint32_t>::max)();
+
+    SlideProps p ("real.tif", "");
+    p.fp_phys_pivoxels = true;
+    p.min_preroi_inten = 0.0;
+    p.max_preroi_inten = 10.0;
+    FpImageOptions fpo;
+    fpo.set_target_dyn_range (1.0e10f);                               // exact in float: 1024 * 9765625
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    ASSERT_EQ((int)p.inten_map, (int)IntenMap::quantized);
+    EXPECT_DOUBLE_EQ(p.inten_top_grey, 1.0e10);
+
+    EXPECT_EQ(p.to_grey_level(10.0), top);                            // the window maximum saturates
+    EXPECT_NEAR((double) p.to_grey_level(1.0), 1.0e9, 2.0);           // a value inside still maps
+    EXPECT_EQ(p.to_grey_level(std::numeric_limits<double>::infinity()), 0u);
 }

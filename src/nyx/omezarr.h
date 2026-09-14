@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include "abs_tile_loader.h"
+#include "grey_level_cast.h"
 #include "nlohmann/json.hpp"
 
 // factory functions to create files, groups and datasets
@@ -241,25 +242,20 @@ private:
     bool quantize_ = false;
     bool round_offset_ = false;		// offset map: round to nearest (--preserve-hu) instead of truncating
 
-    // The offset map, shared by the real-valued and native-integer paths: u = trunc(x - offset),
-    // keeping 1 grey level == 1 intensity unit and clamping sub-minimum outliers to 0 instead of
-    // wrapping on the unsigned cast. The intensity families add the offset back, so reported
-    // statistics are in the dataset's own domain. A mask is opened with offset 0 and no quantize,
-    // which leaves its labels untouched.
+    // The offset map, shared by the real-valued and native-integer paths, keeping 1 grey level ==
+    // 1 intensity unit. The intensity families add the offset back, so reported statistics are in
+    // the dataset's own domain. A mask is opened with offset 0 and no quantize, which leaves its
+    // labels untouched. Both branches narrow through the Nyxus::grey_level* the TIFF loaders use,
+    // so no backend can drift from another.
     DataType map_intensity (double x) const
     {
-        // As in the TIFF loaders: a non-finite sample takes grey level 0 rather than an
-        // undefined conversion, and the offset branch rounds only under --preserve-hu.
-        if (! std::isfinite (x)) return (DataType) 0;
         if (! quantize_)
-        {
-            double y = x - inten_offset_;
-            if (y < 0.0) y = 0.0;
-            return round_offset_ ? (DataType) std::llround (y) : (DataType) y;
-        }
+            return Nyxus::grey_level<DataType> (x - inten_offset_, round_offset_);
+        // Ahead of the clamp, as in the TIFF loaders: the clamp would store +Inf as the top level.
+        if (! std::isfinite (x)) return (DataType) 0;
         double t = x < inten_offset_ ? inten_offset_ : x;
         t = t > inten_max_ ? inten_max_ : t;
-        return (DataType)(target_dyn_range_ * (t - inten_offset_) / (inten_max_ - inten_offset_));
+        return Nyxus::grey_level_truncated<DataType> (target_dyn_range_ * (t - inten_offset_) / (inten_max_ - inten_offset_));
     }
 };
 #endif //OMEZARR_SUPPORT

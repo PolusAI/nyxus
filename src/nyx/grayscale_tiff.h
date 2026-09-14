@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include "abs_tile_loader.h"
+#include "grey_level_cast.h"
 
 #ifdef __APPLE__
     #define uint64 uint64_hack_
@@ -364,24 +365,15 @@ private:
     bool round_offset = false;		// offset map: round to nearest (--preserve-hu) instead of truncating
 
     // The offset map, shared by the real-valued and native-integer paths, keeping 1 grey level ==
-    // 1 intensity unit and clamping sub-minimum outliers (negative CT values among them) to 0
-    // instead of wrapping on the unsigned cast. The intensity families add the offset back, so
-    // reported statistics are in the slide's own domain.
-    //
-    // round_offset selects the narrowing. Under --preserve-hu it rounds to nearest: that mode
-    // exists to carry absolute intensities, inten_scale is 1 so the inverse cannot recover a
-    // dropped fraction, and a fractional sample is what a non-integer DICOM RescaleSlope or NIfTI
-    // scl_slope produces. Otherwise it truncates, which is what a real-valued slide read without
-    // the flag has always done.
+    // 1 intensity unit. The intensity families add the offset back, so reported statistics are in
+    // the slide's own domain. round_offset rounds to nearest under --preserve-hu, which exists to
+    // carry absolute intensities and whose scale-1 inverse cannot recover a dropped fraction;
+    // otherwise it truncates, which is what a real-valued slide read without the flag has always
+    // done. Nyxus::grey_level() carries the narrowing every load-time map shares: non-finite to 0,
+    // clamped below, saturated above.
     DataType offset_map (double x) const
     {
-        // A non-finite sample carries no intensity, and converting one to an unsigned integer
-        // is undefined; it takes the same grey level as a sub-minimum outlier. The scan leaves
-        // such samples out of the slide extrema for the same reason.
-        if (! std::isfinite (x)) return (DataType) 0;
-        double y = x - floatpt_image_min_intensity;
-        if (y < 0.0) y = 0.0;
-        return round_offset ? (DataType) std::llround (y) : (DataType) y;
+        return Nyxus::grey_level<DataType> (x - floatpt_image_min_intensity, round_offset);
     }
 
     // Map one real-valued pixel to the integer feature domain.
@@ -389,10 +381,13 @@ private:
     {
         if (! quantize)
             return offset_map (x);
+        // Ahead of the clamp, not left to the narrowing: the clamp would turn +Inf into
+        // floatpt_image_max_intensity and store the top grey level, where a non-finite sample
+        // takes grey level 0 on every other map.
         if (! std::isfinite (x)) return (DataType) 0;
         double t = x < floatpt_image_min_intensity ? floatpt_image_min_intensity : x;
         t = t > floatpt_image_max_intensity ? floatpt_image_max_intensity : t;
-        return (DataType)(floatpt_image_target_dyn_range * (t - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity));
+        return Nyxus::grey_level_truncated<DataType> (floatpt_image_target_dyn_range * (t - floatpt_image_min_intensity) / (floatpt_image_max_intensity - floatpt_image_min_intensity));
     }
 
 };
@@ -708,20 +703,16 @@ private:
     bool quantize_ = false;
     bool round_offset_ = false;		// offset map: round to nearest (--preserve-hu) instead of truncating
 
+    // The same two maps the tile loader carries, over the same shared narrowing, so a tiled and a
+    // stripped read of the same slide store the same grey levels.
     DataType map_intensity (double x) const
     {
-        // As in the tile loader above: a non-finite sample takes grey level 0 rather than an
-        // undefined conversion, and the offset branch rounds only under --preserve-hu, so a
-        // tiled and a stripped read of the same slide store the same grey levels.
-        if (! std::isfinite (x)) return (DataType) 0;
         if (! quantize_)
-        {
-            double y = x - inten_offset_;
-            if (y < 0.0) y = 0.0;
-            return round_offset_ ? (DataType) std::llround (y) : (DataType) y;
-        }
+            return Nyxus::grey_level<DataType> (x - inten_offset_, round_offset_);
+        // Ahead of the clamp, as in the tile loader: the clamp would store +Inf as the top level.
+        if (! std::isfinite (x)) return (DataType) 0;
         double t = x < inten_offset_ ? inten_offset_ : x;
         t = t > inten_max_ ? inten_max_ : t;
-        return (DataType)(target_dyn_range_ * (t - inten_offset_) / (inten_max_ - inten_offset_));
+        return Nyxus::grey_level_truncated<DataType> (target_dyn_range_ * (t - inten_offset_) / (inten_max_ - inten_offset_));
     }
 };
