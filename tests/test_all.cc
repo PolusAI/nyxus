@@ -10,6 +10,7 @@
 #include "test_2d_firstorder_matlab.h"
 #include "test_2d_intensity_histogram_regression.h"
 #include "test_2d_intensity_degenerate_roi_mechanics.h"
+#include "test_3d_intensity_degenerate_roi_mechanics.h"
 #include "test_2d_radial_invariant.h"
 #include "test_2d_radial_mechanics.h"
 #include "test_2d_radial_regression.h"
@@ -1143,6 +1144,16 @@ TEST(TEST_NYXUS, TEST_2D_INTENSITY_NONZERO_ROI_RATIOS_UNAFFECTED_MECHANICS)
 	ASSERT_NO_THROW(test_2d_intensity_nonzero_roi_ratios_unaffected_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_3D_INTENSITY_ZERO_VALUED_ROI_RATIOS_MECHANICS)
+{
+	ASSERT_NO_THROW(test_3d_intensity_zero_valued_roi_ratios_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_INTENSITY_NONZERO_ROI_RATIOS_UNAFFECTED_MECHANICS)
+{
+	ASSERT_NO_THROW(test_3d_intensity_nonzero_roi_ratios_unaffected_mechanics());
+}
+
 TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_OFFSET_NEGATIVE_MIN_ANALYTIC)
 {
 	ASSERT_NO_THROW(test_hu_domain_map_offset_negative_min_analytic());
@@ -1282,6 +1293,16 @@ TEST(TEST_NYXUS, TEST_2D_HU_LOADER_DICOM_CT_SMALL_PRESERVE_MECHANICS)
 TEST(TEST_NYXUS, TEST_2D_HU_LOADER_DICOM_CT_SMALL_BASELINE_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_hu_loader_dicom_ct_small_baseline_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_HU_LOADER_DICOM_FRACTIONAL_SLOPE_ROUNDS_UNDER_PRESERVE_HU_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_hu_loader_dicom_fractional_slope_rounds_under_preserve_hu_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_HU_LOADER_DICOM_FRACTIONAL_SLOPE_TRUNCATES_BY_DEFAULT_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_hu_loader_dicom_fractional_slope_truncates_by_default_mechanics());
 }
 #endif
 

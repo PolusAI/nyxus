@@ -9,6 +9,7 @@ to verify the `--preserve-hu` offset mapping through the real TIFF decode path.
 | `ct_float.tif` | float32 (SampleFormat=3) | exercises `loadTile_real_intens<float>` |
 | `ct_u16.dcm` | DICOM uint16, RescaleIntercept=−1024 | textbook CT: rescale then offset |
 | `ct_i16.dcm` | DICOM int16 signed, intercept 0 | signed stored values, no wraparound |
+| `ct_frac.dcm` | DICOM uint16, RescaleSlope=0.5, RescaleIntercept=−1024 | a fractional slope, as a PET or SUV series carries — see below |
 
 All are 16×16, a single tile, encoding the SAME logical HU field
 `HU(r,c) = -1024 + idx*8`, `idx = r*16 + c` (0..255) — a CT/HU-like range
@@ -17,6 +18,33 @@ All are 16×16, a single tile, encoding the SAME logical HU field
 These fixtures are committed to the repository and consumed as-is. The construction
 of each file is documented in this README so the ground truth the tests assert
 against stays auditable.
+
+### `ct_frac.dcm` — the one DICOM fixture that does not encode that field
+
+Every other DICOM fixture has an integral `RescaleSlope`, so after the rescale and the offset
+every value is an integer, and rounding and truncation store the same grey level. That leaves
+the loader's narrowing invisible on DICOM — which matters because a PET or SUV series routinely
+carries a fractional slope, and `inten_scale` is 1 on the offset map, so a fraction the narrowing
+drops cannot be recovered on the way out.
+
+`ct_frac.dcm` is 16×16 uint16 with stored `idx` (0..255), `RescaleSlope=0.5` and
+`RescaleIntercept=-1024`, so the physical value is `0.5·idx − 1024` over −1024..−896.5 and half
+the pixels are fractional. With the scanned minimum floored as the offset the loader narrows
+`y = 0.5·idx`: under `--preserve-hu` it rounds (idx 1 → 1, idx 3 → 2, idx 255 → 128), without it
+it truncates (0, 1, 127). `tests/test_2d_hu_mechanics.h` pins both directions against the same
+pixels, with idx 2 (`y = 1`) as the control where the two agree.
+
+It was derived from `ct_u16.dcm` with pydicom, which keeps every tag the loader does not read
+byte-for-byte as in the fixture already in the tree:
+
+```python
+import numpy as np, pydicom
+ds = pydicom.dcmread("ct_u16.dcm")                    # 16x16, BitsAllocated 16, unsigned
+ds.RescaleSlope, ds.RescaleIntercept = "0.5", "-1024"
+ds.PixelData = np.arange(256, dtype=np.uint16).reshape(16, 16).tobytes()
+ds.SOPInstanceUID = pydicom.uid.generate_uid()
+ds.save_as("ct_frac.dcm", enforce_file_format=True)   # explicit VR little endian, uncompressed
+```
 
 ## 3D NIfTI fixtures
 

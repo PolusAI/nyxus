@@ -14,10 +14,10 @@
 // Degenerate-ROI mechanics for the 2D intensity family (SPEC.md 2: plumbing, no
 // correctness claim).
 //
-// QCOD and UNIFORMITY_PIU are quotients whose denominators are sums -- p75 + p25 and
-// aux_max + aux_min -- that a populated ROI sitting entirely at grey level 0 leaves at
-// 0. Such an ROI is ordinary once the load-time offset map is in play, since that map
-// puts the slide's own minimum on grey level 0.
+// QCOD, UNIFORMITY_PIU and COV are quotients whose denominators -- p75 + p25,
+// aux_max + aux_min, and the mean -- a populated ROI sitting entirely at grey level 0
+// leaves at 0. Such an ROI is ordinary once the load-time offset map is in play, since
+// that map puts the slide's own minimum on grey level 0.
 //
 // This has to be asserted HERE, on the feature object, rather than through the Python
 // API: every value leaving the pipeline goes through Nyxus::force_finite_number() in
@@ -37,8 +37,9 @@ static const NyxusPixel intensityZeroValuedRoiTestData[] =
     {0, 2, 0}, {1, 2, 0}, {2, 2, 0}, {3, 2, 0}
 };
 
-// Both quotients come back as numbers rather than NaN, and specifically as the 0 the
-// pre-guard code reported by returning before it ever computed them.
+// All three quotients come back as numbers rather than NaN, and specifically as 0. QCOD and
+// PIU are the 0 the pre-guard code reported by returning before it ever computed them; COV
+// sat above that guard and was NaN on this ROI even then.
 void test_2d_intensity_zero_valued_roi_ratios_mechanics()
 {
     Dataset ds;
@@ -63,12 +64,18 @@ void test_2d_intensity_zero_valued_roi_ratios_mechanics()
     f.save_value (roidata.fvals);
 
     double qcod = roidata.fvals[(int)Feature2D::QCOD][0],
-        piu = roidata.fvals[(int)Feature2D::UNIFORMITY_PIU][0];
+        piu = roidata.fvals[(int)Feature2D::UNIFORMITY_PIU][0],
+        cov = roidata.fvals[(int)Feature2D::COV][0];
 
     ASSERT_FALSE (std::isnan(qcod)) << "QCOD is NaN before the output sanitizer";
     ASSERT_FALSE (std::isnan(piu)) << "UNIFORMITY_PIU is NaN before the output sanitizer";
     ASSERT_DOUBLE_EQ (qcod, 0.0);
     ASSERT_DOUBLE_EQ (piu, 0.0);
+
+    // COV divides a standard deviation by a mean the same ROI leaves at 0, so it is 0/0 on the
+    // same footing as the two above, and takes the same convention.
+    ASSERT_FALSE (std::isnan(cov)) << "COV is NaN before the output sanitizer";
+    ASSERT_DOUBLE_EQ (cov, 0.0);
 
     // the rest of the distribution is still described, which is the point of letting a
     // populated zero-valued ROI through in the first place
@@ -104,7 +111,7 @@ void test_2d_intensity_empty_roi_mechanics()
     ASSERT_TRUE (roidata.fvals[(int)Feature2D::HISTOGRAM].empty());
 }
 
-// A non-degenerate ROI is unaffected: both quotients keep their ordinary definitions.
+// A non-degenerate ROI is unaffected: every quotient keeps its ordinary definition.
 void test_2d_intensity_nonzero_roi_ratios_unaffected_mechanics()
 {
     Dataset ds;
@@ -124,10 +131,13 @@ void test_2d_intensity_nonzero_roi_ratios_unaffected_mechanics()
     f.save_value (roidata.fvals);
 
     double qcod = roidata.fvals[(int)Feature2D::QCOD][0],
-        piu = roidata.fvals[(int)Feature2D::UNIFORMITY_PIU][0];
+        piu = roidata.fvals[(int)Feature2D::UNIFORMITY_PIU][0],
+        cov = roidata.fvals[(int)Feature2D::COV][0];
 
     ASSERT_FALSE (std::isnan(qcod));
     ASSERT_FALSE (std::isnan(piu));
-    // the guard must not have collapsed a live denominator to the degenerate answer
+    ASSERT_FALSE (std::isnan(cov));
+    // the guards must not have collapsed a live denominator to the degenerate answer
     ASSERT_NE (piu, 0.0);
+    ASSERT_NE (cov, 0.0);
 }
