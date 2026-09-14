@@ -32,11 +32,11 @@ regression: 119  invariant: 0  untested: 0
 
 ## Verdicts
 
-786 of 964 assertion rows agree with the tree.
+806 of 984 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 786 | the claim and the tree say the same thing |
+| `agree` | 806 | the claim and the tree say the same thing |
 | `unscanned` | 178 | no scanner covers this family x dim yet |
 
 ### How far each verdict reaches
@@ -47,13 +47,13 @@ regression: 119  invariant: 0  untested: 0
 | scope | rows | what was compared |
 |---|---:|---|
 | `feature` | 441 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
-| `row` | 194 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
+| `row+config` | 205 | the case named in `test_name` asserts this feature at this `config_recipe` |
 | `none` | 178 | no scanner for this family x dim, so nothing was read at all |
-| `row+config` | 151 | the case named in `test_name` asserts this feature at this `config_recipe` |
+| `row` | 160 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 
 ## Families with no scanner
 
-**178 of 964 rows (18%) cannot be checked against the tree at all.** These families have an
+**178 of 984 rows (18%) cannot be checked against the tree at all.** These families have an
 `audit/<family>_<dim>_coverage.csv`, but nothing regenerates it from the test
 sources, so the artifact records what someone believed rather than what the tree
 asserts. Writing the 5 missing scanners is what closes this.

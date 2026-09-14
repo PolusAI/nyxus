@@ -82,6 +82,63 @@ void assert_3d_gldzm_feature_regression (const Nyxus::Feature3D& expecting_fcode
 //     runAllTests --gtest_filter=*3D_GLDZM_DUMP_REGRESSION*
 // and paste the output over the table above. It goes through the same extract_3d_gldzm helper and
 // the same settings the assert helper uses, so the two cannot drift apart.
+// 3GLDZM_GLM and 3GLDZM_ZDM at the two compatibility-phantom config points.
+//
+// MIRP's GLDZM emits no dzm_gl_mean or dzm_zd_mean column and IBSI defines neither, so these two are
+// the only features of the family no oracle reaches at any binning scheme. They are still Nyxus
+// outputs at every one of them, so each cell of tests/vetting/matrix/gldzm3d.md that has oracle rows
+// for the other sixteen carries drift guards for these two -- otherwise a cell would be silently
+// uncovered for them.
+//
+// The two points return the same values here because the radiomics scheme is the identity on this
+// fixture's levels (test_3d_gldzm_radiomics_binning_is_identity_here_mechanics). They are pinned and
+// asserted separately anyway: they are separate config cells, and a change that broke the identity
+// should fail both cells by name rather than one assertion twice.
+static const ref_vals_map<double> gldzm_3d_regression_compat_ref_vals{
+	{"3GLDZM_GLM",   4.7692307692307692},
+	{"3GLDZM_ZDM",   1.3736263736263736},
+};
+
+void assert_3d_gldzm_feature_compat_regression (const Nyxus::Feature3D& expecting_fcode,
+	const std::string& fname, const Fsettings& s)
+{
+	ASSERT_TRUE(gldzm_3d_regression_compat_ref_vals.count(fname) > 0) << fname;
+
+	auto [ipath, mpath, label] = get_3d_compat_gldzm_phantom();
+
+	Environment e;
+	int fcode = -1;
+	ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(fname, fcode));
+	ASSERT_TRUE((int)expecting_fcode == fcode);
+
+	std::vector<std::vector<double>> fvals;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_gldzm(fvals, ipath, mpath, label, s));
+
+	ASSERT_TRUE(agrees_gt(fvals[fcode][0], gldzm_3d_regression_compat_ref_vals.at(fname),
+		gldzm_3d_regression_frac_tolerance))
+		<< fname << " actual=" << std::setprecision(17) << fvals[fcode][0];
+}
+
+void test_3d_gldzm_glm_compat_regression() {
+	assert_3d_gldzm_feature_compat_regression (Nyxus::Feature3D::GLDZM_GLM, "3GLDZM_GLM",
+		make_gldzm3d_settings(64, true));
+}
+
+void test_3d_gldzm_zdm_compat_regression() {
+	assert_3d_gldzm_feature_compat_regression (Nyxus::Feature3D::GLDZM_ZDM, "3GLDZM_ZDM",
+		make_gldzm3d_settings(64, true));
+}
+
+void test_3d_gldzm_glm_radiomics_regression() {
+	assert_3d_gldzm_feature_compat_regression (Nyxus::Feature3D::GLDZM_GLM, "3GLDZM_GLM",
+		make_gldzm3d_settings(-8, false));
+}
+
+void test_3d_gldzm_zdm_radiomics_regression() {
+	assert_3d_gldzm_feature_compat_regression (Nyxus::Feature3D::GLDZM_ZDM, "3GLDZM_ZDM",
+		make_gldzm3d_settings(-8, false));
+}
+
 void test_3d_gldzm_dump_regression()
 {
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();

@@ -937,6 +937,72 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDE_MIRP) {
 	ASSERT_NO_THROW(test_3d_gldzm_zde_mirp());
 }
 
+//***** 3D GLDZM vs mirp, radiomics binning point *****
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_SDE_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_sde_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_LDE_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_lde_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_LGLZE_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_lglze_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_HGLZE_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_hglze_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_SDLGLE_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_sdlgle_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_SDHGLE_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_sdhgle_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_LDLGLE_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_ldlgle_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_LDHGLE_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_ldhgle_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_GLNU_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_glnu_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_GLNUN_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_glnun_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDNU_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zdnu_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDNUN_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zdnun_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZP_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zp_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_GLV_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_glv_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDV_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zdv_radiomics_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDE_RADIOMICS_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_zde_radiomics_mirp());
+}
+
 //***** 3D GLDZM regression *****
 
 TEST(TEST_NYXUS, TEST_3D_GLDZM_GLM_REGRESSION) {
@@ -1013,6 +1079,22 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDE_REGRESSION) {
 
 TEST(TEST_NYXUS, TEST_3D_GLDZM_DUMP_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_gldzm_dump_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_GLM_COMPAT_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_gldzm_glm_compat_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDM_COMPAT_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_gldzm_zdm_compat_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_GLM_RADIOMICS_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_gldzm_glm_radiomics_regression());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDM_RADIOMICS_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_gldzm_zdm_radiomics_regression());
 }
 
 //***** 3D NGLDM vetted vs MIRP, at the recipe where both tools share a grey-level ladder *****
