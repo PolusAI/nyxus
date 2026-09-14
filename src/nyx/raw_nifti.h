@@ -5,6 +5,7 @@
 #include <tuple>
 #include <vector>
 #include "abs_tile_loader.h"
+#include "grey_level_cast.h"
 #include "raw_format.h"
 #include "io/nifti/nifti2_io.h"
 
@@ -340,19 +341,17 @@ private:
        // them) clamp to 0 instead of wrapping on the unsigned cast. Reading the volume's own
        // minimum here instead would produce a shift nothing downstream could undo.
        //
-       // A non-finite voxel takes grey level 0, the convention every load-time map uses: a float
-       // volume is free to hold NaN -- a masked-out background, most often -- and converting one
-       // to an unsigned integer is undefined. round_offset_ rounds to nearest under --preserve-hu,
-       // where scl_slope is routinely fractional on a PET-derived volume and the scale-1 inverse
-       // could not recover a truncated fraction; a volume read without the flag truncates, which
-       // is what a real-valued NIfTI has always done.
+       // Nyxus::grey_level() carries the narrowing every load-time map shares. A non-finite voxel
+       // takes grey level 0 -- a float volume is free to hold NaN, a masked-out background most
+       // often -- and one above the grey type's maximum saturates, which a 64-bit volume or a
+       // large scl_slope can reach. round_offset_ rounds to nearest under --preserve-hu, where
+       // scl_slope is routinely fractional on a PET-derived volume and the scale-1 inverse could
+       // not recover a truncated fraction; a volume read without the flag truncates, which is what
+       // a real-valued NIfTI has always done.
        for (size_t i = 0; i < n; ++i)
        {
            double v = cur_scl_slope_ * (double)houbuf[i] + cur_scl_inter_;
-           double y = v - inten_offset_;
-           if (! std::isfinite (y)) y = 0.0;
-           if (y < 0.0) y = 0.0;
-           nyxbuf[i] = round_offset_ ? static_cast<til>(std::llround (y)) : static_cast<til>(y);
+           nyxbuf[i] = Nyxus::grey_level<til> (v - inten_offset_, round_offset_);
        }
    }
 };

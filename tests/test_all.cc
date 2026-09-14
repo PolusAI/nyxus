@@ -1228,6 +1228,21 @@ TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_CONSTANT_NEGATIVE_FLOAT_ANALYTIC)
 	ASSERT_NO_THROW(test_hu_domain_map_constant_negative_float_analytic());
 }
 
+TEST(TEST_NYXUS, TEST_HU_GREY_LEVEL_CAST_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_grey_level_cast_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_OFFSET_SATURATES_ABOVE_GREY_RANGE_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_offset_saturates_above_grey_range_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_HU_DOMAIN_MAP_QUANTIZED_SATURATES_ABOVE_GREY_RANGE_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_hu_domain_map_quantized_saturates_above_grey_range_analytic());
+}
+
 TEST(TEST_NYXUS, TEST_2D_HU_FPIMAGE_OPTIONS_PARSE_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_hu_fpimage_options_parse_mechanics());

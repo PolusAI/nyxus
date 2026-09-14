@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <string>
+#include "grey_level_cast.h"
 #include "cli_anisotropy_options.h"
 #include "cli_fpimage_options.h"
 
@@ -95,7 +96,8 @@ public:
 	// actually stored.
 	unsigned int to_grey_level (double x) const
 	{
-		// The loaders store a non-finite sample as grey level 0; so does this.
+		// The loaders store a non-finite sample as grey level 0; so does this. It has to run ahead of
+		// the quantized clamp, which would otherwise store +Inf as the top grey level.
 		if (! std::isfinite (x))
 			return 0u;
 		if (inten_map == IntenMap::quantized)
@@ -104,11 +106,10 @@ public:
 			double fpmax = inten_offset + inten_scale * inten_top_grey;
 			double t = x < inten_offset ? inten_offset : x;
 			t = t > fpmax ? fpmax : t;
-			return (unsigned int)(inten_top_grey * (t - inten_offset) / (fpmax - inten_offset));
+			return Nyxus::grey_level_truncated<unsigned int> (inten_top_grey * (t - inten_offset) / (fpmax - inten_offset));
 		}
-		double y = (x - inten_offset) / inten_scale;
-		if (y < 0.0) y = 0.0;
-		return preserve_hu ? (unsigned int) std::llround (y) : (unsigned int) y;
+		// The same call the offset loaders make, with the rounding ImageLoader::open hands them.
+		return Nyxus::grey_level<unsigned int> ((x - inten_offset) / inten_scale, preserve_hu);
 	}
 
 	// The inverse: one stored grey level -> this slide's own intensity domain.

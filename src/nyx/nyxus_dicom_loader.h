@@ -1,6 +1,7 @@
 #ifdef DICOM_SUPPORT
 #pragma once
 #include <cmath>
+#include "grey_level_cast.h"
 #include "dcmtk/dcmdata/dctk.h"
 #include "dcmtk/dcmjpeg/djdecode.h"  /* for JPEG decoders */
 #include "dcmtk/dcmjpls/djdecode.h"  /* for JPEG-LS decoders */
@@ -265,18 +266,15 @@ private:
             // Get ahold of the raw pointer
                 DataType* dest = dest_as_vector.data();
                 for (size_t i=0; i<data_length; i++){
-                    // Rescale stored -> physical units, then shift by the recorded offset;
-                    // sub-minimum values clamp to 0 instead of wrapping on the unsigned cast.
+                    // Rescale stored -> physical units, then shift by the recorded offset.
                     // RescaleSlope / RescaleIntercept come straight off the tags, so an unusual
-                    // file can make this non-finite, and converting one is undefined: it takes
-                    // grey level 0, the convention every load-time map uses. round_offset_ rounds
-                    // to nearest under --preserve-hu, where a fractional slope (PET, SUV) would
-                    // otherwise be truncated away with a scale-1 inverse unable to recover it.
+                    // file can put a non-finite or out-of-range value here; Nyxus::grey_level()
+                    // takes the first to 0 and saturates the second, as every load-time map does.
+                    // round_offset_ rounds to nearest under --preserve-hu, where a fractional
+                    // slope (PET, SUV) would otherwise be truncated away with a scale-1 inverse
+                    // unable to recover it.
                     double hu = rescaleSlope_ * (double)buffer[i] + rescaleIntercept_;
-                    double y = hu - inten_offset_;
-                    if (! std::isfinite (y)) y = 0.0;
-                    if (y < 0.0) y = 0.0;
-                    *(dest+i) = round_offset_ ? (DataType) std::llround (y) : (DataType) y;
+                    *(dest+i) = Nyxus::grey_level<DataType> (hu - inten_offset_, round_offset_);
                 }
             } else {
                 std::stringstream message;

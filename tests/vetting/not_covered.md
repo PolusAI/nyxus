@@ -17,7 +17,7 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 
 ---
 
-## A. Test files no registry row references — 30 files, 98 test functions
+## A. Test files no registry row references — 30 files, 101 test functions
 
 Both totals are the sum of the two tables below, counting each distinct file once and
 skipping any row struck through as closed, so they can be recomputed from the tables.
@@ -69,7 +69,7 @@ omission matters:
 | ~~`test_neighbors_oracle.py`~~ | 2 | `PERCENT_TOUCHING`, `NUM_NEIGHBORS`, closest-neighbor distance on the production `featurize()` path | **CLOSED in Wave 15.** On inspection it asserts bounds and relations (`<= 100`, `> 0`, `== 100` for an enclosed ROI), not oracle values — so it is an `_invariant`, not the CellProfiler oracle assumed here. Renamed `test_2d_neighbor_invariant.py` and added to `current_test` on the 3 rows it covers. |
 | `test_2d_hu_regression.py` | 4 | first-order MIN/MAX/MEAN/INTEGRATED on a CT slide in Hounsfield units | a second config for existing firstorder rows (SPEC §1 "vetted on config A") — no row records it |
 | `test_3d_hu_nifti_regression.py` | 3 | the same on a 3D NIfTI volume with `scl_slope`/`scl_inter` | ditto, 3D |
-| `test_hu_analytic.h` | 16 | closed form of the load-time intensity map and its inverse, the range the scan records, and the `--fpimg*` rejections | analytic assertion with no row |
+| `test_hu_analytic.h` | 19 | closed form of the load-time intensity map and its inverse, the range the scan records, the `--fpimg*` rejections, and the shared grey-level narrowing including its saturation at both maps' upper ends | analytic assertion with no row |
 | `test_2d_hu_mechanics.h` | 8 | loader-level HU preservation (TIFF / DICOM / float) | plumbing, but it pins values |
 | `test_2d_signed_int16_loader_mechanics.py` | 2 | MIN/MAX/MEAN do not wrap for signed int16 | guards a wrap bug that silently corrupted values |
 | `test_2d_tiff_loader_mechanics.py` | 2 | pixel values and feature equality for uint32 strip TIFFs | guards a heap over-read that corrupted values |

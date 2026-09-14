@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include "grey_level_cast.h"
 #include "nlohmann/json.hpp"
 
 // factory functions to create files, groups and datasets
@@ -131,22 +132,15 @@ public:
     {
     }
 
-    // Every sample the unsigned pipeline type cannot hold is clamped or zeroed rather than
-    // converted: the buffer holds the sample as the file states it, and converting a negative,
-    // a non-finite or an above-UINT32_MAX double to an unsigned integer is undefined. A
-    // non-finite sample carries no label to keep, so it takes grey level 0 -- the convention
-    // every load-time map uses; the finite out-of-range ends saturate. The clamps are what make
-    // the accessor safe, not the fact that only a mask -- non-negative integer labels -- is read
-    // through it today. Both tile loaders zero a non-finite sample and clamp below in the same
-    // way before their own cast; the upper clamp is this accessor's alone, since a tile loader
-    // reads intensities through a recorded map rather than raw samples.
+    // The buffer holds the sample as the file states it, so a negative, non-finite or
+    // above-UINT32_MAX value reaches this accessor, and converting any of them to an unsigned
+    // integer is undefined. Nyxus::grey_level_truncated() zeroes the first two and saturates the
+    // third -- the same narrowing every load-time map now shares, rather than a clamp this accessor
+    // carries alone. That, not the fact that only a mask is read through it today, is what makes
+    // it safe. It truncates because it reads integer labels, not intensities.
     uint32_t get_uint32_pixel (size_t idx) const
     {
-        double y = dest[idx];
-        if (! std::isfinite (y)) return 0u;
-        if (y < 0.0) y = 0.0;
-        if (y > (double) UINT32_MAX) y = (double) UINT32_MAX;
-        return (uint32_t) y;
+        return Nyxus::grey_level_truncated<uint32_t> (dest[idx]);
     }
 
     double get_dpequiv_pixel (size_t idx) const
