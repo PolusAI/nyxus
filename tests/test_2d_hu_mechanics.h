@@ -116,13 +116,14 @@ void test_2d_hu_loader_float_nonpreserve_baseline_mechanics()
 #include "../src/nyx/nyxus_dicom_loader.h"
 
 // Load tile 0 of a CT DICOM fixture through the feature-path loader (which applies
-// RescaleSlope/Intercept then the recorded offset). inten_offset is the scanned min.
+// RescaleSlope/Intercept then the recorded offset). inten_offset is the scanned min;
+// round_offset is what ImageLoader::open passes from preserve_hu.
 static std::vector<uint32_t> hu_load_dicom_tile0(const char* fixture, double inten_offset,
-                                                 bool rescale = true)
+                                                 bool rescale = true, bool round_offset = false)
 {
     fs::path ds = hu_data_path(fixture);
     EXPECT_TRUE(fs::exists(ds)) << "missing fixture: " << ds.string();
-    NyxusGrayscaleDicomLoader<uint32_t> ldr(1, ds.string(), inten_offset, rescale);
+    NyxusGrayscaleDicomLoader<uint32_t> ldr(1, ds.string(), inten_offset, rescale, round_offset);
     size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
     EXPECT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
@@ -174,5 +175,38 @@ void test_2d_hu_loader_dicom_ct_small_baseline_mechanics()
     const size_t tw = 128;
     EXPECT_EQ(buf[0   * tw + 0  ], 175u);    // raw stored (positive int16, no wrap)
     EXPECT_EQ(buf[64  * tw + 64 ], 1928u);
+}
+
+// A fractional RescaleSlope, which is what a PET or SUV series carries. ct_frac.dcm is 16x16
+// uint16 with stored = idx (0..255), RescaleSlope 0.5 and RescaleIntercept -1024, so the
+// physical value is 0.5*idx - 1024 and half the pixels are fractional. With the scanned minimum
+// floored as the offset, the loader narrows y = 0.5*idx. Every other DICOM fixture has an
+// integral slope, where rounding and truncation agree and this narrowing cannot be seen.
+//
+// Under --preserve-hu the narrowing rounds to nearest: the inverse map carries a scale of 1, so
+// a truncated fraction could never be recovered.
+void test_2d_hu_loader_dicom_fractional_slope_rounds_under_preserve_hu_mechanics()
+{
+    auto buf = hu_load_dicom_tile0("ct_frac.dcm", /*inten_offset*/ -1024.0, /*rescale*/ true,
+                                   /*round_offset*/ true);
+    EXPECT_EQ(buf[0], 0u);        // y 0
+    EXPECT_EQ(buf[1], 1u);        // y 0.5   -> 1    (truncating would store 0)
+    EXPECT_EQ(buf[2], 1u);        // y 1     -> 1    integral: both narrowings agree
+    EXPECT_EQ(buf[3], 2u);        // y 1.5   -> 2    (truncating would store 1)
+    EXPECT_EQ(buf[255], 128u);    // y 127.5 -> 128  (truncating would store 127)
+}
+
+// Without the flag the same series truncates, which is what a slide read without --preserve-hu
+// has always done. Pinned against the same pixels, so the two cases above and below can only both
+// pass if the narrowing really follows the flag.
+void test_2d_hu_loader_dicom_fractional_slope_truncates_by_default_mechanics()
+{
+    auto buf = hu_load_dicom_tile0("ct_frac.dcm", /*inten_offset*/ -1024.0, /*rescale*/ true,
+                                   /*round_offset*/ false);
+    EXPECT_EQ(buf[0], 0u);
+    EXPECT_EQ(buf[1], 0u);        // y 0.5   -> 0
+    EXPECT_EQ(buf[2], 1u);        // y 1     -> 1
+    EXPECT_EQ(buf[3], 1u);        // y 1.5   -> 1
+    EXPECT_EQ(buf[255], 127u);    // y 127.5 -> 127
 }
 #endif // DICOM_SUPPORT
