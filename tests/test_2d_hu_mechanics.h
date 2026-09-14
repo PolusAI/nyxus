@@ -196,10 +196,11 @@ void test_2d_hu_loader_dicom_fractional_slope_rounds_under_preserve_hu_mechanics
     EXPECT_EQ(buf[255], 128u);    // y 127.5 -> 128  (truncating would store 127)
 }
 
-// Without the flag the same series truncates, which is what a slide read without --preserve-hu
-// has always done. Pinned against the same pixels, so the two cases above and below can only both
-// pass if the narrowing really follows the flag.
-void test_2d_hu_loader_dicom_fractional_slope_truncates_by_default_mechanics()
+// With round_offset off the loader's rescale-then-shift narrowing truncates. Pinned against the
+// same pixels, so the two cases above and below can only both pass if the narrowing really follows
+// the flag. A DICOM slide read without --preserve-hu does not reach this narrowing: it takes the
+// stored map, pinned end to end below.
+void test_2d_hu_loader_dicom_fractional_slope_truncates_without_round_offset_mechanics()
 {
     auto buf = hu_load_dicom_tile0("ct_frac.dcm", /*inten_offset*/ -1024.0, /*rescale*/ true,
                                    /*round_offset*/ false);
@@ -208,5 +209,57 @@ void test_2d_hu_loader_dicom_fractional_slope_truncates_by_default_mechanics()
     EXPECT_EQ(buf[2], 1u);        // y 1     -> 1
     EXPECT_EQ(buf[3], 1u);        // y 1.5   -> 1
     EXPECT_EQ(buf[255], 127u);    // y 127.5 -> 127
+}
+
+#include "../src/nyx/image_loader.h"
+
+// The whole load path for a fractional slope, from the scan through the recorder to the loader
+// ImageLoader::open picks. Without --preserve-hu ct_frac.dcm takes the stored map: the stored
+// integers are its grey levels, the slope 0.5 goes into the inverse, and every one of the 256
+// pixels reads back as its exact physical value 0.5*idx - 1024, fractions included. Under
+// --preserve-hu it takes the offset map, where each pixel reads back rounded to a whole unit.
+// The slide is scanned whole, with no mask, so the scanned range is the whole slide's.
+void test_2d_hu_dicom_fractional_slope_load_path_mechanics()
+{
+    for (bool preserve_hu : { false, true })
+    {
+        SlideProps p (hu_data_path("ct_frac.dcm").string(), "");
+        p.preserve_hu = preserve_hu;
+        AnisotropyOptions aniso;
+        FpImageOptions fpo;
+        ASSERT_TRUE(Nyxus::scan_slide_props(p, 2, aniso, fpo, false));
+
+        EXPECT_DOUBLE_EQ(p.min_allpix_inten, -1024.0);
+        EXPECT_DOUBLE_EQ(p.max_preroi_inten, -896.5);
+        if (preserve_hu)
+        {
+            ASSERT_EQ((int)p.inten_map, (int)IntenMap::offset);
+            EXPECT_DOUBLE_EQ(p.inten_scale, 1.0);
+        }
+        else
+        {
+            ASSERT_EQ((int)p.inten_map, (int)IntenMap::stored);
+            EXPECT_DOUBLE_EQ(p.inten_scale, 0.5);
+            EXPECT_DOUBLE_EQ(p.inten_stored_shift, 0.0);
+        }
+        EXPECT_DOUBLE_EQ(p.inten_offset, -1024.0);
+
+        ImageLoader ilo;
+        ASSERT_TRUE(ilo.open(p, fpo));
+        ASSERT_TRUE(ilo.load_tile(0));
+        const std::vector<uint32_t> & buf = ilo.get_int_tile_buffer();
+        ASSERT_GE(buf.size(), 256u);
+
+        for (size_t idx = 0; idx < 256; idx++)
+        {
+            double physical = 0.5 * (double) idx - 1024.0,
+                expected = preserve_hu ? -1024.0 + (double) std::llround (0.5 * (double) idx) : physical;
+            EXPECT_DOUBLE_EQ(p.to_source_intensity(buf[idx]), expected) << "preserve_hu " << preserve_hu << ", idx " << idx;
+        }
+
+        // the forward map lands on the grey levels the loader stored
+        EXPECT_EQ(p.to_grey_level(p.max_preroi_inten), buf[255]);
+        ilo.close();
+    }
 }
 #endif // DICOM_SUPPORT

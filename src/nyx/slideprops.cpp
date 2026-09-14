@@ -19,6 +19,7 @@ namespace Nyxus
 		// low-level slide properties (intensity and mask, if available)
 		p.lolvl_slide_descr = "from montage";
 		p.fp_phys_pivoxels = false;
+		p.integer_rescale = false;
 
 		// time series
 		p.inten_time = 0;
@@ -94,6 +95,7 @@ namespace Nyxus
 		// low-level slide properties (intensity and mask, if available)
 		p.lolvl_slide_descr = ilo.get_slide_descr();
 		p.fp_phys_pivoxels = ilo.get_fp_phys_pixvoxels();
+		p.integer_rescale = ilo.get_integer_rescale (p.rescale_slope, p.rescale_intercept);
 
 		// time series
 		p.inten_time = ilo.get_inten_time();
@@ -286,6 +288,7 @@ namespace Nyxus
 		// low-level slide properties (intensity and mask, if available)
 		p.lolvl_slide_descr = ilo.get_slide_descr();
 		p.fp_phys_pivoxels = ilo.get_fp_phys_pixvoxels();
+		p.integer_rescale = ilo.get_integer_rescale (p.rescale_slope, p.rescale_intercept);
 
 		// time series
 		p.inten_time = ilo.get_inten_time();
@@ -567,6 +570,7 @@ namespace Nyxus
 		p.inten_scale = 1.0;
 		p.inten_offset = 0.0;
 		p.inten_top_grey = 0.0;
+		p.inten_stored_shift = 0.0;
 		p.inten_map = IntenMap::native;
 
 		// A slide handed over in memory (montage / numpy input) never went through a tile
@@ -603,6 +607,42 @@ namespace Nyxus
 			// fractional constant survives the round trip exactly.
 			p.inten_map = IntenMap::offset;
 			p.inten_offset = fpmin;
+			return;
+		}
+
+		// A slide of integer samples that a header rescale carries into physical units keeps the
+		// stored integers as its grey levels and moves the rescale into the recorded inverse:
+		// intensity = (intercept + slope*shift) + slope*u. Nothing is narrowed, so no resolution is
+		// lost however small the slope -- a PET series with RescaleSlope 0.0005 keeps every one of
+		// its stored levels, where rescaling before narrowing would squeeze them into a handful.
+		// The shift follows the offset map's rule in stored units, so a slope-1 integer-intercept
+		// CT stores exactly the grey levels the offset map would: with a negative physical value
+		// anywhere the slide's minimum sits on grey level 0, and otherwise physical 0 stays there.
+		// preserve_hu asks for 1 grey level == 1 intensity unit and takes the offset map below
+		// instead; so does a slope the inverse cannot carry (zero, negative or non-finite).
+		if (p.integer_rescale && ! p.preserve_hu
+			&& std::isfinite (p.rescale_slope) && p.rescale_slope > 0.0 && std::isfinite (p.rescale_intercept))
+		{
+			double shift;
+			if (p.min_allpix_inten < 0.0)
+			{
+				// the stored minimum itself, recovered exactly: stored samples are integers
+				shift = std::round ((p.min_allpix_inten - p.rescale_intercept) / p.rescale_slope);
+			}
+			else
+			{
+				// The stored value that sits at physical 0, rounded down so no sample goes below it.
+				// A quotient within rounding error of an integer is that integer, so an exact case
+				// does not lose a level to the division.
+				double q = -p.rescale_intercept / p.rescale_slope,
+					r = std::round (q);
+				shift = std::fabs (q - r) <= 1e-9 * (std::max)(1.0, std::fabs (q)) ? r : std::floor (q);
+			}
+
+			p.inten_map = IntenMap::stored;
+			p.inten_scale = p.rescale_slope;
+			p.inten_stored_shift = shift;
+			p.inten_offset = p.rescale_intercept + p.rescale_slope * shift;
 			return;
 		}
 

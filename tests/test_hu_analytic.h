@@ -18,19 +18,23 @@
 //     SlideProps::to_grey_level(x) / SlideProps::to_source_intensity(u)
 //         (nyxus-src/src/nyx/slideprops.h, slideprops.cpp)
 //
-// Three maps, one per branch of the recorder:
+// Four maps, one per branch of the recorder:
 //   * offset     : u = x - floor(min) when the slide holds a negative intensity, so
 //                  1 HU == 1 grey level and negative CT no longer wraps on the unsigned
 //                  cast. The identity when nothing in the slide is negative. `min` is
 //                  the all-pixel minimum, not the within-mask one.
 //   * quantized  : a real-valued slide clamped to [min, max] then mapped onto
 //                  [0, target dynamic range] (keeps shape, not absolute intensities).
+//   * stored     : a slide of integer samples with a header rescale (DICOM, integer
+//                  NIfTI) keeps u = stored - shift, and the rescale moves into the
+//                  inverse, so a small slope loses no stored level.
 //   * native     : carried as it is (in-memory montage input, which never went through
 //                  a tile loader at all).
 //
 // The map is chosen from what the slide holds, not from the file format it arrived in:
 // every backend applies the recorded map at load time, so OME-Zarr takes the same
-// branches TIFF, NIfTI and DICOM do.
+// branches TIFF does. Only a header rescale, which DICOM and NIfTI alone carry, selects
+// the stored map.
 //
 // to_source_intensity() is the inverse the intensity families report through, so each
 // case also asserts the round trip that makes a reported feature absolute again.
@@ -523,4 +527,184 @@ void test_hu_domain_map_quantized_saturates_above_grey_range_analytic()
     EXPECT_EQ(p.to_grey_level(10.0), top);                            // the window maximum saturates
     EXPECT_NEAR((double) p.to_grey_level(1.0), 1.0e9, 2.0);           // a value inside still maps
     EXPECT_EQ(p.to_grey_level(std::numeric_limits<double>::infinity()), 0u);
+}
+
+// A PET-like series: stored 0..30000 with RescaleSlope 0.0005 and no intercept, so the physical
+// range is [0, 15]. The stored map keeps every stored level as a grey level and carries the slope
+// in the inverse. The offset map, which rescales before it narrows, would leave 16 grey levels for
+// the same slide -- the same slide under preserve_hu shows that side by side.
+void test_hu_domain_map_stored_small_slope_keeps_every_level_analytic()
+{
+    SlideProps p ("pet.dcm", "");
+    p.integer_rescale = true;
+    p.rescale_slope = 0.0005;
+    p.rescale_intercept = 0.0;
+    p.min_allpix_inten = 0.0;
+    p.min_preroi_inten = 0.0;
+    p.max_preroi_inten = 15.0;
+    FpImageOptions fpo;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    ASSERT_EQ((int)p.inten_map, (int)IntenMap::stored);
+    EXPECT_DOUBLE_EQ(p.inten_scale, 0.0005);
+    EXPECT_DOUBLE_EQ(p.inten_stored_shift, 0.0);
+    EXPECT_DOUBLE_EQ(p.inten_offset, 0.0);
+
+    EXPECT_EQ(p.to_grey_level(15.0), 30000u);                         // the top stored level
+    EXPECT_EQ(p.to_grey_level(0.0005 * 12345), 12345u);               // the forward map rounds float error away
+    EXPECT_EQ(p.to_grey_level(0.0005 * 12346), 12346u);               // and adjacent stored levels stay apart
+    EXPECT_DOUBLE_EQ(p.to_source_intensity(30000.0), 15.0);
+    EXPECT_DOUBLE_EQ(p.to_source_intensity(12345.0), 6.1725);
+
+    // the same slide under preserve_hu takes the offset map, 1 grey level == 1 intensity unit
+    SlideProps q = p;
+    q.preserve_hu = true;
+    Nyxus::record_intensity_domain_map (q, fpo);
+    ASSERT_EQ((int)q.inten_map, (int)IntenMap::offset);
+    EXPECT_EQ(q.to_grey_level(15.0), 15u);
+    EXPECT_EQ(q.to_grey_level(0.0005 * 12345), q.to_grey_level(0.0005 * 12346));
+}
+
+// A textbook CT, slope 1 with an integer intercept, lands on exactly the grey levels and inverse
+// the offset map gives the same slide -- with a negative value present (the minimum on grey level
+// 0) and without one (physical 0 on grey level 0). So a stored map changes nothing for such a CT.
+void test_hu_domain_map_stored_unit_slope_matches_offset_map_analytic()
+{
+    FpImageOptions fpo;
+    for (double min : { -1000.0, 0.0 })
+    {
+        SlideProps s ("ct.dcm", "");
+        s.integer_rescale = true;
+        s.rescale_slope = 1.0;
+        s.rescale_intercept = -1024.0;
+        s.min_allpix_inten = min;
+        s.min_preroi_inten = min;
+        s.max_preroi_inten = 3071.0;
+        Nyxus::record_intensity_domain_map (s, fpo);
+
+        SlideProps o = s;
+        o.integer_rescale = false;
+        Nyxus::record_intensity_domain_map (o, fpo);
+
+        ASSERT_EQ((int)s.inten_map, (int)IntenMap::stored);
+        ASSERT_EQ((int)o.inten_map, (int)IntenMap::offset);
+        EXPECT_DOUBLE_EQ(s.inten_scale, o.inten_scale);
+        EXPECT_DOUBLE_EQ(s.inten_offset, o.inten_offset);
+        // the stored shift is the offset map's shift carried back through the intercept
+        EXPECT_DOUBLE_EQ(s.inten_stored_shift, o.inten_offset + 1024.0);
+        for (double x : { min, -1.0, 0.0, 1.0, 3071.0 })
+            EXPECT_EQ(s.to_grey_level(x), o.to_grey_level(x)) << "min " << min << ", x " << x;
+    }
+}
+
+// Signed stored integers and a non-unit slope. ct3d_int16.nii's header: stored -200..311, slope 2,
+// intercept -1024, physical -1424..-402. The shift is the stored minimum, -200, so grey levels run
+// 0..511 and the inverse carries the slope. ct3d_frac.nii's: stored 0..511, slope 0.5, the same
+// intercept, physical -1024..-768.5 -- a fractional value the inverse reports exactly. And a
+// SlideProps built for a later pass inherits the shift along with the map.
+void test_hu_domain_map_stored_signed_and_fractional_analytic()
+{
+    FpImageOptions fpo;
+
+    SlideProps p ("ct3d_int16.nii", "");
+    p.integer_rescale = true;
+    p.rescale_slope = 2.0;
+    p.rescale_intercept = -1024.0;
+    p.min_allpix_inten = -1424.0;
+    p.min_preroi_inten = -1424.0;
+    p.max_preroi_inten = -402.0;
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    ASSERT_EQ((int)p.inten_map, (int)IntenMap::stored);
+    EXPECT_DOUBLE_EQ(p.inten_stored_shift, -200.0);
+    EXPECT_DOUBLE_EQ(p.inten_scale, 2.0);
+    EXPECT_DOUBLE_EQ(p.inten_offset, -1424.0);
+    EXPECT_EQ(p.to_grey_level(-1424.0), 0u);
+    EXPECT_EQ(p.to_grey_level(-402.0), 511u);
+    EXPECT_DOUBLE_EQ(p.to_source_intensity(511.0), -402.0);
+
+    SlideProps f ("ct3d_frac.nii", "");
+    f.integer_rescale = true;
+    f.rescale_slope = 0.5;
+    f.rescale_intercept = -1024.0;
+    f.min_allpix_inten = -1024.0;
+    f.min_preroi_inten = -1024.0;
+    f.max_preroi_inten = -768.5;
+    Nyxus::record_intensity_domain_map (f, fpo);
+
+    ASSERT_EQ((int)f.inten_map, (int)IntenMap::stored);
+    EXPECT_DOUBLE_EQ(f.inten_stored_shift, 0.0);
+    EXPECT_DOUBLE_EQ(f.inten_offset, -1024.0);
+    EXPECT_EQ(f.to_grey_level(-768.5), 511u);
+    EXPECT_EQ(f.to_grey_level(-1023.5), 1u);
+    EXPECT_DOUBLE_EQ(f.to_source_intensity(511.0), -768.5);
+    EXPECT_DOUBLE_EQ(f.to_source_intensity(1.0), -1023.5);
+
+    SlideProps pass ("ct3d_int16.nii", "");
+    pass.inherit_intensity_domain (p);
+    EXPECT_EQ((int)pass.inten_map, (int)IntenMap::stored);
+    EXPECT_DOUBLE_EQ(pass.inten_stored_shift, -200.0);
+    EXPECT_EQ(pass.to_grey_level(-402.0), 511u);
+}
+
+// With no negative value the shift is the stored value at physical 0, rounded down so no sample
+// goes below it. Two quotients show both halves of that: -1/0.3 is not an integer and floors to
+// -4, while 0.3/0.1 is exactly 3 but computes as 2.9999999999999996, which must not floor to 2.
+void test_hu_domain_map_stored_nonnegative_shift_analytic()
+{
+    FpImageOptions fpo;
+
+    SlideProps p ("a.nii", "");
+    p.integer_rescale = true;
+    p.rescale_slope = 0.3;
+    p.rescale_intercept = 1.0;
+    p.min_allpix_inten = 1.0;           // stored 0
+    p.min_preroi_inten = 1.0;
+    p.max_preroi_inten = 4.0;           // stored 10
+    Nyxus::record_intensity_domain_map (p, fpo);
+
+    ASSERT_EQ((int)p.inten_map, (int)IntenMap::stored);
+    EXPECT_DOUBLE_EQ(p.inten_stored_shift, -4.0);
+    EXPECT_EQ(p.to_grey_level(1.0), 4u);                              // stored 0 -> 0 - (-4)
+    EXPECT_NEAR(p.to_source_intensity(4.0), 1.0, 1e-12);
+
+    SlideProps q ("b.nii", "");
+    q.integer_rescale = true;
+    q.rescale_slope = 0.1;
+    q.rescale_intercept = -0.3;
+    q.min_allpix_inten = 0.0;
+    q.min_preroi_inten = 0.0;
+    q.max_preroi_inten = 1.0;
+    ASSERT_LT(0.3 / 0.1, 3.0);                                        // the quotient really is short of 3
+    Nyxus::record_intensity_domain_map (q, fpo);
+
+    ASSERT_EQ((int)q.inten_map, (int)IntenMap::stored);
+    EXPECT_DOUBLE_EQ(q.inten_stored_shift, 3.0);
+    EXPECT_EQ(q.to_grey_level(0.0), 0u);                              // physical 0 stays on grey level 0
+}
+
+// The stored map needs a positive, finite slope to carry in the inverse, and a header rescale to
+// carry at all. Anything else takes the offset map it would otherwise have taken.
+void test_hu_domain_map_stored_falls_back_to_offset_analytic()
+{
+    FpImageOptions fpo;
+    const double nan = std::numeric_limits<double>::quiet_NaN();
+
+    struct Case { bool integer_rescale; double slope, intercept; };
+    for (Case c : { Case{ true, 0.0, 0.0 }, Case{ true, -1.0, 0.0 }, Case{ true, nan, 0.0 },
+                    Case{ true, 1.0, nan }, Case{ false, 0.5, -1024.0 } })
+    {
+        SlideProps p ("x.nii", "");
+        p.integer_rescale = c.integer_rescale;
+        p.rescale_slope = c.slope;
+        p.rescale_intercept = c.intercept;
+        p.min_allpix_inten = -1024.0;
+        p.min_preroi_inten = -1024.0;
+        p.max_preroi_inten = 3071.0;
+        Nyxus::record_intensity_domain_map (p, fpo);
+
+        EXPECT_EQ((int)p.inten_map, (int)IntenMap::offset) << "slope " << c.slope << ", intercept " << c.intercept;
+        EXPECT_DOUBLE_EQ(p.inten_scale, 1.0);
+        EXPECT_DOUBLE_EQ(p.inten_stored_shift, 0.0);
+    }
 }

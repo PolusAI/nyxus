@@ -16,6 +16,16 @@ public:
 
     bool get_fp_pixels() { return fp_pixels_; }
 
+    // Whether the slide stores integer samples that a header rescale carries into physical units
+    // (DICOM RescaleSlope / RescaleIntercept, NIfTI scl_slope / scl_inter), and if so that rescale:
+    // physical = slope * stored + intercept. The recorder uses it to keep such a slide's stored
+    // integers as its grey levels and move the rescale into the recorded inverse. No other format
+    // carries one.
+    [[nodiscard]] virtual bool get_integer_rescale ([[maybe_unused]] double & slope, [[maybe_unused]] double & intercept) const
+    {
+        return false;
+    }
+
     virtual void loadTileFromFile (
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,

@@ -37,7 +37,8 @@ namespace Nyxus
 
 	// Round to nearest. The offset map under --preserve-hu: there a grey level is one intensity
 	// unit and the recorded inverse carries a scale of 1, so a fraction the cast dropped could never
-	// be recovered.
+	// be recovered. Also the stored map's forward map, which recovers an exact stored integer from a
+	// physical value only to within floating-point error.
 	template <class T>
 	inline T grey_level_rounded (double y)
 	{

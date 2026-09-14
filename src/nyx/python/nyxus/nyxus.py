@@ -122,10 +122,13 @@ class Nyxus:
         despite this option's name. What it actually does:
         Carry a FLOATING-POINT slide on the offset-preserving map (1 grey level = 1
         intensity unit, offset by the slide's floored minimum) instead of the min-max
-        rescaling controlled by dynamic_range/min_intensity/max_intensity. Integer, DICOM
-        and NIfTI slides take that map regardless of this flag, and DICOM
-        RescaleSlope/RescaleIntercept and NIfTI scl_slope/scl_inter are always applied, so
-        CT Hounsfield Units survive the load either way and negative values never wrap.
+        rescaling controlled by dynamic_range/min_intensity/max_intensity. A DICOM or
+        integer NIfTI slide takes it instead of the stored map, which keeps the stored
+        integers as grey levels and carries RescaleSlope/RescaleIntercept (scl_slope/
+        scl_inter) in the recorded inverse, so a fractional slope loses no stored level.
+        Other integer slides take the offset map regardless of this flag. The DICOM and
+        NIfTI rescale reaches the reported values either way, so CT Hounsfield Units survive
+        the load either way and negative values never wrap.
         Whichever map a slide takes is recorded and undone on the way out:
           * Every intensity feature -- location (mean, median, mode, percentiles, min, max),
             dispersion, the sum/energy family, and the Intensity Histogram (IH_*) features --
@@ -133,9 +136,11 @@ class Nyxus:
             reported in Hounsfield units, negatives included.
           * Shift-invariant intensity features (variance, standard deviation, skewness,
             kurtosis, range, interquartile range) and all shape/texture features: unaffected.
-          * Sub-unit precision is not preserved: grey levels are integers, so a slide whose
-            values are not integer-valued is reported rounded down to the grey level it was
-            stored as. Hounsfield units are integer-valued, so CT is unaffected.
+          * Sub-unit precision survives on the stored map, which reports a fractional
+            rescaled value exactly. Elsewhere grey levels are integers, so a value that is not
+            integer-valued is reported as the grey level it was stored as: truncated, or
+            rounded to nearest under preserve_hu. Hounsfield units are integer-valued, so CT
+            is unaffected.
     ram_limit: int (optional)
         Maximum amount of ram to be used by Nyxus in megabytes
     verbose: int (optional, default 0)
@@ -982,10 +987,13 @@ class Nyxus3D:
         despite this option's name. What it actually does:
         Carry a FLOATING-POINT slide on the offset-preserving map (1 grey level = 1
         intensity unit, offset by the slide's floored minimum) instead of the min-max
-        rescaling controlled by dynamic_range/min_intensity/max_intensity. Integer, DICOM
-        and NIfTI slides take that map regardless of this flag, and DICOM
-        RescaleSlope/RescaleIntercept and NIfTI scl_slope/scl_inter are always applied, so
-        CT Hounsfield Units survive the load either way and negative values never wrap.
+        rescaling controlled by dynamic_range/min_intensity/max_intensity. A DICOM or
+        integer NIfTI slide takes it instead of the stored map, which keeps the stored
+        integers as grey levels and carries RescaleSlope/RescaleIntercept (scl_slope/
+        scl_inter) in the recorded inverse, so a fractional slope loses no stored level.
+        Other integer slides take the offset map regardless of this flag. The DICOM and
+        NIfTI rescale reaches the reported values either way, so CT Hounsfield Units survive
+        the load either way and negative values never wrap.
         Whichever map a slide takes is recorded and undone on the way out:
           * Every intensity feature -- location (mean, median, mode, percentiles, min, max),
             dispersion, the sum/energy family, and the Intensity Histogram (IH_*) features --
@@ -993,9 +1001,11 @@ class Nyxus3D:
             reported in Hounsfield units, negatives included.
           * Shift-invariant intensity features (variance, standard deviation, skewness,
             kurtosis, range, interquartile range) and all shape/texture features: unaffected.
-          * Sub-unit precision is not preserved: grey levels are integers, so a slide whose
-            values are not integer-valued is reported rounded down to the grey level it was
-            stored as. Hounsfield units are integer-valued, so CT is unaffected.
+          * Sub-unit precision survives on the stored map, which reports a fractional
+            rescaled value exactly. Elsewhere grey levels are integers, so a value that is not
+            integer-valued is reported as the grey level it was stored as: truncated, or
+            rounded to nearest under preserve_hu. Hounsfield units are integer-valued, so CT
+            is unaffected.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)
@@ -1547,10 +1557,13 @@ class ImageQuality:
         despite this option's name. What it actually does:
         Carry a FLOATING-POINT slide on the offset-preserving map (1 grey level = 1
         intensity unit, offset by the slide's floored minimum) instead of the min-max
-        rescaling controlled by dynamic_range/min_intensity/max_intensity. Integer, DICOM
-        and NIfTI slides take that map regardless of this flag, and DICOM
-        RescaleSlope/RescaleIntercept and NIfTI scl_slope/scl_inter are always applied, so
-        CT Hounsfield Units survive the load either way and negative values never wrap.
+        rescaling controlled by dynamic_range/min_intensity/max_intensity. A DICOM or
+        integer NIfTI slide takes it instead of the stored map, which keeps the stored
+        integers as grey levels and carries RescaleSlope/RescaleIntercept (scl_slope/
+        scl_inter) in the recorded inverse, so a fractional slope loses no stored level.
+        Other integer slides take the offset map regardless of this flag. The DICOM and
+        NIfTI rescale reaches the reported values either way, so CT Hounsfield Units survive
+        the load either way and negative values never wrap.
         Whichever map a slide takes is recorded and undone on the way out:
           * Every intensity feature -- location (mean, median, mode, percentiles, min, max),
             dispersion, the sum/energy family, and the Intensity Histogram (IH_*) features --
@@ -1558,9 +1571,11 @@ class ImageQuality:
             reported in Hounsfield units, negatives included.
           * Shift-invariant intensity features (variance, standard deviation, skewness,
             kurtosis, range, interquartile range) and all shape/texture features: unaffected.
-          * Sub-unit precision is not preserved: grey levels are integers, so a slide whose
-            values are not integer-valued is reported rounded down to the grey level it was
-            stored as. Hounsfield units are integer-valued, so CT is unaffected.
+          * Sub-unit precision survives on the stored map, which reports a fractional
+            rescaled value exactly. Elsewhere grey levels are integers, so a value that is not
+            integer-valued is reported as the grey level it was stored as: truncated, or
+            rounded to nearest under preserve_hu. Hounsfield units are integer-valued, so CT
+            is unaffected.
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)

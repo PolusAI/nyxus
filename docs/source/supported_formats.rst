@@ -43,12 +43,17 @@ CT / Hounsfield Units
 Nyxus carries pixels internally as unsigned integers, so a slide holding negative values --
 every CT does, air sitting at roughly -1000 HU -- is offset at load time by its own floored
 minimum, ``value - floor(slide_min)``, which keeps one grey level equal to one intensity unit
-and stops the negatives wrapping on the unsigned cast. For DICOM and NIfTI the
-``RescaleSlope`` / ``RescaleIntercept`` tags (``scl_slope`` / ``scl_inter``) are applied first,
-so the offset is taken on true Hounsfield values. **That offset is recorded per slide and
+and stops the negatives wrapping on the unsigned cast. **That offset is recorded per slide and
 undone on the way out**: reported intensity features are in the slide's own domain, so a CT read
 in Hounsfield units is reported in Hounsfield units, negative values included. A slide with no
 negative pixel takes no offset at all.
+
+A DICOM slide, or a NIfTI volume of integer samples, carries a rescale in its header
+(``RescaleSlope`` / ``RescaleIntercept``, ``scl_slope`` / ``scl_inter``). Such a slide keeps its
+stored integers as its grey levels, shifted the same way, and the rescale joins the recorded
+inverse instead of being applied at load. Nothing is narrowed, so a slope well below 1 -- a PET or
+SUV series, an MR volume -- keeps every stored level, and a fractional rescaled value is reported
+exactly. For a CT with a slope of 1 the grey levels are the ones the offset map gives.
 
 .. note::
 
@@ -61,7 +66,9 @@ negative pixel takes no offset at all.
 to take that same offset map. Left off, a float slide is instead min-max rescaled into
 ``[0, --fpimgdr]``, which keeps its shape but quantizes it; that rescale is likewise recorded and
 undone, so its features come back in the slide's own float range rather than in quantization
-steps. Integer slides, DICOM and NIfTI do not need the flag.
+steps. Integer slides, DICOM and NIfTI do not need the flag. Given the flag, a DICOM or integer NIfTI
+slide is rescaled at load and takes the offset map, one grey level per intensity unit, with each
+value rounded to the nearest unit.
 
 Which feature families the load-time map touches:
 
@@ -70,9 +77,10 @@ Which feature families the load-time map touches:
   the slide's own intensity domain, as are the Intensity Histogram (``IH_*``) features.
 * Shift-invariant intensity features (variance, standard deviation, skewness, kurtosis, range,
   interquartile range) and all shape/texture features are unaffected by the offset.
-* Sub-unit precision is not preserved: grey levels are integers, so a slide whose values are not
-  integer-valued is reported rounded down to the grey level it was stored as. Hounsfield units
-  are integer-valued, so CT is unaffected.
+* Sub-unit precision survives where the stored integers are kept (DICOM and integer NIfTI read
+  without ``--preserve-hu``). Elsewhere grey levels are integers, so a value that is not
+  integer-valued is reported as the grey level it was stored as: truncated, or rounded to nearest
+  under ``--preserve-hu``. Hounsfield units are integer-valued, so CT is unaffected.
 
 
 

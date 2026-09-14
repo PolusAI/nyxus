@@ -303,3 +303,8 @@ bool RawImageLoader::get_fp_phys_pixvoxels()
 	return intFL->get_fp_pixels();
 }
 
+bool RawImageLoader::get_integer_rescale (double & slope, double & intercept)
+{
+	return intFL->get_integer_rescale (slope, intercept);
+}
+

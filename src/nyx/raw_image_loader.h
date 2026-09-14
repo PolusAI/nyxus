@@ -37,6 +37,7 @@ public:
 
 	std::string get_slide_descr();
 	bool get_fp_phys_pixvoxels();
+	bool get_integer_rescale (double & slope, double & intercept);
 
 private:
 	
