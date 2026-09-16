@@ -160,14 +160,12 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	// after binning the background filling the rest of the bounding box is indistinguishable from a
 	// genuine level-1 ROI voxel. The voxel cloud is what knows, and the 2D twin ngldm.cpp masks from
 	// it for the same reason.
+	// allocate() value-initialises a fresh cube, so every voxel starts at 0, "not the ROI's".
 	SimpleCube<int> dist;
 	dist.allocate (D.width(), D.height(), D.depth());
-	dist.fill (0);
 	auto xmin = r.aabb.get_xmin(),
 		ymin = r.aabb.get_ymin(),
 		zmin = r.aabb.get_zmin();
-	for (const auto& p : r.raw_pixels_3D)
-		dist.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)) = 1;
 
 	// -- a GLDZM grey level is 1-based, and two of the three binning schemes can hand back a 0 for a
 	// voxel that is genuinely the ROI's: the IBSI setting bins nothing at all, so a raw intensity of 0
@@ -177,38 +175,45 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	// out of the ZP denominator's numerator while they still counted in the ROI's voxel total.
 	// The lift is by one, not a re-map onto a dense ladder: it makes the levels valid and changes
 	// nothing else about their spacing, which the grey-level-weighted features are weighted by.
+	//
+	// The grey levels are the ROI's, not the bounding box's, so they are gathered over the voxel cloud,
+	// in the same pass that marks the ROI and looks for a zero level. Whether to lift is only known
+	// once that pass is over, so the levels are gathered before the lift and moved up with it.
+	const bool ibsi_levels = ibsi_grey_binning (greyInfo);
 	bool roi_has_zero_level = false;
+	PixIntens max_level = 0;
+	std::unordered_set<PixIntens> U;
 	for (const auto& p : r.raw_pixels_3D)
-		if (D.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)) == 0)
-		{
-			roi_has_zero_level = true;
-			break;
-		}
+	{
+		int z = int(p.z - zmin), y = int(p.y - ymin), x = int(p.x - xmin);
+		dist.zyx (z, y, x) = 1;
+		PixIntens level = D.zyx (z, y, x);
+		roi_has_zero_level = roi_has_zero_level || level == 0;
+		if (ibsi_levels)
+			max_level = std::max (max_level, level);
+		else
+			U.insert (level);
+	}
 	if (roi_has_zero_level)
 		for (const auto& p : r.raw_pixels_3D)
 			D.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)) += 1;
 
-	// allocate intensities matrix. The grey levels are the ROI's, not the bounding box's, so they are
-	// gathered over the voxel cloud too.
+	// allocate intensities matrix
 	std::vector<PixIntens> I;
-	if (ibsi_grey_binning(greyInfo))
+	if (ibsi_levels)
 	{
-		PixIntens n_ibsi_levels = 0;
-		for (const auto& p : r.raw_pixels_3D)
-			n_ibsi_levels = std::max (n_ibsi_levels,
-				D.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)));
+		PixIntens n_ibsi_levels = roi_has_zero_level ? max_level + 1 : max_level;
 		I.resize (n_ibsi_levels);
 		for (PixIntens i = 0; i < n_ibsi_levels; i++)
 			I[i] = i + 1;
 	}
 	else // radiomics and matlab
 	{
-		std::unordered_set<PixIntens> U;
-		for (const auto& p : r.raw_pixels_3D)
-			U.insert (D.zyx (int(p.z - zmin), int(p.y - ymin), int(p.x - xmin)));
-		U.erase(0);	// discard intensity '0'
-		I.assign(U.begin(), U.end());
-		std::sort(I.begin(), I.end());
+		// no level here is 0: either no ROI voxel had one, or the lift moved it to 1
+		I.reserve (U.size());
+		for (auto level : U)
+			I.push_back (roi_has_zero_level ? level + 1 : level);
+		std::sort (I.begin(), I.end());
 	}
 
 	//==== Distance of every ROI voxel to the ROI border. One pass over the box, not a lookup per
