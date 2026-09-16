@@ -252,8 +252,8 @@ FAMILY = scanlib.Family(
     oracle_suffix=ORACLE_SUFFIX,
     notes=NOTE,
     collect_override=collect,
-    # the mechanics guards are neither oracle nor regression, and this family names them in a
-    # column of their own rather than folding them into the notes
+    # the mechanics guards are neither oracle nor regression; they are listed in the
+    # scan_other_tests column of test_output.csv
     # every built-in check is replaced by the per-kind model above, registration included
     checks=frozenset(),
     extra_problems=disagreements,
