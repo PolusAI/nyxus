@@ -72,88 +72,71 @@ void D3_NGLDM_feature::clear_buffers()
 		f_DCENE = 0;
 }
 
-template <class PixelCloud> void D3_NGLDM_feature::gather_unique_intensities (std::vector<PixIntens>& V, PixelCloud& C, PixIntens max_inten, int nGrays, bool ibsi)
-{
-	// Find unique intensities
-	std::unordered_set<PixIntens> U;
-	PixIntens range = max_inten - 0;
-	for (const auto& p : C)
-	{
-		PixIntens inten_ = Nyxus::to_grayscale(p.inten, 0, range, nGrays, ibsi);
-		U.insert(inten_);
-	}
-
-	// Cast the set to vector to be able to access intensities by indices
-	V.insert(V.end(), U.begin(), U.end());
-	std::sort(V.begin(), V.end());
-}
-
 /**
  * Calculates an NGLD-matrix over the ROI voxels.
  *
  * @param NGLDM		(output) the NGLDM
  * @param Nr		(output) Nr - max column index of non-zero element of NGLDM plus 1 for zero dependency
+ * @param C			ROI voxel cloud; its voxels are the NGLDM centers
+ * @param aabb		ROI bounding box, the origin of 'I' and 'roi_mask'
  * @param I			Masked ROI image matrix. (Non-ROI elements are equal to zero.)
  * @param roi_mask	Nonzero exactly at the ROI voxels of the bounding box
  * @param U			Grey levels LUT
  * @param max_inten	Maximum intensity
  */
 
-void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& Nr, /*not const*/ SimpleCube<PixIntens>& I, const SimpleCube<unsigned char>& roi_mask, const std::vector<PixIntens>& U, PixIntens max_inten, int nGrays, bool ibsi)
+void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& Nr, const std::vector<Pixel3>& C, const AABB& aabb, /*not const*/ SimpleCube<PixIntens>& I, const SimpleCube<unsigned char>& roi_mask, const std::vector<PixIntens>& U, PixIntens max_inten, int nGrays, bool ibsi)
 {
 	// Temps
 	PixIntens range = max_inten - 0;
+	auto xmin = aabb.get_xmin(),
+		ymin = aabb.get_ymin(),
+		zmin = aabb.get_zmin();
 
 	// Reset the max dependency
 	int max_dep = 0;
 
-	// Iterate every ROI voxel. Border voxels of the bounding box are valid NGLDM centers; neighbors
-	// outside the volume or outside the ROI simply do not contribute matches.
-	for (int z = 0; z < I.depth(); z++)
+	// Every ROI voxel is a center, visited straight from the voxel cloud so the background filling
+	// the rest of the bounding box costs nothing. Border voxels of the bounding box are valid centers;
+	// neighbors outside the volume or outside the ROI simply do not contribute matches.
+	for (const auto& p : C)
 	{
-		for (int y = 0; y < I.height(); y++)
+		int z = (int)(p.z - zmin),
+			y = (int)(p.y - ymin),
+			x = (int)(p.x - xmin);
+
+		// Raw intensity of the central voxel
+		PixIntens cpi = I.zyx (z, y, x);
+
+		// Binned intensity
+		PixIntens cpi_ = Nyxus::to_grayscale (cpi, 0, range, nGrays, ibsi);	// binned 'cpi'
+
+		// Get a dense index value for sparse binned intensity cpi_
+		auto iter = std::find(U.begin(), U.end(), cpi_);
+		if (iter == U.end())
+			continue;
+		int row = (int)(iter - U.begin());
+
+		// Having voxel (z,y,x) as the center, iterate voxels of the neighborhood and update its histogram
+		int n_matches = 0;	// (z,y,x)'s dependency -- the number of matches of center voxel (z,y,x)'s intensity in its neighborhood
+		for (int i = 0; i < nsh; i++)
 		{
-			for (int x = 0; x < I.width(); x++)
-			{
-				// The NGLDM is defined over the ROI, so the background filling the rest of the
-				// bounding box is not a center
-				if (roi_mask.zyx (z, y, x) == 0)
-					continue;
+			int nz = z + shifts[i].dz,
+				ny = y + shifts[i].dy,
+				nx = x + shifts[i].dx;
+			if (!roi_mask.safe (nz, ny, nx) || roi_mask.zyx (nz, ny, nx) == 0)
+				continue;
 
-				// Raw intensity of the central voxel
-				PixIntens cpi = I.zyx (z, y, x);
-
-				// Binned intensity
-				PixIntens cpi_ = Nyxus::to_grayscale (cpi, 0, range, nGrays, ibsi);	// binned 'cpi'
-
-				// Get a dense index value for sparse binned intensity cpi_
-				auto iter = std::find(U.begin(), U.end(), cpi_);
-				if (iter == U.end())
-					continue;
-				int row = (int)(iter - U.begin());
-
-				// Having voxel (z,y,x) as the center, iterate voxels of the neighborhood and update its histogram 
-				int n_matches = 0;	// (z,y,x)'s dependency -- the number of matches of center voxel (z,y,x)'s intensity in its neighborhood
-				for (int i = 0; i < nsh; i++)
-				{
-					int nz = z + shifts[i].dz,
-						ny = y + shifts[i].dy,
-						nx = x + shifts[i].dx;
-					if (!roi_mask.safe (nz, ny, nx) || roi_mask.zyx (nz, ny, nx) == 0)
-						continue;
-
-					PixIntens npi = I.zyx (nz, ny, nx);	// neighboring voxel intensity
-					PixIntens npi_ = Nyxus::to_grayscale (npi, 0, range, nGrays, ibsi);	// binned 'npi'
-					if (cpi_ == npi_)
-						n_matches++;
-				}
-				unsigned int& binCount = NGLDM.yx(row, n_matches);
-				binCount++;
-
-				// Update the max dependency
-				max_dep = std::max(max_dep, n_matches);
-			}
+			PixIntens npi = I.zyx (nz, ny, nx);	// neighboring voxel intensity
+			PixIntens npi_ = Nyxus::to_grayscale (npi, 0, range, nGrays, ibsi);	// binned 'npi'
+			if (cpi_ == npi_)
+				n_matches++;
 		}
+		unsigned int& binCount = NGLDM.yx(row, n_matches);
+		binCount++;
+
+		// Update the max dependency
+		max_dep = std::max(max_dep, n_matches);
 	}
 
 	// The result matrix NGLDM is one column wider due to eistence of the leftmost zero-dependency column
@@ -210,27 +193,34 @@ void D3_NGLDM_feature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGL
 	//==== Temps
 	/*const*/ SimpleCube<PixIntens> & I = r.aux_image_cube;
 
-	//==== Unique binned intensities gathered from the ROI voxels, so the background filling the rest
-	// of the bounding box contributes no grey level
-	gather_unique_intensities (grey_levels_LUT, r.raw_pixels_3D, r.aux_max, n_greys, ibsi);
-	Ng = grey_levels_LUT.size();
-
-	int maxNr = nsh + 1;	// max number of columns in the NGLDM = max dependence 26 (due to 26 neighbors) + zero
-
-	//==== ROI mask over the bounding box: which voxels of the cube are the ROI's
+	//==== One pass over the ROI voxels builds both the ROI mask over the bounding box (which voxels of
+	// the cube are the ROI's) and the set of unique binned intensities, so the background filling the
+	// rest of the bounding box contributes no grey level
 	SimpleCube<unsigned char> roi_mask;
 	roi_mask.allocate (I.width(), I.height(), I.depth());
 	roi_mask.fill (0);
 	auto xmin = r.aabb.get_xmin(),
 		ymin = r.aabb.get_ymin(),
 		zmin = r.aabb.get_zmin();
+	PixIntens range = r.aux_max - 0;
+	std::unordered_set<PixIntens> U;
 	for (const auto& p : r.raw_pixels_3D)
+	{
 		roi_mask.zyx (p.z - zmin, p.y - ymin, p.x - xmin) = 1;
+		U.insert (Nyxus::to_grayscale (p.inten, 0, range, n_greys, ibsi));
+	}
+
+	// Cast the set to vector to be able to access intensities by indices
+	grey_levels_LUT.insert (grey_levels_LUT.end(), U.begin(), U.end());
+	std::sort (grey_levels_LUT.begin(), grey_levels_LUT.end());
+	Ng = grey_levels_LUT.size();
+
+	int maxNr = nsh + 1;	// max number of columns in the NGLDM = max dependence 26 (due to 26 neighbors) + zero
 
 	//==== NGLD-matrix
 	NGLDM.allocate(maxNr, Ng);	// Ng rows, maxNr columns, but we may end up having fewer informative columns after the NGLD-matrix calculation
 	NGLDM.fill(0);
-	calc_ngld_matrix (NGLDM, Nr, I, roi_mask, grey_levels_LUT, r.aux_max, n_greys, ibsi);	// sets the actual max dependency 'Nr'
+	calc_ngld_matrix (NGLDM, Nr, r.raw_pixels_3D, r.aabb, I, roi_mask, grey_levels_LUT, r.aux_max, n_greys, ibsi);	// sets the actual max dependency 'Nr'
 }
 
 void D3_NGLDM_feature::calc_rowwise_and_columnwise_totals(
