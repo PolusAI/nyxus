@@ -3,7 +3,7 @@
     python tests/vetting/audit/scan_imq_coverage.py --check
 
 The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
-tree, and `report_features.py` joins it into `test_output.csv`. `--check` runs the acceptance checks.
+tree, and `report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance checks.
 The run loop lives in scanlib.py; the reading and the acceptance model below are this family's own.
 
 Each row is checked against the tests of its OWN kind -- a vetted row against the oracle files, a
@@ -253,7 +253,7 @@ FAMILY = scanlib.Family(
     notes=NOTE,
     collect_override=collect,
     # the mechanics guards are neither oracle nor regression; they are listed in the
-    # scan_other_tests column of test_output.csv
+    # scan_other_tests column of report_output.csv
     # every built-in check is replaced by the per-kind model above, registration included
     checks=frozenset(),
     extra_problems=disagreements,

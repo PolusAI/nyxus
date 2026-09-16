@@ -13,8 +13,8 @@ the actual test migration/rollout happens after the spec is approved and merged.
 | [`check_test_names.py`](check_test_names.py) | Enforces the SPEC §6.1 file-name and §6.2 function-name conventions over the whole test tree, including gtest case names. `--check` fails in CI. |
 | [`benchmarks.md`](benchmarks.md) | The fixtures assertions run on (SPEC §6.3): what each one is, why it exists, and which recipes and tests use it. A `benchmark` id in the registry must be defined here, which `check_coverage.py` enforces — as it does for `test_name`, which must resolve to a gtest case in `test_all.cc`. |
 | [`matrix/`](matrix/) | Per-family config matrices (SPEC §5.1): the settings a family actually reads, the config points they produce, and each point's verdict. |
-| [`report_features.py`](report_features.py) | Generates [`test_output.csv`](test_output.csv) and [`test_output.md`](test_output.md) — the whole report, one row per (dim, feature, oracle, config_recipe), joining what the registry CLAIMS to what the tree ASSERTS. Its `verdict` column is the join and `verdict_scope` says how far that join reached — `row+config` compared the row's own assertion at its own config, `row` its own assertion, `feature` only the feature, which is all a row with no `test_name` can be asked. `test_output.csv` also carries each feature's scanner note (`scan_notes`). `--check` fails in CI on any row that disagrees without an allowlisted reason. **This is the artifact to read.** |
-| [`test_output.md`](test_output.md) | The generated report: coverage, verdicts, the families no scanner covers, the family × oracle matrix, the dimensionality split. Never edit by hand. |
+| [`report_features.py`](report_features.py) | Generates [`report_output.csv`](report_output.csv) and [`report_output.md`](report_output.md) — the whole report, one row per (dim, feature, oracle, config_recipe), joining what the registry CLAIMS to what the tree ASSERTS. Its `verdict` column is the join and `verdict_scope` says how far that join reached — `row+config` compared the row's own assertion at its own config, `row` its own assertion, `feature` only the feature, which is all a row with no `test_name` can be asked. `report_output.csv` also carries each feature's scanner note (`scan_notes`). `--check` fails in CI on any row that disagrees without an allowlisted reason. **This is the artifact to read.** |
+| [`report_output.md`](report_output.md) | The generated report: coverage, verdicts, the families no scanner covers, the family × oracle matrix, the dimensionality split. Never edit by hand. |
 | [`audit/`](audit/) | Baseline coverage audit of the current test tree (see below), and the per-family coverage scanners that keep it current. |
 | [`audit/scanlib.py`](audit/scanlib.py) | The scanners' shared machinery: the coverage rule and the acceptance checks, in one place. Each `audit/scan_*_coverage.py` is the family's declaration on top of it — which files to read, how the family spells its feature names in C++, which checks apply. |
 | [`audit/scanlib_selftest.py`](audit/scanlib_selftest.py) | Negative controls for the coverage rule itself, on fixtures rather than on the tree: a literal the case never loops, a returned value the caller discards, a gtest case registered on one line, and a registry row whose `config_recipe` has been swapped for another of its family's. The per-family `--check` cannot catch these — it reads the tree through the very rule being tested. Runs in CI. |
@@ -42,7 +42,7 @@ Tracked artifacts (the rest are regenerable — see below):
 `audit/scan_<family>_coverage.py` reads the family's feature -> test mapping out of the test
 sources, so it cannot drift from the tree, and runs that family's acceptance checks against
 `oracle_coverage.csv`. A scanner writes no file of its own: `report_features.py` imports every
-declaration and joins the scan into `test_output.csv`. Every family in the registry has one, and all
+declaration and joins the scan into `report_output.csv`. Every family in the registry has one, and all
 twenty-five share `scanlib.py`; a family whose tests genuinely read differently (2D moments resolves golden tables, not
 assertion lines) or which judges differently (2D NGTDM, IMQ, 3D GLDM and 3D GLSZM check each row
 against the tests of its own KIND) overrides that part in its own file, where the difference is
@@ -55,7 +55,7 @@ every family before failing and names the ones that failed, beside `check_covera
 Regenerable byproducts of the retired pipeline, all git-ignored and all under `audit/`:
 `audit/features.csv`, `audit_scan.txt`, `vetting_pivot.csv`, `gap_not_tested.csv`,
 `gap_claimed_3p.csv`, `gap_regression.csv`. `audit/features.csv` is not the tracked
-`tests/vetting/test_output.csv` the table above links. Run
+`tests/vetting/report_output.csv` the table above links. Run
 `extract_features.py && scan_tests.py && merge.py && report.py` from this folder to rebuild them
 (and to refresh `vetting_report.csv`).
 

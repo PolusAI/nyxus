@@ -494,9 +494,9 @@ worth listing separately so nobody reads the coverage percentage as more than it
 | `imq` (`LOCAL_FOCUS_SCORE`) | OpenCV supplies the **Laplacian and the population variance** — the filtered image is checked cell for cell, residual exactly 0 — but the **tiling** is Nyxus': `get_local_focus_score()` picks which sub-arrays to visit and divides by `scale²`, and the generator reproduces that rather than taking it from a tool. So the oracle vets the per-tile statistic *conditional on* the tiling, and the tiling is exactly where the family's open defect is (one tile of four, `todo.md` 28). Measured by the generator's negative control: scoring the same feature over all four tiles gives 28.341145833333336 against the pinned one-tile 7.5763888888888902, so 73% of the feature sits outside what this oracle reaches. `FOCUS_SCORE` is not in this position — cv2 computes the whole of it | nothing external: no tool implements Nyxus' tiling, because it is not a published convention. What closes it is fixing the loop bound, at which point the divisor and the tile set agree and the whole quantity is `mean(var(Laplacian(tile)))`, which cv2 does compute |
 
 The registry records the split where it can: `scan_gabor_coverage.py`'s GABOR note in
-`test_output.csv` names the analytic half, and both `oracle_coverage.csv` rows spell it out in
+`report_output.csv` names the analytic half, and both `oracle_coverage.csv` rows spell it out in
 `notes`. `imq`'s split lives in the `scan_notes` column `scan_imq_coverage.py` contributes to
-`test_output.csv`, and in the `LOCAL_FOCUS_SCORE` registry row's `notes`. The `oracle`
+`report_output.csv`, and in the `LOCAL_FOCUS_SCORE` registry row's `notes`. The `oracle`
 column itself holds one SPEC §4 token by construction, so `notes` is where the narrowing has to live
 — the same arrangement SPEC §4 documents for `matlab`.
 

@@ -3,7 +3,7 @@
     python tests/vetting/audit/scan_ngtdm_coverage.py --check
 
 The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
-tree, and `report_features.py` joins it into `test_output.csv`. `--check` runs the acceptance check
+tree, and `report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance check
 below. The coverage rule and the scan live in scanlib.py.
 
 This family does NOT use scanlib's shared checks. They read `current_test` per feature: every file

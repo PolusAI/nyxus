@@ -4,7 +4,7 @@
 
 The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
 tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
-checks live in scanlib.py; `report_features.py` joins the scan into `test_output.csv`. This file is
+checks live in scanlib.py; `report_features.py` joins the scan into `report_output.csv`. This file is
 the family's declaration.
 """
 import sys
@@ -29,7 +29,7 @@ NOTE = {
                  "eight wedge SUMS over all eight.",
 }
 
-# Scanned, reported in test_output.csv's scan_other_tests column, and deliberately NOT expected in
+# Scanned, reported in report_output.csv's scan_other_tests column, and deliberately NOT expected in
 # current_test. Every assertion in this file pins a value that
 # audit/radial_2d_cellprofiler_vetting_report.md section 6 shows is wrong (defects 1-3), so a
 # correct fix must change all of them. Crediting the file as coverage would make those defects

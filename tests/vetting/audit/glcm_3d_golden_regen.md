@@ -123,7 +123,7 @@ which is what kept `test_3d_glcm_regression.h` — and still keeps
 
 ```
 python tests/vetting/audit/scan_glcm3d_coverage.py --check   # acceptance check
-python tests/vetting/report_features.py --write          # regenerate test_output.csv
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```
 
 One 3D-specific wrinkle the scanner handles, worth copying for the remaining 3D families: tests

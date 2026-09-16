@@ -4,7 +4,7 @@
 
 The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
 tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
-checks live in scanlib.py; `report_features.py` joins the scan into `test_output.csv`. This file is
+checks live in scanlib.py; `report_features.py` joins the scan into `report_output.csv`. This file is
 the family's declaration.
 """
 import os
@@ -53,7 +53,7 @@ FAMILY = scanlib.Family(
     scan_helpers=True,
     other_note="guarded",
     # A drift guard is not a vetting claim, so current_test lists the oracle files only; the
-    # regression and mechanics files are reported in test_output.csv, not required in the registry.
+    # regression and mechanics files are reported in report_output.csv, not required in the registry.
     current_exempt=("test_2d_gldm_regression.h", "test_2d_gldm_mechanics.h",
                     "test_2d_gldm_mechanics.py"),
 )

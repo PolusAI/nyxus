@@ -7,7 +7,7 @@ everywhere it applies. A `scan_*_coverage.py` file is the family's declaration o
 whatever is genuinely its own.
 
 A scanner writes nothing. What it reads out of the tree reaches a reader through
-`report_features.py`, which imports every declaration and joins the scan into `test_output.csv`;
+`report_features.py`, which imports every declaration and joins the scan into `report_output.csv`;
 running a scanner on its own runs the family's acceptance checks.
 
 ## The coverage rule
@@ -740,7 +740,7 @@ def run(fam, argv=None):
     """Run the family's acceptance checks; exit status 1 on any problem.
 
     `--check` is accepted and is what the recorded commands spell; there is no other mode, because
-    the scan's output lives in `test_output.csv` and `report_features.py` is what writes it.
+    the scan's output lives in `report_output.csv` and `report_features.py` is what writes it.
     """
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",

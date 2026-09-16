@@ -138,7 +138,7 @@ reintroduce a two-env `.npy` hand-off.
 
 ```
 python tests/vetting/audit/scan_ngldm3d_coverage.py --check   # acceptance check
-python tests/vetting/report_features.py --write          # regenerate test_output.csv
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```
 
 `ORACLE_SUFFIX` maps `mirp` to the `_mirp` suffix, so `--check` credits `test_3d_ngldm_mirp.h`'s 16
