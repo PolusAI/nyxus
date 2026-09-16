@@ -201,7 +201,7 @@ and no hand-kept counts.
 
 ```
 python tests/vetting/audit/scan_morphology3d_coverage.py --check   # acceptance check
-python tests/vetting/report_features.py --write          # regenerate test_output.csv
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```
 
 `--check` asserts that every `vetted` row is backed by an oracle-suffixed test naming the oracle the

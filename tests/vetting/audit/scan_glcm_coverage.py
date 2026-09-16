@@ -4,7 +4,7 @@
 
 The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
 tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
-checks live in scanlib.py; `report_features.py` joins the scan into `test_output.csv`. This file is
+checks live in scanlib.py; `report_features.py` joins the scan into `report_output.csv`. This file is
 the family's declaration.
 """
 import os

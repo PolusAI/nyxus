@@ -3,7 +3,7 @@
     python tests/vetting/audit/scan_intensity_histogram_coverage.py --check
 
 The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
-tree, and `report_features.py` joins it into `test_output.csv`. `--check` runs the acceptance checks,
+tree, and `report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance checks,
 which live in scanlib.py.
 
 This family overrides scanlib's collect for two reasons, one sound and one not:

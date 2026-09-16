@@ -92,7 +92,7 @@ verified, 0 failed, 0 unproducible, 0 unquoted.**
 
 ```
 python tests/vetting/audit/scan_gldzm3d_coverage.py --check   # acceptance check
-python tests/vetting/report_features.py --write          # regenerate test_output.csv
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```
 
 `ORACLE_SUFFIX` is `{"mirp": "mirp"}`, so `--check` holds a `vetted` row to naming an oracle test
@@ -101,7 +101,7 @@ the file its `current_test` names, and holds every test function defined in the 
 registered — the last of which is the check `3GLDZM_ZDM` needed and did not have.
 
 Rerun it after any change to the family's registry rows or test files, and commit the regenerated
-`test_output.csv` with them: CI runs `report_features.py --check`, and a stale report fails it.
+`report_output.csv` with them: CI runs `report_features.py --check`, and a stale report fails it.
 
 ## Two cheap checks on a regenerated table, before believing it
 

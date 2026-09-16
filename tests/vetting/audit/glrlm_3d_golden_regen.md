@@ -152,7 +152,7 @@ which is what kept this file — and still keeps `test_3d_{gldm,glszm,ngtdm}_reg
 
 ```
 python tests/vetting/audit/scan_glrlm3d_coverage.py --check   # acceptance check
-python tests/vetting/report_features.py --write          # regenerate test_output.csv
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```
 
 The scanner reads the feature→test mapping out of the test sources rather than a hand-written list,
