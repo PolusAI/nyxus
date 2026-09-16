@@ -1,10 +1,10 @@
-"""Regenerate intensity_histogram_2d_coverage.csv by scanning the 2D IH tests. Stdlib only.
+"""Scan the 2D IH tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_intensity_histogram_coverage.py [--check]
+    python tests/vetting/audit/scan_intensity_histogram_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks. The checks and the rendering live in scanlib.py.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree, and `report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance checks,
+which live in scanlib.py.
 
 This family overrides scanlib's collect for two reasons, one sound and one not:
 
@@ -118,7 +118,7 @@ def collect(fam, feat_re):
 
 
 FAMILY = scanlib.Family(
-    dim="2D", family="intensity_histogram", out="intensity_histogram_2d_coverage.csv",
+    dim="2D", family="intensity_histogram",
     sources=SOURCES,
     oracle_suffix=ORACLE_SUFFIX,
     notes=NOTE,

@@ -1,10 +1,10 @@
-"""Regenerate glszm_3d_coverage.csv by scanning the 3D GLSZM tests. Stdlib only.
+"""Scan the 3D GLSZM tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_glszm3d_coverage.py [--check]
+    python tests/vetting/audit/scan_glszm3d_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting. The scan, the
-rendering and the run loop live in scanlib.py; the acceptance model below is this family's own.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree, and `report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance checks.
+The scan and the run loop live in scanlib.py; the acceptance model below is this family's own.
 
 It is the strictest in the tree, and deliberately so: a row here must say WHICH assertion it records
 -- a recipe, a band, and a `test_name` resolving to a case whose file is the ONLY file
@@ -183,7 +183,7 @@ def disagreements(fam, cov):
 
 
 FAMILY = scanlib.Family(
-    dim="3D", family="glszm", out="glszm_3d_coverage.csv",
+    dim="3D", family="glszm",
     sources=SOURCES,
     oracle_suffix=ORACLE_SUFFIX,
     notes=note,

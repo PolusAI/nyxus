@@ -1,10 +1,10 @@
-"""Regenerate gldm_3d_coverage.csv by scanning the 3D GLDM tests. Stdlib only.
+"""Scan the 3D GLDM tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_gldm3d_coverage.py [--check]
+    python tests/vetting/audit/scan_gldm3d_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting. The scan, the
-rendering and the run loop live in scanlib.py; the reading rules and the acceptance model below are
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree, and `report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance checks.
+The scan and the run loop live in scanlib.py; the reading rules and the acceptance model below are
 this family's own.
 
 WHAT THIS FAMILY DOES DIFFERENTLY, and why each one is here rather than in scanlib:
@@ -74,7 +74,7 @@ NOTE = {
                    "0.00073572), under a function that asserted 3GLDM_SDE; both halves regenerated"),
 }
 
-# Filled by collect() and reported by the rewrite summary: features a dump helper names, which are
+# Filled by collect() and reported by the check summary: features a dump helper names, which are
 # deliberately not coverage.
 _DUMPS = {}
 
@@ -112,7 +112,7 @@ def collect(fam, feat_re):
 
 
 def dump_summary(cov):
-    """The write line counts rows; this family's artifact is read per feature, so say both."""
+    """The check line counts rows; this family's scan is read per feature, so say both."""
     out = [f"{len(cov.features(FAMILY.order))} features"]
     if _DUMPS:
         out.append(f"note: {len(_DUMPS)} feature(s) also appear in dump helpers, "
@@ -252,14 +252,13 @@ def disagreements(fam, cov):
 
 
 FAMILY = scanlib.Family(
-    dim="3D", family="gldm", out="gldm_3d_coverage.csv",
+    dim="3D", family="gldm",
     sources=SOURCES,
     oracle_suffix=ORACLE_SUFFIX,
     notes=NOTE,
     scan_helpers=True,
     # a name must not match at the tail of a longer one; see scanlib.feature_re
     boundary="strict",
-    extra_column="Invariant",
     order="sorted",
     collect_override=collect,
     extra_summary=dump_summary,

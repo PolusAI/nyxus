@@ -1,11 +1,11 @@
-"""Regenerate ngldm_3d_coverage.csv by scanning the 3D NGLDM tests. Stdlib only.
+"""Scan the 3D NGLDM tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_ngldm3d_coverage.py [--check]
+    python tests/vetting/audit/scan_ngldm3d_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks. The coverage rule, the checks and the rendering all live in scanlib.py; this file
-is the family's declaration.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
+checks live in scanlib.py; `report_features.py` joins the scan into `report_output.csv`. This file is
+the family's declaration.
 """
 import os
 import sys
@@ -26,7 +26,7 @@ NOTE = {
 }
 
 FAMILY = scanlib.Family(
-    dim="3D", family="ngldm", out="ngldm_3d_coverage.csv",
+    dim="3D", family="ngldm",
     sources=SOURCES,
     # The family's oracle is MIRP at ngldm3d.mirp_samelevels, where both tools evaluate the NGLDM
     # over one grey-level ladder (oracles/gen_ngldm3d_mirp.py, test_3d_ngldm_mirp.h). 16 of the 19

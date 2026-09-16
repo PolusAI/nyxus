@@ -1,11 +1,11 @@
-"""Regenerate morphology_2d_coverage.csv by scanning the 2D morphology tests. Stdlib only.
+"""Scan the 2D morphology tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_morphology_coverage.py [--check]
+    python tests/vetting/audit/scan_morphology_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks. The coverage rule, the checks and the rendering all live in scanlib.py; this file
-is the family's declaration.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
+checks live in scanlib.py; `report_features.py` joins the scan into `report_output.csv`. This file is
+the family's declaration.
 """
 import os
 import sys
@@ -54,7 +54,7 @@ def note(feature, cov):
 
 
 FAMILY = scanlib.Family(
-    dim="2D", family="morphology", out="morphology_2d_coverage.csv",
+    dim="2D", family="morphology",
     sources=SOURCES,
     oracle_suffix={"matlab": "matlab", "skimage": "skimage", "imea": "imea",
                    "cellprofiler": "cellprofiler", "fraclac": "fraclac", "analytic": "analytic"},

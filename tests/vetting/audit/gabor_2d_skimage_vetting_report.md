@@ -233,8 +233,8 @@ recipes in `config_recipes.md` rather than left as an implementation detail. Gen
 the mass table and part D2 re-runs the native-filtering control on every run, so both halves of the
 statement stay measured rather than remembered.
 
-**The registry says so too.** `audit/gabor_2d_coverage.csv` lists this family as `skimage;analytic`,
-not `skimage`, and both `oracle_coverage.csv` rows carry the split in `notes`: kernel from skimage,
+**The registry says so too.** `scan_gabor_coverage.py`'s note on GABOR in `report_output.csv` names
+the analytic half, and both `oracle_coverage.csv` rows carry the split in `notes`: kernel from skimage,
 f0=0 kernel and count-ratio score analytic. The `oracle` column itself stays `skimage` because
 `check_coverage.py` takes one SPEC §4 token per row — the same arrangement SPEC §4 already documents
 for `matlab`, where the token names the semantics and every artifact repeats what produced the

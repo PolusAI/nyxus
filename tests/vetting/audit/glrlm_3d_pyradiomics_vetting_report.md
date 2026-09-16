@@ -272,8 +272,8 @@ python tests/vetting/oracles/gen_glrlm3d_pyradiomics.py
 # regression pins
 runAllTests --gtest_filter=*3D_GLRLM_DUMP_REGRESSION*
 
-# coverage artifact
-python tests/vetting/audit/scan_glrlm3d_coverage.py [--check]
+# coverage check
+python tests/vetting/audit/scan_glrlm3d_coverage.py --check
 ```
 
 ## Note for the remaining 3D families

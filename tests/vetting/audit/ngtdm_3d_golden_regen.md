@@ -96,15 +96,15 @@ means. These pins claim no oracle.
 alongside each pinned PyRadiomics value — that is the one to run when a residual needs reading
 without a debugger.
 
-## Coverage artifact
+## Coverage check
 
 ```
-python tests/vetting/audit/scan_ngtdm3d_coverage.py            # rewrite ngtdm_3d_coverage.csv
-python tests/vetting/audit/scan_ngtdm3d_coverage.py --check    # report drift instead
+python tests/vetting/audit/scan_ngtdm3d_coverage.py --check   # acceptance check
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```
 
-The feature → test mapping is read out of the test sources, so the CSV cannot drift from the tree.
-`--check` also runs the acceptance check: every `vetted` row asserted by an oracle test, that test's
+The feature → test mapping is read out of the test sources, so it cannot drift from the tree, and
+`report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance check: every `vetted` row asserted by an oracle test, that test's
 oracle equal to the row's, and `current_test` naming the file that defines the row's `test_name`.
 
 ## If a value moves

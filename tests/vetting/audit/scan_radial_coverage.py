@@ -1,11 +1,11 @@
-"""Regenerate radial_2d_coverage.csv by scanning the 2D radial-distribution tests. Stdlib only.
+"""Scan the 2D radial-distribution tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_radial_coverage.py [--check]
+    python tests/vetting/audit/scan_radial_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks. The coverage rule, the checks and the rendering all live in scanlib.py; this file
-is the family's declaration.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
+checks live in scanlib.py; `report_features.py` joins the scan into `report_output.csv`. This file is
+the family's declaration.
 """
 import sys
 
@@ -29,7 +29,7 @@ NOTE = {
                  "eight wedge SUMS over all eight.",
 }
 
-# Scanned, reported in the artifact's Invariant_Mechanics column, and deliberately NOT expected in
+# Scanned, reported in report_output.csv's scan_other_tests column, and deliberately NOT expected in
 # current_test. Every assertion in this file pins a value that
 # audit/radial_2d_cellprofiler_vetting_report.md section 6 shows is wrong (defects 1-3), so a
 # correct fix must change all of them. Crediting the file as coverage would make those defects
@@ -42,13 +42,12 @@ UNCREDITED = {
 }
 
 FAMILY = scanlib.Family(
-    dim="2D", family="radial", out="radial_2d_coverage.csv",
+    dim="2D", family="radial",
     sources=SOURCES,
     # No oracle covers this family. Left empty rather than dropped so that adding one is a one-line
     # change and the suffix rule stays visible.
     oracle_suffix={},
     notes=NOTE,
-    extra_column="Invariant_Mechanics",
     uncredited=UNCREDITED,
     checks=scanlib.DEFAULT_CHECKS | scanlib.NO_ORACLE_CLAIMED_CHECK,
 )

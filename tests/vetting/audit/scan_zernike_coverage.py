@@ -1,11 +1,11 @@
-"""Regenerate zernike_2d_coverage.csv by scanning the 2D Zernike tests. Stdlib only.
+"""Scan the 2D Zernike tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_zernike_coverage.py [--check]
+    python tests/vetting/audit/scan_zernike_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks. The coverage rule, the checks and the rendering all live in scanlib.py; this file
-is the family's declaration.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
+checks live in scanlib.py; `report_features.py` joins the scan into `report_output.csv`. This file is
+the family's declaration.
 """
 import sys
 
@@ -27,14 +27,13 @@ NOTE = {
 }
 
 FAMILY = scanlib.Family(
-    dim="2D", family="zernike", out="zernike_2d_coverage.csv",
+    dim="2D", family="zernike",
     sources=SOURCES,
     # The closed form is the family's only oracle; `analytic` is the SPEC 4 token for it.
     oracle_suffix={"analytic": "analytic"},
     notes=NOTE,
     # the invariant and mechanics guards are neither oracle nor regression; this family names them
     # in a column of their own rather than folding them into the notes
-    extra_column="Invariant_Mechanics",
     # this family carries rows that claim no oracle, so the reverse of oracle_mismatch
     # applies: an oracle-suffixed test asserting one of them is a claim gone stale
     checks=scanlib.DEFAULT_CHECKS | scanlib.NO_ORACLE_CLAIMED_CHECK,

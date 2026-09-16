@@ -1,10 +1,14 @@
-"""Shared machinery for the per-family `scan_*_coverage.py` artifacts. Stdlib only.
+"""Shared machinery for the per-family `scan_*_coverage.py` scanners. Stdlib only.
 
 Every scanner reads the same thing out of the tree in the same way and differs only in which files
 it reads, how the family spells its feature names in C++, and which of the acceptance checks it
 runs. This module is that common part, held once, so a change to the coverage rule takes effect
 everywhere it applies. A `scan_*_coverage.py` file is the family's declaration on top of it, plus
 whatever is genuinely its own.
+
+A scanner writes nothing. What it reads out of the tree reaches a reader through
+`report_features.py`, which imports every declaration and joins the scan into `report_output.csv`;
+running a scanner on its own runs the family's acceptance checks.
 
 ## The coverage rule
 
@@ -24,7 +28,7 @@ oracle-suffixed function contributes an oracle token.
 
 A registry row describes ONE assertion -- feature x config x reference (SPEC 3) -- so its
 `current_test` names the file that assertion lives in, not every file that touches the feature. The
-artifact this module renders is the other shape: a feature -> test rollup, one line per feature.
+scan is the other shape: a feature -> test rollup, one entry per feature.
 
 ## Checks
 
@@ -37,7 +41,6 @@ than a plan, which is what `PR/todo.md` tracks instead.
 """
 import argparse
 import csv
-import io
 import os
 import re
 
@@ -100,11 +103,10 @@ class Family:
     """One family's declaration. Everything else is in this module.
 
     dim / family      the registry rows this scanner owns.
-    out               the artifact basename, written next to this module.
     sources           test files to scan, repo-tests-relative.
     oracle_suffix     {function-name suffix: oracle token}. Empty means the family has no oracle
                       test, and `--check` then enforces only that no row claims to be vetted.
-    notes             {feature: note} or a callable(feature, ctx) -> str.
+    notes             {feature: note} or a callable(feature, ctx) -> str; reported as `scan_notes`.
     table_owner       {golden-table name: the function to credit its keys to}, for a table keyed by
                       a foreign feature name that the asserting function never spells out.
     table_dialect     how to read such a table: "cpp" for a brace-initialiser list of {"KEY", value}
@@ -114,12 +116,9 @@ class Family:
     enum_alias        a family stem, when a test aliases the enum (`using F = Nyxus::Feature3D;`)
                       and so spells features `F::GLCM_ASM`.
     fn_prefix         the test-function name stem used to find registrations in test_all.cc.
-    extra_column      (header, source) to append before Notes, where source is "other" -- the
-                      functions whose kind is neither oracle nor regression. imq calls that column
-                      Mechanics and 3D gldm calls it Invariant; both mean the same set.
     other_note        how the functions whose kind is neither oracle nor regression appear in the
-                      Notes cell instead of a column: "asserted" names each one, "guarded" appends
-                      the family's production-config phrasing, None says nothing.
+                      notes as well as in `scan_other_tests`: "asserted" names each one, "guarded"
+                      appends the family's production-config phrasing, None says nothing.
     current_exempt    files `missing_current` does not fault a row for omitting. A drift guard is
                       not a vetting claim, so families whose `current_test` deliberately lists the
                       oracle files only name their regression and mechanics files here.
@@ -147,7 +146,7 @@ class Family:
                       not want a local lookup table read as coverage.
     extra_problems    callable(fam, cov) -> [str], for a check that is genuinely this family's own.
     boundary          how a feature name is delimited when matched; see feature_re().
-    extra_summary     callable(cov) -> str or None, printed after the write line in rewrite mode.
+    extra_summary     callable(cov) -> str or None, printed after the check's summary line.
     collect_override  callable(fam, feat_re) -> the five collect() maps, for a family whose tests do
                       not name features on assertion lines at all. 2D moments is the case: its
                       assertions pass a golden TABLE to a looping helper, so coverage is resolved
@@ -173,15 +172,15 @@ class Family:
                       rather than leaving to be assumed.
     """
 
-    def __init__(self, dim, family, out, sources, oracle_suffix, notes=None, table_owner=None,
+    def __init__(self, dim, family, sources, oracle_suffix, notes=None, table_owner=None,
                  table_dialect="cpp",
-                 enum_dim_prefix=False, enum_alias=None, fn_prefix=None, extra_column=None,
+                 enum_dim_prefix=False, enum_alias=None, fn_prefix=None,
                  other_note=None, order="registry", count_noun="rows", checks=None,
                  scan_helpers=False, loop_tables=False, py_loop_tables=False, featureset_loop=None,
                  extra_problems=None, collect_override=None, boundary="word", extra_summary=None,
                  current_scope="row", recipe_reader=None, fn_oracle=None,
                  current_exempt=(), uncredited=None):
-        self.dim, self.family, self.out = dim, family, out
+        self.dim, self.family = dim, family
         self.sources, self.oracle_suffix = sources, oracle_suffix
         self.notes, self.table_owner = notes or {}, table_owner or {}
         self.table_dialect = table_dialect
@@ -191,7 +190,7 @@ class Family:
         # matches nothing in the tree, and a prefix that matches nothing makes every registration
         # check pass by finding no registrations at all.
         self.fn_prefix = fn_prefix or f"test_{ {'2D': '2d_', '3D': '3d_'}.get(dim, '') }{family}"
-        self.extra_column, self.other_note = extra_column, other_note
+        self.other_note = other_note
         self.recipe_reader = recipe_reader or {}
         self.fn_oracle = fn_oracle or {}
         self.current_exempt = frozenset(current_exempt)
@@ -206,10 +205,6 @@ class Family:
         self.boundary, self.extra_summary = boundary, extra_summary
         bad = self.checks - ALL_CHECKS
         assert not bad, f"unknown check(s): {sorted(bad)}"
-
-    @property
-    def out_path(self):
-        return os.path.join(HERE, self.out)
 
 
 class Coverage:
@@ -359,15 +354,18 @@ def asserted_names(block):
 
 
 
-# `cols = [...]` / `ellipse = (...)` at the top of a pytest case: the literal is the whole
-# right-hand side, so a call that merely takes a list argument (`row = _one([...], label)`) is not
-# one of these. The name is captured because it, not the literal, is what the loop below names.
-PY_ASSIGN_LITERAL = re.compile(r"^[ 	]*(\w+)\s*=\s*[\[(]", re.M)
-# `for c in cols:` -- a loop over a local NAME, which is what says WHICH literal is iterated
-# rather than merely held. The indent bounds the body, and the loop VARIABLE is captured because
-# an assertion in the body that never mentions it is not an assertion about the list -- a loop can
-# hold an unrelated check as easily as it can hold the real one.
-PY_LOOP_NAME = re.compile(r"^([ \t]*)for\s+(\w+)\s+in\s+(\w+)\s*:", re.M)
+# `cols = [...]` / `ellipse = (...)` / `goldens = {...}` at the top of a pytest case: the literal is
+# the whole right-hand side, so a call that merely takes a list argument (`row = _one([...], label)`)
+# is not one of these. The name is captured because it, not the literal, is what the loop below
+# names.
+PY_ASSIGN_LITERAL = re.compile(r"^[ 	]*(\w+)\s*=\s*[\[({]", re.M)
+# `for c in cols:`, or `for key, gold in goldens.items():` over a dict of goldens -- a loop over a
+# local NAME, which is what says WHICH literal is iterated rather than merely held. The indent bounds
+# the body, and the first loop VARIABLE is captured because an assertion in the body that never
+# mentions it is not an assertion about the list -- a loop can hold an unrelated check as easily as
+# it can hold the real one. For a dict that variable is the key, which is the feature name.
+PY_LOOP_NAME = re.compile(
+    r"^([ \t]*)for\s+(\w+)(?:\s*,\s*\w+)*\s+in\s+(\w+)(?:\.(?:items|keys)\(\))?\s*:", re.M)
 # `bad.append(...)`, `p = float(...)` -- what a loop that compares without asserting hands to the
 # assertion after it. `=[^=]` so a comparison is not read as a binding.
 PY_ACCUMULATE = re.compile(
@@ -379,7 +377,7 @@ PY_IDENT = re.compile(r"[A-Za-z_]\w*")
 
 def _bracketed(text, start):
     """The text between the bracket at `start` and its match, or "" if it never closes."""
-    pairs = {"[": "]", "(": ")"}
+    pairs = {"[": "]", "(": ")", "{": "}"}
     close = pairs[text[start]]
     depth, i = 1, start + 1
     while i < len(text) and depth:
@@ -488,7 +486,9 @@ def scan(fam, path, feat_re, all_names=()):
         text = re.sub(r"\bF::(?=" + re.escape(fam.enum_alias) + r"_)", "F::3", text)
 
     hits = {}
-    close, key = ("};", r'\{"([A-Z0-9_]+)"') if fam.table_dialect == "cpp" else ("}", r'"([A-Z0-9_]+)"')
+    # `{"KEY", v}` and `{ "KEY", v }` are both how the tree writes a table entry
+    close, key = (("};", r'\{\s*"([A-Z0-9_]+)"') if fam.table_dialect == "cpp"
+                  else ("}", r'"([A-Z0-9_]+)"'))
     for table, owner in fam.table_owner.items():
         if table not in text:
             continue
@@ -550,10 +550,10 @@ def collect(fam, feat_re, all_names=()):
 
 
 def note_for(fam, feature, cov):
-    """The Notes cell: the family's own note, plus whatever it says about the other-kind functions.
+    """The `scan_notes` cell: the family's own note, plus whatever it says about the other-kind functions.
 
     A function whose name-suffix is neither an oracle nor `regression` contributes coverage but no
-    oracle token, so without one of these it would be invisible in the artifact -- which is how a
+    oracle token, so without one of these it would be invisible in the notes -- which is how a
     second assertion on the same golden stops being visible as something to re-tighten together.
     """
     note = fam.notes(feature, cov) if callable(fam.notes) else fam.notes.get(feature, "")
@@ -572,7 +572,7 @@ def dual_oracle_notes(notes, dual):
 
     Four of them assert the same feature against both IBSI and mirp on purpose -- IBSI fixes the
     DEFINITION at its published three-significant-figure precision, mirp fixes the DIGITS at the
-    exact tier -- so the artifact says so on every such row rather than only where NOTE has an
+    exact tier -- so the notes say so on every such feature rather than only where NOTE has an
     entry. An explicit NOTE still wins, because it says something this default cannot.
     """
     def note(feature, cov):
@@ -580,26 +580,6 @@ def dual_oracle_notes(notes, dual):
             return notes[feature]
         return dual if len(cov.oracles.get(feature, ())) > 1 else ""
     return note
-
-
-def render(fam, cov):
-    buf = io.StringIO()
-    w = csv.writer(buf, lineterminator="\n")
-    head = ["Dim", "Family", "FeatureName", "List_of_Oracles", "Test_Names",
-            "Regression", "Reg_Test_Name"]
-    if fam.extra_column:
-        head.append(fam.extra_column)
-    w.writerow(head + ["Notes"])
-    for f in cov.features(fam.order):
-        row = [fam.dim, fam.family, f,
-               ";".join(sorted(cov.oracles.get(f, ()))),
-               ";".join(sorted(cov.asserted.get(f, ()))),
-               "Y" if f in cov.regression else "N",
-               ";".join(sorted(cov.regression.get(f, ())))]
-        if fam.extra_column:
-            row.append(";".join(sorted(cov.other.get(f, ()))))
-        w.writerow(row + [note_for(fam, f, cov)])
-    return buf.getvalue()
 
 
 def _test_all():
@@ -746,43 +726,36 @@ def problems(fam, cov):
     return out
 
 
-def run(fam, argv=None):
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--check", action="store_true",
-                    help="report drift and registry disagreements instead of rewriting")
-    a = ap.parse_args(argv)
-
+def coverage(fam):
+    """-> Coverage, the family's registry rows and what its sources assert about them."""
     rows = registry_rows(fam)
     names = {r["feature"] for r in rows}
     feat_re = feature_re(names, fam.boundary)
     if fam.collect_override:
-        cov = Coverage(rows, *fam.collect_override(fam, feat_re))
-    else:
-        cov = Coverage(rows, *collect(fam, feat_re, names))
-    text = render(fam, cov)
+        return Coverage(rows, *fam.collect_override(fam, feat_re))
+    return Coverage(rows, *collect(fam, feat_re, names))
+
+
+def run(fam, argv=None):
+    """Run the family's acceptance checks; exit status 1 on any problem.
+
+    `--check` is accepted and is what the recorded commands spell; there is no other mode, because
+    the scan's output lives in `report_output.csv` and `report_features.py` is what writes it.
+    """
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--check", action="store_true",
+                    help="run the acceptance checks (the only mode)")
+    ap.parse_args(argv)
+
+    cov = coverage(fam)
     probs = problems(fam, cov)
-    n = len(rows) if fam.count_noun == "rows" else len(cov.features(fam.order))
-
-    if a.check:
-        if not os.path.exists(fam.out_path):
-            probs.insert(0, f"{fam.out} is missing; run without --check")
-        else:
-            with open(fam.out_path, newline="", encoding="utf-8") as fh:
-                if fh.read() != text:
-                    probs.insert(0, f"{fam.out} is stale; rerun without --check")
-        for p in probs:
-            print("ERROR:", p)
-        print(f"checked {n} {fam.count_noun}: "
-              f"{'clean' if not probs else str(len(probs)) + ' problem(s)'}")
-        return 1 if probs else 0
-
-    with open(fam.out_path, "w", newline="", encoding="utf-8") as fh:
-        fh.write(text)
-    print(f"wrote {fam.out_path} ({n} {fam.count_noun})")
+    n = len(cov.rows) if fam.count_noun == "rows" else len(cov.features(fam.order))
+    for p in probs:
+        print("ERROR:", p)
+    print(f"checked {n} {fam.count_noun}: "
+          f"{'clean' if not probs else str(len(probs)) + ' problem(s)'}")
     if fam.extra_summary:
         extra = fam.extra_summary(cov)
         if extra:
             print(extra)
-    for p in probs:
-        print("WARNING:", p)
-    return 0
+    return 1 if probs else 0

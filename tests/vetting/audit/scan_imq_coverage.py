@@ -1,10 +1,10 @@
-"""Regenerate imq_coverage.csv by scanning the IMQ tests. Stdlib only.
+"""Scan the IMQ tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_imq_coverage.py [--check]
+    python tests/vetting/audit/scan_imq_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting. The rendering and
-the run loop live in scanlib.py; the reading and the acceptance model below are this family's own.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree, and `report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance checks.
+The run loop lives in scanlib.py; the reading and the acceptance model below are this family's own.
 
 Each row is checked against the tests of its OWN kind -- a vetted row against the oracle files, a
 regression row against the snapshot one -- so `current_test` must name exactly the files that cover
@@ -247,14 +247,13 @@ def disagreements(fam, cov):
 
 
 FAMILY = scanlib.Family(
-    dim="IMQ", family="imq", out="imq_coverage.csv",
+    dim="IMQ", family="imq",
     sources=SOURCES,
     oracle_suffix=ORACLE_SUFFIX,
     notes=NOTE,
     collect_override=collect,
-    # the mechanics guards are neither oracle nor regression, and this family names them in a
-    # column of their own rather than folding them into the notes
-    extra_column="Mechanics",
+    # the mechanics guards are neither oracle nor regression; they are listed in the
+    # scan_other_tests column of report_output.csv
     # every built-in check is replaced by the per-kind model above, registration included
     checks=frozenset(),
     extra_problems=disagreements,

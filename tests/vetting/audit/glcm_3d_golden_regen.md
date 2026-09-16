@@ -119,11 +119,11 @@ Carrying a second definition is a redefinition error in the single `test_all.cc`
 which is what kept `test_3d_glcm_regression.h` — and still keeps
 `test_3d_{gldm,glrlm,glszm,ngtdm}_regression.h` and `test_3d_firstorder_matlab.h` — out of the build.
 
-## Coverage artifact
+## Coverage check
 
 ```
-python tests/vetting/audit/scan_glcm3d_coverage.py           # rewrite
-python tests/vetting/audit/scan_glcm3d_coverage.py --check   # drift + acceptance check
+python tests/vetting/audit/scan_glcm3d_coverage.py --check   # acceptance check
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```
 
 One 3D-specific wrinkle the scanner handles, worth copying for the remaining 3D families: tests

@@ -170,6 +170,6 @@ one family's copy would leave the series inconsistent. A repo-wide gap worth its
 # oracle goldens + identity checks + the MATLAB cross-check (conda env with mirp 2.6.0)
 python tests/vetting/oracles/gen_morphology3d_mirp.py
 
-# coverage artifact
-python tests/vetting/audit/scan_morphology3d_coverage.py [--check]
+# coverage check
+python tests/vetting/audit/scan_morphology3d_coverage.py --check
 ```
