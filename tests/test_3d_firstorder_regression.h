@@ -43,21 +43,15 @@ static void assert_3d_firstorder_feature_regression(
 
 void test_3d_firstorder_covered_image_intensity_range_regression()
 {
-    assert_3d_firstorder_feature_regression(
-        Nyxus::Feature3D::COVERED_IMAGE_INTENSITY_RANGE,
-        "3COVERED_IMAGE_INTENSITY_RANGE");
+    assert_3d_firstorder_feature_regression(Nyxus::Feature3D::COVERED_IMAGE_INTENSITY_RANGE, "3COVERED_IMAGE_INTENSITY_RANGE");
 }
 
 void test_3d_firstorder_median_absolute_deviation_regression()
 {
-    assert_3d_firstorder_feature_regression(
-        Nyxus::Feature3D::MEDIAN_ABSOLUTE_DEVIATION,
-        "3MEDIAN_ABSOLUTE_DEVIATION");
+    assert_3d_firstorder_feature_regression(Nyxus::Feature3D::MEDIAN_ABSOLUTE_DEVIATION, "3MEDIAN_ABSOLUTE_DEVIATION");
 }
 
 void test_3d_firstorder_robust_mean_regression()
 {
-    assert_3d_firstorder_feature_regression(
-        Nyxus::Feature3D::ROBUST_MEAN,
-        "3ROBUST_MEAN");
+    assert_3d_firstorder_feature_regression(Nyxus::Feature3D::ROBUST_MEAN, "3ROBUST_MEAN");
 }

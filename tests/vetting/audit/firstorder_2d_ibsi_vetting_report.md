@@ -44,7 +44,7 @@ itself - no Docker, no Octave, nothing to install.
   (`test_2d_firstorder_robust_mean_absolute_deviation_ibsi`) is commented out in the source with
   "needs to be updated to pass" - since the reference value itself checks out, that's a bug in
   Nyxus's live `ROBUST_MEAN_ABSOLUTE_DEVIATION` calculation (or a settings mismatch in how the test
-  invokes it), not a bad golden. See `firstorder_2d_coverage.csv`'s ROBUST_MEAN_ABSOLUTE_DEVIATION
+  invokes it), not a bad golden. See `test_output.csv`'s 2D ROBUST_MEAN_ABSOLUTE_DEVIATION
   row for the related pyradiomics-side finding (that one's exact and live).
 - No provenance gap here unlike the matlab file: the IBSI phantom and its published reference
   statistics are a fixed external standard, not something generated on demand, so there's no

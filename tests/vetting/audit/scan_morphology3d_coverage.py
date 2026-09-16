@@ -1,11 +1,11 @@
-"""Regenerate morphology_3d_coverage.csv by scanning the 3D morphology tests. Stdlib only.
+"""Scan the 3D morphology tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_morphology3d_coverage.py [--check]
+    python tests/vetting/audit/scan_morphology3d_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks. The coverage rule, the checks and the rendering all live in scanlib.py; this file
-is the family's declaration.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
+checks live in scanlib.py; `report_features.py` joins the scan into `test_output.csv`. This file is
+the family's declaration.
 """
 import sys
 
@@ -40,7 +40,7 @@ NOTE = {
 }
 
 FAMILY = scanlib.Family(
-    dim="3D", family="morphology", out="morphology_3d_coverage.csv",
+    dim="3D", family="morphology",
     sources=SOURCES,
     oracle_suffix={"matlab": "matlab", "mirp": "mirp"},
     notes=NOTE,
@@ -48,8 +48,8 @@ FAMILY = scanlib.Family(
     enum_alias="MORPHOLOGY",
     other_note="asserted",
     scan_helpers=True, loop_tables=True,
-    # the registry carries several oracle rows per feature here, and this artifact is the feature
-    # rollup, so the summary counts what it emitted rather than the rows behind it
+    # the registry carries several oracle rows per feature here, and the scan is the feature
+    # rollup, so the summary counts features rather than the rows behind them
     count_noun="features",
     # ... and for the same reason a covering file is measured against the union of the feature's
     # rows, not each row alone, with each row additionally required to name its own oracle's file

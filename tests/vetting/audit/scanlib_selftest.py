@@ -2,8 +2,8 @@
 
     python tests/vetting/audit/scanlib_selftest.py
 
-The per-family `--check` compares an artifact to the tree; nothing there can say whether the RULE
-that produced the artifact is right, because both sides of that comparison come from the same rule.
+The per-family `--check` compares the registry to the scan; nothing there can say whether the RULE
+that produced the scan is right, because the scan is the only reading of the tree it has.
 These are the other direction: a fixture where the answer is known, and a fault injected into it.
 
 Every case here is a shape that once read as evidence and is not:
@@ -44,7 +44,7 @@ def check(name, got, want):
 
 def scanned(text, names, **kw):
     """-> {function: features} for `text` written to a temp .py and read by the shared scan."""
-    fam = scanlib.Family(dim="2D", family="selftest", out="none.csv", sources=[],
+    fam = scanlib.Family(dim="2D", family="selftest", sources=[],
                          oracle_suffix={"analytic": "analytic"}, **kw)
     fd, path = tempfile.mkstemp(suffix=".py")
     os.close(fd)
@@ -113,6 +113,23 @@ def literals():
     check("an assertion inside the loop that ignores the iterator credits only what it names",
           scanned(unrelated, names, py_loop_tables=True)["test_2d_selftest_reach_analytic"],
           {"PERIMETER"})
+
+    # a dict of goldens looped by `.items()`: the key is the feature, and the key is what reaches the
+    # assertion. The same dict looped only for its values says nothing about which column it read.
+    goldens = ('''
+def test_2d_selftest_goldens_analytic():
+    unused = {"PERIMETER": 1.0}
+    goldens = {"ECCENTRICITY": 0.5, "AREA": 9.0}
+    for key, gold in goldens.items():
+        assert row[key] == gold
+''')
+    check("a dict looped by .items() whose key reaches the assertion is credited",
+          scanned(goldens, names, py_loop_tables=True)["test_2d_selftest_goldens_analytic"],
+          {"ECCENTRICITY", "AREA"})
+    values_only = goldens.replace("assert row[key] == gold", "assert gold > 0")
+    check("the same dict whose key never reaches the assertion is NOT credited",
+          scanned(values_only, names, py_loop_tables=True)["test_2d_selftest_goldens_analytic"],
+          set())
 
 
 # ---------------------------------------------------------------- helper attribution
@@ -188,7 +205,7 @@ TEST(TEST_NYXUS, TEST_2D_SELFTEST_MULTI_LINE_ANALYTIC)
 
 def registrations():
     print("case -> function")
-    fam = scanlib.Family(dim="2D", family="selftest", out="none.csv", sources=[],
+    fam = scanlib.Family(dim="2D", family="selftest", sources=[],
                          oracle_suffix={"analytic": "analytic"})
     cov = scanlib.Coverage([], {}, {}, {}, {},
                            {"test_2d_selftest_one_line_analytic": "test_2d_selftest_analytic.h",

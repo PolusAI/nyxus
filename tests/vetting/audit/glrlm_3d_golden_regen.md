@@ -148,11 +148,11 @@ Carrying a second definition is a redefinition error in the single `test_all.cc`
 which is what kept this file — and still keeps `test_3d_{gldm,glszm,ngtdm}_regression.h` and
 `test_3d_firstorder_matlab.h` — out of the build.
 
-## Coverage artifact
+## Coverage check
 
 ```
-python tests/vetting/audit/scan_glrlm3d_coverage.py           # rewrite
-python tests/vetting/audit/scan_glrlm3d_coverage.py --check   # drift + acceptance check
+python tests/vetting/audit/scan_glrlm3d_coverage.py --check   # acceptance check
+python tests/vetting/report_features.py --write          # regenerate test_output.csv
 ```
 
 The scanner reads the feature→test mapping out of the test sources rather than a hand-written list,

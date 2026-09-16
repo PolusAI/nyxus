@@ -1,10 +1,10 @@
-"""Regenerate ngtdm_2d_coverage.csv by scanning the 2D NGTDM tests. Stdlib only.
+"""Scan the 2D NGTDM tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_ngtdm_coverage.py [--check]
+    python tests/vetting/audit/scan_ngtdm_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance check below. The coverage rule, the scan and the rendering live in scanlib.py.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree, and `report_features.py` joins it into `test_output.csv`. `--check` runs the acceptance check
+below. The coverage rule and the scan live in scanlib.py.
 
 This family does NOT use scanlib's shared checks. They read `current_test` per feature: every file
 that covers the feature must be named, whatever kind it is. This family reads it per KIND -- a row
@@ -75,13 +75,12 @@ def disagreements(fam, cov):
 
 
 FAMILY = scanlib.Family(
-    dim="2D", family="ngtdm", out="ngtdm_2d_coverage.csv",
+    dim="2D", family="ngtdm",
     sources=SOURCES,
     oracle_suffix={"mirp": "mirp", "ibsi": "ibsi"},
     notes=scanlib.dual_oracle_notes({}, DUAL_ORACLE),
     # the mechanics guards are neither oracle nor regression, and this family names them in a
     # column of their own rather than folding them into the notes
-    extra_column="Mechanics",
     scan_helpers=True,
     # the shared per-feature checks are replaced wholesale by the per-kind reading above; the
     # never-runs sweep is the one built-in this family keeps
