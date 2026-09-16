@@ -104,5 +104,5 @@ why the values moved. A drift guard re-pinned without that reason is not a guard
 
 ```
 python tests/vetting/audit/scan_gldzm_coverage.py --check   # acceptance check
-python tests/vetting/report_features.py --write          # regenerate test_output.csv
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```

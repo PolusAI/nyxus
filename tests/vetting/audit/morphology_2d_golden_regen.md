@@ -111,11 +111,11 @@ Name mapping: `martin_{min,max,mean,median,std}`, `nassenstein_*`, `feret_*` →
 ## Coverage check
 
 The family's feature -> test mapping is read out of the tree, not hand-written, and lands in
-`test_output.csv`:
+`report_output.csv`:
 
 ```
 python tests/vetting/audit/scan_morphology_coverage.py --check   # acceptance check
-python tests/vetting/report_features.py --write          # regenerate test_output.csv
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```
 
 `--check` also enforces the family acceptance rule: no `vetted` row without an oracle assertion, no

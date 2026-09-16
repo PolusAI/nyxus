@@ -3,7 +3,7 @@
     python tests/vetting/audit/scan_glszm3d_coverage.py --check
 
 The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
-tree, and `report_features.py` joins it into `test_output.csv`. `--check` runs the acceptance checks.
+tree, and `report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance checks.
 The scan and the run loop live in scanlib.py; the acceptance model below is this family's own.
 
 It is the strictest in the tree, and deliberately so: a row here must say WHICH assertion it records

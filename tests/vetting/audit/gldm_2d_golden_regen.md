@@ -93,5 +93,5 @@ without that reason is not a guard.
 
 ```
 python tests/vetting/audit/scan_gldm_coverage.py --check   # acceptance check
-python tests/vetting/report_features.py --write          # regenerate test_output.csv
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```

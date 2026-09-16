@@ -77,7 +77,7 @@ against 10.2464 computed). Pin exact digits against mirp instead; the two files 
 
 ```
 python tests/vetting/audit/scan_ngldm_coverage.py --check   # acceptance check
-python tests/vetting/report_features.py --write          # regenerate test_output.csv
+python tests/vetting/report_features.py --write          # regenerate report_output.csv
 ```
 
 `--check` enforces the family acceptance rule: no `vetted` row without an oracle assertion, no row
