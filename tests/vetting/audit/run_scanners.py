@@ -2,8 +2,8 @@
 
     python tests/vetting/audit/run_scanners.py
 
-The twenty scanners share one library, so a change that breaks the library should report all twenty
-families rather than stopping at the first. In a shell that means accumulating a status across a
+The scanners share one library, so a change that breaks the library should report every family
+rather than stopping at the first. In a shell that means accumulating a status across a
 loop and exiting on it at the end, which the CI step did as
 
     rc=0; for s in ...; do python3 "$s" --check || rc=1; done; exit $rc
@@ -14,7 +14,7 @@ declarations the per-family entry points do, through the same `scanlib.run`, and
 an ordinary Python one -- the shape every other check step in that workflow already uses.
 
 A family that raises is caught and counted rather than allowed to abort the run, for the same
-reason the loop exists: one broken declaration must not hide the other nineteen.
+reason the loop exists: one broken declaration must not hide the rest.
 """
 import glob
 import importlib

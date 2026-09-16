@@ -229,6 +229,6 @@ python tests/vetting/oracles/gen_ngldm3d_mirp.py
 # Nyxus side
 runAllTests --gtest_filter=*3D_NGLDM_DUMP_REGRESSION*
 
-# coverage artifact
-python tests/vetting/audit/scan_ngldm3d_coverage.py [--check]
+# coverage check
+python tests/vetting/audit/scan_ngldm3d_coverage.py --check
 ```

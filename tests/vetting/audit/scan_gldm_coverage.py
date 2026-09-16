@@ -1,11 +1,11 @@
-"""Regenerate gldm_2d_coverage.csv by scanning the 2D GLDM tests. Stdlib only.
+"""Scan the 2D GLDM tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_gldm_coverage.py [--check]
+    python tests/vetting/audit/scan_gldm_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks. The coverage rule, the checks and the rendering all live in scanlib.py; this file
-is the family's declaration.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
+checks live in scanlib.py; `report_features.py` joins the scan into `test_output.csv`. This file is
+the family's declaration.
 """
 import os
 import sys
@@ -45,7 +45,7 @@ NOTE = {
 }
 
 FAMILY = scanlib.Family(
-    dim="2D", family="gldm", out="gldm_2d_coverage.csv",
+    dim="2D", family="gldm",
     sources=SOURCES,
     oracle_suffix={"pyradiomics": "pyradiomics", "ibsi": "ibsi"},
     notes=scanlib.dual_oracle_notes(NOTE, DUAL_ORACLE),
@@ -53,7 +53,7 @@ FAMILY = scanlib.Family(
     scan_helpers=True,
     other_note="guarded",
     # A drift guard is not a vetting claim, so current_test lists the oracle files only; the
-    # regression and mechanics files are reported in the artifact, not required in the registry.
+    # regression and mechanics files are reported in test_output.csv, not required in the registry.
     current_exempt=("test_2d_gldm_regression.h", "test_2d_gldm_mechanics.h",
                     "test_2d_gldm_mechanics.py"),
 )

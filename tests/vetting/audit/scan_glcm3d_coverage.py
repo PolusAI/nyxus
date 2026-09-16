@@ -1,11 +1,11 @@
-"""Regenerate glcm_3d_coverage.csv by scanning the 3D GLCM tests. Stdlib only.
+"""Scan the 3D GLCM tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_glcm3d_coverage.py [--check]
+    python tests/vetting/audit/scan_glcm3d_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks. The coverage rule, the checks and the rendering all live in scanlib.py; this file
-is the family's declaration.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
+checks live in scanlib.py; `report_features.py` joins the scan into `test_output.csv`. This file is
+the family's declaration.
 """
 import os
 import sys
@@ -19,7 +19,7 @@ SOURCES = [
 ]
 
 FAMILY = scanlib.Family(
-    dim="3D", family="glcm", out="glcm_3d_coverage.csv",
+    dim="3D", family="glcm",
     sources=SOURCES,
     oracle_suffix={"pyradiomics": "pyradiomics"},
     enum_dim_prefix=True,

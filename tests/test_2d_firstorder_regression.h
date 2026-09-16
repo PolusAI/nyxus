@@ -43,9 +43,7 @@ void test_2d_firstorder_entropy_regression()
 
 void test_2d_firstorder_median_absolute_deviation_regression()
 {
-    assert_firstorder_feature_regression(
-        Nyxus::Feature2D::MEDIAN_ABSOLUTE_DEVIATION,
-        "MEDIAN_ABSOLUTE_DEVIATION");
+    assert_firstorder_feature_regression(Nyxus::Feature2D::MEDIAN_ABSOLUTE_DEVIATION, "MEDIAN_ABSOLUTE_DEVIATION");
 }
 void test_2d_firstorder_robust_mean_regression()
 {

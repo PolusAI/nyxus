@@ -96,11 +96,11 @@ jobs:
       working-directory: ${{github.workspace}}
       run: python3 tests/vetting/audit/scanlib_selftest.py
 
-    - name: Validate coverage artifacts against the test tree
+    - name: Validate every family's registry rows against the test tree
       working-directory: ${{github.workspace}}
-      # every family runs, then the step fails once and names the ones that failed: the twenty
-      # scanners share one library, so a change that breaks it should report all twenty families
-      # rather than stopping at the first. The accumulation is in the runner rather than in a shell
+      # every family runs, then the step fails once and names the ones that failed: the scanners
+      # share one library, so a change that breaks it should report every family rather than
+      # stopping at the first. The accumulation is in the runner rather than in a shell
       # loop -- the shell form failed this step twice with twenty clean scanners logged under it.
       run: python3 tests/vetting/audit/run_scanners.py
 

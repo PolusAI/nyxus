@@ -108,13 +108,14 @@ Name mapping: `martin_{min,max,mean,median,std}`, `nassenstein_*`, `feret_*` →
 - any caliper statistic on the 8×8 shape2d raster — imea's values there differ from Nyxus by
   3.9–79.3%. Those are regression snapshots in `test_2d_morphology_regression.h`.
 
-## Coverage artifact
+## Coverage check
 
-`morphology_2d_coverage.csv` is generated, not hand-written:
+The family's feature -> test mapping is read out of the tree, not hand-written, and lands in
+`test_output.csv`:
 
 ```
-python tests/vetting/audit/scan_morphology_coverage.py           # rewrite
-python tests/vetting/audit/scan_morphology_coverage.py --check   # CI-style drift + acceptance check
+python tests/vetting/audit/scan_morphology_coverage.py --check   # acceptance check
+python tests/vetting/report_features.py --write          # regenerate test_output.csv
 ```
 
 `--check` also enforces the family acceptance rule: no `vetted` row without an oracle assertion, no

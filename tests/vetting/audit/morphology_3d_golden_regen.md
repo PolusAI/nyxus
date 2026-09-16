@@ -197,11 +197,11 @@ The completeness guard in `test_3d_coverage_common.h` reads the retired families
 the tables their named tests assert against, so a family leaving the sweep is one `add_keys()` line
 and no hand-kept counts.
 
-## Coverage artifact
+## Coverage check
 
 ```
-python tests/vetting/audit/scan_morphology3d_coverage.py           # rewrite
-python tests/vetting/audit/scan_morphology3d_coverage.py --check   # drift + acceptance check
+python tests/vetting/audit/scan_morphology3d_coverage.py --check   # acceptance check
+python tests/vetting/report_features.py --write          # regenerate test_output.csv
 ```
 
 `--check` asserts that every `vetted` row is backed by an oracle-suffixed test naming the oracle the
