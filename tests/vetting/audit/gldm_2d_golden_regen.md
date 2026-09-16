@@ -89,9 +89,9 @@ settings — `gldm_2d_feature_value(cat2500_int, cat2500_seg, ..., make_gldm2d_s
 the same call the test makes — and state in the PR why the values moved. A drift guard re-pinned
 without that reason is not a guard.
 
-## Coverage artifact
+## Coverage check
 
 ```
-python tests/vetting/audit/scan_gldm_coverage.py           # rewrite
-python tests/vetting/audit/scan_gldm_coverage.py --check   # drift + acceptance check
+python tests/vetting/audit/scan_gldm_coverage.py --check   # acceptance check
+python tests/vetting/report_features.py --write          # regenerate test_output.csv
 ```

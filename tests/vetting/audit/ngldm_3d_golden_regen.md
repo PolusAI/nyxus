@@ -134,11 +134,11 @@ reintroduce a two-env `.npy` hand-off.
   beside the samelevels ones rather than replacing them: SPEC 1 counts vetting per assertion, and the
   two recipes establish different things.
 
-## Coverage artifact
+## Coverage check
 
 ```
-python tests/vetting/audit/scan_ngldm3d_coverage.py           # rewrite
-python tests/vetting/audit/scan_ngldm3d_coverage.py --check   # drift + acceptance check
+python tests/vetting/audit/scan_ngldm3d_coverage.py --check   # acceptance check
+python tests/vetting/report_features.py --write          # regenerate test_output.csv
 ```
 
 `ORACLE_SUFFIX` maps `mirp` to the `_mirp` suffix, so `--check` credits `test_3d_ngldm_mirp.h`'s 16

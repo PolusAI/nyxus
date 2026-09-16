@@ -176,4 +176,70 @@ void assert_3d_firstorder_feature_pyradiomics (const Nyxus::Feature3D &expected_
         firstorder_3d_pyradiomics_band(fname))) << fname;
 }
 
+void test_3d_firstorder_energy_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::ENERGY, "3ENERGY");
+}
 
+void test_3d_firstorder_entropy_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::ENTROPY, "3ENTROPY");
+}
+
+void test_3d_firstorder_interquartile_range_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::INTERQUARTILE_RANGE, "3INTERQUARTILE_RANGE");
+}
+
+void test_3d_firstorder_kurtosis_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::KURTOSIS, "3KURTOSIS");
+}
+
+void test_3d_firstorder_max_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::MAX, "3MAX");
+}
+
+void test_3d_firstorder_mean_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::MEAN, "3MEAN");
+}
+
+void test_3d_firstorder_mean_absolute_deviation_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::MEAN_ABSOLUTE_DEVIATION, "3MEAN_ABSOLUTE_DEVIATION");
+}
+
+void test_3d_firstorder_median_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::MEDIAN, "3MEDIAN");
+}
+
+void test_3d_firstorder_min_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::MIN, "3MIN");
+}
+
+void test_3d_firstorder_p10_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::P10, "3P10");
+}
+
+void test_3d_firstorder_p90_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::P90, "3P90");
+}
+
+void test_3d_firstorder_range_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::RANGE, "3RANGE");
+}
+
+void test_3d_firstorder_robust_mean_absolute_deviation_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION, "3ROBUST_MEAN_ABSOLUTE_DEVIATION");
+}
+
+void test_3d_firstorder_root_mean_squared_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::ROOT_MEAN_SQUARED, "3ROOT_MEAN_SQUARED");
+}
+
+void test_3d_firstorder_skewness_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::SKEWNESS, "3SKEWNESS");
+}
+
+void test_3d_firstorder_uniformity_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::UNIFORMITY, "3UNIFORMITY");
+}
+
+void test_3d_firstorder_variance_pyradiomics() {
+    assert_3d_firstorder_feature_pyradiomics (Nyxus::Feature3D::VARIANCE, "3VARIANCE");
+}

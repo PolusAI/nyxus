@@ -1,11 +1,11 @@
-"""Regenerate glszm_2d_coverage.csv by scanning the 2D GLSZM tests. Stdlib only.
+"""Scan the 2D GLSZM tests for the feature -> test mapping. Stdlib only.
 
-    python tests/vetting/audit/scan_glszm_coverage.py [--check]
+    python tests/vetting/audit/scan_glszm_coverage.py --check
 
-The feature -> test mapping is read out of the test sources rather than written by hand, so the
-artifact cannot drift from the tree. `--check` reports drift instead of rewriting, and also runs the
-acceptance checks. The coverage rule, the checks and the rendering all live in scanlib.py; this file
-is the family's declaration.
+The mapping is read out of the test sources rather than written by hand, so it cannot drift from the
+tree. `--check` runs the acceptance checks against `oracle_coverage.csv`. The coverage rule and the
+checks live in scanlib.py; `report_features.py` joins the scan into `test_output.csv`. This file is
+the family's declaration.
 """
 import sys
 
@@ -32,7 +32,7 @@ NOTE = {
 }
 
 FAMILY = scanlib.Family(
-    dim="2D", family="glszm", out="glszm_2d_coverage.csv",
+    dim="2D", family="glszm",
     sources=SOURCES,
     oracle_suffix={"mirp": "mirp", "ibsi": "ibsi"},
     notes=scanlib.dual_oracle_notes(NOTE, DUAL_ORACLE),

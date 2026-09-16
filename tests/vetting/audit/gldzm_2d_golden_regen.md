@@ -100,9 +100,9 @@ re-record them after an intended math change, read the values off a run at those
 `gldzm_2d_phantom_slice_values(f)` averaged is the same call the test makes — and state in the PR
 why the values moved. A drift guard re-pinned without that reason is not a guard.
 
-## Coverage artifact
+## Coverage check
 
 ```
-python tests/vetting/audit/scan_gldzm_coverage.py           # rewrite
-python tests/vetting/audit/scan_gldzm_coverage.py --check   # drift + acceptance check
+python tests/vetting/audit/scan_gldzm_coverage.py --check   # acceptance check
+python tests/vetting/report_features.py --write          # regenerate test_output.csv
 ```

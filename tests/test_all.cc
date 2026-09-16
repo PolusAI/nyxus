@@ -133,71 +133,71 @@ TEST(TEST_NYXUS, TEST_2D_CONTOUR_MULTI_CONNECTED_ANALYTIC) {
 //***** first-order compatibility *****
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P10_PYRADIOMICS) {
-	ASSERT_NO_THROW(assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::P10, "3P10"));
+	ASSERT_NO_THROW(test_3d_firstorder_p10_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_P90_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::P90, "3P90"));
+	ASSERT_NO_THROW(test_3d_firstorder_p90_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ENERGY_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::ENERGY, "3ENERGY"));
+	ASSERT_NO_THROW(test_3d_firstorder_energy_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ENTROPY_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::ENTROPY, "3ENTROPY"));
+	ASSERT_NO_THROW(test_3d_firstorder_entropy_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_INTERQUARTILE_RANGE_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::INTERQUARTILE_RANGE, "3INTERQUARTILE_RANGE"));
+	ASSERT_NO_THROW(test_3d_firstorder_interquartile_range_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_KURTOSIS_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::KURTOSIS, "3KURTOSIS"));
+	ASSERT_NO_THROW(test_3d_firstorder_kurtosis_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MAX_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MAX, "3MAX"));
+	ASSERT_NO_THROW(test_3d_firstorder_max_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MEAN_ABSOLUTE_DEVIATION, "3MEAN_ABSOLUTE_DEVIATION"));
+	ASSERT_NO_THROW(test_3d_firstorder_mean_absolute_deviation_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEAN_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MEAN, "3MEAN"));
+	ASSERT_NO_THROW(test_3d_firstorder_mean_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MEDIAN_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MEDIAN, "3MEDIAN"));
+	ASSERT_NO_THROW(test_3d_firstorder_median_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MIN_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::MIN, "3MIN"));
+	ASSERT_NO_THROW(test_3d_firstorder_min_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_RANGE_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::RANGE, "3RANGE"));
+	ASSERT_NO_THROW(test_3d_firstorder_range_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::ROBUST_MEAN_ABSOLUTE_DEVIATION, "3ROBUST_MEAN_ABSOLUTE_DEVIATION"));
+	ASSERT_NO_THROW(test_3d_firstorder_robust_mean_absolute_deviation_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_ROOT_MEAN_SQUARED_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::ROOT_MEAN_SQUARED, "3ROOT_MEAN_SQUARED"));
+	ASSERT_NO_THROW(test_3d_firstorder_root_mean_squared_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_SKEWNESS_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::SKEWNESS, "3SKEWNESS"));
+	ASSERT_NO_THROW(test_3d_firstorder_skewness_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_UNIFORMITY_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::UNIFORMITY, "3UNIFORMITY"));
+	ASSERT_NO_THROW(test_3d_firstorder_uniformity_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS) {
-	ASSERT_NO_THROW (assert_3d_firstorder_feature_pyradiomics(Nyxus::Feature3D::VARIANCE, "3VARIANCE"));
+	ASSERT_NO_THROW(test_3d_firstorder_variance_pyradiomics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MATLAB) {

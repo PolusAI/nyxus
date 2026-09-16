@@ -88,11 +88,11 @@ reverse direction for a feature MIRP produces that the report omits, checks the 
 span against the span the report states, and exits non-zero on any of those. Last run: **48
 verified, 0 failed, 0 unproducible, 0 unquoted.**
 
-## Coverage artifact
+## Coverage check
 
 ```
-python tests/vetting/audit/scan_gldzm3d_coverage.py           # rewrite
-python tests/vetting/audit/scan_gldzm3d_coverage.py --check   # drift + acceptance check
+python tests/vetting/audit/scan_gldzm3d_coverage.py --check   # acceptance check
+python tests/vetting/report_features.py --write          # regenerate test_output.csv
 ```
 
 `ORACLE_SUFFIX` is `{"mirp": "mirp"}`, so `--check` holds a `vetted` row to naming an oracle test
@@ -100,8 +100,8 @@ whose function suffix is that oracle, holds every row's `test_name` to a registe
 the file its `current_test` names, and holds every test function defined in the family to being
 registered — the last of which is the check `3GLDZM_ZDM` needed and did not have.
 
-Rerun it after any change to the family's registry rows or test files, and commit the rewritten
-`gldzm_3d_coverage.csv` with them: CI runs `--check`, and a stale artifact fails it.
+Rerun it after any change to the family's registry rows or test files, and commit the regenerated
+`test_output.csv` with them: CI runs `report_features.py --check`, and a stale report fails it.
 
 ## Two cheap checks on a regenerated table, before believing it
 
