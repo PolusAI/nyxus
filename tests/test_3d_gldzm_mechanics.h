@@ -67,13 +67,9 @@ static const double gldzm_3d_mechanics_tolerance = 1.e-9;
 static const double gldzm_3d_mechanics_zones = 2.0;
 static const double gldzm_3d_mechanics_roi_voxels = 64.0;
 
-void test_3d_gldzm_zero_level_voxels_are_zoned_mechanics()
+// The derived table and the zone count, asserted against one extraction.
+static void assert_3d_gldzm_zero_level_voxels_are_zoned (const std::vector<std::vector<double>>& fvals)
 {
-	auto [ipath, mpath, label] = get_3d_gldzm_zerolevel_phantom();
-
-	std::vector<std::vector<double>> fvals;
-	ASSERT_NO_FATAL_FAILURE(extract_3d_gldzm(fvals, ipath, mpath, label, make_gldzm3d_settings(64, true)));
-
 	Environment e;
 	for (const auto& nv : gldzm_3d_mechanics_ref_vals)
 	{
@@ -91,6 +87,32 @@ void test_3d_gldzm_zero_level_voxels_are_zoned_mechanics()
 		<< "the ROI's zero-level voxels are not in a zone: " << std::setprecision(17)
 		<< fvals[zp][0] * gldzm_3d_mechanics_roi_voxels << " zones over "
 		<< gldzm_3d_mechanics_roi_voxels << " voxels, expected " << gldzm_3d_mechanics_zones;
+}
+
+void test_3d_gldzm_zero_level_voxels_are_zoned_mechanics()
+{
+	auto [ipath, mpath, label] = get_3d_gldzm_zerolevel_phantom();
+
+	std::vector<std::vector<double>> fvals;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_gldzm(fvals, ipath, mpath, label, make_gldzm3d_settings(64, true)));
+	assert_3d_gldzm_zero_level_voxels_are_zoned (fvals);
+}
+
+// The same fixture through the radiomics scheme, which gathers the ROI's grey levels as a set rather
+// than as a 1..max ladder, so its lift is a separate code path from the no-binning point's.
+//
+// At a bin count of 5 the scheme maps the fixture's raw levels onto themselves: `to_grayscale_radiomix`
+// sends 0 to 0 by construction, and 5 over a bin width of (5-0)/5 = 1 to bin 6, which clips into the
+// last bin, 5. The lift then makes them 1 and 6 -- the levels of the no-binning point -- so the
+// derived table above applies unchanged. A set gathered without the lift would hold 0 and 5, and a
+// level-1 zone would have no row to go in.
+void test_3d_gldzm_zero_level_voxels_are_zoned_radiomics_mechanics()
+{
+	auto [ipath, mpath, label] = get_3d_gldzm_zerolevel_phantom();
+
+	std::vector<std::vector<double>> fvals;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_gldzm(fvals, ipath, mpath, label, make_gldzm3d_settings(-5, false)));
+	assert_3d_gldzm_zero_level_voxels_are_zoned (fvals);
 }
 
 // GREYDEPTH=0 and IBSI=true are two ways of asking for the same thing -- calculate() overwrites the

@@ -862,6 +862,10 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_ZERO_LEVEL_VOXELS_ARE_ZONED_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_gldzm_zero_level_voxels_are_zoned_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_3D_GLDZM_ZERO_LEVEL_VOXELS_ARE_ZONED_RADIOMICS_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_zero_level_voxels_are_zoned_radiomics_mechanics());
+}
+
 TEST(TEST_NYXUS, TEST_3D_GLDZM_NO_BINNING_SPELLINGS_AGREE_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_gldzm_no_binning_spellings_agree_mechanics());
 }
