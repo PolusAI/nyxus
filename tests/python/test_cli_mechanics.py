@@ -50,8 +50,12 @@ def _volume_pair(tmp_path, depth_int, depth_seg):
     inten = (1 + np.arange(depth_int * Y * X, dtype=np.uint16).reshape(depth_int, Y, X) % 4000)
     mask = np.zeros((depth_seg, Y, X), np.uint16)
     mask[:, 4:12, 4:12] = 1
-    tifffile.imwrite(str(intdir / "v.ome.tif"), inten, metadata={"axes": "ZYX"})
-    tifffile.imwrite(str(segdir / "v.ome.tif"), mask, metadata={"axes": "ZYX"})
+    # photometric="minisblack" is what makes the leading axis Z rather than samples: tifffile
+    # reads a first axis of length 3 or 4 as RGB/RGBA and writes ONE plane of that many samples
+    # per pixel, whatever the axes metadata says. At depth 4 that produced a SamplesPerPixel=4
+    # file, which nyxus rightly refuses as not grayscale.
+    tifffile.imwrite(str(intdir / "v.ome.tif"), inten, photometric="minisblack", metadata={"axes": "ZYX"})
+    tifffile.imwrite(str(segdir / "v.ome.tif"), mask, photometric="minisblack", metadata={"axes": "ZYX"})
     return intdir, segdir
 
 
