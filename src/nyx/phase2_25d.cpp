@@ -49,11 +49,12 @@ namespace Nyxus
 			if (! env.theImLoader.open(p, env.fpimageOptions))
 			{
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
+				env.theImLoader.close();	// the pair this function opened is its to release
 				return false;
 			}
 
-			size_t nth = env.theImLoader.get_num_tiles_hor(),
-				ntv = env.theImLoader.get_num_tiles_vert(),
+			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
+				ntVert = env.theImLoader.get_num_tiles_vert(),	// tiles down a column
 				fw = env.theImLoader.get_tile_width(),
 				th = env.theImLoader.get_tile_height(),
 				tw = env.theImLoader.get_tile_width(),
@@ -62,9 +63,9 @@ namespace Nyxus
 				fullheight = env.theImLoader.get_full_height();
 
 			int cnt = 1;
-			for (unsigned int row = 0; row < nth; row++)
+			for (unsigned int row = 0; row < ntVert; row++)
 			{
-				for (unsigned int col = 0; col < ntv; col++)
+				for (unsigned int col = 0; col < ntHor; col++)
 				{
 					// Fetch the tile 
 					bool ok = env.theImLoader.load_tile(row, col);
@@ -72,6 +73,7 @@ namespace Nyxus
 					{
 						std::stringstream ss;
 						ss << "Error fetching tile row=" << row << " col=" << col;
+						env.theImLoader.close();	// released before the throw below, which leaves under Python
 #ifdef WITH_PYTHON_H
 						throw ss.str();
 #endif	
@@ -117,7 +119,7 @@ namespace Nyxus
 						if (cnt++ % 4 == 0)
 						{
 							static int prevIntPc = 0;
-							float pc = int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100.;
+							float pc = int((row * ntHor + col) * 100 / float(ntHor * ntVert) * 100) / 100.;
 							if (int(pc) != prevIntPc)
 							{
 								std::cout << "\t" << "scan trivial " << int(pc) << " % \n";
@@ -181,11 +183,12 @@ namespace Nyxus
 			if (! env.theImLoader.open(p, env.fpimageOptions))
 			{
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
+				env.theImLoader.close();	// the pair this function opened is its to release
 				return false;
 			}
 
-			size_t nth = env.theImLoader.get_num_tiles_hor(),
-				ntv = env.theImLoader.get_num_tiles_vert(),
+			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
+				ntVert = env.theImLoader.get_num_tiles_vert(),	// tiles down a column
 				fw = env.theImLoader.get_tile_width(),
 				th = env.theImLoader.get_tile_height(),
 				tw = env.theImLoader.get_tile_width(),
@@ -195,9 +198,7 @@ namespace Nyxus
 
 			// virtual slide properties
 			size_t vh = (size_t)(double(fullheight) * aniso_y),
-				vw = (size_t)(double(fullwidth) * aniso_x),
-				vth = (size_t)(double(th) * aniso_y),
-				vtw = (size_t)(double(tw) * aniso_x);
+				vw = (size_t)(double(fullwidth) * aniso_x);
 
 			// current tile to skip tile reloads
 			size_t curt_x = 999, curt_y = 999;
@@ -206,9 +207,18 @@ namespace Nyxus
 			{
 				for (size_t vc = 0; vc < vw; vc++)
 				{
-					// tile position
-					size_t tidx_y = size_t(vr / vth),
-						tidx_x = size_t(vc / vtw);
+					// A virtual pixel's tile is found through its PHYSICAL position, not through a virtual tile
+					// width: (tile width * factor) truncates, so virtual_extent / truncated_tile_width can exceed
+					// the tile count the slide actually has -- 2048 px of 1024-px tiles at 0.7 gives a virtual
+					// width of 1433 over a virtual tile of 716, and the last column asks for tile 2 of 2. Going
+					// through the physical column cannot overrun, and needs no bound of its own: the loop puts
+					// vc below (size_t)(fullwidth * aniso_x), which is at most fullwidth * aniso_x, so
+					// vc / aniso_x is below the slide's width, its tile index is below the grid's, and the
+					// within-tile offset is exact rather than accumulated. The row follows the same argument.
+					const size_t ph_col = (size_t) (double(vc) / aniso_x),
+						ph_row = (size_t) (double(vr) / aniso_y);
+					const size_t tidx_x = ph_col / tw,
+						tidx_y = ph_row / th;
 
 					// load it
 					if (tidx_y != curt_y || tidx_x != curt_x)
@@ -217,6 +227,7 @@ namespace Nyxus
 						if (!ok)
 						{
 							std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
+							env.theImLoader.close();	// released before the throw below, which leaves under Python
 #ifdef WITH_PYTHON_H
 							throw s;
 #endif	
@@ -229,14 +240,8 @@ namespace Nyxus
 						curt_x = tidx_x;
 					}
 
-					// within-tile virtual pixel position
-					size_t vx = vc - tidx_x * vtw,
-						vy = vr - tidx_y * vth;
-
-					// within-tile physical pixel position
-					size_t ph_x = size_t(double(vx) / aniso_x),
-						ph_y = size_t(double(vy) / aniso_y),
-						i = ph_y * tw + ph_x;
+					// the physical pixel's offset inside the tile buffer, from the loader that filled it
+					const size_t i = env.theImLoader.get_within_tile_idx (ph_row, ph_col);
 
 					// read buffered physical pixel 
 					auto dataI = env.theImLoader.get_int_tile_buffer(),
@@ -249,10 +254,6 @@ namespace Nyxus
 
 					// skip this ROI if the label isn't in the pending set of a multi-ROI mode
 					if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
-						continue;
-
-					// skip tile buffer pixels beyond the image's bounds
-					if (vc >= fullwidth || vr >= fullheight)
 						continue;
 
 					// collapse all the labels to one if single-ROI mde is requested
@@ -274,6 +275,40 @@ namespace Nyxus
 		VERBOSLVL5 (env.get_verbosity_level(), dump_roi_pixels(env.dim(), Nyxus::get_temp_dir_path(), batch_labels, label_fpath, env.uniqueLabels, env.roiData));
 
 			return true;
+	}
+
+	// The ROI's extent and voxel count describe the cloud the anisotropic scan cached.
+	// gatherRoisMetrics_25D records both from the PHYSICAL grid, and the resampled cloud has a
+	// different extent and a different voxel count: the extent sizes aux_image_cube, which
+	// calculate_from_pixelcloud fills by coordinate without a bounds check, and aux_area divides
+	// every feature that averages. Taking both from the cloud leaves one authoritative source for
+	// the virtual geometry, which is what processTrivialRois_3D does after its own anisotropic scan.
+	static bool adopt_anisotropic_cloud_25D (Environment& env, const std::vector<int>& pending, double ax, double ay, double az)
+	{
+		for (auto lbl : pending)
+		{
+			LR& r = env.roiData[lbl];
+
+			// A ROI thinner than the factor's step maps to no virtual voxel at all: every virtual
+			// coordinate that would carry it rounds back to a physical one outside it. There is no
+			// cloud to take an extent from and nothing to featurize, so name the ROI and stop rather
+			// than reduce a cube of zeros.
+			if (r.raw_pixels_3D.empty())
+			{
+				std::string s = "Error: ROI " + std::to_string(lbl) + " maps to no voxel at anisotropy "
+					+ std::to_string(ax) + "," + std::to_string(ay) + "," + std::to_string(az);
+#ifdef WITH_PYTHON_H
+				throw s;
+#endif
+				std::cerr << s << "\n";
+				return false;
+			}
+
+			r.aabb.update_from_voxelcloud (r.raw_pixels_3D);
+			r.aux_area = (unsigned int) r.raw_pixels_3D.size();
+		}
+
+		return true;
 	}
 
 	bool processTrivialRois_25D (Environment & env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices)
@@ -308,14 +343,19 @@ namespace Nyxus
 
 					if (env.anisoOptions.customized() == false)
 					{
-						scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices);
+						if (! scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices))
+							return false;
 					}
 					else
 					{
 						double	ax = env.anisoOptions.get_aniso_x(),
 							ay = env.anisoOptions.get_aniso_y(),
 							az = env.anisoOptions.get_aniso_z();
-						scanTrivialRois_25D_anisotropic (env, Pending, intens_fpath, label_fpath, z_indices, ax, ay, az);
+						if (! scanTrivialRois_25D_anisotropic (env, Pending, intens_fpath, label_fpath, z_indices, ax, ay, az))
+							return false;
+
+						if (! adopt_anisotropic_cloud_25D (env, Pending, ax, ay, az))
+							return false;
 					}
 
 				// Allocate memory
@@ -368,14 +408,19 @@ namespace Nyxus
 				);
 			if (env.anisoOptions.customized() == false)
 			{
-				scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices);
+				if (! scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices))
+					return false;
 			}
 			else
 			{
 				double	ax = env.anisoOptions.get_aniso_x(),
 					ay = env.anisoOptions.get_aniso_y(),
 					az = env.anisoOptions.get_aniso_z();
-				scanTrivialRois_25D_anisotropic (env, Pending, intens_fpath, label_fpath, z_indices, ax, ay, az);
+				if (! scanTrivialRois_25D_anisotropic (env, Pending, intens_fpath, label_fpath, z_indices, ax, ay, az))
+					return false;
+
+				if (! adopt_anisotropic_cloud_25D (env, Pending, ax, ay, az))
+					return false;
 			}
 
 			// Allocate memory

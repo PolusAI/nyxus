@@ -208,9 +208,7 @@ namespace Nyxus
 
 		// virtual slide properties
 		size_t vh = (size_t) (double(fullheight) * sf_y),
-			vw = (size_t) (double(fullwidth) * sf_x),
-			vth = (size_t)(double(th) * sf_y),
-			vtw = (size_t)(double(tw) * sf_x);
+			vw = (size_t) (double(fullwidth) * sf_x);
 
 		// current tile to skip tile reloads
 		size_t curt_x = 999, curt_y = 999;
@@ -219,9 +217,18 @@ namespace Nyxus
 		{
 			for (size_t vc = 0; vc < vw; vc++)
 			{
-				// tile position
-				size_t tidx_y = size_t(vr / vth),
-					tidx_x = size_t(vc / vtw);
+				// A virtual pixel's tile is found through its PHYSICAL position, not through a virtual tile
+				// width: (tile width * factor) truncates, so virtual_extent / truncated_tile_width can exceed
+				// the tile count the slide actually has -- 2048 px of 1024-px tiles at 0.7 gives a virtual
+				// width of 1433 over a virtual tile of 716, and the last column asks for tile 2 of 2. Going
+				// through the physical column cannot overrun, and needs no bound of its own: the loop puts
+				// vc below (size_t)(fullwidth * sf_x), which is at most fullwidth * sf_x, so vc / sf_x is
+				// below the slide's width, its tile index is below the grid's, and the within-tile offset
+				// is exact rather than accumulated. The row follows the same argument.
+				const size_t ph_col = (size_t) (double(vc) / sf_x),
+					ph_row = (size_t) (double(vr) / sf_y);
+				const size_t tidx_x = ph_col / tw,
+					tidx_y = ph_row / th;
 
 				// load it
 				if (tidx_y != curt_y || tidx_x != curt_x)
@@ -242,14 +249,8 @@ namespace Nyxus
 					curt_x = tidx_x;
 				}
 
-				// within-tile virtual pixel position
-				size_t vx = vc - tidx_x * vtw,
-					vy = vr - tidx_y * vth;
-
-				// within-tile physical pixel position
-				size_t ph_x = size_t (double(vx) / sf_x), 
-					ph_y = size_t (double(vy) / sf_y),
-					i = ph_y * tw + ph_x;
+				// the physical pixel's offset inside the tile buffer, from the loader that filled it
+				const size_t i = ldr.get_within_tile_idx (ph_row, ph_col);
 
 				// read buffered physical pixel 
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
@@ -296,8 +297,8 @@ namespace Nyxus
 			lyr = 0;	//	Layer
 
 		// Read the tiffs
-		size_t nth = ldr.get_num_tiles_hor(),
-			ntv = ldr.get_num_tiles_vert(),
+		size_t ntHor = ldr.get_num_tiles_hor(),	// tiles across a row
+			ntVert = ldr.get_num_tiles_vert(),	// tiles down a column
 			fw = ldr.get_tile_width(),
 			th = ldr.get_tile_height(),
 			tw = ldr.get_tile_width(),
@@ -306,8 +307,8 @@ namespace Nyxus
 			fullheight = ldr.get_full_height();
 
 		int cnt = 1;
-		for (unsigned int row = 0; row < nth; row++)
-			for (unsigned int col = 0; col < ntv; col++)
+		for (unsigned int row = 0; row < ntVert; row++)
+			for (unsigned int col = 0; col < ntHor; col++)
 			{
 				// Fetch the tile 
 				bool ok = ldr.load_tile(row, col);
@@ -359,8 +360,8 @@ namespace Nyxus
 			lyr = 0;	//	Layer
 
 		// physical slide properties
-		size_t nth = ldr.get_num_tiles_hor(),
-			ntv = ldr.get_num_tiles_vert(),
+		size_t ntHor = ldr.get_num_tiles_hor(),	// tiles across a row
+			ntVert = ldr.get_num_tiles_vert(),	// tiles down a column
 			fw = ldr.get_tile_width(),
 			th = ldr.get_tile_height(),
 			tw = ldr.get_tile_width(),
@@ -370,9 +371,7 @@ namespace Nyxus
 
 		// virtual slide properties
 		size_t vh = (size_t)(double(fullheight) * aniso_y),
-			vw = (size_t)(double(fullwidth) * aniso_x),
-			vth = (size_t)(double(th) * aniso_y),
-			vtw = (size_t)(double(tw) * aniso_x);
+			vw = (size_t)(double(fullwidth) * aniso_x);
 
 		// current tile to skip tile reloads
 		size_t curt_x = 999, curt_y = 999;
@@ -381,9 +380,18 @@ namespace Nyxus
 		{
 			for (size_t vc = 0; vc < vw; vc++)
 			{
-				// tile position for virtual pixel (vc, vr)
-				size_t tidx_y = size_t(vr / vth),
-					tidx_x = size_t(vc / vtw);
+				// A virtual pixel's tile is found through its PHYSICAL position, not through a virtual tile
+				// width: (tile width * factor) truncates, so virtual_extent / truncated_tile_width can exceed
+				// the tile count the slide actually has -- 2048 px of 1024-px tiles at 0.7 gives a virtual
+				// width of 1433 over a virtual tile of 716, and the last column asks for tile 2 of 2. Going
+				// through the physical column cannot overrun, and needs no bound of its own: the loop puts
+				// vc below (size_t)(fullwidth * aniso_x), which is at most fullwidth * aniso_x, so
+				// vc / aniso_x is below the slide's width, its tile index is below the grid's, and the
+				// within-tile offset is exact rather than accumulated. The row follows the same argument.
+				const size_t ph_col = (size_t) (double(vc) / aniso_x),
+					ph_row = (size_t) (double(vr) / aniso_y);
+				const size_t tidx_x = ph_col / tw,
+					tidx_y = ph_row / th;
 
 				// load it
 				if (tidx_y != curt_y || tidx_x != curt_x)
@@ -404,14 +412,8 @@ namespace Nyxus
 					curt_x = tidx_x;
 				}
 
-				// within-tile virtual pixel position
-				size_t vx = vc - tidx_x * vtw,
-					vy = vr - tidx_y * vth;
-
-				// within-tile physical pixel position
-				size_t ph_x = size_t(double(vx) / aniso_x),
-					ph_y = size_t(double(vy) / aniso_y),
-					i = ph_y * tw + ph_x;
+				// the physical pixel's offset inside the tile buffer, from the loader that filled it
+				const size_t i = ldr.get_within_tile_idx (ph_row, ph_col);
 
 				// read buffered physical pixel
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();

@@ -1,4 +1,6 @@
 #include "cli_nested_roi_options.h"
+#include <algorithm>
+#include <fstream>
 #include "helpers/helpers.h"
 
 #include <sstream>
@@ -116,7 +118,7 @@ namespace Nyxus
 	std::unordered_map <int, std::vector<int>> parentsChildren;
 	std::unordered_map <int, HieLR> roiDataP, roiDataC;
 
-	void parse_csv_line2 (std::vector<std::string>& dst, std::istringstream& src)
+	void parse_csv_line(std::vector<std::string>& dst, std::istringstream& src)
 	{
 		dst.clear();
 		std::string field;
@@ -124,25 +126,50 @@ namespace Nyxus
 			dst.push_back(field);
 	}
 
-	bool find_csv_record2 (std::string& csvLine, std::vector<std::string>& csvHeader, std::vector<std::string>& csvFields, const std::string& csvFP, int label)
+	bool csv_layout (const std::vector<std::string>& header, CsvLayout& layout)
+	{
+		// the CSV writer quotes the header's names
+		auto column_of = [&header] (const char* name) -> int
+		{
+			for (size_t i = 0; i < header.size(); i++)
+			{
+				const std::string& h = header[i];
+				bool quoted = h.size() >= 2 && h.front() == '"' && h.back() == '"';
+				if ((quoted ? h.substr(1, h.size() - 2) : h) == name)
+					return (int) i;
+			}
+			return -1;
+		};
+
+		layout.intensity = column_of (colname_intensity_image);
+		layout.mask = column_of (colname_mask_image);
+		layout.label = column_of (colname_roi_label);
+		layout.t_index = column_of (colname_t_index);
+		int last_nonfeature = column_of (colname_phys_z);
+		layout.first_feature = last_nonfeature < 0 ? -1 : last_nonfeature + 1;
+		return layout.intensity >= 0 && layout.mask >= 0 && layout.label >= 0 && layout.t_index >= 0 && layout.first_feature >= 0;
+	}
+
+	bool find_csv_record(std::string& csvLine, std::vector<std::string>& csvHeader, std::vector<std::string>& csvFields, CsvLayout& layout, const std::string& csvFP, int label)
 	{
 		std::ifstream f(csvFP);
 		std::string line;
 		std::istringstream ssLine;
 
-		// just store the header
+		// the header tells where the label and the features are
 		std::getline(f, line);
 		ssLine.str(line);
-		parse_csv_line2(csvHeader, ssLine);
+		parse_csv_line(csvHeader, ssLine);
+		if (! csv_layout (csvHeader, layout))
+			return false;
 
+		const std::string lab = std::to_string (label);
 		while (std::getline(f, line))
 		{
-			std::istringstream ss(line); 
-			parse_csv_line2(csvFields, ss);
+			std::istringstream ss(line);
+			parse_csv_line(csvFields, ss);
 
-			std::stringstream ssLab;
-			ssLab << label;
-			if (csvFields[2] == ssLab.str())
+			if ((int) csvFields.size() > layout.label && csvFields[layout.label] == lab)
 			{
 				csvLine = line;
 				return true;
@@ -152,6 +179,11 @@ namespace Nyxus
 		return false;
 	}
 
+	bool find_csv_record(std::string& csvLine, std::vector<std::string>& csvHeader, std::vector<std::string>& csvFields, const std::string& csvFP, int label)
+	{
+		CsvLayout layout;
+		return find_csv_record (csvLine, csvHeader, csvFields, layout, csvFP, label);
+	}
 
 /// @brief Save results of one set of parents to the results cache
 	bool output_roi_relational_table_2_rescache(
@@ -390,9 +422,6 @@ namespace Nyxus
 		// number of child feature sets
 		int n_childSets = aggr == NestedRoiOptions::Aggregations::aNONE ? max_n_children : 1; 
 
-		// columns of a feature result record that need to be skipped
-		int skipNonfeatureColumns = mandatory_output_columns.size();
-
 		//=== Header cells
 
 		// Make the output table file name
@@ -459,14 +488,17 @@ namespace Nyxus
 			std::string csvFP = get_feature_output_fname (env, ifile, sfile);
 			std::string csvWholeline;
 			std::vector<std::string> csvHeader, csvFields;
-			bool ok = find_csv_record2 (csvWholeline, csvHeader, csvFields, csvFP, lPar);
+			CsvLayout layout;
+			bool ok = find_csv_record (csvWholeline, csvHeader, csvFields, layout, csvFP, lPar);
 			if (ok == false)
 			{
 				std::cerr << "Cannot find record for parent " << lPar << " in " << csvFP << "\n";
 
 				// Write emergency CSV-code to zero-fill incomplete date of this parent 
 
-				// --- zero-fill parent feature cells
+				// --- blank mandatory cells and zero-filled parent feature cells
+				for (size_t i = 0; i < mandatory_output_columns.size(); i++)
+					ofile << ",";
 				for (auto& f : F)
 					ofile << "0.0,";
 
@@ -480,9 +512,11 @@ namespace Nyxus
 				continue;
 			}
 
-			// Write parent features
-			for (auto& field : csvFields)
-				ofile << field << ",";
+			// Write the parent's mandatory columns and features, under the header written above
+			for (int col : { layout.intensity, layout.mask, layout.label, layout.t_index })
+				ofile << csvFields[col] << ",";
+			for (int i=0; i < F.size(); i++)
+				ofile << csvFields [layout.first_feature + i] << ",";
 
 			// Don't break the line here (ofile << "\n")! Children features may follow
 
@@ -502,7 +536,7 @@ namespace Nyxus
 
 					// read child's feature CSV file
 					std::string rawLine;
-					bool ok = find_csv_record2 (rawLine, csvHeader, csvFields, fpath, lChi);
+					bool ok = find_csv_record (rawLine, csvHeader, csvFields, layout, fpath, lChi);
 					if (ok == false)
 					{
 						std::cerr << "Cannot find record for child " << lChi << " in " << fpath << "\n";
@@ -511,7 +545,7 @@ namespace Nyxus
 
 					// write features 
 					for (int i=0; i < F.size(); i++)
-						ofile << csvFields [skipNonfeatureColumns + i] << ",";
+						ofile << csvFields [layout.first_feature + i] << ",";
 
 					// don't break the line either! More children features may follow-- ofile << "\n";
 
@@ -542,7 +576,7 @@ namespace Nyxus
 
 					// Read child's features
 					std::string csvWholeline_chi;
-					bool ok = find_csv_record2 (csvWholeline_chi, csvHeader, csvFields, csvFP_chi, lChi);
+					bool ok = find_csv_record (csvWholeline_chi, csvHeader, csvFields, layout, csvFP_chi, lChi);
 					if (ok == false)
 					{
 						std::cerr << "Cannot find record for child " << lPar << " in " << csvFP << "\n";
@@ -558,7 +592,7 @@ namespace Nyxus
 						
 						// Parse a feature value. (Nans, infs, etc. need to be handled.)
 						float val = 0.0f;
-						parse_as_float (csvFields[skipNonfeatureColumns+i], val);
+						parse_as_float (csvFields[layout.first_feature+i], val);
 						childRow.push_back (val);
 					}
 					aggrBuf.push_back (childRow);

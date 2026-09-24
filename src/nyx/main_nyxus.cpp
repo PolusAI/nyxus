@@ -133,6 +133,13 @@ int main (int argc, char** argv)
 				return 1;
 			}
 		}
+
+		// The switch above only reports. The status of the run is the status of the process, as
+		// it is for the 3D branches below: the 2D whole-slide path carries a refused slide all
+		// the way here, and dropping it at the last step would undo the chain. Placed after the
+		// nested-ROI step so a failure changes what the process returns, not what it does.
+		if (errorCode != 0)
+			return errorCode;
 	} // 2D
 	else
 		if (env.dim() == 3)
@@ -208,6 +215,11 @@ int main (int argc, char** argv)
 					std::cout << std::endl << "Error #" << errorCode << std::endl;
 					break;
 				}
+
+				// The switch above only reports. The status of the run is the status of the process,
+				// as it is for the whole-volume branch that returns the same way.
+				if (errorCode != 0)
+					return errorCode;
 			}
 
 		} // 3D

@@ -228,6 +228,7 @@ set(SOURCE
 	src/nyx/phase2_25d.cpp
 	src/nyx/phase2_3d.cpp
 	src/nyx/phase3.cpp
+	src/nyx/phase3_3d.cpp
 	src/nyx/pixel_feed.cpp
 	src/nyx/raw_image_loader.cpp
 	src/nyx/reduce_trivial_rois.cpp

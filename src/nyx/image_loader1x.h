@@ -18,6 +18,9 @@ public:
 	bool load_tile(size_t tile_row, size_t tile_col);
 	const std::vector<uint32_t>& get_tile_buffer();
 	size_t get_tile_size();
+	// Tiles down a column (the number of tile ROWS) and tiles across a row (the number
+	// of tile COLUMNS). A grid walk bounds its row by the first and its column by the
+	// second, which is the order load_tile (row, col) takes.
 	size_t get_num_tiles_vert();
 	size_t get_num_tiles_hor();
 	size_t get_tile_height();
