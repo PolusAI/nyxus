@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "../src/nyx/raw_nifti.h"
+#include "../src/nyx/image_loader.h"
 #include "../src/nyx/helpers/fsystem.h"
 
 void test_3d_nifti_loader_mechanics () 
@@ -49,8 +50,8 @@ void test_3d_nifti_data_access_consistency_mechanics()
     ASSERT_TRUE(fs::exists(data1_p));
 
     // The volume spans -1024..2000, so the offset the scan records for it -- and hands the
-    // loader -- is -1024; the loader no longer reads a minimum of its own, since a shift it
-    // discovered by itself would be one nothing downstream could undo (SlideProps::inten_offset).
+    // loader -- is -1024. The offset is always the scan's: one a loader discovered by
+    // itself would be one nothing downstream could undo (SlideProps::inten_offset).
     auto ldr1 = NiftiLoader<uint32_t>(data1_p.string(), -1024.0);
 
     size_t h = 0, w = 0, d = 0;
@@ -59,7 +60,7 @@ void test_3d_nifti_data_access_consistency_mechanics()
     ASSERT_NO_THROW(h = ldr1.fullHeight(0));
 
     auto t = std::make_shared<std::vector<uint32_t>> (d*w*h);
-    ASSERT_NO_THROW (ldr1.loadTileFromFile (t, 0, 0, 0, 0));
+    ASSERT_NO_THROW (ldr1.loadTileFromFile (t, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     // stats
     std::vector<uint32_t>& databuf = *t;
@@ -72,10 +73,48 @@ void test_3d_nifti_data_access_consistency_mechanics()
     // which is what keeps a stray negative from wrapping when no slide props are available.
     auto ldr0 = NiftiLoader<uint32_t>(data1_p.string());
     auto t0 = std::make_shared<std::vector<uint32_t>> (d*w*h);
-    ASSERT_NO_THROW (ldr0.loadTileFromFile (t0, 0, 0, 0, 0));
+    ASSERT_NO_THROW (ldr0.loadTileFromFile (t0, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
     double tot0 = 0;
     for (auto x : *t0)
         tot0 += x;
     ASSERT_TRUE(tot0 < tot);
     ASSERT_TRUE(tot0 > 0);
+}
+
+// Safety net for the volumetric consumers' streamed read: for a NIfTI
+// (whole-4D loader), the streamed volume of (0,t) must equal the t-th timeframe slab of the
+// current whole-volume read (load_tile(0,0) + get_int_tile_buffer). If this holds,
+// swapping the consumer's read source cannot regress NIfTI.
+void test_3d_nifti_facade_stream_equivalence_mechanics()
+{
+    fs::path p(__FILE__);
+    fs::path f("/data/nifti/signal/signal1.nii");
+    fs::path ds = (p.parent_path().string() + f.make_preferred().string());
+    ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+    SlideProps sp;
+    sp.fname_int = ds.string();
+    sp.fname_seg = "";
+    FpImageOptions fp;
+    ImageLoader il;
+    ASSERT_TRUE(il.open(sp, fp)) << ds.string();
+
+    const size_t timeFrameSize = il.get_full_width() * il.get_full_height() * il.get_full_depth();
+    const size_t nt = il.get_inten_time();
+    ASSERT_GE(nt, 1u);
+
+    ASSERT_TRUE(il.load_tile((size_t)0, (size_t)0));       // the current NIfTI read: whole x*y*z*t blob
+    const std::vector<uint32_t> whole = il.get_int_tile_buffer();  // copy (the stream reuses ptrI)
+    ASSERT_GE(whole.size(), timeFrameSize * nt);
+
+    for (size_t t = 0; t < nt; ++t)
+    {
+        std::vector<uint32_t> vol_i1, vol_s1;
+        ASSERT_NO_THROW(Nyxus::assemble_streamed_volume(il, 0, t, vol_i1, vol_s1));
+        const std::vector<uint32_t>& vol = vol_i1;
+        ASSERT_EQ(vol.size(), timeFrameSize);
+        for (size_t i = 0; i < timeFrameSize; ++i)
+            ASSERT_EQ(vol[i], whole[t * timeFrameSize + i]) << "t=" << t << " i=" << i;
+    }
+    il.close();
 }

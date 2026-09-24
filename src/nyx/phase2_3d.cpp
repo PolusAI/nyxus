@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <cassert>
 #include <fstream>
+#include <functional>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -13,269 +15,162 @@
 
 #include "environment.h"
 #include "globals.h"
+#include "helpers/helpers.h"		// Nyxus::near_eq for the physical-spacing resolver
 #include "helpers/fsystem.h"
 #include "helpers/timing.h"
 
 namespace Nyxus
 {
+	// The effective 3D voxel spacing of a slide. Explicit --aniso* (anisoOptions.customized())
+	// always wins. Otherwise, when --use-physical-spacing is on, the slide's OME PhysicalSize*
+	// ratio-normalized so the smallest axis == 1 (the anisotropic path resamples by the
+	// multiplier, so ratios - not absolute units - are what correct for non-cubic voxels).
+	// Returns false + (1,1,1) when the grid is isotropic. Every pass over a volume resolves its
+	// spacing here -- the prescan and phase-1 bounding boxes, the memory estimate, the in-RAM
+	// voxel caches and the out-of-core clouds -- so one slide cannot mix resampled and
+	// unresampled geometry.
+	bool resolve_anisotropy (const AnisotropyOptions& aniso, bool use_physical_spacing, const SlideProps& p, double& ax, double& ay, double& az)
+	{
+		ax = ay = az = 1.0;
+
+		if (aniso.customized())
+		{
+			ax = aniso.get_aniso_x();
+			ay = aniso.get_aniso_y();
+			az = aniso.get_aniso_z();
+			return true;
+		}
+
+		if (use_physical_spacing)
+		{
+			double sx = p.phys_x, sy = p.phys_y, sz = p.phys_z;
+			double mn = std::min(sx, std::min(sy, sz));
+			if (mn > 0.0)
+			{
+				ax = sx / mn; ay = sy / mn; az = sz / mn;
+				// only take the anisotropic path if the voxels are actually non-cubic
+				if (! (Nyxus::near_eq(ax, 1.0) && Nyxus::near_eq(ay, 1.0) && Nyxus::near_eq(az, 1.0)))
+					return true;
+			}
+			ax = ay = az = 1.0;
+		}
+
+		return false;
+	}
+
+	bool resolve_slide_anisotropy (const Environment& env, size_t sidx, double& ax, double& ay, double& az)
+	{
+		if (sidx >= env.dataset.dataset_props.size())
+		{
+			SlideProps unknown;
+			return resolve_anisotropy (env.anisoOptions, false, unknown, ax, ay, az);
+		}
+		return resolve_anisotropy (env.anisoOptions, env.use_physical_spacing(), env.dataset.dataset_props[sidx], ax, ay, az);
+	}
+
+	bool stream_volume_checked (ImageLoader& ilo, size_t channel, size_t t_index, const std::string& intens_fpath, const std::string& mask_fpath,
+		const std::function<void(size_t z, const std::vector<uint32_t>& int_plane, const std::vector<uint32_t>& seg_plane)>& sink)
+	{
+		// ImageLoader::open() guarantees that the mask's and intensity's width, height and depth
+		// match. They may differ only in the number of time frames: 1:1, 1:N and N:1 pair up.
+		size_t frameSize = ilo.get_full_width() * ilo.get_full_height() * ilo.get_full_depth(),
+			nVoxI = frameSize * ilo.get_inten_time(),
+			nVoxM = frameSize * ilo.get_mask_time();	// 0 in whole-volume mode
+
+		if (nVoxI >= nVoxM)
+		{
+			ilo.stream_volume_planes (channel, t_index, sink);
+			return true;
+		}
+
+		std::string erm = "Error: unsupported shape - intensity file " + intens_fpath + ": " + std::to_string(nVoxI)
+			+ " voxels, mask file " + mask_fpath + ": " + std::to_string(nVoxM);
+#ifdef WITH_PYTHON_H
+		throw std::runtime_error (erm);
+#endif
+		std::cerr << erm << "\n";
+		return false;
+	}
+	bool open_scanned_pair (Environment& env, int slide_idx, const std::string& intens_fpath, const std::string& label_fpath)
+	{
+		SlideProps p (intens_fpath, label_fpath);
+		const SlideProps * scanned = env.dataset.scanned_slide (slide_idx);
+		if (scanned)
+			p.inherit_intensity_domain (*scanned);
+		if (! env.theImLoader.open(p, env.fpimageOptions))
+		{
+			// open() allocates the intensity loader before the mask one and returns false from
+			// either half, so a failed open leaves loaders behind unless they are released here
+			env.theImLoader.close();
+			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
+			return false;
+		}
+		return true;
+	}
+
 	//
 	// Loads ROI voxels into voxel clouds
 	//
-	bool scanTrivialRois_3D (Environment & env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index)
+	bool scanTrivialRois_3D (Environment & env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index, size_t channel)
 	{
 		// Sort the batch's labels to enable binary searching in it
 		std::vector<int> whiteList = batch_labels;
 		std::sort(whiteList.begin(), whiteList.end());
 
-		// Scan this Z intensity-mask pair
-		SlideProps p (intens_fpath, label_fpath);
-		// The prescan measured this slide's intensity range and recorded the map the loader
-		// will apply to it; a bare SlideProps carries neither, so this pass would otherwise
-		// map its grey levels differently from the prescan and be reported in a domain of
-		// its own.
-		const SlideProps * scanned = batch_labels.empty() ? nullptr
-			: env.dataset.scanned_slide (env.roiData[batch_labels[0]].slide_idx);
-		if (scanned)
-			p.inherit_intensity_domain (*scanned);
-		if (! env.theImLoader.open(p, env.fpimageOptions))
+		if (! open_scanned_pair (env, batch_labels.empty() ? -1 : env.roiData[batch_labels[0]].slide_idx, intens_fpath, label_fpath))
+			return false;
+
+		const size_t w = env.theImLoader.get_full_width(),
+			h = env.theImLoader.get_full_height();
+
+		// Stream this (channel, timeframe)'s volume plane by plane, with the mask plane that pairs
+		// with it, caching the batch's ROI voxels
+		bool ok = stream_volume_checked (env.theImLoader, channel, t_index, intens_fpath, label_fpath,
+			[&](size_t z, const std::vector<uint32_t>& dataI, const std::vector<uint32_t>& dataL)
+			{
+				for (size_t y = 0; y < h; y++)
+					for (size_t x = 0; x < w; x++)
+					{
+						size_t i = y * w + x;
+
+						// Skip non-mask pixels
+						auto label = dataL[i];
+						if (!label)
+							continue;
+
+						// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
+						if (! env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
+							continue;
+
+						// Collapse all the labels to one if single-ROI mde is requested
+						if (env.singleROI)
+							label = 1;
+
+						// Cache this pixel
+						LR& r = env.roiData[label];
+						feed_pixel_2_cache_3D_LR ((int) x, (int) y, (int) z, dataI[i], r);
+					}
+			});
+		if (! ok)
 		{
-			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
+			// the pair this function opened is its to release on the way out too
+			env.theImLoader.close();
 			return false;
 		}
 
-		// thanks to ImageLoader::open() we are guaranteed that the mask and intensity volumes' 
-		// width, height, and depth match. Mask and intensity may only differ in the number of 
-		// time frames: 1:1, 1:N, and N:1 cases are permitted.
-		size_t 
-			/*
-			* we don't need these in the 3D scenario:
-			* 
-			nth = env.theImLoader.get_num_tiles_hor(),
-			ntv = env.theImLoader.get_num_tiles_vert(),
-			fw = env.theImLoader.get_tile_width(),
-			th = env.theImLoader.get_tile_height(),
-			tw = env.theImLoader.get_tile_width(),
-			tileSize = env.theImLoader.get_tile_size(),
-			*/
-			w = env.theImLoader.get_full_width(),
-			h = env.theImLoader.get_full_height(),
-			d = env.theImLoader.get_full_depth(),
-			sliceSize = w * h,
-			timeFrameSize = sliceSize * d,
-			timeI = env.theImLoader.get_inten_time(),
-			timeM = env.theImLoader.get_mask_time(),
-			nVoxI = timeFrameSize * timeI,
-			nVoxM = timeFrameSize * timeM;
-
-		// is this intensity-mask pair's shape supported?
-		if (nVoxI < nVoxM)
-		{
-			std::string erm = "Error: unsupported shape - intensity file: " + std::to_string(nVoxI) + ", mask file: " + std::to_string(nVoxM);
-#ifdef WITH_PYTHON_H
-			throw erm;
-#endif	
-			std::cerr << erm << "\n";
-			return false;
-		}
-
-		int cnt = 1;
-
-		// fetch 3D data 
-		bool ok = env.theImLoader.load_tile (0/*row*/, 0/*col*/);
-		if (!ok)
-		{
-			std::string erm = "Error fetching segmented data from " + intens_fpath + "(I) " + label_fpath + "(M)";
-#ifdef WITH_PYTHON_H
-			throw erm;
-#endif	
-			std::cerr << erm << "\n";
-			return false;
-		}
-
-		// Get ahold of tile's pixel buffer
-		auto dataI = env.theImLoader.get_int_tile_buffer(),
-			dataL = env.theImLoader.get_seg_tile_buffer();
-
-		size_t baseI, baseM;
-		if (timeI == timeM)
-		{			
-			baseM = baseI = t_index * timeFrameSize;
-		}
-		else // nVoxI > nVoxM
-		{
-			baseM = 0;
-			baseI = t_index * timeFrameSize;
-		}
-
-		// Iterate voxels
-		for (size_t i=0; i<nVoxM; i++)
-		{
-			size_t k = i + baseM;	// absolute index of mask voxel
-			size_t j = i + baseI;	// absolute index of intensity voxel
-
-			// Skip non-mask pixels
-			auto label = dataL[k];
-			if (!label)
-				continue;
-
-			// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
-			if (! env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
-				continue;
-
-			int z = k / sliceSize,
-				y = (k - z * sliceSize) / w,
-				x = (k - z * sliceSize) % w;
-
-			//
-
-			// Skip tile buffer pixels beyond the image's bounds
-			if (x >= w || y >= h || z >= d)
-				continue;
-
-			// Collapse all the labels to one if single-ROI mde is requested
-			if (env.singleROI)
-				label = 1;
-
-			// Cache this pixel 
-			LR& r = env.roiData[label];
-			feed_pixel_2_cache_3D_LR (x, y, z, dataI[j], r);
-		}
+		// The scan is finished and nothing below reads the pair, so it is released here rather
+		// than after the interrupt check, which leaves by a throw.
+		env.theImLoader.close();
 
 #ifdef WITH_PYTHON_H
 		if (PyErr_CheckSignals() != 0)
 			throw pybind11::error_already_set();
 #endif
 
-		// Close the image pair
-		env.theImLoader.close();
-
 		// Dump ROI pixel clouds to the output directory
 		VERBOSLVL5 (env.get_verbosity_level(), dump_roi_pixels(env.dim(), Nyxus::get_temp_dir_path(), batch_labels, label_fpath, env.uniqueLabels, env.roiData));
 
 		return true;
-	}
-
-	bool scanTrivialRois_3D_anisotropic__BEFORE4D(
-		Environment & env,
-		const std::vector<int>& batch_labels,
-		const std::string& intens_fpath,
-		const std::string& label_fpath,
-		double aniso_x,
-		double aniso_y,
-		double aniso_z)
-	{
-		// Sort the batch's labels to enable binary searching in it
-		std::vector<int> whiteList = batch_labels;
-		std::sort(whiteList.begin(), whiteList.end());
-
-		int lvl = 0,	// pyramid level
-			lyr = 0;	//	layer
-
-		// Scan this Z intensity-mask pair 
-		SlideProps p (intens_fpath, label_fpath);
-		if (! env.theImLoader.open(p, env.fpimageOptions))
-		{
-			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
-			return false;
-		}
-
-		size_t nth = env.theImLoader.get_num_tiles_hor(),
-			ntv = env.theImLoader.get_num_tiles_vert(),
-			fw = env.theImLoader.get_tile_width(),
-			th = env.theImLoader.get_tile_height(),
-			tw = env.theImLoader.get_tile_width(),
-			tileSize = env.theImLoader.get_tile_size(),
-			fullW = env.theImLoader.get_full_width(),
-			fullH = env.theImLoader.get_full_height(),
-			fullD = env.theImLoader.get_full_depth();
-
-		size_t vD = (size_t)(double(fullD) * aniso_z);	// virtual depth
-
-		for (size_t vz = 0; vz < vD; vz++)
-		{
-			size_t z = size_t(double(vz) / aniso_z);	// physical z
-
-			// virtual slide properties
-			size_t vh = (size_t)(double(fullH) * aniso_y),
-				vw = (size_t)(double(fullW) * aniso_x),
-				vth = (size_t)(double(th) * aniso_y),
-				vtw = (size_t)(double(tw) * aniso_x);
-
-			// current tile to skip tile reloads
-			size_t curt_x = 999, curt_y = 999;
-
-			for (size_t vr = 0; vr < vh; vr++)
-			{
-				for (size_t vc = 0; vc < vw; vc++)
-				{
-					// tile position
-					size_t tidx_y = size_t(vr / vth),
-						tidx_x = size_t(vc / vtw);
-
-					// load it
-					if (tidx_y != curt_y || tidx_x != curt_x)
-					{
-						bool ok = env.theImLoader.load_tile(tidx_y, tidx_x);
-						if (!ok)
-						{
-							std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
-#ifdef WITH_PYTHON_H
-							throw s;
-#endif	
-							std::cerr << s << "\n";
-							return false;
-						}
-
-						// cache tile position to avoid reloading
-						curt_y = tidx_y;
-						curt_x = tidx_x;
-					}
-
-					// within-tile virtual pixel position
-					size_t vx = vc - tidx_x * vtw,
-						vy = vr - tidx_y * vth;
-
-					// within-tile physical pixel position
-					size_t ph_x = size_t(double(vx) / aniso_x),
-						ph_y = size_t(double(vy) / aniso_y),
-						i = ph_y * tw + ph_x;
-
-					// read buffered physical pixel 
-					auto dataI = env.theImLoader.get_int_tile_buffer(),
-						dataL = env.theImLoader.get_seg_tile_buffer();
-
-					// skip non-mask pixels
-					auto label = dataL[i];
-					if (!label)
-						continue;
-
-					// skip this ROI if the label isn't in the pending set of a multi-ROI mode
-					if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
-						continue;
-
-					// skip tile buffer pixels beyond the image's bounds
-					if (vc >= fullW || vr >= fullH)
-						continue;
-
-					// collapse all the labels to one if single-ROI mde is requested
-					if (env.singleROI)
-						label = 1;
-
-					// cache this voxel 
-					auto inten = dataI[i];
-					LR& r = env.roiData[label];
-					feed_pixel_2_cache_3D_LR (vc, vr, vz, dataI[i], r);
-				}
-			}
-
-			// Close the image pair
-			env.theImLoader.close();
-		}
-
-		// Dump ROI pixel clouds to the output directory
-		VERBOSLVL5 (env.get_verbosity_level(), dump_roi_pixels(env.dim(), Nyxus::get_temp_dir_path(), batch_labels, label_fpath, env.uniqueLabels, env.roiData));
-
-			return true;
 	}
 
 	//
@@ -287,6 +182,7 @@ namespace Nyxus
 		const std::string& intens_fpath,
 		const std::string& label_fpath,
 		size_t t_index,
+		size_t channel,
 		double aniso_x,
 		double aniso_y,
 		double aniso_z)
@@ -295,210 +191,104 @@ namespace Nyxus
 		std::vector<int> whiteList = batch_labels;
 		std::sort (whiteList.begin(), whiteList.end());
 
-		// temp slideprops instance to pass some into to ImageLoader
-		SlideProps p (intens_fpath, label_fpath);
-		// The prescan measured this slide's intensity range and recorded the map the loader
-		// will apply to it; a bare SlideProps carries neither, so this pass would otherwise
-		// map its grey levels differently from the prescan and be reported in a domain of
-		// its own.
-		const SlideProps * scanned = batch_labels.empty() ? nullptr
-			: env.dataset.scanned_slide (env.roiData[batch_labels[0]].slide_idx);
-		if (scanned)
-			p.inherit_intensity_domain (*scanned);
-		if (!env.theImLoader.open(p, env.fpimageOptions))
-		{
-			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
+		if (! open_scanned_pair (env, batch_labels.empty() ? -1 : env.roiData[batch_labels[0]].slide_idx, intens_fpath, label_fpath))
 			return false;
-		}
 
-		// thanks to ImageLoader::open() we are guaranteed that the mask's and intensity's  
-		// W, H, and D match. Mask and intensity may only differ in the number of 
-		// time frames: 1:1, 1:N, and N:1 cases are permitted
-		size_t
+		const size_t
 			w = env.theImLoader.get_full_width(),
 			h = env.theImLoader.get_full_height(),
-			d = env.theImLoader.get_full_depth(),
-			slice = w * h,
-			timeFrameSize = slice * d,
-			timeI = env.theImLoader.get_inten_time(),
-			timeM = env.theImLoader.get_mask_time(),
-			nVoxI = timeFrameSize * timeI,
-			nVoxM = timeFrameSize * timeM;
-
-		// is this intensity-mask pair's shape supported?
-		if (nVoxI < nVoxM)
-		{
-			std::string erm = "Error: unsupported shape - intensity file: " + std::to_string(nVoxI) + ", mask file: " + std::to_string(nVoxM);
-	#ifdef WITH_PYTHON_H
-			throw erm;
-	#endif	
-			std::cerr << erm << "\n";
-			return false;
-		}
-
-		int cnt = 1;
-
-		// fetch 3D data 
-		if (!env.theImLoader.load_tile (0/*row*/, 0/*col*/))
-		{
-			std::string erm = "Error fetching data from file pair " + intens_fpath + "(I) " + label_fpath + "(M)";
-	#ifdef WITH_PYTHON_H
-			throw erm;
-	#endif	
-			std::cerr << erm << "\n";
-			return false;
-		}
-
-		// get ahold of voxel buffers
-		auto dataI = env.theImLoader.get_int_tile_buffer(),
-			dataL = env.theImLoader.get_seg_tile_buffer();
-
-		// align time frame's mask and intensity volumes
-		size_t baseI, baseM;
-		if (timeI == timeM)
-		{
-			// trivial N mask : N intensity
-			baseM = 
-			baseI = t_index * timeFrameSize;
-		}
-		else
-		{
-			// nontrivial 1 mask : N intensity
-			baseM = 0;
-			baseI = t_index * timeFrameSize;
-		}
+			d = env.theImLoader.get_full_depth();
 
 		// virtual dimensions
-		size_t virt_h = h * aniso_y,
+		const size_t virt_h = h * aniso_y,
 			virt_w = w * aniso_x,
 			virt_d = d * aniso_z;
-		size_t vSliceLen = virt_h * virt_w,
-			virt_v = vSliceLen * virt_d;
 
-		// iterate virtual voxels and fill them with corresponding physical intensities
-		for (size_t vIdx = 0; vIdx < virt_v; vIdx++)
+		// Stream this (channel, timeframe)'s volume plane by plane and fill each virtual voxel with
+		// the physical voxel nearest to it. A virtual plane's physical plane never decreases with
+		// its index, so each virtual plane is filled when its physical plane arrives.
+		size_t vZ = 0;	// the next virtual plane to fill
+		bool ok = stream_volume_checked (env.theImLoader, channel, t_index, intens_fpath, label_fpath,
+			[&](size_t z, const std::vector<uint32_t>& dataI, const std::vector<uint32_t>& dataL)
+			{
+				for (; vZ < virt_d; vZ++)
+				{
+					const size_t pZ = vZ / aniso_z + 0.5;
+					if (pZ > z)
+						break;		// its physical plane is still to come
+					if (pZ < z)
+						continue;
+
+					for (size_t vY = 0; vY < virt_h; vY++)
+						for (size_t vX = 0; vX < virt_w; vX++)
+						{
+							// physical position; casting from virtual to physical can land outside
+							// the physical bounds
+							const size_t pY = vY / aniso_y + 0.5,
+								pX = vX / aniso_x + 0.5;
+							if (pX >= w || pY >= h)
+								continue;
+							const size_t i = pY * w + pX;
+
+							// skip non-mask pixels
+							auto lbl = dataL[i];
+							if (!lbl)
+								continue;
+
+							// skip this ROI if the label isn't in the pending set of a multi-ROI mode
+							if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), lbl))
+								continue;
+
+							// collapse all the labels to one if single-ROI mde is requested
+							if (env.singleROI)
+								lbl = 1;
+
+							// cache this voxel
+							LR& r = env.roiData[lbl];
+							feed_pixel_2_cache_3D_LR (vX, vY, vZ, dataI[i], r);
+						}
+				}
+			});
+		if (! ok)
 		{
-			// virtual Cartesian position
-			size_t vZ = vIdx / vSliceLen, 
-				vLastSliceLen = vIdx % vSliceLen,
-				vY = vLastSliceLen / virt_w,
-				vX = vLastSliceLen % virt_w;
-
-			// physical Cartesian position
-			size_t pZ = vZ / aniso_z + 0.5,
-				pY = vY / aniso_y + 0.5,
-				pX = vX / aniso_x + 0.5;
-
-			// skip a position outside the bounds
-			// (since we are casting coorinates from virtual to physical,
-			// we may get positions outside the physical bounds)
-			if (pX >= w || pY >= h || pZ >= d)
-				continue;
-
-			// physical offset
-			size_t i = pZ * slice + pY * w + pX;
-
-			//
-			// interpret the mask intensity
-			//
-
-			// skip non-mask pixels
-			auto lbl = dataL[baseM + i];
-			if (!lbl)
-				continue;
-
-			// skip this ROI if the label isn't in the pending set of a multi-ROI mode
-			if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), lbl))
-				continue;
-
-			// collapse all the labels to one if single-ROI mde is requested
-			if (env.singleROI)
-				lbl = 1;
-
-#if !defined(NDEBUG)
-			if (vZ >= virt_d)
-				std::cout << "vZ=" << vZ << " < virt_d =" << virt_d << "\n";
-			assert(vZ < virt_d);
-			if (vY >= virt_h)
-				std::cout << "vY=" << vY << " < virt_h =" << virt_h << "\n";
-			assert(vY < virt_h);
-			if (vX >= virt_w)
-				std::cout << "vX=" << vX << " < virt_w =" << virt_w << "\n";
-			assert(vX < virt_w);
-#endif
-
-			// cache this voxel 
-			auto inten = dataI[baseI + i];
-			LR& r = env.roiData[lbl];
-			feed_pixel_2_cache_3D_LR (vX, vY, vZ, inten, r);
+			// the pair this function opened is its to release on the way out too
+			env.theImLoader.close();
+			return false;
 		}
+
+		// The scan is finished and nothing below reads the pair, so it is released here rather
+		// than after the interrupt check, which leaves by a throw.
+		env.theImLoader.close();
 
 	#ifdef WITH_PYTHON_H
 		// allow keyboard interrupt
 		if (PyErr_CheckSignals() != 0)
 			throw pybind11::error_already_set();
 	#endif
-
-		// Close the image pair
-		env.theImLoader.close();
 		return true;
 	}
-
 	//
 	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	//
 	bool scan_trivial_wholevolume (
 		LR& vroi,
 		const std::string& intens_fpath,
-		ImageLoader& ilo)
+		ImageLoader& ilo,
+		size_t channel,
+		size_t timeframe)
 	{
-		int lvl = 0,	// Pyramid level
-			lyr = 0;	//	Layer
+		const size_t fullW = ilo.get_full_width(),
+			fullH = ilo.get_full_height();
 
-		// Read the tiffs
-
-		size_t fullwidth = ilo.get_full_width(),
-			fullheight = ilo.get_full_height(),
-			fullD = ilo.get_full_depth(),
-			sliceSize = fullwidth * fullheight,
-			nVox = sliceSize * fullD;
-
-		// in the 3D case tiling is a formality, so fetch the only tile in the file
-		if (!ilo.load_tile(0, 0))
-		{
-#ifdef WITH_PYTHON_H
-			throw "Error fetching tile";
-#endif	
-			std::cerr << "Error fetching tile\n";
-			return false;
-		}
-
-		// Get ahold of tile's pixel buffer
-		const std::vector<uint32_t>& dataI = ilo.get_int_tile_buffer();
-
-		// iterate abstract tiles (in a tiled slide /e.g. tiled tiff/ they correspond to physical tiles, in a nontiled slide /e.g. scanline tiff or strip tiff/ they correspond to )
-		int cnt = 1;
-
-		// iterate voxels
-		for (size_t i = 0; i < nVox; i++)
-		{
-			int z = i / sliceSize,
-				y = (i - z * sliceSize) / fullwidth,
-				x = (i - z * sliceSize) % fullwidth;
-
-			// Skip tile buffer pixels beyond the image's bounds
-			if (x >= fullwidth || y >= fullheight || z >= fullD)
-				continue;
-
-			// dynamic range within- and off-ROI
-			auto inten = dataI[i];
-
-			// Cache this pixel 
-			feed_pixel_2_cache_3D_LR (x, y, z, inten, vroi);
-
-		} //- all voxels
-
-		return true;
+		// Stream the X*Y*Z volume of this (channel, timeframe) plane by plane into the virtual ROI.
+		// Whole-slide has no mask.
+		return stream_volume_checked (ilo, channel, timeframe, intens_fpath, "",
+			[&](size_t z, const std::vector<uint32_t>& dataI, const std::vector<uint32_t>&)
+			{
+				for (size_t y = 0; y < fullH; y++)
+					for (size_t x = 0; x < fullW; x++)
+						feed_pixel_2_cache_3D_LR ((int) x, (int) y, (int) z, dataI[y * fullW + x], vroi);
+			});
 	}
 
 	//
@@ -510,141 +300,47 @@ namespace Nyxus
 		ImageLoader& ilo,
 		double aniso_x,
 		double aniso_y,
-		double aniso_z)
+		double aniso_z,
+		size_t channel,
+		size_t timeframe)
 	{
-		int lvl = 0,	// Pyramid level
-			lyr = 0;	//	Layer
-
-		// Read the tiffs
-
-		size_t fullW = ilo.get_full_width(),
+		const size_t fullW = ilo.get_full_width(),
 			fullH = ilo.get_full_height(),
-			fullD = ilo.get_full_depth(),
-			sliceSize = fullW * fullH;
+			fullD = ilo.get_full_depth();
 
-		size_t vh = (size_t) (double(fullH) * aniso_y),
+		const size_t vh = (size_t) (double(fullH) * aniso_y),
 			vw = (size_t) (double(fullW) * aniso_x),
 			vd = (size_t) (double(fullD) * aniso_z);
 
-		// in the 3D case tiling is a formality, so fetch the only tile in the file
-		if (! ilo.load_tile(0, 0))
-		{
-#ifdef WITH_PYTHON_H
-			throw "Error loading volume data";
-#endif	
-			std::cerr << "Error loading volume data\n";
-			return false;
-		}
-
-		// Get ahold of tile's pixel buffer
-		const std::vector<uint32_t>& dataI = ilo.get_int_tile_buffer();
-
-		// iterate virtual voxels
-		size_t vSliceSize = vh * vw, 
-			nVox = vh * vw * vd;
-		for (size_t i = 0; i < nVox; i++)
-		{
-			// virtual voxel position
-			int z = i / vSliceSize,
-				y = (i - z * vSliceSize) / vw,
-				x = (i - z * vSliceSize) % vw;
-
-			// physical voxel position
-			size_t ph_x = (size_t) (double(x) / aniso_x),
-				ph_y = (size_t) (double(y) / aniso_y),
-				ph_z = (size_t) (double(z) / aniso_z);
-				i = ph_z * sliceSize + ph_y * fullH + ph_x;
-
-			// Cache this pixel 
-			feed_pixel_2_cache_3D_LR (x, y, z, dataI[i], vroi);
-
-		}
-
-		return true;
-	}
-
-	//
-	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi' 
-	// performing anisotropy correction
-	//
-	bool scan_trivial_wholevolume_anisotropic__OLD(
-		LR& vroi,
-		const std::string& intens_fpath,
-		ImageLoader& ldr,
-		double aniso_x,
-		double aniso_y)
-	{
-		int lvl = 0,	// Pyramid level
-			lyr = 0;	//	Layer
-
-		// physical slide properties
-		size_t nth = ldr.get_num_tiles_hor(),
-			ntv = ldr.get_num_tiles_vert(),
-			fw = ldr.get_tile_width(),
-			th = ldr.get_tile_height(),
-			tw = ldr.get_tile_width(),
-			tileSize = ldr.get_tile_size(),
-			fullwidth = ldr.get_full_width(),
-			fullheight = ldr.get_full_height();
-
-		// virtual slide properties
-		size_t vh = (size_t)(double(fullheight) * aniso_y),
-			vw = (size_t)(double(fullwidth) * aniso_x),
-			vth = (size_t)(double(th) * aniso_y),
-			vtw = (size_t)(double(tw) * aniso_x);
-
-		// current tile to skip tile reloads
-		size_t curt_x = 999, curt_y = 999;
-
-		for (size_t vr = 0; vr < vh; vr++)
-		{
-			for (size_t vc = 0; vc < vw; vc++)
+		// Stream the X*Y*Z volume of this (channel, timeframe) plane by plane and fill each virtual
+		// voxel with the physical voxel it falls in, clamped against float rounding at the ratio
+		// boundary. A virtual plane's physical plane never decreases with its index, so each
+		// virtual plane is filled when its physical plane arrives. Whole-slide has no mask.
+		size_t z = 0;	// the next virtual plane to fill
+		return stream_volume_checked (ilo, channel, timeframe, intens_fpath, "",
+			[&](size_t pz, const std::vector<uint32_t>& dataI, const std::vector<uint32_t>&)
 			{
-				// tile position for virtual pixel (vc, vr)
-				size_t tidx_y = size_t(vr / vth),
-					tidx_x = size_t(vc / vtw);
-
-				// load it
-				if (tidx_y != curt_y || tidx_x != curt_x)
+				for (; z < vd; z++)
 				{
-					bool ok = ldr.load_tile(tidx_y, tidx_x);
-					if (!ok)
-					{
-						std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
-#ifdef WITH_PYTHON_H
-						throw s;
-#endif	
-						std::cerr << s << "\n";
-						return false;
-					}
+					const size_t ph_z = (std::min<size_t>) ((size_t) (double(z) / aniso_z), fullD - 1);
+					if (ph_z > pz)
+						break;		// its physical plane is still to come
+					if (ph_z < pz)
+						continue;
 
-					// cache tile position to avoid reloading
-					curt_y = tidx_y;
-					curt_x = tidx_x;
+					for (size_t y = 0; y < vh; y++)
+						for (size_t x = 0; x < vw; x++)
+						{
+							const size_t ph_x = (std::min<size_t>) ((size_t) (double(x) / aniso_x), fullW - 1),
+								ph_y = (std::min<size_t>) ((size_t) (double(y) / aniso_y), fullH - 1);
+							feed_pixel_2_cache_3D_LR ((int) x, (int) y, (int) z, dataI[ph_y * fullW + ph_x], vroi);
+						}
 				}
-
-				// within-tile virtual pixel position
-				size_t vx = vc - tidx_x * vtw,
-					vy = vr - tidx_y * vth;
-
-				// within-tile physical pixel position
-				size_t ph_x = size_t(double(vx) / aniso_x),
-					ph_y = size_t(double(vy) / aniso_y),
-					i = ph_y * tw + ph_x;
-
-				// read buffered physical pixel
-				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
-
-				// Cache this pixel
-				feed_pixel_2_cache_LR(vc, vr, dataI[i], vroi);
-			}
-		}
-
-		return true;
+			});
 	}
 
 
-	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
+	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, size_t channel, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
 	{
 		std::vector<int> Pending;
 		size_t batchDemand = 0;
@@ -675,22 +371,27 @@ namespace Nyxus
 						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-				if (env.anisoOptions.customized() == false)
+				// --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
+				double ax, ay, az;
+				if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
 				{
-					scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index);
+					if (! scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel))
+						return false;
 				}
 				else
 				{
-					double	ax = env.anisoOptions.get_aniso_x(),
-						ay = env.anisoOptions.get_aniso_y(),
-						az = env.anisoOptions.get_aniso_z();
-					scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, ax, ay, az);
+					if (! scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az))
+						return false;
 
-					// rescan and update ROI's AABB
+					// The ROI's extent and voxel count describe the cloud that was just cached.
+					// gatherRoisMetrics_3D recorded them from the PHYSICAL grid, and the anisotropic
+					// scan caches the resampled (virtual) cloud, which has both a different extent and
+					// a different voxel count -- and aux_area divides every feature that averages.
 					for (auto lbl : Pending)
 					{
 						LR& r = env.roiData[lbl];
 						r.aabb.update_from_voxelcloud (r.raw_pixels_3D);
+						r.aux_area = (unsigned int) r.raw_pixels_3D.size();
 					}
 				}
 
@@ -741,22 +442,25 @@ namespace Nyxus
 				std::cout << ">>> (labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-			if (env.anisoOptions.customized() == false)
+			// --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
+			double ax, ay, az;
+			if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
 			{
-				scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index);
+				if (! scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel))
+					return false;
 			}
 			else
 			{
-				double	ax = env.anisoOptions.get_aniso_x(),
-					ay = env.anisoOptions.get_aniso_y(),
-					az = env.anisoOptions.get_aniso_z();
-				scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, ax, ay, az);
+				if (! scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az))
+					return false;
 
-				// rescan and update ROI's AABB
+				// rescan and update ROI's AABB and voxel count -- see the identical fix (and
+				// its rationale) in the main batch loop above.
 				for (auto lbl : Pending)
 				{
 					LR& r = env.roiData[lbl];
 					r.aabb.update_from_voxelcloud(r.raw_pixels_3D);
+					r.aux_area = (unsigned int) r.raw_pixels_3D.size();
 				}
 			}
 

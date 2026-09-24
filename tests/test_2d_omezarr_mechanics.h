@@ -10,6 +10,8 @@
 #include <vector>
 #include "../src/nyx/omezarr.h"
 #include "../src/nyx/raw_omezarr.h"
+#include "../src/nyx/image_loader.h"
+#include "../src/nyx/globals.h"           // scan_trivial_wholevolume, LR
 #include "../src/nyx/helpers/fsystem.h"
 
 // The OME-Zarr test datasets under tests/data/omezarr are generated with bfio
@@ -62,7 +64,7 @@ void test_2d_omezarr_tileloader_content_mechanics()
     size_t tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
 
-    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     const std::vector<uint32_t>& buf = *tile;
 
@@ -108,7 +110,7 @@ void test_2d_omezarr_tileloader_multitile_mechanics()
         for (size_t tc = 0; tc < nCols; ++tc)
         {
             std::fill(tile->begin(), tile->end(), 0u);
-            ASSERT_NO_THROW(ldr.loadTileFromFile(tile, tr, tc, 0, 0));
+            ASSERT_NO_THROW(ldr.loadTileFromFile(tile, tr, tc, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
             const std::vector<uint32_t>& buf = *tile;
             const size_t row0 = tr * th;
@@ -159,7 +161,7 @@ void test_2d_omezarr_raw_content_mechanics()
     auto ldr = RawOmezarrLoader(ds.string());
     const size_t tw = ldr.tileWidth(0);
 
-    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     // get_uint32_pixel indexes into the internal tile buffer (stride tileWidth)
     ASSERT_EQ(ldr.get_uint32_pixel(0 * tw + 0), 0u);
@@ -197,7 +199,7 @@ void test_2d_omezarr_raw_multitile_mechanics()
     {
         for (size_t tc = 0; tc < nCols; ++tc)
         {
-            ASSERT_NO_THROW(ldr.loadTileFromFile(tr, tc, 0, 0));
+            ASSERT_NO_THROW(ldr.loadTileFromFile(tr, tc, 0, 0/*channel*/, 0/*timeframe*/, 0));
             const size_t row0 = tr * th;
             const size_t col0 = tc * tw;
             const size_t validH = std::min(th, H - row0);
@@ -221,13 +223,13 @@ void test_2d_omezarr_raw_multitile_mechanics()
 // ---------------------------------------------------------------------------
 // Signed and real-valued datasets: the load-time intensity map
 //
-// Both loaders used to narrow every sample into the unsigned pipeline type -- an
-// explicit static_cast in RawOmezarrLoader, an implicit one in the std::copy of
-// NyxusOmeZarrLoader -- so a signed dataset's negatives wrapped and a real-valued
-// dataset's fractions were dropped. Nothing recorded that conversion, so the prescan
-// measured the slide's extrema on the converted values and no offset derived from them
-// could undo it. The prescan now reads the sample as the file states it, and the tile
-// loader applies the same offset / quantization map every other backend takes.
+// The prescan reads each sample as the file states it -- int16 as int16, float32 as
+// float32 -- and records the extrema of those values; the tile loader then applies the
+// same offset / quantization map every other backend takes. What this discriminates: a
+// reader that narrows a sample into the unsigned pipeline type wraps a signed dataset's
+// negatives and drops a real-valued one's fractions, and since nothing records that
+// conversion, the extrema are measured on the converted values and no offset derived
+// from them can undo it.
 //
 //   signed.ome.zarr : 32x32 int16,   value = -1013 + (row + col)   [-1013 .. -951]
 //   float.ome.zarr  : 32x32 float32, value = -10.5 + 0.25*(row+col) [-10.5 .. 5.0]
@@ -244,7 +246,7 @@ void test_2d_omezarr_raw_signed_source_domain_mechanics()
 
     auto ldr = RawOmezarrLoader(ds.string());
     const size_t tw = ldr.tileWidth(0);
-    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     // The slide minimum, and what an offset would have to be derived from
     ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(0 * tw + 0), -1013.0);
@@ -276,7 +278,7 @@ void test_2d_omezarr_raw_uint32_accessor_clamps_negative_mechanics()
 
     auto ldr = RawOmezarrLoader(ds.string());
     const size_t tw = ldr.tileWidth(0);
-    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     // every sample of this store is negative, so the whole tile exercises the clamp
     ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(0 * tw + 0), -1013.0);
@@ -293,7 +295,7 @@ void test_2d_omezarr_raw_uint32_accessor_unsigned_exact_mechanics()
 
     auto ldr = RawOmezarrLoader(ds.string());
     const size_t tw = ldr.tileWidth(0);
-    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     ASSERT_EQ(ldr.get_uint32_pixel(100 * tw + 50), 150u);
     ASSERT_EQ(ldr.get_uint32_pixel(511 * tw + 511), 1022u);
@@ -312,7 +314,7 @@ void test_2d_omezarr_raw_uint32_accessor_nonfinite_mechanics()
     auto ldr = RawOmezarrLoader(ds.string());
     const size_t tw = ldr.tileWidth(0);
     ASSERT_TRUE(ldr.get_fp_pixels());
-    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     // the buffer holds each sample as the file states it, which is what makes the cast unsafe
     ASSERT_TRUE(std::isnan(ldr.get_dpequiv_pixel(0)));
@@ -343,7 +345,7 @@ void test_2d_omezarr_raw_float_source_domain_mechanics()
     auto ldr = RawOmezarrLoader(ds.string());
     const size_t tw = ldr.tileWidth(0);
     ASSERT_TRUE(ldr.get_fp_pixels());
-    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
 
     ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(0 * tw + 0), -10.5);   // not truncated to -10, nor to 0
     ASSERT_DOUBLE_EQ(ldr.get_dpequiv_pixel(0 * tw + 1), -10.25);  // the fraction survives
@@ -362,7 +364,7 @@ void test_2d_omezarr_tileloader_signed_offset_map_mechanics()
 
     const size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
-    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
     const std::vector<uint32_t>& buf = *tile;
 
     ASSERT_EQ(buf[0 * tw + 0], 0u);      // the minimum lands on grey level 0, not on 4294966283
@@ -381,7 +383,7 @@ void test_2d_omezarr_tileloader_float_quantized_map_mechanics()
 
     const size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
-    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
     const std::vector<uint32_t>& buf = *tile;
 
     ASSERT_EQ(buf[0 * tw + 0], 0u);         // min endpoint -> 0
@@ -401,7 +403,7 @@ void test_2d_omezarr_tileloader_unsigned_unaffected_mechanics()
 
     const size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
-    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
     const std::vector<uint32_t>& buf = *tile;
 
     ASSERT_EQ(buf[0 * tw + 0], 0u);

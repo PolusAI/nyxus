@@ -94,16 +94,16 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 	}
 
 	// Read the tiff
-	size_t nth = imlo.get_num_tiles_hor(),
-		ntv = imlo.get_num_tiles_vert(),
+	size_t ntHor = imlo.get_num_tiles_hor(),	// tiles across a row
+		ntVert = imlo.get_num_tiles_vert(),	// tiles down a column
 		fw = imlo.get_tile_width(),
 		th = imlo.get_tile_height(),
 		tw = imlo.get_tile_width(),
 		tileSize = imlo.get_tile_size();
 
 	int cnt = 1;
-	for (unsigned int row = 0; row < nth; row++)
-		for (unsigned int col = 0; col < ntv; col++)
+	for (unsigned int row = 0; row < ntVert; row++)
+		for (unsigned int col = 0; col < ntHor; col++)
 		{
 			// Fetch the tile 
 			ok = imlo.load_tile(row, col);
@@ -119,7 +119,7 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 			}
 
 			// Get ahold of tile's pixel buffer
-			auto tileIdx = row * nth + col;
+			auto tileIdx = row * ntHor + col;
 			auto data = imlo.get_tile_buffer();
 
 			// 1st image -> uniqueLabels1, roiData1
@@ -143,7 +143,7 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 #endif
 
 			// Show stayalive progress info
-			//--disabled for nested ROI cli and py-api-- if (cnt++ % 4 == 0) VERBOSLVL1(std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n");
+			//--disabled for nested ROI cli and py-api-- if (cnt++ % 4 == 0) VERBOSLVL1(std::cout << "\t" << int((row * ntHor + col) * 100 / float(ntHor * ntVert) * 100) / 100. << "%\t" << uniqueLabels.size() << " ROIs" << "\n");
 		}
 
 	imlo.close();

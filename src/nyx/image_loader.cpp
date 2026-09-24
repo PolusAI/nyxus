@@ -8,6 +8,9 @@
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
 #include "raw_nifti.h"
+#include "ome/format_detect.h"		// container-family classification for loader dispatch
+#include "mask_plane.h"
+#include "volume_walk.h"
 
 ImageLoader::ImageLoader() {}
 
@@ -18,11 +21,16 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 	std::string & int_fpath = p.fname_int,
 		& seg_fpath = p.fname_seg;
 
+	// A newly opened pair is read at its first plane until stream_volume_planes() selects another
+	cur_channel = 0;
+	cur_timeframe = 0;
+
 	// intensity image
-  
+
 	try 
 	{
-		std::string ext = Nyxus::get_big_extension (int_fpath);
+		// Classify by container family so loader dispatch is identical across all loaders.
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (int_fpath);
 
 		// The map the scan recorded, in the terms every tile loader takes. The quantized branch
 		// spans [inten_offset, inten_offset + inten_scale*DR], which is the [fpmin, fpmax] the scan
@@ -47,12 +55,12 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 		double medical_shift = stored ? p.inten_stored_shift : p.inten_offset;
 		bool medical_rescale = ! stored;
 
-		if (ext == ".zarr" || ext == ".ome.zarr")
+		if (fmt == Nyxus::ContainerKind::OmeZarr)
 		{
 			#ifdef OMEZARR_SUPPORT
-				// Zarr takes the same map as TIFF. It used to copy each sample straight into the
-				// unsigned destination type, which wrapped a signed dataset's negatives and dropped
-				// a real-valued one's fraction.
+				// Zarr takes the same map as TIFF, so a signed dataset keeps its negatives and a
+				// real-valued one its fraction rather than wrapping or truncating into the
+				// unsigned destination type.
 				intFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, int_fpath, fpmin, fpmax, dr, quantize, round_offset);
 			#else
 				std::string erm = "This version of Nyxus was not build with OmeZarr support";
@@ -62,8 +70,8 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 				std::cerr << erm << "\n";
 			#endif
 		}
-		else 
-			if (ext == ".dcm" || ext == ".dicom")
+		else
+			if (fmt == Nyxus::ContainerKind::Dicom)
 			{
 				#ifdef DICOM_SUPPORT
 					// A DICOM slide carries physical units through its rescale tags, so it takes the
@@ -78,7 +86,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 					#endif
 			}
 			else
-				if (ext == ".nii" || ext == ".nii.gz")
+				if (fmt == Nyxus::ContainerKind::Nifti)
 				{
 					// Same as DICOM for an integer volume. A real-valued one never takes the stored
 					// map, so it rescales and shifts by the offset the scan recorded.
@@ -142,9 +150,11 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 
 	try 
 	{
-		std::string ext = Nyxus::get_big_extension(seg_fpath);
+		// The mask is classified by the same container family as the intensity, so an
+		// .ome.zarr mask routes to the Zarr loader (not the TIFF fallback).
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (seg_fpath);
 
-		if (ext == ".zarr")
+		if (fmt == Nyxus::ContainerKind::OmeZarr)
 		{
 			#ifdef OMEZARR_SUPPORT
 				segFL = new NyxusOmeZarrLoader<uint32_t>(n_threads, seg_fpath);		// a mask carries labels, not physical units: offset 0, no quantization
@@ -152,17 +162,17 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 				std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
 			#endif
 		}
-		else 
-			if (ext == ".dcm" || ext == ".dicom")
+		else
+			if (fmt == Nyxus::ContainerKind::Dicom)
 			{
 				#ifdef DICOM_SUPPORT
 					segFL = new NyxusGrayscaleDicomLoader<uint32_t>(n_threads, seg_fpath, 0.0, false);		// a mask carries labels, not physical units
 				#else
-					std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl; 
+					std::cout << "This version of Nyxus was not build with DICOM support." <<std::endl;
 				#endif
 			}
 			else
-				if (ext == ".nii" || ext == ".nii.gz")
+				if (fmt == Nyxus::ContainerKind::Nifti)
 				{
 					segFL = new NiftiLoader <uint32_t> (seg_fpath, 0.0, false);		// a mask carries labels, not physical units
 				}
@@ -245,12 +255,12 @@ bool ImageLoader::load_tile(size_t tile_idx)
 	auto tRow = tile_idx / ntw;
 	auto tCol = tile_idx % ntw;
 	
-	intFL->loadTileFromFile (ptrI, tRow, tCol, lyr, lvl);
+	intFL->loadTileFromFile (ptrI, tRow, tCol, lyr, cur_channel, cur_timeframe, lvl);
 
 	// segmentation loader is not available in wholeslide
 	if (segFL)
-		segFL->loadTileFromFile (ptrL, tRow, tCol, lyr, lvl);
-	
+		segFL->loadTileFromFile (ptrL, tRow, tCol, lyr, cur_channel, cur_timeframe, lvl);
+
 	return true;
 }
 
@@ -259,14 +269,124 @@ bool ImageLoader::load_tile (size_t tile_row, size_t tile_col)
 	if (tile_row >= nth || tile_col >= ntw)
 		return false;
 
-	intFL->loadTileFromFile (ptrI, tile_row, tile_col, lyr, lvl);
+	intFL->loadTileFromFile (ptrI, tile_row, tile_col, lyr, cur_channel, cur_timeframe, lvl);
 
 	// segmentation loader is not available in wholeslide
 	if (segFL)
-		segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, lvl);
+		segFL->loadTileFromFile (ptrL, tile_row, tile_col, lyr, cur_channel, cur_timeframe, lvl);
 
 	return true;
 }
+
+size_t ImageLoader::assemble_tile_layer (AbstractTileLoader<uint32_t>* fl,
+	std::shared_ptr<std::vector<uint32_t>>& ptr,
+	std::vector<std::vector<uint32_t>>& planes, size_t lz, size_t channel, size_t timeframe)
+{
+	const Nyxus::VolumeGrid grid = Nyxus::volume_grid_of (*fl, lvl);
+	const size_t frameBase = grid.frame_base (timeframe),
+		z0 = lz * grid.tile_d,
+		depth = (std::min) (grid.tile_d, fd - z0);
+
+	if (planes.size() < depth)
+		planes.resize (depth);
+	for (size_t k = 0; k < depth; k++)
+		planes[k].assign ((size_t) fw * fh, 0u);
+
+	Nyxus::walk_tile_layer (grid, lz,
+		[&](size_t tr, size_t tc, size_t lz_)
+		{
+			fl->loadTileFromFile (ptr, tr, tc, lz_, channel, timeframe, lvl);
+		},
+		[&](size_t src, size_t x0, size_t y, size_t z, size_t n)
+		{
+			auto from = ptr->begin() + frameBase + src;
+			std::copy (from, from + n, planes[z - z0].begin() + y * fw + x0);
+		},
+		[]() {});
+
+	return depth;
+}
+
+// Planes one read of 'fl' delivers: the entire x*y*z*t blob on a loader that keeps the whole
+// time series in its tile (NIfTI), otherwise the tile layer, which the last layer of a volume
+// may cut short. tileTimestamps is the base class's 1 on every loader that does not override
+// it -- OME-Zarr reports its time extent through fullTimestamps and does not -- so it says
+// "frames per read" only where a loader sets it.
+static size_t planes_per_read_of (const AbstractTileLoader<uint32_t>* fl, int lvl)
+{
+	const size_t fd = fl->fullDepth (lvl);
+	if (fl->tileTimestamps (lvl) > 1)
+		return fd * fl->fullTimestamps (lvl);
+	return (std::min) (fl->tileDepth (lvl), fd);
+}
+
+// True when one read of 'fl' hands back every plane a streaming pass would walk, so there is
+// nothing smaller to stream. A pass walks one (channel, timeframe) volume, which is fullDepth
+// planes; a read that covers them all, and is more than a single plane, leaves nothing to
+// bound. Both the decision and the number a refusal reports come from planes_per_read_of, so
+// they cannot drift apart.
+//
+// Each loader is measured against its own extents: an intensity volume and its mask need not
+// have the same number of time frames.
+static bool tile_is_whole_volume (const AbstractTileLoader<uint32_t>* fl, int lvl)
+{
+	const size_t per_read = planes_per_read_of (fl, lvl);
+	return per_read > 1 && per_read >= fl->fullDepth (lvl);
+}
+
+bool ImageLoader::unstreamable_read (size_t& planes, bool& of_mask) const
+{
+	if (tile_is_whole_volume (intFL, lvl))
+	{
+		planes = planes_per_read_of (intFL, lvl);
+		of_mask = false;
+		return true;
+	}
+	if (segFL != nullptr && tile_is_whole_volume (segFL, lvl))
+	{
+		planes = planes_per_read_of (segFL, lvl);
+		of_mask = true;
+		return true;
+	}
+	return false;
+}
+
+bool ImageLoader::streams_bounded() const
+{
+	size_t planes = 0;
+	bool of_mask = false;
+	return ! unstreamable_read (planes, of_mask);
+}
+void ImageLoader::stream_volume_planes (size_t channel, size_t timeframe,
+	const std::function<void(size_t, const std::vector<uint32_t>&, const std::vector<uint32_t>&)>& sink)
+{
+	cur_channel = channel;
+	cur_timeframe = timeframe;
+
+	// the mask plane that pairs with this (channel, timeframe)
+	size_t mask_channel = 0, mask_tf = 0;
+	if (segFL != nullptr)
+		Nyxus::mask_plane_for (channel, timeframe, intFL->fullTimestamps (lvl),
+			segFL->numberChannels(), segFL->fullTimestamps (lvl), mask_channel, mask_tf);
+
+	// open() requires the mask's tile grid to be the intensity's, so both assemble the same
+	// planes from each tile layer
+	const std::vector<uint32_t> noMask;
+	std::vector<std::vector<uint32_t>> intPlanes, segPlanes;
+	const size_t tileLayers = intFL->numberTileDepth (lvl),
+		tileDepth = intFL->tileDepth (lvl);
+
+	for (size_t lz = 0; lz < tileLayers; lz++)
+	{
+		const size_t depth = assemble_tile_layer (intFL, ptrI, intPlanes, lz, channel, timeframe);
+		if (segFL != nullptr)
+			assemble_tile_layer (segFL, ptrL, segPlanes, lz, mask_channel, mask_tf);
+
+		for (size_t k = 0; k < depth; k++)
+			sink (lz * tileDepth + k, intPlanes[k], segFL != nullptr ? segPlanes[k] : noMask);
+	}
+}
+
 const std::vector<uint32_t>& ImageLoader::get_int_tile_buffer()
 {
 	return *ptrI;

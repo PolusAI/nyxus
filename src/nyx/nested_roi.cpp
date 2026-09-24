@@ -15,40 +15,4 @@ namespace Nyxus
 	std::unordered_set <int> uniqueLabels1, uniqueLabels2;
 	std::unordered_map <int, HieLR> roiData1, roiData2;
 	std::string theParFname, theChiFname;
-
-	void parse_csv_line(std::vector<std::string>& dst, std::istringstream& src)
-	{
-		dst.clear();
-		std::string field;
-		while (getline(src, field, ','))
-			dst.push_back(field);
-	}
-
-	bool find_csv_record(std::string& csvLine, std::vector<std::string>& csvHeader, std::vector<std::string>& csvFields, const std::string& csvFP, int label)
-	{
-		std::ifstream f(csvFP);
-		std::string line;
-		std::istringstream ssLine;
-
-		// just store the header
-		std::getline(f, line);
-		ssLine.str(line);
-		parse_csv_line(csvHeader, ssLine);
-
-		while (std::getline(f, line))
-		{
-			std::istringstream ss(line); // ssLine.str(line);
-			parse_csv_line(csvFields, ss);
-
-			std::stringstream ssLab;
-			ssLab << label;
-			if (csvFields[2] == ssLab.str())
-			{
-				csvLine = line;
-				return true;
-			}
-		}
-
-		return false;
-	}
 }

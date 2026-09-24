@@ -9,6 +9,7 @@
 #include "nyxus_dicom_loader.h"
 #include "dirs_and_files.h"
 #include "helpers/fsystem.h"
+#include "ome/format_detect.h"		// container-family classification for loader dispatch
 
 ImageLoader1x::ImageLoader1x() {}
 
@@ -18,7 +19,11 @@ bool ImageLoader1x::open (const std::string& fpath, const FpImageOptions & fpopt
 
 	try
 	{
-		if 	(fs::path(fpath).extension() == ".zarr")
+		// Classify by container family for parity with the other loaders. This loader carries no
+		// NIfTI backend, so a NIfTI path falls through to the TIFF branch.
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (fpath);
+
+		if 	(fmt == Nyxus::ContainerKind::OmeZarr)
 		{
 			#ifdef OMEZARR_SUPPORT
 			FL = std::make_unique<NyxusOmeZarrLoader<uint32_t>>(n_threads, fpath);
@@ -26,7 +31,7 @@ bool ImageLoader1x::open (const std::string& fpath, const FpImageOptions & fpopt
 			std::cout << "This version of Nyxus was not build with OmeZarr support." <<std::endl;
 			#endif
 		}
-		else if(fs::path(fpath).extension() == ".dcm" | fs::path(fpath).extension() == ".dicom"){
+		else if(fmt == Nyxus::ContainerKind::Dicom){
 			#ifdef DICOM_SUPPORT
 			FL = std::make_unique<NyxusGrayscaleDicomLoader<uint32_t>>(n_threads, fpath, 0.0, false);		// a mask carries labels, not physical units
 			#else
@@ -95,7 +100,7 @@ bool ImageLoader1x::load_tile(size_t tile_idx)
 
 	auto row = tile_idx / ntw;
 	auto col = tile_idx % ntw;
-	FL->loadTileFromFile(ptr, row, col, lyr, lvl);
+	FL->loadTileFromFile(ptr, row, col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
 
 	return true;
 }
@@ -105,7 +110,7 @@ bool ImageLoader1x::load_tile(size_t tile_row, size_t tile_col)
 	if (tile_row >= nth || tile_col >= ntw)
 		return false;
 
-	FL->loadTileFromFile(ptr, tile_row, tile_col, lyr, lvl);
+	FL->loadTileFromFile(ptr, tile_row, tile_col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
 
 	return true;
 }
@@ -142,12 +147,12 @@ size_t ImageLoader1x::get_within_tile_idx(size_t pixel_row, size_t pixel_col)
 
 size_t ImageLoader1x::get_num_tiles_vert()
 {
-	return ntw;
+	return nth;
 }
 
 size_t ImageLoader1x::get_num_tiles_hor()
 {
-	return nth;
+	return ntw;
 }
 
 size_t ImageLoader1x::get_tile_height()
