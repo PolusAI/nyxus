@@ -98,14 +98,25 @@ jobs:
           echo "--- gtest tallies ---"
           grep -E '\[  (PASSED|FAILED|SKIPPED)' /tmp/asan.log | tail -20
         fi
-        # The verdict is stated, not inferred from a bare "exit $rc". An earlier version of this
-        # step ended that way and the job failed while reporting rc=0 and 0 diagnostics -- the
-        # login shell this job runs under returned 1 of its own accord, which is indistinguishable
-        # from a real failure unless the gate says which one it chose.
-        trap 'echo "shell exiting with $?"' EXIT
+        # The verdict goes to a file rather than this shell's exit status. This step runs under
+        # the job's `bash -l`, and that login shell returns 1 whatever we exit with: a run that
+        # printed "rc=0 diagnostics=0" and called `exit 0` still ended with an EXIT trap
+        # reporting 1. The suite's result must not depend on that, so it is recorded here and
+        # acted on by the next step, which uses a plain shell.
         if [ "$rc" -ne 0 ] || [ "$diag" -ne 0 ]; then
-          echo "ASAN GATE FAILED (rc=$rc diagnostics=$diag)"
-          exit 1
+          echo "FAIL rc=$rc diagnostics=$diag" > /tmp/asan_verdict
+        else
+          echo "PASS rc=$rc diagnostics=$diag" > /tmp/asan_verdict
         fi
-        echo "ASAN GATE PASSED (rc=$rc diagnostics=$diag)"
-        exit 0
+        cat /tmp/asan_verdict
+
+    - name: ASan verdict
+      # Plain (non-login) shell on purpose -- see the note above.
+      shell: bash {0}
+      run: |
+        verdict=$(cat /tmp/asan_verdict 2>/dev/null || echo "MISSING")
+        echo "$verdict"
+        case "$verdict" in
+          PASS*) exit 0 ;;
+          *)     exit 1 ;;
+        esac
