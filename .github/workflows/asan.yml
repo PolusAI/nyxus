@@ -83,9 +83,19 @@ jobs:
         ./tests/runAllTests 2>&1 | tee /tmp/asan.log
         rc=$?
         diag=$(grep -cE 'ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:' /tmp/asan.log || true)
+        echo "runAllTests exit: $rc"
         echo "sanitizer diagnostics: $diag"
         if [ "$diag" -ne 0 ]; then
           grep -nE 'ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:' /tmp/asan.log | head -40
           exit 1
+        fi
+        # A non-zero exit with no diagnostic and no failed test means the suite died after its
+        # summary printed -- in a static destructor, or in LeakSanitizer's own exit path. The
+        # summary alone cannot show that, so print what the process actually left behind.
+        if [ "$rc" -ne 0 ]; then
+          echo "--- suite exited $rc with no sanitizer diagnostic; last 60 lines ---"
+          tail -60 /tmp/asan.log
+          echo "--- gtest tallies ---"
+          grep -E '\[  (PASSED|FAILED|SKIPPED)' /tmp/asan.log | tail -20
         fi
         exit $rc
