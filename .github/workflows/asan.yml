@@ -98,4 +98,14 @@ jobs:
           echo "--- gtest tallies ---"
           grep -E '\[  (PASSED|FAILED|SKIPPED)' /tmp/asan.log | tail -20
         fi
-        exit $rc
+        # The verdict is stated, not inferred from a bare "exit $rc". An earlier version of this
+        # step ended that way and the job failed while reporting rc=0 and 0 diagnostics -- the
+        # login shell this job runs under returned 1 of its own accord, which is indistinguishable
+        # from a real failure unless the gate says which one it chose.
+        trap 'echo "shell exiting with $?"' EXIT
+        if [ "$rc" -ne 0 ] || [ "$diag" -ne 0 ]; then
+          echo "ASAN GATE FAILED (rc=$rc diagnostics=$diag)"
+          exit 1
+        fi
+        echo "ASAN GATE PASSED (rc=$rc diagnostics=$diag)"
+        exit 0
