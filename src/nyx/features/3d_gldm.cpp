@@ -1,9 +1,12 @@
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
+#include <set>
 #include <sstream>
 #include <unordered_set>
+#include <vector>
 #include "3d_gldm.h"
+#include "3d_ooc_volume.h"
 #include "../environment.h"
 
 using namespace Nyxus;
@@ -246,7 +249,112 @@ void D3_GLDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inten
 
 void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate (r, s);
+	// Out-of-core GLDM. Streams the disk-backed voxel cloud through a 3-plane sliding window of
+	// dense grey-binned planes (the 26-neighbourhood spans z-1..z+1) and fills the dependence
+	// matrix P directly per voxel (no O(volume) zone list). Feature math (calc_*) is shared with
+	// the in-core path, so values are identical.
+	clear_buffers();
+
+	// intercept blank ROIs (same guard as calculate())
+	if (r.aux_min == r.aux_max)
+	{
+		fv_SDE = fv_LDE = fv_GLN = fv_DN = fv_DNN = fv_GLV = fv_DV = fv_DE =
+		fv_LGLE = fv_HGLE = fv_SDLGLE = fv_SDHGLE = fv_LDLGLE = fv_LDHGLE = STNGS_NAN(s);
+		return;
+	}
+
+	int greyInfo = STNGS_IBSI(s) ? 0 : STNGS_GLDM_GREYDEPTH(s);
+	PixIntens mn = r.aux_min, mx = r.aux_max;
+	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
+	const PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
+
+	// the ROI's binned cube, streamed: its planes carry the levels the in-core cube holds, and
+	// the 26-neighbourhood spans z-1..z+1, so the window keeps 3 of them
+	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); }, bg, 3);
+	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
+
+	// --- grey levels I + matrix dimension (mirrors calculate(), which builds I from the WHOLE
+	// binned cube incl. background -- e.g. matlab binning maps raw-0 background to bin 1, and that
+	// bin must appear in I too, matching D3_GLDM_feature::calculate()'s unordered_set(D.begin(),D.end())).
+	PixIntens maxbin = 0;
+	std::set<PixIntens> uniq = vol.levels (/*with_background=*/ true, /*drop_zero=*/ true, maxbin);
+	I.clear();
+	if (ibsi_grey_binning(greyInfo))
+	{
+		int n = (int) maxbin;
+		I.resize (n);
+		for (int i = 0; i < n; i++) I[i] = i + 1;
+	}
+	else
+		I.assign (uniq.begin(), uniq.end());		// std::set already sorted
+	Ng = (greyInfo == 0) ? (I.empty() ? 0 : (int) *std::max_element(I.begin(), I.end())) : (int) I.size();
+
+	Nd = nsh + 1;
+	P.allocate (Nd + 1, Ng + 1);
+	std::fill (P.begin(), P.end(), 0);
+	int max_Nd = 0;
+
+	// O(1) grey-level -> matrix row, replacing the per-voxel binary search in the scan below
+	// (used only by the non-IBSI branch; IBSI uses pi-1).
+	std::vector<int> rowLUT = Nyxus::ooc_row_lut (I, maxbin);
+	const bool ibsi = STNGS_IBSI(s);
+	for (int c = 0; c < Dz; c++)
+	{
+		const std::vector<PixIntens>& cur = vol.plane (c);
+
+		for (int y = 0; y < H; y++)
+			for (int x = 0; x < W; x++)
+			{
+				PixIntens pi = cur[(size_t) y * W + x];
+				if (pi == zeroI)
+					continue;
+
+				int nd = 1;
+				for (int i = 0; i < nsh; i++)
+				{
+					int nz = c + shifts[i].dz, ny = y + shifts[i].dy, nx = x + shifts[i].dx;
+					if (nz < 0 || nz >= Dz || ny < 0 || ny >= H || nx < 0 || nx >= W)
+						continue;
+					if (pi == vol.plane (nz)[(size_t) ny * W + nx])
+						nd++;
+				}
+
+				int row = ibsi ? (int) pi - 1 : rowLUT[pi];
+				int col = nd - 1;
+				P.xy (col, row)++;
+				max_Nd = (std::max) (max_Nd, nd);
+			}
+	}
+
+	if (greyInfo)
+		Nd = max_Nd;
+
+	Nz = 0;
+	for (auto p : P)
+		Nz += p;
+
+	if (Nz == 0)
+	{
+		fv_SDE = fv_LDE = fv_GLN = fv_DN = fv_DNN = fv_GLV = fv_DV = fv_DE =
+		fv_LGLE = fv_HGLE = fv_SDLGLE = fv_SDHGLE = fv_LDLGLE = fv_LDHGLE = STNGS_NAN(s);
+	}
+	else
+	{
+		fv_SDE = calc_SDE();
+		fv_LDE = calc_LDE();
+		fv_GLN = calc_GLN();
+		fv_DN = calc_DN();
+		fv_DNN = calc_DNN();
+		fv_GLV = calc_GLV();
+		fv_DV = calc_DV();
+		fv_DE = calc_DE();
+		fv_LGLE = calc_LGLE();
+		fv_HGLE = calc_HGLE();
+		fv_SDLGLE = calc_SDLGLE();
+		fv_SDHGLE = calc_SDHGLE();
+		fv_LDLGLE = calc_LDLGLE();
+		fv_LDHGLE = calc_LDHGLE();
+	}
 }
 
 void D3_GLDM_feature::save_value(std::vector<std::vector<double>>& fvals)

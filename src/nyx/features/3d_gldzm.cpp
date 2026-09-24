@@ -1,7 +1,15 @@
+#include <algorithm>
 #include <climits>
+#include <cstdint>
+#include <limits>
+#include <set>
+#include <unordered_set>
+#include <vector>
 #include "../environment.h"
 #include "3d_gldzm.h"
+#include "3d_ooc_volume.h"
 #include "image_cube.h"
+#include "streaming_ccl.h"
 
 
 int D3_GLDZM_feature::n_levels = 0;
@@ -526,7 +534,263 @@ void D3_GLDZM_feature::save_value (std::vector<std::vector<double>> & fvals)
 
 void D3_GLDZM_feature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
 
+// Out-of-core 3D GLDZM. Same definition as prepare_GLDZM_matrix_kit, reached without ever holding
+// the binned cube or the voxel cloud in RAM: a zone is a 26-connected component of one grey level
+// within the ROI, and its distance is the smallest city-block distance to the ROI border any of its
+// voxels has.
+//
+// The family holds one volume-sized buffer, 'dist', for the same reason the in-core path does: the
+// border distance is a breadth-first walk inwards over the whole ROI, so it cannot be answered from
+// a sliding window. It arrives as the ROI mask and leaves carrying each ROI voxel's distance, which
+// is why zero keeps meaning "not the ROI's" throughout. At 2 bytes per voxel it is a quarter of the
+// two int cubes the in-core path allocates, and the grey levels still stream a plane at a time.
+//
+// The ROI mask cannot be recovered from the binned levels -- matlab binning sends intensity 0 to
+// level 1, making background indistinguishable from a genuine level-1 voxel -- so it is marked from
+// the voxel cloud, exactly as the in-core path marks it.
 void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	calculate (r, s);
+	clear_buffers();
+
+	if (r.aux_min == r.aux_max)
+	{
+		f_SDE = f_LDE = f_LGLZE = f_HGLZE = f_SDLGLE = f_SDHGLE = f_LDLGLE = f_LDHGLE =
+		f_GLNU = f_GLNUN = f_ZDNU = f_ZDNUN = f_ZP = f_GLM = f_GLV = f_ZDM = f_ZDV = f_ZDE = f_GLE = STNGS_NAN(s);
+		return;
+	}
+
+	// grey-binning selection mirrors prepare_GLDZM_matrix_kit exactly: no GLDZM-specific greydepth
+	// setting exists, so it starts from the general STNGS_NGREYS(s), can be overridden by the static
+	// D3_GLDZM_feature::n_levels, then forced to 0 (IBSI/no-rescale) when STNGS_IBSI(s) is set.
+	auto greyInfo = STNGS_NGREYS(s);
+	auto greyInfo_localFeature = D3_GLDZM_feature::n_levels;
+	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
+		greyInfo = greyInfo_localFeature;
+	if (STNGS_IBSI(s))
+		greyInfo = 0;
+
+	const PixIntens mn = r.aux_min, mx = r.aux_max;
+	const bool ibsi_levels = ibsi_grey_binning (greyInfo);
+
+	auto bin_of = [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); };
+
+	// the ROI's binned cube, streamed. The marking pass below needs the ROI mask as well: a cell
+	// holding a fill level is otherwise indistinguishable from a ROI voxel that binned to it.
+	Nyxus::OocBinnedVolume vol (r, bin_of, 0, 1, /*with_mask=*/ true);
+	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
+
+	auto voxel_at = [W, H](int z, int y, int x) -> size_t
+	{
+		return ((size_t) z * (size_t) H + (size_t) y) * (size_t) W + (size_t) x;
+	};
+
+	// --- one streaming pass marks the ROI and gathers its grey levels. A GLDZM grey level is
+	// 1-based, and two of the three binning schemes can hand back a 0 for a voxel that is genuinely
+	// the ROI's, so the levels are lifted by one where that happens -- the lift keeps those voxels
+	// in a zone instead of dropping them out of Ns and the zone map while they still count in the
+	// ROI's voxel total. Whether to lift is only known once the pass is over.
+	std::vector<uint16_t> dist ((size_t) W * H * Dz, 0);
+	bool roi_has_zero_level = false;
+	PixIntens max_level = 0;
+	std::set<PixIntens> U;
+
+	for (int z = 0; z < Dz; z++)
+	{
+		const std::vector<PixIntens>& pl = vol.plane (z);
+		const std::vector<unsigned char>& mk = vol.mask (z);
+		for (int y = 0; y < H; y++)
+			for (int x = 0; x < W; x++)
+			{
+				const size_t i = (size_t) y * W + x;
+				if (! mk[i])
+					continue;
+				dist[voxel_at (z, y, x)] = 1;
+				PixIntens level = pl[i];
+				roi_has_zero_level = roi_has_zero_level || level == 0;
+				if (ibsi_levels)
+					max_level = (std::max) (max_level, level);
+				else
+					U.insert (level);
+			}
+	}
+	const PixIntens lift = roi_has_zero_level ? 1 : 0;
+
+	// --- the grey levels the zone map is indexed by, as prepare_GLDZM_matrix_kit builds them
+	std::vector<PixIntens> I;
+	if (ibsi_levels)
+	{
+		PixIntens n_ibsi_levels = max_level + lift;
+		I.resize (n_ibsi_levels);
+		for (PixIntens i = 0; i < n_ibsi_levels; i++)
+			I[i] = i + 1;
+	}
+	else	// radiomics and matlab
+	{
+		// no level here is 0: either no ROI voxel had one, or the lift moved it to 1
+		I.reserve (U.size());
+		for (auto level : U)
+			I.push_back (level + lift);
+		std::sort (I.begin(), I.end());
+	}
+
+	// --- city-block distance from every ROI voxel to the nearest voxel outside the ROI, which is
+	// the distance IBSI's GLDZM measures. A voxel touching the ROI's surface is at distance 1, and
+	// anything outside the bounding box is outside the ROI -- exact, because the box is tight.
+	// Breadth-first from the surface inwards, so every voxel is settled once, at its shortest
+	// distance. This is calc_dist2border() over the flat buffer.
+	{
+		const uint16_t UNSETTLED = (std::numeric_limits<uint16_t>::max)();
+		for (auto& v : dist)
+			if (v)
+				v = UNSETTLED;
+
+		// the 6 city-block moves
+		static const int mv[6][3] = { {-1,0,0}, {+1,0,0}, {0,-1,0}, {0,+1,0}, {0,0,-1}, {0,0,+1} };
+
+		std::vector<size_t> frontier, next_frontier;
+
+		// distance 1 is every ROI voxel with a move that leaves the ROI or leaves the box
+		for (int z = 0; z < Dz; z++)
+			for (int y = 0; y < H; y++)
+				for (int x = 0; x < W; x++)
+				{
+					const size_t o = voxel_at (z, y, x);
+					if (dist[o] == 0)
+						continue;
+
+					for (int i = 0; i < 6; i++)
+					{
+						int nx = x + mv[i][0],
+							ny = y + mv[i][1],
+							nz = z + mv[i][2];
+						if (nx < 0 || nx >= W || ny < 0 || ny >= H || nz < 0 || nz >= Dz ||
+							dist[voxel_at (nz, ny, nx)] == 0)
+						{
+							dist[o] = 1;
+							frontier.push_back (o);
+							break;
+						}
+					}
+				}
+
+		// each round settles the ROI voxels one move further in
+		for (int step = 2; !frontier.empty(); step++)
+		{
+			next_frontier.clear();
+
+			for (size_t o : frontier)
+			{
+				int vx = (int)(o % (size_t) W),
+					vy = (int)((o / (size_t) W) % (size_t) H),
+					vz = (int)(o / ((size_t) W * (size_t) H));
+
+				for (int i = 0; i < 6; i++)
+				{
+					int nx = vx + mv[i][0],
+						ny = vy + mv[i][1],
+						nz = vz + mv[i][2];
+					if (nx < 0 || nx >= W || ny < 0 || ny >= H || nz < 0 || nz >= Dz)
+						continue;
+					const size_t no = voxel_at (nz, ny, nx);
+					if (dist[no] != UNSETTLED)
+						continue;
+
+					dist[no] = (uint16_t) step;
+					next_frontier.push_back (no);
+				}
+			}
+
+			frontier.swap (next_frontier);
+		}
+	}
+
+	// --- streaming 26-connectivity CCL over a 2-plane window, folding each voxel's distance into
+	// its zone's running minimum. Scanning z, then y, then x makes 13 of the 26 neighbours causal:
+	// the four already-visited cells of the current plane (W, NW, N, NE) and all nine of the plane
+	// behind it. A cell outside the ROI never takes a label, so a label alone says "same ROI, and
+	// already seen" and the level test is all that remains.
+	// the same cube with the lift baked into its levels; a zone links to the plane behind it, so
+	// the window keeps 2 planes
+	Nyxus::OocBinnedVolume lifted (r, [bin_of, lift](PixIntens v) { return bin_of (v) + lift; }, lift, 2);
+	LabelUnionFind uf;
+	std::vector<int> prevLabel, curLabel;
+
+	for (int z = 0; z < Dz; z++)
+	{
+		const std::vector<PixIntens>& curPlane = lifted.plane (z);
+		const std::vector<PixIntens>* prevPlane = (z > 0) ? &lifted.plane (z - 1) : nullptr;
+		curLabel.assign ((size_t) W * H, -1);
+
+		for (int y = 0; y < H; y++)
+			for (int x = 0; x < W; x++)
+			{
+				const size_t o = voxel_at (z, y, x);
+				if (dist[o] == 0)
+					continue;		// not the ROI's: the background forms no zone
+
+				const PixIntens pi = curPlane[(size_t) y * W + x];
+				const long long d = (long long) dist[o];
+
+				int found = -1;
+				auto link = [&](const std::vector<PixIntens>& pl, const std::vector<int>& lb, int ny, int nx)
+				{
+					if (ny < 0 || ny >= H || nx < 0 || nx >= W)
+						return;
+					const size_t n = (size_t) ny * W + nx;
+					if (lb[n] < 0 || pl[n] != pi)
+						return;
+					found = (found < 0) ? lb[n] : uf.union_min (found, lb[n]);
+				};
+
+				// the four causal cells of this plane
+				link (curPlane, curLabel, y, x - 1);
+				link (curPlane, curLabel, y - 1, x - 1);
+				link (curPlane, curLabel, y - 1, x);
+				link (curPlane, curLabel, y - 1, x + 1);
+
+				// and all nine of the plane behind it
+				if (z > 0)
+					for (int dy = -1; dy <= 1; dy++)
+						for (int dx = -1; dx <= 1; dx++)
+							link (*prevPlane, prevLabel, y + dy, x + dx);
+
+				if (found < 0)
+					found = uf.make_label (pi, d);
+				else
+					uf.update_min (found, d);
+				curLabel[(size_t) y * W + x] = found;
+			}
+
+		prevLabel.swap (curLabel);
+	}
+
+	// --- one zone per distinct root: (intensity, min distance)
+	std::vector<std::pair<PixIntens, int>> Zones;
+	std::vector<char> seenRoot (uf.num_labels(), 0);
+	for (size_t i = 0; i < uf.num_labels(); i++)
+	{
+		int rt = uf.find ((int) i);
+		if (seenRoot[rt]) continue;
+		seenRoot[rt] = 1;
+		Zones.push_back ({ uf.intensity_of (rt), (int) uf.metric (rt) });
+	}
+
+	int Ng = (int) I.size();
+	int Nd = 0;
+	for (auto& zo : Zones)
+		Nd = (std::max) (Nd, zo.second);
+
+	SimpleMatrix<unsigned int> GLDZM;
+	GLDZM.allocate (Nd, Ng);	// Ng rows, Nd columns -- matches calc_gldzm_matrix's layout
+	GLDZM.fill (0);
+	for (auto& zo : Zones)
+	{
+		int row = (int)(std::lower_bound (I.begin(), I.end(), zo.first) - I.begin());
+		int col = zo.second - 1;
+		GLDZM.yx (row, col)++;
+	}
+
+	std::vector<double> Mx, Md;
+	calc_row_and_column_sum_vectors (Mx, Md, GLDZM, Ng, Nd, I);
+	calc_features (Mx, Md, GLDZM, I, r.aux_area);
 }
