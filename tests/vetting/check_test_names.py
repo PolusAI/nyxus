@@ -80,10 +80,22 @@ DIM_AGNOSTIC = {
     "test_feature_manager_mechanics.h": "FeatureManager registration/dependency compile, both dims at once",
     "test_roi_blacklist_mechanics.h": "ROI blacklist parsing",
     "test_hu_analytic.h": "closed form of the scalar load-time intensity map on SlideProps",
+    "test_io_plumbing_mechanics.h":
+        "readers and accumulators shared by both dims - a TIFF sample type and a value histogram",
+    "test_cli_mechanics.py":
+        "the CLI's exit-status contract, asserted on a 2D whole-slide run and a 3D one",
     "test_feature_calculation_common.h": "the assert_feature template, used from both dims",
     "test_vetting_mechanics.py": "self-test of check_coverage.py / check_test_names.py",
     "test_environment_lifecycle_mechanics.py":
         "instance -> Environment binding in the bindings; no image dimensionality involved",
+    # the native-OME readers address one 5D container (X,Y,Z,C,T) and are exercised at every
+    # extent it can take -- 2D planes through 5D stacks -- so a dim token would name only one
+    # of the shapes each file already covers
+    "test_omezarr_mechanics.h": "OME-Zarr reader over 2D..5D extents of one container",
+    "test_ometiff_mechanics.h": "OME-TIFF reader over 2D..5D extents of one container",
+    "test_ome_meta_mechanics.h": "OME metadata parsers and the axes descriptor; no image is read",
+    "test_ooc_mechanics.py": "out-of-core streaming machinery, asserted for both dims at once",
+    "test_physical_calibration_regression.py": "physical voxel spacing read from OME metadata, not from an image of either dimension",
     # imq carries its own dimension: dim=IMQ in oracle_coverage.csv, not 2D/3D
     "test_imq_common.h": "dim=IMQ in the registry",
     "test_imq_opencv.h": "dim=IMQ in the registry",
