@@ -69,6 +69,7 @@
 #define clo_AGGREGATE "--aggr"				// -> raw_aggregate
 #define clo_ANNOTATE "--annot"				// -> raw_annotate
 #define clo_ANNOT_SEP "--annotsep"		// -> raw_anno_separator
+#define clo_USE_PHYSICAL_SPACING "--use-physical-spacing"	// -> rawUsePhysicalSpacing (true/false); opt-in OME PhysicalSize* voxel spacing
 
 // Valid values of 'OUTPUTTYPE'
 #define clo_OT_SEPCSV "separatecsv"

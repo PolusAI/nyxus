@@ -32,34 +32,27 @@
 
 namespace Nyxus
 {
-	bool featurize_triv_wholeslide (Environment & env, size_t sidx, ImageLoader & imlo, size_t memory_limit, LR & vroi)
+	// Featurizes a whole slide that fits in RAM. The caller owns the oversized decision -- it
+	// refuses anything at or above the RAM limit before reaching here, off the same estimate,
+	// so a second test of it here could never fire.
+	bool featurize_triv_wholeslide (Environment & env, size_t sidx, ImageLoader & imlo, LR & vroi)
 	{
 		const std::string & ifpath = env.dataset.dataset_props[sidx].fname_int;
-
-		// can we process this slide ?
-		size_t footp = vroi.get_ram_footprint_estimate (1);	// 1 since single ROI
-		if (footp > memory_limit)
-		{
-			std::string erm = "Error: cannot process slide " + ifpath + " , reason: its memory footprint " + virguler_ulong(footp) + " exceeds available memory " + virguler_ulong(memory_limit);
-			#ifdef WITH_PYTHON_H
-				throw std::runtime_error(erm);
-			#endif	
-			std::cerr << erm << "\n";
-			return false;
-		}
 
 		// read the slide into a pixel cloud
 		if (env.anisoOptions.customized() == false)
 		{
 			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
-			scan_trivial_wholeslide (vroi, ifpath, imlo); // counterpart of segmented scanTrivialRois ()
+			if (! scan_trivial_wholeslide (vroi, ifpath, imlo))	// counterpart of segmented scanTrivialRois ()
+				return false;
 		}
 		else
 		{
 			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
 			double aniso_x = env.anisoOptions.get_aniso_x(),
 				aniso_y = env.anisoOptions.get_aniso_y();
-			scan_trivial_wholeslide_anisotropic (vroi, ifpath, imlo, aniso_x, aniso_y); // counterpart of segmented scanTrivialRois ()
+			if (! scan_trivial_wholeslide_anisotropic (vroi, ifpath, imlo, aniso_x, aniso_y))	// counterpart of segmented scanTrivialRois ()
+				return false;
 		}
 
 		// allocate buffers of feature helpers (image matrix, etc)
@@ -129,9 +122,7 @@ namespace Nyxus
 		}
 
 		// phase 2: extract features
-		featurize_triv_wholeslide (env, sidx, imlo, env.get_ram_limit(), vroi); // segmented counterpart: phase2.cpp / processTrivialRois ()
-
-		return true;
+		return featurize_triv_wholeslide (env, sidx, imlo, vroi); // segmented counterpart: phase2.cpp / processTrivialRois ()
 	}
 
 	void featurize_wsi_thread (
@@ -152,7 +143,11 @@ namespace Nyxus
 		if (imlo.open(p, env.fpimageOptions) == false)
 		{
 			std::cerr << "Terminating\n";
+			// nothing below can run without the loader, and open() can fail having allocated
+			// one half of the pair
+			imlo.close();
 			rv = 1;
+			return;
 		}
 
 		LR vroi (1); // virtual ROI representing the whole slide ROI-labelled as '1'
@@ -161,12 +156,16 @@ namespace Nyxus
 		{
 			std::cerr << "Error featurizing slide " << p.fname_int << " @ " << __FILE__ << ":" << __LINE__ << "\n";
 			rv = 1;
+			// and no row for it: vroi holds the zeros initialize_fvals() left, so saving it would
+			// report measurements nobody made. The 3D twin skips the write the same way.
+			imlo.close();
+			return;
 		}
 
 		// thread-safely save results of this single slide
 		if (write_apache) 
 		{
-			auto [status, msg] = save_features_2_apache_wholeslide (env, vroi, p.fname_int);
+			auto [status, msg] = save_features_2_apache_wholeslide (env, vroi, p.fname_int, 0/*t_index*/, 0/*c_index*/);
 			if (! status) 
 			{
 				std::cerr << "Error writing Arrow file: " << msg.value() << std::endl;
@@ -176,7 +175,7 @@ namespace Nyxus
 		else 
 			if (saveOption == SaveOption::saveCSV)
 			{
-				if (save_features_2_csv_wholeslide(env, vroi, p.fname_int, "", outputPath, 0 /*pass 0 as t_index is not used in 2D scenario*/) == false)
+				if (save_features_2_csv_wholeslide(env, vroi, p.fname_int, "", outputPath, 0 /*t_index unused in 2D*/, 0 /*c_index unused in 2D*/) == false)
 				{
 					std::cout << "error saving results to CSV file, details: " << __FILE__ << ":" << __LINE__ << std::endl;
 					rv = 2;
@@ -185,7 +184,7 @@ namespace Nyxus
 			else
 			{
 				// pulls feature values from 'vroi' and appends them to global object 'theResultsCache' exposed to Python API
-				if (save_features_2_buffer_wholeslide (env.theResultsCache, env, vroi, p.fname_int, "") == false)
+				if (save_features_2_buffer_wholeslide (env.theResultsCache, env, vroi, p.fname_int, "", 0/*t_index*/, 0/*c_index*/) == false)
 				{
 					std::cerr << "Error saving features to the results buffer" << std::endl;
 					rv = 2;
@@ -198,7 +197,9 @@ namespace Nyxus
 		// Not saving nested ROI related info because this image is single-ROI (whole-slide)
 		//
 
-		rv = 0; // success
+		// NOT rv = 0: a blanket success here discards every failure recorded above -- the
+		// slide that would not open, the one too big for RAM, the row that would not save.
+		// rv is 0 already unless one of those set it.
 	}
 
 	int processDataset_2D_wholeslide (
@@ -208,7 +209,9 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath)
 	{
-		// create a vector of blank mask file names. Blank mask counterparts 
+		env.reset_csv_output_state();		// this run's CSV files start fresh (see Environment::csv_paths_written)
+
+		// create a vector of blank mask file names. Blank mask counterparts
 		// of intensity files will serve as the condition of the whole-slide scenario in the prescan phase
 		std::vector<std::string> labelFiles (intensFiles.size());
 
@@ -232,7 +235,7 @@ namespace Nyxus
 
 			// slide metrics
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "prescanning " << p.fname_int);
-			if (! scan_slide_props(p, 2, env.anisoOptions, env.fpimageOptions, env.resultOptions.need_annotation()))
+			if (! scan_slide_props(p, 2, env.anisoOptions, env.use_physical_spacing(), env.fpimageOptions, env.resultOptions.need_annotation()))
 			{
 				VERBOSLVL1 (env.get_verbosity_level(), std::cout << "error prescanning pair " << p.fname_int << " and " << p.fname_seg << std::endl);
 				return 1;
@@ -278,6 +281,8 @@ namespace Nyxus
 		}
 
 		// run batches of threads
+		int worst_rv = 0;	// aggregates per-thread failure so a slide that could not be
+								// featurized makes the run fail loudly, as the 3D twin does
 		size_t n_jobs = (nf + n_threads - 1) / n_threads;
 		for (size_t j=0; j<n_jobs; j++)
 		{
@@ -322,9 +327,13 @@ namespace Nyxus
 				}
 			}
 
-			// wait for all threads to complete before proceeding
+			// wait for all threads to complete, then take the worst status any slide of this
+			// batch reported: rvals was collected and never read, so a failed slide left no
+			// trace in the exit code
 			for (auto& f : T)
 				f.get();
+			for (int r : rvals)
+				if (r > worst_rv) worst_rv = r;
 
 			// allow keyboard interrupt
 			#ifdef WITH_PYTHON_H
@@ -353,7 +362,9 @@ namespace Nyxus
 		// future: free GPU cache for all participating devices
 		//
 
-		return 0; // success
+		// the worst status any slide reported, as the 3D twin returns: a run that could not
+		// featurize a slide must not tell the shell it succeeded
+		return worst_rv;
 	}
 
 }

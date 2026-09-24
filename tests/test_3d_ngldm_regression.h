@@ -57,14 +57,14 @@ void test_3d_ngldm_dump_regression()
 	Environment e;
 	e.dataset.dataset_props.reserve(1);
 	SlideProps& sp = e.dataset.dataset_props.emplace_back(ipath, mpath);
-	ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.fpimageOptions, e.resultOptions.need_annotation()));
+	ASSERT_TRUE(scan_slide_props(sp, 3, e.anisoOptions, e.use_physical_spacing(), e.fpimageOptions, e.resultOptions.need_annotation()));
 	e.dataset.update_dataset_props_extrema();
 
 	clear_slide_rois(e.uniqueLabels, e.roiData);
-	ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/));
+	ASSERT_TRUE(gatherRoisMetrics_3D(e, 0/*slide_index*/, ipath, mpath, 0/*t_index*/, 0/*channel*/));
 
 	std::vector<int> batch = { label };
-	ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/));
+	ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/, 0/*channel*/));
 	ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
 	Fsettings s;
