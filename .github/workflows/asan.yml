@@ -1,0 +1,91 @@
+name: AddressSanitizer
+
+# The gtest suite under AddressSanitizer + UndefinedBehaviorSanitizer with leak detection on.
+#
+# What this catches that the other jobs cannot: a memory error or a leak whose only symptom is a
+# wrong value under a different allocator, or no symptom at all. Several defects on the IO paths
+# were loaders held past a failure exit -- the run still produced correct numbers, so no assertion
+# could see them. The release jobs are the ones that guard values; this one guards memory.
+#
+# NOEXTRAS=ON: this job compiles the core readers only (no z5/Arrow/DICOM), so it builds in one
+# pass without the extras' toolchains. The families those readers serve are covered by the release
+# jobs; what is asserted here is the memory behaviour of the code shared by both.
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  Sanitize_GTest:
+    name: GoogleTest under ASan + UBSan
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: anaconda-client-env
+        miniconda-version: "latest"
+        python-version: "3.11"
+        channels: conda-forge
+        auto-activate-base: false
+
+    - name: Install Conda Dependencies
+      run: |
+        conda install mamba
+        mamba install compilers=1.7.0 --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
+
+    - name: Configure CMake
+      # The build type's flags are appended AFTER CMAKE_CXX_FLAGS and win, so the -O here has to be
+      # the type's own. Debug is the type to carry it: CMakeLists.txt overwrites
+      # CMAKE_CXX_FLAGS_RELEASE, so a Release build compiles at -O2 whatever is asked for, and an
+      # empty build type is falsy in CMake and becomes Release too. Debug's flags are untouched by
+      # the project, so setting them here is what the compiler actually gets -- and no -DNDEBUG,
+      # which keeps assert() live, as a sanitizer build wants.
+      run: >
+        cmake -B ${{github.workspace}}/build-asan -S ${{github.workspace}}
+        -DCMAKE_BUILD_TYPE=Debug
+        -DCMAKE_CXX_FLAGS_DEBUG="-g1 -O1"
+        -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=undefined"
+        -DRUN_GTEST=ON -DBUILD_CLI=OFF -DBUILD_LIB=OFF -DALLEXTRAS=OFF -DNOEXTRAS=ON -DUSEGPU=OFF
+        -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
+
+    - name: Build
+      # -j2: an ASan compile of tests/test_all.cc peaks over 2 GB, and a runner that OOM-kills
+      # cc1plus reports it as "Terminated signal terminated program", which reads like a compiler
+      # bug rather than memory pressure.
+      run: cmake --build ${{github.workspace}}/build-asan --parallel 2
+
+    - name: Run GTest Suite under ASan + UBSan
+      working-directory: ${{github.workspace}}/build-asan
+      env:
+        ASAN_OPTIONS: detect_leaks=1:abort_on_error=0:print_summary=1
+        UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
+        LSAN_OPTIONS: report_objects=1
+      # The suite's own exit code is the gate, and the log is checked for diagnostics besides:
+      # with -fno-sanitize-recover a UBSan hit aborts before the gtest summary prints, so a clean
+      # summary alone does not mean a clean run.
+      run: |
+        set -o pipefail
+        ./tests/runAllTests 2>&1 | tee /tmp/asan.log
+        rc=$?
+        diag=$(grep -cE 'ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:' /tmp/asan.log || true)
+        echo "sanitizer diagnostics: $diag"
+        if [ "$diag" -ne 0 ]; then
+          grep -nE 'ERROR: (AddressSanitizer|LeakSanitizer)|runtime error:' /tmp/asan.log | head -40
+          exit 1
+        fi
+        exit $rc

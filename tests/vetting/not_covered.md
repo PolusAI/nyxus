@@ -587,6 +587,19 @@ must break it, at which point `PERIMETER` folds back into the invariant's featur
 
 ---
 
+## H. Changes covered by something other than a test assertion
+
+Recorded here so they are a documented decision rather than an apparent oversight. Both came out
+of the #397-#400 IO stack's review rounds.
+
+| change | why no test asserts it | what does cover it |
+|---|---|---|
+| `OocBinnedVolume` takes its binner as a template parameter rather than a `std::function` (`3d_ooc_volume.h`) | behaviour-neutral by construction: the same binning function is called on the same voxels in the same order, so no observable value, count or ordering differs. A test could only assert that the call inlines, which is a property of the build, not of the code | the seven out-of-core texture families' value-parity tests, which compare out-of-core against in-RAM voxel for voxel. They pin that the change altered nothing, which is the whole claim |
+| the in-RAM 2D whole-slide pass reporting a failed scan to its caller (`featurize_wholeslide` -> `featurize_triv_wholeslide`) | the pass fails only on a tile the loader cannot read. The grid overrun that used to produce one is fixed, so reaching it now needs a fixture whose tiles are corrupt in a way that survives `open()` | nothing asserts this link directly. The links on either side of it are covered: `TEST_2D_WSI_THREAD_UNOPENABLE_SLIDE_MECHANICS` pins the one above it (a slide whose loader will not open is refused, with no row written), and `test_cli_wholeslide_exits_nonzero_when_the_slide_cannot_be_featurized_mechanics` pins everything below it, from the oversized refusal through `worst_rv` to the process exit code. The scan the link carries is covered for both its grid walk and its resampling by `TEST_3D_LAYOUTA_ANISOTROPIC_TILE_INDEX_MECHANICS` and `TEST_3D_LAYOUTA_ANISOTROPIC_RESAMPLING_MECHANICS` on the 2.5D twin of the same loop |
+| the loader-release fixes: `close()` on a refusal, before the interrupt `throw`, and per ROI in the oversized loop (`phase1.cpp`, `phase2_3d.cpp`, `phase2_25d.cpp`, `phase3_3d.cpp`) | a leak changes no value and throws nothing, so no assertion in the suite can fail on one. Only a leak checker can see it | the `AddressSanitizer` CI job (`.github/workflows/asan.yml`) runs the gtest suite with `detect_leaks=1`, so a regression fails CI. Before that job existed these were covered only by the pre-commit ASan gate on the ubtest fleet, which guards what lands but not what happens afterwards |
+
+---
+
 ## Summary
 
 | | count |
