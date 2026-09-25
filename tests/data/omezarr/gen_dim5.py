@@ -23,6 +23,7 @@ Run with a python that has zarr 3.x (e.g. the conda build env):
 import os
 import shutil
 import json
+import numcodecs
 import numpy as np
 import zarr
 from zarr.codecs import BloscCodec
@@ -312,6 +313,110 @@ def write_v3_badcodec(name):
     print("wrote %-24s (v3 with unsupported codec 'bogus_codec_xyz')" % name)
 
 
+def write_nested(name, order):
+    """A v2 store whose chunk keys are NESTED -- `dimension_separator: "/"`, so chunk (1,0,0)
+    is the file `0/1/0/0` rather than `0/1.0.0` -- and blosc-compressed. Every other v2
+    fixture here is flat-separator, yet nesting is what bioformats2raw writes by DEFAULT
+    (0.4 mandates it; only `--no-nested` turns it off, and that downgrades the declared NGFF
+    version to 0.1), so the layout of real converter output was untested. Same coordinate
+    encoding and same shape/chunking as dim3_zyx.ome.zarr, so the two must read alike: a
+    reader that assembles chunk keys itself instead of honoring the separator finds no chunk
+    and returns fill_value."""
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+    data = _data_for(order)
+    chunks = tuple(1 if a == "z" else s for a, s in zip(order, data.shape))
+
+    g = zarr.open_group(path, mode="w", zarr_format=2)
+    a = g.create_array("0", shape=data.shape, dtype=data.dtype, chunks=chunks,
+                       compressors=numcodecs.Blosc(cname="lz4", clevel=5, shuffle=1),
+                       chunk_key_encoding={"name": "v2", "configuration": {"separator": "/"}})
+    a[:] = data
+
+    g.attrs.put({"multiscales": [{"version": "0.4", "axes": [_AX[ax] for ax in order],
+        "datasets": [{"path": "0", "coordinateTransformations": [
+            {"type": "scale", "scale": [1.0] * len(order)}]}]}]})
+    meta = json.load(open(os.path.join(path, "0", ".zarray")))
+    print("wrote %-24s (v2 NESTED sep='%s', compressor=%s)"
+          % (name, meta.get("dimension_separator"), meta["compressor"]["id"]))
+
+
+def write_bigendian(name, order):
+    """A v2 store holding BIG-ENDIAN samples (`dtype: ">u2"`). Every other fixture is
+    little-endian, but bioformats2raw through 0.9.x writes big-endian and has no switch to
+    change it, so this is the shape of every 16-bit store that converter produced.
+
+    z5's `types::Datatypes::zarrToDtype()` maps only the '<' and '|' spellings, so the array
+    cannot be opened at all -- the store exists to prove the refusal is *diagnostic*: the
+    error must name big-endian and the remedy, not just echo z5's "Unsupported zarr dtype".
+
+    Written little-endian and uncompressed, then byte-swapped in place and the dtype patched,
+    so the payload stays genuinely big-endian rather than merely mislabelled."""
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+    data = _data_for(order)
+    chunks = tuple(1 if a == "z" else s for a, s in zip(order, data.shape))
+
+    g = zarr.open_group(path, mode="w", zarr_format=2)
+    a = g.create_array("0", shape=data.shape, dtype=data.dtype, chunks=chunks, compressors=None)
+    a[:] = data
+    g.attrs.put({"multiscales": [{"version": "0.4", "axes": [_AX[ax] for ax in order],
+        "datasets": [{"path": "0", "coordinateTransformations": [
+            {"type": "scale", "scale": [1.0] * len(order)}]}]}]})
+
+    arr_dir = os.path.join(path, "0")
+    for fn in sorted(os.listdir(arr_dir)):
+        if fn.startswith("."):
+            continue
+        fp = os.path.join(arr_dir, fn)
+        with open(fp, "rb") as fh:
+            raw = fh.read()
+        with open(fp, "wb") as fh:
+            fh.write(np.frombuffer(raw, dtype="<u2").astype(">u2").tobytes())
+    meta_path = os.path.join(arr_dir, ".zarray")
+    meta = json.load(open(meta_path))
+    meta["dtype"] = ">u2"
+    # newline="\n": the repo is LF-only (.gitattributes), and a text-mode write on Windows
+    # translates "\n" to "\r\n", which an indented dump would then commit into the fixture.
+    with open(meta_path, "w", newline="\n") as fh:
+        json.dump(meta, fh, indent=4)
+    print("wrote %-24s (BIG-ENDIAN '>u2', payload byte-swapped)" % name)
+
+
+def write_b2r_layout(name, zarr_format):
+    """A store in `bioformats2raw` layout: the ROOT is not an image group. It carries only
+    {"bioformats2raw.layout": 3} (nested under "ome" in NGFF 0.5) and the image sits in the
+    child group named by its series index -- here `0`, itself a normal multiscales group whose
+    array is `0/0`.
+
+    This is what bioformats2raw writes by default, so it is the most likely first thing anyone
+    points Nyxus at. The data is perfectly good; only the path is one level too high. The
+    fixture exists to prove the refusal says so, rather than reporting a missing multiscales
+    key that reads as a damaged file. Pointing the loader at `<store>/0` is the positive
+    counterpart and must succeed."""
+    path = os.path.join(HERE, name)
+    shutil.rmtree(path, ignore_errors=True)
+    data = _data_for("zyx")
+    chunks = (1, data.shape[1], data.shape[2])
+
+    root = zarr.open_group(path, mode="w", zarr_format=zarr_format)
+    series = root.create_group("0")
+    a = series.create_array("0", shape=data.shape, dtype=data.dtype, chunks=chunks, compressors=None)
+    a[:] = data
+
+    ms = [{"axes": [_AX[ax] for ax in "zyx"],
+           "datasets": [{"path": "0", "coordinateTransformations": [
+               {"type": "scale", "scale": [1.0, 1.0, 1.0]}]}]}]
+    if zarr_format == 2:
+        ms[0]["version"] = "0.4"
+        series.attrs.put({"multiscales": ms})
+        root.attrs.put({"bioformats2raw.layout": 3})
+    else:
+        series.attrs["ome"] = {"version": "0.5", "multiscales": ms}
+        root.attrs["ome"] = {"version": "0.5", "bioformats2raw.layout": 3}
+    print("wrote %-24s (bioformats2raw layout, zarr v%d: image at <store>/0)" % (name, zarr_format))
+
+
 def write_bad(name, shape, axes):
     """Write a deliberately malformed store (its 'axes' disagrees with the array)
     so the loader must reject it cleanly, not crash."""
@@ -369,7 +474,15 @@ def main():
     # 2 tall and the last col-chunk is 3 wide. Exercises the validH/validW seam clamp in the
     # volumetric assembly, which every exact-multiple fixture (above) leaves untested.
     write_multichunk("dim5_oddchunk.ome.zarr", "tczyx", 4, 5)
+    # nested v2 chunk keys ('/' separator) + blosc -- the layout bioformats2raw writes by
+    # default, and the one v2 trait no other fixture here has. Must read like dim3_zyx.
+    write_nested("dim3_nested.ome.zarr", "zyx")
     # --- illegal / adversarial: must be rejected cleanly, not crash ---
+    # big-endian samples: unopenable through z5, and the refusal must name the cause
+    write_bigendian("bigendian.ome.zarr", "zyx")
+    # bioformats2raw layout: good data, but the root is one level above the image group
+    write_b2r_layout("b2r_layout.ome.zarr", 2)
+    write_b2r_layout("b2r_layout_v3.ome.zarr", 3)
     # 3D array but 'axes' declares 5 entries -> indexing the shape by axis role OOBs
     write_bad("bad_axes_count.ome.zarr", (Z, Y, X), [_AX[k] for k in ("t", "c", "z", "y", "x")])
     # axes present but none labeled x/y -> X/Y unresolvable
