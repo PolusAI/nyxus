@@ -200,10 +200,23 @@ namespace Nyxus
 		return L;
 	}
 
+	/// @brief The group attributes carrying the NGFF model: 0.5 nests them under "ome", 0.4
+	/// puts them at the group root. Keys outside the model (bioformats2raw.layout) appear in
+	/// whichever of the two a given writer uses, so both have to be consulted.
+	inline const nlohmann::json& ome_zarr_model_attributes (const nlohmann::json& groupAttrs)
+	{
+		auto it = groupAttrs.find ("ome");
+		if (it != groupAttrs.end() && it->is_object())
+			return *it;
+		return groupAttrs;
+	}
+
 	/// @brief Open the level-0 (full-resolution) array of the OME-Zarr group 'file' and resolve
 	/// its layout into 'layout'. z5 detects Zarr v2 (.zarray) or v3 (zarr.json) and reports
 	/// shape, chunking and dtype through the same Dataset interface for both. Throws when the
-	/// group declares no multiscales dataset to open.
+	/// group declares no multiscales dataset to open, and when the array it names cannot be
+	/// opened -- in both cases naming the path, since a failure here is nearly always a store
+	/// whose root is one level above the image rather than a damaged file.
 	inline std::unique_ptr<z5::Dataset> open_zarr_level0 (const z5::filesystem::handle::File& file, ZarrLayout& layout)
 	{
 		nlohmann::json file_attributes;
@@ -211,8 +224,40 @@ namespace Nyxus
 
 		const nlohmann::json* multiscale = ome_zarr_multiscale (file_attributes);
 		if (multiscale == nullptr)
-			throw std::runtime_error ("OME-Zarr: the group declares no multiscales");
-		std::unique_ptr<z5::Dataset> ds = z5::openDataset (file, ome_zarr_level_path (*multiscale, 0));
+		{
+			// A bioformats2raw store's root is not an image group: it carries only
+			// {"bioformats2raw.layout": <n>} and each image sits in a child group named by its
+			// series index. That is the shape bioformats2raw writes by default, so it is the
+			// most likely first thing anyone hands Nyxus; "declares no multiscales" alone
+			// reads as a damaged file when the path is simply one level too high.
+			if (ome_zarr_model_attributes (file_attributes).contains ("bioformats2raw.layout"))
+				throw std::runtime_error ("OME-Zarr: '" + file.path().string() + "' is a bioformats2raw "
+					"store rather than an image group -- its images are the numbered child groups. "
+					"Use the series group, e.g. a copy of '" + (file.path() / "0").string() +
+					"' under a name ending in .zarr");
+			throw std::runtime_error ("OME-Zarr: '" + file.path().string() + "' declares no multiscales");
+		}
+
+		const std::string levelPath = ome_zarr_level_path (*multiscale, 0);
+		std::unique_ptr<z5::Dataset> ds;
+		try
+		{
+			ds = z5::openDataset (file, levelPath);
+		}
+		catch (const std::exception& e)
+		{
+			// z5 maps only the little-endian ('<') and single-byte ('|') dtype spellings, so a
+			// big-endian array fails here on its dtype code alone. Worth naming, because
+			// bioformats2raw through 0.9.x writes big-endian and has no switch to change it:
+			// every 16-bit store that converter produced lands on this path.
+			const std::string what = e.what();
+			const std::string hint = what.find ("dtype: >") != std::string::npos
+				? " -- big-endian arrays are unsupported; re-convert with bioformats2raw 0.12 or later,"
+				  " which writes little-endian"
+				: "";
+			throw std::runtime_error ("OME-Zarr: cannot open level-0 array '" + levelPath + "' of '"
+				+ file.path().string() + "': " + what + hint);
+		}
 
 		std::vector<std::size_t> level0Shape (ds->shape().begin(), ds->shape().end()),
 			chunkShape (ds->defaultChunkShape().begin(), ds->defaultChunkShape().end());
