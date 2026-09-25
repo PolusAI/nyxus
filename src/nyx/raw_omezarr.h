@@ -5,22 +5,14 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <vector>
+#include <stdexcept>
 #include "grey_level_cast.h"
-#include "nlohmann/json.hpp"
+#include "ome/ome_zarr_layout.h"   // open_zarr_level0() / ZarrLayout -- shared with omezarr.h
 
-// factory functions to create files, groups and datasets
-#include "z5/factory.hxx"
-// dataset type (cached handle member)
-#include "z5/dataset.hxx"
-// handles for z5 filesystem objects
-#include "z5/filesystem/handle.hxx"
 // z5 multiarray API (ArrayView-based, no xtensor)
 #include "z5/multiarray/array_view.hxx"
 #include "z5/multiarray/array_access.hxx"
-// z5 types
-#include "z5/types/types.hxx"
-// attribute functionality
-#include "z5/attributes.hxx"
 
 #include "raw_format.h"
 
@@ -30,48 +22,17 @@ public:
 
     RawOmezarrLoader (std::string const& filePath): RawFormatLoader("RawOmezarrLoader", filePath)
     {
-        // Open the file
+        // Open the level-0 array once and cache the handle: its metadata is immutable for the
+        // lifetime of this loader. Axis roles, extents, chunking and pixel type come from the
+        // NGFF 'axes' metadata (shared with NyxusOmeZarrLoader -- see ome/ome_zarr_layout.h).
         zarr_ptr_ = std::make_unique<z5::filesystem::handle::File>(filePath.c_str());
-        nlohmann::json file_attributes, ds_attributes;
-        z5::readAttributes(*zarr_ptr_, file_attributes);
+        ds_ = Nyxus::open_zarr_level0 (*zarr_ptr_, layout_);
+        fp_pixels_ = layout_.fp_pixels;
 
-        // assume only one dataset is present
-        ds_name_ = file_attributes["multiscales"][0]["datasets"][0]["path"].get<std::string>();
-        const auto ds_handle = z5::filesystem::handle::Dataset(*zarr_ptr_, ds_name_);
-        fs::path metadata_path;
-        auto success = z5::filesystem::metadata_detail::getMetadataPath(ds_handle, metadata_path);
-        z5::filesystem::metadata_detail::readMetadata(metadata_path, ds_attributes);
-
-        full_depth_ = ds_attributes["shape"][2].get<size_t>();
-        full_height_ = ds_attributes["shape"][3].get<size_t>();
-        full_width_ = ds_attributes["shape"][4].get<size_t>();
-        tile_depth_ = ds_attributes["chunks"][2].get<size_t>();
-        tile_height_ = ds_attributes["chunks"][3].get<size_t>();
-        tile_width_ = ds_attributes["chunks"][4].get<size_t>();
-        std::string dtype_str = ds_attributes["dtype"].get<std::string>();
-        if (dtype_str == "<u1") { data_format_ = 1; } //uint8_t
-        else if (dtype_str == "<u2") { data_format_ = 2; } //uint16_t
-        else if (dtype_str == "<u4") { data_format_ = 3; } //uint32_t
-        else if (dtype_str == "<u8") { data_format_ = 4; } //uint16_t
-        else if (dtype_str == "<i1") { data_format_ = 5; } //int8_t
-        else if (dtype_str == "<i2") { data_format_ = 6; } //int16_t
-        else if (dtype_str == "<i4") { data_format_ = 7; } //int32_t
-        else if (dtype_str == "<i8") { data_format_ = 8; } //int64_t
-        else if (dtype_str == "<f2") { data_format_ = 9; fp_pixels_ = true; } //float
-        else if (dtype_str == "<f4") { data_format_ = 9; fp_pixels_ = true; } //float
-        else if (dtype_str == "<f8") { data_format_ = 10; fp_pixels_ = true; } //double
-        else { data_format_ = 2; } //uint16_t
-
-        // Allocate the buffer. It holds the sample as the file states it: a uint32_t destination
-        // wrapped every negative sample of a signed dataset and truncated every fractional sample
-        // of a real-valued one, so the prescan measured the slide's extrema on converted values and
-        // no offset derived from them could undo the conversion.
-        dest = std::vector<double> (tile_height_ * tile_width_);
-
-        // Open the dataset once and cache the handle. The dataset metadata is
-        // immutable for the lifetime of this loader, so there is no need to
-        // re-open (and re-parse the .zarray metadata) on every tile read.
-        ds_ = z5::openDataset(*zarr_ptr_, ds_name_);
+        // The buffer holds the sample as the file states it, widened to double, so the prescan
+        // measures a signed or real-valued dataset's extrema on the values the file holds. It
+        // spans a whole chunk, tileDepth() planes deep.
+        dest = std::vector<double> (layout_.tile_height * layout_.tile_width * layout_.tile_depth);
     }
 
     ~RawOmezarrLoader() override
@@ -84,48 +45,15 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
+        size_t indexChannel,        // C plane to read (offset into the channel axis)
+        size_t indexTimeframe,      // T plane to read (offset into the time axis)
         [[maybe_unused]] size_t level) override
     {
-        size_t pixel_row_index = indexRowGlobalTile * tile_height_;
-        size_t pixel_col_index = indexColGlobalTile * tile_width_;
-        size_t pixel_layer_index = indexLayerGlobalTile * tile_depth_;
-
-        switch (data_format_)
-        {
-        case 1:
-            loadTile<uint8_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        case 2:
-            loadTile<uint16_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        case 3:
-            loadTile<uint32_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        case 4:
-            loadTile<uint64_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        case 5:
-            loadTile<int8_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        case 6:
-            loadTile<int16_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        case 7:
-            loadTile<int32_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        case 8:
-            loadTile<int64_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        case 9:
-            loadTile<float>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        case 10:
-            loadTile<double>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        default:
-            loadTile<uint16_t>(pixel_row_index, pixel_col_index, pixel_layer_index);
-            break;
-        }
+        const Nyxus::ZarrBlock b = layout_.block_at (indexRowGlobalTile, indexColGlobalTile, indexLayerGlobalTile, indexChannel, indexTimeframe);
+        Nyxus::with_zarr_sample_type (layout_.dtype, [&] (auto sample)
+            {
+                loadTile<decltype(sample)> (b);
+            });
     }
 
     void free_tile() override
@@ -150,86 +78,69 @@ public:
     }
 
     template<typename FileType>
-    void loadTile(size_t pixel_row_index, size_t pixel_col_index, size_t pixel_layer_index)
+    void loadTile (const Nyxus::ZarrBlock& b)
     {
-        size_t data_height = tile_height_, data_width = tile_width_;
-        if (pixel_row_index + data_height > full_height_) {
-            data_height = full_height_ - pixel_row_index;
-        }
-        if (pixel_col_index + data_width > full_width_) {
-            data_width = full_width_ - pixel_col_index;
-        }
+        std::vector<FileType> buffer (b.depth * b.height * b.width);
+        auto view = z5::multiarray::makeView (buffer.data(), b.shape);
+        z5::multiarray::readSubarray<FileType> (*ds_, view, b.offset.begin());
 
-        // Create a buffer to hold the read data
-        std::vector<FileType> buffer(data_height * data_width);
-        
-        // Create an ArrayView into the buffer (z5 3.0.1 uses ArrayView instead of xtensor)
-        z5::types::ShapeType shape = {1, 1, 1, data_height, data_width};
-        auto view = z5::multiarray::makeView(buffer.data(), shape);
-        z5::types::ShapeType offset = {0, 0, pixel_layer_index, pixel_row_index, pixel_col_index};
-        
-        // Read subarray from the cached z5 dataset
-        z5::multiarray::readSubarray<FileType>(*ds_, view, offset.begin());
-        
         // zero-fill the buffer foreseeing its partial filling at incomplete (tail) tiles
-        std::fill(dest.begin(), dest.end(), 0);
-        
-        // Copy from buffer to destination tile, handling partial tiles. The sample is widened to
-        // double rather than narrowed to an unsigned grey level, so a negative or fractional
-        // dataset reaches the prescan as it is written.
-        for (size_t k = 0; k < data_height; ++k) {
-            for (size_t j = 0; j < data_width; ++j) {
-                dest[k * tile_width_ + j] = static_cast<double>(buffer[k * data_width + j]);
-            }
-        }
+        std::fill (dest.begin(), dest.end(), 0);
+
+        // dest is plane-major: plane p, row k at (p*tile_height + k)*tile_width. The sample is
+        // widened to double rather than narrowed to an unsigned grey level, so a negative or
+        // fractional dataset reaches the prescan as it is written.
+        const size_t th = layout_.tile_height, tw = layout_.tile_width;
+        for (size_t p = 0; p < b.depth; ++p)
+            for (size_t k = 0; k < b.height; ++k)
+                for (size_t j = 0; j < b.width; ++j)
+                    dest[(p * th + k) * tw + j] = static_cast<double> (buffer[(p * b.height + k) * b.width + j]);
     }
 
     /// @brief Tiff file height
     /// @param level Tiff level [not used]
     /// @return Full height
-    [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return full_height_; }
+    [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return layout_.full_height; }
     /// @brief Tiff full width
     /// @param level Tiff level [not used]
     /// @return Full width
-    [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return full_width_; }
+    [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return layout_.full_width; }
     /// @brief Tiff full depth
     /// @param level Tiff level [not used]
     /// @return Full Depth
-    [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return full_depth_; }
+    [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return layout_.full_depth; }
 
     /// @brief Tiff tile width
     /// @param level Tiff level [not used]
     /// @return Tile width
-    [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return tile_width_; }
+    [[nodiscard]] size_t tileWidth([[maybe_unused]] size_t level) const override { return layout_.tile_width; }
     /// @brief Tiff tile height
     /// @param level Tiff level [not used]
     /// @return Tile height
-    [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return tile_height_; }
+    [[nodiscard]] size_t tileHeight([[maybe_unused]] size_t level) const override { return layout_.tile_height; }
     /// @brief Tiff tile depth
     /// @param level Tiff level [not used]
     /// @return Tile depth
-    [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return tile_depth_; }
+    [[nodiscard]] size_t tileDepth([[maybe_unused]] size_t level) const override { return layout_.tile_depth; }
 
-    /// @brief Tiff bits per sample
-    /// @return Size of a sample in bits
-    [[nodiscard]] short bitsPerSample() const override { return 1; }
-    /// @brief Level accessor
-    /// @return 1
-    [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
+    /// @brief Bits per sample (resolved from the dataset dtype)
+    [[nodiscard]] short bitsPerSample() const override { return layout_.bits_per_sample; }
+    /// @brief Number of resolution (pyramid) levels declared in multiscales
+    [[nodiscard]] size_t numberPyramidLevels() const override { return layout_.n_levels; }
+    /// @brief Channel (C) extent resolved from the NGFF axes (1 if no channel axis)
+    [[nodiscard]] size_t numberChannels() const override { return layout_.n_channels; }
+    /// @brief Time (T) extent resolved from the NGFF axes (1 if no time axis)
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return layout_.n_timeframes; }
+    /// @brief Physical voxel spacing from the NGFF coordinateTransformations (1.0 if uncalibrated)
+    [[nodiscard]] double physicalSizeX() const override { return layout_.phys_x; }
+    [[nodiscard]] double physicalSizeY() const override { return layout_.phys_y; }
+    [[nodiscard]] double physicalSizeZ() const override { return layout_.phys_z; }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return layout_.phys_unit; }
 
 private:
 
-    size_t
-        full_height_ = 0,          ///< Full height in pixel
-        full_width_ = 0,           ///< Full width in pixel
-        full_depth_ = 0,           ///< Full depth in pixel
-        tile_width_ = 0,           ///< Tile width
-        tile_height_ = 0,          ///< Tile height
-        tile_depth_ = 0;           ///< Tile depth
-
-    short data_format_ = 0;
+    Nyxus::ZarrLayout layout_;          ///< Axis roles, extents, chunking, pixel type and spacing of the level-0 array
     std::unique_ptr<z5::filesystem::handle::File> zarr_ptr_;
-    std::string ds_name_;
     std::unique_ptr<z5::Dataset> ds_;   ///< Cached dataset handle (opened once)
 
     std::vector<double> dest;

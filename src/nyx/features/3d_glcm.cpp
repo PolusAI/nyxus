@@ -179,7 +179,14 @@ void D3_GLCM_feature::save_value(std::vector<std::vector<double>>& fvals)
 void D3_GLCM_feature::extract_texture_features_at_angle(int dx, int dy, int dz, const SimpleCube<PixIntens>& binned_greys, PixIntens min_val, PixIntens max_val, int n_greys, bool ibsi, double soft_nan)
 {
 	calculateCoocMatAtAngle (P_matrix, dx, dy, dz, binned_greys, min_val, max_val, n_greys, ibsi);
+	finalize_angle (soft_nan);
+}
 
+// Computes this angle's GLCM feature values from the already-built P_matrix + sum_p + I. Split out
+// of extract_texture_features_at_angle so the out-of-core path (which builds P_matrix by streaming a
+// 2-plane window instead of scanning the in-RAM cube) reuses the exact same feature math.
+void D3_GLCM_feature::finalize_angle (double soft_nan)
+{
 	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 	if (sum_p == 0)
 	{

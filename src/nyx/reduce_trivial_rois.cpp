@@ -660,7 +660,7 @@ namespace Nyxus
 		if (D3_VoxelIntensityFeatures::required(env.theFeatureSet))
 		{
 			Fsettings& s = env.fsett_D3_VoxelIntensity;
-			D3_VoxelIntensityFeatures::extract (r, s);
+			D3_VoxelIntensityFeatures::extract (r, s, env.dataset);	// the Dataset carries the slide range this feature reads (see 3d_intensity.h)
 		}
 		//==== shape
 		if (D3_SurfaceFeature::required(env.theFeatureSet))

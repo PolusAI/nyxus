@@ -133,6 +133,8 @@ public:
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
         size_t indexLayerGlobalTile,
+        [[maybe_unused]] size_t indexChannel,     // DICOM grayscale: single channel
+        [[maybe_unused]] size_t indexTimeframe,   // DICOM: frames are WSI tiles, not time
         [[maybe_unused]] size_t level) override
     {
         tile.resize (tileWidth_ * tileHeight_);
