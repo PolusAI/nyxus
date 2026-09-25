@@ -9,6 +9,7 @@
 #include "raw_nifti.h"
 #include "raw_omezarr.h"
 #include "raw_tiff.h"
+#include "ome/format_detect.h"		// container-family classification for loader dispatch
 
 RawImageLoader::RawImageLoader() {}
 
@@ -16,9 +17,10 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 {
 	try
 	{
-		std::string ext = Nyxus::get_big_extension(int_fpath);
+		// Classify by container family so loader dispatch is identical across all loaders.
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (int_fpath);
 
-		if (ext == ".zarr")
+		if (fmt == Nyxus::ContainerKind::OmeZarr)
 		{
 #ifdef OMEZARR_SUPPORT
 			intFL = new RawOmezarrLoader (int_fpath);
@@ -26,8 +28,8 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			std::cout << "This version of Nyxus was not build with OmeZarr support." << std::endl;
 #endif
 		}
-		else 
-			if (ext == ".dcm" | ext == ".dicom") {
+		else
+			if (fmt == Nyxus::ContainerKind::Dicom) {
 #ifdef DICOM_SUPPORT
 			intFL = new RawDicomLoader (int_fpath);		// scans in the rescaled physical domain
 #else
@@ -35,7 +37,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 		}
 			else
-				if (ext == ".nii" || ext == ".nii.gz")
+				if (fmt == Nyxus::ContainerKind::Nifti)
 				{
 					intFL = new RawNiftiLoader (int_fpath);		// scans in the rescaled physical domain (matches DICOM)
 				}
@@ -82,8 +84,9 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 	// segmented slide
 
 	try {
-		std::string ext = Nyxus::get_big_extension(seg_fpath);
-		if (ext == ".zarr")
+		// The mask is classified by the same container family as the intensity.
+		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (seg_fpath);
+		if (fmt == Nyxus::ContainerKind::OmeZarr)
 		{
 #ifdef OMEZARR_SUPPORT
 			segFL = new RawOmezarrLoader (seg_fpath);
@@ -91,8 +94,8 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 			std::cout << "This version of Nyxus was not build with OmeZarr support." << std::endl;
 #endif
 		}
-		else 
-			if (ext == ".dcm" | ext == ".dicom") 
+		else
+			if (fmt == Nyxus::ContainerKind::Dicom)
 			{
 #ifdef DICOM_SUPPORT
 				segFL = new RawDicomLoader (seg_fpath);
@@ -101,7 +104,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 #endif
 			}
 			else
-				if (ext == ".nii" || ext == ".nii.gz")
+				if (fmt == Nyxus::ContainerKind::Nifti)
 				{
 					segFL = new RawNiftiLoader (seg_fpath);
 				}
@@ -183,11 +186,11 @@ bool RawImageLoader::load_tile(size_t tile_idx)
 	auto row = tile_idx / ntw;
 	auto col = tile_idx % ntw;
 
-	intFL->loadTileFromFile (row, col, lyr, lvl);
+	intFL->loadTileFromFile (row, col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
 
 	// segmentation loader is not available in wholeslide
 	if (segFL)
-		segFL->loadTileFromFile (row, col, lyr, lvl);
+		segFL->loadTileFromFile (row, col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
 
 	return true;
 }
@@ -197,12 +200,12 @@ bool RawImageLoader::load_tile(size_t tile_row, size_t tile_col)
 	if (tile_row >= nth || tile_col >= ntw)
 		return false;
 
-	intFL->loadTileFromFile (tile_row, tile_col, lyr, lvl);
-	
+	intFL->loadTileFromFile (tile_row, tile_col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
+
 	// segmentation loader is not available in wholeslide
 	if (segFL)
-		segFL->loadTileFromFile (tile_row, tile_col, lyr, lvl);
-	
+		segFL->loadTileFromFile (tile_row, tile_col, lyr, 0/*channel*/, 0/*timeframe*/, lvl);
+
 	return true;
 }
 
@@ -243,12 +246,12 @@ size_t RawImageLoader::get_within_tile_idx(size_t pixel_row, size_t pixel_col)
 
 size_t RawImageLoader::get_num_tiles_vert()
 {
-	return ntw;
+	return nth;
 }
 
 size_t RawImageLoader::get_num_tiles_hor()
 {
-	return nth;
+	return ntw;
 }
 
 size_t RawImageLoader::get_tile_height()
@@ -287,6 +290,31 @@ size_t RawImageLoader::get_mask_time()
 		return segFL->fullTimestamps(0);	// masked mode
 	else
 		return 0;	// whole-slide mode
+}
+
+size_t RawImageLoader::get_inten_channels()
+{
+	return intFL->numberChannels();		// OME loaders report the real C; others default to 1
+}
+
+double RawImageLoader::get_physical_size_x()
+{
+	return intFL->physicalSizeX();		// OME PhysicalSizeX; 1.0 if uncalibrated
+}
+
+double RawImageLoader::get_physical_size_y()
+{
+	return intFL->physicalSizeY();
+}
+
+double RawImageLoader::get_physical_size_z()
+{
+	return intFL->physicalSizeZ();
+}
+
+std::string RawImageLoader::get_physical_size_unit()
+{
+	return intFL->physicalSizeUnit();
 }
 
 std::string RawImageLoader::get_slide_descr()

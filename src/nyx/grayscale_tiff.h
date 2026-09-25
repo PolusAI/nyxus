@@ -12,9 +12,12 @@
 #else
     #include <tiffio.h>
 #endif
+#include "tiff_handle_guard.h"
 #include <cstring>
 #include <sstream>
-#include <limits.h> // for INT_MAX 
+#include <limits.h> // for INT_MAX
+#include "ome/ome_tiff_planes.h"   // OME-XML reading and (z,c,t) -> directory selection
+#include "tiff_sample.h"           // the sample type of each (SampleFormat, BitsPerSample)
 
 constexpr size_t STRIP_TILE_HEIGHT = 1024;
 constexpr size_t STRIP_TILE_WIDTH = 1024;
@@ -53,6 +56,11 @@ public:
         tiff_ = TIFFOpen(filePath.c_str(), "r");
         if (tiff_ != nullptr) 
         {
+            // A constructor that throws never runs its destructor, and every check below can
+            // throw, so the handle opened above would leak on each of those paths. The guard
+            // closes it there and is dismissed once the handle is this loader's to keep.
+            Nyxus::TiffHandleGuard tiffGuard (tiff_);
+
             if (TIFFIsTiled(tiff_) == 0) 
             { 
                 throw (std::runtime_error("Tile Loader ERROR: The file is not tiled.")); 
@@ -72,18 +80,31 @@ public:
             TIFFGetField(tiff_, TIFFTAG_SAMPLESPERPIXEL, &samplesPerPixel);
             TIFFGetField(tiff_, TIFFTAG_BITSPERSAMPLE, &(this->bitsPerSample_));
             TIFFGetField(tiff_, TIFFTAG_SAMPLEFORMAT, &(this->sampleFormat_));
+            // SAMPLEFORMAT is optional and defaults to 1 (unsigned integer); tifffile omits it
+            // for unsigned images
+            if (sampleFormat_ < 1 || sampleFormat_ > 3)
+                sampleFormat_ = 1;
 
             // Test if the file is greyscale
-            if (samplesPerPixel != 1) 
+            if (samplesPerPixel != 1)
             {
                 std::stringstream message;
                 message << "Tile Loader ERROR: The file is not greyscale: SamplesPerPixel = " << samplesPerPixel << ".";
                 throw (std::runtime_error(message.str()));
             }
+
+            // A tiled OME-TIFF stores one (z,c,t) plane per directory, like the strip variant;
+            // its depth is SizeZ, not the directory count (Z*C*T). A plain tiled TIFF's depth is
+            // its run of full-size directories, the rule every TIFF loader applies.
+            is_ome_ = Nyxus::read_ome_tiff_axes (tiff_, ome_);
+            fullDepth_ = is_ome_ ? ome_.sizeZ : Nyxus::plain_tiff_depth (tiff_);
+
+            // fully constructed: ~Loader() owns the handle from here
+            tiffGuard.dismiss();
         }
-        else 
-        { 
-            throw (std::runtime_error("Tile Loader ERROR: The file can not be opened.")); 
+        else
+        {
+            throw (std::runtime_error("Tile Loader ERROR: The file can not be opened."));
         }
     }
 
@@ -106,10 +127,15 @@ public:
     void loadTileFromFile(std::shared_ptr<std::vector<DataType>> tile,
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
-        size_t indexLayerGlobalTile,
+        size_t indexLayerGlobalTile,          // Z plane
+        size_t indexChannel,                  // C plane (OME); 0 for plain TIFF
+        size_t indexTimeframe,                // T plane (OME); 0 for plain TIFF
         size_t level) override
     {
         std::string err;
+
+        Nyxus::select_tiff_plane (tiff_, is_ome_ ? &ome_ : nullptr, fullDepth_,
+            indexLayerGlobalTile, indexChannel, indexTimeframe, "NyxusGrayscaleTiffTileLoader");
 
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
         std::vector<DataType>& tileDataVec = *tile;
@@ -136,69 +162,23 @@ public:
             throw (err);
         }
 
-        switch (sampleFormat_) 
+        // copy at the file's own sample type; the tile buffer is released on every path
+        try
         {
-        case 1:
-            switch (bitsPerSample_) 
+            Nyxus::with_tiff_sample_type (sampleFormat_, bitsPerSample_, "NyxusGrayscaleTiffTileLoader", [&] (auto sample)
             {
-            case 8:
-                loadTile <uint8_t> (tiffTile, tileDataVec);
-                break;
-            case 16:
-                loadTile <uint16_t> (tiffTile, tileDataVec);    
-                break;
-            case 32:
-                loadTile <uint32_t> (tiffTile, tileDataVec);
-                break;
-            case 64:
-                loadTile <uint64_t> (tiffTile, tileDataVec);
-                break;
-            default:
-                err = "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = " + std::to_string(bitsPerSample_);
-                throw (err);
-            }
-            break;
-        case 2:
-            switch (bitsPerSample_) 
-            {
-            case 8:
-                loadTile<int8_t>(tiffTile, tileDataVec);
-                break;
-            case 16:
-                loadTile<int16_t>(tiffTile, tileDataVec);
-                break;
-            case 32:
-                loadTile<int32_t>(tiffTile, tileDataVec);
-                break;
-            case 64:
-                loadTile<int64_t>(tiffTile, tileDataVec);
-                break;
-            default:
-                err = "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = " + std::to_string(bitsPerSample_);
-                throw (err);
-            }
-            break;
-        case 3:
-            switch (bitsPerSample_) 
-            {
-            case 8:
-            case 16:
-            case 32:
-                loadTile_real_intens <float> (tiffTile, tileDataVec);
-                break;
-            case 64:
-                loadTile_real_intens <double> (tiffTile, tileDataVec);
-                break;
-            default:
-                err = "Tile Loader ERROR: The data format is not supported for float, number bits per pixel = " + std::to_string(bitsPerSample_);
-                throw (err);
-            }
-            break;
-        default:
-            err = "Tile Loader ERROR: The data format is not supported, sample format = " + std::to_string(sampleFormat_);
-            throw (std::runtime_error(err));
+                using T = decltype(sample);
+                if constexpr (Nyxus::tiff_sample_is_real<T>)
+                    loadTile_real_intens <T> (tiffTile, tileDataVec);
+                else
+                    loadTile <T> (tiffTile, tileDataVec);
+            });
         }
-
+        catch (...)
+        {
+            _TIFFfree(tiffTile);
+            throw;
+        }
         _TIFFfree(tiffTile);
     }
 
@@ -225,6 +205,16 @@ public:
     /// @brief Level accessor
     /// @return 1
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
+
+    // Z depth, C/T extents and physical voxel spacing from the parsed OME-XML (1, 1, 1 and 1.0
+    // for a plain tiled TIFF)
+    [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return fullDepth_; }
+    [[nodiscard]] size_t numberChannels() const override { return is_ome_ ? ome_.sizeC : 1; }
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return is_ome_ ? ome_.sizeT : 1; }
+    [[nodiscard]] double physicalSizeX() const override { return is_ome_ ? ome_.physX : 1.0; }
+    [[nodiscard]] double physicalSizeY() const override { return is_ome_ ? ome_.physY : 1.0; }
+    [[nodiscard]] double physicalSizeZ() const override { return is_ome_ ? ome_.physZ : 1.0; }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return is_ome_ ? ome_.unitXY : std::string(); }
 
 private:
 
@@ -276,9 +266,9 @@ private:
                         physOffs = r * tileWidth_ + c;
                     // Integer pixels go through the offset map, whose offset is 0 for a slide
                     // whose own minimum is non-negative (so an ordinary image is copied
-                    // unchanged) and the floored minimum otherwise. That is what keeps int16 CT
-                    // from wrapping (-1024 -> ~4.29e9), which used to blow up the
-                    // max-intensity-driven grey-bin/histogram allocation (#373).
+                    // unchanged) and the floored minimum otherwise. That keeps an int16 CT from
+                    // wrapping (-1024 -> ~4.29e9), a maximum the grey-bin and histogram
+                    // allocations would then be sized from (#373).
                     FileType v = *(((FileType*)src) + physOffs);
                     *(dest + logOffs) = offset_map ((double)v);
                 }
@@ -345,8 +335,12 @@ private:
     size_t
         fullHeight_ = 0,           ///< Full height in pixel
         fullWidth_ = 0,            ///< Full width in pixel
+        fullDepth_ = 1,            ///< Full depth (Z) in planes; >1 for multi-plane OME-TIFF
         tileHeight_ = 0,            ///< Tile height
         tileWidth_ = 0;             ///< Tile width
+
+    bool is_ome_ = false;          ///< true when IFD-0 carries an OME-XML block
+    Nyxus::OmeAxes ome_;           ///< parsed OME dimensions (drives the (z,c,t)->IFD map)
 
     short
         sampleFormat_ = 0,          ///< Sample format as defined by libtiff
@@ -427,6 +421,11 @@ public:
         tiff_ = TIFFOpen(filePath.c_str(), "r");
         if (tiff_ != nullptr) 
         {
+            // A constructor that throws never runs its destructor, and every check below can
+            // throw, so the handle opened above would leak on each of those paths. The guard
+            // closes it there and is dismissed once the handle is this loader's to keep.
+            Nyxus::TiffHandleGuard tiffGuard (tiff_);
+
             // Load/parse header
             TIFFGetField(tiff_, TIFFTAG_IMAGEWIDTH, &(this->fullWidth_));
             TIFFGetField(tiff_, TIFFTAG_IMAGELENGTH, &(this->fullHeight_));
@@ -434,7 +433,11 @@ public:
             TIFFGetField(tiff_, TIFFTAG_BITSPERSAMPLE, &(this->bitsPerSample_));
             TIFFGetField(tiff_, TIFFTAG_SAMPLEFORMAT, &(this->sampleFormat_));
 
-            fullDepth_ = TIFFNumberOfDirectories(tiff_);
+            // OME-TIFF: the directories are a (z,c,t) rasterization, not a plain Z-stack, so
+            // the depth is SizeZ rather than the directory count. A plain TIFF's depth is its
+            // run of full-size directories, the rule every TIFF loader applies.
+            is_ome_ = Nyxus::read_ome_tiff_axes (tiff_, ome_);
+            fullDepth_ = is_ome_ ? ome_.sizeZ : Nyxus::plain_tiff_depth (tiff_);
 
             tileWidth_ = std::min(fullWidth_, STRIP_TILE_WIDTH);
             tileHeight_ = std::min(fullHeight_, STRIP_TILE_HEIGHT);
@@ -453,6 +456,9 @@ public:
             {
                 sampleFormat_ = 1;
             }
+
+            // fully constructed: ~Loader() owns the handle from here
+            tiffGuard.dismiss();
         }
         else 
         { 
@@ -479,14 +485,21 @@ public:
     void loadTileFromFile(std::shared_ptr<std::vector<DataType>> tile,
         size_t indexRowGlobalTile,
         size_t indexColGlobalTile,
-        size_t indexLayerGlobalTile,
-        [[maybe_unused]] size_t level) override 
+        size_t indexLayerGlobalTile,   // Z (plane page for non-OME multi-page TIFF)
+        size_t indexChannel,           // C plane (OME-TIFF only)
+        size_t indexTimeframe,         // T plane (OME-TIFF only)
+        [[maybe_unused]] size_t level) override
     {
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
         std::vector<DataType>& tileDataVec = *tile;
 
         tdata_t buf;
         uint32_t row, layer;
+
+        // The plane is checked before anything is read: an out-of-range Z would otherwise skip
+        // the layer loop below and leave the tile as it was
+        Nyxus::select_tiff_plane (tiff_, is_ome_ ? &ome_ : nullptr, fullDepth_,
+            indexLayerGlobalTile, indexChannel, indexTimeframe, "NyxusGrayscaleTiffStripLoader");
 
         buf = _TIFFmalloc(TIFFScanlineSize(tiff_));
 
@@ -498,70 +511,37 @@ public:
             startCol = indexColGlobalTile * tileWidth_,
             endCol = std::min((indexColGlobalTile + 1) * tileWidth_, fullWidth_);
 
-        for (layer = startLayer; layer < endLayer; ++layer) 
+        for (layer = startLayer; layer < endLayer; ++layer)
         {
-            TIFFSetDirectory(tiff_, layer);
-            for (row = startRow; row < endRow; row++) 
+            // OME-TIFF: the plane's directory per DimensionOrder; plain multi-page TIFF: directory = Z
+            if (layer != startLayer)
+            {
+                try
+                {
+                    Nyxus::select_tiff_plane (tiff_, is_ome_ ? &ome_ : nullptr, fullDepth_,
+                        layer, indexChannel, indexTimeframe, "NyxusGrayscaleTiffStripLoader");
+                }
+                catch (...)
+                {
+                    _TIFFfree(buf);
+                    throw;
+                }
+            }
+            for (row = startRow; row < endRow; row++)
             {
                 TIFFReadScanline(tiff_, buf, row);
-                std::stringstream message;
-                switch (sampleFormat_) 
+                // copy at the file's own sample type; the scanline buffer is released on every path
+                try
                 {
-                case 1:
-                    switch (bitsPerSample_) 
+                    Nyxus::with_tiff_sample_type (sampleFormat_, bitsPerSample_, "NyxusGrayscaleTiffStripLoader", [&] (auto sample)
                     {
-                    case 8:copyRow<uint8_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                        break;
-                    case 16:copyRow<uint16_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                        break;
-                    case 32:copyRow<uint32_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol); // FIX: was copyRow<size_t> (8 bytes on Win64) for a 4-byte sample -> reads 2x past the scanline buffer (AV / heap corruption) and yields wrong pixels; uint32_t matches the 32-bit sample (cf. signed int32_t below, tile-loader uint32_t, raw_tiff.h uint32_t)
-                        break;
-                    case 64:copyRow<uint64_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                        break;
-                    default:
-                        message
-                            << "Tile Loader ERROR: The data format is not supported for unsigned integer, number bits per pixel = "
-                            << bitsPerSample_;
-                        throw (std::runtime_error(message.str()));
-                    }
-                    break;
-                case 2:
-                    switch (bitsPerSample_) 
-                    {
-                    case 8:copyRow<int8_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                        break;
-                    case 16:copyRow<int16_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                        break;
-                    case 32:copyRow<int32_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                        break;
-                    case 64:copyRow<int64_t>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                        break;
-                    default:
-                        message
-                            << "Tile Loader ERROR: The data format is not supported for signed integer, number bits per pixel = "
-                            << bitsPerSample_;
-                        throw (std::runtime_error(message.str()));
-                    }
-                    break;
-                case 3:
-                    switch (bitsPerSample_) 
-                    {
-                    case 8:
-                    case 16:
-                    case 32:copyRow<float>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                        break;
-                    case 64:copyRow<double>(buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                        break;
-                    default:
-                        message
-                            << "Tile Loader ERROR: The data format is not supported for float, number bits per pixel = "
-                            << bitsPerSample_;
-                        throw (std::runtime_error(message.str()));
-                    }
-                    break;
-                default:
-                    message << "Tile Loader ERROR: The data format is not supported, sample format = " << sampleFormat_;
-                    throw (std::runtime_error(message.str()));
+                        copyRow <decltype(sample)> (buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
+                    });
+                }
+                catch (...)
+                {
+                    _TIFFfree(buf);
+                    throw;
                 }
             }
         }
@@ -581,6 +561,16 @@ public:
     /// @param level Tiff level [not used]
     /// @return Full Depth
     [[nodiscard]] size_t fullDepth([[maybe_unused]] size_t level) const override { return fullDepth_; }
+
+    /// @brief Channel (C) extent from OME-XML (1 for plain TIFF)
+    [[nodiscard]] size_t numberChannels() const override { return is_ome_ ? ome_.sizeC : 1; }
+    /// @brief Time (T) extent from OME-XML (1 for plain TIFF)
+    [[nodiscard]] size_t fullTimestamps([[maybe_unused]] size_t level) const override { return is_ome_ ? ome_.sizeT : 1; }
+    /// @brief Physical voxel spacing from OME-XML PhysicalSize* (1.0 for plain TIFF)
+    [[nodiscard]] double physicalSizeX() const override { return is_ome_ ? ome_.physX : 1.0; }
+    [[nodiscard]] double physicalSizeY() const override { return is_ome_ ? ome_.physY : 1.0; }
+    [[nodiscard]] double physicalSizeZ() const override { return is_ome_ ? ome_.physZ : 1.0; }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return is_ome_ ? ome_.unitXY : std::string(); }
 
     /// @brief Tiff tile width
     /// @param level Tiff level [not used]
@@ -715,4 +705,8 @@ private:
         t = t > inten_max_ ? inten_max_ : t;
         return Nyxus::grey_level_truncated<DataType> (target_dyn_range_ * (t - inten_offset_) / (inten_max_ - inten_offset_));
     }
+
+    bool is_ome_ = false;         ///< true when IFD-0 carries an OME-XML block
+    Nyxus::OmeAxes ome_;          ///< parsed OME dimensions (drives the plane->IFD map)
+
 };

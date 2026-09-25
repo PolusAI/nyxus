@@ -75,7 +75,7 @@ static std::vector<uint32_t> hu_load_tile0(const char* fixture, bool quantize,
 
     size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
-    EXPECT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    EXPECT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
     return *tile;
 }
 
@@ -126,7 +126,7 @@ static std::vector<uint32_t> hu_load_dicom_tile0(const char* fixture, double int
     NyxusGrayscaleDicomLoader<uint32_t> ldr(1, ds.string(), inten_offset, rescale, round_offset);
     size_t th = ldr.tileHeight(0), tw = ldr.tileWidth(0);
     auto tile = std::make_shared<std::vector<uint32_t>>(th * tw, 0u);
-    EXPECT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0));
+    EXPECT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, 0, 0/*channel*/, 0/*timeframe*/, 0));
     return *tile;
 }
 
@@ -227,7 +227,7 @@ void test_2d_hu_dicom_fractional_slope_load_path_mechanics()
         p.preserve_hu = preserve_hu;
         AnisotropyOptions aniso;
         FpImageOptions fpo;
-        ASSERT_TRUE(Nyxus::scan_slide_props(p, 2, aniso, fpo, false));
+        ASSERT_TRUE(Nyxus::scan_slide_props(p, 2, aniso, false, fpo, false));
 
         EXPECT_DOUBLE_EQ(p.min_allpix_inten, -1024.0);
         EXPECT_DOUBLE_EQ(p.max_preroi_inten, -896.5);
