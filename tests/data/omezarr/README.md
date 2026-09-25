@@ -38,6 +38,29 @@ and `3.75`; every other sample is `1.0`. A real-valued store is free to hold any
 `RawOmezarrLoader::get_uint32_pixel` is what a float32 *mask* is read through -- converting a
 non-finite or an out-of-range double to an unsigned integer is undefined, not merely lossy.
 
+The table above covers the stores written by hand or by bfio. Everything else in this
+directory is written by `gen_dim5.py`, whose module docstring and per-writer docstrings are the
+inventory for those; the four described under "Converter-shaped and diagnostic stores" below are
+called out here because what they cover is a property of the *container*, not of the pixels.
+
+### Converter-shaped and diagnostic stores
+
+These exist because the rest of the 3D/5D fixtures here are little-endian, flat-separator and
+uncompressed — i.e. none of them resembles what `bioformats2raw` actually writes. They were
+added after a cross-container run over real converter output.
+
+| Store | What is unusual about it | Expected |
+|-------|--------------------------|----------|
+| `dim3_nested.ome.zarr` | `dimension_separator: "/"` (chunk `(1,0,0)` is the file `0/1/0/0`) plus a blosc/lz4 codec. Nesting is the NGFF 0.4 default and what the converter emits; `--no-nested` downgrades the declared version to 0.1. | reads identically to `dim3_zyx.ome.zarr` |
+| `bigendian.ome.zarr` | `dtype: ">u2"`, payload genuinely byte-swapped. `bioformats2raw` through 0.9.x writes big-endian and has no switch to change it. z5 maps only the `<` and `|` spellings, so the array cannot be opened. | refused, and the message names big-endianness and the remedy |
+| `b2r_layout.ome.zarr` | `bioformats2raw` layout: the root carries only `{"bioformats2raw.layout": 3}` and the image is the child group `0`. The data is fine; the path is one level too high. | refused, and the message names the layout and the series group |
+| `b2r_layout_v3.ome.zarr` | the same, in zarr v3 / NGFF 0.5, where the key sits under `"ome"`. | as above |
+
+`tests/test_omezarr_mechanics.h` asserts the first through
+`test_omezarr_nested_chunk_keys_mechanics()` and the other three through
+`test_omezarr_diagnosed_refusals_mechanics()`, which checks the message text rather than only
+that a throw happened — the throw alone was already there.
+
 ### `dim5.ome.zarr` — 5D channel/timeframe addressability
 
 A genuinely 5D store, shape `(T=2, C=3, Z=4, Y=6, X=8)`, chunked `(T,C,1,Y,X)` —

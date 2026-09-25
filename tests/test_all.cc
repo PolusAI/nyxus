@@ -4247,6 +4247,17 @@ TEST(TEST_NYXUS, TEST_OMEZARR_MALFORMED_THROWS_MECHANICS) {
 	ASSERT_NO_THROW (test_omezarr_malformed_throws_mechanics());
 }
 
+// Nested v2 chunk keys ('/' separator) + blosc -- the layout bioformats2raw writes by default.
+TEST(TEST_NYXUS, TEST_OMEZARR_NESTED_CHUNK_KEYS_MECHANICS) {
+	ASSERT_NO_THROW (test_omezarr_nested_chunk_keys_mechanics());
+}
+
+// The two refusals real converter output runs into must name the cause: a big-endian array and
+// a bioformats2raw store root, both of which hold good data.
+TEST(TEST_NYXUS, TEST_OMEZARR_DIAGNOSED_REFUSALS_MECHANICS) {
+	ASSERT_NO_THROW (test_omezarr_diagnosed_refusals_mechanics());
+}
+
 // A chunk grid uneven along Z, Y and X, through the facade and the prescan.
 TEST(TEST_NYXUS, TEST_OMEZARR_CHUNKED_FACADE_VOLUME_MECHANICS) {
 	ASSERT_NO_THROW (test_omezarr_chunked_facade_volume_mechanics());

@@ -466,5 +466,84 @@ void test_omezarr_whole_z_chunk_is_unstreamable_mechanics()
     il2.close();
 }
 
+// Nested v2 chunk keys: dim3_nested.ome.zarr is dim3_zyx's volume, values and chunking with
+// `dimension_separator: "/"` and a blosc codec, so chunk (1,0,0) is the file 0/1/0/0 rather
+// than 0/1.0.0. Nesting is what bioformats2raw writes by default -- 0.4 mandates it, and
+// asking for flat keys downgrades the store's declared NGFF version to 0.1 -- yet every other
+// 3D/5D fixture here is flat-separator, so the layout of real converter output went untested.
+// What this discriminates: a reader that composes chunk keys itself instead of letting the
+// store's separator do it finds no chunk where it looks and returns fill_value, i.e. zeros,
+// for the whole volume.
+void test_omezarr_nested_chunk_keys_mechanics()
+{
+    assert_omezarr_addressing("dim3_nested.ome.zarr", 1, 1, 4);
+    if (::testing::Test::HasFatalFailure()) return;
+    assert_raw_omezarr_addressing("dim3_nested.ome.zarr", 1, 1, 4);
+    if (::testing::Test::HasFatalFailure()) return;
+    ASSERT_NO_THROW (assert_omezarr_facade_volume("dim3_nested.ome.zarr", 1, 1, 4));
+}
+
+// The two refusals a store from the common converter runs into must say what is wrong, not
+// only that something is. Both stores below hold perfectly good data.
+//
+//  * bigendian.ome.zarr declares `dtype: ">u2"`. z5's zarrToDtype() map holds only the '<' and
+//    '|' spellings, so openDataset throws "Unsupported zarr dtype: >u2" -- accurate, and no
+//    help at all: it names neither big-endianness nor the way out. bioformats2raw through
+//    0.9.x writes big-endian with no switch to change it, so every 16-bit store that converter
+//    produced lands here.
+//  * b2r_layout.ome.zarr (and its v3 twin) is in bioformats2raw layout: the root carries only
+//    {"bioformats2raw.layout": 3} and the image is the child group `0`. The path is one level
+//    too high; nothing is damaged.
+//
+// What this discriminates: the pre-fix code answered the first with z5's raw dtype complaint
+// and the second with "the group declares no multiscales" and no path, so both read as a
+// corrupt file. The assertions are on the message, because the throw itself already happened
+// before the fix.
+void test_omezarr_diagnosed_refusals_mechanics()
+{
+    struct Case { const char* store; const char* phrase; const char* why; };
+    const Case cases[] = {
+        { "bigendian.ome.zarr",     "big-endian",       "names the byte order, not just the dtype code" },
+        { "b2r_layout.ome.zarr",    "bioformats2raw",   "names the layout it recognized" },
+        { "b2r_layout_v3.ome.zarr", "bioformats2raw",   "and does so with the v3 'ome'-nested attributes too" },
+    };
+
+    for (const Case& c : cases)
+    {
+        fs::path ds = omezarr_data_path(c.store);
+        ASSERT_TRUE(fs::exists(ds)) << ds.string();
+
+        // both loader stacks resolve the layout through the same open_zarr_level0
+        for (int raw = 0; raw < 2; ++raw)
+        {
+            try
+            {
+                if (raw) RawOmezarrLoader dead (ds.string());
+                else     NyxusOmeZarrLoader<uint32_t> dead (1, ds.string());
+                FAIL() << c.store << ": expected a throw (raw=" << raw << ")";
+            }
+            catch (const std::runtime_error& e)
+            {
+                const std::string msg = e.what();
+                EXPECT_NE(msg.find (c.phrase), std::string::npos)
+                    << c.store << " (raw=" << raw << "): " << c.why << ": " << msg;
+                EXPECT_NE(msg.find (ds.string()), std::string::npos)
+                    << c.store << " (raw=" << raw << "): the message names the store: " << msg;
+            }
+        }
+    }
+
+    // The positive counterpart of the layout case: the SAME store read one level down, at the
+    // series group the refusal points at, holds the dim3_zyx volume and reads correctly. This
+    // is what makes the refusal a path problem rather than a data problem.
+    const std::string series = (omezarr_data_path("b2r_layout.ome.zarr") / "0").string();
+    ASSERT_TRUE(fs::exists(series)) << series;
+    EXPECT_NO_THROW(NyxusOmeZarrLoader<uint32_t>(1, series));
+    auto ldr = NyxusOmeZarrLoader<uint32_t>(1, series);
+    EXPECT_EQ(ldr.fullWidth(0), 8u);
+    EXPECT_EQ(ldr.fullHeight(0), 6u);
+    EXPECT_EQ(ldr.fullDepth(0), 4u);
+}
+
 
 #endif // OMEZARR_SUPPORT
