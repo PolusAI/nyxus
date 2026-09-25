@@ -71,6 +71,7 @@
 #include "test_2d_ngtdm_regression.h"
 #include "test_roi_blacklist_mechanics.h"
 #include "test_2d_tiff_loader_mechanics.h"
+#include "test_2d_tagless_tiled_tiff_mechanics.h"
 #include "test_imq_regression.h"
 #include "test_imq_opencv.h"
 #include "test_imq_cellprofiler.h"
@@ -1272,6 +1273,26 @@ TEST(TEST_NYXUS, TEST_ROI_BLACKLIST_MECHANICS)
 TEST(TEST_NYXUS, TEST_2D_TIFF_LOADER_UINT32_STRIP_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_tiff_loader_uint32_strip_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_TAGLESS_TILED_TIFF_GRAYSCALE_TILE_LOADER_MECHANICS)
+{
+	ASSERT_NO_FATAL_FAILURE(test_2d_tagless_tiled_tiff_grayscale_tile_loader_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_TAGLESS_TILED_TIFF_RAW_TILE_LOADER_MECHANICS)
+{
+	ASSERT_NO_FATAL_FAILURE(test_2d_tagless_tiled_tiff_raw_tile_loader_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_TAGLESS_TILED_TIFF_DECLARED_FLOAT_STILL_REFUSED_MECHANICS)
+{
+	ASSERT_NO_FATAL_FAILURE(test_2d_tagless_tiled_tiff_declared_float_still_refused_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_TAGLESS_TILED_TIFF_UNSUPPORTED_DEPTH_STILL_REFUSED_MECHANICS)
+{
+	ASSERT_NO_FATAL_FAILURE(test_2d_tagless_tiled_tiff_unsupported_depth_still_refused_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_INITIALIZATION_MECHANICS) {

@@ -53,6 +53,14 @@ public:
         tiff_ = TIFFOpen(filePath.c_str(), "r");
         if (tiff_ != nullptr) 
         {
+            // a constructor that refuses the file never runs its destructor, and every check below
+            // refuses by throwing, so the handle is closed unless the constructor reaches its end
+            struct OpenTiffGuard
+            {
+                TIFF** t;
+                ~OpenTiffGuard() { if (t && *t) { TIFFClose (*t); *t = nullptr; } }
+            } tiffGuard { &tiff_ };
+
             if (TIFFIsTiled(tiff_) == 0) 
             { 
                 throw (std::runtime_error("Tile Loader ERROR: The file is not tiled.")); 
@@ -80,6 +88,13 @@ public:
                 message << "Tile Loader ERROR: The file is not greyscale: SamplesPerPixel = " << samplesPerPixel << ".";
                 throw (std::runtime_error(message.str()));
             }
+            // Interpret undefined data format as unsigned integer data
+            if (sampleFormat_ < 1 || sampleFormat_ > 3) 
+            {
+                sampleFormat_ = 1;
+            }
+
+            tiffGuard.t = nullptr;  // constructed: the destructor owns the handle from here
         }
         else 
         { 
@@ -114,9 +129,21 @@ public:
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
         std::vector<DataType>& tileDataVec = *tile;
 
-        tdata_t tiffTile = nullptr;
+        // libtiff's own tile buffer, released however this function leaves it: the branches below
+        // refuse an unreadable tile, a mask carrying real-valued pixels and a bit depth with no
+        // typed reader by throwing, and each of those returns past the release at the end
+        struct TiffTileBuf
+        {
+            tdata_t p;
+            explicit TiffTileBuf (tmsize_t nbytes) : p (_TIFFmalloc (nbytes)) {}
+            ~TiffTileBuf() { if (p) _TIFFfree (p); }
+            TiffTileBuf (const TiffTileBuf&) = delete;
+            TiffTileBuf& operator= (const TiffTileBuf&) = delete;
+        };
+
         auto t_szb = TIFFTileSize(tiff_);
-        tiffTile = _TIFFmalloc(t_szb);
+        TiffTileBuf tileBuf (t_szb);
+        tdata_t tiffTile = tileBuf.p;
         auto errcode = TIFFReadTile(tiff_, tiffTile, indexColGlobalTile * tileWidth_, indexRowGlobalTile * tileHeight_, 0, 0);
         if (errcode < 0)
         {
@@ -198,8 +225,6 @@ public:
             err = "Tile Loader ERROR: The data format is not supported, sample format = " + std::to_string(sampleFormat_);
             throw (std::runtime_error(err));
         }
-
-        _TIFFfree(tiffTile);
     }
 
 
