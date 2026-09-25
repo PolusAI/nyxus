@@ -420,15 +420,11 @@ public:
 
             scanline_szb = TIFFScanlineSize(tiff_);
             sample_szb = (size_t) bitsPerSample_ / 8;
-            tile_szb = tileWidth_ * tileHeight_ * sample_szb;
 
             // a whole image row is read at once and its in-tile segment copied out of it, so the
             // staging buffer is a scanline wide while the tile buffer is a tile wide
             line_.resize (scanline_szb);
-            buf = _TIFFmalloc (tile_szb);
-            if (!buf)
-                throw std::runtime_error("RawTiffStripLoader error: _TIFFmalloc failed");
-
+            tile_.resize (tileWidth_ * tileHeight_ * sample_szb);
         }
         else
         {
@@ -438,14 +434,8 @@ public:
 
     ~RawTiffStripLoader() override
     {
-        // a loader that is constructed and then merely inspected never reaches free_tile(), so the
-        // constructor's allocation is released here; freeing is idempotent via the null check
-        if (buf)
-        {
-            _TIFFfree(buf);
-            buf = nullptr;
-        }
-
+        // the two buffers are std::vector and release themselves; the TIFF handle is the only
+        // resource this class owns by hand
         if (tiff_)
         {
             TIFFClose(tiff_);
@@ -459,15 +449,6 @@ public:
         size_t indexLayerGlobalTile,
         [[maybe_unused]] size_t level) override
     {
-        // free_tile() releases the buffer after each read, so it is re-allocated here; the
-        // constructor's allocation covers the first read
-        if (buf == nullptr)
-        {
-            buf = _TIFFmalloc (tile_szb);
-            if (!buf)
-                throw std::runtime_error("RawTiffStripLoader error: _TIFFmalloc failed");
-        }
-
         size_t
             startRow = indexRowGlobalTile * tileHeight_,
             endRow = (std::min) ((indexRowGlobalTile + 1) * tileHeight_, fullHeight_),
@@ -486,9 +467,9 @@ public:
         }
 
         // an edge tile fills only part of the buffer; the rest reads as 0
-        auto* fub = static_cast<std::uint8_t*>(buf);
+        auto* fub = tile_.data();
         if (endRow - startRow < tileHeight_ || endCol - startCol < tileWidth_)
-            std::memset (fub, 0, tile_szb);
+            std::memset (fub, 0, tile_.size());
 
         // rows are addressed in image coordinates and land at the tile's own pitch, so tile
         // (i,j) carries the pixels of image rows [startRow,endRow) x columns [startCol,endCol)
@@ -515,26 +496,23 @@ public:
     [[nodiscard]] short bitsPerSample() const override { return bitsPerSample_; }
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
 
-    // RawImageLoader calls free_tile() after each tile. Freeing is idempotent and the next
-    // loadTileFromFile() re-allocates, so a multi-tile image frees and re-reads per tile.
+    // RawImageLoader calls free_tile() after every tile, but the next tile needs a buffer of
+    // exactly the same size, so there is nothing to hand back between tiles: the tile lives with
+    // the loader and goes with it. Peak footprint is one tile per loader either way. The Zarr,
+    // NIfTI and DICOM loaders hold their buffers the same way.
     void free_tile() override
     {
-        if (buf)
-        {
-            _TIFFfree(buf);
-            buf = nullptr;
-        }
     }
 
     uint32_t get_uint32_pixel(size_t idx) const
     {
-        uint32_t rv = get_uint32_pixel_typeresolved (buf, idx);
+        uint32_t rv = get_uint32_pixel_typeresolved (tile_.data(), idx);
         return rv;
     }
 
     double get_dpequiv_pixel(size_t idx) const
     {
-        double rv = get_dpequiv_pixel_typeresolved (buf, idx);
+        double rv = get_dpequiv_pixel_typeresolved (tile_.data(), idx);
         return rv;
     }
 
@@ -566,21 +544,21 @@ private:
     }
 
     template<typename FileType>
-    static uint32_t get_uint32_pixel_imp(tdata_t src, size_t idx)
+    static uint32_t get_uint32_pixel_imp(const void* src, size_t idx)
     {
-        FileType x = *(((FileType*)src) + idx);
+        FileType x = *(((const FileType*)src) + idx);
         return (uint32_t)x;
     }
 
     template<typename FileType>
-    static double get_dp_pixel_imp(tdata_t src, size_t idx)
+    static double get_dp_pixel_imp(const void* src, size_t idx)
     {
-        FileType x = *(((FileType*)src) + idx);
+        FileType x = *(((const FileType*)src) + idx);
         return (double)x;
     }
 
-    double (*get_dpequiv_pixel_typeresolved) (tdata_t src, size_t idx) = nullptr;
-    uint32_t(*get_uint32_pixel_typeresolved) (tdata_t src, size_t idx) = nullptr;
+    double (*get_dpequiv_pixel_typeresolved) (const void* src, size_t idx) = nullptr;
+    uint32_t(*get_uint32_pixel_typeresolved) (const void* src, size_t idx) = nullptr;
 
     size_t STRIP_TILE_HEIGHT = 1024;
     size_t STRIP_TILE_WIDTH = 1024;
@@ -603,11 +581,11 @@ private:
 
     double minval, maxval;
 
-    // low level buffers: 'buf' is the tile (pitch tileWidth_), 'line_' stages one image scanline
-    tdata_t buf = nullptr;
-    std::vector<std::uint8_t> line_;
+    // low level buffers, owned by the loader: 'tile_' holds the tile at a pitch of tileWidth_
+    // samples, which is what the pixel accessors address; 'line_' stages one whole image scanline
+    // on the way in
+    std::vector<std::uint8_t> tile_, line_;
     size_t scanline_szb = 0;
     size_t sample_szb = 0;
-    size_t tile_szb = 0;
 };
 
