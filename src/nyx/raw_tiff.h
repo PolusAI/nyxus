@@ -34,6 +34,14 @@ public:
         tiff_ = TIFFOpen (filePath.c_str(), "r");
         if (tiff_ != nullptr) 
         {
+            // a constructor that refuses the file never runs its destructor, and every check below
+            // refuses by throwing, so the handle is closed unless the constructor reaches its end
+            struct OpenTiffGuard
+            {
+                TIFF** t;
+                ~OpenTiffGuard() { if (t && *t) { TIFFClose (*t); *t = nullptr; } }
+            } tiffGuard { &tiff_ };
+
             if (TIFFIsTiled(tiff_) == 0) 
             { 
                 std::string erm = "RawTiffTileLoader error: file " + filePath +" is not tiled";
@@ -63,6 +71,12 @@ public:
                 std::string erm = "RawTiffTileLoader error: file " + filePath + " is not greyscale, SamplesPerPixel = " + std::to_string(samplesPerPixel);
                 std::cerr << erm << "\n";
                 throw (std::runtime_error(erm));
+            }
+
+            // Interpret undefined data format as unsigned integer data
+            if (sampleFormat_ < 1 || sampleFormat_ > 3)
+            {
+                sampleFormat_ = 1;
             }
 
             // Prepare the right typed getter function
@@ -144,6 +158,8 @@ public:
                 message = "Tile Loader ERROR: The data format is not supported, sample format = " + std::to_string(sampleFormat_);
                 throw (std::runtime_error(message));
             }
+
+            tiffGuard.t = nullptr;  // constructed: the destructor owns the handle from here
         }
         else 
         { 
