@@ -106,7 +106,10 @@ namespace Nyxus
 
 				try
 				{
-					const Fsettings& s = env.get_feature_settings (typeid(f));
+					// typeid(*f), not typeid(f): f is a FeatureMethod*, whose static type is the same
+					// for every feature, so the pointer's type_info resolves no family. Dereferencing
+					// gives the dynamic type, which is what the settings are registered under.
+					const Fsettings& s = env.get_feature_settings (typeid(*f));
 					// Pass the Dataset so intensity/histogram osized features reach their
 					// Dataset-aware osized_calculate; the Dataset-less overload is a guard that throws.
 					f->osized_scan_whole_image (r, s, env.dataset, env.theImLoader);

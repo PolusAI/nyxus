@@ -42,6 +42,7 @@
 #include "test_2d_neighbor_invariant.h"
 #include "test_initialization_mechanics.h"
 #include "test_feature_manager_mechanics.h"
+#include "test_feature_settings_mechanics.h"
 #include "test_2d_glcm_ibsi.h"
 #include "test_2d_glcm_pyradiomics.h"
 #include "test_2d_glcm_mirp.h"
@@ -1280,6 +1281,14 @@ TEST(TEST_NYXUS, TEST_INITIALIZATION_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_FEATURE_MANAGER_MECHANICS) {
 	test_feature_manager_mechanics();
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_RESOLVE_TO_OWN_FAMILY_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_resolve_to_own_family_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_UNREGISTERED_TYPE_REFUSED_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_unregistered_type_refused_mechanics());
 }
 
 //***** Pixel intensity features ***** 
