@@ -174,7 +174,7 @@ class Nyxus:
             'gabor_thold', 'gabor_thetas', 'gabor_freqs', 'channel_signature', 
             'parent_channel', 'child_channel', 'aggregate', 'dynamic_range', 'min_intensity',
             'max_intensity', 'ram_limit', 'verbose',
-            'anisotropy_x', 'anisotropy_y', 'mergerois', 'preserve_hu'
+            'anisotropy_x', 'anisotropy_y', 'mergerois', 'preserve_hu', 'use_physical_spacing'
         }
 
         # Check for unexpected keyword arguments
@@ -201,6 +201,7 @@ class Nyxus:
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
         preserve_hu = kwargs.get('preserve_hu', False)   # CT/HU: preserve absolute Hounsfield values
+        use_physical_spacing = kwargs.get('use_physical_spacing', False)   # opt-in OME PhysicalSize* voxel spacing (3D)
         ram_limit = kwargs.get('ram_limit', -1)
         verb_lvl = kwargs.get('verbose', 0)
         aniso_x = kwargs.get('anisotropy_x', 1.0)
@@ -253,7 +254,8 @@ class Nyxus:
             aniso_y,
             aniso_z,
             mergerois,
-            preserve_hu)
+            preserve_hu,
+            use_physical_spacing)
 
         self.set_gabor_feature_params(
             kersize = gabor_kersize,
@@ -1040,7 +1042,7 @@ class Nyxus3D:
             'verbose',
             'anisotropy_x',
             'anisotropy_y',
-            'anisotropy_z', 'preserve_hu'
+            'anisotropy_z', 'preserve_hu', 'use_physical_spacing'
         }
 
         # Check for unexpected keyword arguments
@@ -1060,6 +1062,7 @@ class Nyxus3D:
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
         preserve_hu = kwargs.get('preserve_hu', False)   # CT/HU: preserve absolute Hounsfield values
+        use_physical_spacing = kwargs.get('use_physical_spacing', False)   # opt-in OME PhysicalSize* voxel spacing (3D)
         verb_lvl = kwargs.get ('verbose', 0)
         aniso_x = kwargs.get('anisotropy_x', 1.0)
         aniso_y = kwargs.get('anisotropy_y', 1.0)
@@ -1119,7 +1122,8 @@ class Nyxus3D:
             aniso_y,
             aniso_z,
             False,  # merge_labels: 2D-segmented only
-            preserve_hu)
+            preserve_hu,
+            use_physical_spacing)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']
@@ -1628,6 +1632,7 @@ class ImageQuality:
         min_intensity = kwargs.get('min_intensity', 0.0)
         max_intensity = kwargs.get('max_intensity', 1.0)
         preserve_hu = kwargs.get('preserve_hu', False)   # CT/HU: preserve absolute Hounsfield values
+        use_physical_spacing = kwargs.get('use_physical_spacing', False)   # opt-in OME PhysicalSize* voxel spacing (3D)
         ram_limit = kwargs.get('ram_limit', -1)
         verb_lvl = kwargs.get ('verbose', 0)
         aniso_x = kwargs.get('anisotropy_x', 1.0)
@@ -1684,7 +1689,8 @@ class ImageQuality:
             aniso_y,
             aniso_z,
             False,  # merge_labels: 2D-segmented only
-            preserve_hu)
+            preserve_hu,
+            use_physical_spacing)
         
         # list of valid outputs that are used throughout featurize functions
         self._valid_output_types = ['pandas', 'arrowipc', 'parquet']

@@ -149,13 +149,16 @@ namespace Nyxus
 			// Extract features from this intensity-mask pair 
 			if (env.theImLoader.open(sprp, env.fpimageOptions) == false)
 			{
+				// open() allocates the intensity loader before the mask one and returns false from
+				// either half, so a failed open leaves loaders behind unless they are released here
+				env.theImLoader.close();
 				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 				return false;
 			}
 
 			// Read the tiff. The image loader is put in the open state in processDataset()
-			size_t nth = env.theImLoader.get_num_tiles_hor(),
-				ntv = env.theImLoader.get_num_tiles_vert(),
+			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
+				ntVert = env.theImLoader.get_num_tiles_vert(),	// tiles down a column
 				fw = env.theImLoader.get_tile_width(),
 				th = env.theImLoader.get_tile_height(),
 				tw = env.theImLoader.get_tile_width(),
@@ -164,14 +167,15 @@ namespace Nyxus
 				fullheight = env.theImLoader.get_full_height();
 
 			int cnt = 1;
-			for (unsigned int row = 0; row < nth; row++)
-				for (unsigned int col = 0; col < ntv; col++)
+			for (unsigned int row = 0; row < ntVert; row++)
+				for (unsigned int col = 0; col < ntHor; col++)
 				{
 					// Fetch a tile 
 					bool ok = env.theImLoader.load_tile (row, col);
 					if (!ok)
 					{
 						std::string erm = "Error fetching tile row:" + std::to_string(row) + " col:" + std::to_string(col) + " from I:" + ifpath + " M:" + mfpath;
+						env.theImLoader.close();	// released before the throw below, which leaves under Python
 						#ifdef WITH_PYTHON_H
 							throw erm;
 						#endif	
@@ -208,13 +212,17 @@ namespace Nyxus
 
 					#ifdef WITH_PYTHON_H
 					if (PyErr_CheckSignals() != 0)
+					{
+						// the interrupt leaves this pass for good, and the pair is this function's
+						env.theImLoader.close();
 						throw pybind11::error_already_set();
+					}
 					#endif
 
 					// Show stayalive progress info
 					VERBOSLVL2 (env.get_verbosity_level(),
 						if (cnt++ % 4 == 0)
-							std::cout << "\t" << int((row * nth + col) * 100 / float(nth * ntv) * 100) / 100. << "%\t" << env.uniqueLabels.size() << " ROIs" << "\n";
+							std::cout << "\t" << int((row * ntHor + col) * 100 / float(ntHor * ntVert) * 100) / 100. << "%\t" << env.uniqueLabels.size() << " ROIs" << "\n";
 					);
 				}
 
@@ -250,121 +258,72 @@ namespace Nyxus
 	// segmented 3D case (true volumetric images e.g. .nii, .nii.gz, .dcm, etc)
 	// prerequisite: 'env.theImLoader' needs to be pre-opened !
 	//
-	bool gatherRoisMetrics_3D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, size_t t_index)
+	bool gatherRoisMetrics_3D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, size_t t_index, size_t channel)
 	{
 		SlideProps & sprp = env.dataset.dataset_props [sidx];
 		if (! env.theImLoader.open(sprp, env.fpimageOptions))
 		{
+			// open() allocates the intensity loader before the mask one and returns false from
+			// either half, so a failed open leaves loaders behind unless they are released here
+			env.theImLoader.close();
 			std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
 			return false;
 		}
 
-		// Read the tiff. The image loader is put in the open state in processDataset()
-		size_t 
-			w = env.theImLoader.get_full_width(),
-			h = env.theImLoader.get_full_height(),
-			d = env.theImLoader.get_full_depth(),
-			sliceSize = w * h,
-			timeFrameSize = sliceSize * d,
-			timeI = env.theImLoader.get_inten_time(),
-			timeM = env.theImLoader.get_mask_time(),	// may be ==0 for WSI
-			nVoxI = timeFrameSize * timeI,
-			nVoxM = timeFrameSize * timeM;
+		const size_t w = env.theImLoader.get_full_width(),
+			h = env.theImLoader.get_full_height();
 
-		// is this intensity-mask pair's shape supported?
-		if (nVoxI < nVoxM)
+		// Stream this (channel, timeframe)'s volume plane by plane, with the mask plane that pairs
+		// with it, exactly as the Phase-2 scan does, so the ROI metrics see the voxels Phase 2 caches
+		bool ok = stream_volume_checked (env.theImLoader, channel, t_index, intens_fpath, mask_fpath,
+			[&](size_t z, const std::vector<uint32_t>& dataI, const std::vector<uint32_t>& dataL)
+			{
+				for (size_t y = 0; y < h; y++)
+					for (size_t x = 0; x < w; x++)
+					{
+						size_t i = y * w + x;
+
+						// Skip non-mask pixels
+						auto label = dataL[i];
+						if (!label)
+							continue;
+
+						// Collapse all the labels to one if single-ROI mde is requested
+						if (env.singleROI)
+							label = 1;
+
+						// Update pixel's ROI metrics
+						feed_pixel_2_metrics_3D (env.uniqueLabels, env.roiData, (int) x, (int) y, (int) z, dataI[i], label, sidx);
+					}
+			});
+		if (! ok)
 		{
-			std::string erm = "Error: unsupported shape - intensity file: " + std::to_string(nVoxI) + ", mask file: " + std::to_string(nVoxM);
-#ifdef WITH_PYTHON_H
-			throw erm;
-#endif	
-			std::cerr << erm << "\n";
+			// the pair opened above is this function's to release on the way out too
+			env.theImLoader.close();
 			return false;
 		}
-
-		int cnt = 1;
-
-		// Fetch a tile 
-		bool ok = env.theImLoader.load_tile (0/*row*/ , 0/*col*/);
-		if (!ok)
-		{
-			std::string erm = "Error fetching tile (0,0) from I:" + intens_fpath + " M:" + mask_fpath;
-			#ifdef WITH_PYTHON_H
-				throw erm;
-			#endif	
-			std::cerr << erm << "\n";
-			return false;
-		}
-
-		// Get ahold of tile's pixel buffer
-		auto dataI = env.theImLoader.get_int_tile_buffer(),
-			dataL = env.theImLoader.get_seg_tile_buffer();
-
-		size_t baseI, baseM;
-		if (nVoxI == nVoxM)
-		{
-			baseM = baseI = t_index * timeFrameSize;
-		}
-		else // nVoxI > nVoxM
-		{
-			baseM = 0;
-			baseI = t_index * timeFrameSize;
-		}
-
-		// Iterate voxels
-		for (size_t i=0; i<timeFrameSize; i++)
-		{
-			size_t k = i + baseM;	// absolute index of mask voxel
-			size_t j = i + baseI;	// absolute index of intensity voxel
-									
-			// Skip non-mask pixels
-			auto label = dataL[k];
-			if (!label)
-				continue;
-
-			int z = k / sliceSize,
-				y = (k - z*sliceSize) / w,
-				x = (k - z * sliceSize) % w;
-
-			// Skip tile buffer pixels beyond the image's bounds
-			if (x >= w || y >= h || z >= d)
-				continue;
-
-			// Collapse all the labels to one if single-ROI mde is requested
-			if (env.singleROI)
-				label = 1;
-
-			// Update pixel's ROI metrics
-			feed_pixel_2_metrics_3D (env.uniqueLabels, env.roiData, x, y, z, dataI[j], label, sidx);
-		}
+		// The scan is finished and nothing below reads the pair, so it is released here rather
+		// than after the interrupt check, which leaves by a throw.
+		env.theImLoader.close();
 
 #ifdef WITH_PYTHON_H
 		if (PyErr_CheckSignals() != 0)
 			throw pybind11::error_already_set();
 #endif
 
-		env.theImLoader.close();
-
-		// fix ROIs' AABBs with respect to anisotropy
-		if (env.anisoOptions.customized() == false)
+		// fix ROIs' AABBs with respect to anisotropy, on the spacing every pass over this volume
+		// resolves -- explicit --aniso* or, opted in, the slide's physical voxel size. These boxes
+		// size the ROI buffers and drive the oversized check, so they describe the same
+		// (resampled) geometry the phase-2 scans cache.
+		double ax, ay, az;
+		bool anisotropic = resolve_slide_anisotropy (env, sidx, ax, ay, az);
+		for (auto& rd : env.roiData)
 		{
-			for (auto& rd : env.roiData)
-			{
-				LR& r = rd.second;
+			LR& r = rd.second;
+			if (anisotropic)
+				r.make_anisotropic_aabb (ax, ay, az);
+			else
 				r.make_nonanisotropic_aabb();
-			}
-		}
-		else
-		{
-			double	ax = env.anisoOptions.get_aniso_x(),
-				ay = env.anisoOptions.get_aniso_y(),
-				az = env.anisoOptions.get_aniso_z();
-
-			for (auto& rd : env.roiData)
-			{
-				LR& r = rd.second;
-				r.make_anisotropic_aabb(ax, ay, az);
-			}
 		}
 
 		return true;

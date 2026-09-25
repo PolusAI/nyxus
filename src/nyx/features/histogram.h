@@ -5,12 +5,11 @@
 #include <iostream>
 #include <map>
 #include <vector>
-#include <unordered_set>
-#include <unordered_map>
 #include <tuple>
 #include "../helpers/helpers.h"
 #include "pixel.h"
 #include "image_matrix_nontriv.h"
+#include "voxel_cloud_nontriv.h"
 
 using HistoItem = unsigned int;
 
@@ -20,10 +19,11 @@ public:
 
 	TrivialHistogram() {}
 
-	// One implementation for every intensity source: the in-RAM std::vector<Pxl> and the disk-backed
-	// OutOfRamPixelCloud. Both expose size() and a range-for yielding an item with an .inten field,
-	// so a single template serves them and the in-core / out-of-core histograms stay identical by
-	// construction (the p10/p90 robust-MAD fix below no longer has to be applied to two copies).
+	// One implementation for every intensity source: the in-RAM std::vector<Pxl>, and the two
+	// disk-backed clouds (OutOfRamPixelCloud, OutOfRamVoxelCloud). All expose size() and a
+	// range-for yielding an item with an .inten field, so a single template serves them and the
+	// in-core / out-of-core histograms stay identical by construction (fixes that had to be
+	// applied to each copy -- e.g. the p10/p90 robust-MAD -- now live in one place).
 	template <class Src>
 	void initialize (int n_cust_bins, HistoItem min_value, HistoItem max_value, const Src& raw_data)
 	{
@@ -32,96 +32,100 @@ public:
 
 		pop_ = raw_data.size();
 
-		// Allocate 
-		// -- "percentile"
-		bins100_.reserve(100);
-		for (int i = 0; i < 100 + 1; i++)
-			bins100_.push_back(0);
-		// -- "uint8"
-		bins_cust_.reserve(n_custBins);
-		for (int i = 0; i < n_custBins + 1; i++)
-			bins_cust_.push_back(0);
-
 		// Cache min/max
 		minVal_ = min_value;
 		maxVal_ = max_value;
 		auto valRange = maxVal_ - minVal_;
 
-		// unique values
+		// The ONE pass over the intensity source, into the value frequencies every statistic
+		// below is derived from. A disk-backed cloud is therefore read once, and the frequencies
+		// cost one entry per distinct grey level rather than one per voxel -- what lets an
+		// out-of-core ROI of a billion voxels be summarized in bounded memory.
+		freq_.clear();
 		for (auto s : raw_data)
-			U_.push_back (s.inten);	
+			++ freq_ [s.inten];
 
-		// Build the "percentile" histogram
+		// Allocate
+		// -- "percentile"
+		bins100_.assign (100 + 1, 0);
+		// -- "uint8"
+		bins_cust_.assign (n_custBins + 1, 0);
+
 		binW100_ = double(valRange) / 100.;
-		for (auto s : raw_data)
+		binWcust_ = double(valRange) / double(n_custBins-1);
+
+		meanVal_ = 0;
+		for (const auto& vc : freq_)
 		{
-			HistoItem h = s.inten;
-			double realIdx = double(h - minVal_) / binW100_;
+			const double v = double(vc.first);
+			const double cnt = double(vc.second);
+
+			// the "percentile" histogram
+			double realIdx = (v - double(minVal_)) / binW100_;
 			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
-			(bins100_[idx])++;
+			bins100_[idx] += (HistoItem) vc.second;
+
+			// the "uint8" histogram. A constant ROI has no range to bin over: to_grayscale()
+			// would divide by it and cast the resulting NaN to a bin index, which is undefined
+			// and only happens to land on 0 on the toolchains in use. Every sample of a constant
+			// ROI belongs to the first bin, which is what the percentile histogram above already
+			// says through its NaN guard.
+			HistoItem h = valRange ? Nyxus::to_grayscale (vc.first, minVal_, valRange, n_custBins) : 0;
+			bins_cust_[h] += (HistoItem) vc.second;
+
+			meanVal_ += v * cnt;
 		}
 
-		// -- Fix the special last bin
+		// -- Fix the special last bins
 		bins100_[100 - 1] += bins100_[100];
 		bins100_[100] = 0;
-
-		// Build the "uint8" histogram
-		binWcust_ = double(valRange) / double(n_custBins-1);
-		for (auto s : raw_data)
-		{
-			// A constant ROI has no range to bin over. to_grayscale() would divide by it and cast
-			// the resulting NaN to a bin index, which is undefined and only happens to land on 0 on
-			// the toolchains in use. Every sample of a constant ROI belongs to the first bin, which
-			// is what the percentile histogram above already says through its NaN guard.
-			HistoItem h = valRange ? Nyxus::to_grayscale(s.inten, minVal_, valRange, n_custBins) : 0;
-			bins_cust_[h] = bins_cust_[h] + 1;
-		}
-
-		// -- Fix the special last bin
 		bins_cust_[n_custBins - 1] += bins_cust_[n_custBins];
 		bins_cust_[n_custBins] = 0;
 
 		// Mean calculation
-		meanVal_ = 0;
-		for (auto s : raw_data)
-			meanVal_ += double(s.inten);
 		meanVal_ /= double(pop_);
 
 		// percentiles
 		calc_percentiles();
 
-		// robust MAD
+		// robust MAD, from the same frequencies
 		mean1090val_ = 0.0;
 		size_t pop1090 = 0;
-		for (auto pxl : raw_data)
-		{
-			double a = double(pxl.inten);
-			if (a >= p10_ && a <= p90_)
+		for (const auto& vc : freq_)
+			if (double(vc.first) >= p10_ && double(vc.first) <= p90_)
 			{
-				mean1090val_ += a;
-				pop1090++;
+				mean1090val_ += double(vc.first) * double(vc.second);
+				pop1090 += vc.second;
 			}
-		}
 		rmad_ = 0.0;
 		if (pop1090)
 		{
 			mean1090val_ /= double(pop1090);
-			for (auto pxl : raw_data)
-			{
-				double a = double(pxl.inten);
-				if (a >= p10_ && a <= p90_)
-					rmad_ += (std::fabs)(a - mean1090val_);
-			}
+			for (const auto& vc : freq_)
+				if (double(vc.first) >= p10_ && double(vc.first) <= p90_)
+					rmad_ += (std::fabs) (double(vc.first) - mean1090val_) * double(vc.second);
 			rmad_ /= double(pop1090);
 		}
 	}
 
+	// How many distinct values the histogram currently describes. The map holds one entry per
+	// value, not per item, which is what bounds its footprint on a cloud of any size.
+	std::size_t n_distinct() const { return freq_.size(); }
+
+	// The value frequencies of 'raw_data', for a caller that needs only the median and the mode of
+	// a set of values (e.g. chord lengths) rather than a full intensity histogram. Each call
+	// describes ITS data: a caller that summarizes two sets through one instance (chords does,
+	// with the max chords and then all chords) gets the second set's statistics, not both sets'.
 	void initialize_uniques (const std::vector<HistoItem>& raw_data)
 	{
+		freq_.clear();
+		pop_ = 0;
 		for (auto h : raw_data)
-			U_.push_back(h);
+		{
+			++ freq_ [h];
+			++ pop_;
+		}
 	}
-
 	// Returns
 	//	[0] median
 	// 	[1] mode
@@ -133,17 +137,17 @@ public:
 	std::tuple<double, HistoItem, double, double, double, double, double, double, double, double, double, double> get_stats()
 	{
 		// Empty histogram?
-		if (U_.size() == 0)
+		if (freq_.empty())
 			return { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 		// Interquartile range
 		double iqr = p75_ - p25_;
 
 		// Median
-		double median = get_median(U_);
+		double median = get_median();
 
 		// Mode
-		HistoItem mode = get_mode(U_);
+		HistoItem mode = get_mode();
 
 		// entropy and uniformity
 		double entropy = 0.0, uniformity = 0.0;
@@ -157,28 +161,33 @@ public:
 		return { median, mode, p1_, p10_, p25_, p75_, p90_, p99_, iqr, rmad_, -entropy, uniformity };
 	}
 
-	HistoItem get_mode()
+	// The most frequent value; the smallest of them if several share the top frequency.
+	HistoItem get_mode() const
 	{
-		// Empty histogram?
-		if (U_.size() == 0)
-			return 0;
-
-		// Mode
-		HistoItem mode = get_mode(U_);
-
+		HistoItem mode = 0;
+		std::size_t top = 0;
+		for (const auto& vc : freq_)
+			if (vc.second > top)
+			{
+				top = vc.second;
+				mode = vc.first;
+			}
 		return mode;
 	}
 
-	double get_median()
+	// The median of the samples: the middle one, or the average of the two middle ones when the
+	// population is even. Read off the value frequencies, so nothing is sorted or held per sample.
+	double get_median() const
 	{
-		// Empty histogram?
-		if (U_.size() == 0)
+		if (freq_.empty() || pop_ == 0)
 			return 0;
 
-		// Median
-		double median = get_median(U_);
+		if (pop_ % 2 != 0)
+			return (double) sample_at_rank (pop_ / 2);
 
-		return median;
+		HistoItem left = sample_at_rank (pop_ / 2 - 1),
+			right = sample_at_rank (pop_ / 2);
+		return (double(left) + double(right)) / 2.0;
 	}
 
 	// --- Histogram bin exposure (per-ROI intensity histogram) -----------------
@@ -212,7 +221,8 @@ private:
 	double meanVal_, binW100_, binWcust_;
 	double mean1090val_, rmad_;	// robust estimation (p10/p90-thresholded)
 	std::vector<HistoItem> bins100_, bins_cust_;
-	std::vector<HistoItem> U_;
+	// how many samples carry each value: one entry per distinct grey level, not per sample
+	std::map<HistoItem, std::size_t> freq_;
 	double p1_, p10_, p25_, p75_, p90_, p99_;
 
 	void calc_percentiles()
@@ -246,75 +256,17 @@ private:
 		}
 	}
 
-	HistoItem get_median(const std::unordered_set<HistoItem>& uniqueValues)
+	// The sample of rank 'k' (0-based) in value order, walked off the frequencies.
+	HistoItem sample_at_rank (std::size_t k) const
 	{
-		// Sort unique intensities
-		std::vector<HistoItem> A{ uniqueValues.begin(), uniqueValues.end() };
-		std::sort(A.begin(), A.end());
-
-		// Pick the median
-		auto n = A.size();
-		if (n % 2 != 0)
+		std::size_t seen = 0;
+		for (const auto& vc : freq_)
 		{
-			int median = A[n / 2];
-			return median;
+			seen += vc.second;
+			if (k < seen)
+				return vc.first;
 		}
-		else
-		{
-			HistoItem right = A[n / 2],
-				left = A[n / 2 - 1],	// Middle left and right values
-				ave = (right + left) / 2;
-			return ave;
-		}
-	}
-
-	// 'raw_I' is passed as non-const and gets sorted
-	double get_median(std::vector<HistoItem>& raw_I)
-	{
-		// Sort unique intensities
-		std::sort(raw_I.begin(), raw_I.end());
-
-		// Pick the median
-		auto n = raw_I.size();
-		if (n % 2 != 0)
-		{
-			HistoItem median = raw_I[n / 2];
-			return (double)median;
-		}
-		else
-		{
-			HistoItem right = raw_I[n / 2],
-				left = raw_I[n / 2 - 1];	// Middle left and right values
-			double ave = double(right + left) / 2.0;
-			return ave;
-		}
-	}
-
-	HistoItem get_mode(std::vector<HistoItem>& raw_I)
-	{
-		// Populate the frequency map
-		std::map<HistoItem, std::size_t> freqMap;
-		for (int v : raw_I)
-			++freqMap[v];
-
-		// Iterator to the highest frequency item
-		auto highestFreqIter = freqMap.begin();
-
-		// Iterate the map updating 'highestFreqIter'
-		for (auto iter = freqMap.begin(); iter != freqMap.end(); ++iter)
-		{
-			if (highestFreqIter->second < iter->second)
-				highestFreqIter = iter;
-		}
-
-		// Return the result
-		auto mo = highestFreqIter->first;
-		return mo;
-	}
-
-	double bin_center(size_t bin_idx, double bin_width)
-	{
-		return double(bin_idx) * bin_width * 1.5;
+		return freq_.empty() ? 0 : freq_.rbegin()->first;
 	}
 };
 

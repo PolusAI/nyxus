@@ -7,9 +7,33 @@
 #include "helpers/fsystem.h"
 #include "helpers/timing.h"
 #include "raw_image_loader.h"
+#include "ome/format_detect.h"
 
 namespace Nyxus
 {
+	// An OME-TIFF or OME-Zarr file addresses its channels and timepoints plane by plane, and 2D
+	// featurization reads one channel and one timepoint of it (3D featurizes every one). A file
+	// carrying more of either is refused in 2D, so no channel or timepoint is left out without a word.
+	static bool check_single_channel_timepoint (RawImageLoader& ilo, const SlideProps& p)
+	{
+		Nyxus::ContainerKind kind = Nyxus::detect_container_family (p.fname_int);
+		if (kind != Nyxus::ContainerKind::Tiff && kind != Nyxus::ContainerKind::OmeZarr)
+			return true;
+
+		size_t n_chan = ilo.get_inten_channels(),
+			n_time = ilo.get_inten_time();
+		if (n_chan <= 1 && n_time <= 1)
+			return true;
+
+		std::string erm = "Error: " + p.fname_int + " carries " + std::to_string(n_chan) + " channels and "
+			+ std::to_string(n_time) + " timepoints; 2D featurization reads one channel and one timepoint of an OME-TIFF or OME-Zarr file";
+#ifdef WITH_PYTHON_H
+		throw std::runtime_error (erm);
+#endif
+		std::cerr << erm << "\n";
+		return false;
+	}
+
 	bool gatherRoisMetrics_2_slideprops_2D_montage (
 		// in
 		const AnisotropyOptions& aniso,
@@ -100,6 +124,14 @@ namespace Nyxus
 		// time series
 		p.inten_time = ilo.get_inten_time();
 		p.mask_time = ilo.get_mask_time();
+		p.inten_channels = ilo.get_inten_channels();		// number of channels (>=1)
+		p.phys_x = ilo.get_physical_size_x();				// physical voxel spacing (1.0 if uncalibrated)
+		p.phys_y = ilo.get_physical_size_y();
+		p.phys_z = ilo.get_physical_size_z();
+		p.phys_unit = ilo.get_physical_size_unit();
+
+		if (! check_single_channel_timepoint (ilo, p))
+			return false;
 
 		// scan intensity slide's data
 
@@ -118,8 +150,8 @@ namespace Nyxus
 			lyr = 0; //	layer
 
 		// Read the image/volume. The image loader is put in the open state in processDataset_XX_YY ()
-		size_t nth = ilo.get_num_tiles_hor(),
-			ntv = ilo.get_num_tiles_vert(),
+		size_t ntHor = ilo.get_num_tiles_hor(),	// tiles across a row
+			ntVert = ilo.get_num_tiles_vert(),	// tiles down a column
 			fw = ilo.get_tile_width(),
 			th = ilo.get_tile_height(),
 			tw = ilo.get_tile_width(),
@@ -129,8 +161,8 @@ namespace Nyxus
 
 		// iterate abstract tiles (in a tiled slide /e.g. tiled tiff/ they correspond to physical tiles, in a nontiled slide /e.g. scanline tiff or strip tiff/ they correspond to )
 		int cnt = 1;
-		for (unsigned int row = 0; row < nth; row++)
-			for (unsigned int col = 0; col < ntv; col++)
+		for (unsigned int row = 0; row < ntVert; row++)
+			for (unsigned int col = 0; col < ntHor; col++)
 			{
 				// Fetch the tile
 				if (!ilo.load_tile(row, col))
@@ -141,9 +173,6 @@ namespace Nyxus
 					std::cerr << "Error fetching tile\n";
 					return false;
 				}
-
-				// Get ahold of tile's pixel buffer
-				auto tidx = row * nth + col;
 
 				// Iterate pixels
 				for (size_t i = 0; i < tileSize; i++)
@@ -282,6 +311,7 @@ namespace Nyxus
 		// in
 		RawImageLoader& ilo,
 		const AnisotropyOptions& aniso,
+		bool use_physical_spacing,
 		// out
 		SlideProps& p)
 	{
@@ -293,10 +323,13 @@ namespace Nyxus
 		// time series
 		p.inten_time = ilo.get_inten_time();
 		p.mask_time = ilo.get_mask_time();
+		p.inten_channels = ilo.get_inten_channels();		// number of channels (>=1)
+		p.phys_x = ilo.get_physical_size_x();				// physical voxel spacing (1.0 if uncalibrated)
+		p.phys_y = ilo.get_physical_size_y();
+		p.phys_z = ilo.get_physical_size_z();
+		p.phys_unit = ilo.get_physical_size_unit();
 
 		// scan intensity slide's data
-
-		bool wholeslide = p.fname_seg.empty();
 
 		double slide_I_max = (std::numeric_limits<double>::lowest)(),
 			slide_I_min = (std::numeric_limits<double>::max)(),
@@ -307,123 +340,103 @@ namespace Nyxus
 		std::unordered_set<int> U;	// unique ROI mask labels
 		std::unordered_map <int, LR> R;	// ROI data
 
-		// Read the volume. The image loader is in the open state by previously called processDataset_XX_YY ()
+		// The image loader is in the open state, opened by processDataset_XX_YY ().
 		size_t fullW = ilo.get_full_width(),
 			fullH = ilo.get_full_height(),
-			fullD = ilo.get_full_depth(),
-			sliceSize = fullW * fullH,
-			nVox = sliceSize * fullD;
+			fullD = ilo.get_full_depth();
 
-		// in the 3D case tiling is a formality, so fetch the only tile in the file
-		if (!ilo.load_tile(0, 0))
+		// Scan the whole X*Y*Z volume of every (channel, timeframe). The pipeline featurizes every
+		// (c,t) plane, so the slide intensity range covers all of them; intensity-indexed buffers
+		// are sized from it. An ROI's bounding box covers it in every pass and its size is its
+		// largest in any one pass: a mask with a frame per timepoint may differ between frames,
+		// and one shared by every plane must not be counted once per plane. for_each_voxel streams
+		// each volume tile by tile across every Z-plane's tile grid and hands back (x,y,z) directly.
+		const size_t n_chan = (std::max)((size_t)1, p.inten_channels),
+			n_time = (std::max)((size_t)1, p.inten_time);
+		std::unordered_map <int, unsigned int> passArea;	// each ROI's voxel count in the current pass
+		bool ok = true;
+
+		for (size_t scan_c = 0; ok && scan_c < n_chan; scan_c++)
+			for (size_t scan_t = 0; ok && scan_t < n_time; scan_t++)
+			{
+				passArea.clear();
+				ok = ilo.for_each_voxel (scan_c, scan_t,
+					[&](size_t x, size_t y, size_t z, double dxequiv_I, uint32_t msk)
+				{
+					// the offset the loader will apply is driven by every voxel, so this runs before
+					// the mask filter below
+					// Non-finite voxels stay out of the extrema, as in the 2D scan above: one infinity
+					// would give the quantized map an infinite span and map every finite voxel to NaN.
+					bool finite_I = std::isfinite (dxequiv_I);
+					if (finite_I)
+						allpix_I_min = (std::min)(allpix_I_min, dxequiv_I);
+
+					// Skip non-mask voxels
+					if (!msk)
+						return;
+
+					// dynamic range within- and off-ROI
+					if (finite_I)
+					{
+						slide_I_max = (std::max)(slide_I_max, dxequiv_I);
+						slide_I_min = (std::min)(slide_I_min, dxequiv_I);
+					}
+
+					// Update the ROI's bounding box over all passes and its voxel count in this one
+					if (U.find(msk) == U.end())
+					{
+						// Remember this label
+						U.insert(msk);
+
+						// Initialize the ROI label record
+						LR r(msk);
+						r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
+						r.init_aabb_3D((int)x, (int)y, (int)z);
+						R[msk] = r;
+					}
+					else
+						R[msk].update_aabb_3D((int)x, (int)y, (int)z);
+
+					passArea[msk]++;
+
+#ifdef WITH_PYTHON_H
+					// keyboard interrupt
+					if (PyErr_CheckSignals() != 0)
+						throw pybind11::error_already_set();
+#endif
+
+				}); //- all voxels
+
+				for (const auto& pa : passArea)
+				{
+					LR& r = R[pa.first];
+					r.aux_area = (std::max) (r.aux_area, pa.second);
+				}
+			} //- all (channel, timeframe) volumes
+
+		if (!ok)
 		{
 #ifdef WITH_PYTHON_H
-			throw "Error fetching tile";
-#endif	
-			std::cerr << "Error fetching tile\n";
+			throw std::runtime_error ("Error fetching volume");
+#endif
+			std::cerr << "Error fetching volume\n";
 			return false;
 		}
 
-		// iterate abstract tiles (in a tiled slide /e.g. tiled tiff/ they correspond to physical tiles, in a nontiled slide /e.g. scanline tiff or strip tiff/ they correspond to )
-		int cnt = 1;
+		//****** fix ROIs' AABBs with respect to anisotropy, on the spacing every pass over this
+		// volume resolves -- explicit --aniso* or, opted in, the slide's physical voxel size. The
+		// ROI sizes recorded below drive the memory estimate, so they have to describe the same
+		// (resampled) geometry the scans will cache.
 
-		// iterate voxels
-		for (size_t i = 0; i < nVox; i++)
+		double ax, ay, az;
+		bool anisotropic = resolve_anisotropy (aniso, use_physical_spacing, p, ax, ay, az);
+		for (auto& pair : R)
 		{
-			int z = i / sliceSize,
-				y = (i - z * sliceSize) / fullW,
-				x = (i - z * sliceSize) % fullW;
-
-			// Skip tile buffer voxels beyond the volume's bounds
-			if (x >= fullW || y >= fullH || z >= fullD)
-				continue;
-
-			// the offset the loader will apply is driven by every voxel, so this runs before
-			// the mask filter below
-			double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
-
-			// Non-finite voxels stay out of the extrema, as in the 2D scan above: one infinity
-			// would give the quantized map an infinite span and map every finite voxel to NaN.
-			bool finite_I = std::isfinite (dxequiv_I);
-			if (finite_I)
-				allpix_I_min = (std::min)(allpix_I_min, dxequiv_I);
-
-			// Mask
-			uint32_t msk = 1; // wholeslide by default
-			if (!wholeslide)
-				msk = ilo.get_cur_tile_seg_pixel(i);
-
-			// Skip non-mask voxels
-			if (!msk)
-				continue;
-
-			// dynamic range within- and off-ROI
-			if (finite_I)
-			{
-				slide_I_max = (std::max)(slide_I_max, dxequiv_I);
-				slide_I_min = (std::min)(slide_I_min, dxequiv_I);
-			}
-
-			// Update pixel's ROI metrics
-			//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
-			if (U.find(msk) == U.end())
-			{
-				// Remember this label
-				U.insert(msk);
-
-				// Initialize the ROI label record
-				LR r(msk);
-
-				//		- mocking init_label_record_3 (newData, theSegFname, theIntFname, x, y, label, intensity, tile_index)
-				// Initialize basic counters
-				r.aux_area = 1;
-				r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
-				r.init_aabb_3D(x, y, z);
-
-				//		- not storing file names (r.segFname = segFile, r.intFname = intFile) but will do so in the future
-
-				// Attach
-				R[msk] = r;
-			}
+			LR& r = pair.second;
+			if (anisotropic)
+				r.make_anisotropic_aabb (ax, ay, az);
 			else
-			{
-				// Update basic ROI info (info that doesn't require costly calculations)
-				LR& r = R[msk];
-
-				//		- mocking update_label_record_2 (r, x, y, label, intensity, tile_index)
-
-				// Per-ROI 
-				r.aux_area++;
-
-				// save
-				r.update_aabb_3D(x, y, z);
-			}
-
-#ifdef WITH_PYTHON_H
-			// keyboard interrupt
-			if (PyErr_CheckSignals() != 0)
-				throw pybind11::error_already_set();
-#endif
-
-		} //- all voxels
-
-		//****** fix ROIs' AABBs with respect to anisotropy
-
-		if (!aniso.customized())
-		{
-			for (auto& pair : R)
-			{
-				LR& r = pair.second;
 				r.make_nonanisotropic_aabb();
-			}
-		}
-		else
-		{
-			for (auto& pair : R)
-			{
-				LR& r = pair.second;
-				r.make_anisotropic_aabb(aniso.get_aniso_x(), aniso.get_aniso_y(), aniso.get_aniso_z());
-			}
 		}
 
 		//****** Analysis
@@ -490,7 +503,7 @@ namespace Nyxus
 	//
 	// prerequisite: initialized fields fname_int and  fname_seg
 	//
-	bool scan_slide_props (SlideProps & p, int dim, const AnisotropyOptions & aniso, const FpImageOptions & fpo, bool need_annot)
+	bool scan_slide_props (SlideProps & p, int dim, const AnisotropyOptions & aniso, bool use_physical_spacing, const FpImageOptions & fpo, bool need_annot)
 	{
 		RawImageLoader ilo;
 		if (! ilo.open(p.fname_int, p.fname_seg))
@@ -499,7 +512,7 @@ namespace Nyxus
 			return false;
 		}
 
-		bool ok = dim==2 ? gatherRoisMetrics_2_slideprops_2D(ilo, aniso, p) : gatherRoisMetrics_2_slideprops_3D(ilo, aniso, p);
+		bool ok = dim==2 ? gatherRoisMetrics_2_slideprops_2D(ilo, aniso, p) : gatherRoisMetrics_2_slideprops_3D(ilo, aniso, use_physical_spacing, p);
 		if (!ok)
 		{
 			std::cerr << "error gathering ROI metrics to slide/volume props \n";

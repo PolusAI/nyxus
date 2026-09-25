@@ -406,8 +406,8 @@ void PixelIntensityFeatures::osized_calculate_grey_levels (LR& r, const Fsetting
 	}
 	val_MEDIAN_ABSOLUTE_DEVIATION = medad / n;
 
-	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image 
-	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/] 
+	// --Uniformity calculated as PIU, percent image uniformity - see "A comparison of five standard methods for evaluating image
+	//	intensity uniformity in partially parallel imaging MRI" [https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3745492/]
 	//	and https://aapm.onlinelibrary.wiley.com/doi/abs/10.1118/1.2241606
 	// An ROI whose grey levels are all 0 puts 0 in the denominator, as for QCOD above.
 	double piu = (r.aux_max + r.aux_min) != 0 ? (1.0 - double(r.aux_max - r.aux_min) / double(r.aux_max + r.aux_min)) * 100.0 : 0.0;
