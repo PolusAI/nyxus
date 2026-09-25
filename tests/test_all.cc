@@ -71,6 +71,7 @@
 #include "test_2d_ngtdm_regression.h"
 #include "test_roi_blacklist_mechanics.h"
 #include "test_2d_tiff_loader_mechanics.h"
+#include "test_2d_raw_tiff_strip_loader_mechanics.h"
 #include "test_imq_regression.h"
 #include "test_imq_opencv.h"
 #include "test_imq_cellprofiler.h"
@@ -1272,6 +1273,21 @@ TEST(TEST_NYXUS, TEST_ROI_BLACKLIST_MECHANICS)
 TEST(TEST_NYXUS, TEST_2D_TIFF_LOADER_UINT32_STRIP_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_tiff_loader_uint32_strip_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RAW_TIFF_STRIP_LOADER_TILE_GRID_MECHANICS)
+{
+	ASSERT_NO_FATAL_FAILURE(test_2d_raw_tiff_strip_loader_tile_grid_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RAW_TIFF_STRIP_LOADER_ONE_AXIS_GRID_MECHANICS)
+{
+	ASSERT_NO_FATAL_FAILURE(test_2d_raw_tiff_strip_loader_one_axis_grid_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RAW_TIFF_STRIP_LOADER_TILE_OUT_OF_GRID_REFUSED_MECHANICS)
+{
+	ASSERT_NO_FATAL_FAILURE(test_2d_raw_tiff_strip_loader_tile_out_of_grid_refused_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_INITIALIZATION_MECHANICS) {

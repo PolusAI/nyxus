@@ -419,7 +419,15 @@ public:
             }
 
             scanline_szb = TIFFScanlineSize(tiff_);
-            buf = _TIFFmalloc (scanline_szb * tileHeight_);
+            sample_szb = (size_t) bitsPerSample_ / 8;
+            tile_szb = tileWidth_ * tileHeight_ * sample_szb;
+
+            // a whole image row is read at once and its in-tile segment copied out of it, so the
+            // staging buffer is a scanline wide while the tile buffer is a tile wide
+            line_.resize (scanline_szb);
+            buf = _TIFFmalloc (tile_szb);
+            if (!buf)
+                throw std::runtime_error("RawTiffStripLoader error: _TIFFmalloc failed");
 
         }
         else
@@ -430,6 +438,14 @@ public:
 
     ~RawTiffStripLoader() override
     {
+        // a loader that is constructed and then merely inspected never reaches free_tile(), so the
+        // constructor's allocation is released here; freeing is idempotent via the null check
+        if (buf)
+        {
+            _TIFFfree(buf);
+            buf = nullptr;
+        }
+
         if (tiff_)
         {
             TIFFClose(tiff_);
@@ -443,13 +459,24 @@ public:
         size_t indexLayerGlobalTile,
         [[maybe_unused]] size_t level) override
     {
+        // free_tile() releases the buffer after each read, so it is re-allocated here; the
+        // constructor's allocation covers the first read
+        if (buf == nullptr)
+        {
+            buf = _TIFFmalloc (tile_szb);
+            if (!buf)
+                throw std::runtime_error("RawTiffStripLoader error: _TIFFmalloc failed");
+        }
+
         size_t
-            startLayer = indexLayerGlobalTile * tileDepth_,
-            endLayer = std::min((indexLayerGlobalTile + 1) * tileDepth_, fullDepth_),
             startRow = indexRowGlobalTile * tileHeight_,
-            endRow = std::min((indexRowGlobalTile + 1) * tileHeight_, fullHeight_),
+            endRow = (std::min) ((indexRowGlobalTile + 1) * tileHeight_, fullHeight_),
             startCol = indexColGlobalTile * tileWidth_,
-            endCol = std::min((indexColGlobalTile + 1) * tileWidth_, fullWidth_);
+            endCol = (std::min) ((indexColGlobalTile + 1) * tileWidth_, fullWidth_);
+
+        if (startRow >= fullHeight_ || startCol >= fullWidth_)
+            throw std::runtime_error("RawTiffStripLoader error: tile (row,col)=(" + std::to_string(indexRowGlobalTile) + ","
+                + std::to_string(indexColGlobalTile) + ") is outside the image");
 
         auto errcode = TIFFSetDirectory (tiff_, indexLayerGlobalTile);
         if (errcode != 1)
@@ -458,17 +485,24 @@ public:
             throw (std::runtime_error(erm));
         }
 
+        // an edge tile fills only part of the buffer; the rest reads as 0
         auto* fub = static_cast<std::uint8_t*>(buf);
-        for (size_t r = 0; r < tileHeight_; r++)
+        if (endRow - startRow < tileHeight_ || endCol - startCol < tileWidth_)
+            std::memset (fub, 0, tile_szb);
+
+        // rows are addressed in image coordinates and land at the tile's own pitch, so tile
+        // (i,j) carries the pixels of image rows [startRow,endRow) x columns [startCol,endCol)
+        const size_t lineOffs = startCol * sample_szb,
+            rowBytes = (std::min) ((endCol - startCol) * sample_szb, scanline_szb - lineOffs);
+        for (size_t r = startRow; r < endRow; r++)
         {
-            size_t offs = r * scanline_szb;
-            auto scanline_buf = &(fub[offs]);
-            errcode = TIFFReadScanline (tiff_, scanline_buf, r);
+            errcode = TIFFReadScanline (tiff_, line_.data(), (uint32_t) r);
             if (errcode != 1)
             {
                 std::string erm = "error " + std::to_string(errcode) + " calling TIFFReadScanline(row = " + std::to_string(r) + ")";
                 throw (std::runtime_error(erm));
             }
+            std::memcpy (fub + (r - startRow) * tileWidth_ * sample_szb, line_.data() + lineOffs, rowBytes);
         }
     }
 
@@ -481,9 +515,15 @@ public:
     [[nodiscard]] short bitsPerSample() const override { return bitsPerSample_; }
     [[nodiscard]] size_t numberPyramidLevels() const override { return 1; }
 
+    // RawImageLoader calls free_tile() after each tile. Freeing is idempotent and the next
+    // loadTileFromFile() re-allocates, so a multi-tile image frees and re-reads per tile.
     void free_tile() override
     {
-        _TIFFfree(buf);
+        if (buf)
+        {
+            _TIFFfree(buf);
+            buf = nullptr;
+        }
     }
 
     uint32_t get_uint32_pixel(size_t idx) const
@@ -563,8 +603,11 @@ private:
 
     double minval, maxval;
 
-    // low level buffer
+    // low level buffers: 'buf' is the tile (pitch tileWidth_), 'line_' stages one image scanline
     tdata_t buf = nullptr;
+    std::vector<std::uint8_t> line_;
     size_t scanline_szb = 0;
+    size_t sample_szb = 0;
+    size_t tile_szb = 0;
 };
 
