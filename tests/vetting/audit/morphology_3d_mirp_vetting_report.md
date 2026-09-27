@@ -14,8 +14,8 @@ two volume rows a reference that can actually be re-run from this tree.
 | MIRP config | `by_slice=False`, `base_feature_families="morphology"`, `base_discretisation_method="none"`, native 1×1×1 spacing |
 | Nyxus config | `D3_SurfaceFeature`, `IBSI=true`, `GREYDEPTH=128`, `PIXELSIZEUM=100` (what `test_3d_morphology_common.h` sets) |
 | Generator | `tests/vetting/oracles/gen_morphology3d_mirp.py` |
-| Test | `test_3d_morphology_mirp.h` |
-| Tolerance | axes `rel=1e-9`; volumes measured per feature — `3VOXEL_VOLUME` 0.1% band on a measured 2.338e-04% residual, `3VOLUME_CONVEXHULL` 5% band on a measured 3.41% |
+| Test | `test_3d_morphology_mirp.h`, with `test_3d_morphology_analytic.h` as a second, tool-independent oracle for `3AREA` and `3MESH_VOLUME` |
+| Tolerance | axes `rel=1e-9`; the seven mesh features `rel=1e-6` on measured residuals of 1.2e-08 to 2.4e-07; `3VOXEL_VOLUME` 0.1% band on a measured 2.338e-04% residual; `3VOLUME_CONVEXHULL` 5% band on a measured 3.28% |
 
 Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
 `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
@@ -101,43 +101,57 @@ every run (8 pins, all at rel=0). The MATLAB generator produces its two built-in
 [`PolusAI/nyxus` main fixture](https://github.com/PolusAI/nyxus/blob/main/tests/data/nifti/phantoms/ut_mask57.nii),
 and the three MATLAB-named tests assert those pins against Nyxus.
 
-That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 479997.83, which is 3.58% from
-MATLAB and 3.41% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
+That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 480655.17, which is 3.45% from
+MATLAB and 3.28% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
 a **discrete voxel hull against two separately triangulated ones** — and that sentence is the
 citation SPEC §7 asks for behind the 5% band: a definitional difference between a voxelised and a
 triangulated hull, measured against two tools rather than asserted.
 
-### `3MESH_VOLUME` is not a mesh volume
+### `3MESH_VOLUME` and `3AREA` are the IBSI mesh integrals
 
-The same run says something the MATLAB comparison alone could not. MIRP reports IBSI's volume (mesh)
-as `morph_volume` = **274338.34** — a surface-mesh integral, necessarily close to the voxel volume
-274432 for a solid ROI. Nyxus' `3MESH_VOLUME` reports **479997.83**, the convex-hull volume, because the
-implementation aliases the two:
+MIRP reports IBSI's volume (mesh) as `morph_volume` = **274338.34375** and area (mesh) as
+`morph_area_mesh` = **46739.01953125**. Nyxus computes both from the same surface — the marching-cubes
+triangulation of the mask at the 0.5 isolevel, built by `Nyxus::build_roi_surface_mesh` — and
+reproduces them:
 
-| quantity | value | vs Nyxus `3MESH_VOLUME` |
-|---|---|---|
-| IBSI volume (mesh), MIRP `morph_volume` | 274338.34 | **75% low** |
-| convex-hull volume, MIRP | 496958.32 | 3.5% |
-| Nyxus `3MESH_VOLUME` | 479997.83 | — |
+| feature | MIRP | Nyxus | rel |
+|---|---:|---:|---:|
+| `3MESH_VOLUME` (`morph_volume`) | 274338.34375 | 274338.33333333331 | 3.8e-08 |
+| `3AREA` (`morph_area_mesh`) | 46739.01953125 | 46739.022534087213 | 6.4e-08 |
 
-So the feature is measuring a hull, under a name that says mesh, and the MATLAB pin it used to carry
-(`ConvexVolume`, 497824) was consistent only because the same alias was applied when the golden was
-chosen. Its MIRP golden is the hull volume for exactly that reason: the assertion judges the alias
-against the quantity the alias computes, and pinning it against `morph_volume` instead would encode a
-75% miss as agreement. The naming/definition gap is filed as a defect for its own branch, not
-absorbed by the 5% band.
+These are the same quantity on both sides, so the residual is not a convention gap being absorbed: it
+is MIRP carrying the mesh in `float32`. Both MIRP values above are exactly representable `float32`s.
+The pins are `rel=1e-6`, one order of magnitude above the largest residual in the group.
 
-## The surface-area convention gap stays open
+The mesh volume tracks the voxel-counting volume closely — 274338.34 against 274432 — which is what a
+surface integral does on a solid ROI, and is the check that the quantity is a mesh volume at all.
 
-`3AREA` counts exposed voxel faces (59992); MIRP integrates a marching-cubes mesh
-(`morph_area_mesh` = 46739.02), a **28% difference**. It is a convention difference, not a numerical
-one, so no amount of tolerance makes it an agreement.
+### The five ratios move with them
 
-`3AREA` and the five features derived from it — `3AREA_2_VOLUME`, `3COMPACTNESS1`, `3COMPACTNESS2`,
-`3SPHERICITY`, `3SPHERICAL_DISPROPORTION` — therefore stay `status=regression` on
-`morphology3d.regression_ut_phantom`, with the reason recorded per row rather than left as a bare
-absence. Settling it means choosing between the IBSI mesh convention and the documented voxel one,
-which changes six public feature values and belongs on its own branch.
+`3AREA_2_VOLUME`, `3COMPACTNESS1`, `3COMPACTNESS2`, `3SPHERICAL_DISPROPORTION` and `3SPHERICITY` are
+area-over-volume combinations, and IBSI section 3.1 defines each over area (mesh) and volume (mesh).
+Nyxus feeds them exactly that, and all five land on MIRP:
+
+| feature | MIRP | Nyxus | rel |
+|---|---:|---:|---:|
+| `3AREA_2_VOLUME` (`morph_av`) | 0.1703699827194214 | 0.17037000249358961 | 1.2e-08 |
+| `3COMPACTNESS1` (`morph_comp_1`) | 0.015317650511860847 | 0.015317649265301225 | 8.1e-08 |
+| `3COMPACTNESS2` (`morph_comp_2`) | 0.0833655446767807 | 0.083365524768728425 | 2.4e-07 |
+| `3SPHERICAL_DISPROPORTION` (`morph_sph_dispr`) | 2.2891335487365723 | 2.2891337610474518 | 9.3e-08 |
+| `3SPHERICITY` (`morph_sphericity`) | 0.4368464946746826 | 0.43684646874563782 | 5.9e-08 |
+
+The denominator is load-bearing here and is worth recording: with the voxel-counting volume in it
+instead, the same five sit 2.3e-04 to 6.8e-04 from MIRP — small enough that a 1e-3 band would have
+passed them, and a definitional difference all the same. A band that passes a known-wrong definition
+is a test bug, so the volume term follows IBSI rather than the band being widened to cover it.
+
+## A second, tool-independent oracle
+
+`test_3d_morphology_analytic.h` pins `3AREA` and `3MESH_VOLUME` against closed-form geometry, so the
+two features do not rest on MIRP alone. A lone voxel's 0.5-isolevel surface is the octahedron with
+vertices half a lattice step out (volume 1/6, area √3) and a solid box is a bevelled box whose two
+integrals are exact functions of its sides; both hold at `rel=1e-12`. Those shapes separate the
+conventions outright — a count of exposed voxel faces returns 6 for the single voxel against √3.
 
 ## Include hygiene and file-level observations
 

@@ -768,9 +768,9 @@ features over the (1-based) bin indices.
    * - Nyxus feature code
      - Description
    * - 3AREA
-     - total of areas of surface faces
+     - area of the triangle mesh of the ROI's surface
    * - 3AREA_2_VOLUME
-     - ratio of the surface area to the voxel volume (lower values correspond to more sphere-like ROIs)
+     - ratio of the surface mesh area to the mesh volume (lower values correspond to more sphere-like ROIs)
    * - 3COMPACTNESS1
      - measure of how compact the shape of the ROI is to a sphere
    * - 3COMPACTNESS2
