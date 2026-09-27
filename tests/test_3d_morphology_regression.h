@@ -39,14 +39,13 @@ static const ref_vals_map<double> morphology_3d_regression_ref_vals{
 // arithmetic supports: double-precision geometry with no approximation left in the path, pinned to
 // 17 digits.
 //
-// 3VOLUME_CONVEXHULL held rel=1e-3 for as long as the hull was built in float. It is built in double
-// now, and the eps the facet predicate compares against is derived from the cloud's own coordinate
-// extent, so the decision has a margin no compiler can round away: the contour voxels are lattice
-// points, so a point that is not exactly coplanar with a facet stands at least |det|/|normal| off
-// it, and with integer coordinates under 1e3 that is upwards of 1e-5 -- eight orders of magnitude
-// above both the eps (~4e-13 here) and the rounding error of the distance itself (~2e-14). Nothing
-// between those scales exists for a toolchain to disagree about, which is why the pin can hold at
-// rel=1e-9 where the float hull spread 6.5e-04 across platforms.
+// 3VOLUME_CONVEXHULL holds the same band because the hull is built in double and the eps its facet
+// predicate compares against is derived from the cloud's own coordinate extent, so the decision has
+// a margin no compiler can round away: the contour voxels are lattice points, so a point that is not
+// exactly coplanar with a facet stands at least |det|/|normal| off it, and with integer coordinates
+// under 1e3 that is upwards of 1e-5 -- eight orders of magnitude above both the eps (~4e-13 here) and
+// the rounding error of the distance itself (~2e-14). Nothing between those scales exists for a
+// toolchain to disagree about, so the facet set, and with it the pin, is the same on every platform.
 static constexpr double MORPHOLOGY_3D_REGRESSION_FRAC_TOLERANCE = 1.e9;
 
 static void assert_3d_morphology_feature_regression (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
