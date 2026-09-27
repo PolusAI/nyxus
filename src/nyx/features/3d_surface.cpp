@@ -1,9 +1,11 @@
 #define _USE_MATH_DEFINES	// for M_PI, etc.
+#include <limits>
 #include <regex>
 #include "../featureset.h"
 #include "../environment.h"	
 #include "../3rdparty/quickhull.hpp"
 #include "../3rdparty/dsyevj3.h"
+#include "3d_mesh.h"
 #include "3d_surface.h"
 
 namespace Nyxus
@@ -279,14 +281,17 @@ void D3_SurfaceFeature::build_surface (LR & r)
 {
 	// read the point cloud of contours
 	constexpr std::size_t dim = 3;
-	using Points = std::vector<std::array<float, dim>>;
+	// quick_hull deduces its arithmetic from the point's element type, so the points carry double:
+	// the facet predicate resolves plane distances that single precision cannot represent apart at
+	// ROI coordinate magnitudes.
+	using Points = std::vector<std::array<double, dim>>;
 	Points P;
 	for (auto& plane : r.contours_3D)
 	{
 		for (auto ip : plane)
 		{
 			auto v = r.raw_pixels_3D[ip];
-			P.push_back (std::array<float, 3>({ (float)v.x, (float)v.y, (float)v.z }));
+			P.push_back (std::array<double, 3>({ (double)v.x, (double)v.y, (double)v.z }));
 		}
 	}
 
@@ -296,12 +301,22 @@ void D3_SurfaceFeature::build_surface (LR & r)
 // Build the convex-hull facet complex from a contour point cloud. Shared by the in-core
 // build_surface and the out-of-core osized_calculate (which collects the same contour points
 // from the disk-backed voxel cloud), so both produce an identical hull.
-void D3_SurfaceFeature::build_hull (const std::vector<std::array<float, 3>>& P)
+void D3_SurfaceFeature::build_hull (const std::vector<std::array<double, 3>>& P)
 {
 	constexpr std::size_t dim = 3;
-	using Points = std::vector<std::array<float, dim>>;
+	using Points = std::vector<std::array<double, dim>>;
 
-	const auto eps = 1e-10f;
+	double maxcoord = 1.0;
+	for (const auto& p : P)
+		maxcoord = std::max ({ maxcoord, std::abs(p[0]), std::abs(p[1]), std::abs(p[2]) });
+
+	// eps is the tolerance on "is this point outside the facet plane", so it has to sit above the
+	// rounding error of the distances it judges and below the smallest real gap between a voxel and
+	// a facet. That rounding error scales with the coordinate magnitude, so eps is derived from the
+	// cloud's own extent rather than fixed: a constant tolerance is only valid at one ROI size, and
+	// below the arithmetic's resolution the predicate decides on noise and the facet set -- with it
+	// the hull volume -- stops being reproducible across toolchains.
+	const double eps = 16.0 * std::numeric_limits<double>::epsilon() * maxcoord;
 	quick_hull<typename Points::const_iterator> qh{ dim, eps };
 	qh.add_points(std::cbegin(P), std::cend(P));
 	auto initial_simplex = qh.get_affine_basis();
@@ -324,7 +339,7 @@ void D3_SurfaceFeature::build_hull (const std::vector<std::array<float, 3>>& P)
 		auto ax = (*V[0])[0], ay = (*V[0])[1], az = (*V[0])[2];
 		auto bx = (*V[1])[0], by = (*V[1])[1], bz = (*V[1])[2];
 		auto cx = (*V[2])[0], cy = (*V[2])[1], cz = (*V[2])[2];
-		float a[3] = { ax, ay, az }, b[3] = { bx, by, bz }, c[3] = {cx, cy, cz};
+		double a[3] = { ax, ay, az }, b[3] = { bx, by, bz }, c[3] = {cx, cy, cz};
 		Simplex3 s(a, b, c);
 		hull_complex.push_back(s);
 	}
@@ -345,13 +360,21 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 			h = r.aabb.get_height(),
 			d = r.aabb.get_z_depth();
 
-		fval_AREA = 2 * (w*h + h*d + w*d);
-		fval_VOLUME_CONVEXHULL = fval_VOXEL_VOLUME = fval_MESH_VOLUME = w * h * d;
-		fval_AREA_2_VOLUME = fval_AREA / fval_VOXEL_VOLUME;
-		fval_COMPACTNESS1 = fval_VOXEL_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
-		fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
-		fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
-		fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
+		// The ROI is the whole box, so its marching-cubes surface is a bevelled box and the two mesh
+		// integrals have a closed form: each of the 4*(w+h+d-3) cells along an interior edge and each
+		// of the 8 corner cells cuts a fixed amount off the staircase. This reproduces
+		// build_roi_surface_mesh() exactly, down to a one-voxel box.
+		const double edgecells = double(w) + double(h) + double(d) - 3.;
+		fval_AREA = 2. * (double(w) * h + double(h) * d + double(w) * d)
+			- 2. * edgecells * (2. - std::sqrt(2.)) - (6. - std::sqrt(3.));
+		fval_MESH_VOLUME = double(w) * h * d - edgecells / 2. - 5. / 6.;
+		// the convex hull of a box is the box itself
+		fval_VOLUME_CONVEXHULL = fval_VOXEL_VOLUME = double(w) * h * d;
+		fval_AREA_2_VOLUME = fval_AREA / fval_MESH_VOLUME;
+		fval_COMPACTNESS1 = fval_MESH_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
+		fval_COMPACTNESS2 = 36. * M_PI * fval_MESH_VOLUME * fval_MESH_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
+		fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_MESH_VOLUME * fval_MESH_VOLUME, 1. / 3.);
+		fval_SPHERICITY = std::pow(36. * M_PI * fval_MESH_VOLUME * fval_MESH_VOLUME, 1. / 3.) / fval_AREA;
 
 		fval_MAJOR_AXIS_LEN =
 		fval_MINOR_AXIS_LEN =
@@ -403,45 +426,13 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 		r.contours_3D.push_back (K);
 	}
 
-	// surface area: count exposed voxel faces in the 6-neighborhood
-	struct VoxelKey
-	{
-		StatsInt x, y, z;
-		bool operator==(const VoxelKey& other) const
-		{
-			return x == other.x && y == other.y && z == other.z;
-		}
-	};
-	struct VoxelKeyHash
-	{
-		std::size_t operator()(const VoxelKey& key) const noexcept
-		{
-			std::size_t h = std::hash<StatsInt>{}(key.x);
-			h ^= std::hash<StatsInt>{}(key.y) + 0x9e3779b9 + (h << 6) + (h >> 2);
-			h ^= std::hash<StatsInt>{}(key.z) + 0x9e3779b9 + (h << 6) + (h >> 2);
-			return h;
-		}
-	};
-	std::unordered_set<VoxelKey, VoxelKeyHash> voxels;
-	voxels.reserve(r.raw_pixels_3D.size() * 2);
-	for (const auto& vox : r.raw_pixels_3D)
-		voxels.insert({ vox.x, vox.y, vox.z });
-
-	static constexpr StatsInt nbr[6][3] = {
-		{ 1, 0, 0 }, { -1, 0, 0 },
-		{ 0, 1, 0 }, { 0, -1, 0 },
-		{ 0, 0, 1 }, { 0, 0, -1 }
-	};
-
-	fval_AREA = 0.0;
-	for (const auto& vox : r.raw_pixels_3D)
-	{
-		for (const auto& d : nbr)
-		{
-			if (voxels.find({ vox.x + d[0], vox.y + d[1], vox.z + d[2] }) == voxels.end())
-				fval_AREA += 1.0;
-		}
-	}
+	// surface area and mesh volume: integrals of the ROI's marching-cubes surface. That is the
+	// surface IBSI section 3.1 defines area (mesh) and volume (mesh) over, and the one MIRP and
+	// pyradiomics integrate, so both features are directly comparable to those references.
+	std::vector<Nyxus::Triangle3> surface_mesh;
+	Nyxus::build_roi_surface_mesh (surface_mesh, r.raw_pixels_3D);
+	fval_AREA = Nyxus::mesh_area (surface_mesh);
+	fval_MESH_VOLUME = Nyxus::mesh_volume (surface_mesh);
 
 	// -- build the hull complex
 	build_surface (r);
@@ -492,13 +483,14 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 		fval_VOLUME_CONVEXHULL += d / 6;
 	}
 
-	// volume-area ratio features
-	fval_MESH_VOLUME = fval_VOLUME_CONVEXHULL;
-	fval_AREA_2_VOLUME = fval_AREA / fval_VOXEL_VOLUME;
-	fval_COMPACTNESS1 = fval_VOXEL_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
-	fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
-	fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
-	fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
+	// volume-area ratio features. 3MESH_VOLUME comes from the surface mesh above; the hull volume is
+	// 3VOLUME_CONVEXHULL alone, a different quantity on any non-convex ROI. The five ratios below
+	// combine area (mesh) with volume (mesh), which is how IBSI section 3.1 defines each of them.
+	fval_AREA_2_VOLUME = fval_AREA / fval_MESH_VOLUME;
+	fval_COMPACTNESS1 = fval_MESH_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
+	fval_COMPACTNESS2 = 36. * M_PI * fval_MESH_VOLUME * fval_MESH_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
+	fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_MESH_VOLUME * fval_MESH_VOLUME, 1. / 3.);
+	fval_SPHERICITY = std::pow(36. * M_PI * fval_MESH_VOLUME * fval_MESH_VOLUME, 1. / 3.) / fval_AREA;
 
 	// pca features
 	double K[3][3];
@@ -571,7 +563,7 @@ void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 
 	// Collected boundary points for the convex hull (bounded by surface area), plus the running
 	// centroid of those points (matches the in-core centroid over contour voxels).
-	std::vector<std::array<float, 3>> P;
+	std::vector<std::array<double, 3>> P;
 	double cx = 0, cy = 0, cz = 0;
 	size_t hullCloudLen = 0;
 
@@ -602,7 +594,7 @@ void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 		for (auto ik : K)
 		{
 			const auto& v = slab[ik];
-			P.push_back (std::array<float, 3>({ (float) v.x, (float) v.y, (float) v.z }));
+			P.push_back (std::array<double, 3>({ (double) v.x, (double) v.y, (double) v.z }));
 			cx += v.x; cy += v.y; cz += v.z;
 			hullCloudLen++;
 		}

@@ -12,24 +12,30 @@ import sys
 import scanlib
 
 SOURCES = [
+    "test_3d_morphology_analytic.h",
     "test_3d_morphology_matlab.h",
     "test_3d_morphology_mirp.h",
     "test_3d_morphology_regression.h",
 ]
 
+MESH = ("IBSI area (mesh) / volume (mesh) and the ratios of them: Nyxus and MIRP integrate the same "
+        "marching-cubes surface, so the residual is MIRP's float32 storage of the mesh (<=2.4e-07) "
+        "and the pin is rel=1e-6")
+
 NOTE = {
-    "3AREA": "Nyxus counts exposed voxel faces (59992); MIRP/pyradiomics integrate a marching-cubes "
-             "mesh (46739), a 28% convention difference -- regression-only until it is settled",
-    "3AREA_2_VOLUME": "inherits the 3AREA surface-area convention difference",
-    "3COMPACTNESS1": "inherits the 3AREA surface-area convention difference",
-    "3COMPACTNESS2": "inherits the 3AREA surface-area convention difference",
-    "3SPHERICITY": "inherits the 3AREA surface-area convention difference",
-    "3SPHERICAL_DISPROPORTION": "inherits the 3AREA surface-area convention difference",
-    "3MESH_VOLUME": "Nyxus aliases this to the convex-hull volume rather than integrating the mesh; "
-                    "MIRP and MATLAB separately assert the hull quantity at a 5% band",
-    "3VOLUME_CONVEXHULL": "discrete voxel hull (479997.83) vs MIRP's triangulated qhull volume, "
-                          "measured 3.41%; MATLAB regionprops3 separately asserts ConvexVolume "
-                          "497824 at 3.58%; "
+    "3AREA": "IBSI area (mesh) = MIRP morph_area_mesh 46739.0195, pinned at rel=1e-6; also pinned "
+             "against the octahedron and bevelled-box closed forms in the analytic file",
+    "3AREA_2_VOLUME": MESH,
+    "3COMPACTNESS1": MESH,
+    "3COMPACTNESS2": MESH,
+    "3SPHERICITY": MESH,
+    "3SPHERICAL_DISPROPORTION": MESH,
+    "3MESH_VOLUME": "IBSI volume (mesh) = MIRP morph_volume 274338.3438, pinned at rel=1e-6; also "
+                    "pinned against closed-form solids in the analytic file. MATLAB regionprops3 "
+                    "carries no mesh volume, so it holds no row for this feature",
+    "3VOLUME_CONVEXHULL": "discrete voxel hull (480655.17) vs MIRP's triangulated qhull volume, "
+                          "measured 3.28%; MATLAB regionprops3 separately asserts ConvexVolume "
+                          "497824 at 3.45%; "
                           "the two oracles agree with each other to 0.17%",
     "3VOXEL_VOLUME": "MIRP morph_vol_approx and MATLAB Volume both report 274432; each separately "
                      "asserts Nyxus 274431.358260 within rel=1e-3 (2.338e-04% residual)",
@@ -42,7 +48,7 @@ NOTE = {
 FAMILY = scanlib.Family(
     dim="3D", family="morphology",
     sources=SOURCES,
-    oracle_suffix={"matlab": "matlab", "mirp": "mirp"},
+    oracle_suffix={"analytic": "analytic", "matlab": "matlab", "mirp": "mirp"},
     notes=NOTE,
     enum_dim_prefix=True,
     enum_alias="MORPHOLOGY",

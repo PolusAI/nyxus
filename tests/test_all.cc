@@ -99,6 +99,7 @@
 #include "test_2d_wholeslide_mechanics.h"	// refusal points of the 2D whole-slide workflow
 #include "test_omezarr_mechanics.h"
 #include "test_2d_omezarr_mechanics.h"
+#include "test_3d_morphology_analytic.h"
 #include "test_3d_morphology_regression.h"
 #include "test_3d_morphology_mechanics.h"
 #include "test_3d_morphology_matlab.h"
@@ -803,10 +804,6 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOLUME_CONVEX_HULL_MATLAB) {
 	ASSERT_NO_THROW(test_3d_morphology_volume_convex_hull_matlab());
 }
 
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MESH_VOLUME_MATLAB) {
-	ASSERT_NO_THROW(test_3d_morphology_mesh_volume_matlab());
-}
-
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_MIRP) {
 	ASSERT_NO_THROW(test_3d_morphology_voxel_volume_mirp());
 }
@@ -817,6 +814,50 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOLUME_CONVEX_HULL_MIRP) {
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MESH_VOLUME_MIRP) {
 	ASSERT_NO_THROW(test_3d_morphology_mesh_volume_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_AREA_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_area_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_AREA_2_VOLUME_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_area_2_volume_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COMPACTNESS1_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_compactness1_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COMPACTNESS2_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_compactness2_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERICAL_DISPROPORTION_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_spherical_disproportion_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERICITY_MIRP) {
+	ASSERT_NO_THROW(test_3d_morphology_sphericity_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SINGLE_VOXEL_MESH_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_morphology_single_voxel_mesh_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_BOX_MESH_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_morphology_box_mesh_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERE_MESH_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_morphology_sphere_mesh_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_EMPTY_ROI_MESH_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_morphology_empty_roi_mesh_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SURFACE_MESH_CLOSED_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_morphology_surface_mesh_closed_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MAJOR_AXIS_LEN_MIRP) {
