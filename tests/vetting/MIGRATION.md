@@ -312,7 +312,7 @@ TU, so the common header keeps the forward declaration. Verified: **696/696 — 
   `get_3d_segmented_phantom` forward decl, and the `test_3shape_feature` helper.
 - `test_3d_morphology_regression.h` — 8 self-referential-snapshot shape features (area, area2volume,
   compactness1/2, spherical_disproportion, sphericity, volumeconvhull, voxelvolume).
-- `test_3d_morphology_matlab.h` — `3MESH_VOLUME` (registry matlab/vetted) + the covariance/eigenvalue
+- `test_3d_morphology_matlab.h` — `3MESH_VOLUME` (registry matlab/vetted at the time; that row is gone, `regionprops3` has no mesh volume) + the covariance/eigenvalue
   math test (`Pixel3::calc_cov_matrix` / `Nyxus::calc_eigvals`) whose GT is MATLAB `cov()`/`eig()`.
 
 9 registry rows repointed (they also list `test_3d_feature_coverage.h`, split in Wave 9).

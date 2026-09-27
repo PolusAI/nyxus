@@ -43,10 +43,14 @@ public:
 
 private:
 
+	// Double, not float: the hull's facet predicate compares plane distances against an epsilon, and
+	// in single precision at ROI coordinate magnitudes the rounding error of those distances swamps
+	// any workable epsilon, so which nearly-coplanar voxels become hull vertices is decided by
+	// compiler-dependent noise rather than by geometry.
 	struct Simplex3
 	{
-		float a[3], b[3], c[3];	// layout: x, y, z
-		Simplex3 (const float* a_, const float* b_, const float* c_)
+		double a[3], b[3], c[3];	// layout: x, y, z
+		Simplex3 (const double* a_, const double* b_, const double* c_)
 		{
 			for (int i = 0; i < 3; i++)
 			{
@@ -61,7 +65,7 @@ private:
 
 	void build_surface (LR& r);
 	// Build the hull complex from a contour point cloud (shared by in-core + out-of-core paths)
-	void build_hull (const std::vector<std::array<float, 3>>& P);
+	void build_hull (const std::vector<std::array<double, 3>>& P);
 
 	double fval_AREA,
 		fval_AREA_2_VOLUME,

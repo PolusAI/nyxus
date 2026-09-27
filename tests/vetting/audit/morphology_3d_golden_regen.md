@@ -12,14 +12,15 @@ feature × config recipe × oracle assertion and whose rollup asks whether at le
 
 ## MIRP goldens — `test_3d_morphology_mirp.h`
 
-Recipe `morphology3d.mirp_ibsi`. Covers the five PCA axis features and the three volume features.
+Recipe `morphology3d.mirp_ibsi`. Covers the five PCA axis features, two volume features
+(voxel-counting and convex hull) and the seven mesh features.
 
 ```
 python tests/vetting/oracles/gen_morphology3d_mirp.py
 ```
 
-The generator prints a paste-ready table, re-verifies every pin (8 of them, last run all at rel=0),
-checks the structural identities, and prints the cross-check quantities — including the MATLAB
+The generator prints three paste-ready tables, re-verifies every pin (14 of them, last run all at
+rel=0), checks the structural identities, and prints the cross-check quantities — including the MATLAB
 numbers asserted separately. It exits non-zero on any mismatch, any unproducible or unpinned golden,
 and any identity violation. Needs mirp 2.6.0:
 `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy`.
@@ -36,6 +37,27 @@ and any identity violation. Needs mirp 2.6.0:
 
 The two orderings agree only because MAJOR is the largest eigenvalue — which is exactly the
 correspondence a past defect broke, so the generator re-checks it every run.
+
+**The mesh features.** These are pinned in `morphology_3d_mirp_mesh_ref_vals` at `rel=1e-6`:
+
+| Nyxus | MIRP | MIRP value | Nyxus | rel |
+|---|---|---:|---:|---:|
+| `3AREA` | `morph_area_mesh` | 46739.01953125 | 46739.022534087213 | 6.4e-08 |
+| `3MESH_VOLUME` | `morph_volume` | 274338.34375 | 274338.33333333331 | 3.8e-08 |
+| `3AREA_2_VOLUME` | `morph_av` | 0.1703699827194214 | 0.17037000249358961 | 1.2e-08 |
+| `3COMPACTNESS1` | `morph_comp_1` | 0.015317650511860847 | 0.015317649265301225 | 8.1e-08 |
+| `3COMPACTNESS2` | `morph_comp_2` | 0.0833655446767807 | 0.083365524768728425 | 2.4e-07 |
+| `3SPHERICAL_DISPROPORTION` | `morph_sph_dispr` | 2.2891335487365723 | 2.2891337610474518 | 9.3e-08 |
+| `3SPHERICITY` | `morph_sphericity` | 0.4368464946746826 | 0.43684646874563782 | 5.9e-08 |
+
+Both sides integrate the same surface — the marching-cubes triangulation of the mask at the 0.5
+isolevel — so these are the same quantity, not near ones, and the residual is MIRP carrying the mesh
+in `float32`: every MIRP value above is an exactly representable `float32`. `rel=1e-6` sits one order
+of magnitude above the largest of them.
+
+What MIRP reports and nothing pins is the part Nyxus implements no feature for: the density family
+(`morph_*_dens_*`), `morph_diam`, `morph_integ_int`, `morph_moran_i` and `morph_geary_c`. The
+generator fails on an unpinned mesh or volume column, so that list cannot silently grow.
 
 **It reads the `.nii` with no NIfTI library.** The mirp env has neither SimpleITK nor nibabel. The
 phantoms are uncompressed single-file NIfTI-1, so the header is parsed directly with `numpy` (`dim[8]`
@@ -54,27 +76,80 @@ failed them before:
 
 ## MATLAB goldens — `test_3d_morphology_matlab.h`
 
-The three volume goldens were produced by an offline MATLAB R2026a Image Processing Toolbox session:
+The two volume goldens were produced by an offline MATLAB R2026a Image Processing Toolbox session:
 
 ```matlab
 M = niftiread('ut_mask57.nii') == 57;
 s = regionprops3(M, 'Volume', 'ConvexVolume');
 ```
 
-`Volume` → `3VOXEL_VOLUME` = 274432; `ConvexVolume` → `3VOLUME_CONVEXHULL` and, through the Nyxus
-alias, `3MESH_VOLUME` = 497824.
+`Volume` → `3VOXEL_VOLUME` = 274432; `ConvexVolume` → `3VOLUME_CONVEXHULL` = 497824.
+
+`regionprops3` has no mesh-volume property, so it holds no row for `3MESH_VOLUME`. That feature is an
+integral of the ROI surface mesh and is covered by MIRP's `morph_volume` and by the closed-form
+solids in `test_3d_morphology_analytic.h`.
 
 The checked-in generator is `tests/vetting/oracles/gen_morphology3d_matlab.m`. It downloads the mask
 from the [`PolusAI/nyxus` main fixture](https://github.com/PolusAI/nyxus/blob/main/tests/data/nifti/phantoms/ut_mask57.nii)
 and calls MATLAB's `niftiread` and `regionprops3` built-ins directly. It
 requires licensed MATLAB R2026a with Image Processing Toolbox. Octave's `image` package has no
-`regionprops3`. The three values are pinned and asserted in
+`regionprops3`. The two values are pinned and asserted in
 `test_3d_morphology_matlab.h`; MIRP supplies a separate second oracle for the same feature/config
 pairs. The checked-in generator closes the SPEC §6.4 provenance gap without making MATLAB a CI
 runtime dependency.
 
-`3AREA` was deliberately absent from the MATLAB table too: `regionprops3` `SurfaceArea` disagrees by
-more than 10%, for the same reason MIRP does (see below).
+`3AREA` is absent from the MATLAB table: `regionprops3` `SurfaceArea` is not the IBSI mesh area and
+disagrees by more than 10%. MIRP's `morph_area_mesh` is the right oracle for it.
+
+## Analytic goldens — `test_3d_morphology_analytic.h`
+
+Recipe `morphology3d.analytic_lattice_solids`. Nothing to regenerate: the goldens are closed-form
+geometry computed in the assertions themselves, from voxel clouds the file builds.
+
+A lone voxel's 0.5-isolevel surface is the octahedron with vertices half a lattice step out along each
+axis, so `3MESH_VOLUME` = 1/6 and `3AREA` = √3 exactly. A solid *w*×*h*×*d* box comes out bevelled —
+each of the 4(*w*+*h*+*d*−3) cells along an interior edge run, and each of the 8 corner cells, cuts a
+fixed amount off the staircase — so both integrals are exact functions of the three sides:
+
+```
+volume = whd − (w+h+d−3)/2 − 5/6
+area   = 2(wh+hd+wd) − 2(w+h+d−3)(2−√2) − (6−√3)
+```
+
+Both shapes hold at `rel=1e-12`. Those same two formulas are what `D3_SurfaceFeature`'s whole-volume
+(`SINGLEROI`) branch evaluates in place of meshing every voxel, so the file pins that shortcut against
+the general path as well.
+
+The two discretised balls are a bound rather than a pin. `3MESH_VOLUME` converges on 4/3·π·r³ (−3.6% at
+r=5, −0.15% by r=15). `3AREA` does **not** converge on 4·π·r²: a binary mask's facets keep lattice-scale
+orientation at any radius, so the area settles about 8.7% above the smooth sphere (+8.3%, +9.2%, +9.0%,
++8.5%, +8.7% at r = 5, 10, 15, 20, 25). That excess is the convention itself and is shared with MIRP
+and pyradiomics. What the ball asserts is that the area is the mesh's and not a staircase's: a count of
+exposed voxel faces lands near +50%, since the mean of |nx|+|ny|+|nz| over a sphere is 1.5.
+
+## The marching-cubes case table
+
+Both mesh integrals read `MC_TRIANGLES` in `src/nyx/features/3d_mesh.cpp`, a 256-entry table derived
+and re-verified by `tests/vetting/audit/derive_marching_cubes_table.py`:
+
+```
+python tests/vetting/audit/derive_marching_cubes_table.py            # derive and verify
+python tests/vetting/audit/derive_marching_cubes_table.py --emit     # print the C++ table
+```
+
+The script contours each cube's six faces with marching squares and chains the segments into the
+closed loops the surface has to span. An ambiguous face — two diagonal corners inside — is resolved by
+separating them, a rule that reads only that face's own four corners, so two cubes sharing a face
+always cut it the same way. For the 134 masks with no ambiguous face it adopts the classic
+triangulation of those loops, taken from `skimage.measure.marching_cubes(method='lorensen')` and
+accepted only after checking that it spans exactly the loops derived here; that settles an arbitrary
+diagonal choice the loops leave open, worth a few parts in a thousand of area, in favour of the one
+MIRP and pyradiomics integrate. The other 120 masks keep the derived triangulation, because the
+classic table leaves those cubes open. scikit-image is a generation-time reference only
+(BSD-3-Clause), never a build or CI dependency.
+
+The script's own checks: the surface closes on random volumes exercising all 256 masks, a lone voxel
+gives exactly 1/6 and √3, and every solid box matches the closed form above.
 
 ## Covariance / eigenvalue kernel — `test_3d_morphology_mechanics.h`
 
@@ -111,73 +186,67 @@ prints the whole table in paste-ready form, read out of the same fixture the ass
 it `false`, so the recipe's `GREYDEPTH`/`IBSI`/`PIXELSIZEUM` do not reach these numbers — which is why
 the retired sweep's pins, taken at a different recipe, were byte-identical to these.
 
-**Why the band moved from 10% to `rel=1e-9`.** A 10% band passes a value off by a factor of 1.1, and
-two of the eight goldens had drifted inside it unnoticed: `3AREA` read 58457 against an actual 59992
-(2.6%), and `3VOLUME_CONVEXHULL` read 478516 — a pin dating to #279 — against an actual 479997.83
-(0.31%). Both were regenerated here. The corrected hull number also moves the divergences quoted
-against MIRP and MATLAB: 3.41% and 3.58%, not 3.71% and 3.88%.
+**Why the band is `rel=1e-9` and not 10%.** A 10% band passes a value off by a factor of 1.1, and two
+of the eight goldens had once drifted inside it unnoticed: `3AREA` read 58457 against the then-actual
+59992 (2.6%), and `3VOLUME_CONVEXHULL` read 478516 — a pin dating to #279 — against 479997.83 (0.31%).
 
-`rel=1e-9` is not a guess at what toolchains might agree on. Seven of the eight values are
-**bit-for-bit identical** on MSVC Release, Linux gcc `RelWithDebInfo -O1` under
-`-fsanitize=address,undefined`, and Apple clang Release on `macos-14`: those seven are
-double-precision arithmetic with no approximation in the path, so the band has the whole double range
-as headroom.
+`rel=1e-9` is not a guess at what toolchains might agree on. Every value in the table is
+double-precision arithmetic with no approximation left in the path, so the band has the whole double
+range as headroom. Seven of the eight were already **bit-for-bit identical** on MSVC Release, Linux
+gcc `RelWithDebInfo -O1` under `-fsanitize=address,undefined`, and Apple clang Release on `macos-14`;
+`3VOLUME_CONVEXHULL` was the exception, and the next section is why it no longer is.
 
-The eighth, `3VOLUME_CONVEXHULL`, is not, and gets `rel=1e-3`. Why is the next section.
+**What the snapshots add.** Six of the eight also carry a MIRP oracle row, and `3AREA` carries an
+analytic one as well, so the snapshot is not the only thing holding them — it records that the number
+has not moved, which an oracle row at a band cannot. `3VOLUME_CONVEXHULL` is the one value here with
+no same-definition oracle anywhere: MIRP and MATLAB both triangulate the hull where Nyxus builds a
+discrete voxel hull, a measured 3.28%.
 
-**Why these six are snapshot-only.** `3AREA` counts exposed voxel faces (59992) where MIRP and
-pyradiomics integrate a marching-cubes mesh (46739) — a 28% *convention* difference. `3AREA_2_VOLUME`,
-`3COMPACTNESS1`, `3COMPACTNESS2`, `3SPHERICITY` and `3SPHERICAL_DISPROPORTION` are all derived from
-`3AREA` and inherit it. No tolerance turns that into an agreement; settling it means choosing a
-convention, which changes six public feature values.
+## The convex hull is built in double, with eps scaled to the ROI
 
-## The convex hull is built in float
-
-`3VOLUME_CONVEXHULL` is the one value in this family that is not computed in double, and it is the
-one that does not reproduce across compilers.
-
-`D3_SurfaceFeature::build_surface` (`src/nyx/features/3d_surface.cpp`) copies the contour points into
+`D3_SurfaceFeature::build_surface` (`src/nyx/features/3d_surface.cpp`) loads the contour points into
+`std::array<double,3>` and derives `quick_hull`'s epsilon from the cloud's own coordinate extent:
 
 ```cpp
-using Points = std::vector<std::array<float, dim>>;
+using Points = std::vector<std::array<double, dim>>;
 ...
-const auto eps = 1e-10f;
+const double eps = 16.0 * std::numeric_limits<double>::epsilon() * maxcoord;
 quick_hull<typename Points::const_iterator> qh{ dim, eps };
 ```
 
-The coordinates run to ~100, where consecutive `float`s are about **7.6e-6** apart, so the
-plane-distance quantities `quick_hull` compares against `eps` carry rounding error many orders of
-magnitude larger than `eps = 1e-10f` itself. The "is this point outside the facet plane" test is
-therefore decided by float rounding noise, and *which* nearly-coplanar boundary voxels get promoted
-to hull vertices depends on how a given compiler rounds and contracts that arithmetic. A different
-facet set integrates to a slightly different volume.
+`quick_hull` deduces its arithmetic from the point's element type, so the element type is the whole
+precision decision. `eps` is the tolerance on "is this point outside the facet plane", and it has to
+sit above the rounding error of the distances it judges and below the smallest real gap between a
+voxel and a facet. Both scale with the ROI, which is why it is derived rather than fixed.
 
-Measured on the segmented phantom:
+**The margin.** The contour voxels are lattice points, so a point that is not exactly coplanar with a
+facet stands at least |det|/|normal| away from it, with `det` a non-zero integer. For integer
+coordinates under 10³ that is upwards of 1e-5. On the segmented phantom `eps` is ~4e-13 and the
+rounding error of the distance itself ~2e-14. Nothing exists between those scales for a compiler to
+disagree about, which is what lets the regression pin hold at `rel=1e-9`.
 
-| toolchain | `3VOLUME_CONVEXHULL` |
+**Why that matters here.** In single precision it did not hold. With the points in `float` and a
+hard-coded `eps = 1e-10f`, coordinates of ~100 put consecutive representable values ~7.6e-6 apart, so
+the plane distances carried rounding error six orders of magnitude above `eps` and the predicate was
+decided by noise: *which* nearly-coplanar boundary voxels became hull vertices depended on how a given
+compiler rounded and contracted that arithmetic, and a different facet set integrates to a different
+volume. Measured on the segmented phantom at the time:
+
+| toolchain | `3VOLUME_CONVEXHULL`, float hull |
 |---|---|
 | MSVC 19.44, Release, Ninja (local) | 479997.83333333186 |
-| MSVC, Release, `windows-latest` (CI) | 479997.83333333186 — job green at `rel=1e-9` |
-| gcc, Release, `ubuntu-latest` (CI) | 479997.83333333186 — job green at `rel=1e-9` |
+| MSVC, Release, `windows-latest` (CI) | 479997.83333333186 |
+| gcc, Release, `ubuntu-latest` (CI) | 479997.83333333186 |
 | gcc 13, RelWithDebInfo `-O1`, ASan+UBSan (local) | 479997.83333333186 |
 | Apple clang, Release, `macos-14` (CI) | **480308.33333333244** |
 
-Four platforms, one outlier, rel **6.5e-4** apart — five to six orders of magnitude above what double
-arithmetic on a fixed algorithm would leave, and the reason the pinned value carries `rel=1e-3` while
-its seven neighbours carry `rel=1e-9`. The three green toolchains reproduce the pin *exactly*: their
-GoogleTest jobs passed the same assertion at `rel=1e-9`, which is what makes the outlier a property
-of the code rather than an argument for loosening everything. `rel=1e-3` is the tightest band above the measured spread; it is not slack, and it
-still catches drift of the size the previous 10% band had been hiding (the stale pin was 3.1e-3 out).
+Four platforms, one outlier, rel **6.5e-4** — five to six orders of magnitude above what double
+arithmetic on a fixed algorithm leaves, and the reason the pin carried `rel=1e-3` while its seven
+neighbours carried `rel=1e-9`. The double hull returns **480655.16666666372**, and the pin is back at
+`rel=1e-9` with its neighbours.
 
-`3MESH_VOLUME` is aliased to the same quantity, so it inherits this. Its MIRP assertion is unaffected
-in practice — the 5% band absorbs a 6.5e-4 wobble on top of the 3.4% convention difference — but the
-divergence figures this document quotes are toolchain-dependent in their third digit: 3.41% from MIRP
-and 3.58% from MATLAB on MSVC/gcc, 3.35% and 3.52% on Apple clang.
-
-**What a fix looks like, when someone takes it:** build the hull in `double` and give `eps` a value
-derived from the coordinate magnitude rather than a hard-coded constant below the arithmetic's noise
-floor. That moves two public feature values, so it belongs on its own branch, and this band should be
-tightened back to `rel=1e-9` in the same change.
+The divergence figures quoted against the two hull oracles move with it: **3.28%** from MIRP and
+**3.45%** from MATLAB `regionprops3`, and they no longer carry a toolchain-dependent third digit.
 
 ## The retired coverage sweep
 
@@ -187,9 +256,9 @@ tightened back to `rel=1e-9` in the same change.
 
 | what the sweep did | where it lives now |
 |---|---|
-| MIRP band check on `3VOXEL_VOLUME`, `3VOLUME_CONVEXHULL`, `3MESH_VOLUME` | `test_3d_morphology_mirp.h`, the same goldens and the same bands, through named tests |
+| MIRP band check on `3VOXEL_VOLUME`, `3VOLUME_CONVEXHULL`, `3MESH_VOLUME` | `test_3d_morphology_mirp.h`, through named tests; `3MESH_VOLUME` is now pinned against `morph_volume` at `rel=1e-6` rather than against the hull at 5% |
 | full-precision pins on `3ELONGATION`, `3FLATNESS`, `3LEAST_AXIS_LEN`, `3MAJOR_AXIS_LEN`, `3MINOR_AXIS_LEN` | `test_3d_morphology_mirp.h` — vetted against MIRP at `rel=1e-9`, which is strictly stronger than a self-pin |
-| full-precision pins on `3AREA`, `3AREA_2_VOLUME`, `3COMPACTNESS1`, `3COMPACTNESS2`, `3SPHERICAL_DISPROPORTION`, `3SPHERICITY` | `morphology_3d_regression_ref_vals`, byte-identical, now at `rel=1e-9` instead of 10% |
+| full-precision pins on `3AREA`, `3AREA_2_VOLUME`, `3COMPACTNESS1`, `3COMPACTNESS2`, `3SPHERICAL_DISPROPORTION`, `3SPHERICITY` | `morphology_3d_regression_ref_vals` at `rel=1e-9` instead of 10%, and all six additionally vetted against MIRP |
 | “the name resolves and the feature code matches” | every named test does it: `calculate_3d_morphology_feature_value()` calls `find_3D_FeatureByString` and asserts the returned code |
 | “every registered `Feature3D` code has exactly one provider” | `FeatureManager::check_11_correspondence()`, in production since the 3D GLCM sweep was retired, and unit-tested in `test_feature_manager_mechanics.h` |
 

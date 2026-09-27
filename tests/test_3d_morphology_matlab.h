@@ -3,20 +3,23 @@
 #include "test_3d_morphology_common.h"
 #include "test_ref_vals.h"
 
-// MATLAB regionprops3 assertions for the three feature/config pairs it can verify on the shared
+// MATLAB regionprops3 assertions for the two feature/config pairs it can verify on the shared
 // segmented phantom. No covariance helpers or other morphology features belong in this file.
 //
 // Provenance (SPEC 6.4):
 //   tool       = MATLAB Image Processing Toolbox regionprops3
 //   version    = MATLAB R2026a
 //   properties = Volume -> 3VOXEL_VOLUME
-//                ConvexVolume -> 3VOLUME_CONVEXHULL and Nyxus' 3MESH_VOLUME alias
+//                ConvexVolume -> 3VOLUME_CONVEXHULL
 //   fixture    = tests/data/nifti/phantoms/ut_mask57.nii, label 57, native 1x1x1 spacing
 //   recipe     = morphology3d.matlab_regionprops3
 //   generator  = tests/vetting/oracles/gen_morphology3d_matlab.m
+//
+// regionprops3 carries no mesh volume, so it cannot judge 3MESH_VOLUME. That feature is an integral
+// of the ROI surface mesh and is asserted against MIRP's morph_volume in test_3d_morphology_mirp.h
+// and against closed-form solids in test_3d_morphology_analytic.h.
 static const ref_vals_map<double> morphology_3d_matlab_ref_vals
 {
-    { "3MESH_VOLUME", 497824.0 },
     { "3VOXEL_VOLUME", 274432.0 },
     { "3VOLUME_CONVEXHULL", 497824.0 }
 };
@@ -45,8 +48,4 @@ void test_3d_morphology_voxel_volume_matlab() {
 
 void test_3d_morphology_volume_convex_hull_matlab() {
     assert_3d_morphology_feature_matlab("3VOLUME_CONVEXHULL", Feature3D::VOLUME_CONVEXHULL);
-}
-
-void test_3d_morphology_mesh_volume_matlab() {
-    assert_3d_morphology_feature_matlab("3MESH_VOLUME", Feature3D::MESH_VOLUME);
 }

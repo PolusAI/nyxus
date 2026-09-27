@@ -18,39 +18,36 @@
 //
 // Regenerate with test_3d_morphology_dump_regression() below.
 //
-// 3VOLUME_CONVEXHULL and 3VOXEL_VOLUME appear here as snapshots and in the MATLAB and MIRP headers
-// as separate oracle assertions. SPEC 3 treats those as distinct claims, not a contradiction.
+// Every feature in this table also carries an oracle row: six of them against MIRP in
+// test_3d_morphology_mirp.h, 3AREA additionally against closed-form solids in
+// test_3d_morphology_analytic.h, and 3VOXEL_VOLUME and 3VOLUME_CONVEXHULL against MIRP and MATLAB.
+// SPEC 3 treats a snapshot and an oracle row as distinct claims, not a contradiction: what these
+// pins add is that the number has not moved.
 static const ref_vals_map<double> morphology_3d_regression_ref_vals{
-    { "3AREA",  59992 },
-    { "3AREA_2_VOLUME", 0.21860475559470999 },
-    { "3COMPACTNESS1",  0.010537043861899255 },
-    { "3COMPACTNESS2",  0.039449347281835329 },
-    { "3SPHERICAL_DISPROPORTION",   2.9375598657539634 },
-    { "3SPHERICITY",    0.34041859424142729 },
-    { "3VOLUME_CONVEXHULL", 479997.83333333186 },
+    { "3AREA",  46739.022534087213 },
+    { "3AREA_2_VOLUME", 0.17037000249358961 },
+    { "3COMPACTNESS1",  0.015317649265301225 },
+    { "3COMPACTNESS2",  0.083365524768728425 },
+    { "3SPHERICAL_DISPROPORTION",   2.2891337610474518 },
+    { "3SPHERICITY",    0.43684646874563782 },
+    { "3VOLUME_CONVEXHULL", 480655.16666666372 },
     { "3VOXEL_VOLUME",  274431.35826022143 }
 };
 
-// frac_tolerance = 1e9, i.e. rel=1e-9, for seven of the eight -- the band the family's other two
-// tables (morphology_3d_mirp_pca_ref_vals, morphology_3d_mechanics_*_ref_vals) already use, and what
-// the arithmetic supports: double-precision geometry with no approximation in the path, pinned to 17
-// digits and reproduced bit-for-bit by MSVC, gcc and Apple clang.
+// frac_tolerance = 1e9, i.e. rel=1e-9, for all eight -- the band the family's other tables
+// (morphology_3d_mirp_pca_ref_vals, morphology_3d_mechanics_*_ref_vals) already use, and what the
+// arithmetic supports: double-precision geometry with no approximation left in the path, pinned to
+// 17 digits.
 //
-// 3VOLUME_CONVEXHULL is the exception and gets rel=1e-3, because it is the one value in this table
-// that is NOT computed in double. D3_SurfaceFeature::build_surface loads the contour into
-// std::array<float,3> and runs quick_hull with eps = 1e-10f -- six orders of magnitude below the
-// ~7.6e-6 spacing of a float near the phantom's coordinate range, so the "is this point outside the
-// facet plane" test decides on float rounding noise and the facet set it produces depends on how the
-// compiler rounds. Measured: 479997.83333333186 on MSVC Release, on gcc Release and on gcc
-// RelWithDebInfo under ASan+UBSan; 480308.33333333244 on Apple clang Release. Four platforms, one
-// outlier, rel 6.5e-4. rel=1e-3 is the tightest band above that; it is not slack, and it still
-// catches the 3.1e-3 drift the previous 10% band had been hiding. The measurements and what
-// tightening it needs: tests/vetting/audit/morphology_3d_golden_regen.md, "The convex hull is built
-// in float".
-static double morphology_3d_regression_frac_tolerance (const std::string& fname)
-{
-    return fname == "3VOLUME_CONVEXHULL" ? 1.e3 : 1.e9;
-}
+// 3VOLUME_CONVEXHULL held rel=1e-3 for as long as the hull was built in float. It is built in double
+// now, and the eps the facet predicate compares against is derived from the cloud's own coordinate
+// extent, so the decision has a margin no compiler can round away: the contour voxels are lattice
+// points, so a point that is not exactly coplanar with a facet stands at least |det|/|normal| off
+// it, and with integer coordinates under 1e3 that is upwards of 1e-5 -- eight orders of magnitude
+// above both the eps (~4e-13 here) and the rounding error of the distance itself (~2e-14). Nothing
+// between those scales exists for a toolchain to disagree about, which is why the pin can hold at
+// rel=1e-9 where the float hull spread 6.5e-04 across platforms.
+static constexpr double MORPHOLOGY_3D_REGRESSION_FRAC_TOLERANCE = 1.e9;
 
 static void assert_3d_morphology_feature_regression (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {
@@ -59,7 +56,7 @@ static void assert_3d_morphology_feature_regression (const std::string& fname, c
     calculate_3d_morphology_feature_value (fname, expecting_fcode, actual);
     ASSERT_TRUE(morphology_3d_regression_ref_vals.count(fname) > 0) << fname;
     ASSERT_TRUE(agrees_gt(actual, morphology_3d_regression_ref_vals.at(fname),
-                          morphology_3d_regression_frac_tolerance(fname)))
+                          MORPHOLOGY_3D_REGRESSION_FRAC_TOLERANCE))
         << fname << " actual=" << std::setprecision(17) << actual;
 }
 

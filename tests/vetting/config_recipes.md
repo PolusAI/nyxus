@@ -568,22 +568,29 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `base_discretisation_method="none"`). Used by: `test_3d_morphology_mirp.h`.
 - Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
   `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
-- Covers the five PCA axis features (`morph_pca_*`), `3VOXEL_VOLUME` (`morph_vol_approx`), and the
-  convex-hull quantity used by `3VOLUME_CONVEXHULL` and the current `3MESH_VOLUME` alias
-  (`morph_volume / morph_vol_dens_conv_hull`). `morph_area_mesh` is not comparable to `3AREA`:
-  MIRP integrates a marching-cubes mesh while Nyxus counts exposed voxel faces, so `3AREA` and its
-  five derived features stay on `morphology3d.regression_ut_phantom`.
+- Covers the five PCA axis features (`morph_pca_*`), `3VOXEL_VOLUME` (`morph_vol_approx`), the
+  convex-hull quantity behind `3VOLUME_CONVEXHULL` (`morph_volume / morph_vol_dens_conv_hull`), and
+  the seven mesh features: `3AREA` (`morph_area_mesh`), `3MESH_VOLUME` (`morph_volume`),
+  `3AREA_2_VOLUME` (`morph_av`), `3COMPACTNESS1` (`morph_comp_1`), `3COMPACTNESS2` (`morph_comp_2`),
+  `3SPHERICAL_DISPROPORTION` (`morph_sph_dispr`) and `3SPHERICITY` (`morph_sphericity`).
+- The mesh features are the same quantity on both sides — each integrates the marching-cubes surface
+  of the mask at the 0.5 isolevel — so they are pinned at `rel=1e-6`, which is MIRP's float32 storage
+  of the mesh and nothing else (measured 1.2e-08 to 2.4e-07). The hull rows keep their 5% band: there
+  Nyxus builds a discrete voxel hull where MIRP triangulates, which is a real convention difference.
+- Not covered, because Nyxus implements no feature for them: the density family (`morph_*_dens_*`),
+  `morph_diam`, `morph_integ_int`, `morph_moran_i`, `morph_geary_c`.
 
 ## morphology3d.matlab_regionprops3
 - The same segmented phantom and Nyxus settings as `morphology3d.mirp_ibsi`. MATLAB Image Processing
   Toolbox reads `ut_mask57.nii`, selects label 57, and calls
   `regionprops3(mask == 57, 'Volume', 'ConvexVolume')` at native 1×1×1 spacing.
-- `Volume` verifies `3VOXEL_VOLUME`; `ConvexVolume` verifies `3VOLUME_CONVEXHULL` and the current
-  `3MESH_VOLUME` alias. Pinned with MATLAB R2026a.
+- `Volume` verifies `3VOXEL_VOLUME`; `ConvexVolume` verifies `3VOLUME_CONVEXHULL`. Pinned with
+  MATLAB R2026a. `regionprops3` carries no mesh volume, so it cannot judge `3MESH_VOLUME`; that
+  feature is covered by `morphology3d.mirp_ibsi` and `morphology3d.analytic_lattice_solids`.
 - Used by: `test_3d_morphology_matlab.h`. Generator:
   `oracles/gen_morphology3d_matlab.m`. Bands: the existing MIRP bands shared by both oracle files —
-  0.1% (`rel=1e-3`) for voxel volume and 5% for both hull aliases. The measured voxel-volume
-  residual is 2.338e-04%, so both rows agree within their declared tolerance.
+  0.1% (`rel=1e-3`) for voxel volume and 5% for the hull. The measured voxel-volume residual is
+  2.338e-04%, so both rows agree within their declared tolerance.
 
 ## morphology3d.covmatrix_numpy
 - Ten fixed voxel coordinates (`morphology_3d_covmatrix_cloud`, `test_3d_morphology_mechanics.h`),
@@ -599,11 +606,29 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   vetting for any registry row (mechanics, SPEC 2); the features that consume them are vetted under
   `morphology3d.mirp_ibsi`.
 
+## morphology3d.analytic_lattice_solids
+- Voxel clouds built in `test_3d_morphology_analytic.h` — a single voxel, six solid boxes and two
+  discretised balls — passed straight to `Nyxus::build_roi_surface_mesh`. No image is read and no
+  external tool runs. Oracle: `analytic`. Used by: `test_3d_morphology_analytic.h`.
+- A lone voxel's 0.5-isolevel surface is the octahedron with vertices half a lattice step out, so its
+  volume is exactly 1/6 and its area exactly sqrt(3). A solid w × h × d box comes out bevelled, and
+  both integrals are exact functions of w, h and d: volume = whd − (w+h+d−3)/2 − 5/6 and
+  area = 2(wh+hd+wd) − 2(w+h+d−3)(2−√2) − (6−√3). Those two shapes are pinned at `rel=1e-12`, which
+  is what double arithmetic on exact half-integer coordinates delivers.
+- The box formulas are also what `D3_SurfaceFeature`'s whole-volume (`SINGLEROI`) branch computes in
+  place of meshing every voxel, so this recipe pins that shortcut against the general path.
+- The balls are a bound, not a pin: the mesh volume converges on 4/3·π·r³ (−0.15% by r=15) while the
+  mesh area does **not** converge on 4·π·r² — a binary mask's facets keep lattice-scale orientation
+  at any radius, so the area settles about 8.7% above the smooth sphere. That bias is the convention,
+  shared with MIRP and pyradiomics; what the ball asserts is only that the area is the mesh's and not
+  a staircase's, which would land near +50%.
+
 ## morphology3d.regression_ut_phantom
 - The same phantom and settings, **no oracle** — pinned Nyxus output as drift guards in
   `test_3d_morphology_regression.h`.
-- Carries `3AREA` and everything derived from it. The reason is a convention difference, not a
-  numerical one: 59992 exposed voxel faces against MIRP's 46739 mesh area, ~28%.
+- Carries the whole family as a snapshot beside its oracle rows; the two are distinct claims under
+  SPEC 3. `3VOLUME_CONVEXHULL` is the one value here with no same-definition oracle: MIRP and MATLAB
+  both triangulate the hull where Nyxus builds a discrete voxel hull, a measured 3.28%.
 ## glrlm3d.pyradiomics_bincount20
 - The compat phantom (`compat_int/compat_int_mri.nii` + `compat_seg/compat_seg_liver.nii`, label 1)
   at `GREYDEPTH=100`, `IBSI=false`, `GLRLM_GREYDEPTH=-20` (negative activates radiomics
