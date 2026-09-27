@@ -9,16 +9,17 @@
 #include "test_3d_morphology_common.h"        // gtest, <string>, agrees_gt
 
 // ---------------------------------------------------------------------------------------------------
-// Analytic oracle for 3AREA and 3MESH_VOLUME. The goldens are closed-form geometry rather than
-// another tool's output, so they hold at every precision and on every platform, and they establish
-// the two features independently of the MIRP rows next door.
+// Analytic oracle for 3AREA, 3MESH_VOLUME and 3VOLUME_CONVEXHULL. The goldens are closed-form
+// geometry rather than another tool's output, so they hold at every precision and on every platform,
+// and they establish the features independently of the MIRP rows next door.
 //
 // Provenance (SPEC 6.4):
 //   tool      = analytic (SPEC 4 token); no external reference is involved
 //   quantity  = IBSI section 3.1 area (mesh) and volume (mesh) -- integrals of the marching-cubes
 //               surface of the mask at the 0.5 isolevel, which for a binary field puts every vertex
-//               on the midpoint between an in-ROI and an out-of-ROI voxel
-//   recipe    = morphology3d.analytic_lattice_solids
+//               on the midpoint between an in-ROI and an out-of-ROI voxel; and the volume of the
+//               convex hull of the voxel centres
+//   recipe   = morphology3d.analytic_lattice_solids
 //   fixture   = voxel clouds built in this file; nothing is read from disk
 //
 // The shapes are chosen so the surface convention is the whole difference between passing and
@@ -29,10 +30,11 @@
 // Runs D3_SurfaceFeature over a synthetic voxel cloud -- the features themselves, not the mesh
 // helpers, so these assertions cover the same code path the phantom fixtures do. single_roi selects
 // the whole-volume branch, which takes the ROI to be its bounding box and evaluates the bevelled-box
-// closed form instead of meshing the cloud.
+// closed form instead of meshing the cloud. hull_volume, when given, receives 3VOLUME_CONVEXHULL.
 static void calculate_3d_morphology_on_cloud (const std::vector<Pixel3>& cloud,
                                               double& area, double& mesh_volume,
-                                              bool single_roi = false)
+                                              bool single_roi = false,
+                                              double* hull_volume = nullptr)
 {
     ASSERT_FALSE (cloud.empty());
 
@@ -61,6 +63,8 @@ static void calculate_3d_morphology_on_cloud (const std::vector<Pixel3>& cloud,
 
     area = r.fvals[(int)Nyxus::Feature3D::AREA][0];
     mesh_volume = r.fvals[(int)Nyxus::Feature3D::MESH_VOLUME][0];
+    if (hull_volume)
+        *hull_volume = r.fvals[(int)Nyxus::Feature3D::VOLUME_CONVEXHULL][0];
 }
 
 // A lone voxel's 0.5-isolevel surface is the octahedron whose six vertices sit half a lattice step
@@ -173,6 +177,89 @@ void test_3d_morphology_sphere_mesh_analytic()
             << "r=" << r << " 3AREA actual=" << area << " 4 pi r^2=" << want_a
             << " -- a staircase face count would land near +50%";
     }
+}
+
+// 3VOLUME_CONVEXHULL is the volume of the convex hull of the voxel centres, so on a lattice solid
+// whose extreme points are known it is exact: a w x h x d box spans (w-1)(h-1)(d-1), the octahedron
+// |x|+|y|+|z| <= R has volume 4/3 R^3, and the rhombic prism |x|+|y| <= R, |z| <= H has 2R^2 * 2H.
+// Every hull face carries many exactly coplanar voxels, which is the case a quickhull decides by
+// its eps: a coplanar voxel taken for an outside one leaves zero-area facets behind, and the signed
+// sum over the facets then misses the hull by whole voxels, by an amount that follows the hash-set
+// iteration order and so differs between standard libraries. The solids sit far from the origin
+// because that is where the facet plane equation's rounding is largest. The volume is a sum of
+// integer determinants over six, so it is pinned at rel=1e-12.
+void test_3d_morphology_lattice_hull_volume_analytic()
+{
+    SCOPED_TRACE("ANALYTIC_ORACLE__3d_morphology_lattice_hull_volume");
+
+    struct Solid { const char* name; std::vector<Pixel3> cloud; double want; };
+    std::vector<Solid> solids;
+
+    const int boxes[][3] = { {2,2,2}, {3,5,2}, {5,7,11}, {8,8,8} };
+    for (const auto& b : boxes)
+    {
+        Solid s { "box", {}, double(b[0] - 1) * (b[1] - 1) * (b[2] - 1) };
+        for (int x = 0; x < b[0]; x++)
+            for (int y = 0; y < b[1]; y++)
+                for (int z = 0; z < b[2]; z++)
+                    s.cloud.push_back (Pixel3(x + 500, y + 700, z + 300, 1000));
+        solids.push_back (s);
+    }
+
+    for (int R : { 3, 8, 15 })
+    {
+        Solid s { "octahedron", {}, 4. / 3. * double(R) * R * R };
+        for (int x = -R; x <= R; x++)
+            for (int y = -R; y <= R; y++)
+                for (int z = -R; z <= R; z++)
+                    if (std::abs(x) + std::abs(y) + std::abs(z) <= R)
+                        s.cloud.push_back (Pixel3(x + 900, y + 600, z + 400, 1000));
+        solids.push_back (s);
+    }
+
+    for (int R : { 4, 12 })
+    {
+        const int H = R / 2 + 1;
+        Solid s { "rhombic prism", {}, 4. * double(R) * R * H };
+        for (int x = -R; x <= R; x++)
+            for (int y = -R; y <= R; y++)
+                for (int z = -H; z <= H; z++)
+                    if (std::abs(x) + std::abs(y) <= R)
+                        s.cloud.push_back (Pixel3(x + 800, y + 800, z + 800, 1000));
+        solids.push_back (s);
+    }
+
+    for (const auto& s : solids)
+    {
+        double area = 0., mesh_volume = 0., hull_volume = 0.;
+        calculate_3d_morphology_on_cloud (s.cloud, area, mesh_volume, false, &hull_volume);
+        if (::testing::Test::HasFatalFailure())
+            return;
+
+        ASSERT_TRUE (agrees_gt (hull_volume, s.want, 1e12))
+            << s.name << " of " << s.cloud.size() << " voxels: 3VOLUME_CONVEXHULL actual="
+            << hull_volume << " analytic=" << s.want;
+    }
+}
+
+// The refusal path for the hull: voxels in a single plane span no volume, so there is no initial
+// simplex. The hull is left empty and 3VOLUME_CONVEXHULL comes back 0 rather than a volume assembled
+// from facets of a degenerate simplex.
+void test_3d_morphology_planar_hull_volume_analytic()
+{
+    SCOPED_TRACE("ANALYTIC_ORACLE__3d_morphology_planar_hull_volume");
+
+    std::vector<Pixel3> cloud;
+    for (int x = 0; x < 6; x++)
+        for (int y = 0; y < 4; y++)
+            cloud.push_back (Pixel3(x + 40, y + 50, 9, 1000));
+
+    double area = 0., mesh_volume = 0., hull_volume = -1.;
+    calculate_3d_morphology_on_cloud (cloud, area, mesh_volume, false, &hull_volume);
+    if (::testing::Test::HasFatalFailure())
+        return;
+
+    ASSERT_EQ (hull_volume, 0.0);
 }
 
 // The refusal path: an ROI with no voxels has no surface. The builder must hand back an empty mesh

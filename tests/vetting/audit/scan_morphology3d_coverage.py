@@ -33,7 +33,7 @@ NOTE = {
     "3MESH_VOLUME": "IBSI volume (mesh) = MIRP morph_volume 274338.3438, pinned at rel=1e-6; also "
                     "pinned against closed-form solids in the analytic file. MATLAB regionprops3 "
                     "carries no mesh volume, so it holds no row for this feature",
-    "3VOLUME_CONVEXHULL": "discrete voxel hull (480655.17) vs MIRP's triangulated qhull volume, "
+    "3VOLUME_CONVEXHULL": "discrete voxel hull (480651.67) vs MIRP's triangulated qhull volume, "
                           "measured 3.28%; MATLAB regionprops3 separately asserts ConvexVolume "
                           "497824 at 3.45%; "
                           "the two oracles agree with each other to 0.17%",

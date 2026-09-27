@@ -317,22 +317,20 @@ void D3_SurfaceFeature::build_hull (const std::vector<std::array<double, 3>>& P)
 	// below the arithmetic's resolution the predicate decides on noise and the facet set -- with it
 	// the hull volume -- stops being reproducible across toolchains.
 	const double eps = 16.0 * std::numeric_limits<double>::epsilon() * maxcoord;
+	hull_complex.clear();
 	quick_hull<typename Points::const_iterator> qh{ dim, eps };
 	qh.add_points(std::cbegin(P), std::cend(P));
 	auto initial_simplex = qh.get_affine_basis();
-	if (initial_simplex.size() < dim + 1) 
-	{
-#ifdef WITH_PYTHON_H
-		throw std::runtime_error ("degenerate convex shell input");
-#endif
-		std::cerr << "degenerate convex shell input \n";
+
+	// Voxels confined to a plane or a line -- an ROI one slice thick, say -- span no volume. The hull
+	// is left empty, which is a hull volume of 0.
+	if (initial_simplex.size() < dim + 1)
 		return;
-	}
+
 	qh.create_initial_simplex(std::cbegin(initial_simplex), std::prev(std::cend(initial_simplex)));
 	qh.create_convex_hull();
 
 	// gather the complex
-	hull_complex.clear();
 	for (auto f : qh.facets_)
 	{
 		const auto & V = f.vertices_;
