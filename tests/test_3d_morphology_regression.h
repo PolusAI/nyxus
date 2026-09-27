@@ -30,7 +30,7 @@ static const ref_vals_map<double> morphology_3d_regression_ref_vals{
     { "3COMPACTNESS2",  0.083365524768728425 },
     { "3SPHERICAL_DISPROPORTION",   2.2891337610474518 },
     { "3SPHERICITY",    0.43684646874563782 },
-    { "3VOLUME_CONVEXHULL", 480655.16666666372 },
+    { "3VOLUME_CONVEXHULL", 480651.66666666395 },
     { "3VOXEL_VOLUME",  274431.35826022143 }
 };
 
@@ -39,13 +39,14 @@ static const ref_vals_map<double> morphology_3d_regression_ref_vals{
 // arithmetic supports: double-precision geometry with no approximation left in the path, pinned to
 // 17 digits.
 //
-// 3VOLUME_CONVEXHULL holds the same band because the hull is built in double and the eps its facet
-// predicate compares against is derived from the cloud's own coordinate extent, so the decision has
-// a margin no compiler can round away: the contour voxels are lattice points, so a point that is not
-// exactly coplanar with a facet stands at least |det|/|normal| off it, and with integer coordinates
-// under 1e3 that is upwards of 1e-5 -- eight orders of magnitude above both the eps (~4e-13 here) and
-// the rounding error of the distance itself (~2e-14). Nothing between those scales exists for a
-// toolchain to disagree about, so the facet set, and with it the pin, is the same on every platform.
+// 3VOLUME_CONVEXHULL holds the same band because every decision the hull makes has a margin no
+// toolchain can round away. The contour voxels are lattice points, so a point that is not exactly
+// coplanar with a facet stands at least 1/|normal| off it -- upwards of 1e-7 with integer coordinates
+// under 1e3. The facet plane is the cross product of two edges taken through a vertex, which is exact
+// for lattice vertices, so a distance carries rounding of order |point| * DBL_EPSILON (~1e-14 here),
+// and the eps every predicate compares against (~4e-13 here) sits between the two. Coplanar points
+// are therefore never taken for outside ones, whatever order a standard library's hash sets visit the
+// facets in, and the pin is the exact hull volume of the cloud, 1441955/3, on every platform.
 static constexpr double MORPHOLOGY_3D_REGRESSION_FRAC_TOLERANCE = 1.e9;
 
 static void assert_3d_morphology_feature_regression (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)

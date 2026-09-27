@@ -351,6 +351,30 @@ private:
     void
         set_hyperplane_equation(facet& _facet)
     {
+        if (dimension_ == 3) {
+            // The normal is the cross product of two edges and D is taken through the first vertex, so
+            // every product is between coordinate differences: exact for integer (voxel) vertices, and
+            // a point's distance carries rounding of order |point| * DBL_EPSILON. The cofactor form
+            // below works on the raw coordinates, whose determinant for D is of order |point|^3, and
+            // leaves a rounding error in the distance that no coordinate-scaled eps sits above.
+            auto const a = std::cbegin(*_facet.vertices_[0]);
+            auto const b = std::cbegin(*_facet.vertices_[1]);
+            auto const c = std::cbegin(*_facet.vertices_[2]);
+            value_type const ab[3] = { b[0] - a[0], b[1] - a[1], b[2] - a[2] };
+            value_type const ac[3] = { c[0] - a[0], c[1] - a[1], c[2] - a[2] };
+            value_type& nx = _facet.normal_[0];
+            value_type& ny = _facet.normal_[1];
+            value_type& nz = _facet.normal_[2];
+            nx = ab[1] * ac[2] - ab[2] * ac[1];
+            ny = ab[2] * ac[0] - ab[0] * ac[2];
+            nz = ab[0] * ac[1] - ab[1] * ac[0];
+            _facet.D = -(nx * a[0] + ny * a[1] + nz * a[2]);
+            using std::sqrt;
+            value_type const N = sqrt(nx * nx + ny * ny + nz * nz);
+            divide(_facet.normal_.data(), N);
+            _facet.D /= N;
+            return;
+        }
         matrix_transpose_copy(_facet.vertices_);
         matrix_restore();
         _facet.D = -det();
@@ -474,7 +498,7 @@ private:
                 furthest = it;
             }
         }
-        if (furthest == oend) {
+        if (furthest == oend || !(eps * eps < distance_)) { // distance_ is squared; a point within eps of the subspace does not extend it
             return false;
         }
         _basis.splice(std::cend(_basis), outside_, furthest);
@@ -669,7 +693,7 @@ private:
             return (visible_.count(f) != 0);
         }
         facet& facet_ = facets_[f];
-        if (!(zero < facet_.distance(std::cbegin(*_apex)))) {
+        if (!(eps < facet_.distance(std::cbegin(*_apex)))) { // same predicate partition() puts a point outside by: a facet the apex is coplanar with is not visible
             return false;
         }
         visible_.insert(f);

@@ -222,9 +222,24 @@ voxel and a facet. Both scale with the ROI, which is why it is derived rather th
 
 **The margin.** The contour voxels are lattice points, so a point that is not exactly coplanar with a
 facet stands at least |det|/|normal| away from it, with `det` a non-zero integer. For integer
-coordinates under 10³ that is upwards of 1e-5. On the segmented phantom `eps` is ~4e-13 and the
-rounding error of the distance itself ~2e-14. Nothing exists between those scales for a compiler to
-disagree about, which is what lets the regression pin hold at `rel=1e-9`.
+coordinates under 10³ that is upwards of 1e-7, and on the segmented phantom upwards of 1e-5.
+
+The rounding error of a distance depends on how the facet plane is built. `quick_hull`'s generic
+path takes each normal component and the offset `D` as determinants of the raw coordinates, and `D`
+is of order |point|³ — ~1e6 on the phantom, which leaves ~1e-10 of rounding in every distance, three
+orders of magnitude above any `eps` scaled to the coordinates. For `dimension_ == 3` the plane is
+instead the cross product of two edges taken through the first vertex: every product is between
+coordinate differences, exact for lattice vertices, and a distance carries rounding of order
+|point| × `DBL_EPSILON`, ~1e-14 on the phantom. `eps` (~4e-13 there) sits between that and the
+lattice gap.
+
+`eps` is also the one tolerance every decision uses: `partition()` puts a point outside a facet when
+its distance exceeds `eps`, `process_visibles()` counts a facet visible from the apex by the same
+test, and `steal_best()` extends the initial simplex only with a point further than `eps` from the
+subspace so far. A facet coplanar with the apex is therefore never removed, no zero-area facet is
+created, and an ROI confined to one plane yields no simplex and a hull volume of 0. With no decision
+left to rounding, the facet set does not depend on the order a standard library's hash sets visit
+the facets in, which is what lets the regression pin hold at `rel=1e-9`.
 
 **Why that matters here.** In single precision it did not hold. With the points in `float` and a
 hard-coded `eps = 1e-10f`, coordinates of ~100 put consecutive representable values ~7.6e-6 apart, so
@@ -243,8 +258,11 @@ volume. Measured on the segmented phantom at the time:
 
 Four platforms, one outlier, rel **6.5e-4** — five to six orders of magnitude above what double
 arithmetic on a fixed algorithm leaves, and the reason the pin carried `rel=1e-3` while its seven
-neighbours carried `rel=1e-9`. The double hull returns **480655.16666666372**, and the pin is back at
-`rel=1e-9` with its neighbours.
+neighbours carried `rel=1e-9`. The double hull returns **480651.66666666395**, which is the exact
+hull volume of the phantom's contour cloud, 1441955/3, as scipy's qhull computes it from the same
+points, and the pin is back at `rel=1e-9` with its neighbours. `TEST_3D_MORPHOLOGY_LATTICE_HULL_VOLUME_ANALYTIC`
+holds the hull to closed-form volumes on boxes, octahedra and rhombic prisms placed far from the
+origin, and `TEST_3D_MORPHOLOGY_PLANAR_HULL_VOLUME_ANALYTIC` holds a single-plane ROI to 0.
 
 The divergence figures quoted against the two hull oracles move with it: **3.28%** from MIRP and
 **3.45%** from MATLAB `regionprops3`, and they no longer carry a toolchain-dependent third digit.
