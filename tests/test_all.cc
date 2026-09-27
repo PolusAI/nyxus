@@ -826,6 +826,10 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_BOX_MESH_ANALYTIC) {
 	ASSERT_NO_THROW(test_3d_morphology_box_mesh_analytic());
 }
 
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_BOX_MESH_SINGLEROI_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_morphology_box_mesh_singleroi_analytic());
+}
+
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERE_MESH_ANALYTIC) {
 	ASSERT_NO_THROW(test_3d_morphology_sphere_mesh_analytic());
 }

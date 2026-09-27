@@ -27,9 +27,12 @@
 // ---------------------------------------------------------------------------------------------------
 
 // Runs D3_SurfaceFeature over a synthetic voxel cloud -- the features themselves, not the mesh
-// helpers, so these assertions cover the same code path the phantom fixtures do.
+// helpers, so these assertions cover the same code path the phantom fixtures do. single_roi selects
+// the whole-volume branch, which takes the ROI to be its bounding box and evaluates the bevelled-box
+// closed form instead of meshing the cloud.
 static void calculate_3d_morphology_on_cloud (const std::vector<Pixel3>& cloud,
-                                              double& area, double& mesh_volume)
+                                              double& area, double& mesh_volume,
+                                              bool single_roi = false)
 {
     ASSERT_FALSE (cloud.empty());
 
@@ -48,7 +51,7 @@ static void calculate_3d_morphology_on_cloud (const std::vector<Pixel3>& cloud,
 
     Fsettings s;
     s.resize ((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::SINGLEROI].bval = single_roi;
     s[(int)NyxSetting::VERBOSLVL].ival = 0;
 
     ASSERT_NO_THROW (r.initialize_fvals());
@@ -78,13 +81,9 @@ void test_3d_morphology_single_voxel_mesh_analytic()
 
 // A solid w x h x d box comes out bevelled: each of the 4*(w+h+d-3) cells along an interior edge run,
 // and each of the 8 corner cells, cuts a fixed amount off the staircase. Both integrals are therefore
-// exact functions of w, h and d. D3_SurfaceFeature's whole-volume (SINGLEROI) branch computes those
-// same two formulas in place of meshing every voxel, so this pins that shortcut against the general
-// path as well.
-void test_3d_morphology_box_mesh_analytic()
+// exact functions of w, h and d. Shared by the general-path and whole-volume tests below.
+static void assert_3d_morphology_boxes_match_closed_form (bool single_roi)
 {
-    SCOPED_TRACE("ANALYTIC_ORACLE__3d_morphology_box_mesh");
-
     const int boxes[][3] = { {1,1,1}, {1,4,9}, {2,2,2}, {3,5,2}, {5,7,11}, {8,8,8} };
 
     for (const auto& b : boxes)
@@ -97,7 +96,7 @@ void test_3d_morphology_box_mesh_analytic()
                     cloud.push_back (Pixel3(x + 3, y + 3, z + 3, 1000));
 
         double area = 0., mesh_volume = 0.;
-        calculate_3d_morphology_on_cloud (cloud, area, mesh_volume);
+        calculate_3d_morphology_on_cloud (cloud, area, mesh_volume, single_roi);
         if (::testing::Test::HasFatalFailure())
             return;
 
@@ -112,6 +111,22 @@ void test_3d_morphology_box_mesh_analytic()
         ASSERT_TRUE (agrees_gt (area, want_a, 1e12))
             << w << "x" << h << "x" << d << " 3AREA actual=" << area << " analytic=" << want_a;
     }
+}
+
+// The general path: marching cubes over the box's voxels, integrated triangle by triangle.
+void test_3d_morphology_box_mesh_analytic()
+{
+    SCOPED_TRACE("ANALYTIC_ORACLE__3d_morphology_box_mesh");
+    assert_3d_morphology_boxes_match_closed_form (false);
+}
+
+// The whole-volume (SINGLEROI) branch evaluates the bevelled-box closed form from the bounding box
+// in place of meshing every voxel. Asserting it against the same closed form, box for box, holds it
+// to the value the general path produces above.
+void test_3d_morphology_box_mesh_singleroi_analytic()
+{
+    SCOPED_TRACE("ANALYTIC_ORACLE__3d_morphology_box_mesh_singleroi");
+    assert_3d_morphology_boxes_match_closed_form (true);
 }
 
 // A lattice-discretised ball. 3MESH_VOLUME converges on the smooth sphere as the radius grows --
