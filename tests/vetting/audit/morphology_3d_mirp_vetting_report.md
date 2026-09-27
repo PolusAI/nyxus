@@ -101,7 +101,7 @@ every run (8 pins, all at rel=0). The MATLAB generator produces its two built-in
 [`PolusAI/nyxus` main fixture](https://github.com/PolusAI/nyxus/blob/main/tests/data/nifti/phantoms/ut_mask57.nii),
 and the three MATLAB-named tests assert those pins against Nyxus.
 
-That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 480655.17, which is 3.45% from
+That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 480651.67, which is 3.45% from
 MATLAB and 3.28% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
 a **discrete voxel hull against two separately triangulated ones** — and that sentence is the
 citation SPEC §7 asks for behind the 5% band: a definitional difference between a voxelised and a

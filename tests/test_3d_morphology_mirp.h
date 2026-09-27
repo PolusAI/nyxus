@@ -53,7 +53,7 @@ static const ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
 //
 //   feature              Nyxus       MIRP        MATLAB regionprops3   Nyxus vs MIRP
 //   3VOXEL_VOLUME        274431.36   274432.00   274432.00            2.34e-04%
-//   3VOLUME_CONVEXHULL   480655.17   496958.32   497824.00            3.28e+00%
+//   3VOLUME_CONVEXHULL   480651.67   496958.32   497824.00            3.28e+00%
 //
 // MIRP's and MATLAB's separately computed triangulated hulls agree with each other to 0.17%, and
 // Nyxus sits 3.28% below MIRP and 3.45% below regionprops3 -- because Nyxus builds a DISCRETE VOXEL

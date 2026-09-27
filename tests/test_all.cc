@@ -853,6 +853,14 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERE_MESH_ANALYTIC) {
 	ASSERT_NO_THROW(test_3d_morphology_sphere_mesh_analytic());
 }
 
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_LATTICE_HULL_VOLUME_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_morphology_lattice_hull_volume_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_PLANAR_HULL_VOLUME_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_morphology_planar_hull_volume_analytic());
+}
+
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_EMPTY_ROI_MESH_ANALYTIC) {
 	ASSERT_NO_THROW(test_3d_morphology_empty_roi_mesh_analytic());
 }
