@@ -117,8 +117,9 @@ area   = 2(wh+hd+wd) − 2(w+h+d−3)(2−√2) − (6−√3)
 ```
 
 Both shapes hold at `rel=1e-12`. Those same two formulas are what `D3_SurfaceFeature`'s whole-volume
-(`SINGLEROI`) branch evaluates in place of meshing every voxel, so the file pins that shortcut against
-the general path as well.
+(`SINGLEROI`) branch evaluates in place of meshing every voxel. The box assertions run once per
+`SINGLEROI` setting against the same closed form, so the shortcut is held to the value the general path
+produces.
 
 The two discretised balls are a bound rather than a pin. `3MESH_VOLUME` converges on 4/3·π·r³ (−3.6% at
 r=5, −0.15% by r=15). `3AREA` does **not** converge on 4·π·r²: a binary mask's facets keep lattice-scale

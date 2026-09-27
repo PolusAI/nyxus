@@ -616,7 +616,8 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   area = 2(wh+hd+wd) − 2(w+h+d−3)(2−√2) − (6−√3). Those two shapes are pinned at `rel=1e-12`, which
   is what double arithmetic on exact half-integer coordinates delivers.
 - The box formulas are also what `D3_SurfaceFeature`'s whole-volume (`SINGLEROI`) branch computes in
-  place of meshing every voxel, so this recipe pins that shortcut against the general path.
+  place of meshing every voxel. The box test runs twice, once per `SINGLEROI` setting, against the same
+  closed form, so the shortcut is held to the value the general path produces.
 - The balls are a bound, not a pin: the mesh volume converges on 4/3·π·r³ (−0.15% by r=15) while the
   mesh area does **not** converge on 4·π·r² — a binary mask's facets keep lattice-scale orientation
   at any radius, so the area settles about 8.7% above the smooth sphere. That bias is the convention,
