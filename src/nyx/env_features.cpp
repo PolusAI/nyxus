@@ -5,8 +5,10 @@
 #include <iostream>
 #include <iterator>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <tuple>
+#include <typeinfo>
 #include <vector>
 
 #include "environment.h"
@@ -580,6 +582,10 @@ void Environment::compile_feature_settings()
 {
 	f_settings_.push_back (fsett_PixelIntensity);
 		feature2settings_ [typeid(PixelIntensityFeatures).hash_code()] = f_settings_.size() - 1;
+		// The intensity histogram family shares the intensity settings vector: the in-RAM reduce
+		// (reduce_trivial_rois.cpp) hands IntensityHistogramFeatures::reduce fsett_PixelIntensity,
+		// so the oversized-ROI path resolves to the same vector rather than a vector of its own.
+		feature2settings_ [typeid(IntensityHistogramFeatures).hash_code()] = f_settings_.size() - 1;
 
 	f_settings_.push_back (fsett_BasicMorphology);
 		feature2settings_ [typeid(BasicMorphologyFeatures).hash_code()] = f_settings_.size() - 1;
@@ -694,7 +700,7 @@ void Environment::compile_feature_settings()
 		feature2settings_ [typeid(D3_GLSZM_feature).hash_code()] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_D3_GLRLM);
-		feature2settings_ [typeid(D3_GLSZM_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_GLRLM_feature).hash_code()] = f_settings_.size() - 1;
 
 		// 2D image quality
 	f_settings_.push_back(fsett_FocusScore);
@@ -755,8 +761,18 @@ void Environment::refresh_feature_settings_singleroi()
 const Fsettings& Environment::get_feature_settings (const std::type_info& ftype)
 {
 	size_t h = ftype.hash_code();
-	int idx = feature2settings_[h];
-	const Fsettings& s = f_settings_[idx];
+
+	// A type with no entry has no settings vector of its own, and f_settings_[0] - the intensity
+	// settings - is not a substitute for one: handing it to a texture family would run that family
+	// at the intensity vector's grey depth, co-occurrence offset and neighbourhood radius. Refuse
+	// instead, naming the type, so a feature registered in FeatureManager but not in
+	// compile_feature_settings() is reported rather than silently misconfigured.
+	auto it = feature2settings_.find (h);
+	if (it == feature2settings_.end())
+		throw std::runtime_error (std::string("No feature settings are registered for ") + ftype.name()
+			+ ". Check Environment::compile_feature_settings()");
+
+	const Fsettings& s = f_settings_.at (it->second);
 	return s;
 }
 
