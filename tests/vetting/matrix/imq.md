@@ -30,7 +30,10 @@ pass. It ships as one open row, and the follow-up that closes it is scoped at th
 |---|---|---|---|---|
 | `FOCUS_SCORE` | `ksize` | 1, the only value `calculate()` passes | VALID | `imq.laplacian_ksize1_zeropad` — opencv, SPEC §7 exact tier |
 | `FOCUS_SCORE` | `ksize` | >1, kernel `{{2,0,2},{0,-8,0},{2,0,2}}` | INVALID | unreachable from `calculate()` and no `cv2.Laplacian` counterpart |
-| `LOCAL_FOCUS_SCORE` | `scale` | 2, the only value `calculate()` passes | VALID | `imq.laplacian_ksize1_zeropad` — opencv, one tile (see below) |
+| `LOCAL_FOCUS_SCORE` | `scale` | 2, the only value `calculate()` passes | VALID | `imq.laplacian_ksize1_zeropad` — opencv, the mean over the 2×2 tile grid (see below) |
+| `LOCAL_FOCUS_SCORE` | ROI | each tile carrying the texture in turn, both side parities | VALID | analytic, `test_imq_local_focus_score_{each_tile,all_tiles}_analytic` — `20v²/(P·scale²)` per tile (see below) |
+| `LOCAL_FOCUS_SCORE` | ROI side | not a multiple of `scale` | VALID | analytic, `test_imq_local_focus_score_remainder_analytic` — the leftover row/column is in no tile, pinned 0 |
+| `LOCAL_FOCUS_SCORE` | ROI side | shorter than `scale` (a 1 px thin ROI) | VALID | analytic, `test_imq_local_focus_score_thin_roi_analytic` — no tile fits, pinned 0 |
 | `LOCAL_FOCUS_SCORE` | `scale` | ≠2 | INVALID | no config reaches it: `calculate()` hardcodes 2, the parameter has a default and no plumbing, and nothing else calls `get_local_focus_score()` |
 | `MIN`/`MAX_SATURATION` | — | in-RAM path | VALID | `imq.saturation_observed_extremum` — cellprofiler, SPEC §7 exact tier |
 | `MIN`/`MAX_SATURATION` | ROI | constant (`min == max`) | VALID-BUT-PRODUCTION-ONLY | CellProfiler computes something else here (below), so no oracle claim — `test_imq_{min,max}_saturation_constant_roi_regression`, pinned 0 and 1 |
@@ -40,31 +43,34 @@ pass. It ships as one open row, and the follow-up that closes it is scoped at th
 | `SHARPNESS` | `width` | 2 | VALID-BUT-PRODUCTION-ONLY | `imq.regression_quality_roi` — the reference DOM measure does not reproduce it (below), `test_imq_sharpness_regression` |
 | any | out-of-core (`osized_calculate`) | — | VALID-BUT-PRODUCTION-ONLY | reachable and **still unguarded** — the one open row; needs an oversized-ROI harness, see below and `not_covered.md` |
 
-## Three things that look like knobs and are not
+## Two things that look like knobs and are not
 
-- **`static int ksize;`** is declared as "User interface" in all four feature headers and is
-  **defined nowhere and referenced nowhere**. Nothing sets it, and a translation unit that tried to
-  would fail to link. It is dead API surface, not an axis.
-- **`FocusScoreFeature::kernel[9]`** is a *mutable* static. `laplacian()` and `get_focus_score_NT()`
-  overwrite it in place when `ksize != 1`, and never restore it — so a single call with `ksize != 1`
-  would change the kernel for every later ROI in the process. Nothing reaches that branch today
-  because `calculate()` hardcodes `ksize=1`, which is what makes it latent rather than live. Same
-  shape as the `NGTDMFeature::n_levels` static the 2D NGTDM pass fixed.
-- **`Fsettings`** itself. The three test files pass a default-constructed one because
-  `assert`-style helpers need something to pass, not because any value in it is read.
+- **The Laplacian kernel.** `laplacian()` picks one of two constant stencils per call from its
+  `ksize` argument — `{{0,1,0},{1,-4,1},{0,1,0}}` for 1, `{{2,0,2},{0,-8,0},{2,0,2}}` otherwise — so
+  no call changes the kernel a later one sees. `calculate()` always passes 1.
+  `test_imq_focus_score_kernel_per_call_analytic` runs a `ksize=3` call and then a `ksize=1` one on
+  a single spike and asserts each returns its own stencil.
+- **`Fsettings`** itself. The test files pass a default-constructed one because `assert`-style
+  helpers need something to pass, not because any value in it is read.
 
-## `LOCAL_FOCUS_SCORE` reaches one tile of four
+## `LOCAL_FOCUS_SCORE` is the mean over a `scale × scale` tile grid
 
-`get_local_focus_score()` loops `for (y = 0; y < height - M; y += M)` with `M = height/scale`. At
-`scale=2` on a 12-row ROI that is `0 < 6` → true, `6 < 6` → false, and the same in x, so exactly
-**one** 4×6 tile is visited — while the final division is still by `scale*scale = 4`. The pinned
-golden is `var(Laplacian(top-left tile)) / 4`, and `gen_imq_opencv.py` asserts the tile count so a
-change to the bound fails there rather than silently redefining the golden.
+`get_local_focus_score()` cuts the ROI into `scale²` non-overlapping tiles of `M = height/scale` by
+`N = width/scale` pixels, tile `(tx, ty)` starting at `(tx·N, ty·M)`, and returns the mean of their
+focus scores. The last `height % scale` rows and `width % scale` columns belong to no tile. A side
+shorter than `scale` gives `M` or `N` = 0: no tile fits and the score is 0. At the `scale=2`
+`calculate()` passes, the 8×12 fixture has four 4×6 tiles, and `gen_imq_opencv.py` asserts that
+count and prints each tile's score.
 
-Two separate claims are entangled in that loop and neither is settled here: the bound is `<` where
-`<=` would visit all `scale²` tiles, and `docs/source/Math/f_image_quality.rst` says "the mean and
-median values of the tiles are returned" where the code returns one sum over one tile. **Open, not
-endorsed.** The assertion pins the current behaviour so a fix is visible as a moved golden.
+The opencv assertion vets the mean on the fixture. Which tiles take part is asserted separately,
+analytically, because every tile of the fixture is textured and a mean over them cannot say which
+ones contributed. A single spike of height `v` clear of the tile edge has a ksize=1 Laplacian of
+`-4v` at the spike and `+v` at its four neighbours, so its tile scores exactly `20v²/P` with `P`
+the tile's pixel count, and every all-zero tile scores 0. `test_imq_analytic.h` puts the spike in
+each tile in turn on 8×12, 9×12, 8×13 and 9×13 ROIs — all a 2×2 grid of 4×6 tiles — and asserts
+`20·36/24/4 = 7.5` for every placement. Both parities matter: a `y < height - M` loop bound stops
+after the first tile on an even side but still reaches the second on an odd one, so only the
+even-sided ROIs separate the two bounds.
 
 ## `POWER_SPECTRUM_SLOPE` is pinned twice: at the guard, and at the algorithm behind it
 
@@ -152,8 +158,8 @@ harness is for. Per feature:
 - **`SharpnessFeature::osized_calculate()` is empty** — `{}` at `sharpness.h:32`, the same shape,
   publishing `sharpness_`.
 - **`FocusScoreFeature::osized_calculate()` never assigns `local_focus_score_`.** It sets
-  `focus_score_` only (`focus_score.cpp:80`); `local_focus_score_` is assigned at
-  `focus_score.cpp:26`, inside `calculate()`, on the in-RAM path alone — while `save_value()` writes
+  `focus_score_` only (`focus_score.cpp:88`); `local_focus_score_` is assigned at
+  `focus_score.cpp:34`, inside `calculate()`, on the in-RAM path alone — while `save_value()` writes
   both members either way. So it is three features in this position, not two.
 - **No member has a default initializer.** `slope_`, `sharpness_`, `focus_score_`,
   `local_focus_score_`, `max_saturation_` and `min_saturation_` are all bare `double x;`, no
@@ -161,7 +167,7 @@ harness is for. Per feature:
   (`feature_method.h:43`) with no override in any of the four classes. Combined with the three items
   above, the first oversized ROI publishes an **indeterminate** double rather than a zero.
 - **The early returns leak the previous ROI's values.** `SaturationFeature::osized_calculate()`
-  (`saturation.cpp:58`) and `FocusScoreFeature::osized_calculate()` (`focus_score.cpp:75`) both
+  (`saturation.cpp:58`) and `FocusScoreFeature::osized_calculate()` (`focus_score.cpp:83`) both
   return early when `aux_max == aux_min`, but the base calls `save_value()` regardless. Feature
   methods are long-lived singletons registered once in `feature_mgr_init.cpp` and nothing resets them
   between ROIs, so the second oversized constant ROI publishes the first one's numbers. Same shape as
@@ -171,18 +177,17 @@ harness is for. Per feature:
   constant ROI the two paths disagree by construction — and on that ROI the early return above means
   neither of them runs. One input, three answers.
 - **`FocusScoreFeature::get_focus_score_NT()`** carries four defects of its own. It calls
-  `laplacian (W, conv_buffer, width, height, ksize)` at `focus_score.cpp:141`, passing the width
+  `laplacian (W, conv_buffer, width, height, ksize)` at `focus_score.cpp:134`, passing the width
   where the definition's first size parameter is the row count — the other branch passes
-  `(winY, winX)` at line 173, which is what identifies line 141 as the bug rather than the
-  convention. The declaration in `focus_score.h` names those two parameters `(n_image, m_image)`
-  and the definition names them `(m_image, n_image)`, which is how the confusion survives. It takes `variance()` over the whole `conv_buffer`, sized
+  `(winY, winX)` at line 166, which is what identifies line 134 as the bug rather than the
+  convention. It takes `variance()` over the whole `conv_buffer`, sized
   `(winY + n - 1) * (winX + n - 1) * 2 = 2048`, larger than the region any pixel writes. In the
   branch taken when the ROI is smaller than one 30×30 window it fills `W`, sized `winY * winX = 900`,
   with `W[row * width + col]` over the full ROI — a 100×20 ROI writes 2000 entries into 900. And the
   large-ROI branch steps wrong twice: the horizontal term is `winHor * n_winHor * winX` where one
   window's stride is `winX`, so it moves `n_winHor` windows sideways per window, and
   `row * n_winHor * winX` assumes `width == n_winHor * winX`, true only when the width is an exact
-  multiple of 30. Its `tile_variance` vector (`focus_score.cpp:151`), commented "0: abs sum of tile",
+  multiple of 30. Its `tile_variance` vector (`focus_score.cpp:144`), commented "0: abs sum of tile",
   is declared and never touched.
 - **`PowerSpectrumFeature::featureset` names the wrong feature** (`power_spectrum.h:17`):
   `{ FeatureIMQ::FOCUS_SCORE }` where the constructor provides `POWER_SPECTRUM_SLOPE`. Latent today —
@@ -214,7 +219,7 @@ Not in it: the `POWER_SPECTRUM_SLOPE` radial-binning defect described earlier. T
 | feature | oracle | oracle value | Nyxus | abs | rel |
 |---|---|---|---:|---:|---:|
 | `FOCUS_SCORE` | opencv 4.13.0 | 34.956597222222221 | 34.956597222222229 | 7.1e-15 | 2.0e-16 |
-| `LOCAL_FOCUS_SCORE` | opencv 4.13.0 | 7.5763888888888902 | 7.5763888888888937 | 3.6e-15 | 4.7e-16 |
+| `LOCAL_FOCUS_SCORE` | opencv 4.13.0 | 28.341145833333336 | 28.341145833333343 | 7.1e-15 | 2.5e-16 |
 | `MIN_SATURATION` | cellprofiler 4.2.8 | 0.1875 | 0.1875 | 0 | 0 |
 | `MAX_SATURATION` | cellprofiler 4.2.8 | 0.16666666666666669 | 0.16666666666666666 | 2.8e-17 | 1.7e-16 |
 
@@ -233,4 +238,4 @@ tolerance and `assert_feature`'s signature ends `double frac_tolerance = 1000`. 
 None of the four features has a GPU path, an IBSI mode, or a 3D twin — `FeatureIMQ` is its own
 enum and `dim=IMQ` is its own registry dimension. IMQ is also the one family with no
 `*_coverage.h` sweep to retire: every feature has a named test, and the features whose matrix has
-more than one reachable cell have one test per cell — eleven assertions over six features.
+more than one reachable cell have one test per cell — sixteen tests over six features.

@@ -34,9 +34,6 @@ public:
     // Result saver
     void save_value(std::vector<std::vector<double>>& feature_vals);
 
-    // User interface
-    static int ksize;
-
 private:
 
     // Result cache

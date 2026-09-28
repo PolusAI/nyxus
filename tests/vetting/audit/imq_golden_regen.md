@@ -43,7 +43,7 @@ Recipe `imq.laplacian_ksize1_zeropad`. What the tool is asked for:
 |---|---|
 | filter | `cv2.Laplacian(roi_float64, cv2.CV_64F, ksize=1, borderType=cv2.BORDER_CONSTANT)` |
 | statistic | `ndarray.var()` — population variance, `ddof=0` |
-| `LOCAL_FOCUS_SCORE` | the same call on each tile `get_local_focus_score()` visits, summed, divided by `scale*scale` with `scale=2` |
+| `LOCAL_FOCUS_SCORE` | the same call on each tile of the `scale × scale` grid, `scale=2`, averaged |
 
 **Name mapping**: none. OpenCV computes a filtered image, not a named feature; the two Nyxus names
 are the two ways this generator reduces it.
@@ -56,10 +56,11 @@ are the two ways this generator reduces it.
 - `BORDER_CONSTANT` is what matches Nyxus dropping out-of-range taps. `BORDER_REPLICATE`, cv2's
   default, does not.
 - `ndarray.var()` is the population variance. `numpy.var(ddof=1)` would be off by `N/(N-1)`.
-- **The tile count is part of the recipe, not an implementation detail.** `get_local_focus_score()`
-  loops `y < height - M`, so at `scale=2` it visits one 4×6 tile and divides by 4. The generator
-  asserts `len(tiles) == 1`; if the loop bound is ever fixed, that check fails and the golden has to
-  be re-derived rather than quietly meaning something else.
+- **The tile grid is part of the recipe, not an implementation detail.** `get_local_focus_score()`
+  averages a `scale × scale` grid of `(height/scale) × (width/scale)` tiles, so at `scale=2` the
+  8×12 fixture gives four 4×6 tiles. The generator asserts `len(tiles) == 4` and prints each
+  tile's score, and asserts the pin is more than 1% away from the one-tile value a truncated
+  `y < height - M` loop would give.
 
 ## `MIN_SATURATION`, `MAX_SATURATION` — CellProfiler
 

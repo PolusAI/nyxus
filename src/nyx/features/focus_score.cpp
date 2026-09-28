@@ -4,9 +4,17 @@
 
 using namespace Nyxus;
 
-int FocusScoreFeature::kernel[9] = { 0, 1, 0, 
-                                     1, -4, 1, 
-                                     0, 1, 0 };
+namespace
+{
+    // The two Laplacian stencils laplacian() chooses between, per call, from its ksize argument.
+    // Both are constant, so no call can change the kernel a later call sees.
+    constexpr int laplacian_kernel_ksize1[9] = { 0, 1, 0,
+                                                 1, -4, 1,
+                                                 0, 1, 0 };
+    constexpr int laplacian_kernel_ksizeN[9] = { 2, 0, 2,
+                                                 0, -8, 0,
+                                                 2, 0, 2 };
+}
 
 FocusScoreFeature::FocusScoreFeature() : FeatureMethod("FocusScoreFeature") {
     provide_features(FocusScoreFeature::featureset);
@@ -93,21 +101,6 @@ double FocusScoreFeature::get_focus_score_NT(WriteImageMatrix_nontriv& Im, int k
 
     int n = 3; // size of kernel nxn
 
-    if (ksize != 1) {
-
-        kernel[0] = 2; 
-        kernel[1] = 0;
-        kernel[2] = 2;
-
-        kernel[3] = 0;
-        kernel[4] = -8;
-        kernel[5] = 0;
-
-        kernel[6] = 2;
-        kernel[7] = 0;
-        kernel[8] = 2;
-    }
-
     auto width = Im.get_width(),
         height = Im.get_height(); 
     auto xy0 = (int)ceil(double(n) / 2.);
@@ -187,15 +180,25 @@ double FocusScoreFeature::get_focus_score_NT(WriteImageMatrix_nontriv& Im, int k
 
 double FocusScoreFeature::get_local_focus_score(const std::vector<PixIntens>& image, int height, int width, int ksize, int scale) {
 
-    double local_focus_score = 0;
-
+    // The ROI is cut into a scale x scale grid of non-overlapping M x N tiles, and the score is the
+    // mean of the tiles' focus scores. When a side is not a multiple of scale, its last
+    // height % scale rows or width % scale columns belong to no tile.
     int M = height / scale;
     int N = width / scale;
 
+    // A side shorter than scale leaves no room for a tile, so there is nothing to average
+    if (M == 0 || N == 0)
+        return 0;
+
+    double local_focus_score = 0;
+
     std::vector<double> laplacian_vec(M*N);
     std::vector<PixIntens> image_tile(M*N);
-    for (int y = 0; y < height - M; y += M) {
-        for (int x = 0; x < width - N; x += N) {
+    for (int ty = 0; ty < scale; ty++) {
+        for (int tx = 0; tx < scale; tx++) {
+
+            int y = ty * M,
+                x = tx * N;
 
             // Extract image tile
             for (int i = y; i < y + M; i++) {
@@ -213,7 +216,7 @@ double FocusScoreFeature::get_local_focus_score(const std::vector<PixIntens>& im
 
     }
 
-    return local_focus_score / (scale * scale); // average scores
+    return local_focus_score / (scale * scale); // mean over the scale^2 tiles
 }
 
 void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vector<double>& out, int m_image, int n_image, int ksize) {
@@ -221,19 +224,7 @@ void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vect
     int m_kernel = 3;
     int n_kernel = 3;
 
-    if (ksize != 1) {
-        kernel[0] = 2; 
-        kernel[1] = 0;
-        kernel[2] = 2;
-
-        kernel[3] = 0;
-        kernel[4] = -8;
-        kernel[5] = 0;
-
-        kernel[6] = 2;
-        kernel[7] = 0;
-        kernel[8] = 2;
-    }
+    const int* kernel = ksize == 1 ? laplacian_kernel_ksize1 : laplacian_kernel_ksizeN;
 
     int xKSize = n_kernel; // number of columns
     int yKSize = m_kernel; // number of rows

@@ -33,8 +33,6 @@ public:
     // Result saver
     void save_value(std::vector<std::vector<double>>& feature_vals);
 
-    static int ksize;
-
 private:
     double slope_;
 

@@ -36,15 +36,19 @@ SOURCES = [
     "test_imq_opencv.h",
     "test_imq_cellprofiler.h",
     "test_imq_regression.h",
+    "test_imq_analytic.h",
 ]
 # The golden table each file carries, so a key can be checked against the assertions that read it.
+# test_imq_analytic.h has none: its expected values are closed forms computed in the test, so there
+# is no pinned number for an assertion to leave unread.
 TABLE_OF = {
     "test_imq_opencv.h": "imq_opencv_ref_vals",
     "test_imq_cellprofiler.h": "imq_cellprofiler_ref_vals",
     "test_imq_regression.h": "imq_regression_ref_vals",
+    "test_imq_analytic.h": None,
 }
 
-ORACLE_SUFFIX = {"opencv": "opencv", "cellprofiler": "cellprofiler"}
+ORACLE_SUFFIX = {"opencv": "opencv", "cellprofiler": "cellprofiler", "analytic": "analytic"}
 
 FUNC = re.compile(r"^(?:inline\s+)?(?:static\s+)?void\s+(test_\w+)", re.M)
 # This family asserts through per-oracle helpers (assert_imq_opencv, assert_imq_cellprofiler,
@@ -61,9 +65,9 @@ TRACE = re.compile(r"SCOPED_TRACE\s*\(.*?\)\s*;", re.S)
 COMMENT = re.compile(r"//[^\n]*|/\*.*?\*/", re.S)
 
 NOTE = {
-    "LOCAL_FOCUS_SCORE": "opencv covers the per-tile statistic only: the tile extraction and "
-                         "the scale^2 divisor are Nyxus' own definition, reproduced in the "
-                         "generator. See not_covered.md section E",
+    "LOCAL_FOCUS_SCORE": "opencv covers each tile's Laplacian variance and their mean; the tile "
+                         "grid is Nyxus' own definition, reproduced in the generator and pinned "
+                         "tile by tile by the analytic row. See not_covered.md section E",
     "POWER_SPECTRUM_SLOPE": "two cells, both regression: the 8 px fixture pins the GUARD's return "
                             "value (rps() returns early below a 24 px short side, so the 0 is the "
                             "early return), and a 24x24 ROI pins the algorithm past it at "
@@ -98,7 +102,8 @@ def scan(path, feat_re):
     """-> ({test fn: {features it covers}}, {test fn: {pin keys it names}}, {keys the table pins})."""
     with open(path, encoding="utf-8", errors="replace") as fh:
         text = COMMENT.sub(lambda m: "\n" * m.group(0).count("\n"), fh.read())
-    keys = table_keys(text, TABLE_OF[os.path.basename(path)])
+    table = TABLE_OF[os.path.basename(path)]
+    keys = table_keys(text, table) if table else set()
 
     hits, read = {}, {}
     marks = [(m.start(), m.group(1)) for m in FUNC.finditer(text)]
@@ -175,6 +180,8 @@ def key_reader_problems():
     """
     out = []
     for rel, pinned in _KEYS.items():
+        if TABLE_OF[rel] is None:
+            continue                    # no golden table: nothing pinned, nothing to leave unread
         if pinned is None:
             out.append(f"{rel}: golden table {TABLE_OF[rel]} not found - the scanner cannot check "
                        f"its keys against the assertions that read them")
@@ -195,7 +202,10 @@ def disagreements(fam, cov):
         f = r["feature"]
         claimed = {t for t in r["current_test"].split(";") if t}
         if r["status"] == "vetted":
-            files = {cov.where[fn] for fn in cov.asserted.get(f, ())}
+            # a vetted row answers for the files of ITS oracle: a feature vetted twice (opencv and
+            # analytic) carries one row per oracle, each naming its own file
+            files = {cov.where[fn] for fn in cov.asserted.get(f, ())
+                     if ORACLE_SUFFIX.get(fn.rsplit("_", 1)[-1]) == r["oracle"]}
             if not cov.asserted.get(f):
                 out.append(f"{f}: status=vetted but no oracle test asserts it")
             if r["oracle"] and r["oracle"] not in cov.oracles.get(f, set()):
@@ -215,8 +225,10 @@ def disagreements(fam, cov):
 
     # the reverse gap: a kind of test with no row to answer for it
     for f in sorted(cov.asserted):
-        if not any(r["feature"] == f and r["status"] == "vetted" for r in cov.rows):
-            out.append(f"{f}: {sorted(cov.asserted[f])} assert it but no registry row is vetted")
+        for o in sorted(cov.oracles.get(f, ())):
+            if not any(r["feature"] == f and r["status"] == "vetted" and r["oracle"] == o
+                       for r in cov.rows):
+                out.append(f"{f}: {o} tests assert it but no registry row is vetted against {o}")
     for f in sorted(cov.regression):
         if not any(r["feature"] == f and r["status"] == "regression" for r in cov.rows):
             out.append(f"{f}: {sorted(cov.regression[f])} pin it but no registry row is a "

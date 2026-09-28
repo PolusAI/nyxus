@@ -102,6 +102,7 @@ DIM_AGNOSTIC = {
     "test_imq_opencv.h": "dim=IMQ in the registry",
     "test_imq_cellprofiler.h": "dim=IMQ in the registry",
     "test_imq_regression.h": "dim=IMQ in the registry",
+    "test_imq_analytic.h": "dim=IMQ in the registry",
 }
 
 # Headers that belong to no family, so any file may include them. Everything else named

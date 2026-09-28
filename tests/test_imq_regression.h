@@ -1,9 +1,8 @@
 #pragma once
 
 #include <gtest/gtest.h>
-#include <vector>                                // the probe ROIs below are built, not literals
 
-#include "test_imq_common.h"                     // fixture: calc_imq_feature, and FeatureIMQ via featureset.h
+#include "test_imq_common.h"                     // fixture: calc_imq_feature, imq_all_ones_mask, <vector>, and FeatureIMQ via featureset.h
 #include "test_ref_vals.h"                       // ref_vals_map, and <string> for the helper
 #include "../src/nyx/features/power_spectrum.h"  // PowerSpectrumFeature
 #include "../src/nyx/features/saturation.h"      // SaturationFeature
@@ -128,15 +127,6 @@ static std::vector<NyxusPixel> imq_narrow_mask_mask()
 			bool in = (x < 2 && y < 2) || (x == 3 && y == 3);
 			px.push_back (NyxusPixel {x, y, in ? 1u : 0u});
 		}
-	return px;
-}
-
-static std::vector<NyxusPixel> imq_all_ones_mask (size_t w, size_t h)
-{
-	std::vector<NyxusPixel> px;
-	for (size_t y = 0; y < h; y++)
-		for (size_t x = 0; x < w; x++)
-			px.push_back (NyxusPixel {x, y, 1u});
 	return px;
 }
 
