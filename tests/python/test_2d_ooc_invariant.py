@@ -122,19 +122,31 @@ def _make_pair_2d(tmp_path, size=128, const=None):
     return str(intdir) + os.sep, str(segdir) + os.sep
 
 
-def _ooc_vs_ram_2d(tmp_path, feats, const=None, size=128):
+def _set_metaparams(nyx, metaparams):
+    """Apply each "<family>/<name>=<value>" setting and read it back, so a setting the backend did
+    not take fails here rather than surfacing as a value mismatch further on."""
+    for mp in metaparams:
+        name, val = mp.split("=")
+        nyx.set_metaparam(mp)
+        assert nyx.get_metaparam(name) == float(val), "%s was not applied" % mp
+
+
+def _ooc_vs_ram_2d(tmp_path, feats, const=None, size=128, metaparams=()):
     """Featurize the same file pair twice, in-RAM and out-of-core, and require every feature column
     to agree. ram_limit=0 forces the oversized branch for any ROI (roiFootprint >= 0 is always
     true), which is what routes the ROI through the disk-backed OutOfRamPixelCloud and each
-    feature's osized_calculate."""
+    feature's osized_calculate. `metaparams` are applied to both instances alike. Returns the
+    in-RAM frame."""
     intdir, segdir = _make_pair_2d(tmp_path, size=size, const=const)
 
     n_ram = nyxus.Nyxus(feats)
     _set_ram_limit_mb(n_ram, RAM_LIMIT_LARGE_MB)  # large -> in-RAM (trivial); explicit so test is order-independent
+    _set_metaparams(n_ram, metaparams)
     df_ram = n_ram.featurize_directory(intdir, segdir)
 
     n_ooc = nyxus.Nyxus(feats)
     _set_ram_limit_mb(n_ooc, 0)  # 0 -> every ROI oversized -> out-of-core
+    _set_metaparams(n_ooc, metaparams)
     df_ooc = n_ooc.featurize_directory(intdir, segdir)
 
     cols, a = _feature_cols(df_ram)
@@ -155,6 +167,7 @@ def _ooc_vs_ram_2d(tmp_path, feats, const=None, size=128):
         )
     ]
     assert not bad, "2D out-of-core features diverge from in-RAM: %r" % (bad[:8],)
+    return df_ram
 
 
 def test_2d_ooc_2d_texture_matches_in_ram_invariant(tmp_path):
@@ -165,6 +178,46 @@ def test_2d_ooc_2d_texture_matches_in_ram_invariant(tmp_path):
         tmp_path,
         ["*ALL_GLCM*", "*ALL_GLRLM*", "*ALL_GLSZM*", "*ALL_GLDZM*", "*ALL_GLDM*", "*ALL_NGLDM*", "*ALL_NGTDM*"],
     )
+
+
+# A non-default GLCM setting: co-occurrence offset 2 against the default 1. glcm/greydepth is not
+# among them because the co-occurrence matrix is binned at the common grey depth
+# (calculateCoocMatAtAngle reads NyxSetting::GREYDEPTH), so it leaves every GLCM value unchanged and
+# cannot show which settings vector a path was given. Metaparameters live on the instance's own
+# Environment, so nothing set here reaches another instance or a later test.
+GLCM_METAPARAMS = ("glcm/offset=2",)
+
+
+def _glcm_in_ram(tmp_path, metaparams):
+    intdir, segdir = _make_pair_2d(tmp_path)
+    nyx = nyxus.Nyxus(["*ALL_GLCM*"])
+    _set_ram_limit_mb(nyx, RAM_LIMIT_LARGE_MB)
+    _set_metaparams(nyx, metaparams)
+    return _feature_cols(nyx.featurize_directory(intdir, segdir))[1]
+
+
+def test_2d_ooc_2d_glcm_metaparam_matches_in_ram_invariant(tmp_path):
+    """GLCM out-of-core must match in-RAM under a non-default glcm/offset, i.e. the oversized-ROI
+    path must be handed the GLCM family's own settings vector, which is where set_metaparam writes
+    it. At the defaults every family's vector holds the same offset, so the texture test above
+    cannot tell which vector the out-of-core path was given.
+
+    The fixture is a 128 px gradient spanning every one of the 64 default grey levels, so doubling
+    the offset moves the GLCM values. The control half asserts exactly that, per setting, so that an
+    out-of-core path running at the default offset cannot agree with the in-RAM one by the fixture
+    being insensitive to the setting."""
+    base = tmp_path / "default"
+    base.mkdir()
+    default_vals = _glcm_in_ram(base, ())
+    for mp in GLCM_METAPARAMS:
+        d = tmp_path / mp.split("/")[1].split("=")[0]
+        d.mkdir()
+        vals = _glcm_in_ram(d, (mp,))
+        assert vals.shape == default_vals.shape
+        assert not np.allclose(vals, default_vals, rtol=1e-6, atol=1e-9, equal_nan=True), (
+            "%s leaves the in-RAM GLCM values unchanged on this fixture" % mp)
+
+    _ooc_vs_ram_2d(tmp_path, ["*ALL_GLCM*"], metaparams=GLCM_METAPARAMS)
 
 
 def test_2d_ooc_2d_moments_matches_in_ram_invariant(tmp_path):
