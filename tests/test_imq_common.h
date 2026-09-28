@@ -4,6 +4,8 @@
 // builds one ROI and asserts nothing - the files that include it bring gtest in themselves, and
 // SPEC 6.3.1 keeps every golden table with the assertions that read it.
 
+#include <vector>                          // imq_all_ones_mask
+
 #include "../src/nyx/feature_settings.h"   // Fsettings
 #include "../src/nyx/featureset.h"         // FeatureIMQ
 #include "../src/nyx/roi_cache.h"          // LR
@@ -32,6 +34,16 @@ static double calc_imq_feature_on (Nyxus::FeatureIMQ feature, const NyxusPixel* 
 	f.save_value (roidata.fvals);
 
 	return roidata.fvals[(int)feature][0];
+}
+
+// A mask covering the whole w x h rectangle, so the ROI image matrix is the full intensity array
+static std::vector<NyxusPixel> imq_all_ones_mask (size_t w, size_t h)
+{
+	std::vector<NyxusPixel> px;
+	for (size_t y = 0; y < h; y++)
+		for (size_t x = 0; x < w; x++)
+			px.push_back (NyxusPixel {x, y, 1u});
+	return px;
 }
 
 // The im_quality fixture. The mask covers the whole bounding box, so the ROI image matrix is the

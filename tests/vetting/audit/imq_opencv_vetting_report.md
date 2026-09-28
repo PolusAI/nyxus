@@ -1,6 +1,6 @@
 # Audit: IMQ focus scores vs a fresh OpenCV run
 
-**Verdict: both quantities reproduce**, to 7.1e-15 and 3.6e-15 absolute — and the *filtered image*
+**Verdict: both quantities reproduce**, each to 7.1e-15 absolute — and the *filtered image*
 they are computed from is equal to OpenCV's cell for cell, which is the stronger of the two results.
 
 Covers `tests/test_imq_opencv.h` (goldens + assertions), `tests/test_imq_common.h` (fixture) and
@@ -24,7 +24,7 @@ Covers `tests/test_imq_opencv.h` (goldens + assertions), `tests/test_imq_common.
 | feature | pinned (OpenCV) | Nyxus | abs | rel | verdict |
 |---|---|---|---:|---:|---|
 | `FOCUS_SCORE` | 34.956597222222221 | 34.956597222222229 | 7.1e-15 | 2.0e-16 | vetted |
-| `LOCAL_FOCUS_SCORE` | 7.5763888888888902 | 7.5763888888888937 | 3.6e-15 | 4.7e-16 | vetted |
+| `LOCAL_FOCUS_SCORE` | 28.341145833333336 | 28.341145833333343 | 7.1e-15 | 2.5e-16 | vetted |
 
 Both assert at SPEC §7's exact tier, an **absolute** 1e-9 band via `ASSERT_NEAR`. The tier applies
 for the reason the SPEC gives it: nothing but float summation order separates the two sides. It is
@@ -57,12 +57,21 @@ values too, because two errors that cancel leave a mean unmoved. This family has
 and that is checked rather than assumed:
 
 - `FOCUS_SCORE` is one variance over one ROI. There is no partition.
-- `LOCAL_FOCUS_SCORE` is a sum over the tiles `get_local_focus_score()` visits, divided by
-  `scale²`. The generator **asserts that the tile count is 1**, so the "aggregate" and its single
-  element are the same number up to the constant divisor, and a per-element table would be the
-  scalar table again. If the loop bound is ever fixed the count becomes 4, that assertion fails,
-  and the golden has to be re-derived — at which point the per-element rule starts applying and the
-  generator is the thing that says so.
+- `LOCAL_FOCUS_SCORE` is the mean over the `scale² = 4` tiles, so the per-element rule applies. The
+  generator asserts the tile count is 4 and prints each tile's score:
+
+  | tile (x, y) | `var(cv2.Laplacian(tile))` |
+  |---|---:|
+  | (0, 0) | 30.305555555555561 |
+  | (1, 0) | 28.623263888888889 |
+  | (0, 1) | 32.831597222222221 |
+  | (1, 1) | 21.604166666666668 |
+
+  Their mean is the pinned 28.341145833333336. The per-tile values are not reachable from the C++
+  side, which returns only the mean, so the per-element assertion is made analytically instead:
+  `test_imq_analytic.h` puts a single spike, whose tile score has the closed form `20v²/P`, in each
+  tile in turn and asserts every placement contributes it. A tile that dropped out of the mean, or
+  was counted twice, fails there rather than hiding inside an average.
 - Both saturations are counts over the whole ROI, again unpartitioned.
 
 What this family has instead of a per-element table is the **filtered image** comparison above,
@@ -76,32 +85,22 @@ when `ksize != 1`. It has no `cv2.Laplacian` counterpart, and `calculate()` neve
 `laplacian()` is only ever called with the default. Out of scope, and recorded as INVALID in
 `matrix/imq.md` rather than left implied.
 
-Worth noting where that kernel lives: `FocusScoreFeature::kernel[9]` is a *mutable static*, and the
-`ksize != 1` branch overwrites it in place without restoring it. A single call with `ksize != 1`
-would change the kernel for every later ROI in the process. Nothing reaches that branch today, which
-makes it latent rather than live — the same shape as the `NGTDMFeature::n_levels` static the 2D
-NGTDM pass fixed.
+The two kernels are constant arrays, and `laplacian()` picks one per call from its `ksize`
+argument, so no call changes the kernel a later call sees;
+`test_imq_focus_score_kernel_per_call_analytic` asserts it.
 
-**`LOCAL_FOCUS_SCORE` visits one tile, not four.** `get_local_focus_score()` loops
-`for (y = 0; y < height - M; y += M)` with `M = height/scale`. On a 12-row ROI at `scale=2` that is
-`0 < 6` → true, `6 < 6` → false, and the same in x: exactly **one** 4×6 tile, while the final
-division is still by `scale*scale = 4`. The golden reproduces that, and the generator asserts the
-tile count is 1 — so a change to the loop bound fails in the generator rather than silently
-redefining what the golden means.
+**The tile grid is Nyxus' definition, reproduced rather than taken from the tool.** cv2 supplies
+each tile's Laplacian and variance. Which sub-arrays are tiles — a `scale × scale` grid of
+`(height/scale) × (width/scale)` tiles, with any leftover row or column in no tile — is Nyxus'
+own convention, and no tool publishes it. The generator reproduces the grid and asserts its tile
+count; `test_imq_analytic.h` pins which tiles take part, the leftover row and column, and the ROI too
+thin for any tile.
 
-Two claims are entangled there and this report settles neither: the bound is `<` where `<=` would
-visit all `scale²` tiles, and `docs/source/Math/f_image_quality.rst` says "the mean and median
-values of the tiles are returned" where the code returns one sum over one tile. Both are recorded as
-open in `matrix/imq.md`.
-
-**How much of the feature that leaves unvetted, measured.** The tile count alone only checks that
-the tiling this generator reproduces still matches the one Nyxus walks; it says nothing about the
-size of the gap. So the generator carries the SPEC §4 negative control for a partial-pipeline
-oracle: scoring the same feature over all `scale² = 4` tiles — the tiling the `/scale²` divisor
-already assumes — gives **28.341145833333336** against the pinned one-tile **7.5763888888888902**.
-**73% of `LOCAL_FOCUS_SCORE` is outside this oracle's reach**, and the control asserts that gap
-rather than printing it: were it to vanish, the one-tile pin would not be a partial value and this
-scope note would be overstated.
+**Negative control: the pin rejects a truncated tiling.** A tile loop bounded by `y < height - M`
+stops after the first tile on an even side while still dividing by `scale²`. On this 8×12 fixture
+that visits one tile of four and gives **7.5763888888888902** against the full **28.341145833333336**
+— 73% apart. The generator asserts that gap: were it to vanish, the `LOCAL_FOCUS_SCORE` pin could not
+tell the full tiling from the truncated one.
 
 **The out-of-core path.** `FocusScoreFeature::get_focus_score_NT()` is reached by
 `osized_calculate()` and by no assertion in the tree. Reading it (not measuring — nothing exercises

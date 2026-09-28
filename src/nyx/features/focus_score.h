@@ -35,8 +35,9 @@ public:
 
     static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst);
 
-    //-------------- - User interface
-    static int ksize;
+    // Adds the 3x3 Laplacian of the m_image x n_image image to out, with zero padding at the border.
+    // ksize == 1 selects {{0,1,0},{1,-4,1},{0,1,0}}, any other value {{2,0,2},{0,-8,0},{2,0,2}}.
+    static void laplacian(const std::vector<PixIntens>& image, std::vector<double>& out, int m_image, int n_image, int ksize=1);
 
 private:
 
@@ -46,12 +47,8 @@ private:
 
     //=== Trivial ROIs ===
 
-    static double get_local_focus_score(const std::vector<PixIntens>& image, int n_image, int m_image, int ksize=1, int scale=2);
-
-    static void laplacian(const std::vector<PixIntens>& image, std::vector<double>& out, int n_image, int m_image, int ksize=1);
+    static double get_local_focus_score(const std::vector<PixIntens>& image, int height, int width, int ksize=1, int scale=2);
 
     static double variance(const std::vector<double>& image);
-
-    static int kernel[9];
 };
 

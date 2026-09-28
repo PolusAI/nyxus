@@ -16,17 +16,16 @@
 // generator asserts cv2's filtered image equals Nyxus' hand-rolled laplacian() cell for cell before
 // it compares any scalar, so the convolution is proved and only the variance step is being checked
 // here. The pins carry OpenCV's own digits; Nyxus reproduces them to 7.1e-15 absolute (2.0e-16
-// relative) on FOCUS_SCORE and 3.6e-15 / 4.7e-16 on LOCAL_FOCUS_SCORE - agreement, not bit
+// relative) on FOCUS_SCORE and 7.1e-15 / 2.5e-16 on LOCAL_FOCUS_SCORE - agreement, not bit
 // identity, and the residual is the variance summation order alone. See
 // tests/vetting/audit/imq_opencv_vetting_report.md.
 //
 // Scope of the claim:
 //   * ksize=1 only -- the ksize>1 kernel {{2,0,2},{0,-8,0},{2,0,2}} has no cv2.Laplacian
 //     counterpart and calculate() never selects it.
-//   * LOCAL_FOCUS_SCORE covers the top-left tile only. get_local_focus_score() loops
-//     y < height - M with M = height/scale, so at scale=2 exactly one 4x6 tile is visited while
-//     the divisor stays scale^2 = 4; the golden is var(Laplacian(that tile)) / 4. The loop bound is
-//     pinned as-is, not endorsed -- tests/vetting/matrix/imq.md records it as an open defect.
+//   * LOCAL_FOCUS_SCORE is the mean of var(Laplacian(tile)) over the 2x2 grid of 4x6 tiles at
+//     scale=2. cv2 computes each tile's score; the grid is Nyxus' definition, reproduced in the
+//     generator. Which tiles are averaged is asserted tile by tile in test_imq_analytic.h.
 //   * The out-of-core path (get_focus_score_NT) is not covered.
 //
 // CellProfiler also publishes features named FocusScore / LocalFocusScore, but those are a
@@ -34,7 +33,7 @@
 // these two -- see test_imq_cellprofiler.h.
 static const ref_vals_map<double> imq_opencv_ref_vals {
 	{"FOCUS_SCORE", 34.956597222222221},
-	{"LOCAL_FOCUS_SCORE", 7.5763888888888902}
+	{"LOCAL_FOCUS_SCORE", 28.341145833333336}
 };
 
 // SPEC 7's exact tier verbatim: an absolute band, so ASSERT_NEAR rather than the relative agrees_gt

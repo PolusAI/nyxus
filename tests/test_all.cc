@@ -92,6 +92,7 @@
 #include "test_imq_regression.h"
 #include "test_imq_opencv.h"
 #include "test_imq_cellprofiler.h"
+#include "test_imq_analytic.h"
 #include "test_3d_nifti_mechanics.h"
 #include "test_3d_layouta_mechanics.h"	// the layoutA (per-Z slice files) path
 #include "test_io_plumbing_mechanics.h"	// guards shared by both dimensions
@@ -4036,6 +4037,31 @@ TEST(TEST_NYXUS, TEST_IMQ_MAX_SATURATION_NARROW_MASK_REGRESSION)
 TEST(TEST_NYXUS, TEST_IMQ_POWER_SPECTRUM_SLOPE_LARGE_ROI_REGRESSION)
 {
 	ASSERT_NO_THROW(test_imq_power_spectrum_slope_large_roi_regression());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_EACH_TILE_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_imq_local_focus_score_each_tile_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_ALL_TILES_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_imq_local_focus_score_all_tiles_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_REMAINDER_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_imq_local_focus_score_remainder_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_THIN_ROI_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_imq_local_focus_score_thin_roi_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_FOCUS_SCORE_KERNEL_PER_CALL_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_imq_focus_score_kernel_per_call_analytic());
 }
 
 //***** 3D i/o ***** 

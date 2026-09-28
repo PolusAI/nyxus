@@ -63,12 +63,16 @@ Laplacian, not over its magnitude: :math:`\text{Var}(|x|)` is a different, small
 whenever :math:`\text{mean}(x) \neq 0`, which the zero border condition guarantees.
 
 Local Focus Score
------------
+-----------------
 
-Local Focus Score is calculated the same way as Focus Score, but on non-overlapping tiles of
-:math:`\text{height}/\text{scale}` by :math:`\text{width}/\text{scale}` pixels, summed and divided by
-:math:`\text{scale}^2`. Note that the tile loop's bound stops one tile short in each direction, so
-for the default :math:`\text{scale}=2` only the top-left tile currently contributes.
+Local Focus Score cuts the image into a :math:`\text{scale}\times\text{scale}` grid of
+non-overlapping tiles of :math:`\lfloor\text{height}/\text{scale}\rfloor` by
+:math:`\lfloor\text{width}/\text{scale}\rfloor` pixels, computes the Focus Score of each tile, with the
+zero border condition applied at the tile's own edge, and returns the mean of the
+:math:`\text{scale}^2` tile scores. Nyxus uses :math:`\text{scale}=2`, so the score is the mean over
+the four quadrants. When a side is not a multiple of :math:`\text{scale}`, the rows or columns past
+the grid belong to no tile. An image with a side shorter than :math:`\text{scale}` has no tiles, and
+its Local Focus Score is 0.
 
 GLCM Correlation and Dissimilarity
 ----------------------------------

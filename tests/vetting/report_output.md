@@ -32,11 +32,11 @@ regression: 121  invariant: 0  untested: 0
 
 ## Verdicts
 
-1013 of 1013 assertion rows agree with the tree.
+1014 of 1014 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 1013 | the claim and the tree say the same thing |
+| `agree` | 1014 | the claim and the tree say the same thing |
 
 ### How far each verdict reaches
 
@@ -46,7 +46,7 @@ regression: 121  invariant: 0  untested: 0
 | scope | rows | what was compared |
 |---|---:|---|
 | `feature` | 533 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
-| `row` | 273 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
+| `row` | 274 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 | `row+config` | 207 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
 ## Every oracle a feature was matched against
@@ -81,8 +81,8 @@ that alone understates every family that corroborates.
 | 3D | morphology | 2 | . | . | . | . | 2 | 8 | . | . | . | 6 |
 | 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | . | . | 5 | . | . |
-| IMQ | imq | . | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **40** | **9** | **2** | **181** | **20** | **95** | **208** | **2** | **266** | **127** | **121** |
+| IMQ | imq | 1 | 2 | . | . | . | . | . | 2 | . | . | 2 |
+| | **all** | **41** | **9** | **2** | **181** | **20** | **95** | **208** | **2** | **266** | **127** | **121** |
 
 ## By dimensionality
 

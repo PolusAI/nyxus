@@ -1069,16 +1069,31 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   variance-of-the-Laplacian focus measure. Generator: `oracles/gen_imq_opencv.py`, which asserts the
   two filtered images are equal cell for cell before comparing any scalar, so the convolution is
   proved rather than inferred from a matching variance.
-- Measured: `FOCUS_SCORE` 7.1e-15 absolute (2.0e-16 relative), `LOCAL_FOCUS_SCORE` 3.6e-15 absolute
-  (4.7e-16 relative). The filtered images are equal cell for cell; the residual is the variance
+- Measured: `FOCUS_SCORE` 7.1e-15 absolute (2.0e-16 relative), `LOCAL_FOCUS_SCORE` 7.1e-15 absolute
+  (2.5e-16 relative). The filtered images are equal cell for cell; the residual is the variance
   summation order alone. Report: `audit/imq_opencv_vetting_report.md`.
-- **Inside the fixture but outside the claim:** `LOCAL_FOCUS_SCORE` reaches exactly one tile.
-  `get_local_focus_score()` loops `y < height - M` with `M = height/scale`, so at `scale=2` the 4x6
-  top-left tile is the only one visited while the divisor stays `scale^2 = 4`. The golden reproduces
-  that; it does not endorse it. See `matrix/imq.md`.
+- `LOCAL_FOCUS_SCORE` is the mean over the 2x2 grid of 4x6 tiles `get_local_focus_score()` cuts
+  the fixture into at `scale=2`. The grid is Nyxus' definition, reproduced in the generator; which
+  tiles take part is asserted tile by tile in `test_imq_analytic.h`. See `matrix/imq.md`.
 - **Outside this recipe:** the `ksize>1` kernel `{{2,0,2},{0,-8,0},{2,0,2}}`, which has no
   `cv2.Laplacian` counterpart and which `calculate()` never selects; and the out-of-core
   `get_focus_score_NT()` path, which no assertion reaches.
+
+## imq.local_focus_single_spike
+- No benchmark; config matrix `matrix/imq.md`. Exact assertions, an absolute band of 0.
+- Synthetic ROIs built in `test_imq_analytic.h`: 8x12, 9x12, 8x13 and 9x13 rectangles, full mask,
+  0 everywhere except single spikes of height 6. At the `scale=2` default of
+  `get_local_focus_score()` every one of them is a 2x2 grid of 4x6 tiles, and the odd sides add a
+  row or column that belongs to no tile; a 5x1 and a 1x5 ROI are too thin for any tile.
+  `FocusScoreFeature::calculate()` reads no `NyxSetting`. Oracle: `analytic`. Used by:
+  `test_imq_analytic.h`.
+- The closed form: a spike of height `v` at least one pixel inside its tile has a ksize=1 Laplacian
+  of `-4v` at the spike and `+v` at its four neighbours, mean exactly 0, so the tile scores
+  `20v^2/P` (`P` = 24 pixels) and an all-zero tile scores 0. `LOCAL_FOCUS_SCORE` is then
+  `20*36/24/4 = 7.5` for one spiked tile and 30 for four. Integer arithmetic throughout, exact in
+  double.
+- The even sides are the ones that separate a full tiling from one whose loop stops after the
+  first tile; the odd sides pin the leftover row and column.
 
 ## imq.saturation_observed_extremum
 - Benchmark `bench_imq_quality_roi`; config matrix `matrix/imq.md`. Assertions at SPEC 7's exact
