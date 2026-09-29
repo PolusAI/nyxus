@@ -14,6 +14,7 @@
 #endif
 #include "tiff_handle_guard.h"
 #include <cstring>
+#include <memory>
 #include <sstream>
 #include <limits.h> // for INT_MAX
 #include "ome/ome_tiff_planes.h"   // OME-XML reading and (z,c,t) -> directory selection
@@ -82,8 +83,10 @@ public:
             TIFFGetField(tiff_, TIFFTAG_BITSPERSAMPLE, &(this->bitsPerSample_));
             TIFFGetField(tiff_, TIFFTAG_SAMPLEFORMAT, &(this->sampleFormat_));
             // SAMPLEFORMAT is optional and defaults to 1 (unsigned integer); tifffile omits it
-            // for unsigned images
-            if (sampleFormat_ < 1 || sampleFormat_ > 3)
+            // for unsigned images. SAMPLEFORMAT_VOID (4), untyped data, reads as unsigned too.
+            // Every other value stays as declared, so the complex formats (5, 6) reach the typed
+            // dispatch and are refused there.
+            if (sampleFormat_ == 0 || sampleFormat_ == SAMPLEFORMAT_VOID)
                 sampleFormat_ = 1;
 
             // Test if the file is greyscale
@@ -141,9 +144,12 @@ public:
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
         std::vector<DataType>& tileDataVec = *tile;
 
-        tdata_t tiffTile = nullptr;
+        // libtiff's tile buffer, released on every exit, the refusals below included
         auto t_szb = TIFFTileSize(tiff_);
-        tiffTile = _TIFFmalloc(t_szb);
+        std::unique_ptr<void, void(*)(void*)> tileBuf (_TIFFmalloc(t_szb), _TIFFfree);
+        if (!tileBuf)
+            throw std::runtime_error("NyxusGrayscaleTiffTileLoader: _TIFFmalloc failed");
+        tdata_t tiffTile = tileBuf.get();
         auto errcode = TIFFReadTile(tiff_, tiffTile, indexColGlobalTile * tileWidth_, indexRowGlobalTile * tileHeight_, 0, 0);
         if (errcode < 0)
         {
@@ -163,24 +169,15 @@ public:
             throw (err);
         }
 
-        // copy at the file's own sample type; the tile buffer is released on every path
-        try
+        // copy at the file's own sample type
+        Nyxus::with_tiff_sample_type (sampleFormat_, bitsPerSample_, "NyxusGrayscaleTiffTileLoader", [&] (auto sample)
         {
-            Nyxus::with_tiff_sample_type (sampleFormat_, bitsPerSample_, "NyxusGrayscaleTiffTileLoader", [&] (auto sample)
-            {
-                using T = decltype(sample);
-                if constexpr (Nyxus::tiff_sample_is_real<T>)
-                    loadTile_real_intens <T> (tiffTile, tileDataVec);
-                else
-                    loadTile <T> (tiffTile, tileDataVec);
-            });
-        }
-        catch (...)
-        {
-            _TIFFfree(tiffTile);
-            throw;
-        }
-        _TIFFfree(tiffTile);
+            using T = decltype(sample);
+            if constexpr (Nyxus::tiff_sample_is_real<T>)
+                loadTile_real_intens <T> (tiffTile, tileDataVec);
+            else
+                loadTile <T> (tiffTile, tileDataVec);
+        });
     }
 
 
@@ -452,8 +449,10 @@ public:
                 message << "Tile Loader ERROR: The file is not grayscale: SamplesPerPixel = " << samplesPerPixel << ".";
                 throw (std::runtime_error(message.str()));
             }
-            // Interpret undefined data format as unsigned integer data
-            if (sampleFormat_ < 1 || sampleFormat_ > 3) 
+            // SAMPLEFORMAT is optional and defaults to 1 (unsigned integer); SAMPLEFORMAT_VOID (4),
+            // untyped data, reads as unsigned too. Every other value stays as declared, so the
+            // complex formats (5, 6) reach the typed dispatch and are refused there.
+            if (sampleFormat_ == 0 || sampleFormat_ == SAMPLEFORMAT_VOID)
             {
                 sampleFormat_ = 1;
             }

@@ -66,8 +66,10 @@ public:
             TIFFGetField(tiff_, TIFFTAG_BITSPERSAMPLE, &(this->bitsPerSample_));
             TIFFGetField(tiff_, TIFFTAG_SAMPLEFORMAT, &(this->sampleFormat_));
             // SAMPLEFORMAT is optional and defaults to 1 (unsigned integer); tifffile omits it
-            // for unsigned images
-            if (sampleFormat_ < 1 || sampleFormat_ > 3)
+            // for unsigned images. SAMPLEFORMAT_VOID (4), untyped data, reads as unsigned too.
+            // Every other value stays as declared, so the complex formats (5, 6) reach the typed
+            // dispatch and are refused there.
+            if (sampleFormat_ == 0 || sampleFormat_ == SAMPLEFORMAT_VOID)
                 sampleFormat_ = 1;
 
             // Test if the file is greyscale
@@ -252,8 +254,10 @@ public:
                 std::cerr << erm + "\n";
                 throw std::runtime_error(erm);
             }
-            // Interpret undefined data format as unsigned integer data
-            if (sampleFormat_ < 1 || sampleFormat_ > 3)
+            // SAMPLEFORMAT is optional and defaults to 1 (unsigned integer); SAMPLEFORMAT_VOID (4),
+            // untyped data, reads as unsigned too. Every other value stays as declared, so the
+            // complex formats (5, 6) reach the typed dispatch and are refused there.
+            if (sampleFormat_ == 0 || sampleFormat_ == SAMPLEFORMAT_VOID)
             {
                 sampleFormat_ = 1;
             }
