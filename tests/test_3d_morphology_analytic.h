@@ -236,9 +236,8 @@ void test_3d_morphology_lattice_hull_volume_analytic()
         if (::testing::Test::HasFatalFailure())
             return;
 
-        ASSERT_TRUE (agrees_gt (hull_volume, s.want, 1e12))
-            << s.name << " of " << s.cloud.size() << " voxels: 3VOLUME_CONVEXHULL actual="
-            << hull_volume << " analytic=" << s.want;
+        ASSERT_TRUE (agrees_gt (hull_volume, s.want, 1e12)) << "3VOLUME_CONVEXHULL actual=" << hull_volume
+            << " analytic=" << s.want << " for a " << s.name << " of " << s.cloud.size() << " voxels";
     }
 }
 
@@ -259,7 +258,7 @@ void test_3d_morphology_planar_hull_volume_analytic()
     if (::testing::Test::HasFatalFailure())
         return;
 
-    ASSERT_EQ (hull_volume, 0.0);
+    ASSERT_EQ (hull_volume, 0.0) << "3VOLUME_CONVEXHULL of a single-plane ROI";
 }
 
 // The refusal path: an ROI with no voxels has no surface. The builder must hand back an empty mesh
