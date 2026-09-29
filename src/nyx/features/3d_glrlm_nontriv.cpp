@@ -9,29 +9,17 @@
 
 using namespace Nyxus;
 
-// Same 13 canonical direction shifts as 3d_glrlm.cpp (dz in {0,1} only: half of the 26-connected
-// directions, avoiding double-counting an axis and its opposite). AngleShift order is {dz,dy,dx}.
+// The 13 direction shifts of 3d_glrlm.cpp: dz in {0,1}, one of each direction and its opposite.
+// AngleShift order is {dz,dy,dx}.
 static const AngleShift SHIFTS13[] =
 {
 	{1,  1,  1}, {1,  1,  0}, {1,  1, -1}, {1,  0,  1}, {1,  0,  0}, {1,  0, -1},
 	{1, -1,  1}, {1, -1,  0}, {1, -1, -1}, {0,  1,  1}, {0,  1,  0}, {0,  1, -1}, {0,  0,  1}
 };
 
-// Out-of-core 3D GLRLM. gather_rl_zones() greedily walks each run forward along its direction,
-// consuming voxels via an in-RAM VISITED marker -- workable in-core (whole cube available) but not
-// as-is out-of-core. Two cases, driven by the fact all 13 canonical directions have dz in {0,1}:
-//
-//  - dz==0 (3 directions): the run never leaves its Z-plane, so gather_rl_zones() is called
-//    UNCHANGED on a depth-1 SimpleCube built from one streamed dense plane -- byte-identical to the
-//    in-core algorithm, just fed one plane at a time.
-//  - dz==1 (10 directions): a run advances exactly one (dz,dy,dx) step per Z-plane, so it visits at
-//    most one voxel per plane. This lets a "carry" array (indexed by the CURRENT plane's (y,x))
-//    track each in-progress run's length across a 2-plane window, finalizing (recording into the
-//    grey/length histogram) a run the moment its continuation check fails, instead of needing the
-//    whole volume. Peak memory is O(plane area), not O(volume).
-//
-// Grey-level LUT and histogram-fill both reuse calc_SRE()/etc unchanged once a full SimpleMatrix<int>
-// is assembled per direction, so values are identical to calculate().
+// A dz==0 run never leaves its plane, so gather_rl_zones() runs on each streamed plane as a depth-1
+// cube. A dz==1 run takes exactly one voxel per plane, so its length is carried across a 2-plane
+// window, indexed by the current plane's (y,x), and recorded when the run fails to continue.
 void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	n_angles_ = (int) (sizeof(SHIFTS13) / sizeof(AngleShift));
@@ -62,12 +50,9 @@ void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 	const size_t nvox = vol.n_voxels();
 
-	// --- grey levels I (mirrors calculate(): unique values of the WHOLE binned cube, incl.
-	// background, minus 0 -- for IBSI a 1..max linspace instead). Ng == I.size() in both cases.
-	// NOTE: the in-core path's I-construction branches on ibsi_grey_binning(greyInfo) (the numeric
-	// "no rescale" binning mode), NOT the STNGS_IBSI(s) compliance flag used below for row lookup --
-	// under default settings greyInfo==0 (ibsi_grey_binning true) while STNGS_IBSI(s) is false, so
-	// conflating the two picks the wrong (sparse unique-set) branch here.
+	// --- grey levels I: 1..max under no binning, else the unique levels of the whole binned cube,
+	// background included, minus 0. The construction follows the binning mode, ibsi_grey_binning();
+	// the row lookup below follows the IBSI flag, and the two differ at GREYDEPTH=0 without IBSI.
 	std::vector<PixIntens> I;
 	if (ibsi_grey_binning (greyInfo))
 	{
@@ -82,7 +67,7 @@ void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 		I.assign (uniq.begin(), uniq.end());
 	}
 	const int Ng = (int) I.size();
-	const size_t Np = nvox;	// matches r.raw_pixels_3D.size() in the in-core path
+	const size_t Np = nvox;
 
 	auto row_of = [&](PixIntens pi) -> int
 	{
@@ -106,7 +91,6 @@ void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 		if (ash.dz == 0)
 		{
-			// In-plane run: reuse the in-core algorithm verbatim on a depth-1 sub-cube per plane.
 			for (int z = 0; z < Dz; z++)
 			{
 				SimpleCube<PixIntens> D1 (vol.plane (z), W, H, 1);
@@ -118,11 +102,8 @@ void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 		}
 		else
 		{
-			// Cross-plane run (dz==1): carry each in-progress run's length across a 2-plane window,
-			// indexed by the CURRENT plane's (y,x). A run at (y,x) in plane z has its predecessor at
-			// (y-dy, x-dx) in plane z-1; if intensities match, the run continues (length+1), else the
-			// PREDECESSOR's run just ended and is finalized. Whatever remains unconsumed after the
-			// last plane is finalized once more after the loop.
+			// A run at (y,x) in plane z continues the one at (y-dy, x-dx) in plane z-1 when the levels
+			// match; a run in plane z-1 that nothing continued has ended.
 			std::vector<int> prevCarry, curCarry;
 
 			for (int z = 0; z < Dz; z++)
@@ -139,7 +120,7 @@ void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 					for (int x = 0; x < W; x++)
 					{
 						PixIntens pi = curPlane[(size_t) y * W + x];
-						if (pi == 0)	// background/skip: matches gather_rl_zones's zeroI==0 check
+						if (pi == 0)	// gather_rl_zones's zeroI
 							continue;
 
 						int py = y - ash.dy, px = x - ash.dx;
@@ -166,7 +147,7 @@ void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 				prevCarry.swap (curCarry);
 			}
-			// Finalize whatever is still active after the last plane
+			// the runs still open at the last plane
 			if (Dz > 0)
 			{
 				const std::vector<PixIntens>& lastPlane = vol.plane (Dz - 1);
@@ -180,7 +161,7 @@ void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 			}
 		}
 
-		// --- assemble the direction's matrix from counts and reuse the shared feature math
+		// --- the direction's matrix
 		int Nr = 0;
 		for (auto& row : counts)
 			Nr = (std::max) (Nr, (int) row.size());

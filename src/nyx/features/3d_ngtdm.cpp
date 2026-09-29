@@ -275,10 +275,9 @@ void D3_NGTDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inte
 
 void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	// Out-of-core NGTDM. Streams the disk-backed voxel cloud through a (2*radius+1)-plane sliding
-	// window of dense grey-binned planes, reproducing calculate() exactly: unique-over-cube grey
-	// levels (incl background), the "+1 if min level is 0" shift, the radius neighbourhood average
-	// (which includes background neighbours), then N/S/P and the shared feature math (calc_*).
+	// The radius neighbourhood spans 2*radius+1 planes, which is the window. Grey levels are the
+	// unique levels of the whole binned cube, background included, lifted by one when the lowest is
+	// 0, and the neighbourhood average takes in background neighbours, as calculate() does.
 	clear_buffers();
 	I.clear();
 
@@ -325,13 +324,10 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	P.assign (Ng, 0.0);
 	Nvp = 0;
 
-	// O(1) grey-level -> matrix row, replacing the per-voxel binary search in the scan below.
-	// rowLUT[v] == lower_bound(I, v) - I.begin() for every possible (shifted) binned level (the
-	// max is I's last, sorted, entry), so the row is identical to the search it replaces.
+	// grey level -> matrix row, over every shifted level up to I's largest
 	std::vector<int> rowLUT = Nyxus::ooc_row_lut (I, I.back());
 
-	// --- the binned cube with the shift baked into its levels, streamed through a window of
-	//     (2*rad+1) planes -- the Z reach of the radius neighbourhood
+	// --- the binned cube with the shift baked into its levels
 	const PixIntens lift = shift ? 1 : 0;
 	Nyxus::OocBinnedVolume vol (r, [bin_of, lift](PixIntens v) { return bin_of (v) + lift; }, bgv, 2 * rad + 1);
 

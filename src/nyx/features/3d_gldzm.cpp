@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <limits>
 #include <set>
+#include <stdexcept>
+#include <string>
 #include <unordered_set>
 #include <vector>
 #include "../environment.h"
@@ -534,20 +536,26 @@ void D3_GLDZM_feature::save_value (std::vector<std::vector<double>> & fvals)
 
 void D3_GLDZM_feature::osized_add_online_pixel (size_t x, size_t y, uint32_t intensity) {}
 
-// Out-of-core 3D GLDZM. Same definition as prepare_GLDZM_matrix_kit, reached without ever holding
-// the binned cube or the voxel cloud in RAM: a zone is a 26-connected component of one grey level
-// within the ROI, and its distance is the smallest city-block distance to the ROI border any of its
-// voxels has.
+// The out-of-core border distance of one voxel. Its largest value is the unsettled mark, and 0 means
+// "not the ROI's", so a distance is valid only strictly between the two.
+using OocBorderDist = uint16_t;
+
+// A voxel's distance to the ROI border is at most its distance to the nearest face of the bounding
+// box, so the largest distance a box can produce is (shortest side + 1) / 2 -- the long sides do not
+// enter into it.
+bool D3_GLDZM_feature::ooc_border_distance_fits (int w, int h, int d)
+{
+	const long long shortest = (std::min) ({ (long long) w, (long long) h, (long long) d });
+	return (shortest + 1) / 2 < (long long) (std::numeric_limits<OocBorderDist>::max)();
+}
+
+// A zone is a 26-connected component of one grey level within the ROI, and its distance is the
+// smallest city-block distance to the ROI border any of its voxels has. 'dist' is the one
+// volume-sized buffer, because the border distance is a breadth-first walk over the whole ROI; it
+// carries the ROI mask (nonzero = the ROI's) and then each ROI voxel's distance.
 //
-// The family holds one volume-sized buffer, 'dist', for the same reason the in-core path does: the
-// border distance is a breadth-first walk inwards over the whole ROI, so it cannot be answered from
-// a sliding window. It arrives as the ROI mask and leaves carrying each ROI voxel's distance, which
-// is why zero keeps meaning "not the ROI's" throughout. At 2 bytes per voxel it is a quarter of the
-// two int cubes the in-core path allocates, and the grey levels still stream a plane at a time.
-//
-// The ROI mask cannot be recovered from the binned levels -- matlab binning sends intensity 0 to
-// level 1, making background indistinguishable from a genuine level-1 voxel -- so it is marked from
-// the voxel cloud, exactly as the in-core path marks it.
+// The mask is marked from the voxel cloud, not the binned levels: matlab binning sends intensity 0
+// to level 1, so background is indistinguishable from a level-1 voxel.
 void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	clear_buffers();
@@ -559,9 +567,8 @@ void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 		return;
 	}
 
-	// grey-binning selection mirrors prepare_GLDZM_matrix_kit exactly: no GLDZM-specific greydepth
-	// setting exists, so it starts from the general STNGS_NGREYS(s), can be overridden by the static
-	// D3_GLDZM_feature::n_levels, then forced to 0 (IBSI/no-rescale) when STNGS_IBSI(s) is set.
+	// the grey depth prepare_GLDZM_matrix_kit uses: the static n_levels overrides the setting, and
+	// IBSI forces no binning
 	auto greyInfo = STNGS_NGREYS(s);
 	auto greyInfo_localFeature = D3_GLDZM_feature::n_levels;
 	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
@@ -574,10 +581,15 @@ void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	auto bin_of = [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); };
 
-	// the ROI's binned cube, streamed. The marking pass below needs the ROI mask as well: a cell
-	// holding a fill level is otherwise indistinguishable from a ROI voxel that binned to it.
+	// the ROI's binned cube, streamed, with its mask: a cell holding the fill level is otherwise
+	// indistinguishable from a ROI voxel that binned to it
 	Nyxus::OocBinnedVolume vol (r, bin_of, 0, 1, /*with_mask=*/ true);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
+
+	if (! ooc_border_distance_fits (W, H, Dz))
+		throw std::runtime_error ("3D GLDZM: the " + std::to_string (W) + "x" + std::to_string (H) + "x"
+			+ std::to_string (Dz) + " bounding box of ROI " + std::to_string (r.label)
+			+ " has border distances too large for the out-of-core border distance buffer");
 
 	auto voxel_at = [W, H](int z, int y, int x) -> size_t
 	{
@@ -585,11 +597,9 @@ void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	};
 
 	// --- one streaming pass marks the ROI and gathers its grey levels. A GLDZM grey level is
-	// 1-based, and two of the three binning schemes can hand back a 0 for a voxel that is genuinely
-	// the ROI's, so the levels are lifted by one where that happens -- the lift keeps those voxels
-	// in a zone instead of dropping them out of Ns and the zone map while they still count in the
-	// ROI's voxel total. Whether to lift is only known once the pass is over.
-	std::vector<uint16_t> dist ((size_t) W * H * Dz, 0);
+	// 1-based, and the IBSI and radiomics schemes can bin a ROI voxel to 0, so the levels are lifted
+	// by one when any ROI voxel has level 0. Whether to lift is only known once the pass is over.
+	std::vector<OocBorderDist> dist ((size_t) W * H * Dz, 0);
 	bool roi_has_zero_level = false;
 	PixIntens max_level = 0;
 	std::set<PixIntens> U;
@@ -633,13 +643,11 @@ void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 		std::sort (I.begin(), I.end());
 	}
 
-	// --- city-block distance from every ROI voxel to the nearest voxel outside the ROI, which is
-	// the distance IBSI's GLDZM measures. A voxel touching the ROI's surface is at distance 1, and
-	// anything outside the bounding box is outside the ROI -- exact, because the box is tight.
-	// Breadth-first from the surface inwards, so every voxel is settled once, at its shortest
-	// distance. This is calc_dist2border() over the flat buffer.
+	// --- city-block distance from every ROI voxel to the nearest voxel outside the ROI, as
+	// calc_dist2border() measures it. A voxel touching the ROI's surface is at distance 1, and
+	// anything outside the bounding box is outside the ROI, because the box is tight.
 	{
-		const uint16_t UNSETTLED = (std::numeric_limits<uint16_t>::max)();
+		const OocBorderDist UNSETTLED = (std::numeric_limits<OocBorderDist>::max)();
 		for (auto& v : dist)
 			if (v)
 				v = UNSETTLED;
@@ -695,7 +703,7 @@ void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 					if (dist[no] != UNSETTLED)
 						continue;
 
-					dist[no] = (uint16_t) step;
+					dist[no] = (OocBorderDist) step;
 					next_frontier.push_back (no);
 				}
 			}
@@ -704,13 +712,10 @@ void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 		}
 	}
 
-	// --- streaming 26-connectivity CCL over a 2-plane window, folding each voxel's distance into
-	// its zone's running minimum. Scanning z, then y, then x makes 13 of the 26 neighbours causal:
-	// the four already-visited cells of the current plane (W, NW, N, NE) and all nine of the plane
-	// behind it. A cell outside the ROI never takes a label, so a label alone says "same ROI, and
-	// already seen" and the level test is all that remains.
-	// the same cube with the lift baked into its levels; a zone links to the plane behind it, so
-	// the window keeps 2 planes
+	// --- streaming 26-connectivity CCL over a 2-plane window of the lifted cube, keeping each zone's
+	// smallest distance. In z, y, x scan order 13 of the 26 neighbours are causal: W, NW, N, NE of
+	// the current plane and all nine of the plane behind it. A cell outside the ROI never takes a
+	// label, so a labelled neighbour of the same level is the same zone.
 	Nyxus::OocBinnedVolume lifted (r, [bin_of, lift](PixIntens v) { return bin_of (v) + lift; }, lift, 2);
 	LabelUnionFind uf;
 	std::vector<int> prevLabel, curLabel;

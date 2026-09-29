@@ -1,6 +1,7 @@
 #pragma once
 
-// 3D GLDZM mechanics: what the family does with a ROI voxel whose grey level is 0.
+// 3D GLDZM mechanics: what the family does with a ROI voxel whose grey level is 0, and the bound on
+// the out-of-core border distance (at the end of the file).
 //
 // A GLDZM grey level is 1-based, and two of the three binning schemes hand back a 0 for a voxel that
 // is genuinely the ROI's: `IBSI=true` bins nothing, so a raw intensity of 0 stays 0, and the
@@ -29,8 +30,11 @@
 // assertions discriminating rather than decorative.
 
 // Only what the fixture header does not already supply: <iomanip> for the failure message's
-// precision. gtest, <string>, <vector> and the Environment / roi_cache graph arrive through it.
+// precision, <climits> and <stdexcept> for the out-of-core bound. gtest, <string>, <vector> and the
+// Environment / roi_cache graph arrive through it.
+#include <climits>
 #include <iomanip>
+#include <stdexcept>
 
 #include "test_3d_gldzm_common.h"   // the zero-level phantom, make_gldzm3d_settings, extract_3d_gldzm
 #include "test_ref_vals.h"          // ref_vals_map
@@ -168,4 +172,164 @@ void test_3d_gldzm_radiomics_binning_is_identity_here_mechanics()
 			<< nv.first << " differs between GREYDEPTH=-8,IBSI=false and the no-binning point, so the "
 			<< "radiomics scheme is not the identity on this fixture after all";
 	}
+}
+
+// ---- The out-of-core border distance ----
+//
+// osized_calculate() keeps each ROI voxel's distance to the ROI border in 16 bits, with the top
+// value as its "unsettled" mark and 0 as "not the ROI's". A voxel's distance is at most its distance
+// to the nearest face of the bounding box, so the largest one a box produces is
+// (shortest side + 1) / 2. A box is refused when that reaches the unsettled mark, which takes a
+// shortest side of 131069; the long sides do not enter into it.
+
+// One synthetic ROI filled for both paths: the voxel list and cube calculate() reads, and the
+// disk-backed cloud osized_calculate() streams. 'keep' says which voxels of the w x h x d box are the
+// ROI's -- it must keep one on every face, so the box is the ROI's tight bounding box -- and 'inten'
+// what each carries.
+template <class Keep, class Inten>
+static void make_gldzm3d_both_paths_roi (LR& r, int w, int h, int d, Keep keep, Inten inten, const std::string& cloud_name)
+{
+	r.aabb.init_x (0); r.aabb.update_x (w - 1);
+	r.aabb.init_y (0); r.aabb.update_y (h - 1);
+	r.aabb.init_z (0); r.aabb.update_z (d - 1);
+
+	r.raw_voxels_NT.init (r.label, cloud_name);
+	for (int z = 0; z < d; z++)
+	{
+		r.raw_voxels_NT.begin_slab (z);
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+			{
+				if (! keep (x, y, z))
+					continue;
+				Pixel3 p (x, y, z, (PixIntens) inten (x, y, z));
+				r.raw_pixels_3D.push_back (p);
+				r.raw_voxels_NT.add_voxel (p);
+				r.aux_min = (std::min) (r.aux_min, p.inten);
+				r.aux_max = (std::max) (r.aux_max, p.inten);
+			}
+	}
+	r.aux_area = (unsigned int) r.raw_pixels_3D.size();
+	r.aux_image_cube.calculate_from_pixelcloud (r.raw_pixels_3D, r.aabb);
+}
+
+// A box 131071 voxels long on a 5x5 cross-section returns the in-RAM values out-of-core. What this
+// discriminates: a refusal keyed on the LONGEST side -- whether as the side itself or as
+// (side + 1) / 2 against 16 bits -- refuses this ROI, although its deepest voxel is 3 steps from the
+// border.
+//
+// The levels put zones at every depth the box has: the outer shell alternates 1 and 2 every seven
+// voxels, the ring below it is one level-3 zone, and the centre line alternates 5 and 6 every
+// thousand voxels. A notch in one face every thousand voxels brings the ring and one centre segment
+// per notch closer to the border.
+void test_3d_gldzm_ooc_long_box_matches_in_ram_mechanics()
+{
+	const int W = 131071, H = 5, D = 5;
+	ASSERT_FALSE(D3_GLDZM_feature::ooc_border_distance_fits (W, W, W))
+		<< "the fixture's long side must be one the bound refuses when it is the shortest";
+
+	auto keep = [](int x, int y, int z) { return ! (y == 0 && x % 1000 == 500); };
+	auto inten = [](int x, int y, int z) -> int
+	{
+		if (y == 2 && z == 2)
+			return 5 + (x / 1000) % 2;
+		if (y >= 1 && y <= 3 && z >= 1 && z <= 3)
+			return 3;
+		return 1 + (x / 7) % 2;
+	};
+
+	LR r (1);
+	make_gldzm3d_both_paths_roi (r, W, H, D, keep, inten, "gldzm3d_ooc_long_box");
+	const Fsettings s = make_gldzm3d_settings (64, true);
+
+	std::vector<std::vector<double>> in_ram, ooc;
+	{
+		D3_GLDZM_feature f;
+		r.initialize_fvals();
+		ASSERT_NO_THROW(f.calculate (r, s));
+		f.save_value (r.fvals);
+		in_ram = r.fvals;
+	}
+	{
+		D3_GLDZM_feature f;
+		ImageLoader dummy;	// osized_calculate reads the cloud, not the loader
+		r.initialize_fvals();
+		ASSERT_NO_THROW(f.osized_calculate (r, s, dummy)) << "a long, thin ROI is within the bound";
+		f.save_value (r.fvals);
+		ooc = r.fvals;
+	}
+	r.raw_voxels_NT.clear();
+
+	Environment e;
+	for (const auto& nv : gldzm_3d_mechanics_ref_vals)
+	{
+		int fcode = -1;
+		ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(nv.first, fcode)) << nv.first;
+		EXPECT_DOUBLE_EQ(ooc[fcode][0], in_ram[fcode][0]) << nv.first << " differs out-of-core";
+	}
+
+	// the fixture has zones deeper than the surface, so the distances are exercised past 1
+	int zdm = -1;
+	ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString("3GLDZM_ZDM", zdm));
+	EXPECT_GT(in_ram[zdm][0], 1.0) << "every zone of the fixture is at distance 1";
+}
+
+// A box whose border distances reach the unsettled mark is refused before anything is allocated or
+// read. What this discriminates: without the refusal the pass allocates its distance buffer first --
+// 131069^3 voxels, 4.5 PB -- and fails with bad_alloc, which names neither the ROI nor the cause.
+// The cloud holds two voxels; the box is what is too large.
+void test_3d_gldzm_ooc_too_thick_box_refused_mechanics()
+{
+	const int side = 131069;	// (side + 1) / 2 == 65535, the unsettled mark
+
+	LR r (1);
+	r.aabb.init_x (0); r.aabb.update_x (side - 1);
+	r.aabb.init_y (0); r.aabb.update_y (side - 1);
+	r.aabb.init_z (0); r.aabb.update_z (side - 1);
+	r.raw_voxels_NT.init (r.label, "gldzm3d_ooc_too_thick");
+	r.raw_voxels_NT.begin_slab (0);
+	r.raw_voxels_NT.add_voxel (Pixel3 (0, 0, 0, (PixIntens) 1));
+	r.raw_voxels_NT.add_voxel (Pixel3 (1, 0, 0, (PixIntens) 2));
+	r.aux_min = 1;
+	r.aux_max = 2;
+	r.aux_area = 2;
+
+	D3_GLDZM_feature f;
+	ImageLoader dummy;
+	std::string refusal, other;
+	try
+	{
+		f.osized_calculate (r, make_gldzm3d_settings (64, true), dummy);
+	}
+	catch (const std::runtime_error& ex)
+	{
+		refusal = ex.what();
+	}
+	catch (const std::exception& ex)
+	{
+		other = ex.what();
+	}
+	r.raw_voxels_NT.clear();
+
+	ASSERT_FALSE(refusal.empty()) << "the box was not refused"
+		<< (other.empty() ? std::string() : "; the pass failed with: " + other);
+	EXPECT_NE(refusal.find ("border distance"), std::string::npos) << refusal;
+	EXPECT_NE(refusal.find ("131069x131069x131069"), std::string::npos) << "the refusal names the box: " << refusal;
+}
+
+// The bound itself, at the sides where it turns. What this discriminates: an off-by-one either way
+// -- refusing the box whose deepest voxel is 65534 steps in, or accepting the one whose deepest voxel
+// would be stored as the unsettled mark -- and a bound on the longest side instead of the shortest.
+void test_3d_gldzm_ooc_border_distance_bound_mechanics()
+{
+	EXPECT_TRUE(D3_GLDZM_feature::ooc_border_distance_fits (1, 1, 1));
+	EXPECT_TRUE(D3_GLDZM_feature::ooc_border_distance_fits (131068, 131068, 131068))
+		<< "deepest voxel 65534 steps in: the largest distance that fits";
+	EXPECT_FALSE(D3_GLDZM_feature::ooc_border_distance_fits (131069, 131069, 131069))
+		<< "deepest voxel 65535 steps in: the unsettled mark";
+	EXPECT_FALSE(D3_GLDZM_feature::ooc_border_distance_fits (131070, 131070, 131070));
+	EXPECT_TRUE(D3_GLDZM_feature::ooc_border_distance_fits (INT_MAX, INT_MAX, 131068))
+		<< "the long sides do not bound the distance";
+	EXPECT_FALSE(D3_GLDZM_feature::ooc_border_distance_fits (INT_MAX, 131069, INT_MAX))
+		<< "the shortest side does, on whichever axis it lies";
 }

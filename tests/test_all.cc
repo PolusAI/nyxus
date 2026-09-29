@@ -875,6 +875,18 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_RADIOMICS_BINNING_IS_IDENTITY_HERE_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_gldzm_radiomics_binning_is_identity_here_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_3D_GLDZM_OOC_LONG_BOX_MATCHES_IN_RAM_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_ooc_long_box_matches_in_ram_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_OOC_TOO_THICK_BOX_REFUSED_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_ooc_too_thick_box_refused_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLDZM_OOC_BORDER_DISTANCE_BOUND_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_gldzm_ooc_border_distance_bound_mechanics());
+}
+
 
 //***** 3D GLDZM vs mirp *****
 
