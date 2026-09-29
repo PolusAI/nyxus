@@ -75,6 +75,7 @@
 #include "test_imq_opencv.h"
 #include "test_imq_cellprofiler.h"
 #include "test_3d_nifti_mechanics.h"
+#include "test_2d_nested_roi_mechanics.h"
 #include "test_2d_omezarr_mechanics.h"
 #include "test_3d_morphology_regression.h"
 #include "test_3d_morphology_mechanics.h"
@@ -3812,6 +3813,24 @@ TEST(TEST_NYXUS, TEST_3D_NIFTI_LOADER_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_3D_NIFTI_DATA_ACCESS_CONSISTENCY_MECHANICS) {
 	ASSERT_NO_THROW (test_3d_nifti_data_access_consistency_mechanics());
+}
+
+//***** Nested-ROI table *****
+
+TEST(TEST_NYXUS, TEST_2D_NESTED_ROI_TABLE_CARRIES_LEADING_COLUMNS_MECHANICS) {
+	test_2d_nested_roi_table_carries_leading_columns_mechanics();
+}
+
+TEST(TEST_NYXUS, TEST_2D_NESTED_ROI_TABLE_MISSING_PARENT_FILLS_WHOLE_ROW_MECHANICS) {
+	test_2d_nested_roi_table_missing_parent_fills_whole_row_mechanics();
+}
+
+TEST(TEST_NYXUS, TEST_2D_NESTED_ROI_TABLE_COLUMN_ABSENT_FROM_SOURCE_IS_BLANK_MECHANICS) {
+	test_2d_nested_roi_table_column_absent_from_source_is_blank_mechanics();
+}
+
+TEST(TEST_NYXUS, TEST_2D_NESTED_ROI_LEADING_COLUMNS_NEED_PHYS_Z_MECHANICS) {
+	test_2d_nested_roi_leading_columns_need_phys_z_mechanics();
 }
 
 //***** OME-Zarr i/o *****
