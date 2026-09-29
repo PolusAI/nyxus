@@ -33,6 +33,10 @@ namespace Nyxus
 	};
 	bool csv_layout (const std::vector<std::string>& header, CsvLayout& layout);
 
+	/// @brief The unquoted names of the non-feature columns 'header' leads with, in order, up to
+	/// and including phys_z. Empty if 'header' has no phys_z.
+	std::vector<std::string> leading_columns (const std::vector<std::string>& header);
+
 	/// @brief Find the record of ROI 'label' in feature CSV 'csvFP', locating the label column
 	/// by the file's header. 'layout' receives the file's column layout.
 	bool find_csv_record(std::string& csvLine, std::vector<std::string>& csvHeader, std::vector<std::string>& csvFields, CsvLayout& layout, const std::string& csvFP, int label);

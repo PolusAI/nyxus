@@ -206,7 +206,6 @@ namespace Nyxus
 
 	// 2 scenarios of saving a result of feature calculation of a label-intensity file pair: saving to a CSV-file and saving to a matrix to be later consumed by a Python endpoint
 	std::string get_feature_output_fname (Environment& env, const std::string& intFpath, const std::string& segFpath);
-	extern const std::vector<std::string> mandatory_output_columns;
 	// thread c_index alongside t_index so the output carries the channel column
 	bool save_features_2_csv (Environment & env, const std::string & intFpath, const std::string & segFpath, const std::string & outputDir, size_t t_index, size_t c_index, bool need_aggregation);
 	bool save_features_2_csv_wholeslide (Environment & env, const LR & r, const std::string & ifpath, const std::string & mfpath, const std::string & outdir, size_t t_index, size_t c_index);
@@ -309,5 +308,9 @@ namespace Nyxus
 	void save_nested_roi_info(std::unordered_map <std::string, NestableRois>& dst_nestedRoiData, const std::unordered_set<int>& src_labels, std::unordered_map <int, LR>& src_roiData, const Dataset& ds);
 
 	bool mine_segment_relations2 (Environment& env, const std::vector <std::string>& label_files);
+
+	/// @brief Writes the nested feature table of parents 'P' and their children 'C' to
+	/// 'outdir'/'parentFname'_nested_features.csv, reading each ROI's record from its feature CSV.
+	bool aggregate_features2 (Environment& env, const FeatureSet& fset, NestableRois& P, NestableRois& C, const std::string& outdir, const std::string& parentFname, const NestedRoiOptions::Aggregations& aggr, int verbose_level);
 
 } // namespace Nyxus

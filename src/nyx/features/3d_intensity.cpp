@@ -307,7 +307,7 @@ void D3_VoxelIntensityFeatures::osized_calculate_grey_levels (LR & r, const Fset
 	// be known before dispersion; the percentiles before median-abs-dev / robust mean).
 
 	// --- Pass 1: raw sums + online moments (MEAN, ENERGY, CENTROID, INTEGRATED_INTENSITY, and the
-	// Moments4 accumulator for SKEWNESS/KURTOSIS -- folded in here instead of its own later pass)
+	// Moments4 accumulator for SKEWNESS/KURTOSIS)
 	double mean_ = 0.0;
 	double energy = 0.0;
 	double cen_x = 0.0,
@@ -356,21 +356,15 @@ void D3_VoxelIntensityFeatures::osized_calculate_grey_levels (LR & r, const Fset
 	// --Standard error
 	val_STANDARD_ERROR = val_STANDARD_DEVIATION / sqrt(n);
 
-	// Emptiness, not zero-valuedness -- as in the in-RAM path above. The Moments4 accumulator is
-	// filled in pass 1 but not consumed until after this guard, so an empty ROI leaves the
-	// moment-derived features at their defaults exactly as when they had their own later pass.
+	// Emptiness, not zero-valuedness -- as in the in-RAM path above. An empty ROI leaves the
+	// moment-derived features below at their defaults.
 	if (nvox == 0)
 		return;
 
 	// Skewness / Kurtosis from the pass-1 accumulator
 	val_SKEWNESS = mom.skewness();
 	val_KURTOSIS = mom.kurtosis();
-	// Excess kurtosis. NOTE: this is NOT val_KURTOSIS-3 -- Moments4::excess_kurtosis() has its own
-	// independent zero-variance (M2==0) guard returning exactly 0.0, whereas kurtosis() ALSO
-	// returns exactly 0.0 under that same guard; subtracting 3 from the latter wrongly yields -3.0
-	// for a degenerate (constant-intensity) ROI instead of 0.0. Only diverges from kurtosis()-3 in
-	// that degenerate case (for n>4 the two formulas are algebraically identical), which is why
-	// every non-degenerate fixture matched before this was caught by a blank-ROI OOC test.
+	// 0, not -3, for a zero-variance ROI
 	val_EXCESS_KURTOSIS = mom.excess_kurtosis();
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
@@ -406,8 +400,7 @@ void D3_VoxelIntensityFeatures::osized_calculate_grey_levels (LR & r, const Fset
 	// robust mean (mean of voxels in the [P10,P90] window, matching the 2D implementation), and
 	// the hyperskewness/hyperflatness sum-of-powers (the in-core calculate()'s explicit
 	// definition; Moments4::hyperskewness()/hyperflatness() use a different definition and
-	// diverge). Each accumulator sums in the same voxel order as when these were three separate
-	// passes, so the values are unchanged.
+	// diverge).
 	double medad = 0.0;
 	double robustMean = 0.0;
 	size_t robustCount = 0;

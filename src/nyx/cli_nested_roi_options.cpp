@@ -107,14 +107,6 @@ std::string NestedRoiOptions::get_last_er_msg()
 
 namespace Nyxus 
 {
-	const std::vector<std::string> mandatory_output_columns
-	{
-		Nyxus::colname_intensity_image,
-		Nyxus::colname_mask_image,
-		Nyxus::colname_roi_label,
-		Nyxus::colname_t_index
-	};
-
 	std::unordered_map <int, std::vector<int>> parentsChildren;
 	std::unordered_map <int, HieLR> roiDataP, roiDataC;
 
@@ -126,28 +118,39 @@ namespace Nyxus
 			dst.push_back(field);
 	}
 
+	// the CSV writer quotes the header's names
+	static std::string unquoted (const std::string& h)
+	{
+		bool quoted = h.size() >= 2 && h.front() == '"' && h.back() == '"';
+		return quoted ? h.substr(1, h.size() - 2) : h;
+	}
+
+	static int column_of (const std::vector<std::string>& header, const std::string& name)
+	{
+		for (size_t i = 0; i < header.size(); i++)
+			if (unquoted (header[i]) == name)
+				return (int) i;
+		return -1;
+	}
+
 	bool csv_layout (const std::vector<std::string>& header, CsvLayout& layout)
 	{
-		// the CSV writer quotes the header's names
-		auto column_of = [&header] (const char* name) -> int
-		{
-			for (size_t i = 0; i < header.size(); i++)
-			{
-				const std::string& h = header[i];
-				bool quoted = h.size() >= 2 && h.front() == '"' && h.back() == '"';
-				if ((quoted ? h.substr(1, h.size() - 2) : h) == name)
-					return (int) i;
-			}
-			return -1;
-		};
-
-		layout.intensity = column_of (colname_intensity_image);
-		layout.mask = column_of (colname_mask_image);
-		layout.label = column_of (colname_roi_label);
-		layout.t_index = column_of (colname_t_index);
-		int last_nonfeature = column_of (colname_phys_z);
+		layout.intensity = column_of (header, colname_intensity_image);
+		layout.mask = column_of (header, colname_mask_image);
+		layout.label = column_of (header, colname_roi_label);
+		layout.t_index = column_of (header, colname_t_index);
+		int last_nonfeature = column_of (header, colname_phys_z);
 		layout.first_feature = last_nonfeature < 0 ? -1 : last_nonfeature + 1;
 		return layout.intensity >= 0 && layout.mask >= 0 && layout.label >= 0 && layout.t_index >= 0 && layout.first_feature >= 0;
+	}
+
+	std::vector<std::string> leading_columns (const std::vector<std::string>& header)
+	{
+		std::vector<std::string> names;
+		int last_nonfeature = column_of (header, colname_phys_z);
+		for (int i = 0; i <= last_nonfeature; i++)
+			names.push_back (unquoted (header[i]));
+		return names;
 	}
 
 	bool find_csv_record(std::string& csvLine, std::vector<std::string>& csvHeader, std::vector<std::string>& csvFields, CsvLayout& layout, const std::string& csvFP, int label)
@@ -433,8 +436,9 @@ namespace Nyxus
 		ofile.open (fPath);
 
 		// *** Columns of the parent
-		// mandatory columns #1, #2, and #3
-		for (const auto& s : mandatory_output_columns)
+		// the non-feature columns every feature table of this run leads with
+		const std::vector<std::string> parentColumns = leading_columns (get_header (env));
+		for (const auto& s : parentColumns)
 			ofile << s << ",";
 
 		// User feature selection
@@ -496,8 +500,8 @@ namespace Nyxus
 
 				// Write emergency CSV-code to zero-fill incomplete date of this parent 
 
-				// --- blank mandatory cells and zero-filled parent feature cells
-				for (size_t i = 0; i < mandatory_output_columns.size(); i++)
+				// --- blank non-feature cells and zero-filled parent feature cells
+				for (size_t i = 0; i < parentColumns.size(); i++)
 					ofile << ",";
 				for (auto& f : F)
 					ofile << "0.0,";
@@ -512,9 +516,15 @@ namespace Nyxus
 				continue;
 			}
 
-			// Write the parent's mandatory columns and features, under the header written above
-			for (int col : { layout.intensity, layout.mask, layout.label, layout.t_index })
-				ofile << csvFields[col] << ",";
+			// Write the parent's non-feature columns, each found by its name in the record's own
+			// header (a column that header lacks is left blank), then the parent's features
+			for (const auto& name : parentColumns)
+			{
+				int col = column_of (csvHeader, name);
+				if (col >= 0 && col < (int) csvFields.size())
+					ofile << csvFields[col];
+				ofile << ",";
+			}
 			for (int i=0; i < F.size(); i++)
 				ofile << csvFields [layout.first_feature + i] << ",";
 
