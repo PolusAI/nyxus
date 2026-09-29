@@ -137,8 +137,9 @@ namespace Nyxus
 	/// @brief Resolve the array layout from NGFF metadata + the level-0 array's shape/chunking.
 	/// Prefers the 'axes' block (so the on-disk order is honored rather than assumed to be
 	/// TCZYX); falls back to a rank-safe positional mapping when 'axes' is absent or unusable.
-	/// Throws if the metadata is self-inconsistent (axis count vs array rank) or if X/Y cannot
-	/// be resolved -- either would make the read index out of bounds.
+	/// Throws if the metadata is self-inconsistent (axis count vs array rank, or an 'axes' entry
+	/// that is not an axis) or if X/Y cannot be resolved -- any of these would make the read
+	/// index the wrong dimension or out of bounds.
 	inline ZarrLayout resolve_zarr_layout (
 		const nlohmann::json& file_attributes,
 		const std::vector<std::size_t>& level0Shape,

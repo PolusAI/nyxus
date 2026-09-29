@@ -15,6 +15,7 @@
 #include <vector>
 #include <cstddef>
 #include <cctype>
+#include <limits>
 
 namespace Nyxus
 {
@@ -76,6 +77,15 @@ namespace Nyxus
 		return PixelType::Unknown;
 	}
 
+	// out = a * b; false (out untouched) when the product does not fit a size_t
+	inline bool mul_fits(std::size_t a, std::size_t b, std::size_t& out)
+	{
+		if (a != 0 && b > (std::numeric_limits<std::size_t>::max)() / a)
+			return false;
+		out = a * b;
+		return true;
+	}
+
 	// One axis in on-disk (storage) order.
 	struct OmeAxis
 	{
@@ -131,9 +141,15 @@ namespace Nyxus
 			return -1;
 		}
 
+		// Ordinal (and IFD) of no plane: a plane outside the extents, or one whose ordinal does
+		// not fit a size_t. It is past every directory index libtiff can address, so selecting
+		// it fails instead of reading another plane.
+		static constexpr std::size_t no_plane = (std::numeric_limits<std::size_t>::max)();
+
 		// The plane's ordinal under the OME DimensionOrder (default rasterization: the axes
 		// after XY, fastest to slowest). E.g. XYZCT -> z + c*sizeZ + t*sizeZ*sizeC. This is the
 		// IFD only when planes are stored contiguously from IFD 0; TiffData can say otherwise.
+		// no_plane when (z,c,t) lies outside the extents or the plane count does not fit a size_t.
 		std::size_t canonicalPlaneOrdinal(std::size_t z, std::size_t c, std::size_t t) const
 		{
 			std::size_t idx = 0, stride = 1;
@@ -142,15 +158,20 @@ namespace Nyxus
 				if (ax == 'X' || ax == 'Y') continue;
 				std::size_t coord = (ax == 'Z') ? z : (ax == 'C') ? c : t;
 				std::size_t sz    = (ax == 'Z') ? sizeZ : (ax == 'C') ? sizeC : sizeT;
+				std::size_t next_stride;
+				if (coord >= sz || ! mul_fits(stride, sz, next_stride))
+					return no_plane;
+				// idx < stride and coord < sz, so idx + coord*stride < next_stride: no wrap
 				idx += coord * stride;
-				stride *= sz;
+				stride = next_stride;
 			}
 			return idx;
 		}
 
 		// Map a (z,c,t) plane to the physical IFD holding its pixels. Honors an explicit
 		// <TiffData> plane->IFD map when present (writers that start at a non-zero IFD or
-		// reorder planes); otherwise falls back to the canonical ordinal.
+		// reorder planes); otherwise falls back to the canonical ordinal. no_plane for a plane
+		// that has no ordinal.
 		std::size_t ifdForPlane(std::size_t z, std::size_t c, std::size_t t) const
 		{
 			std::size_t ord = canonicalPlaneOrdinal(z, c, t);

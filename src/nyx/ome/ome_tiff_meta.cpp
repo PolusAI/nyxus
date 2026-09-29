@@ -6,6 +6,7 @@
 #include <cmath>
 #include <locale>
 #include <sstream>
+#include <stdexcept>
 
 namespace Nyxus
 {
@@ -165,7 +166,13 @@ namespace Nyxus
 		// per-plane blocks, or a multi-image container). Each block maps PlaneCount consecutive
 		// DimensionOrder planes starting at (FirstZ,FirstC,FirstT) to consecutive IFDs from IFD.
 		{
-			const std::size_t totalPlanes = ax.sizeZ * ax.sizeC * ax.sizeT;
+			// The plane count sizes the plane->IFD map and bounds every plane ordinal. Each extent
+			// fits a size_t on its own, but their product need not, and a wrapped count would
+			// address planes at the wrong IFD, so such a document is refused rather than read.
+			std::size_t totalPlanes = 0;
+			if (! mul_fits (ax.sizeZ, ax.sizeC, totalPlanes) || ! mul_fits (totalPlanes, ax.sizeT, totalPlanes))
+				throw std::runtime_error ("OME-XML: the plane count SizeZ*SizeC*SizeT = " + std::to_string (ax.sizeZ) + "*"
+					+ std::to_string (ax.sizeC) + "*" + std::to_string (ax.sizeT) + " does not fit a " + std::to_string (8 * sizeof (std::size_t)) + "-bit index");
 			// integer attribute of a start-tag, with default (same guards as `i` above)
 			auto iat = [](const std::string& tag, const char* n, std::size_t def) -> std::size_t {
 				std::string v; if (!get_attr(tag, n, v)) return def;
@@ -238,13 +245,17 @@ namespace Nyxus
 				const std::size_t fz = iat(tag, "FirstZ", 0), fc = iat(tag, "FirstC", 0), ft = iat(tag, "FirstT", 0);
 				const std::size_t ifd0 = iat(tag, "IFD", 0);
 				const std::size_t startOrd = ax.canonicalPlaneOrdinal(fz, fc, ft);
+				// a block starting outside the image maps no plane
+				if (startOrd == OmeAxes::no_plane)
+					{ tp = gt + 1; continue; }
 				// PlaneCount default per OME: the remaining planes from the start plane.
-				std::size_t count = iat(tag, "PlaneCount", (startOrd < totalPlanes) ? totalPlanes - startOrd : 0);
+				std::size_t count = iat(tag, "PlaneCount", totalPlanes - startOrd);
 
-				if (map.empty() && totalPlanes > 0)
+				if (map.empty())
 					{ map.resize(totalPlanes); for (std::size_t k = 0; k < totalPlanes; ++k) map[k] = k; }
+				// an IFD past a size_t saturates to no_plane, which no directory index reaches
 				for (std::size_t k = 0; k < count && (startOrd + k) < totalPlanes; ++k)
-					map[startOrd + k] = ifd0 + k;
+					map[startOrd + k] = (ifd0 > OmeAxes::no_plane - k) ? OmeAxes::no_plane : ifd0 + k;
 				tp = gt + 1;
 			}
 			ax.multiFileTiff = sawMultiFile;
