@@ -8,8 +8,14 @@
 // io_oracle/ome_meta_selftest.cpp.
 
 #include <gtest/gtest.h>
+#include <cstdint>
+#include <filesystem>
+#include <limits>
+#include <stdexcept>
+#include <vector>
 #include "../src/nyx/ome/ome_axes.h"
 #include "../src/nyx/ome/ome_tiff_meta.h"
+#include "../src/nyx/ome/ome_tiff_planes.h"
 
 // 5D, non-default DimensionOrder XYZTC (C and T swapped) — the case that catches
 // a reader assuming TCZYX. Taken verbatim from io_oracle/fixtures/xml/5d_ctzyx.xml.
@@ -289,6 +295,150 @@ TEST(OmeTiffMeta, InvalidWhenNoPixels)
 }
 
 // ---------------------------------------------------------------------------
+// Plane-count and plane-ordinal range. SizeZ*SizeC*SizeT sizes the <TiffData> plane->IFD map
+// and bounds every plane ordinal, so each has to fit a size_t, and a plane outside the extents
+// must not be given an ordinal that belongs to another plane.
+// ---------------------------------------------------------------------------
+
+// Value of an out-of-range plane ordinal / IFD: past every directory index libtiff can address.
+static constexpr std::size_t kNoPlane = (std::numeric_limits<std::size_t>::max)();
+
+// XYZCT document with the given Z, C and T extents (as attribute text) and <TiffData> blocks
+static std::string extents_xml(const std::string& z, const std::string& c, const std::string& t, const std::string& blocks = "")
+{
+	return "<OME><Image><Pixels ID=\"p\" DimensionOrder=\"XYZCT\" Type=\"uint16\" SizeX=\"8\" SizeY=\"6\" "
+	       "SizeZ=\"" + z + "\" SizeC=\"" + c + "\" SizeT=\"" + t + "\">" + blocks + "</Pixels></Image></OME>";
+}
+
+// Each extent parses on its own; only the product is past a size_t. 2^32 on two axes wraps to 0,
+// once per pair of axes. 2^62+1 times 4 wraps to exactly 4, a plane count a small file could have,
+// and with a <TiffData> block that wrapped count would size the plane->IFD map. What this
+// discriminates: a parser that range-checks each Size* attribute alone accepts every case.
+TEST(OmeTiffMetaBad, PlaneCountPastSizeTRefused)
+{
+	const std::string p32 = "4294967296", p62 = "4611686018427387905";
+	const std::vector<std::vector<std::string>> cases = {
+		{ p32, p32, "1" }, { p32, "1", p32 }, { "1", p32, p32 }, { p62, "4", "1" } };
+	for (const auto& zct : cases)
+		EXPECT_THROW(Nyxus::parse_ome_xml(extents_xml(zct[0], zct[1], zct[2])), std::runtime_error)
+			<< "SizeZ=" << zct[0] << " SizeC=" << zct[1] << " SizeT=" << zct[2];
+
+	EXPECT_THROW(Nyxus::parse_ome_xml(extents_xml(p62, "4", "1", "<TiffData IFD=\"10\" PlaneCount=\"4\"/>")),
+		std::runtime_error);
+}
+
+// The largest extents that fit are read, and the last plane's ordinal is computed exactly:
+// 2^32 * (2^32 - 1) planes is below 2^64.
+TEST(OmeTiffMeta, LargestFittingPlaneCountParses)
+{
+	const std::size_t z = 4294967296ull, c = 4294967295ull;
+	Nyxus::OmeAxes a;
+	ASSERT_NO_THROW(a = Nyxus::parse_ome_xml(extents_xml("4294967296", "4294967295", "1")));
+	ASSERT_TRUE(a.valid);
+	EXPECT_EQ(a.sizeZ, z);
+	EXPECT_EQ(a.sizeC, c);
+	EXPECT_EQ(a.canonicalPlaneOrdinal(z - 1, c - 1, 0), z * c - 1);
+	EXPECT_EQ(a.ifdForPlane(z - 1, c - 1, 0), z * c - 1);
+}
+
+// A plane outside the extents has no ordinal. By the stride formula alone, z=2 on SizeZ=2 is
+// ordinal 2 -- plane (0,1,0)'s -- so a caller that forgot its range check would read the wrong
+// plane rather than fail. Base XML: XYZCT, Z=2 C=2 T=1.
+TEST(OmeAxes, OutOfRangePlaneHasNoOrdinal)
+{
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(tiffdata_xml(""));
+	ASSERT_TRUE(a.valid);
+	EXPECT_EQ(a.canonicalPlaneOrdinal(1, 1, 0), 3u);   // in range: z + c*2
+	EXPECT_EQ(a.canonicalPlaneOrdinal(2, 0, 0), kNoPlane);
+	EXPECT_EQ(a.canonicalPlaneOrdinal(0, 2, 0), kNoPlane);
+	EXPECT_EQ(a.canonicalPlaneOrdinal(0, 0, 1), kNoPlane);
+	EXPECT_EQ(a.canonicalPlaneOrdinal(kNoPlane, 1, 0), kNoPlane);
+	EXPECT_EQ(a.ifdForPlane(2, 0, 0), kNoPlane);
+}
+
+// A <TiffData> block that starts outside the image maps nothing. FirstZ=2^64-1 with FirstC=1 is
+// ordinal 2^64+1 by the stride formula, which wraps to 1: the block would move plane (1,0,0)
+// to IFD 9.
+TEST(OmeTiffMetaTiffData, BlockStartingOutsideImageMapsNothing)
+{
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(tiffdata_xml(
+		"<TiffData FirstZ=\"18446744073709551615\" FirstC=\"1\" FirstT=\"0\" IFD=\"9\" PlaneCount=\"1\"/>"));
+	ASSERT_TRUE(a.valid);
+	EXPECT_TRUE(a.planeToIfd.empty());
+	EXPECT_EQ(a.ifdForPlane(1, 0, 0), 1u);
+
+	// a block inside the image still maps
+	Nyxus::OmeAxes in = Nyxus::parse_ome_xml(tiffdata_xml(
+		"<TiffData FirstZ=\"1\" FirstC=\"0\" FirstT=\"0\" IFD=\"9\" PlaneCount=\"1\"/>"));
+	EXPECT_EQ(in.ifdForPlane(1, 0, 0), 9u);
+}
+
+// IFD + k saturates rather than wrapping: a block starting at IFD 2^64-1 must not put plane 1 at
+// IFD 0 and plane 3 at IFD 2, which exist and hold other planes. The saturated value is past
+// every directory index, so select_tiff_directory refuses it.
+TEST(OmeTiffMetaTiffData, IfdPastSizeTSaturates)
+{
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(tiffdata_xml("<TiffData IFD=\"18446744073709551615\" PlaneCount=\"4\"/>"));
+	ASSERT_TRUE(a.valid);
+	EXPECT_EQ(a.ifdForPlane(0, 0, 0), kNoPlane);
+	EXPECT_EQ(a.ifdForPlane(1, 0, 0), kNoPlane);
+	EXPECT_EQ(a.ifdForPlane(1, 1, 0), kNoPlane);
+
+	// the largest IFD run that fits is kept as written
+	Nyxus::OmeAxes top = Nyxus::parse_ome_xml(tiffdata_xml("<TiffData IFD=\"18446744073709551611\" PlaneCount=\"4\"/>"));
+	EXPECT_EQ(top.ifdForPlane(1, 1, 0), kNoPlane - 1);
+}
+
+// Writes a one-directory 8x6 uint16 TIFF whose ImageDescription is 'desc'; returns its path.
+static std::string write_described_tiff(const std::string& name, const std::string& desc)
+{
+	const std::string path = (std::filesystem::temp_directory_path() / name).string();
+	TIFF* tif = TIFFOpen(path.c_str(), "w");
+	if (tif == nullptr)
+		return "";
+	TIFFSetField(tif, TIFFTAG_IMAGEWIDTH, 8u);
+	TIFFSetField(tif, TIFFTAG_IMAGELENGTH, 6u);
+	TIFFSetField(tif, TIFFTAG_BITSPERSAMPLE, 16);
+	TIFFSetField(tif, TIFFTAG_SAMPLESPERPIXEL, 1);
+	TIFFSetField(tif, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+	TIFFSetField(tif, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+	TIFFSetField(tif, TIFFTAG_ROWSPERSTRIP, 6u);
+	TIFFSetField(tif, TIFFTAG_IMAGEDESCRIPTION, desc.c_str());
+	std::vector<std::uint16_t> row(8, 0);
+	for (std::uint32_t y = 0; y < 6; ++y)
+		TIFFWriteScanline(tif, row.data(), y, 0);
+	TIFFClose(tif);
+	return path;
+}
+
+// Through the loaders' entry point: an OME-TIFF whose plane count is past a size_t is refused.
+// Reporting it as "not OME" instead would have every loader read the file as a plain Z-stack,
+// which is the same wrong addressing with no error at all.
+TEST(OmeTiffPlanes, PlaneCountPastSizeTRefusedByLoaderEntry)
+{
+	const std::string bad = write_described_tiff("nyxus_ome_plane_overflow.ome.tif", extents_xml("4294967296", "4294967296", "1"));
+	ASSERT_FALSE(bad.empty());
+	TIFF* t = TIFFOpen(bad.c_str(), "r");
+	ASSERT_NE(t, nullptr);
+	Nyxus::OmeAxes ax;
+	EXPECT_THROW(Nyxus::read_ome_tiff_axes(t, ax), std::runtime_error);
+	TIFFClose(t);
+	std::filesystem::remove(bad);
+
+	// control: the same file with extents that fit is read as OME
+	const std::string good = write_described_tiff("nyxus_ome_plane_fits.ome.tif", extents_xml("2", "2", "1"));
+	ASSERT_FALSE(good.empty());
+	t = TIFFOpen(good.c_str(), "r");
+	ASSERT_NE(t, nullptr);
+	Nyxus::OmeAxes ok;
+	EXPECT_TRUE(Nyxus::read_ome_tiff_axes(t, ok));
+	EXPECT_EQ(ok.sizeZ, 2u);
+	EXPECT_EQ(ok.sizeC, 2u);
+	TIFFClose(t);
+	std::filesystem::remove(good);
+}
+
+// ---------------------------------------------------------------------------
 // Negative / robustness: bad or missing metadata for every field we parse.
 // The parser must never crash and must degrade to safe defaults.
 // ---------------------------------------------------------------------------
@@ -556,7 +706,7 @@ TEST(OmeAxes, PixelTypeMappings)
 }
 
 #ifdef OMEZARR_SUPPORT
-#include "../src/nyx/ome/ome_zarr_meta.h"
+#include "../src/nyx/ome/ome_zarr_layout.h"
 
 TEST(OmeZarrMeta, ParsesNgffAxesAndPyramid)
 {
@@ -639,16 +789,40 @@ TEST(OmeZarrMetaBad, NonNumericScaleElementDefaultsThatAxis)
 	EXPECT_DOUBLE_EQ(a.physX, 0.5);
 }
 
-TEST(OmeZarrMetaBad, MalformedAxisEntrySkipped)
+// Every entry of 'axes' is the axis of one array dimension, so an entry that is not an axis
+// object is refused wherever it sits -- first, in the middle or last, and whatever JSON it is.
+// Skipping it would give each later axis the previous dimension's extent and scale; when the entry
+// is last, the remaining axis count equals the array rank, so no later check could notice.
+TEST(OmeZarrMetaBad, NonObjectAxisEntryRefused)
 {
-	// a non-object axis entry must be skipped, not crash
+	const std::string y = R"({"name":"y","type":"space"})", x = R"({"name":"x","type":"space"})",
+		z = R"({"name":"z","type":"space"})";
+	auto attrs = [](const std::string& axes)
+	{
+		return R"({"multiscales":[{"axes":[)" + axes + R"(],"datasets":[{"path":"0"}]}]})";
+	};
+
+	EXPECT_THROW(zarr_parse(attrs("\"junk\"," + y + "," + x).c_str(), {1, 6, 8}), std::runtime_error);
+	EXPECT_THROW(zarr_parse(attrs(z + ",\"junk\"," + y + "," + x).c_str(), {4, 6, 8}), std::runtime_error);
+	for (const char* junk : { "\"junk\"", "7", "null", "[]" })
+		EXPECT_THROW(zarr_parse(attrs(z + "," + y + "," + x + "," + junk).c_str(), {4, 6, 8}), std::runtime_error)
+			<< "last axis entry " << junk;
+}
+
+// An axis object that is merely incomplete (no name, an unknown name) is still an axis: it keeps
+// its dimension, so the axes after it read their own extents.
+TEST(OmeZarrMeta, IncompleteAxisObjectKeepsItsDimension)
+{
 	Nyxus::OmeAxes a = zarr_parse(
-		R"({"multiscales":[{"axes":["notanobject",{"name":"y","type":"space"},{"name":"x","type":"space"}],
-			"datasets":[{"path":"0","coordinateTransformations":[{"type":"scale","scale":[1,0.5,0.5]}]}]}]})",
-		{1, 6, 8});
+		R"({"multiscales":[{"axes":[{},{"name":"q"},{"name":"y","type":"space"},{"name":"x","type":"space"}],
+			"datasets":[{"path":"0"}]}]})",
+		{3, 5, 6, 8});
 	ASSERT_TRUE(a.valid);
-	EXPECT_EQ(a.sizeX, 8u);
+	EXPECT_EQ(a.storageAxes.size(), 4u);
 	EXPECT_EQ(a.sizeY, 6u);
+	EXPECT_EQ(a.sizeX, 8u);
+	EXPECT_EQ(a.storageIndexOf('Y'), 2);
+	EXPECT_EQ(a.storageIndexOf('X'), 3);
 }
 
 TEST(OmeZarrMetaBad, UnknownDtypeFallsBackUint16)
@@ -724,5 +898,29 @@ TEST(UnitCanonicalization, OmeZarrAlreadyMicrometerUnaffected)
 	EXPECT_DOUBLE_EQ(a.physZ, 2.0);
 	EXPECT_EQ(a.unitXY, "micrometer");
 	EXPECT_EQ(a.unitZ, "micrometer");
+}
+
+// Through the loaders' entry point: a store whose last 'axes' entry is not an axis is refused.
+// Its three remaining axes match the rank-3 array, so the rank check alone accepts it, and an
+// invalid parse would fall back to the positional layout -- a guess, not what the store says.
+TEST(OmeZarrLayout, NonObjectAxisEntryRefusedByLayout)
+{
+	const std::vector<std::size_t> shape = { 4, 6, 8 }, chunks = { 1, 6, 8 };
+	const nlohmann::json junk = nlohmann::json::parse(
+		R"({"multiscales":[{"axes":[{"name":"z","type":"space"},{"name":"y","type":"space"},{"name":"x","type":"space"},"junk"],
+			"datasets":[{"path":"0"}]}]})");
+	EXPECT_THROW(Nyxus::resolve_zarr_layout(junk, shape, chunks, z5::types::uint16), std::runtime_error);
+
+	// control: the same axes without the junk entry resolve each axis to its own dimension
+	const nlohmann::json clean = nlohmann::json::parse(
+		R"({"multiscales":[{"axes":[{"name":"z","type":"space"},{"name":"y","type":"space"},{"name":"x","type":"space"}],
+			"datasets":[{"path":"0"}]}]})");
+	Nyxus::ZarrLayout L = Nyxus::resolve_zarr_layout(clean, shape, chunks, z5::types::uint16);
+	EXPECT_EQ(L.iz, 0);
+	EXPECT_EQ(L.iy, 1);
+	EXPECT_EQ(L.ix, 2);
+	EXPECT_EQ(L.full_depth, 4u);
+	EXPECT_EQ(L.full_height, 6u);
+	EXPECT_EQ(L.full_width, 8u);
 }
 #endif
