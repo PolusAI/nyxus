@@ -872,6 +872,14 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SURFACE_MESH_CLOSED_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_morphology_surface_mesh_closed_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_QUICK_HULL_LATTICE_ELLIPSOID_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_morphology_quick_hull_lattice_ellipsoid_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_QUICK_HULL_DEGENERATE_BASIS_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_morphology_quick_hull_degenerate_basis_mechanics());
+}
+
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MAJOR_AXIS_LEN_MIRP) {
 	ASSERT_NO_THROW(test_3d_morphology_major_axis_len_mirp());
 }

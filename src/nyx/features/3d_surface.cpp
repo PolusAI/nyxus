@@ -360,13 +360,16 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 
 		// The ROI is the whole box, so its marching-cubes surface is a bevelled box and the two mesh
 		// integrals have a closed form: each of the 4*(w+h+d-3) cells along an interior edge and each
-		// of the 8 corner cells cuts a fixed amount off the staircase. This reproduces
-		// build_roi_surface_mesh() exactly, down to a one-voxel box.
+		// of the 8 corner cells cuts a fixed amount off the staircase. For 3AREA and 3MESH_VOLUME this
+		// reproduces build_roi_surface_mesh() exactly, down to a one-voxel box.
 		const double edgecells = double(w) + double(h) + double(d) - 3.;
 		fval_AREA = 2. * (double(w) * h + double(h) * d + double(w) * d)
 			- 2. * edgecells * (2. - std::sqrt(2.)) - (6. - std::sqrt(3.));
 		fval_MESH_VOLUME = double(w) * h * d - edgecells / 2. - 5. / 6.;
-		// the convex hull of a box is the box itself
+		// 3VOXEL_VOLUME and 3VOLUME_CONVEXHULL both report the box volume w*h*d, the volume of the
+		// union of the voxels. That is not what the general path computes for either: its hull is the
+		// hull of the voxel centres, (w-1)(h-1)(d-1) for a box, and its voxel volume carries the
+		// packing constant below.
 		fval_VOLUME_CONVEXHULL = fval_VOXEL_VOLUME = double(w) * h * d;
 		fval_AREA_2_VOLUME = fval_AREA / fval_MESH_VOLUME;
 		fval_COMPACTNESS1 = fval_MESH_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);

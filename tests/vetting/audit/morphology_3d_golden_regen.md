@@ -121,6 +121,12 @@ Both shapes hold at `rel=1e-12`. Those same two formulas are what `D3_SurfaceFea
 `SINGLEROI` setting against the same closed form, so the shortcut is held to the value the general path
 produces.
 
+`3VOLUME_CONVEXHULL` is the volume of the convex hull of the voxel centres, so a lattice solid whose
+extreme points are known pins it exactly: a *w*×*h*×*d* box spans (*w*−1)(*h*−1)(*d*−1), the
+octahedron |x|+|y|+|z| ≤ R has 4/3·R³, and the rhombic prism |x|+|y| ≤ R, |z| ≤ H has 4·R²·H. Four
+boxes, three octahedra and two prisms, placed hundreds of voxels from the origin, hold at `rel=1e-12`.
+Voxels confined to one plane span no volume, and that ROI is held to a hull volume of 0.
+
 The two discretised balls are a bound rather than a pin. `3MESH_VOLUME` converges on 4/3·π·r³ (−3.6% at
 r=5, −0.15% by r=15). `3AREA` does **not** converge on 4·π·r²: a binary mask's facets keep lattice-scale
 orientation at any radius, so the area settles about 8.7% above the smooth sphere (+8.3%, +9.2%, +9.0%,
@@ -238,8 +244,39 @@ its distance exceeds `eps`, `process_visibles()` counts a facet visible from the
 test, and `steal_best()` extends the initial simplex only with a point further than `eps` from the
 subspace so far. A facet coplanar with the apex is therefore never removed, no zero-area facet is
 created, and an ROI confined to one plane yields no simplex and a hull volume of 0. With no decision
-left to rounding, the facet set does not depend on the order a standard library's hash sets visit
-the facets in, which is what lets the regression pin hold at `rel=1e-9`.
+left to rounding, the hull volume does not depend on the order a standard library's hash sets visit
+the facets in, which is what lets the regression pin hold at `rel=1e-9`. The triangulation of a hull
+face with more than three vertices still does: those hash sets are keyed on point addresses, so the
+same cloud can come back as 48, 50 or 52 facets that enclose the same volume.
+
+Each of the three predicates has a test that fails without it, and two of them are driven on the
+kernel directly in `test_3d_morphology_mechanics.h` (recipe `morphology3d.quick_hull_scipy`):
+`TEST_3D_MORPHOLOGY_QUICK_HULL_LATTICE_ELLIPSOID_MECHANICS` hulls three lattice ellipsoids at six
+placements each and requires no zero-area facet, no point more than `eps` outside a facet, and the
+volume qhull gives; `TEST_3D_MORPHOLOGY_QUICK_HULL_DEGENERATE_BASIS_MECHANICS` requires
+`get_affine_basis()` to stop at three points on a plane and two on a line.
+
+| edit, reverted alone | fails |
+|---|---|
+| cofactor plane in place of the cross product | `LATTICE_HULL_VOLUME_ANALYTIC`, `QUICK_HULL_LATTICE_ELLIPSOID_MECHANICS`, `VOLUME_CONVEX_HULL_REGRESSION` |
+| `steal_best()` accepting any distance above 0 | `QUICK_HULL_DEGENERATE_BASIS_MECHANICS`; `PLANAR_HULL_VOLUME_ANALYTIC` aborts on `assert(check())` |
+| `process_visibles()` testing `zero <` | `QUICK_HULL_LATTICE_ELLIPSOID_MECHANICS`, `VOLUME_CONVEX_HULL_REGRESSION` |
+
+The planar ROI's volume alone cannot tell the second edit apart: without the asserts, a flat simplex
+also integrates to 0, which is why the basis is asserted directly. The third edit is invisible to the
+closed-form solids, whose small hulls never put an apex within `eps` of a neighbouring facet; the
+ellipsoids do on most placements, and which placement depends on the hash order, so the test runs all
+eighteen.
+
+Regenerate or re-verify the ellipsoid volumes with
+
+```
+python tests/vetting/oracles/gen_morphology3d_quick_hull_scipy.py            # print
+python tests/vetting/oracles/gen_morphology3d_quick_hull_scipy.py --check    # re-verify the pins
+```
+
+scipy's `ConvexHull` is qhull, an implementation independent of `quick_hull`; a hull of lattice points
+has a volume that is a multiple of 1/6, and each pin is that multiple.
 
 **Why that matters here.** In single precision it did not hold. With the points in `float` and a
 hard-coded `eps = 1e-10f`, coordinates of ~100 put consecutive representable values ~7.6e-6 apart, so
