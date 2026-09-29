@@ -34,7 +34,8 @@ namespace Nyxus
 	//                 "attributes" object of zarr.json for v3).
 	//   level0Shape : shape of the level-0 dataset, in on-disk axis order.
 	//   dtypeStr    : the level-0 dtype string (v2 "<u2" or v3 "uint16").
-	// Returns OmeAxes with .valid==false if no multiscales/axes are found.
+	// Returns OmeAxes with .valid==false if no multiscales/axes are found. Throws
+	// std::runtime_error when an 'axes' entry is not an axis object.
 	OmeAxes parse_ome_zarr(const nlohmann::json& groupAttrs,
 		const std::vector<std::size_t>& level0Shape,
 		const std::string& dtypeStr);

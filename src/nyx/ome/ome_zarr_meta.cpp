@@ -82,9 +82,12 @@ namespace Nyxus
 
 		for (std::size_t k = 0; k < axes.size(); ++k)
 		{
+			// Entry k is the axis of array dimension k, so an entry that is not an axis cannot be
+			// skipped: every later axis would take the previous dimension's extent and scale.
 			const auto& a = axes[k];
-			if (!a.is_object())    // a malformed axis entry -> skip (keeps role sizes at default)
-				continue;
+			if (!a.is_object())
+				throw std::runtime_error("OME-Zarr: multiscales axis " + std::to_string(k) + " is " + a.dump()
+					+ ", not an axis object, so the axes cannot be matched to the array's dimensions");
 			std::string name = a.value("name", std::string());
 			std::string type = a.value("type", std::string());
 			std::string unit = a.value("unit", std::string());

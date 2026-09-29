@@ -15,7 +15,8 @@
 namespace Nyxus
 {
 	// Parse an OME-XML document (the string from a TIFF IFD-0 ImageDescription).
-	// Returns an OmeAxes with .valid==false if no <Pixels> element is found.
+	// Returns an OmeAxes with .valid==false if no <Pixels> element is found. Throws
+	// std::runtime_error when SizeZ*SizeC*SizeT does not fit a size_t.
 	// A <TiffData><UUID> block naming any file other than this one is a multi-file OME-TIFF
 	// (OmeAxes::multiFileTiff). Which file a block names is read from its UUID text whenever the
 	// root <OME> declares one to compare it against; failing that, from its FileName attribute
