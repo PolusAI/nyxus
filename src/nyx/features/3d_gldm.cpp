@@ -249,13 +249,10 @@ void D3_GLDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inten
 
 void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 {
-	// Out-of-core GLDM. Streams the disk-backed voxel cloud through a 3-plane sliding window of
-	// dense grey-binned planes (the 26-neighbourhood spans z-1..z+1) and fills the dependence
-	// matrix P directly per voxel (no O(volume) zone list). Feature math (calc_*) is shared with
-	// the in-core path, so values are identical.
+	// The dependence matrix fills per voxel over a 3-plane window: the 26-neighbourhood spans
+	// z-1..z+1.
 	clear_buffers();
 
-	// intercept blank ROIs (same guard as calculate())
 	if (r.aux_min == r.aux_max)
 	{
 		fv_SDE = fv_LDE = fv_GLN = fv_DN = fv_DNN = fv_GLV = fv_DV = fv_DE =
@@ -268,14 +265,11 @@ void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
 	const PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
 
-	// the ROI's binned cube, streamed: its planes carry the levels the in-core cube holds, and
-	// the 26-neighbourhood spans z-1..z+1, so the window keeps 3 of them
 	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); }, bg, 3);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 
-	// --- grey levels I + matrix dimension (mirrors calculate(), which builds I from the WHOLE
-	// binned cube incl. background -- e.g. matlab binning maps raw-0 background to bin 1, and that
-	// bin must appear in I too, matching D3_GLDM_feature::calculate()'s unordered_set(D.begin(),D.end())).
+	// --- grey levels I: the unique levels of the whole binned cube, so the background level counts
+	// when the bounding box has background
 	PixIntens maxbin = 0;
 	std::set<PixIntens> uniq = vol.levels (/*with_background=*/ true, /*drop_zero=*/ true, maxbin);
 	I.clear();
@@ -294,8 +288,7 @@ void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 	std::fill (P.begin(), P.end(), 0);
 	int max_Nd = 0;
 
-	// O(1) grey-level -> matrix row, replacing the per-voxel binary search in the scan below
-	// (used only by the non-IBSI branch; IBSI uses pi-1).
+	// grey level -> matrix row; IBSI uses level-1 instead
 	std::vector<int> rowLUT = Nyxus::ooc_row_lut (I, maxbin);
 	const bool ibsi = STNGS_IBSI(s);
 	for (int c = 0; c < Dz; c++)

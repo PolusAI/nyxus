@@ -398,14 +398,9 @@ void D3_NGLDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inte
 
 void D3_NGLDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	// Out-of-core NGLDM. Streams the disk-backed voxel cloud through a 3-plane sliding window of
-	// dense grey-binned planes and fills the NGLD-matrix directly. The window carries a parallel
-	// ROI-mask plane per slot because the family is defined over the ROI, not over the bounding
-	// box: every ROI voxel is a centre (bounding-box border voxels included), and a neighbour
-	// contributes a match only when it is itself a ROI voxel. Binning, the 26-neighbourhood
-	// 'shifts' table and the grey-level LUT are the ones calc_ngld_matrix uses, and the totals and
-	// feature math (calc_rowwise_and_columnwise_totals / calc_features) are shared outright, so
-	// the streaming path and the in-core path are one definition expressed twice.
+	// The family is defined over the ROI, not the bounding box: every ROI voxel is a centre, border
+	// voxels included, and a neighbour matches only when it is itself a ROI voxel. So the 3-plane
+	// window (the 26-neighbourhood spans z-1..z+1) carries the ROI mask beside each plane.
 	clear_buffers();
 
 	if (r.aux_min == r.aux_max)
@@ -420,18 +415,13 @@ void D3_NGLDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	const bool ibsi = STNGS_IBSI(s);
 	const PixIntens range = r.aux_max;			// binning basis is [0, aux_max], as in calc_ngld_matrix
 
-	// The ROI's binned cube, streamed: a dense grey-binned plane plus the ROI mask that says which
-	// of its cells are the ROI's. Both are needed because a bounding box is only as tight as the
-	// ROI's extent, not its shape, so a cell holding the fill level is indistinguishable from a
-	// ROI voxel that binned to the same level. The 26-neighbourhood spans z-1..z+1, so the window
-	// keeps 3 planes.
+	// a cell holding the fill level is otherwise indistinguishable from a ROI voxel that binned to it
 	const PixIntens bg = Nyxus::to_grayscale (0, 0, range, nGrays, ibsi);
 	Nyxus::OocBinnedVolume vol (r, [range, nGrays, ibsi](PixIntens v) { return Nyxus::to_grayscale (v, 0, range, nGrays, ibsi); },
 		bg, 3, /*with_mask=*/ true);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 
-	// --- grey-level LUT: unique binned values over the ROI's voxels, as prepare_NGLDM_matrix_kit
-	// builds it. The background filling the rest of the bounding box contributes no grey level.
+	// --- grey-level LUT: the unique binned levels of the ROI's voxels; background contributes none
 	PixIntens maxlevel = 0;
 	std::set<PixIntens> uniq = vol.levels (/*with_background=*/ false, /*drop_zero=*/ false, maxlevel);
 	std::vector<PixIntens> grey_levels_LUT (uniq.begin(), uniq.end());	// std::set already sorted
@@ -443,13 +433,11 @@ void D3_NGLDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	NGLDM.fill (0);
 	int max_dep = 0;
 
-	// O(1) grey-level -> matrix row, replacing the per-voxel binary search in the scan below.
+	// grey level -> matrix row
 	std::vector<int> rowLUT;
 	if (Ng > 0)
 		rowLUT = Nyxus::ooc_row_lut (grey_levels_LUT, grey_levels_LUT.back());
-	// Every ROI voxel is a centre, bounding-box border voxels included: a neighbour that falls
-	// outside the box, or inside it but outside the ROI, simply does not contribute a match. This
-	// is calc_ngld_matrix's walk over the voxel cloud, expressed as a walk over the mask.
+
 	for (int c = 0; c < Dz; c++)
 	{
 		const std::vector<PixIntens>& cur = vol.plane (c);

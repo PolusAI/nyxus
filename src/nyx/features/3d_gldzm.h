@@ -53,6 +53,10 @@ public:
 
 	static int n_levels; // default value: 0
 
+	// Whether every border distance of a w x h x d bounding box fits the out-of-core distance
+	// buffer. osized_calculate() refuses a ROI whose box does not.
+	static bool ooc_border_distance_fits (int w, int h, int d);
+
 private:
 
 	void clear_buffers();

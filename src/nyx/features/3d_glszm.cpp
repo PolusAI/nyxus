@@ -39,23 +39,10 @@ D3_GLSZM_feature::D3_GLSZM_feature() : FeatureMethod("D3_GLSZM_feature")
 
 void D3_GLSZM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting
 
-// Out-of-core 3D GLSZM. gather_size_zones() is a full 26-connectivity flood fill that greedily
-// walks a zone (with explicit backtracking via 'history') and marks voxels VISITED -- workable
-// in-core but assumes the whole cube is resident, since a zone can wander in any direction and
-// therefore its final size isn't known until the whole volume has been explored.
-//
-// This streams a standard two-pass ("raster scan") connected-component labeling: process Z-planes
-// in ascending order, and within each plane voxels in raster (row,col) order, checking only
-// CAUSAL neighbours -- those already fully labeled by the scan order. For 26-connectivity that is
-// 4 same-plane neighbours (West, North, North-West, North-East) plus all 9 neighbours in the
-// previous (fully resolved) plane -- 13 of the 26, exactly the causal half. The symmetric "future"
-// neighbours are not missed: they get discovered from the OTHER voxel's perspective once the scan
-// reaches it. A growable union-find (LabelUnionFind, streaming_ccl.h) merges labels that turn out
-// to belong to the same zone and accumulates each zone's voxel count (summed on union), so the
-// final size is known the instant the volume finishes streaming -- no second voxel pass needed.
-// Peak memory is a 2-plane label window (O(area)) plus the label table (bounded by zone count,
-// worst case O(volume) for pathological data -- the same class of bound already accepted for
-// GLRLM's per-row run-length histograms).
+// Zones are 26-connected components found by one raster scan over a 2-plane window. In z, y, x scan
+// order 13 of the 26 neighbours are causal: W, NW, N, NE of the current plane and all nine of the
+// plane behind it. The union-find sums each zone's voxel count as labels merge. The label table
+// grows with the zone count, which is O(volume) at worst.
 void D3_GLSZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	clear_buffers();
@@ -70,8 +57,7 @@ void D3_GLSZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	if (STNGS_IBSI(s)) greyInfo = 0;
 	PixIntens mn = r.aux_min, mx = r.aux_max;
 	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
-	// Background/skip value: matlab-aware, matching THIS feature's own convention (calculate()'s
-	// zeroI) -- NOT GLRLM's hardcoded 0, which is a different feature's own quirk.
+	// calculate()'s zeroI: matlab binning puts background at level 1
 	const PixIntens zeroI = matlab_grey_binning (greyInfo) ? 1 : 0;
 
 	// the ROI's binned cube, streamed: the connected-component pass below reaches one plane back,
@@ -79,9 +65,8 @@ void D3_GLSZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); }, bg, 2);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 
-	// --- grey levels I (mirrors calculate(): ibsi_grey_binning(greyInfo) numeric check for
-	// construction -- NOT the STNGS_IBSI(s) compliance flag, which calculate() reserves for row
-	// lookup below; conflating the two was the exact bug found and fixed in GLRLM).
+	// --- grey levels I. The construction follows the binning mode, ibsi_grey_binning(); the row
+	// lookup below follows the IBSI flag, and the two differ at GREYDEPTH=0 without IBSI.
 	I.clear();
 	if (ibsi_grey_binning (greyInfo))
 	{

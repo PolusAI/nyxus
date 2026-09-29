@@ -8,7 +8,7 @@
 
 using namespace Nyxus;
 
-// The 13 direction shifts, identical to the in-core path (3d_glcm.cpp)
+// The 13 direction shifts of 3d_glcm.cpp
 namespace {
 	struct Sh { int dx, dy, dz; };
 	const Sh SHIFTS[13] = {
@@ -17,35 +17,28 @@ namespace {
 	};
 }
 
-// Out-of-core 3D GLCM. Instead of scanning the in-RAM grey-binned cube, this builds the 13
-// co-occurrence matrices by streaming the disk-backed voxel cloud one Z-plane at a time through a
-// sliding window of (offset+1) dense grey-binned planes (co-occurrence counts are additive and the
-// 13 directions only reach +/- offset in Z). The per-direction feature math is then the shared
-// finalize_angle(), so the values are identical to calculate().
+// Co-occurrence counts are additive and the 13 directions reach at most 'offset' planes in Z, so
+// the matrices accumulate over a window of offset+1 streamed planes.
 void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
 	clear_result_buffers();
 
 	const size_t nvox = r.raw_voxels_NT.size();
 
-	// grey-binning mode, mirroring calculate(): IBSI forces the "no binning" (==0) mode
+	// IBSI forces no binning
 	int greyInfo = STNGS_IBSI(s) ? 0 : STNGS_GLCM_GREYDEPTH(s);
 	bool ibsi = STNGS_IBSI(s);
 	double soft_nan = STNGS_NAN(s);
 	PixIntens mn = r.aux_min, mx = r.aux_max;
 
-	// Background cells of the in-core cube are grey-binned too (0 -> 1 for matlab, 0 otherwise);
-	// reproduce that so a dense plane matches a Z-slice of the binned cube exactly. The 13
-	// directions reach +/- offset in Z, so the window keeps offset+1 planes.
+	// background cells carry the binned level of intensity 0, as they do in the in-core cube
 	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
 	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); },
 		bg, D3_GLCM_feature::offset + 1);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 
-	// --- pass 1: the global set of grey levels (I) + matrix dimension, as in calculateCoocMatAtAngle,
-	// which builds I from the unique values of the WHOLE binned cube (mask + background) for the
-	// radiomics branch -- so a background bin (e.g. matlab binning maps raw-0 to bin 1) must be
-	// included too when the ROI bbox actually has background voxels.
+	// --- the grey levels I. Under radiomics binning they are the unique levels of the whole binned
+	// cube, so the background level counts when the bounding box has background.
 	PixIntens maxbin = 0;
 	std::set<PixIntens> uniq = vol.levels (/*with_background=*/ true, /*drop_zero=*/ true, maxbin);
 
@@ -66,8 +59,7 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	}
 	const int Ng = (int) I.size();
 
-	// Nothing to featurize (empty/blank): emit 13 blank angles, matching the in-core path's
-	// per-direction soft-NaN pushes so the angled vectors and their averages line up.
+	// nothing to featurize: 13 blank angles, so the angled vectors and their averages line up
 	if (Ng == 0 || nvox == 0)
 	{
 		P_matrix.allocate (1, 1);
@@ -80,7 +72,7 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 		return;
 	}
 
-	// --- pass 2: accumulate the 13 co-occurrence matrices over a sliding Z window
+	// --- the 13 co-occurrence matrices
 	std::vector<SimpleMatrix<double>> mats (13);
 	for (int k = 0; k < 13; k++)
 	{
@@ -91,17 +83,14 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	const int off = D3_GLCM_feature::offset;
 	const bool sym = D3_GLCM_feature::symmetric_glcm;
 
-	// O(1) grey-level -> matrix row, replacing the per-pair binary search in the hot add_pair loop
-	// (radiomics is the only binning branch that indexes I by value; the others use pi-1 directly).
-	// rowLUT[v] == lower_bound(I, v) - I.begin() for every possible binned level, so the row is
-	// identical to the search it replaces.
+	// grey level -> matrix row; only radiomics binning indexes I by value, the others use level-1
 	const bool radiomics = radiomics_grey_binning(greyInfo);
 	std::vector<int> rowLUT;
 	if (radiomics)
 		rowLUT = Nyxus::ooc_row_lut (I, maxbin);
 
-	// Count one (base, neighbor) grey-level pair into matrix M, mirroring calculateCoocMatAtAngle:
-	// GLCM.xy(idx(neighbor), idx(base)), plus the symmetric transpose for radiomics/ibsi/symmetric.
+	// one (base, neighbor) pair at M.xy(neighbor, base), and its transpose when the matrix is
+	// symmetric: radiomics, no binning, or symmetric_glcm
 	auto add_pair = [&](SimpleMatrix<double>& M, PixIntens lvl_base, PixIntens lvl_nbr)
 	{
 		if (ibsi_grey_binning(greyInfo))
@@ -171,8 +160,7 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 		}
 	}
 
-	// --- per-direction feature values from the accumulated matrices (shared finalize).
-	// Move each matrix into P_matrix rather than copy it -- mats[k] is not reused afterwards.
+	// --- per-direction feature values
 	for (int k = 0; k < 13; k++)
 	{
 		P_matrix = std::move (mats[k]);
