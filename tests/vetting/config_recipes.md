@@ -607,9 +607,12 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `morphology3d.mirp_ibsi`.
 
 ## morphology3d.analytic_lattice_solids
-- Voxel clouds built in `test_3d_morphology_analytic.h` — a single voxel, six solid boxes and two
-  discretised balls — passed straight to `Nyxus::build_roi_surface_mesh`. No image is read and no
-  external tool runs. Oracle: `analytic`. Used by: `test_3d_morphology_analytic.h`.
+- Voxel clouds built in `test_3d_morphology_analytic.h`, run through `D3_SurfaceFeature::calculate`
+  the way the phantom fixtures are (`calculate_3d_morphology_on_cloud`): a single voxel, six solid
+  boxes and two discretised balls for the mesh features; four boxes, three octahedra and two rhombic
+  prisms for the hull; and one planar cloud for the hull's refusal path. No image is read and no
+  external tool runs. Oracle: `analytic`. Used by: `test_3d_morphology_analytic.h`. The empty-ROI
+  refusal alone calls `Nyxus::build_roi_surface_mesh` directly.
 - A lone voxel's 0.5-isolevel surface is the octahedron with vertices half a lattice step out, so its
   volume is exactly 1/6 and its area exactly sqrt(3). A solid w × h × d box comes out bevelled, and
   both integrals are exact functions of w, h and d: volume = whd − (w+h+d−3)/2 − 5/6 and
@@ -623,6 +626,21 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   at any radius, so the area settles about 8.7% above the smooth sphere. That bias is the convention,
   shared with MIRP and pyradiomics; what the ball asserts is only that the area is the mesh's and not
   a staircase's, which would land near +50%.
+- `3VOLUME_CONVEXHULL` is the volume of the convex hull of the voxel centres, so the hull solids have
+  exact volumes: (w−1)(h−1)(d−1) for a w × h × d box, 4/3·R³ for the octahedron |x|+|y|+|z| ≤ R and
+  4·R²·H for the rhombic prism |x|+|y| ≤ R, |z| ≤ H. They sit hundreds of voxels from the origin and are
+  pinned at `rel=1e-12`. A cloud confined to one plane spans no volume and is held to 0.
+
+## morphology3d.quick_hull_scipy
+- Lattice ellipsoids built in `test_3d_morphology_mechanics.h` (`morphology_3d_quick_hull_ellipsoids`),
+  each hulled at six placements from the origin out to 2e4 by `quick_hull` directly, with the `eps`
+  `D3_SurfaceFeature::build_surface` uses; plus a plane and a line whose affine basis must stop short.
+  No image and no feature. Reference: `scipy` 1.10.1 `spatial.ConvexHull` (qhull) — **not an
+  oracle**: `scipy` is not a SPEC §4 oracle token and a mechanics assertion establishes no vetting.
+  Used by: `test_3d_morphology_mechanics.h`. Generator: `oracles/gen_morphology3d_quick_hull_scipy.py`.
+- A hull of lattice points has a volume that is a multiple of 1/6; each pin is that multiple, and the
+  generator confirms qhull lands on it. The assertions also require every facet to have non-zero area
+  and no point to lie more than `eps` outside any facet.
 
 ## morphology3d.regression_ut_phantom
 - The same phantom and settings, **no oracle** — pinned Nyxus output as drift guards in
