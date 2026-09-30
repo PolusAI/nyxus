@@ -1,15 +1,20 @@
 # OME-Zarr test datasets
 
-These datasets are consumed by `tests/test_omezarr.h`, which exercises the two
-z5-based OME-Zarr readers:
+These datasets are consumed by `tests/test_omezarr_mechanics.h` (and the OME-Zarr cases in
+`tests/test_all.cc`), which exercise the two z5-based OME-Zarr readers:
 
 - `NyxusOmeZarrLoader` (`src/nyx/omezarr.h`)  — the Hedgehog tile-loader
 - `RawOmezarrLoader`   (`src/nyx/raw_omezarr.h`) — the raw-format loader
 
-Both readers expect a **zarr v2** store laid out as OME-NGFF: a root group whose
-`.zattrs` carries `multiscales[0].datasets[0].path`, pointing at a 5D
-`(T, C, Z, Y, X)` array. The loaders read `shape[2..4]` as depth/height/width
-and `chunks[2..4]` as the tile sizes.
+Both readers open an OME-NGFF image group (zarr v2 or v3) whose attributes carry
+`multiscales[0].datasets[0].path`, pointing at a 2D to 5D array. Both resolve the array's
+layout through `resolve_zarr_layout` (`src/nyx/ome/ome_zarr_layout.h`): each axis role
+(X, Y, Z, C, T) is looked up in the multiscale's `axes` block, and the width, height, depth,
+channel and timeframe extents -- and the tile width, height and depth -- are the `shape` and
+`chunks` entries at that role's storage index. The on-disk order is therefore whatever `axes`
+declares: `dim5_ztcyx.ome.zarr` is shape `[4, 2, 3, 6, 8]` and reports depth 4, not `shape[2]`.
+Only when `axes` is absent is the order taken positionally, as `(T, C, Z, Y, X)` right-aligned
+to the array's rank (X last, Y before it, then Z, C, T).
 
 ## Datasets
 
@@ -66,8 +71,11 @@ that a throw happened — the throw alone was already there.
 A genuinely 5D store, shape `(T=2, C=3, Z=4, Y=6, X=8)`, chunked `(T,C,1,Y,X)` —
 one chunk per z-slice (4 chunk files) — and written **uncompressed** (so it reads
 with header-only z5). Z gets its own chunk because the loader maps the layer index
-as `layer*tileDepth` (`tileDepth = chunks[2]`); C and T are addressed directly by
-the read offset, so they don't need separate chunks. Every voxel encodes its own
+as `layer*tileDepth`, where `tileDepth` is the `chunks` entry at the Z axis's storage index
+(here `chunks[2] = 1`, since `axes` declares TCZYX); C and T are addressed directly by the read
+offset, so they don't need separate chunks. The `dim5_<order>.ome.zarr` siblings hold the same
+voxels in the other five axis orders, and `dim5_noaxes.ome.zarr` omits `axes` to exercise the
+positional fallback. Every voxel encodes its own
 coordinate:
 
 ```
