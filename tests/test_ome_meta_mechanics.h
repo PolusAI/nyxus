@@ -923,4 +923,77 @@ TEST(OmeZarrLayout, NonObjectAxisEntryRefusedByLayout)
 	EXPECT_EQ(L.full_height, 6u);
 	EXPECT_EQ(L.full_width, 8u);
 }
+
+// The extents and tile sizes are the 'shape'/'chunks' entries at each axis role's storage index,
+// as 'axes' declares it. A ZTCYX array (dim5_ztcyx's shape) puts C=3 at shape[2]; a reader that
+// took shape[2..4]/chunks[2..4] positionally would report depth 3 and tile depth 3. Every
+// extent and every chunk entry differs, so each role has to come from its own dimension.
+TEST(OmeZarrLayout, ExtentsAndTilesFollowDeclaredAxisOrder)
+{
+	const std::vector<std::size_t> shape = { 4, 2, 3, 6, 8 }, chunks = { 1, 2, 3, 3, 4 };
+	const nlohmann::json ztcyx = nlohmann::json::parse(
+		R"({"multiscales":[{"axes":[{"name":"z","type":"space"},{"name":"t","type":"time"},{"name":"c","type":"channel"},
+			{"name":"y","type":"space"},{"name":"x","type":"space"}],
+			"datasets":[{"path":"0"}]}]})");
+	Nyxus::ZarrLayout L = Nyxus::resolve_zarr_layout(ztcyx, shape, chunks, z5::types::uint16);
+	EXPECT_EQ(L.iz, 0);
+	EXPECT_EQ(L.it, 1);
+	EXPECT_EQ(L.ic, 2);
+	EXPECT_EQ(L.iy, 3);
+	EXPECT_EQ(L.ix, 4);
+	EXPECT_EQ(L.full_depth, 4u);
+	EXPECT_EQ(L.n_timeframes, 2u);
+	EXPECT_EQ(L.n_channels, 3u);
+	EXPECT_EQ(L.full_height, 6u);
+	EXPECT_EQ(L.full_width, 8u);
+	EXPECT_EQ(L.tile_depth, 1u);
+	EXPECT_EQ(L.tile_height, 3u);
+	EXPECT_EQ(L.tile_width, 4u);
+}
+
+// With no 'axes' block the same array is read positionally, as TCZYX right-aligned to the rank:
+// the answers differ from the declared-order case above, which is what makes that case discriminate.
+TEST(OmeZarrLayout, NoAxesFallsBackToPositionalTCZYX)
+{
+	const std::vector<std::size_t> shape = { 4, 2, 3, 6, 8 }, chunks = { 1, 2, 3, 3, 4 };
+	const nlohmann::json noaxes = nlohmann::json::parse(R"({"multiscales":[{"datasets":[{"path":"0"}]}]})");
+	Nyxus::ZarrLayout L = Nyxus::resolve_zarr_layout(noaxes, shape, chunks, z5::types::uint16);
+	EXPECT_EQ(L.it, 0);
+	EXPECT_EQ(L.ic, 1);
+	EXPECT_EQ(L.iz, 2);
+	EXPECT_EQ(L.n_timeframes, 4u);
+	EXPECT_EQ(L.n_channels, 2u);
+	EXPECT_EQ(L.full_depth, 3u);
+	EXPECT_EQ(L.tile_depth, 3u);
+	EXPECT_EQ(L.full_height, 6u);
+	EXPECT_EQ(L.full_width, 8u);
+
+	// right-aligned to the rank: a 3D array without 'axes' is ZYX, with no C or T dimension
+	const std::vector<std::size_t> shape3 = { 5, 6, 8 }, chunks3 = { 1, 6, 8 };
+	Nyxus::ZarrLayout L3 = Nyxus::resolve_zarr_layout(noaxes, shape3, chunks3, z5::types::uint16);
+	EXPECT_EQ(L3.iz, 0);
+	EXPECT_EQ(L3.ic, -1);
+	EXPECT_EQ(L3.it, -1);
+	EXPECT_EQ(L3.full_depth, 5u);
+	EXPECT_EQ(L3.n_channels, 1u);
+	EXPECT_EQ(L3.n_timeframes, 1u);
+}
+
+// A declared 'axes' block that cannot address the array is refused, not replaced by the
+// positional reading: an axis count that disagrees with the rank, and axes that name no X.
+TEST(OmeZarrLayout, DeclaredAxesThatCannotAddressTheArrayAreRefused)
+{
+	const std::vector<std::size_t> shape = { 4, 2, 3, 6, 8 }, chunks = { 1, 2, 3, 3, 4 };
+	const nlohmann::json four_axes = nlohmann::json::parse(
+		R"({"multiscales":[{"axes":[{"name":"t","type":"time"},{"name":"z","type":"space"},
+			{"name":"y","type":"space"},{"name":"x","type":"space"}],
+			"datasets":[{"path":"0"}]}]})");
+	EXPECT_THROW(Nyxus::resolve_zarr_layout(four_axes, shape, chunks, z5::types::uint16), std::runtime_error);
+
+	const nlohmann::json no_x = nlohmann::json::parse(
+		R"({"multiscales":[{"axes":[{"name":"z","type":"space"},{"name":"t","type":"time"},{"name":"c","type":"channel"},
+			{"name":"y","type":"space"},{"name":"w","type":"space"}],
+			"datasets":[{"path":"0"}]}]})");
+	EXPECT_THROW(Nyxus::resolve_zarr_layout(no_x, shape, chunks, z5::types::uint16), std::runtime_error);
+}
 #endif
