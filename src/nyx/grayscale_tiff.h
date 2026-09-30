@@ -214,7 +214,7 @@ public:
     [[nodiscard]] double physicalSizeX() const override { return is_ome_ ? ome_.physX : 1.0; }
     [[nodiscard]] double physicalSizeY() const override { return is_ome_ ? ome_.physY : 1.0; }
     [[nodiscard]] double physicalSizeZ() const override { return is_ome_ ? ome_.physZ : 1.0; }
-    [[nodiscard]] std::string physicalSizeUnit() const override { return is_ome_ ? ome_.unitXY : std::string(); }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return is_ome_ ? ome_.planeUnit() : std::string(); }
 
 private:
 
@@ -570,7 +570,7 @@ public:
     [[nodiscard]] double physicalSizeX() const override { return is_ome_ ? ome_.physX : 1.0; }
     [[nodiscard]] double physicalSizeY() const override { return is_ome_ ? ome_.physY : 1.0; }
     [[nodiscard]] double physicalSizeZ() const override { return is_ome_ ? ome_.physZ : 1.0; }
-    [[nodiscard]] std::string physicalSizeUnit() const override { return is_ome_ ? ome_.unitXY : std::string(); }
+    [[nodiscard]] std::string physicalSizeUnit() const override { return is_ome_ ? ome_.planeUnit() : std::string(); }
 
     /// @brief Tiff tile width
     /// @param level Tiff level [not used]

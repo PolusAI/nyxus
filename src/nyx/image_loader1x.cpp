@@ -21,7 +21,7 @@ bool ImageLoader1x::open (const std::string& fpath, const FpImageOptions & fpopt
 	{
 		// Classify by container family for parity with the other loaders. This loader carries no
 		// NIfTI backend, so a NIfTI path falls through to the TIFF branch.
-		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (fpath);
+		Nyxus::ContainerKind fmt = Nyxus::supported_container_family (fpath);
 
 		if 	(fmt == Nyxus::ContainerKind::OmeZarr)
 		{

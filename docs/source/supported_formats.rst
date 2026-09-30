@@ -4,6 +4,11 @@ Supported Image Formats
 
 Currently, Nyxus supports OME-TIFF, OME-Zarr and DICOM 2D Grayscale images.
 
+Nyxus chooses a reader by file extension, case-insensitively, and refuses any other name:
+``.tif``, ``.tiff``, ``.ome.tif`` and ``.ome.tiff`` (TIFF and OME-TIFF), ``.zarr`` and
+``.ome.zarr`` (OME-Zarr), ``.dcm`` and ``.dicom`` (DICOM), ``.nii`` and ``.nii.gz`` (NIfTI). A TIFF
+stored under another extension, such as ``.btf`` or ``.tf8``, is refused until it is renamed.
+
 OME-TIFF images uses the standard TIFF specification to store one or multiple image planes. OME-TIFF images are always structured as 
 5D data((T)ime, (C)hannel, Z, Y and X). For 2D single channel image, Z, C and T dimensions are constrained to be one. OME-TIFF images also contain an XML 
 document stored under the ``IMAGE_DESCRIPTION`` tag. This XML document contains the metadata to extract Image File Directory (IFD) for a 
