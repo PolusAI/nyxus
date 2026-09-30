@@ -475,7 +475,8 @@ TEST(OmeTiffMetaBad, AllSizesMissingDefaultToOne)
 	EXPECT_EQ(a.dtype, Nyxus::PixelType::UInt16); // missing Type -> default
 	EXPECT_DOUBLE_EQ(a.physX, 1.0);               // missing PhysicalSize -> 1.0
 	EXPECT_DOUBLE_EQ(a.physZ, 1.0);
-	EXPECT_TRUE(a.unitXY.empty());
+	EXPECT_TRUE(a.unitX.empty());
+	EXPECT_TRUE(a.unitY.empty());
 	EXPECT_TRUE(a.unitZ.empty());
 }
 
@@ -590,10 +591,10 @@ TEST(OmeTiffMetaBad, SizeXNotConfusedWithPhysicalSizeX)
 		"<Pixels PhysicalSizeX=\"9.9\" PhysicalSizeXUnit=\"nm\" SizeX=\"8\" SizeY=\"6\"></Pixels>");
 	ASSERT_TRUE(a.valid);
 	EXPECT_EQ(a.sizeX, 8u);
-	// physX/unitXY are canonicalized to micrometer (9.9 nm = 0.0099 um); see
-	// UnitCanonicalization.NanometerConvertedToMicrometer for a test dedicated to that.
+	// physX/unitX are canonicalized to micrometer (9.9 nm = 0.0099 um); see
+	// UnitCanonicalization.KnownUnitsConvertedToMicrometer for the conversion table.
 	EXPECT_DOUBLE_EQ(a.physX, 0.0099);
-	EXPECT_EQ(a.unitXY, "micrometer");
+	EXPECT_EQ(a.unitX, "micrometer");
 }
 
 // canonicalize_to_micrometer / unit_scale_to_micrometer directly -- no XML/JSON parsing
@@ -641,13 +642,14 @@ TEST(UnitCanonicalization, OmeTiffNanometerXAndMillimeterZBothConvert)
 	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(
 		"<Pixels SizeX=\"8\" SizeY=\"6\" SizeZ=\"4\" "
 		"PhysicalSizeX=\"500\" PhysicalSizeXUnit=\"nanometer\" "
-		"PhysicalSizeY=\"500\" "
+		"PhysicalSizeY=\"500\" PhysicalSizeYUnit=\"nanometer\" "
 		"PhysicalSizeZ=\"0.003\" PhysicalSizeZUnit=\"millimeter\"></Pixels>");
 	ASSERT_TRUE(a.valid);
 	EXPECT_NEAR(a.physX, 0.5, 1e-9);
 	EXPECT_NEAR(a.physY, 0.5, 1e-9);
 	EXPECT_NEAR(a.physZ, 3.0, 1e-9);
-	EXPECT_EQ(a.unitXY, "micrometer");
+	EXPECT_EQ(a.unitX, "micrometer");
+	EXPECT_EQ(a.unitY, "micrometer");
 	EXPECT_EQ(a.unitZ, "micrometer");
 	// storageAxes mirror the canonicalized per-axis values too
 	int ix = a.storageIndexOf('X'), iy = a.storageIndexOf('Y'), iz = a.storageIndexOf('Z');
@@ -655,6 +657,57 @@ TEST(UnitCanonicalization, OmeTiffNanometerXAndMillimeterZBothConvert)
 	EXPECT_NEAR(a.storageAxes[ix].physical, 0.5, 1e-9);
 	EXPECT_NEAR(a.storageAxes[iy].physical, 0.5, 1e-9);
 	EXPECT_NEAR(a.storageAxes[iz].physical, 3.0, 1e-9);
+}
+
+// OME-XML declares PhysicalSizeXUnit and PhysicalSizeYUnit separately, so X and Y convert with
+// their own units: 500 nanometer and 0.003 millimeter are 0.5 and 3.0 micrometer. What this
+// discriminates: converting Y with X's unit reads 0.003 as nanometer, giving 3e-6.
+TEST(UnitCanonicalization, OmeTiffXAndYConvertWithTheirOwnUnits)
+{
+	Nyxus::OmeAxes a = Nyxus::parse_ome_xml(
+		"<Pixels SizeX=\"8\" SizeY=\"6\" "
+		"PhysicalSizeX=\"500\" PhysicalSizeXUnit=\"nanometer\" "
+		"PhysicalSizeY=\"0.003\" PhysicalSizeYUnit=\"millimeter\"></Pixels>");
+	ASSERT_TRUE(a.valid);
+	EXPECT_NEAR(a.physX, 0.5, 1e-9);
+	EXPECT_NEAR(a.physY, 3.0, 1e-9);
+	EXPECT_EQ(a.unitX, "micrometer");
+	EXPECT_EQ(a.unitY, "micrometer");
+	int iy = a.storageIndexOf('Y');
+	ASSERT_GE(iy, 0);
+	EXPECT_NEAR(a.storageAxes[iy].physical, 3.0, 1e-9);
+	EXPECT_EQ(a.storageAxes[iy].unit, "micrometer");
+}
+
+// Y never borrows X's unit. Undeclared, Y keeps its value and an empty unit (the OME default is
+// micrometer, which needs no conversion); declared but unrecognized, Y keeps value and label as
+// written while X still converts. And a file declaring only Y's unit reports it as the plane's.
+TEST(UnitCanonicalization, OmeTiffYUnitIsNeverXs)
+{
+	Nyxus::OmeAxes undeclared = Nyxus::parse_ome_xml(
+		"<Pixels SizeX=\"8\" SizeY=\"6\" PhysicalSizeX=\"500\" PhysicalSizeXUnit=\"nanometer\" PhysicalSizeY=\"500\"></Pixels>");
+	ASSERT_TRUE(undeclared.valid);
+	EXPECT_NEAR(undeclared.physX, 0.5, 1e-9);
+	EXPECT_DOUBLE_EQ(undeclared.physY, 500.0);
+	EXPECT_EQ(undeclared.unitX, "micrometer");
+	EXPECT_TRUE(undeclared.unitY.empty());
+	EXPECT_EQ(undeclared.planeUnit(), "micrometer");
+
+	Nyxus::OmeAxes unknown = Nyxus::parse_ome_xml(
+		"<Pixels SizeX=\"8\" SizeY=\"6\" PhysicalSizeX=\"500\" PhysicalSizeXUnit=\"nanometer\" "
+		"PhysicalSizeY=\"7\" PhysicalSizeYUnit=\"furlong\"></Pixels>");
+	ASSERT_TRUE(unknown.valid);
+	EXPECT_NEAR(unknown.physX, 0.5, 1e-9);
+	EXPECT_DOUBLE_EQ(unknown.physY, 7.0);
+	EXPECT_EQ(unknown.unitY, "furlong");
+
+	Nyxus::OmeAxes y_only = Nyxus::parse_ome_xml(
+		"<Pixels SizeX=\"8\" SizeY=\"6\" PhysicalSizeX=\"2\" PhysicalSizeY=\"500\" PhysicalSizeYUnit=\"nanometer\"></Pixels>");
+	ASSERT_TRUE(y_only.valid);
+	EXPECT_DOUBLE_EQ(y_only.physX, 2.0);
+	EXPECT_TRUE(y_only.unitX.empty());
+	EXPECT_NEAR(y_only.physY, 0.5, 1e-9);
+	EXPECT_EQ(y_only.planeUnit(), "micrometer");
 }
 
 TEST(OmeTiffMetaBad, WhitespaceAndNewlinesInTag)
@@ -877,7 +930,8 @@ TEST(UnitCanonicalization, OmeZarrNanometerXYAndAngstromZBothConvert)
 	EXPECT_NEAR(a.physX, 0.5, 1e-9);
 	EXPECT_NEAR(a.physY, 0.5, 1e-9);
 	EXPECT_NEAR(a.physZ, 3.0, 1e-9);
-	EXPECT_EQ(a.unitXY, "micrometer");
+	EXPECT_EQ(a.unitX, "micrometer");
+	EXPECT_EQ(a.unitY, "micrometer");
 	EXPECT_EQ(a.unitZ, "micrometer");
 }
 
@@ -896,8 +950,37 @@ TEST(UnitCanonicalization, OmeZarrAlreadyMicrometerUnaffected)
 	EXPECT_DOUBLE_EQ(a.physX, 0.5);
 	EXPECT_DOUBLE_EQ(a.physY, 0.5);
 	EXPECT_DOUBLE_EQ(a.physZ, 2.0);
-	EXPECT_EQ(a.unitXY, "micrometer");
+	EXPECT_EQ(a.unitX, "micrometer");
+	EXPECT_EQ(a.unitY, "micrometer");
 	EXPECT_EQ(a.unitZ, "micrometer");
+}
+
+// NGFF declares a unit on each axis, and X and Y keep their own: X in nanometer converts, a Y in
+// an unrecognized unit keeps value and label. The layout's single phys_unit is X's, or Y's when
+// only Y declares one.
+TEST(UnitCanonicalization, OmeZarrXAndYUnitsKeptSeparately)
+{
+	Nyxus::OmeAxes a = zarr_parse(
+		R"({"multiscales":[{
+			"axes":[{"name":"y","type":"space","unit":"furlong"},
+			        {"name":"x","type":"space","unit":"nanometer"}],
+			"datasets":[{"path":"0","coordinateTransformations":[{"type":"scale","scale":[7.0,500.0]}]}]}]})",
+		{6, 8}, "uint16");
+	ASSERT_TRUE(a.valid);
+	EXPECT_NEAR(a.physX, 0.5, 1e-9);
+	EXPECT_EQ(a.unitX, "micrometer");
+	EXPECT_DOUBLE_EQ(a.physY, 7.0);
+	EXPECT_EQ(a.unitY, "furlong");
+	EXPECT_EQ(a.planeUnit(), "micrometer");
+
+	const nlohmann::json y_only = nlohmann::json::parse(
+		R"({"multiscales":[{
+			"axes":[{"name":"y","type":"space","unit":"nanometer"},{"name":"x","type":"space"}],
+			"datasets":[{"path":"0","coordinateTransformations":[{"type":"scale","scale":[500.0,2.0]}]}]}]})");
+	Nyxus::ZarrLayout L = Nyxus::resolve_zarr_layout(y_only, { 6, 8 }, { 6, 8 }, z5::types::uint16);
+	EXPECT_EQ(L.phys_unit, "micrometer");
+	EXPECT_NEAR(L.phys_y, 0.5, 1e-9);
+	EXPECT_DOUBLE_EQ(L.phys_x, 2.0);
 }
 
 // Through the loaders' entry point: a store whose last 'axes' entry is not an axis is refused.
