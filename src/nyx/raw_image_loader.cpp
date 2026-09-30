@@ -18,7 +18,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 	try
 	{
 		// Classify by container family so loader dispatch is identical across all loaders.
-		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (int_fpath);
+		Nyxus::ContainerKind fmt = Nyxus::supported_container_family (int_fpath);
 
 		if (fmt == Nyxus::ContainerKind::OmeZarr)
 		{
@@ -85,7 +85,7 @@ bool RawImageLoader::open (const std::string& int_fpath, const std::string& seg_
 
 	try {
 		// The mask is classified by the same container family as the intensity.
-		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (seg_fpath);
+		Nyxus::ContainerKind fmt = Nyxus::supported_container_family (seg_fpath);
 		if (fmt == Nyxus::ContainerKind::OmeZarr)
 		{
 #ifdef OMEZARR_SUPPORT

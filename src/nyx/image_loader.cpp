@@ -30,7 +30,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 	try 
 	{
 		// Classify by container family so loader dispatch is identical across all loaders.
-		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (int_fpath);
+		Nyxus::ContainerKind fmt = Nyxus::supported_container_family (int_fpath);
 
 		// The map the scan recorded, in the terms every tile loader takes. The quantized branch
 		// spans [inten_offset, inten_offset + inten_scale*DR], which is the [fpmin, fpmax] the scan
@@ -152,7 +152,7 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 	{
 		// The mask is classified by the same container family as the intensity, so an
 		// .ome.zarr mask routes to the Zarr loader (not the TIFF fallback).
-		Nyxus::ContainerKind fmt = Nyxus::detect_container_family (seg_fpath);
+		Nyxus::ContainerKind fmt = Nyxus::supported_container_family (seg_fpath);
 
 		if (fmt == Nyxus::ContainerKind::OmeZarr)
 		{
