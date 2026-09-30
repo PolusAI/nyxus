@@ -171,7 +171,7 @@ namespace Nyxus
 			L.n_timeframes = axes.sizeT;
 			// the parsed physical voxel spacing, for opt-in calibration
 			L.phys_x = axes.physX; L.phys_y = axes.physY; L.phys_z = axes.physZ;
-			L.phys_unit = axes.unitXY;
+			L.phys_unit = axes.planeUnit();
 		}
 		else
 		{

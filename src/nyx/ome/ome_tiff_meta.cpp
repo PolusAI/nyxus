@@ -276,17 +276,16 @@ namespace Nyxus
 		ax.physX = d("PhysicalSizeX", 1.0);
 		ax.physY = d("PhysicalSizeY", 1.0);
 		ax.physZ = d("PhysicalSizeZ", 1.0);
-		ax.unitXY = s("PhysicalSizeXUnit", "");
+		ax.unitX = s("PhysicalSizeXUnit", "");
+		ax.unitY = s("PhysicalSizeYUnit", "");
 		ax.unitZ = s("PhysicalSizeZUnit", "");
 
-		// Canonicalize each axis to micrometer using ITS OWN declared unit (X/Y share
-		// unitXY, Z has its own unitZ) -- a file that declares Z in a different unit than
-		// X/Y (or either in nm/mm/etc.) would otherwise report raw, uncomparable values under
-		// a unit label that only ever reflected X/Y. No-op for an already-micrometer or
-		// unrecognized/uncalibrated unit.
-		std::string unitY = ax.unitXY;
-		canonicalize_to_micrometer(ax.physX, ax.unitXY);
-		canonicalize_to_micrometer(ax.physY, unitY);
+		// Canonicalize each axis to micrometer using ITS OWN declared unit: OME-XML declares
+		// PhysicalSizeXUnit, PhysicalSizeYUnit and PhysicalSizeZUnit separately, so the axes may
+		// differ, and converting one with another's unit misscales it. No-op for an
+		// already-micrometer or unrecognized/undeclared unit.
+		canonicalize_to_micrometer(ax.physX, ax.unitX);
+		canonicalize_to_micrometer(ax.physY, ax.unitY);
 		canonicalize_to_micrometer(ax.physZ, ax.unitZ);
 
 		// On-disk order = reverse(DimensionOrder) with singleton axes dropped
@@ -307,8 +306,8 @@ namespace Nyxus
 			a.label = c;
 			a.kind = axis_kind_of(c);
 			a.size = size_of(c);
-			if (c == 'X') { a.physical = ax.physX; a.unit = ax.unitXY; }
-			else if (c == 'Y') { a.physical = ax.physY; a.unit = ax.unitXY; }
+			if (c == 'X') { a.physical = ax.physX; a.unit = ax.unitX; }
+			else if (c == 'Y') { a.physical = ax.physY; a.unit = ax.unitY; }
 			else if (c == 'Z') { a.physical = ax.physZ; a.unit = ax.unitZ; }
 			else /* C */ { a.physical = 1.0; }
 			ax.storageAxes.push_back(a);
