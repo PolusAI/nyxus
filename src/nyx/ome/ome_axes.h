@@ -108,9 +108,14 @@ namespace Nyxus
 		std::string omeDimensionOrder;
 		std::vector<OmeAxis> storageAxes;  // in storageOrder order
 
-		// Physical calibration (convenience mirror of the space axes).
+		// Physical calibration (convenience mirror of the space axes), each axis in its own
+		// declared unit; an empty unit means the file declares none for that axis.
 		double physX = 1, physY = 1, physZ = 1;
-		std::string unitXY, unitZ;
+		std::string unitX, unitY, unitZ;
+
+		// The in-plane unit a single-unit consumer (the phys_unit output column) reports: X's,
+		// or Y's when only Y declares one.
+		const std::string& planeUnit() const { return unitX.empty() ? unitY : unitX; }
 
 		PixelType dtype = PixelType::UInt16;
 		unsigned  bitsPerSample = 16;

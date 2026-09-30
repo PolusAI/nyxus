@@ -112,8 +112,8 @@ namespace Nyxus
 
 			switch (label)
 			{
-				case 'X': ax.sizeX = oa.size; ax.physX = oa.physical; ax.unitXY = unit; break;
-				case 'Y': ax.sizeY = oa.size; ax.physY = oa.physical; if (ax.unitXY.empty()) ax.unitXY = unit; break;
+				case 'X': ax.sizeX = oa.size; ax.physX = oa.physical; ax.unitX = unit; break;
+				case 'Y': ax.sizeY = oa.size; ax.physY = oa.physical; ax.unitY = unit; break;
 				case 'Z': ax.sizeZ = oa.size; ax.physZ = oa.physical; ax.unitZ = unit; break;
 				case 'C': ax.sizeC = oa.size; break;
 				case 'T': ax.sizeT = oa.size; break;
