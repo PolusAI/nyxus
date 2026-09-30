@@ -581,139 +581,139 @@ void Environment::show_featureset_help()
 void Environment::compile_feature_settings()
 {
 	f_settings_.push_back (fsett_PixelIntensity);
-		feature2settings_ [typeid(PixelIntensityFeatures).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(PixelIntensityFeatures)] = f_settings_.size() - 1;
 		// The intensity histogram family shares the intensity settings vector: the in-RAM reduce
 		// (reduce_trivial_rois.cpp) hands IntensityHistogramFeatures::reduce fsett_PixelIntensity,
 		// so the oversized-ROI path resolves to the same vector rather than a vector of its own.
-		feature2settings_ [typeid(IntensityHistogramFeatures).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(IntensityHistogramFeatures)] = f_settings_.size() - 1;
 
 	f_settings_.push_back (fsett_BasicMorphology);
-		feature2settings_ [typeid(BasicMorphologyFeatures).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(BasicMorphologyFeatures)] = f_settings_.size() - 1;
 
 	f_settings_.push_back (fsett_Neighbors);
-		feature2settings_ [typeid(NeighborsFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(NeighborsFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back (fsett_Contour);
-		feature2settings_ [typeid(ContourFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(ContourFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back (fsett_ConvexHull);
-		feature2settings_[typeid(ConvexHullFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_[typeid(ConvexHullFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_EllipseFitting);
-		feature2settings_ [typeid(EllipseFittingFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(EllipseFittingFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_Extrema);
-		feature2settings_ [typeid(ExtremaFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(ExtremaFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_EulerNumber);
-		feature2settings_ [typeid(EulerNumberFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(EulerNumberFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_CaliperFeret);
-		feature2settings_ [typeid(CaliperFeretFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(CaliperFeretFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_CaliperMartin);
-		feature2settings_ [typeid(CaliperMartinFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(CaliperMartinFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_CaliperNassenstein);
-		feature2settings_ [typeid(CaliperNassensteinFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(CaliperNassensteinFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_Chords);
-		feature2settings_ [typeid(ChordsFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(ChordsFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_HexagonalityPolygonality);
-		feature2settings_ [typeid(HexagonalityPolygonalityFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(HexagonalityPolygonalityFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_EnclosingInscribingCircumscribingCircle);
-		feature2settings_ [typeid(EnclosingInscribingCircumscribingCircleFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(EnclosingInscribingCircumscribingCircleFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_GeodeticLengthThickness);
-		feature2settings_ [typeid(GeodeticLengthThicknessFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(GeodeticLengthThicknessFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_RoiRadius);
-		feature2settings_ [typeid(RoiRadiusFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(RoiRadiusFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_ErosionPixels);
-		feature2settings_ [typeid(ErosionPixelsFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(ErosionPixelsFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_FractalDimension);
-		feature2settings_ [typeid(FractalDimensionFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(FractalDimensionFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_GLCM);
-		feature2settings_ [typeid(GLCMFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(GLCMFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_GLRLM);
-		feature2settings_ [typeid(GLRLMFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(GLRLMFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_GLDZM);
-		feature2settings_ [typeid(GLDZMFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(GLDZMFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_GLSZM);
-		feature2settings_ [typeid(GLSZMFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(GLSZMFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_GLDM);
-		feature2settings_ [typeid(GLDMFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(GLDMFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_NGLDM);
-		feature2settings_ [typeid(NGLDMfeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(NGLDMfeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_NGTDM);
-		feature2settings_ [typeid(NGTDMFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(NGTDMFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_Imoms2D);
-		feature2settings_ [typeid(Imoms2D_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(Imoms2D_feature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_Smoms2D);
-		feature2settings_ [typeid(Smoms2D_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(Smoms2D_feature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_Gabor);
-		feature2settings_ [typeid(GaborFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(GaborFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_Zernike);
-		feature2settings_ [typeid(ZernikeFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(ZernikeFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_RadialDistribution);
-		feature2settings_ [typeid(RadialDistributionFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(RadialDistributionFeature)] = f_settings_.size() - 1;
 
 		// 3D
 	f_settings_.push_back(fsett_D3_VoxelIntensity);
-		feature2settings_ [typeid(D3_VoxelIntensityFeatures).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_VoxelIntensityFeatures)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_D3_Surface);
-		feature2settings_ [typeid(D3_SurfaceFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_SurfaceFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_D3_GLCM);
-		feature2settings_ [typeid(D3_GLCM_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_GLCM_feature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_D3_GLDM);
-		feature2settings_ [typeid(D3_GLDM_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_GLDM_feature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_D3_GLDZM);
-		feature2settings_ [typeid(D3_GLDZM_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_GLDZM_feature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_D3_NGLDM);
-		feature2settings_ [typeid(D3_NGLDM_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_NGLDM_feature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_D3_NGTDM);
-		feature2settings_ [typeid(D3_NGTDM_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_NGTDM_feature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_D3_GLSZM);
-		feature2settings_ [typeid(D3_GLSZM_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_GLSZM_feature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_D3_GLRLM);
-		feature2settings_ [typeid(D3_GLRLM_feature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(D3_GLRLM_feature)] = f_settings_.size() - 1;
 
 		// 2D image quality
 	f_settings_.push_back(fsett_FocusScore);
-		feature2settings_ [typeid(FocusScoreFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(FocusScoreFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_PowerSpectrum);
-		feature2settings_ [typeid(PowerSpectrumFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(PowerSpectrumFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_Saturation);
-		feature2settings_ [typeid(SaturationFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(SaturationFeature)] = f_settings_.size() - 1;
 
 	f_settings_.push_back(fsett_Sharpness);
-		feature2settings_ [typeid(SharpnessFeature).hash_code()] = f_settings_.size() - 1;
+		feature2settings_ [typeid(SharpnessFeature)] = f_settings_.size() - 1;
 
 		for (auto& wrapd_s : f_settings_)
 		{
@@ -758,16 +758,14 @@ void Environment::refresh_feature_settings_singleroi()
 	}
 }
 
-const Fsettings& Environment::get_feature_settings (const std::type_info& ftype)
+const Fsettings& Environment::get_feature_settings (const std::type_info& ftype) const
 {
-	size_t h = ftype.hash_code();
-
 	// A type with no entry has no settings vector of its own, and f_settings_[0] - the intensity
 	// settings - is not a substitute for one: handing it to a texture family would run that family
 	// at the intensity vector's grey depth, co-occurrence offset and neighbourhood radius. Refuse
 	// instead, naming the type, so a feature registered in FeatureManager but not in
 	// compile_feature_settings() is reported rather than silently misconfigured.
-	auto it = feature2settings_.find (h);
+	auto it = feature2settings_.find (std::type_index(ftype));
 	if (it == feature2settings_.end())
 		throw std::runtime_error (std::string("No feature settings are registered for ") + ftype.name()
 			+ ". Check Environment::compile_feature_settings()");
