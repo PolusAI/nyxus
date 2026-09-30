@@ -2,6 +2,7 @@
 
 #include <map>
 #include <string>
+#include <typeindex>
 #include <unordered_set>		// csv_paths_written registry (see below)
 #include <vector>
 
@@ -223,10 +224,10 @@ public:
 		fsett_Sharpness;
 
 	std::vector<std::reference_wrapper<Fsettings>> f_settings_;
-	std::map<size_t, int> feature2settings_;
+	std::map<std::type_index, int> feature2settings_;
 	void compile_feature_settings();
 	void refresh_feature_settings_singleroi();
-	const Fsettings & get_feature_settings (const std::type_info& ftype);
+	const Fsettings & get_feature_settings (const std::type_info& ftype) const;
 
 	// Meta-parameters
 	std::optional<std::string> set_metaparam (const std::string & p_val);

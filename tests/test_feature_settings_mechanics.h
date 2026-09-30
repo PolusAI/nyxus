@@ -8,6 +8,7 @@
 #include <set>
 #include <stdexcept>
 #include <string>
+#include <typeindex>
 #include <typeinfo>
 
 #include "../src/nyx/environment.h"
@@ -58,64 +59,64 @@
 #include "../src/nyx/features/saturation.h"
 #include "../src/nyx/features/sharpness.h"
 
-// The settings vector each registered feature method is entitled to, keyed by the hash of its
-// dynamic type -- the key Environment::compile_feature_settings() files it under and the key
-// phase3.cpp resolves it by. Written out here rather than read back from feature2settings_ so that
-// the assertion is against the intended pairing and not against whatever the map happens to hold.
+// The settings vector each registered feature method is entitled to, keyed by its dynamic type --
+// the key Environment::compile_feature_settings() files it under and the key phase3.cpp resolves
+// it by. Written out here rather than read back from feature2settings_ so that the assertion is
+// against the intended pairing and not against whatever the map happens to hold.
 //
 // IntensityHistogramFeatures shares fsett_PixelIntensity with the intensity family: that is the
 // vector reduce_trivial_rois.cpp hands its in-RAM reduce, so the oversized path resolves to the same
 // one. Every other family owns a vector of its own.
-inline std::map<size_t, const Fsettings*> expected_feature_settings (Environment& e)
+inline std::map<std::type_index, const Fsettings*> expected_feature_settings (Environment& e)
 {
 	return {
 		// 2D
-		{ typeid(PixelIntensityFeatures).hash_code(), &e.fsett_PixelIntensity },
-		{ typeid(IntensityHistogramFeatures).hash_code(), &e.fsett_PixelIntensity },
-		{ typeid(BasicMorphologyFeatures).hash_code(), &e.fsett_BasicMorphology },
-		{ typeid(NeighborsFeature).hash_code(), &e.fsett_Neighbors },
-		{ typeid(ContourFeature).hash_code(), &e.fsett_Contour },
-		{ typeid(ConvexHullFeature).hash_code(), &e.fsett_ConvexHull },
-		{ typeid(EllipseFittingFeature).hash_code(), &e.fsett_EllipseFitting },
-		{ typeid(ExtremaFeature).hash_code(), &e.fsett_Extrema },
-		{ typeid(EulerNumberFeature).hash_code(), &e.fsett_EulerNumber },
-		{ typeid(CaliperFeretFeature).hash_code(), &e.fsett_CaliperFeret },
-		{ typeid(CaliperMartinFeature).hash_code(), &e.fsett_CaliperMartin },
-		{ typeid(CaliperNassensteinFeature).hash_code(), &e.fsett_CaliperNassenstein },
-		{ typeid(ChordsFeature).hash_code(), &e.fsett_Chords },
-		{ typeid(HexagonalityPolygonalityFeature).hash_code(), &e.fsett_HexagonalityPolygonality },
-		{ typeid(EnclosingInscribingCircumscribingCircleFeature).hash_code(), &e.fsett_EnclosingInscribingCircumscribingCircle },
-		{ typeid(GeodeticLengthThicknessFeature).hash_code(), &e.fsett_GeodeticLengthThickness },
-		{ typeid(RoiRadiusFeature).hash_code(), &e.fsett_RoiRadius },
-		{ typeid(ErosionPixelsFeature).hash_code(), &e.fsett_ErosionPixels },
-		{ typeid(FractalDimensionFeature).hash_code(), &e.fsett_FractalDimension },
-		{ typeid(GLCMFeature).hash_code(), &e.fsett_GLCM },
-		{ typeid(GLRLMFeature).hash_code(), &e.fsett_GLRLM },
-		{ typeid(GLDZMFeature).hash_code(), &e.fsett_GLDZM },
-		{ typeid(GLSZMFeature).hash_code(), &e.fsett_GLSZM },
-		{ typeid(GLDMFeature).hash_code(), &e.fsett_GLDM },
-		{ typeid(NGLDMfeature).hash_code(), &e.fsett_NGLDM },
-		{ typeid(NGTDMFeature).hash_code(), &e.fsett_NGTDM },
-		{ typeid(Imoms2D_feature).hash_code(), &e.fsett_Imoms2D },
-		{ typeid(Smoms2D_feature).hash_code(), &e.fsett_Smoms2D },
-		{ typeid(GaborFeature).hash_code(), &e.fsett_Gabor },
-		{ typeid(ZernikeFeature).hash_code(), &e.fsett_Zernike },
-		{ typeid(RadialDistributionFeature).hash_code(), &e.fsett_RadialDistribution },
+		{ typeid(PixelIntensityFeatures), &e.fsett_PixelIntensity },
+		{ typeid(IntensityHistogramFeatures), &e.fsett_PixelIntensity },
+		{ typeid(BasicMorphologyFeatures), &e.fsett_BasicMorphology },
+		{ typeid(NeighborsFeature), &e.fsett_Neighbors },
+		{ typeid(ContourFeature), &e.fsett_Contour },
+		{ typeid(ConvexHullFeature), &e.fsett_ConvexHull },
+		{ typeid(EllipseFittingFeature), &e.fsett_EllipseFitting },
+		{ typeid(ExtremaFeature), &e.fsett_Extrema },
+		{ typeid(EulerNumberFeature), &e.fsett_EulerNumber },
+		{ typeid(CaliperFeretFeature), &e.fsett_CaliperFeret },
+		{ typeid(CaliperMartinFeature), &e.fsett_CaliperMartin },
+		{ typeid(CaliperNassensteinFeature), &e.fsett_CaliperNassenstein },
+		{ typeid(ChordsFeature), &e.fsett_Chords },
+		{ typeid(HexagonalityPolygonalityFeature), &e.fsett_HexagonalityPolygonality },
+		{ typeid(EnclosingInscribingCircumscribingCircleFeature), &e.fsett_EnclosingInscribingCircumscribingCircle },
+		{ typeid(GeodeticLengthThicknessFeature), &e.fsett_GeodeticLengthThickness },
+		{ typeid(RoiRadiusFeature), &e.fsett_RoiRadius },
+		{ typeid(ErosionPixelsFeature), &e.fsett_ErosionPixels },
+		{ typeid(FractalDimensionFeature), &e.fsett_FractalDimension },
+		{ typeid(GLCMFeature), &e.fsett_GLCM },
+		{ typeid(GLRLMFeature), &e.fsett_GLRLM },
+		{ typeid(GLDZMFeature), &e.fsett_GLDZM },
+		{ typeid(GLSZMFeature), &e.fsett_GLSZM },
+		{ typeid(GLDMFeature), &e.fsett_GLDM },
+		{ typeid(NGLDMfeature), &e.fsett_NGLDM },
+		{ typeid(NGTDMFeature), &e.fsett_NGTDM },
+		{ typeid(Imoms2D_feature), &e.fsett_Imoms2D },
+		{ typeid(Smoms2D_feature), &e.fsett_Smoms2D },
+		{ typeid(GaborFeature), &e.fsett_Gabor },
+		{ typeid(ZernikeFeature), &e.fsett_Zernike },
+		{ typeid(RadialDistributionFeature), &e.fsett_RadialDistribution },
 		// 3D
-		{ typeid(D3_VoxelIntensityFeatures).hash_code(), &e.fsett_D3_VoxelIntensity },
-		{ typeid(D3_SurfaceFeature).hash_code(), &e.fsett_D3_Surface },
-		{ typeid(D3_GLCM_feature).hash_code(), &e.fsett_D3_GLCM },
-		{ typeid(D3_GLDM_feature).hash_code(), &e.fsett_D3_GLDM },
-		{ typeid(D3_GLDZM_feature).hash_code(), &e.fsett_D3_GLDZM },
-		{ typeid(D3_NGLDM_feature).hash_code(), &e.fsett_D3_NGLDM },
-		{ typeid(D3_NGTDM_feature).hash_code(), &e.fsett_D3_NGTDM },
-		{ typeid(D3_GLSZM_feature).hash_code(), &e.fsett_D3_GLSZM },
-		{ typeid(D3_GLRLM_feature).hash_code(), &e.fsett_D3_GLRLM },
+		{ typeid(D3_VoxelIntensityFeatures), &e.fsett_D3_VoxelIntensity },
+		{ typeid(D3_SurfaceFeature), &e.fsett_D3_Surface },
+		{ typeid(D3_GLCM_feature), &e.fsett_D3_GLCM },
+		{ typeid(D3_GLDM_feature), &e.fsett_D3_GLDM },
+		{ typeid(D3_GLDZM_feature), &e.fsett_D3_GLDZM },
+		{ typeid(D3_NGLDM_feature), &e.fsett_D3_NGLDM },
+		{ typeid(D3_NGTDM_feature), &e.fsett_D3_NGTDM },
+		{ typeid(D3_GLSZM_feature), &e.fsett_D3_GLSZM },
+		{ typeid(D3_GLRLM_feature), &e.fsett_D3_GLRLM },
 		// 2D image quality
-		{ typeid(FocusScoreFeature).hash_code(), &e.fsett_FocusScore },
-		{ typeid(PowerSpectrumFeature).hash_code(), &e.fsett_PowerSpectrum },
-		{ typeid(SaturationFeature).hash_code(), &e.fsett_Saturation },
-		{ typeid(SharpnessFeature).hash_code(), &e.fsett_Sharpness }
+		{ typeid(FocusScoreFeature), &e.fsett_FocusScore },
+		{ typeid(PowerSpectrumFeature), &e.fsett_PowerSpectrum },
+		{ typeid(SaturationFeature), &e.fsett_Saturation },
+		{ typeid(SharpnessFeature), &e.fsett_Sharpness }
 	};
 }
 
@@ -131,7 +132,7 @@ void test_feature_settings_resolve_to_own_family_mechanics()
 	Environment e;
 	e.compile_feature_settings();
 
-	const std::map<size_t, const Fsettings*> expected = expected_feature_settings (e);
+	const std::map<std::type_index, const Fsettings*> expected = expected_feature_settings (e);
 
 	// Ask for everything -- 2D, 3D and image quality alike -- so the requested set is the whole
 	// registered set and no family is covered by proxy.
@@ -142,7 +143,7 @@ void test_feature_settings_resolve_to_own_family_mechanics()
 	int nrf = e.theFeatureMgr.get_num_requested_features();
 	ASSERT_GT (nrf, 0);
 
-	std::set<size_t> seen;
+	std::set<std::type_index> seen;
 
 	for (int i = 0; i < nrf; i++)
 	{
@@ -154,14 +155,14 @@ void test_feature_settings_resolve_to_own_family_mechanics()
 		const std::type_info& t = typeid(*f);
 		SCOPED_TRACE (std::string("feature method ") + t.name());
 
-		auto exp = expected.find (t.hash_code());
+		auto exp = expected.find (std::type_index(t));
 		ASSERT_NE (exp, expected.end()) << "registered in FeatureManager but absent from this table";
 
 		const Fsettings* got = nullptr;
 		ASSERT_NO_THROW (got = &e.get_feature_settings (t));
 		ASSERT_EQ (got, exp->second);
 
-		seen.insert (t.hash_code());
+		seen.insert (std::type_index(t));
 	}
 
 	// and nothing in the table has fallen out of FeatureManager
