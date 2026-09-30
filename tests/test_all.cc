@@ -15,6 +15,7 @@
 #include "../src/nyx/features/3d_ngldm.h"
 #include "../src/nyx/features/3d_ngtdm.h"
 #include "../src/nyx/ome/format_detect.h"		// detect_container_family
+#include "../src/nyx/raw_image_loader.h"		// RawImageLoader, the prescan-side dispatch
 #include "test_2d_contour_analytic.h"
 #include "test_ome_meta_mechanics.h"		// native-OME metadata parsers / OmeAxes descriptor
 #include "test_ometiff_mechanics.h"	// OME-TIFF native (z,c,t)->IFD read (core; no USE_Z5)
@@ -4500,20 +4501,94 @@ TEST(TEST_NYXUS, TEST_OMETIFF_MASK_MORE_CHANNELS_THAN_INTENSITY_MECHANICS) {
 }
 
 // detect_container_family is the single dispatch point all three loader stacks use. It
-// classifies by big-extension alone, so it needs no file on disk; every TIFF flavor is one kind
-// because one TIFF loader reads plain and OME-TIFF alike.
+// classifies by extension alone, so it needs no file on disk; every TIFF flavor is one kind
+// because one TIFF loader reads plain and OME-TIFF alike. The last extension decides, so a
+// dotted stem ("scan.001.tif") classifies like a plain one.
 TEST(TEST_NYXUS, TEST_DETECT_CONTAINER_FAMILY_MECHANICS) {
 	using Nyxus::detect_container_family;
 	using Nyxus::ContainerKind;
 	EXPECT_EQ(detect_container_family(ometiff_data_path("dim5.ome.tif").string()), ContainerKind::Tiff);
 	EXPECT_EQ(detect_container_family(ometiff_data_path("dim3_plain.tif").string()), ContainerKind::Tiff);
-	EXPECT_EQ(detect_container_family("x.TIFF"), ContainerKind::Tiff);
+	for (const char* tif : { "x.tif", "x.tiff", "x.ome.tif", "x.ome.tiff", "x.TIFF", "X.OME.TIF", "scan.001.tif" })
+		EXPECT_EQ(detect_container_family(tif), ContainerKind::Tiff) << tif;
 	EXPECT_EQ(detect_container_family("x.dcm"), ContainerKind::Dicom);
 	EXPECT_EQ(detect_container_family("x.dicom"), ContainerKind::Dicom);
 	EXPECT_EQ(detect_container_family("x.nii"), ContainerKind::Nifti);
 	EXPECT_EQ(detect_container_family("x.nii.gz"), ContainerKind::Nifti);
+	EXPECT_EQ(detect_container_family("X.NII.GZ"), ContainerKind::Nifti);
 	EXPECT_EQ(detect_container_family("no_such_store.zarr"), ContainerKind::OmeZarr);
 	EXPECT_EQ(detect_container_family("no_such_store.ome.zarr"), ContainerKind::OmeZarr);
+	EXPECT_EQ(detect_container_family("plate.v2.zarr"), ContainerKind::OmeZarr);
+}
+
+// Only the listed extensions are read. Everything else -- the other TIFF spellings (.tf2, .tf8,
+// .btf), other image formats, a compressed file that is not NIfTI, a backup copy, no extension
+// at all -- is Unsupported, and supported_container_family refuses it by name. What this
+// discriminates: a classifier that treats every unrecognized name as a TIFF.
+TEST(TEST_NYXUS, TEST_DETECT_CONTAINER_FAMILY_UNSUPPORTED_MECHANICS) {
+	using Nyxus::ContainerKind;
+	for (const char* name : { "x.tf2", "x.tf8", "x.btf", "x.png", "x.jpg", "x.txt", "x.gz", "x.tif.bak", "x.ome", "noext" })
+	{
+		EXPECT_EQ(Nyxus::detect_container_family(name), ContainerKind::Unsupported) << name;
+		EXPECT_THROW(Nyxus::supported_container_family(name), std::runtime_error) << name;
+	}
+	EXPECT_EQ(Nyxus::supported_container_family("x.ome.tif"), ContainerKind::Tiff);
+	EXPECT_EQ(Nyxus::supported_container_family("x.nii.gz"), ContainerKind::Nifti);
+}
+
+// The loaders refuse an unsupported name before opening anything: a genuine TIFF copied to a
+// .btf name fails to open on the feature side (ImageLoader) and the prescan side
+// (RawImageLoader), as an intensity image and as a mask. The same bytes under a .tif name open,
+// so the refusal is the extension's alone. What this discriminates: a dispatch that sends an
+// unrecognized name to the TIFF loader, which reads this file without complaint.
+TEST(TEST_NYXUS, TEST_LOADERS_REFUSE_UNSUPPORTED_EXTENSION_MECHANICS) {
+	const fs::path src = ometiff_data_path("dim3_zyx.ome.tif");
+	ASSERT_TRUE(fs::exists(src)) << src.string();
+	const fs::path dir = fs::temp_directory_path() / "nyxus_unsupported_extension";
+	fs::create_directories(dir);
+	const fs::path btf = dir / "dim3_zyx.btf", tif = dir / "dim3_zyx.tif";
+	fs::copy_file(src, btf, fs::copy_options::overwrite_existing);
+	fs::copy_file(src, tif, fs::copy_options::overwrite_existing);
+
+	FpImageOptions fp;
+	{
+		SlideProps p;
+		p.fname_int = btf.string();
+		p.fname_seg = "";
+		ImageLoader il;
+		EXPECT_FALSE(il.open(p, fp)) << "a .btf intensity image must be refused";
+	}
+	{
+		SlideProps p;
+		p.fname_int = tif.string();
+		p.fname_seg = btf.string();
+		ImageLoader il;
+		EXPECT_FALSE(il.open(p, fp)) << "a .btf mask must be refused";
+		il.close();
+	}
+	{
+		SlideProps p;
+		p.fname_int = tif.string();
+		p.fname_seg = "";
+		ImageLoader il;
+		EXPECT_TRUE(il.open(p, fp)) << "the same file named .tif opens";
+		il.close();
+	}
+	{
+		RawImageLoader rl;
+		EXPECT_FALSE(rl.open(btf.string(), "")) << "the prescan must refuse a .btf intensity image";
+	}
+	{
+		RawImageLoader rl;
+		EXPECT_FALSE(rl.open(tif.string(), btf.string())) << "the prescan must refuse a .btf mask";
+	}
+	{
+		RawImageLoader rl;
+		EXPECT_TRUE(rl.open(tif.string(), "")) << "the prescan opens the same file named .tif";
+	}
+
+	std::error_code ec;
+	fs::remove_all(dir, ec);
 }
 
 // Pyramidal OME-TIFF: every full-res plane's IFD carries downsampled levels as SubIFDs (tag
