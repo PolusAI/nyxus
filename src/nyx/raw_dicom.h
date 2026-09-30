@@ -9,6 +9,7 @@
 #include "dcmtk/dcmseg/segdoc.h"
 #include "dcmtk/dcmseg/segment.h"
 #include "dcmtk/dcmseg/segutils.h"
+#include "dicom_frame_compat.h"
 #ifdef JPEG2K_SUPPORT
 #include "fmjpeg2k/djdecode.h"
 #endif
@@ -325,22 +326,24 @@ private:
 
         OFCondition status = DcmSegmentation::loadDataset(*ds, segdoc);
         if (status.good()) {
-            const DcmIODTypes::Frame* frame = segdoc->getFrame(static_cast<size_t>(frame_no));
-            const DcmIODTypes::Frame* unpacked_frame = nullptr;
-            unpacked_frame = DcmSegUtils::unpackBinaryFrame(frame, tileHeight_, tileWidth_);
+            // DCMTK 3.7 made DcmIODTypes::Frame a class template, which broke the build; access frames via dicom_frame_compat.h
+            const Nyxus::DcmBinaryFrame* frame = Nyxus::get_binary_seg_frame(segdoc, static_cast<size_t>(frame_no));
+            const Nyxus::DcmBinaryFrame* unpacked_frame = nullptr;
+            if (frame) // nullptr if the frame is missing or (DCMTK 3.7+) not 8-bit
+                unpacked_frame = DcmSegUtils::unpackBinaryFrame(frame, tileHeight_, tileWidth_);
             if (unpacked_frame) {
-                if (dest_as_vector.size() < unpacked_frame->length) {
+                if (dest_as_vector.size() < Nyxus::frame_length(unpacked_frame)) {
                     std::stringstream message;
                     message
                         << "Tile Loader ERROR: The destination buffer size ("
                         << dest_as_vector.size()
                         << ") is smaller than the frame size ("
-                        << unpacked_frame->length << ").";
+                        << Nyxus::frame_length(unpacked_frame) << ").";
                     throw (std::runtime_error(message.str()));
                 }
                 uint32_t* dest = dest_as_vector.data();
-                for (size_t i = 0; i < unpacked_frame->length; ++i) {
-                    *(dest + i) = static_cast<uint32_t>(unpacked_frame->pixData[i]);
+                for (size_t i = 0; i < Nyxus::frame_length(unpacked_frame); ++i) {
+                    *(dest + i) = static_cast<uint32_t>(Nyxus::frame_pixels(unpacked_frame)[i]);
                 }
                 delete unpacked_frame;
             }
