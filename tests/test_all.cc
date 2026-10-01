@@ -5049,7 +5049,7 @@ TEST(TEST_NYXUS, TEST_3D_OOC_ANISOTROPIC_CLOUD_MATCHES_IN_RAM_MECHANICS) {
 	LR ooc(1);
 	ooc.aabb.init_from_whd (8, 6, 4);
 	ooc.aux_area = 8 * 6 * 4;
-	ASSERT_NO_THROW(Nyxus::populate_3d_voxel_cloud(il, ooc, 0, 0, /*wholevolume=*/ true, ax, ay, az, ds.string(), ""));
+	ASSERT_NO_THROW(Nyxus::populate_3d_voxel_cloud(il, ooc, 0, 0, /*wholevolume=*/ true, /*singleroi=*/ false, ax, ay, az, ds.string(), ""));
 
 	ASSERT_EQ(ooc.raw_voxels_NT.size(), ram.raw_pixels_3D.size());
 	EXPECT_EQ(ooc.raw_voxels_NT.size(), (size_t)(8 * 6 * 8));	// Z resampled 2x
