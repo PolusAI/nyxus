@@ -106,7 +106,8 @@ namespace Nyxus
 	// it was trying to featurize.
 	std::string ooc_unstreamable_reason (ImageLoader& imlo);
 	// Streams r.raw_voxels_NT from 'imlo' plane-by-plane; when wholevolume is true every voxel is
-	// kept (no mask), otherwise only voxels matching r.label. On a non-cubic grid (ax,ay,az from
+	// kept (no mask), otherwise only voxels matching r.label -- or, when singleroi is true, every
+	// nonzero mask voxel, which is the ROI single-ROI mode's phase 1 measured. On a non-cubic grid (ax,ay,az from
 	// resolve_anisotropy) the cloud is resampled and r.aabb/r.aux_area follow it. Shared by the segmented and whole-volume
 	// out-of-core paths (processNontrivialRois_3D, workflow_3d_whole.cpp's oversized branch).
 	// Returns false without touching the cloud when the loader cannot be streamed within a bounded
@@ -114,10 +115,12 @@ namespace Nyxus
 	// Nyxus::stream_volume_checked has reported an intensity/mask shape mismatch itself -- which is
 	// why the callers' own refusal message is guarded by ImageLoader::streams_bounded().
 	bool populate_3d_voxel_cloud (ImageLoader& imlo, LR& r, size_t channel, size_t timeframe, bool wholevolume,
-		double ax, double ay, double az, const std::string& intens_fpath, const std::string& mask_fpath);
+		bool singleroi, double ax, double ay, double az, const std::string& intens_fpath, const std::string& mask_fpath);
 	// Runs every requested feature's out-of-core path over an already-populated r.raw_voxels_NT,
 	// guarded by is_3d_ooc_supported(); writes into r.fvals via save_value(). Shared the same way.
-	void run_3d_ooc_features (Environment& env, LR& r, ImageLoader& imloader);
+	// Returns false once a feature fails (on the CLI build; under Python it raises), and the
+	// callers then write no row for the ROI.
+	bool run_3d_ooc_features (Environment& env, LR& r, ImageLoader& imloader);
 	// Featurizes one slide of the whole-volume workflow and returns its status by value. Declared
 	// here so a test can drive it directly: its refusal of a slide whose loader will not open is
 	// not reachable through processDataset_3D_wholevolume, whose prescan rejects such a slide first.
