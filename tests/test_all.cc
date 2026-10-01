@@ -85,6 +85,7 @@
 #include "test_3d_gldzm_mechanics.h"
 #include "test_3d_gldzm_mirp.h"
 #include "test_3d_gldzm_regression.h"
+#include "test_3d_ooc_segmented_mechanics.h"	// the segmented 3D out-of-core pass: its voxels and its status
 #include "test_3d_ngldm_mirp.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
@@ -885,6 +886,18 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_OOC_TOO_THICK_BOX_REFUSED_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_3D_GLDZM_OOC_BORDER_DISTANCE_BOUND_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_gldzm_ooc_border_distance_bound_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_OOC_SINGLEROI_COLLAPSES_LABELS_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_ooc_singleroi_collapses_labels_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_OOC_MULTIROI_KEEPS_LABELS_APART_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_ooc_multiroi_keeps_labels_apart_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_OOC_FAILED_FEATURE_FAILS_PAIR_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_ooc_failed_feature_fails_pair_mechanics());
 }
 
 

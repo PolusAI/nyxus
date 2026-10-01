@@ -152,7 +152,7 @@ namespace Nyxus
 			// Out-of-core whole volume: stream every voxel (no mask -- workflow_3d_whole.cpp opens
 			// the loader with an empty label path) plane-by-plane instead of holding the whole
 			// cube, mirroring the segmented ROI path (processNontrivialRois_3D).
-			if (! populate_3d_voxel_cloud (imlo, vroi, channel, timeframe, /*wholevolume=*/ true, ax, ay, az,
+			if (! populate_3d_voxel_cloud (imlo, vroi, channel, timeframe, /*wholevolume=*/ true, /*singleroi=*/ false, ax, ay, az,
 				p.fname_int, ""))
 			{
 				// the segmented path refuses the same way: an empty reason means the pair streams and the
@@ -170,9 +170,10 @@ namespace Nyxus
 				return false;
 			}
 
-			run_3d_ooc_features (env, vroi, imlo);
+			// a feature that fails leaves this plane's volume without a row, as a refusal does
+			const bool ok = run_3d_ooc_features (env, vroi, imlo);
 			vroi.raw_voxels_NT.clear();
-			return true;
+			return ok;
 		}
 
 		//***** phase 2: extract features
