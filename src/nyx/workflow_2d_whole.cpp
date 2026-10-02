@@ -83,11 +83,10 @@ namespace Nyxus
 		FeatureSet on_grid, geometric;
 		split_2d_selection (env.theFeatureSet, on_grid, geometric);
 
-		// the pixels as acquired, on the slide's own box
+		// the pixels as acquired, on the slide's own box (featurize_wholeslide sized it so)
 		if (on_grid.numOfEnabled (2))
 		{
 			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
-			vroi.aabb.init_from_wh (imlo.get_full_width(), imlo.get_full_height());
 			if (! scan_trivial_wholeslide (vroi, ifpath, imlo))
 				return false;
 			reduce_triv_wholeslide_selection (env, vroi, on_grid);
@@ -126,11 +125,17 @@ namespace Nyxus
 		vroi.aux_min = (PixIntens) p.to_grey_level (p.min_preroi_inten);
 		vroi.aux_max = (PixIntens) p.to_grey_level (p.max_preroi_inten);
 
+		// The prescan scales the box by the anisotropy factors, but an anisotropic slide is scanned
+		// twice, once as acquired and once resampled, so it is sized from the slide as acquired and
+		// the estimate covers the larger of the two passes, as a segmented ROI's does
+		if (env.anisoOptions.customized())
+			vroi.aabb.init_from_wh (imlo.get_full_width(), imlo.get_full_height());
+
 		// prepare (zero) ROI's feature value buffer
 		vroi.initialize_fvals();
 
 		// assess ROI's memory footprint and check if we can featurize it as phase 2 (trivially) ?
-		size_t roiFootprint = vroi.get_ram_footprint_estimate (1),		// 1 since single ROI
+		size_t roiFootprint = trivial_footprint_2d (env, vroi, 1),		// 1 since single ROI
 			ramLim = env.get_ram_limit();
 		if (roiFootprint >= ramLim)
 		{
