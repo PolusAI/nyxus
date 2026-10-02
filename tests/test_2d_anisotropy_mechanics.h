@@ -297,3 +297,70 @@ void test_2d_anisotropy_vanished_roi_is_refused_mechanics()
 	EXPECT_FALSE(ok) << "a ROI with no resampled pixel was reduced";
 	EXPECT_NE(err.find ("ROI 7 maps to no pixel"), std::string::npos) << err;
 }
+
+// The whole-slide trivial/oversized decision on an anisotropic run covers the pass over the slide
+// as acquired. The prescan scales the slide's box by the factors, so at (0.5, 0.5) its box is a
+// quarter of the slide the first pass holds. The RAM limit goes between the two estimates. What
+// this discriminates: a decision built on the prescan's box reads the slide as trivial and
+// featurizes it in a pass that does not fit the limit; sized from the slide as acquired, it is
+// refused.
+void test_2d_anisotropy_wholeslide_sized_as_acquired_mechanics()
+{
+	const uint32_t W = 512, H = 512, TILE = 256;
+	const fs::path dir = fs::temp_directory_path() / "nyxus_2d_aniso_wholeslide_size";
+	std::error_code ec;
+	fs::remove_all (dir, ec);
+	fs::create_directories (dir);
+	const fs::path ip = dir / "i.tif";
+	{
+		TIFF* t = TIFFOpen (ip.string().c_str(), "w");
+		ASSERT_NE(t, nullptr) << ip.string();
+		TIFFSetField (t, TIFFTAG_IMAGEWIDTH, W);
+		TIFFSetField (t, TIFFTAG_IMAGELENGTH, H);
+		TIFFSetField (t, TIFFTAG_SAMPLESPERPIXEL, 1);
+		TIFFSetField (t, TIFFTAG_BITSPERSAMPLE, 16);
+		TIFFSetField (t, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
+		TIFFSetField (t, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+		TIFFSetField (t, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
+		TIFFSetField (t, TIFFTAG_TILEWIDTH, TILE);
+		TIFFSetField (t, TIFFTAG_TILELENGTH, TILE);
+		std::vector<uint16_t> buf (TILE * TILE);
+		for (uint32_t y0 = 0; y0 < H; y0 += TILE)
+			for (uint32_t x0 = 0; x0 < W; x0 += TILE)
+			{
+				for (uint32_t r = 0; r < TILE; r++)
+					for (uint32_t c = 0; c < TILE; c++)
+						buf[r * TILE + c] = (uint16_t) (1 + ((x0 + c) * 7 + (y0 + r) * 3) % 251);
+				ASSERT_GE(TIFFWriteTile (t, buf.data(), x0, y0, 0, 0), 0);
+			}
+		ASSERT_EQ(TIFFWriteDirectory (t), 1);
+		TIFFClose (t);
+	}
+
+	Environment e;
+	prepare_aniso2_env (e, true, ip.string(), "", 0.5, 0.5);
+	const SlideProps& p = e.dataset.dataset_props[0];
+	ASSERT_LT(p.max_roi_w, (size_t) W) << "the prescan box is the scaled one";
+
+	// the estimate the prescan's box gives, and the one the slide as acquired gives
+	LR scaled (1), acquired (1);
+	scaled.aux_area = acquired.aux_area = p.max_roi_area;
+	scaled.aabb.init_from_wh (p.max_roi_w, p.max_roi_h);
+	acquired.aabb.init_from_wh (W, H);
+	const size_t f_scaled = scaled.get_ram_footprint_estimate (1),
+		f_acquired = acquired.get_ram_footprint_estimate (1);
+	const size_t limit_mb = ((f_scaled + f_acquired) / 2) / (1024 * 1024);
+	ASSERT_GT(limit_mb * 1024 * 1024, f_scaled);
+	ASSERT_LT(limit_mb * 1024 * 1024, f_acquired) << "the two estimates must straddle a megabyte boundary";
+	ASSERT_TRUE(e.set_ram_limit (limit_mb));
+
+	LR vroi (1);
+	testing::internal::CaptureStderr();
+	const bool ok = Nyxus::featurize_wholeslide (e, 0, e.theImLoader, vroi);
+	const std::string err = testing::internal::GetCapturedStderr();
+	e.theImLoader.close();
+	fs::remove_all (dir, ec);
+
+	EXPECT_FALSE(ok) << "the slide as acquired does not fit the limit, and its first pass holds all of it";
+	EXPECT_NE(err.find ("slide is non-trivial"), std::string::npos) << err;
+}
