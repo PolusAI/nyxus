@@ -493,7 +493,6 @@ public:
         // Get ahold of the logical (feature extraction facing) tile buffer from its smart pointer
         std::vector<DataType>& tileDataVec = *tile;
 
-        tdata_t buf;
         uint32_t row, layer;
 
         // The plane is checked before anything is read: an out-of-range Z would otherwise skip
@@ -501,7 +500,9 @@ public:
         Nyxus::select_tiff_plane (tiff_, is_ome_ ? &ome_ : nullptr, fullDepth_,
             indexLayerGlobalTile, indexChannel, indexTimeframe, "NyxusGrayscaleTiffStripLoader");
 
-        buf = _TIFFmalloc(TIFFScanlineSize(tiff_));
+        // one image scanline; a std::vector so that an error thrown below does not leak it
+        std::vector<uint8_t> line (TIFFScanlineSize(tiff_));
+        tdata_t buf = line.data();
 
         size_t
             startLayer = indexLayerGlobalTile * tileDepth_,
@@ -515,37 +516,46 @@ public:
         {
             // OME-TIFF: the plane's directory per DimensionOrder; plain multi-page TIFF: directory = Z
             if (layer != startLayer)
+                Nyxus::select_tiff_plane (tiff_, is_ome_ ? &ome_ : nullptr, fullDepth_,
+                    layer, indexChannel, indexTimeframe, "NyxusGrayscaleTiffStripLoader");
+
+            // libtiff reaches an arbitrary row of a strip only in an uncompressed file; a codec
+            // decodes a strip from its first row forward and cannot skip rows it has not decoded.
+            // Selecting the directory above leaves no strip decoded, so a tile whose startRow is
+            // inside a strip -- every tile row past the first, unless the strip height divides the
+            // tile height -- starts at a row the codec cannot reach directly. In a compressed
+            // directory the read therefore starts at the first row of the strip holding startRow,
+            // a row libtiff always reaches by (re)starting that strip, and the rows above startRow
+            // are decoded and dropped. The same rule as RawTiffStripLoader::loadTileFromFile.
+            uint16_t compression = COMPRESSION_NONE;
+            uint32_t rowsPerStrip = 0;
+            TIFFGetFieldDefaulted(tiff_, TIFFTAG_COMPRESSION, &compression);
+            TIFFGetFieldDefaulted(tiff_, TIFFTAG_ROWSPERSTRIP, &rowsPerStrip);
+            const size_t firstRow = (compression == COMPRESSION_NONE || rowsPerStrip == 0) ?
+                startRow : (startRow / rowsPerStrip) * rowsPerStrip;
+
+            for (row = firstRow; row < endRow; row++)
             {
-                try
+                // a failed read leaves the scanline buffer holding whatever it held before, so it
+                // is an error, never pixels
+                if (TIFFReadScanline(tiff_, buf, row) != 1)
                 {
-                    Nyxus::select_tiff_plane (tiff_, is_ome_ ? &ome_ : nullptr, fullDepth_,
-                        layer, indexChannel, indexTimeframe, "NyxusGrayscaleTiffStripLoader");
+                    std::stringstream message;
+                    message << "Tile Loader ERROR: TIFFReadScanline failed at row " << row << " of " << TIFFFileName(tiff_);
+                    throw (std::runtime_error(message.str()));
                 }
-                catch (...)
+
+                // rows above startRow only bring the codec up to startRow
+                if (row < startRow)
+                    continue;
+
+                // copy at the file's own sample type
+                Nyxus::with_tiff_sample_type (sampleFormat_, bitsPerSample_, "NyxusGrayscaleTiffStripLoader", [&] (auto sample)
                 {
-                    _TIFFfree(buf);
-                    throw;
-                }
-            }
-            for (row = startRow; row < endRow; row++)
-            {
-                TIFFReadScanline(tiff_, buf, row);
-                // copy at the file's own sample type; the scanline buffer is released on every path
-                try
-                {
-                    Nyxus::with_tiff_sample_type (sampleFormat_, bitsPerSample_, "NyxusGrayscaleTiffStripLoader", [&] (auto sample)
-                    {
-                        copyRow <decltype(sample)> (buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
-                    });
-                }
-                catch (...)
-                {
-                    _TIFFfree(buf);
-                    throw;
-                }
+                    copyRow <decltype(sample)> (buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
+                });
             }
         }
-        _TIFFfree(buf);
     }
 
 
