@@ -1005,6 +1005,14 @@ TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WHOLESLIDE_SIZED_AS_ACQUIRED_MECHANICS) {
 	ASSERT_NO_THROW(test_2d_anisotropy_wholeslide_sized_as_acquired_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_MATCHES_IN_RAM_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_matches_in_ram_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_VANISHED_ROI_IS_REFUSED_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_vanished_roi_is_refused_mechanics());
+}
+
 //***** 3D voxel spacing *****
 
 TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_IN_RAM_LEAVES_INTENSITY_AND_TEXTURE_ALONE_MECHANICS) {
