@@ -339,9 +339,24 @@ public:
         if (endRow - startRow < tileHeight_ || endCol - startCol < tileWidth_)
             std::memset (fub, 0, tile_szb);
 
+        // libtiff reaches an arbitrary row of a strip only in an uncompressed file; a codec
+        // decodes a strip from its first row forward and cannot seek past rows it has not
+        // decoded. Every tile past the first column starts at a row the reader has already
+        // gone by, so in a compressed directory the read starts at the first row of the strip
+        // holding startRow -- a row libtiff always reaches, by (re)starting that strip -- and
+        // the rows above startRow are decoded and dropped.
+        uint16_t compression = COMPRESSION_NONE;
+        uint32_t rowsPerStrip = 0;
+        TIFFGetFieldDefaulted (tiff_, TIFFTAG_COMPRESSION, &compression);
+        TIFFGetFieldDefaulted (tiff_, TIFFTAG_ROWSPERSTRIP, &rowsPerStrip);
+        const size_t firstRow = (compression == COMPRESSION_NONE || rowsPerStrip == 0) ?
+            startRow : (startRow / rowsPerStrip) * rowsPerStrip;
+
+        // rows are addressed in image coordinates and land at the tile's own pitch, so tile
+        // (i,j) carries the pixels of image rows [startRow,endRow) x columns [startCol,endCol)
         const size_t lineOffs = startCol * sample_szb,
             rowBytes = (std::min) ((endCol - startCol) * sample_szb, scanline_szb - lineOffs);
-        for (size_t r = startRow; r < endRow; r++)
+        for (size_t r = firstRow; r < endRow; r++)
         {
             int errcode = TIFFReadScanline (tiff_, line_.data(), (uint32_t) r);
             if (errcode != 1)
@@ -349,7 +364,8 @@ public:
                 std::string erm = "error " + std::to_string(errcode) + " calling TIFFReadScanline(row = " + std::to_string(r) + ")";
                 throw (std::runtime_error(erm));
             }
-            std::memcpy (fub + (r - startRow) * tileWidth_ * sample_szb, line_.data() + lineOffs, rowBytes);
+            if (r >= startRow)
+                std::memcpy (fub + (r - startRow) * tileWidth_ * sample_szb, line_.data() + lineOffs, rowBytes);
         }
     }
 
