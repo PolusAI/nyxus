@@ -215,7 +215,9 @@ namespace Nyxus
 						+ "' is not yet supported out-of-core for oversized 3D ROIs; "
 						+ "segment into smaller ROIs, raise --ramLimit, or add RAM");
 
-				const Fsettings& s = env.get_feature_settings (typeid(f));
+				// typeid(*f), not typeid(f): f is a FeatureMethod*, so only the dereferenced object
+				// carries the dynamic type the settings are registered under
+				const Fsettings& s = env.get_feature_settings (typeid(*f));
 				f->osized_scan_whole_image (r, s, env.dataset, imloader);
 			}
 			catch (std::exception const& e)
