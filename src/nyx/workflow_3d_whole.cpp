@@ -35,47 +35,14 @@ namespace Nyxus
 	// Featurizes a whole volume that fits in RAM. The caller owns the oversized decision -- it sends
 	// everything at or above the RAM limit out-of-core before reaching here, off the same estimate,
 	// so a second test of it here could never fire.
-	// (anisotropic, ax, ay, az) is the voxel spacing featurize_wholevolume resolved for this slide,
-	// passed in rather than resolved again here: the out-of-core branch of the caller resamples the
-	// voxel cloud onto that same grid, and the box the oversized check is made against was recorded
-	// on it, so a second resolution is a second place for the slide's geometry to come from.
-	bool featurize_triv_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, LR& vroi, size_t channel, size_t timeframe,
-		bool anisotropic, double ax, double ay, double az)
+	bool featurize_triv_wholevolume (Environment & env, size_t sidx, ImageLoader& imlo, LR& vroi, size_t channel, size_t timeframe)
 	{
 		const std::string& ifpath = env.dataset.dataset_props[sidx].fname_int;
 
-		// read the slide into a pixel cloud
-		// --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
-		if (! anisotropic)
-		{
-			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
-			if (! scan_trivial_wholevolume (vroi, ifpath, imlo, channel, timeframe))
-				return false;
-		}
-		else
-		{
-			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
-			if (! scan_trivial_wholevolume_anisotropic (
-				vroi,
-				ifpath,
-				imlo,
-				ax,
-				ay,
-				az,
-				channel,
-				timeframe))
-				return false;
-
-			// The vROI's extent and voxel count describe the cloud that was just cached.
-			// featurize_wholevolume presets them from the PHYSICAL slide dimensions
-			// (init_from_whd / p.max_roi_area) before any cloud exists, and the anisotropic scan
-			// caches the resampled (virtual) cloud, which is both a different extent and a
-			// different voxel count. The extent sizes aux_image_cube, which
-			// calculate_from_pixelcloud fills, and aux_area divides every feature that averages.
-			// The segmented path recomputes both the same way (processTrivialRois_3D).
-			vroi.aabb.update_from_voxelcloud (vroi.raw_pixels_3D);
-			vroi.aux_area = (unsigned int) vroi.raw_pixels_3D.size();
-		}
+		// read the slide into a pixel cloud, the voxels as acquired whatever the spacing
+		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
+		if (! scan_trivial_wholevolume (vroi, ifpath, imlo, channel, timeframe))
+			return false;
 
 		// allocate memory for feature helpers (image matrix, etc)
 		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\tallocating vROI buffers\n");
@@ -103,9 +70,7 @@ namespace Nyxus
 		vroi.slide_idx = (decltype(vroi.slide_idx)) sidx;
 		vroi.aux_area = p.max_roi_area;
 
-		// The extent the prescan recorded, taken as it stands: scan_slide_props resolves the same
-		// voxel spacing and already recorded these on the resampled grid, so scaling them again
-		// here would square the resampling and inflate the oversized check by that factor.
+		// the extent the prescan recorded, on the grid the volume was acquired on
 		vroi.aabb.init_from_whd (p.max_roi_w, p.max_roi_h, p.max_roi_d);
 
 		// the grey levels the loader will store for this volume's range, through the same map the
@@ -123,10 +88,11 @@ namespace Nyxus
 		// instead of gather_wholeslide_metrics (p.fname_int, imlo, vroi)
 		init_wholevolume_vroi (p, sidx, vroi);
 
-		// the spacing this volume is scanned on, resolved once for both branches below (the box
-		// above is already on that grid)
+		// the spacing the shape family measures this volume's geometry on, the same for both
+		// branches below
 		double ax, ay, az;
-		bool anisotropic = resolve_slide_anisotropy (env, sidx, ax, ay, az);
+		resolve_slide_anisotropy (env, sidx, ax, ay, az);
+		vroi.set_spacing (ax, ay, az);
 
 		// prepare (zero) ROI's feature value buffer
 		vroi.initialize_fvals();
@@ -152,7 +118,7 @@ namespace Nyxus
 			// Out-of-core whole volume: stream every voxel (no mask -- workflow_3d_whole.cpp opens
 			// the loader with an empty label path) plane-by-plane instead of holding the whole
 			// cube, mirroring the segmented ROI path (processNontrivialRois_3D).
-			if (! populate_3d_voxel_cloud (imlo, vroi, channel, timeframe, /*wholevolume=*/ true, /*singleroi=*/ false, ax, ay, az,
+			if (! populate_3d_voxel_cloud (imlo, vroi, channel, timeframe, /*wholevolume=*/ true, /*singleroi=*/ false,
 				p.fname_int, ""))
 			{
 				// the segmented path refuses the same way: an empty reason means the pair streams and the
@@ -177,7 +143,7 @@ namespace Nyxus
 		}
 
 		//***** phase 2: extract features
-		return featurize_triv_wholevolume (env, sidx, imlo, vroi, channel, timeframe, anisotropic, ax, ay, az); // segmented counterpart: phase2.cpp / processTrivialRois ()
+		return featurize_triv_wholevolume (env, sidx, imlo, vroi, channel, timeframe); // segmented counterpart: phase2.cpp / processTrivialRois ()
 	}
 
 	// The per-thread status is returned by VALUE, through the future: a std::async worker's write

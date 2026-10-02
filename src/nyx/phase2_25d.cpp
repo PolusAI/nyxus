@@ -140,177 +140,6 @@ namespace Nyxus
 		return true;
 	}
 
-	bool scanTrivialRois_25D_anisotropic (
-		Environment & env,
-		const std::vector<int>& batch_labels,
-		const std::string& intens_fpath,
-		const std::string& label_fpath,
-		const std::vector<std::string>& z_indices,
-		double aniso_x,
-		double aniso_y,
-		double aniso_z)
-	{
-		// Sort the batch's labels to enable binary searching in it
-		std::vector<int> whiteList = batch_labels;
-		std::sort(whiteList.begin(), whiteList.end());
-
-		int lvl = 0,	// pyramid level
-			lyr = 0;	//	layer
-
-		size_t vD = (size_t)(double(z_indices.size()) * aniso_z);	// virtual depth
-
-		for (size_t vz = 0; vz < vD; vz++)
-		{
-			size_t z = size_t(double(vz) / aniso_z);	// physical z
-
-			// prepare the physical file 
-			// 
-			// ifile and mfile contain a placeholder for the z-index. We need to turn them to physical filesystem files
-			auto zValue = z_indices[z];	// realistic dataset's z-values may be arbitrary (non-zer-based and non-contiguous), so use the actual value
-			std::string ifpath = std::regex_replace(intens_fpath, std::regex("\\*"), zValue),
-				mfpath = std::regex_replace(label_fpath, std::regex("\\*"), zValue);
-
-			// Scan this Z intensity-mask pair 
-			SlideProps p (ifpath, mfpath);
-			// The prescan measured this slide's intensity range and recorded the map the loader
-			// will apply to it; a bare SlideProps carries neither, so this pass would otherwise
-			// map its grey levels differently from the prescan and be reported in a domain of
-			// its own.
-			const SlideProps * scanned = batch_labels.empty() ? nullptr
-				: env.dataset.scanned_slide (env.roiData[batch_labels[0]].slide_idx);
-			if (scanned)
-				p.inherit_intensity_domain (*scanned);
-			if (! env.theImLoader.open(p, env.fpimageOptions))
-			{
-				std::cerr << "Error opening a file pair with ImageLoader. Terminating\n";
-				env.theImLoader.close();	// the pair this function opened is its to release
-				return false;
-			}
-
-			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
-				ntVert = env.theImLoader.get_num_tiles_vert(),	// tiles down a column
-				fw = env.theImLoader.get_tile_width(),
-				th = env.theImLoader.get_tile_height(),
-				tw = env.theImLoader.get_tile_width(),
-				tileSize = env.theImLoader.get_tile_size(),
-				fullwidth = env.theImLoader.get_full_width(),
-				fullheight = env.theImLoader.get_full_height();
-
-			// virtual slide properties
-			size_t vh = (size_t)(double(fullheight) * aniso_y),
-				vw = (size_t)(double(fullwidth) * aniso_x);
-
-			// current tile to skip tile reloads
-			size_t curt_x = 999, curt_y = 999;
-
-			for (size_t vr = 0; vr < vh; vr++)
-			{
-				for (size_t vc = 0; vc < vw; vc++)
-				{
-					// A virtual pixel's tile is found through its PHYSICAL position, not through a virtual tile
-					// width: (tile width * factor) truncates, so virtual_extent / truncated_tile_width can exceed
-					// the tile count the slide actually has -- 2048 px of 1024-px tiles at 0.7 gives a virtual
-					// width of 1433 over a virtual tile of 716, and the last column asks for tile 2 of 2. Going
-					// through the physical column cannot overrun, and needs no bound of its own: the loop puts
-					// vc below (size_t)(fullwidth * aniso_x), which is at most fullwidth * aniso_x, so
-					// vc / aniso_x is below the slide's width, its tile index is below the grid's, and the
-					// within-tile offset is exact rather than accumulated. The row follows the same argument.
-					const size_t ph_col = (size_t) (double(vc) / aniso_x),
-						ph_row = (size_t) (double(vr) / aniso_y);
-					const size_t tidx_x = ph_col / tw,
-						tidx_y = ph_row / th;
-
-					// load it
-					if (tidx_y != curt_y || tidx_x != curt_x)
-					{
-						bool ok = env.theImLoader.load_tile(tidx_y, tidx_x);
-						if (!ok)
-						{
-							std::string s = "Error fetching tile row=" + std::to_string(tidx_y) + " col=" + std::to_string(tidx_x);
-							env.theImLoader.close();	// released before the throw below, which leaves under Python
-#ifdef WITH_PYTHON_H
-							throw s;
-#endif	
-							std::cerr << s << "\n";
-							return false;
-						}
-
-						// cache tile position to avoid reloading
-						curt_y = tidx_y;
-						curt_x = tidx_x;
-					}
-
-					// the physical pixel's offset inside the tile buffer, from the loader that filled it
-					const size_t i = env.theImLoader.get_within_tile_idx (ph_row, ph_col);
-
-					// read buffered physical pixel 
-					auto dataI = env.theImLoader.get_int_tile_buffer(),
-						dataL = env.theImLoader.get_seg_tile_buffer();
-
-					// skip non-mask pixels
-					auto label = dataL[i];
-					if (!label)
-						continue;
-
-					// skip this ROI if the label isn't in the pending set of a multi-ROI mode
-					if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
-						continue;
-
-					// collapse all the labels to one if single-ROI mde is requested
-					if (env.singleROI)
-						label = 1;
-
-					// cache this voxel 
-					auto inten = dataI[i];
-					LR& r = env.roiData[label];
-					feed_pixel_2_cache_3D_LR (vc, vr, vz, dataI[i], r);
-				}
-			}
-
-			// Close the image pair
-			env.theImLoader.close();
-		}
-
-		// Dump ROI pixel clouds to the output directory
-		VERBOSLVL5 (env.get_verbosity_level(), dump_roi_pixels(env.dim(), Nyxus::get_temp_dir_path(), batch_labels, label_fpath, env.uniqueLabels, env.roiData));
-
-			return true;
-	}
-
-	// The ROI's extent and voxel count describe the cloud the anisotropic scan cached.
-	// gatherRoisMetrics_25D records both from the PHYSICAL grid, and the resampled cloud has a
-	// different extent and a different voxel count: the extent sizes aux_image_cube, which
-	// calculate_from_pixelcloud fills by coordinate without a bounds check, and aux_area divides
-	// every feature that averages. Taking both from the cloud leaves one authoritative source for
-	// the virtual geometry, which is what processTrivialRois_3D does after its own anisotropic scan.
-	static bool adopt_anisotropic_cloud_25D (Environment& env, const std::vector<int>& pending, double ax, double ay, double az)
-	{
-		for (auto lbl : pending)
-		{
-			LR& r = env.roiData[lbl];
-
-			// A ROI thinner than the factor's step maps to no virtual voxel at all: every virtual
-			// coordinate that would carry it rounds back to a physical one outside it. There is no
-			// cloud to take an extent from and nothing to featurize, so name the ROI and stop rather
-			// than reduce a cube of zeros.
-			if (r.raw_pixels_3D.empty())
-			{
-				std::string s = "Error: ROI " + std::to_string(lbl) + " maps to no voxel at anisotropy "
-					+ std::to_string(ax) + "," + std::to_string(ay) + "," + std::to_string(az);
-#ifdef WITH_PYTHON_H
-				throw s;
-#endif
-				std::cerr << s << "\n";
-				return false;
-			}
-
-			r.aabb.update_from_voxelcloud (r.raw_pixels_3D);
-			r.aux_area = (unsigned int) r.raw_pixels_3D.size();
-		}
-
-		return true;
-	}
-
 	bool processTrivialRois_25D (Environment & env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices)
 	{
 		std::vector<int> Pending;
@@ -341,22 +170,10 @@ namespace Nyxus
 							std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 					);
 
-					if (env.anisoOptions.customized() == false)
-					{
-						if (! scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices))
-							return false;
-					}
-					else
-					{
-						double	ax = env.anisoOptions.get_aniso_x(),
-							ay = env.anisoOptions.get_aniso_y(),
-							az = env.anisoOptions.get_aniso_z();
-						if (! scanTrivialRois_25D_anisotropic (env, Pending, intens_fpath, label_fpath, z_indices, ax, ay, az))
-							return false;
-
-						if (! adopt_anisotropic_cloud_25D (env, Pending, ax, ay, az))
-							return false;
-					}
+				// the voxels as acquired, whatever the spacing; the shape family takes the spacing
+				// from each ROI (gatherRoisMetrics_25D recorded it)
+				if (! scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices))
+					return false;
 
 				// Allocate memory
 				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
@@ -406,22 +223,9 @@ namespace Nyxus
 					else
 						std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
-			if (env.anisoOptions.customized() == false)
-			{
-				if (! scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices))
-					return false;
-			}
-			else
-			{
-				double	ax = env.anisoOptions.get_aniso_x(),
-					ay = env.anisoOptions.get_aniso_y(),
-					az = env.anisoOptions.get_aniso_z();
-				if (! scanTrivialRois_25D_anisotropic (env, Pending, intens_fpath, label_fpath, z_indices, ax, ay, az))
-					return false;
-
-				if (! adopt_anisotropic_cloud_25D (env, Pending, ax, ay, az))
-					return false;
-			}
+			// the voxels as acquired, as in the batch loop above
+			if (! scanTrivialRois_25D (env, Pending, intens_fpath, label_fpath, z_indices))
+				return false;
 
 			// Allocate memory
 			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");

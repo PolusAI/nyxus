@@ -7,8 +7,7 @@
 
 namespace Nyxus
 {
-	/// @brief One triangle of an ROI surface mesh. Vertices carry lattice coordinates, so a mesh
-	/// built on an anisotropy-resampled cloud is already in physical units.
+	/// @brief One triangle of an ROI surface mesh. Vertices carry lattice coordinates.
 	struct Triangle3
 	{
 		double a[3], b[3], c[3];	// layout: x, y, z

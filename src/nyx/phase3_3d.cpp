@@ -70,17 +70,15 @@ namespace Nyxus
 	/// and phase 2, so the ROI phase 1 measured is the whole foreground. When 'wholevolume' is true, every voxel is
 	/// kept regardless of any mask (there is none: workflow_3d_whole.cpp opens the loader with an
 	/// empty label path, so ImageLoader::stream_volume_planes's segPlane is empty in that case).
-	/// (ax,ay,az) is the voxel spacing Nyxus::resolve_anisotropy resolved for the slide: on a
-	/// non-cubic grid the cloud is resampled onto the virtual grid the in-RAM scans build, and
-	/// r.aabb and r.aux_area are updated to that geometry (the physical ones the prescan recorded
-	/// describe a different extent and a different voxel count).
+	/// The cloud is the voxels as acquired, as the in-RAM scans cache them; the ROI's spacing
+	/// (r.spacing_*) is what makes the shape family's values physical.
 	/// Shared by the segmented (processNontrivialRois_3D) and whole-volume out-of-core paths so
 	/// both stream through the exact same primitive. The file paths name the pair in the messages
 	/// Nyxus::stream_volume_checked raises, which is how this path gets the intensity-vs-mask voxel
 	/// count check the in-RAM passes make; 'mask_fpath' is empty in whole-volume mode, which has no
 	/// mask to check.
 	bool populate_3d_voxel_cloud (ImageLoader& imlo, LR& r, size_t channel, size_t timeframe, bool wholevolume,
-		bool singleroi, double ax, double ay, double az, const std::string& intens_fpath, const std::string& mask_fpath)
+		bool singleroi, const std::string& intens_fpath, const std::string& mask_fpath)
 	{
 		// A loader that hands the whole cube back in one read (NIfTI) cannot be streamed within a
 		// bounded footprint: a "tile layer" of it IS the volume. Out-of-core exists to bound that
@@ -91,104 +89,25 @@ namespace Nyxus
 		r.raw_voxels_NT.init (r.label, "raw_voxels_NT");
 
 		const size_t W = imlo.get_full_width(),
-			H = imlo.get_full_height(),
-			D = imlo.get_full_depth();
+			H = imlo.get_full_height();
 		const uint32_t want = (uint32_t) r.label;
 		auto is_roi_voxel = [&](const std::vector<uint32_t>& segPlane, size_t i)
 		{
 			return wholevolume || (singleroi ? segPlane[i] != 0 : segPlane[i] == want);
 		};
 
-		const bool anisotropic = ! (Nyxus::near_eq (ax, 1.0) && Nyxus::near_eq (ay, 1.0) && Nyxus::near_eq (az, 1.0));
-		if (! anisotropic)
-		{
-			return stream_volume_checked (imlo, channel, timeframe, intens_fpath, mask_fpath,
-				[&](size_t z, const std::vector<uint32_t>& intPlane, const std::vector<uint32_t>& segPlane)
-				{
-					r.raw_voxels_NT.begin_slab (z);
-					for (size_t y = 0; y < H; y++)
-						for (size_t x = 0; x < W; x++)
-						{
-							size_t i = y * W + x;
-							if (is_roi_voxel (segPlane, i))
-								r.raw_voxels_NT.add_voxel (Pixel3(x, y, z, intPlane[i]));
-						}
-				});
-		}
-
-		// The virtual grid of the in-RAM anisotropic scans: the whole-volume scan takes the
-		// physical voxel a virtual one falls in (truncated, clamped at the far edge), the
-		// segmented scan the nearest one, and skips a virtual voxel that lands outside.
-		const size_t vW = (size_t) (double(W) * ax),
-			vH = (size_t) (double(H) * ay),
-			vD = (size_t) (double(D) * az);
-		bool any = false;
-		StatsInt minx = 0, maxx = 0, miny = 0, maxy = 0, minz = 0, maxz = 0;
-
-		size_t vz = 0;	// the next virtual plane to fill
-		if (! stream_volume_checked (imlo, channel, timeframe, intens_fpath, mask_fpath,
+		return stream_volume_checked (imlo, channel, timeframe, intens_fpath, mask_fpath,
 			[&](size_t z, const std::vector<uint32_t>& intPlane, const std::vector<uint32_t>& segPlane)
 			{
-				for (; vz < vD; vz++)
-				{
-					const size_t pz = wholevolume
-						? (std::min<size_t>) ((size_t) (double(vz) / az), D - 1)
-						: (size_t) (vz / az + 0.5);
-					if (pz > z)
-						break;		// its physical plane is still to come
-					if (pz < z)
-						continue;
-
-					r.raw_voxels_NT.begin_slab (vz);
-					for (size_t vy = 0; vy < vH; vy++)
-						for (size_t vx = 0; vx < vW; vx++)
-						{
-							size_t px, py;
-							if (wholevolume)
-							{
-								px = (std::min<size_t>) ((size_t) (double(vx) / ax), W - 1);
-								py = (std::min<size_t>) ((size_t) (double(vy) / ay), H - 1);
-							}
-							else
-							{
-								px = (size_t) (vx / ax + 0.5);
-								py = (size_t) (vy / ay + 0.5);
-								if (px >= W || py >= H)
-									continue;
-							}
-
-							const size_t i = py * W + px;
-							if (! is_roi_voxel (segPlane, i))
-								continue;
-
-							r.raw_voxels_NT.add_voxel (Pixel3(vx, vy, vz, intPlane[i]));
-
-							if (! any)
-							{
-								any = true;
-								minx = maxx = (StatsInt) vx; miny = maxy = (StatsInt) vy; minz = maxz = (StatsInt) vz;
-							}
-							else
-							{
-								minx = (std::min) (minx, (StatsInt) vx); maxx = (std::max) (maxx, (StatsInt) vx);
-								miny = (std::min) (miny, (StatsInt) vy); maxy = (std::max) (maxy, (StatsInt) vy);
-								minz = (std::min) (minz, (StatsInt) vz); maxz = (std::max) (maxz, (StatsInt) vz);
-							}
-						}
-				}
-			}))
-			return false;
-
-		// the resampled cloud's own extent and voxel count, as the in-RAM anisotropic scans
-		// recompute them after resampling
-		if (any)
-		{
-			r.aabb.init_x (minx); r.aabb.update_x (maxx);
-			r.aabb.init_y (miny); r.aabb.update_y (maxy);
-			r.aabb.init_z (minz); r.aabb.update_z (maxz);
-		}
-		r.aux_area = (unsigned int) r.raw_voxels_NT.size();
-		return true;
+				r.raw_voxels_NT.begin_slab (z);
+				for (size_t y = 0; y < H; y++)
+					for (size_t x = 0; x < W; x++)
+					{
+						size_t i = y * W + x;
+						if (is_roi_voxel (segPlane, i))
+							r.raw_voxels_NT.add_voxel (Pixel3(x, y, z, intPlane[i]));
+					}
+			});
 	}
 	/// @brief Runs every requested feature's out-of-core path over an already-populated
 	/// r.raw_voxels_NT, guarded by is_3d_ooc_supported(); writes results into r.fvals via
@@ -265,10 +184,7 @@ namespace Nyxus
 			// Populate the ROI's disk-backed voxel cloud by streaming the volume plane-by-plane.
 			// Only this ROI's label voxels are written; z is preserved. Peak memory is one tile
 			// layer of intensity and mask plus this plane's ROI voxels, never the whole cube.
-			// The cloud is resampled onto the same virtual grid the in-RAM scans build.
-			double ax, ay, az;
-			resolve_slide_anisotropy (env, (size_t) r.slide_idx, ax, ay, az);
-			if (! populate_3d_voxel_cloud (env.theImLoader, r, channel, timeframe, /*wholevolume=*/ false, env.singleROI, ax, ay, az,
+			if (! populate_3d_voxel_cloud (env.theImLoader, r, channel, timeframe, /*wholevolume=*/ false, env.singleROI,
 				intens_fpath, label_fpath))
 			{
 				// Why this loader has no bounded streaming path, read before the pair is released -- the

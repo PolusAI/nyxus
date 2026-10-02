@@ -146,9 +146,10 @@ class Nyxus:
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)
-        X-dimension scale factor
+        Size of a pixel along X relative to Y. The geometric features are computed on the pixels resampled by
+        the anisotropy; intensity and texture features on the pixels as acquired, so it does not change them.
     anisotropy_y: float (optional, default 1.0)
-        Y-dimension scale factor
+        Y-dimension counterpart of anisotropy_x
     """
 
     def __del__(self):
@@ -1011,11 +1012,13 @@ class Nyxus3D:
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)
-        X-dimension scale factor
+        Size of a voxel along X relative to the other axes. The volume is featurized on its voxels as
+        acquired and the shape features scale their coordinates by the anisotropy, so it changes only
+        shape values.
     anisotropy_y: float (optional, default 1.0)
-        Y-dimension scale factor
+        Y-dimension counterpart of anisotropy_x
     anisotropy_z: float (optional, default 1.0)
-        Z-dimension scale factor
+        Z-dimension counterpart of anisotropy_x
     """
 
     def __del__(self):
@@ -1583,9 +1586,10 @@ class ImageQuality:
     verbose: int (optional, default 0)
         Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
     anisotropy_x: float (optional, default 1.0)
-        X-dimension scale factor
+        Size of a pixel along X relative to Y. Image-quality features are computed on the pixels as acquired,
+        so it does not change them.
     anisotropy_y: float (optional, default 1.0)
-        Y-dimension scale factor
+        Y-dimension counterpart of anisotropy_x
     """
 
     def __del__(self):
