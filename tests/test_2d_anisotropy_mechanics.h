@@ -18,6 +18,7 @@
 #include <vector>
 #include "test_main_nyxus.h"		// gtest, libtiff, fs, globals.h, roi_cache.h
 #include "../src/nyx/environment.h"
+#include "../src/nyx/features/basic_morphology.h"
 #include "../src/nyx/features/focus_score.h"
 #include "../src/nyx/features/gabor.h"
 #include "../src/nyx/features/glcm.h"
@@ -68,7 +69,7 @@ namespace
 	}
 
 	// One tiled 16-bit page of the slide, 'val' giving each pixel
-	void write_aniso2_slide (const fs::path& f, uint16_t (*val) (uint32_t, uint32_t))
+	void write_aniso2_slide (const fs::path& f, uint16_t (*val) (uint32_t, uint32_t), uint32_t tile = aniso2_tile)
 	{
 		TIFF* t = TIFFOpen (f.string().c_str(), "w");
 		ASSERT_NE(t, nullptr) << f.string();
@@ -79,15 +80,15 @@ namespace
 		TIFFSetField (t, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_UINT);
 		TIFFSetField (t, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
 		TIFFSetField (t, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
-		TIFFSetField (t, TIFFTAG_TILEWIDTH, aniso2_tile);
-		TIFFSetField (t, TIFFTAG_TILELENGTH, aniso2_tile);
-		std::vector<uint16_t> buf (aniso2_tile * aniso2_tile);
-		for (uint32_t y0 = 0; y0 < aniso2_H; y0 += aniso2_tile)
-			for (uint32_t x0 = 0; x0 < aniso2_W; x0 += aniso2_tile)
+		TIFFSetField (t, TIFFTAG_TILEWIDTH, tile);
+		TIFFSetField (t, TIFFTAG_TILELENGTH, tile);
+		std::vector<uint16_t> buf (tile * tile);
+		for (uint32_t y0 = 0; y0 < aniso2_H; y0 += tile)
+			for (uint32_t x0 = 0; x0 < aniso2_W; x0 += tile)
 			{
-				for (uint32_t r = 0; r < aniso2_tile; r++)
-					for (uint32_t c = 0; c < aniso2_tile; c++)
-						buf[r * aniso2_tile + c] = (x0 + c < aniso2_W && y0 + r < aniso2_H) ? val (x0 + c, y0 + r) : 0;
+				for (uint32_t r = 0; r < tile; r++)
+					for (uint32_t c = 0; c < tile; c++)
+						buf[r * tile + c] = (x0 + c < aniso2_W && y0 + r < aniso2_H) ? val (x0 + c, y0 + r) : 0;
 				ASSERT_GE(TIFFWriteTile (t, buf.data(), x0, y0, 0, 0), 0) << f.string();
 			}
 		ASSERT_EQ(TIFFWriteDirectory (t), 1) << f.string();
@@ -98,7 +99,7 @@ namespace
 	{
 		fs::path dir, inten, mask;
 
-		Aniso2Pair (const char* name, uint16_t (*lab) (uint32_t, uint32_t) = aniso2_label)
+		Aniso2Pair (const char* name, uint16_t (*lab) (uint32_t, uint32_t) = aniso2_label, uint32_t tile = aniso2_tile)
 		{
 			dir = fs::temp_directory_path() / name;
 			std::error_code ec;
@@ -106,8 +107,8 @@ namespace
 			fs::create_directories (dir);
 			inten = dir / "i.tif";
 			mask = dir / "m.tif";
-			write_aniso2_slide (inten, aniso2_inten);
-			write_aniso2_slide (mask, lab);
+			write_aniso2_slide (inten, aniso2_inten, tile);
+			write_aniso2_slide (mask, lab, tile);
 		}
 		~Aniso2Pair()
 		{
@@ -363,4 +364,93 @@ void test_2d_anisotropy_wholeslide_sized_as_acquired_mechanics()
 
 	EXPECT_FALSE(ok) << "the slide as acquired does not fit the limit, and its first pass holds all of it";
 	EXPECT_NE(err.find ("slide is non-trivial"), std::string::npos) << err;
+}
+
+namespace
+{
+	// An environment with first-order and basic morphology requested -- the out-of-core pass of both
+	// is the in-RAM one -- at factors (ax, ay), through phase 1 over the pair, with the pair open
+	void prepare_aniso2_ooc_env (Environment& e, const Aniso2Pair& p, double ax, double ay)
+	{
+		e.set_dim (2);
+		e.singleROI = false;
+		e.theFeatureSet.enableAll (false);
+		e.theFeatureSet.enableFeatures (PixelIntensityFeatures::featureset);
+		e.theFeatureSet.enableFeatures (BasicMorphologyFeatures::featureset);
+		ASSERT_TRUE(e.theFeatureMgr.compile());
+		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
+		ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+		e.compile_feature_settings();
+		e.refresh_feature_settings_singleroi();
+		ASSERT_TRUE(e.set_ram_limit (64));
+		e.anisoOptions.set_aniso_x (ax);
+		e.anisoOptions.set_aniso_y (ay);
+		SlideProps& sp = e.dataset.dataset_props.emplace_back (p.inten.string(), p.mask.string());
+		ASSERT_TRUE(Nyxus::scan_slide_props (sp, 2, e.anisoOptions, e.use_physical_spacing(),
+			e.fpimageOptions, e.resultOptions.need_annotation()));
+		e.dataset.update_dataset_props_extrema();
+		ASSERT_TRUE(e.theImLoader.open (sp, e.fpimageOptions));
+		ASSERT_TRUE(Nyxus::gatherRoisMetrics (0, p.inten.string(), p.mask.string(), e, e.theImLoader));
+		for (auto lab : e.uniqueLabels)
+			e.roiData[lab].initialize_fvals();
+	}
+}
+
+// An oversized anisotropic 2D ROI is featurized out-of-core as an in-RAM one is: the grid families
+// over the pixels as acquired, the geometric families over the ROI resampled by the factors. The
+// slide fits one 32-px tile. What this discriminates: an out-of-core pass that streams only the
+// pixels as acquired reports the ROI's shape in pixel units while the same ROI under the RAM limit
+// reports it resampled, so one ROI's geometry would depend on whether it fits in RAM.
+void test_2d_anisotropy_out_of_core_matches_in_ram_mechanics()
+{
+	Aniso2Pair p ("nyxus_2d_aniso_ooc", aniso2_label, 32);
+
+	Environment in_ram, ooc;
+	prepare_aniso2_ooc_env (in_ram, p, aniso2_ax, aniso2_ay);
+	prepare_aniso2_ooc_env (ooc, p, aniso2_ax, aniso2_ay);
+	const std::vector<int> labels = { 1, 2 };
+	ASSERT_TRUE(Nyxus::processTrivialRois (in_ram, labels, p.inten.string(), p.mask.string(), in_ram.get_ram_limit()));
+	ASSERT_TRUE(Nyxus::processNontrivialRois (ooc, labels, p.inten.string(), p.mask.string()));
+	in_ram.theImLoader.close();
+	ooc.theImLoader.close();
+
+	for (int lab : labels)
+	{
+		for (auto F : { PixelIntensityFeatures::featureset, BasicMorphologyFeatures::featureset })
+			for (auto f : F)
+			{
+				const double want = in_ram.roiData[lab].fvals[(int) f][0],
+					got = ooc.roiData[lab].fvals[(int) f][0];
+				EXPECT_NEAR(got, want, 1e-9 * (std::max) (1.0, std::abs (want)))
+					<< "ROI " << lab << " feature " << (int) f << " differs out-of-core";
+			}
+
+		// and the geometry is the resampled ROI's
+		EXPECT_EQ(ooc.roiData[lab].fvals[(int) Nyxus::Feature2D::AREA_PIXELS_COUNT][0],
+			(double) aniso2_virtual_pixels (aniso2_label, lab, aniso2_ax, aniso2_ay).size()) << "ROI " << lab;
+	}
+}
+
+// The out-of-core twin of the vanished-ROI refusal: a ROI the resampling leaves with no pixel is
+// refused by name rather than reported with zero geometry.
+void test_2d_anisotropy_out_of_core_vanished_roi_is_refused_mechanics()
+{
+	struct Thin
+	{
+		static uint16_t label (uint32_t x, uint32_t y) { return (x == 1 && y >= 4 && y <= 12) ? 7 : 0; }
+	};
+	ASSERT_TRUE(aniso2_virtual_pixels (Thin::label, 7, 0.4, 1.0).empty());
+
+	Aniso2Pair p ("nyxus_2d_aniso_ooc_vanished", Thin::label, 32);
+	Environment e;
+	prepare_aniso2_ooc_env (e, p, 0.4, 1.0);
+	ASSERT_EQ(e.uniqueLabels.size(), 1u);
+
+	testing::internal::CaptureStderr();
+	const bool ok = Nyxus::processNontrivialRois (e, { 7 }, p.inten.string(), p.mask.string());
+	const std::string err = testing::internal::GetCapturedStderr();
+	e.theImLoader.close();
+
+	EXPECT_FALSE(ok) << "a ROI with no resampled pixel was reduced out-of-core";
+	EXPECT_NE(err.find ("ROI 7 maps to no pixel"), std::string::npos) << err;
 }
