@@ -99,25 +99,12 @@ namespace Nyxus
 				);
 			}
 
-		// fix ROIs' AABBs with respect to anisotropy
-		if (env.anisoOptions.customized() == false)
+		// The boxes describe the pixels as acquired, which phase 2 scans first whatever the spacing;
+		// an anisotropic run's geometric pass takes its own box from the cloud it resamples.
+		for (auto& rd : env.roiData)
 		{
-			for (auto& rd : env.roiData)
-			{
-				LR& r = rd.second;
-				r.make_nonanisotropic_aabb ();
-			}
-		}
-		else
-		{
-			double	ax = env.anisoOptions.get_aniso_x(),
-						ay = env.anisoOptions.get_aniso_y();
-
-			for (auto& rd : env.roiData)
-			{
-				LR& r = rd.second;
-				r.make_anisotropic_aabb (ax, ay);
-			}
+			LR& r = rd.second;
+			r.make_nonanisotropic_aabb ();
 		}
 
 		return true;
@@ -229,26 +216,16 @@ namespace Nyxus
 			env.theImLoader.close();
 		}
 
-		// fix ROIs' AABBs with respect to anisotropy
-		if (env.anisoOptions.customized() == false)
+		// The boxes describe the voxels as acquired, which is what the phase-2 scan caches, and each
+		// ROI carries the stack's spacing for the shape family, resolved as every volumetric path
+		// resolves it -- explicit --aniso* or, opted in, the physical voxel size.
+		double ax, ay, az;
+		resolve_slide_anisotropy (env, sidx, ax, ay, az);
+		for (auto& rd : env.roiData)
 		{
-			for (auto& rd : env.roiData)
-			{
-				LR& r = rd.second;
-				r.make_nonanisotropic_aabb();
-			}
-		}
-		else
-		{
-			double	ax = env.anisoOptions.get_aniso_x(),
-				ay = env.anisoOptions.get_aniso_y(),
-				az = env.anisoOptions.get_aniso_z();
-
-			for (auto& rd : env.roiData)
-			{
-				LR& r = rd.second;
-				r.make_anisotropic_aabb (ax, ay, az);
-			}
+			LR& r = rd.second;
+			r.make_nonanisotropic_aabb();
+			r.set_spacing (ax, ay, az);
 		}
 
 		return true;
@@ -311,19 +288,16 @@ namespace Nyxus
 			throw pybind11::error_already_set();
 #endif
 
-		// fix ROIs' AABBs with respect to anisotropy, on the spacing every pass over this volume
-		// resolves -- explicit --aniso* or, opted in, the slide's physical voxel size. These boxes
-		// size the ROI buffers and drive the oversized check, so they describe the same
-		// (resampled) geometry the phase-2 scans cache.
+		// The boxes describe the voxels as acquired, which is what the phase-2 scans cache, and each
+		// ROI carries the slide's spacing -- explicit --aniso* or, opted in, the physical voxel size --
+		// for the shape family.
 		double ax, ay, az;
-		bool anisotropic = resolve_slide_anisotropy (env, sidx, ax, ay, az);
+		resolve_slide_anisotropy (env, sidx, ax, ay, az);
 		for (auto& rd : env.roiData)
 		{
 			LR& r = rd.second;
-			if (anisotropic)
-				r.make_anisotropic_aabb (ax, ay, az);
-			else
-				r.make_nonanisotropic_aabb();
+			r.make_nonanisotropic_aabb();
+			r.set_spacing (ax, ay, az);
 		}
 
 		return true;

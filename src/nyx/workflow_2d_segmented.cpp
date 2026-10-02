@@ -121,7 +121,7 @@ namespace Nyxus
 					}
 
 					// Examine ROI's memory footprint
-					if (size_t roiFootprint = r.get_ram_footprint_estimate (env.uniqueLabels.size()),
+					if (size_t roiFootprint = trivial_footprint_2d (env, r, env.uniqueLabels.size()),
 						ramLim = env.get_ram_limit();
 						roiFootprint >= ramLim)
 					{

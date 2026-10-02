@@ -194,7 +194,9 @@ public:
 
 namespace Nyxus
 {
-	// Scans segmented slide p.fname_int / p.fname_seg and fills other fields of 'p'
+	// Scans segmented slide p.fname_int / p.fname_seg and fills other fields of 'p'. 'aniso' sizes
+	// a 2D slide's ROI boxes on the grid its shape pass is resampled onto; a volume's boxes are
+	// recorded as acquired whatever its spacing, so 'use_physical_spacing' does not change them.
 	bool scan_slide_props (SlideProps & p, int dim, const AnisotropyOptions & aniso, bool use_physical_spacing, const FpImageOptions & fpo, bool need_annotations);
 
 	// Writes the intensity range a scan measured onto 'p'. A scan that met no finite sample --

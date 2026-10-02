@@ -47,8 +47,9 @@ public:
 
 private:
 
-	// Every feature of an ROI that fills its whole w x h x d box (single-ROI mode), in closed form
-	void set_whole_box (StatsInt w, StatsInt h, StatsInt d);
+	// Every feature of an ROI that fills its whole w x h x d box (single-ROI mode), in closed form, a
+	// voxel being sx by sy by sz
+	void set_whole_box (StatsInt w, StatsInt h, StatsInt d, double sx, double sy, double sz);
 
 	double fval_AREA,
 		fval_AREA_2_VOLUME,

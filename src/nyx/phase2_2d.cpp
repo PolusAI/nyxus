@@ -13,6 +13,20 @@
 #include "environment.h"
 #include "globals.h"
 #include "helpers/timing.h"
+#include "features/focus_score.h"
+#include "features/gabor.h"
+#include "features/glcm.h"
+#include "features/gldm.h"
+#include "features/gldzm.h"
+#include "features/glrlm.h"
+#include "features/glszm.h"
+#include "features/intensity.h"
+#include "features/intensity_histogram.h"
+#include "features/ngldm.h"
+#include "features/ngtdm.h"
+#include "features/power_spectrum.h"
+#include "features/saturation.h"
+#include "features/sharpness.h"
 
 namespace Nyxus
 {
@@ -500,6 +514,128 @@ namespace Nyxus
 //		delete ImageMatrixBuffer;
 	}
 
+	void split_2d_selection (const FeatureSet& requested, FeatureSet& on_grid, FeatureSet& geometric)
+	{
+		geometric = requested;
+		for (auto F : { PixelIntensityFeatures::featureset, IntensityHistogramFeatures::featureset,
+			GLCMFeature::featureset, GLRLMFeature::featureset, GLDZMFeature::featureset, GLSZMFeature::featureset,
+			GLDMFeature::featureset, NGLDMfeature::featureset, NGTDMFeature::featureset, GaborFeature::featureset })
+			geometric.enableFeatures (F, false);
+		for (auto F : { FocusScoreFeature::featureset, PowerSpectrumFeature::featureset, SaturationFeature::featureset,
+			SharpnessFeature::featureset })
+			geometric.enableFeatures (F, false);
+
+		on_grid = requested;
+		on_grid.subtract (geometric);
+	}
+
+	size_t trivial_footprint_2d (const Environment& env, const LR& r, size_t n_rois)
+	{
+		size_t fp = r.get_ram_footprint_estimate (n_rois);
+		if (env.anisoOptions.customized())
+		{
+			const double area = env.anisoOptions.get_aniso_x() * env.anisoOptions.get_aniso_y();
+			if (area > 1.0)
+				fp = (size_t) (double(fp) * area);
+		}
+		return fp;
+	}
+
+	bool adopt_resampled_cloud_2d (LR& r, double ax, double ay)
+	{
+		// A ROI thinner than the factor's step maps to no virtual pixel at all: every virtual
+		// coordinate that would carry it truncates back to a physical one outside it. There is no
+		// geometry to measure, so name the ROI and stop rather than report its shape as zeros.
+		if (r.raw_pixels.empty())
+		{
+			std::string s = "Error: ROI " + std::to_string(r.label) + " maps to no pixel at anisotropy "
+				+ std::to_string(ax) + "," + std::to_string(ay) + ", so its shape cannot be measured";
+#ifdef WITH_PYTHON_H
+			throw std::runtime_error (s);
+#endif
+			std::cerr << s << "\n";
+			return false;
+		}
+
+		r.aabb.init_x (r.raw_pixels[0].x);
+		r.aabb.init_y (r.raw_pixels[0].y);
+		for (const Pixel2& p : r.raw_pixels)
+		{
+			r.aabb.update_x (p.x);
+			r.aabb.update_y (p.y);
+		}
+		r.aux_area = (unsigned int) r.raw_pixels.size();
+		return true;
+	}
+
+	// Reduces the families 'selection' enables over the ROIs' cached pixels, then frees them. The
+	// user's selection is put back on the way out, a throw included.
+	static void reduce_trivial_batch_selection (Environment& env, std::vector<int>& Pending, const FeatureSet& selection)
+	{
+		struct Restore
+		{
+			Environment& env;
+			FeatureSet requested;
+			~Restore() { env.theFeatureSet = requested; }
+		} restore { env, env.theFeatureSet };
+
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
+		allocateTrivialRoisBuffers (Pending, env.roiData, env.hostCache);
+
+#ifdef DUMP_ALL_ROI
+		dump_all_roi();
+#endif
+
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
+		env.theFeatureSet = selection;
+		reduce_trivial_rois_manual (Pending, env);
+
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
+		freeTrivialRoisBuffers (Pending, env.roiData);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+	}
+
+	// Scans and reduces one batch of trivial ROIs. An anisotropic batch is scanned twice: the
+	// families defined on the image grid reduce the pixels as acquired, then the geometric families
+	// reduce the cloud resampled by the spacing. Each pass computes only its own families, so
+	// together they fill every requested feature once. After the second pass each ROI's box and
+	// pixel count describe the resampled cloud, as its contour does, which is the geometry the
+	// neighbor pass after the batches measures.
+	static bool scan_reduce_trivial_batch (Environment& env, std::vector<int>& Pending, const std::string& intens_fpath, const std::string& label_fpath)
+	{
+		if (! env.anisoOptions.customized())
+		{
+			if (! scanTrivialRois (Pending, intens_fpath, label_fpath, env, env.theImLoader))
+				return false;
+			reduce_trivial_batch_selection (env, Pending, env.theFeatureSet);
+			return true;
+		}
+
+		FeatureSet on_grid, geometric;
+		split_2d_selection (env.theFeatureSet, on_grid, geometric);
+
+		if (on_grid.numOfEnabled (2))
+		{
+			if (! scanTrivialRois (Pending, intens_fpath, label_fpath, env, env.theImLoader))
+				return false;
+			reduce_trivial_batch_selection (env, Pending, on_grid);
+		}
+		if (! geometric.numOfEnabled (2))
+			return true;
+
+		const double ax = env.anisoOptions.get_aniso_x(),
+			ay = env.anisoOptions.get_aniso_y();
+		if (! scanTrivialRois_anisotropic (Pending, intens_fpath, label_fpath, env, env.theImLoader, ax, ay))
+			return false;
+		for (auto lab : Pending)
+			if (! adopt_resampled_cloud_2d (env.roiData[lab], ax, ay))
+			{
+				freeTrivialRoisBuffers (Pending, env.roiData);
+				return false;
+			}
+		reduce_trivial_batch_selection (env, Pending, geometric);
+		return true;
+	}
+
 	bool processTrivialRois (Environment & env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
 	{
 		std::vector<int> Pending;
@@ -510,7 +646,7 @@ namespace Nyxus
 		{
 			LR& r = env.roiData[lab];
 
-			size_t itemFootprint = r.get_ram_footprint_estimate (trivRoiLabels.size());
+			size_t itemFootprint = trivial_footprint_2d (env, r, trivRoiLabels.size());
 
 			// Check if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
 			if (batchDemand + itemFootprint < memory_limit)
@@ -531,27 +667,8 @@ namespace Nyxus
 						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-				if (env.anisoOptions.customized() == false)
-					scanTrivialRois (Pending, intens_fpath, label_fpath, env, env.theImLoader);
-				else
-				{
-					double ax = env.anisoOptions.get_aniso_x(), 
-						ay = env.anisoOptions.get_aniso_y();
-					scanTrivialRois_anisotropic (Pending, intens_fpath, label_fpath, env, env.theImLoader, ax, ay);
-				}
-
-				// Allocate memory
-				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
-				allocateTrivialRoisBuffers (Pending, env.roiData, env.hostCache);
-
-				// Reduce them
-				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
-				// reduce_trivial_rois(Pending);	
-				reduce_trivial_rois_manual (Pending, env);
-
-				// Free memory
-				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
-				freeTrivialRoisBuffers (Pending, env.roiData);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+				if (! scan_reduce_trivial_batch (env, Pending, intens_fpath, label_fpath))
+					return false;
 
 				// Reset the RAM footprint accumulator
 				batchDemand = 0;
@@ -589,34 +706,8 @@ namespace Nyxus
 					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-				if (env.anisoOptions.customized() == false)
-				{
-					scanTrivialRois (Pending, intens_fpath, label_fpath, env, env.theImLoader);
-				}
-				else
-				{
-					double	ax = env.anisoOptions.get_aniso_x(), 
-								ay = env.anisoOptions.get_aniso_y();
-					scanTrivialRois_anisotropic (Pending, intens_fpath, label_fpath, env, env.theImLoader, ax, ay);
-				}
-
-			// Allocate memory
-			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
-			allocateTrivialRoisBuffers (Pending, env.roiData, env.hostCache);
-
-			// Dump ROIs for use in unit testing
-#ifdef DUMP_ALL_ROI
-			dump_all_roi();
-#endif
-
-			// Reduce them
-			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
-			//reduce_trivial_rois(Pending):
-			reduce_trivial_rois_manual (Pending, env);
-
-			// Free memory
-			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
-			freeTrivialRoisBuffers (Pending, env.roiData);
+			if (! scan_reduce_trivial_batch (env, Pending, intens_fpath, label_fpath))
+				return false;
 
 			#ifdef WITH_PYTHON_H
 			// Allow keyboard interrupt

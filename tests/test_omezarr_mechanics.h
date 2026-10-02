@@ -370,11 +370,11 @@ void test_omezarr_chunked_prescan_mechanics()
     EXPECT_EQ(p.max_roi_area, (size_t)(8 * 6 * 4));
 }
 
-// Under --use-physical-spacing the prescan records the ROI geometry of the RESAMPLED grid, the
-// one every scan of the volume builds: dim5_calibrated declares z=2, y=x=0.5 um, so the smallest
-// axis normalizes to 1 and Z is resampled 4x. What this discriminates: a prescan that applies
-// only explicit --aniso* reports the physical depth, and the memory estimate built from it
-// budgets a quarter of the voxels the scans will cache.
+// Under --use-physical-spacing the prescan reads the store's voxel size and records the ROI
+// geometry of the voxels as acquired, which is what every scan of the volume caches whatever the
+// spacing: dim5_calibrated declares z=2, y=x=0.5 um. What this discriminates: a prescan that scales
+// the box by the spacing reports a depth the scans never cache, and the memory estimate built from
+// it budgets four times the voxels they hold.
 void test_omezarr_physical_spacing_prescan_mechanics()
 {
     fs::path ip = omezarr_data_path("dim5_calibrated.ome.zarr");
@@ -387,9 +387,7 @@ void test_omezarr_physical_spacing_prescan_mechanics()
     EXPECT_DOUBLE_EQ(phys.phys_x, 0.5);
     EXPECT_EQ(phys.max_roi_w, 8u);
     EXPECT_EQ(phys.max_roi_h, 6u);
-    // the resampled extent AABB::apply_anisotropy gives the Z range 0..3 at 4x, which phase 1
-    // records for the same volume (the scans then recompute the exact extent from the cloud)
-    EXPECT_EQ(phys.max_roi_d, 14u);
+    EXPECT_EQ(phys.max_roi_d, 4u);
 
     SlideProps off (ip.string(), "");
     ASSERT_TRUE(Nyxus::scan_slide_props(off, 3, e.anisoOptions, false, e.fpimageOptions, e.resultOptions.need_annotation()));

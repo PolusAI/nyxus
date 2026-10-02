@@ -310,8 +310,6 @@ namespace Nyxus
 	bool gatherRoisMetrics_2_slideprops_3D(
 		// in
 		RawImageLoader& ilo,
-		const AnisotropyOptions& aniso,
-		bool use_physical_spacing,
 		// out
 		SlideProps& p)
 	{
@@ -423,20 +421,13 @@ namespace Nyxus
 			return false;
 		}
 
-		//****** fix ROIs' AABBs with respect to anisotropy, on the spacing every pass over this
-		// volume resolves -- explicit --aniso* or, opted in, the slide's physical voxel size. The
-		// ROI sizes recorded below drive the memory estimate, so they have to describe the same
-		// (resampled) geometry the scans will cache.
+		//****** the ROI sizes recorded below drive the memory estimate, so they describe what the
+		// scans will cache: the voxels as acquired, whatever the spacing
 
-		double ax, ay, az;
-		bool anisotropic = resolve_anisotropy (aniso, use_physical_spacing, p, ax, ay, az);
 		for (auto& pair : R)
 		{
 			LR& r = pair.second;
-			if (anisotropic)
-				r.make_anisotropic_aabb (ax, ay, az);
-			else
-				r.make_nonanisotropic_aabb();
+			r.make_nonanisotropic_aabb();
 		}
 
 		//****** Analysis
@@ -512,7 +503,7 @@ namespace Nyxus
 			return false;
 		}
 
-		bool ok = dim==2 ? gatherRoisMetrics_2_slideprops_2D(ilo, aniso, p) : gatherRoisMetrics_2_slideprops_3D(ilo, aniso, use_physical_spacing, p);
+		bool ok = dim==2 ? gatherRoisMetrics_2_slideprops_2D(ilo, aniso, p) : gatherRoisMetrics_2_slideprops_3D(ilo, p);
 		if (!ok)
 		{
 			std::cerr << "error gathering ROI metrics to slide/volume props \n";
