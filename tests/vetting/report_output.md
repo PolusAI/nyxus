@@ -8,8 +8,8 @@ what [`oracle_coverage.csv`](oracle_coverage.csv) CLAIMS to what the test tree A
 
 ## Coverage
 
-Features vetted by >=1 oracle: 643/758 (85%)
-regression: 115  invariant: 0  untested: 0
+Features vetted by >=1 oracle: 637/758 (84%)
+regression: 121  invariant: 0  untested: 0
 
 | family | total | vetted | regression | invariant | untested |
 |---|---|---|---|---|---|
@@ -23,7 +23,7 @@ regression: 115  invariant: 0  untested: 0
 | imq | 6 | 4 | 2 | 0 | 0 |
 | intensity_histogram | 47 | 43 | 4 | 0 | 0 |
 | moments | 180 | 118 | 62 | 0 | 0 |
-| morphology | 113 | 84 | 29 | 0 | 0 |
+| morphology | 113 | 78 | 35 | 0 | 0 |
 | neighbor | 9 | 8 | 1 | 0 | 0 |
 | ngldm | 38 | 33 | 5 | 0 | 0 |
 | ngtdm | 10 | 10 | 0 | 0 | 0 |
@@ -32,11 +32,11 @@ regression: 115  invariant: 0  untested: 0
 
 ## Verdicts
 
-1020 of 1020 assertion rows agree with the tree.
+1013 of 1013 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 1020 | the claim and the tree say the same thing |
+| `agree` | 1013 | the claim and the tree say the same thing |
 
 ### How far each verdict reaches
 
@@ -45,7 +45,7 @@ regression: 115  invariant: 0  untested: 0
 
 | scope | rows | what was compared |
 |---|---:|---|
-| `feature` | 540 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
+| `feature` | 533 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
 | `row` | 273 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 | `row+config` | 207 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
@@ -78,18 +78,18 @@ that alone understates every family that corroborates.
 | 3D | gldzm | . | . | . | . | . | . | 16 | . | . | . | 2 |
 | 3D | glrlm | . | . | . | . | . | . | . | . | 32 | . | . |
 | 3D | glszm | . | . | . | . | . | . | . | . | 16 | . | . |
-| 3D | morphology | 3 | . | . | . | . | 2 | 14 | . | . | . | . |
+| 3D | morphology | 2 | . | . | . | . | 2 | 8 | . | . | . | 6 |
 | 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | . | . | 5 | . | . |
 | IMQ | imq | . | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **41** | **9** | **2** | **181** | **20** | **95** | **214** | **2** | **266** | **127** | **115** |
+| | **all** | **40** | **9** | **2** | **181** | **20** | **95** | **208** | **2** | **266** | **127** | **121** |
 
 ## By dimensionality
 
 | dim | features | vetted | scanned | no oracle assertion | unscanned |
 |---|---:|---:|---:|---:|---:|
 | 2D | 539 | 434 | 539 | 105 | 0 |
-| 3D | 213 | 205 | 213 | 8 | 0 |
+| 3D | 213 | 199 | 213 | 14 | 0 |
 | IMQ | 6 | 4 | 6 | 2 | 0 |
 
 ## Reading a row

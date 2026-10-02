@@ -101,6 +101,7 @@
 #include "test_3d_morphology_mechanics.h"
 #include "test_3d_morphology_matlab.h"
 #include "test_3d_morphology_mirp.h"
+#include "test_3d_morphology_invariant.h"
 #include "test_3d_gldzm_common.h"
 #include "test_3d_gldzm_mechanics.h"
 #include "test_3d_gldzm_mirp.h"
@@ -813,30 +814,6 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_MESH_VOLUME_MIRP) {
 	ASSERT_NO_THROW(test_3d_morphology_mesh_volume_mirp());
 }
 
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_AREA_MIRP) {
-	ASSERT_NO_THROW(test_3d_morphology_area_mirp());
-}
-
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_AREA_2_VOLUME_MIRP) {
-	ASSERT_NO_THROW(test_3d_morphology_area_2_volume_mirp());
-}
-
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COMPACTNESS1_MIRP) {
-	ASSERT_NO_THROW(test_3d_morphology_compactness1_mirp());
-}
-
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_COMPACTNESS2_MIRP) {
-	ASSERT_NO_THROW(test_3d_morphology_compactness2_mirp());
-}
-
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERICAL_DISPROPORTION_MIRP) {
-	ASSERT_NO_THROW(test_3d_morphology_spherical_disproportion_mirp());
-}
-
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERICITY_MIRP) {
-	ASSERT_NO_THROW(test_3d_morphology_sphericity_mirp());
-}
-
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SINGLE_VOXEL_MESH_ANALYTIC) {
 	ASSERT_NO_THROW(test_3d_morphology_single_voxel_mesh_analytic());
 }
@@ -863,6 +840,14 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_PLANAR_HULL_VOLUME_ANALYTIC) {
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_EMPTY_ROI_MESH_ANALYTIC) {
 	ASSERT_NO_THROW(test_3d_morphology_empty_roi_mesh_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SURFACE_PATHS_AGREE_INVARIANT) {
+	ASSERT_NO_THROW(test_3d_morphology_surface_paths_agree_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SURFACE_PATHS_AGREE_SINGLEROI_INVARIANT) {
+	ASSERT_NO_THROW(test_3d_morphology_surface_paths_agree_singleroi_invariant());
 }
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SURFACE_MESH_CLOSED_MECHANICS) {

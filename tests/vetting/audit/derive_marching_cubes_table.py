@@ -1,5 +1,5 @@
 """Derives, verifies and emits the marching-cubes case table shipped in
-src/nyx/features/3d_mesh.cpp, which 3AREA and 3MESH_VOLUME are integrals of.
+src/nyx/features/3d_mesh.cpp, the surface 3MESH_VOLUME is the enclosed volume of.
 
     python derive_marching_cubes_table.py            # derive and verify
     python derive_marching_cubes_table.py --emit     # also print the C++ table

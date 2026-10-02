@@ -2,29 +2,29 @@
 
 #include <cmath>
 #include <vector>
-#include "../src/nyx/features/3d_mesh.h"      // Triangle3, build_roi_surface_mesh, mesh_area, mesh_volume
+#include "../src/nyx/features/3d_mesh.h"      // Triangle3, LatticeBounds, build_roi_surface_mesh, mesh_volume, roi_mesh_volume
 #include "../src/nyx/features/3d_surface.h"   // D3_SurfaceFeature
 #include "../src/nyx/features/pixel.h"        // Pixel3
 #include "../src/nyx/roi_cache.h"             // LR
 #include "test_3d_morphology_common.h"        // gtest, <string>, agrees_gt
 
 // ---------------------------------------------------------------------------------------------------
-// Analytic oracle for 3AREA, 3MESH_VOLUME and 3VOLUME_CONVEXHULL. The goldens are closed-form
+// Analytic oracle for 3MESH_VOLUME and 3VOLUME_CONVEXHULL. The goldens are closed-form
 // geometry rather than another tool's output, so they hold at every precision and on every platform,
 // and they establish the features independently of the MIRP rows next door.
 //
 // Provenance (SPEC 6.4):
 //   tool      = analytic (SPEC 4 token); no external reference is involved
-//   quantity  = IBSI section 3.1 area (mesh) and volume (mesh) -- integrals of the marching-cubes
-//               surface of the mask at the 0.5 isolevel, which for a binary field puts every vertex
-//               on the midpoint between an in-ROI and an out-of-ROI voxel; and the volume of the
-//               convex hull of the voxel centres
+//   quantity  = IBSI section 3.1 volume (mesh) -- the volume enclosed by the marching-cubes surface
+//               of the mask at the 0.5 isolevel, which for a binary field puts every vertex on the
+//               midpoint between an in-ROI and an out-of-ROI voxel; and the volume of the convex
+//               hull of the voxel centres
 //   recipe   = morphology3d.analytic_lattice_solids
 //   fixture   = voxel clouds built in this file; nothing is read from disk
 //
-// The shapes are chosen so the surface convention is the whole difference between passing and
-// failing: a count of exposed voxel faces returns 6 for the single voxel where the octahedron's area
-// is sqrt(3), and lands near +50% on a ball.
+// The shapes are chosen so the volume convention is the whole difference between passing and
+// failing: counting voxels returns 1 for the single voxel where the octahedron encloses 1/6, and the
+// convex hull of a non-convex solid encloses more than its surface does.
 // ---------------------------------------------------------------------------------------------------
 
 // Runs D3_SurfaceFeature over a synthetic voxel cloud -- the features themselves, not the mesh
@@ -32,7 +32,7 @@
 // the whole-volume branch, which takes the ROI to be its bounding box and evaluates the bevelled-box
 // closed form instead of meshing the cloud. hull_volume, when given, receives 3VOLUME_CONVEXHULL.
 static void calculate_3d_morphology_on_cloud (const std::vector<Pixel3>& cloud,
-                                              double& area, double& mesh_volume,
+                                              double& mesh_volume,
                                               bool single_roi = false,
                                               double* hull_volume = nullptr)
 {
@@ -61,31 +61,29 @@ static void calculate_3d_morphology_on_cloud (const std::vector<Pixel3>& cloud,
     ASSERT_NO_THROW (f.calculate (r, s));
     f.save_value (r.fvals);
 
-    area = r.fvals[(int)Nyxus::Feature3D::AREA][0];
     mesh_volume = r.fvals[(int)Nyxus::Feature3D::MESH_VOLUME][0];
     if (hull_volume)
         *hull_volume = r.fvals[(int)Nyxus::Feature3D::VOLUME_CONVEXHULL][0];
 }
 
 // A lone voxel's 0.5-isolevel surface is the octahedron whose six vertices sit half a lattice step
-// out along each axis: volume 4/3 * d^3 = 1/6, and eight faces of edge sqrt(1/2), i.e. area sqrt(3).
-// Both are exact in double, so these are pinned at rel=1e-12 rather than given a band.
+// out along each axis: volume 4/3 * d^3 = 1/6. That is exact in double, so it is pinned at rel=1e-12
+// rather than given a band.
 void test_3d_morphology_single_voxel_mesh_analytic()
 {
     SCOPED_TRACE("ANALYTIC_ORACLE__3d_morphology_single_voxel_mesh");
 
-    double area = 0., mesh_volume = 0.;
-    calculate_3d_morphology_on_cloud ({ Pixel3(7, 11, 5, 1000) }, area, mesh_volume);
+    double mesh_volume = 0.;
+    calculate_3d_morphology_on_cloud ({ Pixel3(7, 11, 5, 1000) }, mesh_volume);
     if (::testing::Test::HasFatalFailure())
         return;
 
     ASSERT_TRUE (agrees_gt (mesh_volume, 1.0 / 6.0, 1e12)) << "3MESH_VOLUME actual=" << mesh_volume;
-    ASSERT_TRUE (agrees_gt (area, std::sqrt(3.0), 1e12)) << "3AREA actual=" << area;
 }
 
 // A solid w x h x d box comes out bevelled: each of the 4*(w+h+d-3) cells along an interior edge run,
-// and each of the 8 corner cells, cuts a fixed amount off the staircase. Both integrals are therefore
-// exact functions of w, h and d. Shared by the general-path and whole-volume tests below.
+// and each of the 8 corner cells, cuts a fixed amount off the staircase. The enclosed volume is
+// therefore an exact function of w, h and d. Shared by the general-path and whole-volume tests below.
 static void assert_3d_morphology_boxes_match_closed_form (bool single_roi)
 {
     const int boxes[][3] = { {1,1,1}, {1,4,9}, {2,2,2}, {3,5,2}, {5,7,11}, {8,8,8} };
@@ -99,21 +97,17 @@ static void assert_3d_morphology_boxes_match_closed_form (bool single_roi)
                 for (int z = 0; z < d; z++)
                     cloud.push_back (Pixel3(x + 3, y + 3, z + 3, 1000));
 
-        double area = 0., mesh_volume = 0.;
-        calculate_3d_morphology_on_cloud (cloud, area, mesh_volume, single_roi);
+        double mesh_volume = 0.;
+        calculate_3d_morphology_on_cloud (cloud, mesh_volume, single_roi);
         if (::testing::Test::HasFatalFailure())
             return;
 
         const double edgecells = double(w) + double(h) + double(d) - 3.;
         const double want_v = double(w) * h * d - edgecells / 2. - 5. / 6.;
-        const double want_a = 2. * (double(w) * h + double(h) * d + double(w) * d)
-            - 2. * edgecells * (2. - std::sqrt(2.)) - (6. - std::sqrt(3.));
 
         ASSERT_TRUE (agrees_gt (mesh_volume, want_v, 1e12))
             << w << "x" << h << "x" << d << " 3MESH_VOLUME actual=" << mesh_volume
             << " analytic=" << want_v;
-        ASSERT_TRUE (agrees_gt (area, want_a, 1e12))
-            << w << "x" << h << "x" << d << " 3AREA actual=" << area << " analytic=" << want_a;
     }
 }
 
@@ -135,15 +129,6 @@ void test_3d_morphology_box_mesh_singleroi_analytic()
 
 // A lattice-discretised ball. 3MESH_VOLUME converges on the smooth sphere as the radius grows --
 // -3.6% at r=5, -0.15% by r=15 -- so 1% is a real bound there and not slack.
-//
-// 3AREA does not converge on 4 pi r^2 and is deliberately not asserted against it. The surface comes
-// from a binary mask, so its facets keep lattice-scale orientation however large the ball is and the
-// area settles on a constant excess over the smooth sphere instead of shrinking: measured +8.3%,
-// +9.2%, +9.0%, +8.5%, +8.7% at r = 5, 10, 15, 20, 25. That bias is the convention itself, shared
-// with MIRP and pyradiomics, which is why 3AREA is pinned against MIRP at rel=1e-6 next door and
-// against exact solids above. What the bound below establishes is that the area is the mesh's and not
-// the staircase's: counting exposed voxel faces puts a ball near +50%, since the mean of
-// |nx|+|ny|+|nz| over a sphere is 1.5.
 void test_3d_morphology_sphere_mesh_analytic()
 {
     SCOPED_TRACE("ANALYTIC_ORACLE__3d_morphology_sphere_mesh");
@@ -159,23 +144,15 @@ void test_3d_morphology_sphere_mesh_analytic()
                     if (x * x + y * y + z * z <= r * r)
                         cloud.push_back (Pixel3(x + 64, y + 64, z + 64, 1000));
 
-        double area = 0., mesh_volume = 0.;
-        calculate_3d_morphology_on_cloud (cloud, area, mesh_volume);
+        double mesh_volume = 0.;
+        calculate_3d_morphology_on_cloud (cloud, mesh_volume);
         if (::testing::Test::HasFatalFailure())
             return;
 
-        const double want_v = 4. / 3. * M_PI * double(r) * r * r,
-            want_a = 4. * M_PI * double(r) * r;
+        const double want_v = 4. / 3. * M_PI * double(r) * r * r;
 
         ASSERT_LE (std::abs(mesh_volume - want_v) / want_v, 0.01)
             << "r=" << r << " 3MESH_VOLUME actual=" << mesh_volume << " 4/3 pi r^3=" << want_v;
-
-        const double area_excess = (area - want_a) / want_a;
-        ASSERT_GT (area_excess, 0.05)
-            << "r=" << r << " 3AREA actual=" << area << " 4 pi r^2=" << want_a;
-        ASSERT_LT (area_excess, 0.12)
-            << "r=" << r << " 3AREA actual=" << area << " 4 pi r^2=" << want_a
-            << " -- a staircase face count would land near +50%";
     }
 }
 
@@ -231,8 +208,8 @@ void test_3d_morphology_lattice_hull_volume_analytic()
 
     for (const auto& s : solids)
     {
-        double area = 0., mesh_volume = 0., hull_volume = 0.;
-        calculate_3d_morphology_on_cloud (s.cloud, area, mesh_volume, false, &hull_volume);
+        double mesh_volume = 0., hull_volume = 0.;
+        calculate_3d_morphology_on_cloud (s.cloud, mesh_volume, false, &hull_volume);
         if (::testing::Test::HasFatalFailure())
             return;
 
@@ -253,16 +230,17 @@ void test_3d_morphology_planar_hull_volume_analytic()
         for (int y = 0; y < 4; y++)
             cloud.push_back (Pixel3(x + 40, y + 50, 9, 1000));
 
-    double area = 0., mesh_volume = 0., hull_volume = -1.;
-    calculate_3d_morphology_on_cloud (cloud, area, mesh_volume, false, &hull_volume);
+    double mesh_volume = 0., hull_volume = -1.;
+    calculate_3d_morphology_on_cloud (cloud, mesh_volume, false, &hull_volume);
     if (::testing::Test::HasFatalFailure())
         return;
 
     ASSERT_EQ (hull_volume, 0.0) << "3VOLUME_CONVEXHULL of a single-plane ROI";
 }
 
-// The refusal path: an ROI with no voxels has no surface. The builder must hand back an empty mesh
-// and two zeros rather than reading off the end of an empty cloud.
+// The refusal path: an ROI with no voxels has no surface. The builder must hand back an empty mesh,
+// and both volume integrals a zero, rather than reading off the end of an empty cloud; bounds that
+// enclose no lattice point give a zero without asking the plane source for a plane.
 void test_3d_morphology_empty_roi_mesh_analytic()
 {
     SCOPED_TRACE("ANALYTIC_ORACLE__3d_morphology_empty_roi_mesh");
@@ -270,6 +248,11 @@ void test_3d_morphology_empty_roi_mesh_analytic()
     std::vector<Nyxus::Triangle3> mesh;
     ASSERT_NO_THROW (Nyxus::build_roi_surface_mesh (mesh, std::vector<Pixel3>{}));
     ASSERT_TRUE (mesh.empty());
-    ASSERT_EQ (Nyxus::mesh_area (mesh), 0.0);
     ASSERT_EQ (Nyxus::mesh_volume (mesh), 0.0);
+    ASSERT_EQ (Nyxus::roi_mesh_volume (std::vector<Pixel3>{}), 0.0);
+
+    int planes_asked = 0;
+    const Nyxus::LatticeBounds none = { 5, 4, 0, 3, 0, 3 };
+    ASSERT_EQ (Nyxus::roi_mesh_volume (none, [&planes_asked](StatsInt, std::vector<Pixel3>&) { planes_asked++; }), 0.0);
+    ASSERT_EQ (planes_asked, 0);
 }

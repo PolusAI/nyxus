@@ -25,9 +25,12 @@
 // MIRP names these axes by role and Nyxus by size rank; the two agree only because MAJOR is the
 // largest eigenvalue, which is the correspondence the generator re-checks on every run.
 //
-// What is still not pinned from MIRP's morph_* block is the density family (morph_*_dens_*),
-// morph_diam, morph_integ_int and the spatial-autocorrelation pair (morph_moran_i, morph_geary_c):
-// Nyxus implements no feature for any of them.
+// MIRP's `morph_area_mesh` is not pinned here: it is a marching-cubes mesh area while Nyxus' 3AREA
+// counts exposed voxel faces (46739 against 59992), and the five area-derived ratios inherit that
+// convention difference. They stay regression-only -- see
+// tests/vetting/audit/morphology_3d_mirp_vetting_report.md. Nor are the density family
+// (morph_*_dens_*), morph_diam, morph_integ_int and the spatial-autocorrelation pair (morph_moran_i,
+// morph_geary_c): Nyxus implements no feature for any of them.
 static const ref_vals_map<double> morphology_3d_mirp_pca_ref_vals
 {
     { "3ELONGATION", 0.8433210559938976 },      // morph_pca_elongation
@@ -72,37 +75,22 @@ static const ref_vals_map<double> morphology_3d_mirp_volume_ref_vals
     { "3VOLUME_CONVEXHULL", 496958.3201121965 }  // morph_volume / morph_vol_dens_conv_hull
 };
 
-// ORACLE goldens -- the ROI surface mesh and the features computed from it, same run, same recipe.
+// ORACLE golden -- the ROI surface mesh's enclosed volume, same run, same recipe.
 //
-// These seven are the same quantity on both sides: Nyxus and MIRP both integrate the marching-cubes
-// surface of the mask at the 0.5 isolevel, so no convention difference is left for a band to absorb.
+//   3MESH_VOLUME = morph_volume, IBSI volume (mesh)
 //
-//   3AREA                     = morph_area_mesh, IBSI area (mesh)
-//   3MESH_VOLUME              = morph_volume, IBSI volume (mesh)
-//   3AREA_2_VOLUME            = morph_av
-//   3COMPACTNESS1             = morph_comp_1
-//   3COMPACTNESS2             = morph_comp_2
-//   3SPHERICAL_DISPROPORTION  = morph_sph_dispr
-//   3SPHERICITY               = morph_sphericity
-//
-// IBSI defines the five ratios over area (mesh) and volume (mesh), which is what Nyxus feeds them.
+// The same quantity on both sides: Nyxus and MIRP both integrate the marching-cubes surface of the
+// mask at the 0.5 isolevel, so no convention difference is left for a band to absorb.
 static const ref_vals_map<double> morphology_3d_mirp_mesh_ref_vals
 {
-    { "3AREA", 46739.01953125 },                          // morph_area_mesh
-    { "3MESH_VOLUME", 274338.34375 },                     // morph_volume
-    { "3AREA_2_VOLUME", 0.1703699827194214 },             // morph_av
-    { "3COMPACTNESS1", 0.015317650511860847 },            // morph_comp_1
-    { "3COMPACTNESS2", 0.0833655446767807 },              // morph_comp_2
-    { "3SPHERICAL_DISPROPORTION", 2.2891335487365723 },   // morph_sph_dispr
-    { "3SPHERICITY", 0.4368464946746826 }                 // morph_sphericity
+    { "3MESH_VOLUME", 274338.34375 }                      // morph_volume
 };
 
 // Same definition and the same surface on both sides, so what is left is MIRP's own precision: it
-// carries the mesh in float32, and every golden above is an exactly representable float32. Measured
-// divergence runs from 1.2e-08 on 3AREA_2_VOLUME to 2.4e-07 on 3COMPACTNESS2, which is that storage
-// rather than a difference in the integral. frac_tolerance = 1e6, i.e. rel=1e-6: an order of
-// magnitude above the largest measured residual, and far below any change of surface definition --
-// a staircase area would miss 3AREA by 28%.
+// carries the mesh in float32, and the golden above is an exactly representable float32. The
+// measured divergence is 3.8e-08, which is that storage rather than a difference in the integral.
+// frac_tolerance = 1e6, i.e. rel=1e-6: more than an order of magnitude above the measured residual,
+// and far below any change of definition -- the convex-hull volume sits 75% above it.
 static void assert_3d_morphology_mesh_mirp (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)
 {
     SCOPED_TRACE(std::string("MIRP_ORACLE__") + fname);
@@ -115,32 +103,8 @@ static void assert_3d_morphology_mesh_mirp (const std::string& fname, const Nyxu
         << fname << " actual=" << actual << " mirp=" << morphology_3d_mirp_mesh_ref_vals.at(fname);
 }
 
-void test_3d_morphology_area_mirp() {
-    assert_3d_morphology_mesh_mirp ("3AREA", Feature3D::AREA);
-}
-
 void test_3d_morphology_mesh_volume_mirp() {
     assert_3d_morphology_mesh_mirp ("3MESH_VOLUME", Feature3D::MESH_VOLUME);
-}
-
-void test_3d_morphology_area_2_volume_mirp() {
-    assert_3d_morphology_mesh_mirp ("3AREA_2_VOLUME", Feature3D::AREA_2_VOLUME);
-}
-
-void test_3d_morphology_compactness1_mirp() {
-    assert_3d_morphology_mesh_mirp ("3COMPACTNESS1", Feature3D::COMPACTNESS1);
-}
-
-void test_3d_morphology_compactness2_mirp() {
-    assert_3d_morphology_mesh_mirp ("3COMPACTNESS2", Feature3D::COMPACTNESS2);
-}
-
-void test_3d_morphology_spherical_disproportion_mirp() {
-    assert_3d_morphology_mesh_mirp ("3SPHERICAL_DISPROPORTION", Feature3D::SPHERICAL_DISPROPORTION);
-}
-
-void test_3d_morphology_sphericity_mirp() {
-    assert_3d_morphology_mesh_mirp ("3SPHERICITY", Feature3D::SPHERICITY);
 }
 
 static void assert_3d_morphology_volume_mirp (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)

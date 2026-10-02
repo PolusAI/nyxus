@@ -144,7 +144,7 @@ void test_3d_morphology_surface_mesh_closed_mechanics()
 }
 
 // The convex hull kernel, quick_hull (src/nyx/3rdparty/quickhull.hpp), driven directly and the way
-// D3_SurfaceFeature::build_surface drives it: double points, eps = 16 * DBL_EPSILON * the largest
+// D3_SurfaceFeature::build_hull drives it: double points, eps = 16 * DBL_EPSILON * the largest
 // coordinate. The clouds are lattice ellipsoids, every voxel with (x/a)^2 + (y/b)^2 + (z/c)^2 <= 1,
 // because their hull faces carry many voxels exactly on a face or on an edge line -- the points the
 // facet predicates must treat as within eps of a plane, not as above or below it.
@@ -262,7 +262,7 @@ void test_3d_morphology_quick_hull_lattice_ellipsoid_mechanics()
 
 // The refusal path of the same kernel: a cloud that spans no volume has no initial simplex.
 // get_affine_basis() adds a point only if it lies more than eps off the subspace the basis already
-// spans, so a plane stops at three points and a line at two, and build_surface then leaves the hull
+// spans, so a plane stops at three points and a line at two, and build_hull then leaves the hull
 // empty. The clouds are integer points, in an axis-aligned plane, a tilted plane and a tilted line,
 // far enough from the origin that a point in the subspace sits a rounding error off it rather than
 // exactly on it.
