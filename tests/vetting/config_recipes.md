@@ -570,13 +570,14 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
 - Covers the five PCA axis features (`morph_pca_*`), `3VOXEL_VOLUME` (`morph_vol_approx`), the
   convex-hull quantity behind `3VOLUME_CONVEXHULL` (`morph_volume / morph_vol_dens_conv_hull`), and
-  the seven mesh features: `3AREA` (`morph_area_mesh`), `3MESH_VOLUME` (`morph_volume`),
-  `3AREA_2_VOLUME` (`morph_av`), `3COMPACTNESS1` (`morph_comp_1`), `3COMPACTNESS2` (`morph_comp_2`),
-  `3SPHERICAL_DISPROPORTION` (`morph_sph_dispr`) and `3SPHERICITY` (`morph_sphericity`).
-- The mesh features are the same quantity on both sides — each integrates the marching-cubes surface
-  of the mask at the 0.5 isolevel — so they are pinned at `rel=1e-6`, which is MIRP's float32 storage
-  of the mesh and nothing else (measured 1.2e-08 to 2.4e-07). The hull rows keep their 5% band: there
-  Nyxus builds a discrete voxel hull where MIRP triangulates, which is a real convention difference.
+  the one mesh feature, `3MESH_VOLUME` (`morph_volume`).
+- `3MESH_VOLUME` is the same quantity on both sides — each integrates the marching-cubes surface of
+  the mask at the 0.5 isolevel — so it is pinned at `rel=1e-6`, which is MIRP's float32 storage of the
+  mesh and nothing else (measured 3.8e-08). The hull rows keep their 5% band: there Nyxus builds a
+  discrete voxel hull where MIRP triangulates, which is a real convention difference.
+- `morph_area_mesh` is not comparable to `3AREA`: MIRP integrates a marching-cubes mesh while Nyxus
+  counts exposed voxel faces, so `3AREA` and its five derived features stay on
+  `morphology3d.regression_ut_phantom`.
 - Not covered, because Nyxus implements no feature for them: the density family (`morph_*_dens_*`),
   `morph_diam`, `morph_integ_int`, `morph_moran_i`, `morph_geary_c`.
 
@@ -609,23 +610,18 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 ## morphology3d.analytic_lattice_solids
 - Voxel clouds built in `test_3d_morphology_analytic.h`, run through `D3_SurfaceFeature::calculate`
   the way the phantom fixtures are (`calculate_3d_morphology_on_cloud`): a single voxel, six solid
-  boxes and two discretised balls for the mesh features; four boxes, three octahedra and two rhombic
+  boxes and two discretised balls for `3MESH_VOLUME`; four boxes, three octahedra and two rhombic
   prisms for the hull; and one planar cloud for the hull's refusal path. No image is read and no
   external tool runs. Oracle: `analytic`. Used by: `test_3d_morphology_analytic.h`. The empty-ROI
-  refusal alone calls `Nyxus::build_roi_surface_mesh` directly.
+  refusal alone calls `Nyxus::build_roi_surface_mesh` and `Nyxus::roi_mesh_volume` directly.
 - A lone voxel's 0.5-isolevel surface is the octahedron with vertices half a lattice step out, so its
-  volume is exactly 1/6 and its area exactly sqrt(3). A solid w × h × d box comes out bevelled, and
-  both integrals are exact functions of w, h and d: volume = whd − (w+h+d−3)/2 − 5/6 and
-  area = 2(wh+hd+wd) − 2(w+h+d−3)(2−√2) − (6−√3). Those two shapes are pinned at `rel=1e-12`, which
-  is what double arithmetic on exact half-integer coordinates delivers.
-- The box formulas are also what `D3_SurfaceFeature`'s whole-volume (`SINGLEROI`) branch computes in
+  volume is exactly 1/6. A solid w × h × d box comes out bevelled, and its volume is an exact function
+  of w, h and d: whd − (w+h+d−3)/2 − 5/6. Those two shapes are pinned at `rel=1e-12`, which is what
+  double arithmetic on exact half-integer coordinates delivers.
+- The box formula is also what `D3_SurfaceFeature`'s whole-volume (`SINGLEROI`) branch computes in
   place of meshing every voxel. The box test runs twice, once per `SINGLEROI` setting, against the same
   closed form, so the shortcut is held to the value the general path produces.
-- The balls are a bound, not a pin: the mesh volume converges on 4/3·π·r³ (−0.15% by r=15) while the
-  mesh area does **not** converge on 4·π·r² — a binary mask's facets keep lattice-scale orientation
-  at any radius, so the area settles about 8.7% above the smooth sphere. That bias is the convention,
-  shared with MIRP and pyradiomics; what the ball asserts is only that the area is the mesh's and not
-  a staircase's, which would land near +50%.
+- The balls are a bound, not a pin: the mesh volume converges on 4/3·π·r³ (−0.15% by r=15).
 - `3VOLUME_CONVEXHULL` is the volume of the convex hull of the voxel centres, so the hull solids have
   exact volumes: (w−1)(h−1)(d−1) for a w × h × d box, 4/3·R³ for the octahedron |x|+|y|+|z| ≤ R and
   4·R²·H for the rhombic prism |x|+|y| ≤ R, |z| ≤ H. They sit hundreds of voxels from the origin and are
@@ -634,7 +630,7 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 ## morphology3d.quick_hull_scipy
 - Lattice ellipsoids built in `test_3d_morphology_mechanics.h` (`morphology_3d_quick_hull_ellipsoids`),
   each hulled at six placements from the origin out to 2e4 by `quick_hull` directly, with the `eps`
-  `D3_SurfaceFeature::build_surface` uses; plus a plane and a line whose affine basis must stop short.
+  `D3_SurfaceFeature::build_hull` uses; plus a plane and a line whose affine basis must stop short.
   No image and no feature. Reference: `scipy` 1.10.1 `spatial.ConvexHull` (qhull) — **not an
   oracle**: `scipy` is not a SPEC §4 oracle token and a mechanics assertion establishes no vetting.
   Used by: `test_3d_morphology_mechanics.h`. Generator: `oracles/gen_morphology3d_quick_hull_scipy.py`.
@@ -645,9 +641,10 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 ## morphology3d.regression_ut_phantom
 - The same phantom and settings, **no oracle** — pinned Nyxus output as drift guards in
   `test_3d_morphology_regression.h`.
-- Carries the whole family as a snapshot beside its oracle rows; the two are distinct claims under
-  SPEC 3. `3VOLUME_CONVEXHULL` is the one value here with no same-definition oracle: MIRP and MATLAB
-  both triangulate the hull where Nyxus builds a discrete voxel hull, a measured 3.28%.
+- Carries `3AREA` and everything derived from it. The reason is a convention difference, not a
+  numerical one: 59992 exposed voxel faces against MIRP's 46739 mesh area, ~28%.
+- `3VOXEL_VOLUME` and `3VOLUME_CONVEXHULL` are pinned here as snapshots beside their oracle rows; the
+  two are distinct claims under SPEC 3.
 ## glrlm3d.pyradiomics_bincount20
 - The compat phantom (`compat_int/compat_int_mri.nii` + `compat_seg/compat_seg_liver.nii`, label 1)
   at `GREYDEPTH=100`, `IBSI=false`, `GLRLM_GREYDEPTH=-20` (negative activates radiomics

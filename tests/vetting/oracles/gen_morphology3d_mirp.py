@@ -13,10 +13,14 @@ so no grey-level binning applies and asking for one would be meaningless. On the
 D3_SurfaceFeature with IBSI=true and PIXELSIZEUM=100, which is what test_3d_morphology_common.h sets.
 
 MIRP's `morph_*` block is the IBSI section 3.1 morphology family. Three groups of it are pinned: the
-five PCA axis quantities, two volume quantities (voxel-counting and convex hull), and the seven
-features that are integrals of the ROI surface mesh -- `morph_area_mesh`, `morph_volume` and the five
-ratios built from them. What stays unpinned is the part Nyxus implements no feature for: the density
-family (`morph_*_dens_*`), `morph_diam`, `morph_integ_int` and the spatial-autocorrelation pair.
+five PCA axis quantities, two volume quantities (voxel-counting and convex hull), and the volume
+enclosed by the ROI surface mesh, `morph_volume`. MIRP's `morph_area_mesh` is not: it is a
+marching-cubes mesh area while Nyxus' 3AREA counts exposed voxel faces (46739 against 59992, ~28%),
+and the five features derived from area -- 3AREA_2_VOLUME, 3COMPACTNESS1/2, 3SPHERICITY,
+3SPHERICAL_DISPROPORTION -- inherit that convention difference. They stay regression-only; see
+../audit/morphology_3d_mirp_vetting_report.md. Nor is the part Nyxus implements no feature for: the
+density family (`morph_*_dens_*`), `morph_diam`, `morph_integ_int` and the spatial-autocorrelation
+pair.
 
 NIFTI READING WITHOUT A NIFTI LIBRARY: the mirp env has neither SimpleITK nor nibabel, and adding one
 would make this a two-env, two-step generator. The phantoms are uncompressed single-file NIfTI-1
@@ -72,23 +76,15 @@ MIRP = {
 # below and is pinned against morph_volume directly.
 MIRP_VOLUME_SOURCES = ("morph_vol_approx", "morph_volume", "morph_vol_dens_conv_hull")
 
-# The ROI surface mesh and the features computed from it. Nyxus and MIRP build the same surface -- the
-# marching-cubes triangulation of the mask at the 0.5 isolevel -- so these are the same quantity on
-# both sides and are pinned at rel=1e-6, which is MIRP's own float32 storage and nothing else. IBSI
-# section 3.1 defines the five ratios over area (mesh) and volume (mesh), which is what Nyxus feeds
-# them.
+# The volume enclosed by the ROI surface mesh. Nyxus and MIRP build the same surface -- the
+# marching-cubes triangulation of the mask at the 0.5 isolevel -- so this is the same quantity on both
+# sides and is pinned at rel=1e-6, which is MIRP's own float32 storage and nothing else.
 MIRP_MESH = {
-    "3AREA": "morph_area_mesh",
     "3MESH_VOLUME": "morph_volume",
-    "3AREA_2_VOLUME": "morph_av",
-    "3COMPACTNESS1": "morph_comp_1",
-    "3COMPACTNESS2": "morph_comp_2",
-    "3SPHERICAL_DISPROPORTION": "morph_sph_dispr",
-    "3SPHERICITY": "morph_sphericity",
 }
 
 # rel=1e-6 matches assert_3d_morphology_mesh_mirp: same definition on both sides, so the residual is
-# MIRP carrying the mesh in float32 (measured 1.2e-08 to 2.4e-07), not a difference in the integral.
+# MIRP carrying the mesh in float32 (measured 3.8e-08), not a difference in the integral.
 MESH_RELTOL = 1e-6
 
 
@@ -108,11 +104,15 @@ def volume_pins(extra):
 
 
 # Reported for context, and the two the hull pin is derived from. Everything pinned is read from the
-# tables above; nothing here is a golden by itself.
+# tables above; nothing here is a golden by itself. The area quantities are the measurement behind
+# the convention gap that keeps 3AREA and its five ratios regression-only.
 CROSSCHECK = [
     ("morph_vol_approx", "3VOXEL_VOLUME, and MATLAB regionprops3 Volume"),
     ("morph_volume", "IBSI volume (mesh) -> 3MESH_VOLUME, and the numerator of the hull pin"),
     ("morph_vol_dens_conv_hull", "volume / convex-hull volume -> back out the hull volume"),
+    ("morph_area_mesh", "3AREA, but marching-cubes mesh area vs Nyxus' exposed-voxel-face count"),
+    ("morph_sphericity", "3SPHERICITY (inherits the area convention)"),
+    ("morph_av", "3AREA_2_VOLUME (inherits the area convention)"),
 ]
 
 # NIfTI-1 datatype code -> numpy dtype, for the codes these phantoms use.
@@ -233,7 +233,7 @@ def main():
     print(f'\t{{"3VOLUME_CONVEXHULL", {vols["3VOLUME_CONVEXHULL"]!r}}}'.ljust(56)
           + "// morph_volume / morph_vol_dens_conv_hull")
 
-    print("# paste-ready mesh goldens (third table)")
+    print("# paste-ready mesh golden (third table)")
     for name in MIRP_MESH:
         print(f'\t{{"{name}", {mesh[name]!r}}},'.ljust(56) + f"// {MIRP_MESH[name]}")
 

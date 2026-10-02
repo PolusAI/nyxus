@@ -294,41 +294,33 @@ namespace
 	};
 }
 
-void Nyxus::build_roi_surface_mesh (std::vector<Triangle3>& mesh, const std::vector<Pixel3>& cloud)
+void Nyxus::march_roi_surface (const LatticeBounds& bounds, const RoiPlaneSource& planes,
+	const std::function<void (const Triangle3&)>& emit)
 {
-	mesh.clear();
-	if (cloud.empty())
+	if (bounds.xmax < bounds.xmin || bounds.ymax < bounds.ymin || bounds.zmax < bounds.zmin)
 		return;
 
-	// lattice extent of the voxel cloud
-	StatsInt xmin = cloud[0].x, xmax = xmin,
-		ymin = cloud[0].y, ymax = ymin,
-		zmin = cloud[0].z, zmax = zmin;
-	for (const auto& v : cloud)
-	{
-		xmin = std::min(xmin, v.x);	xmax = std::max(xmax, v.x);
-		ymin = std::min(ymin, v.y);	ymax = std::max(ymax, v.y);
-		zmin = std::min(zmin, v.z);	zmax = std::max(zmax, v.z);
-	}
+	const StatsInt xmin = bounds.xmin, ymin = bounds.ymin, zmin = bounds.zmin;
 
 	// One voxel of empty padding on every side, so the cells cover the whole surface and the ROI
 	// closes off at the lattice boundary instead of being cut open there.
-	const size_t pw = size_t(xmax - xmin) + 3,
-		ph = size_t(ymax - ymin) + 3,
-		pd = size_t(zmax - zmin) + 3;
+	const size_t pw = size_t(bounds.xmax - xmin) + 3,
+		ph = size_t(bounds.ymax - ymin) + 3,
+		pd = size_t(bounds.zmax - zmin) + 3;
 
-	// Bucket the cloud by z once. The cells are then walked one z-layer at a time against two voxel
-	// planes, so the working set is two slices rather than the whole padded lattice.
-	std::vector<std::vector<size_t>> byz (pd);
-	for (size_t i = 0; i < cloud.size(); i++)
-		byz[size_t(cloud[i].z - zmin) + 1].push_back(i);
-
+	// Padded plane k holds lattice plane zmin - 1 + k; planes 0 and pd - 1 are the padding.
 	std::vector<unsigned char> lo (pw * ph, 0), hi (pw * ph, 0);
+	std::vector<Pixel3> voxels;
 	auto stamp = [&](std::vector<unsigned char>& plane, size_t k)
 	{
 		std::fill (plane.begin(), plane.end(), (unsigned char)0);
-		for (auto i : byz[k])
-			plane[size_t(cloud[i].x - xmin) + 1 + (size_t(cloud[i].y - ymin) + 1) * pw] = 1;
+		if (k == 0 || k + 1 == pd)
+			return;
+		voxels.clear();
+		planes (zmin - 1 + StatsInt(k), voxels);
+		for (const auto& v : voxels)
+			if (v.x >= xmin && v.x <= bounds.xmax && v.y >= ymin && v.y <= bounds.ymax)
+				plane[size_t(v.x - xmin) + 1 + (size_t(v.y - ymin) + 1) * pw] = 1;
 	};
 
 	// midpoint of each edge, relative to the cell's low corner
@@ -370,7 +362,7 @@ void Nyxus::build_roi_surface_mesh (std::vector<Triangle3>& mesh, const std::vec
 						vert[u][1] = oy + emid[t[u]][1];
 						vert[u][2] = oz + emid[t[u]][2];
 					}
-					mesh.push_back (s);
+					emit (s);
 				}
 			}
 
@@ -378,27 +370,79 @@ void Nyxus::build_roi_surface_mesh (std::vector<Triangle3>& mesh, const std::vec
 	}
 }
 
-double Nyxus::mesh_volume (const std::vector<Triangle3>& mesh)
+namespace
 {
-	// Divergence theorem on a closed surface: each facet contributes the signed volume of the
-	// tetrahedron it spans with the origin, and the parts outside the body cancel.
-	double v = 0.0;
-	for (const auto& s : mesh)
-		v += s.a[0] * (s.b[1] * s.c[2] - s.b[2] * s.c[1])
+	// Lattice bounds of an in-memory cloud, and a plane source over it that buckets the cloud by z
+	// once.
+	struct CloudPlanes
+	{
+		Nyxus::LatticeBounds bounds;
+		std::vector<std::vector<size_t>> byz;
+
+		explicit CloudPlanes (const std::vector<Pixel3>& cloud)
+		{
+			bounds = { cloud[0].x, cloud[0].x, cloud[0].y, cloud[0].y, cloud[0].z, cloud[0].z };
+			for (const auto& v : cloud)
+			{
+				bounds.xmin = std::min(bounds.xmin, v.x);	bounds.xmax = std::max(bounds.xmax, v.x);
+				bounds.ymin = std::min(bounds.ymin, v.y);	bounds.ymax = std::max(bounds.ymax, v.y);
+				bounds.zmin = std::min(bounds.zmin, v.z);	bounds.zmax = std::max(bounds.zmax, v.z);
+			}
+			byz.resize (size_t(bounds.zmax - bounds.zmin) + 1);
+			for (size_t i = 0; i < cloud.size(); i++)
+				byz[size_t(cloud[i].z - bounds.zmin)].push_back(i);
+		}
+
+		Nyxus::RoiPlaneSource source (const std::vector<Pixel3>& cloud) const
+		{
+			return [this, &cloud](StatsInt z, std::vector<Pixel3>& voxels)
+			{
+				for (auto i : byz[size_t(z - bounds.zmin)])
+					voxels.push_back (cloud[i]);
+			};
+		}
+	};
+
+	// One facet's term of the divergence-theorem volume: the signed volume of the tetrahedron it spans
+	// with the origin, times 6. Over a closed surface the parts outside the body cancel.
+	double signed_volume6 (const Nyxus::Triangle3& s)
+	{
+		return s.a[0] * (s.b[1] * s.c[2] - s.b[2] * s.c[1])
 			- s.a[1] * (s.b[0] * s.c[2] - s.b[2] * s.c[0])
 			+ s.a[2] * (s.b[0] * s.c[1] - s.b[1] * s.c[0]);
+	}
+}
+
+void Nyxus::build_roi_surface_mesh (std::vector<Triangle3>& mesh, const std::vector<Pixel3>& cloud)
+{
+	mesh.clear();
+	if (cloud.empty())
+		return;
+
+	CloudPlanes cp (cloud);
+	march_roi_surface (cp.bounds, cp.source (cloud), [&mesh](const Triangle3& s) { mesh.push_back (s); });
+}
+
+double Nyxus::mesh_volume (const std::vector<Triangle3>& mesh)
+{
+	double v = 0.0;
+	for (const auto& s : mesh)
+		v += signed_volume6 (s);
 	return std::abs (v) / 6.0;
 }
 
-double Nyxus::mesh_area (const std::vector<Triangle3>& mesh)
+double Nyxus::roi_mesh_volume (const LatticeBounds& bounds, const RoiPlaneSource& planes)
 {
-	double a = 0.0;
-	for (const auto& s : mesh)
-	{
-		const double ux = s.b[0] - s.a[0], uy = s.b[1] - s.a[1], uz = s.b[2] - s.a[2],
-			vx = s.c[0] - s.a[0], vy = s.c[1] - s.a[1], vz = s.c[2] - s.a[2],
-			cx = uy * vz - uz * vy, cy = uz * vx - ux * vz, cz = ux * vy - uy * vx;
-		a += 0.5 * std::sqrt (cx * cx + cy * cy + cz * cz);
-	}
-	return a;
+	double v = 0.0;
+	march_roi_surface (bounds, planes, [&v](const Triangle3& s) { v += signed_volume6 (s); });
+	return std::abs (v) / 6.0;
+}
+
+double Nyxus::roi_mesh_volume (const std::vector<Pixel3>& cloud)
+{
+	if (cloud.empty())
+		return 0.0;
+
+	CloudPlanes cp (cloud);
+	return roi_mesh_volume (cp.bounds, cp.source (cloud));
 }

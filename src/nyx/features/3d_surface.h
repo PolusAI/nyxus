@@ -66,6 +66,8 @@ private:
 	void build_surface (LR& r);
 	// Build the hull complex from a contour point cloud (shared by in-core + out-of-core paths)
 	void build_hull (const std::vector<std::array<double, 3>>& P);
+	// Every feature of an ROI that fills its whole w x h x d box (single-ROI mode), in closed form
+	void set_whole_box (StatsInt w, StatsInt h, StatsInt d);
 
 	double fval_AREA,
 		fval_AREA_2_VOLUME,
