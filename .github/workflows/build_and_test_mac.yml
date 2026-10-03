@@ -81,7 +81,7 @@ jobs:
       - name: Install Conda Dependencies
         run: |
           conda install -y mamba
-          mamba install -y compilers pytest bfio \
+          mamba install -y compilers pytest bfio imagecodecs \
             --file "${{ github.workspace }}/ci-utils/envs/conda_cpp_mac.txt" \
             --file "${{ github.workspace }}/ci-utils/envs/conda_py.txt"
 

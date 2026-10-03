@@ -386,7 +386,7 @@ jobs:
             LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_ARCHS: auto64
-          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -449,7 +449,7 @@ jobs:
             LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_ARCHS: auto64
-          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -509,7 +509,7 @@ jobs:
           CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: auto64
-          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -589,7 +589,7 @@ jobs:
             -w {dest_dir} {wheel} \
             -e libssl -e libzstd -e libcrypto -e libwebp -e libsharpyuv
           CIBW_ARCHS: auto64
-          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
@@ -664,7 +664,7 @@ jobs:
             -w {dest_dir} {wheel} \
             -e libssl -e libzstd -e libcrypto
           CIBW_ARCHS: arm64
-          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio
+          CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
