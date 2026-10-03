@@ -88,9 +88,10 @@ def _write_pair(tmp_path, w, h, compression=None, rowsperstrip=None):
 
 
 def _featurize_files(int_path, seg_path):
-    # these fixtures are a few megabytes, so a 512 MB ram_limit keeps both paths in RAM
+    # these fixtures are a few megabytes, so a 256 MB ram_limit keeps both paths in RAM; it is also a
+    # limit a small test box -- or an ASan-instrumented interpreter late in the suite -- still has free
     n_disk = nyxus.Nyxus(features=_FEATURES, n_feature_calc_threads=1)
-    _set_ram_limit_mb(n_disk, 512)
+    _set_ram_limit_mb(n_disk, 256)
     return n_disk.featurize_files(
         intensity_files=[int_path],
         mask_files=[seg_path],
@@ -105,7 +106,7 @@ def _featurize_both(tmp_path, w, h, compression=None, rowsperstrip=None):
     from_disk = _featurize_files(int_path, seg_path)
 
     n_mem = nyxus.Nyxus(features=_FEATURES, n_feature_calc_threads=1)
-    _set_ram_limit_mb(n_mem, 512)
+    _set_ram_limit_mb(n_mem, 256)
     in_memory = n_mem.featurize(inten, np.ones_like(inten, dtype=np.uint32))
 
     return inten, from_disk, in_memory
