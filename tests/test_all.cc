@@ -1370,6 +1370,11 @@ TEST(TEST_NYXUS, TEST_2D_GRAYSCALE_TIFF_STRIP_LOADER_CORRUPT_STRIP_REFUSED_MECHA
 	ASSERT_NO_FATAL_FAILURE(test_2d_grayscale_tiff_strip_loader_corrupt_strip_refused_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_2D_TIFF_STRIP_LOADERS_DECODE_EACH_ROW_ONCE_MECHANICS)
+{
+	ASSERT_NO_FATAL_FAILURE(test_2d_tiff_strip_loaders_decode_each_row_once_mechanics());
+}
+
 TEST(TEST_NYXUS, TEST_INITIALIZATION_MECHANICS) {
 	test_initialization_mechanics();
 }

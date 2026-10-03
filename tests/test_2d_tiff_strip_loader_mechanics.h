@@ -49,6 +49,10 @@
 //   - a strip that does not decode makes the tile read throw, naming the row, rather than hand
 //     back the previous contents of the scanline buffer as pixels.
 //
+// What both are held to together: a row-major read of the grid decodes every image row once, the
+// tiles of a tile row sharing its scanlines and each tile row continuing the strip the one above
+// left the decoder in.
+//
 
 // pixel value at image (col, row); row-dependent so a tile reading the wrong rows is detectable
 static inline uint32_t nyxus_ut_strip_enc (size_t col, size_t row)
@@ -253,11 +257,12 @@ void test_2d_raw_tiff_strip_loader_sample_width_grid_mechanics()
     EXPECT_NO_FATAL_FAILURE (nyxus_ut_assert_strip_grid ("strip1100x300_u8", 1100, 300, COMPRESSION_NONE, 16, 8, SAMPLEFORMAT_UINT));
 }
 
-// A compressed striped TIFF: a codec decodes a strip only from its first row forward, and every
-// tile past the first column starts at a row the reader has already passed. The strip heights are
-// chosen so that row 1024 -- where the second tile row starts -- is in the middle of a strip: 100
-// rows per strip does not divide 1024, and a single strip spanning the whole image puts every tile
-// inside the same one. LZW and PackBits are both built into libtiff, and neither can seek.
+// A compressed striped TIFF: a codec decodes a strip only from its first row forward and cannot
+// skip rows it has not decoded, so a tile row whose first row is not where the decoder stands has
+// to start its strip over. The strip heights are chosen so that row 1024 -- where the second tile
+// row starts -- is in the middle of a strip: 100 rows per strip does not divide 1024, and a single
+// strip spanning the whole image puts every tile inside the same one. LZW and PackBits are both
+// built into libtiff, and neither can seek.
 void test_2d_raw_tiff_strip_loader_compressed_grid_mechanics()
 {
     ASSERT_NO_FATAL_FAILURE (nyxus_ut_assert_strip_grid ("strip1100x1100_lzw100", 1100, 1100, COMPRESSION_LZW, 100));
@@ -376,12 +381,10 @@ static inline void nyxus_ut_assert_grayscale_strip_grid (const char* stem, size_
             ASSERT_NO_FATAL_FAILURE (nyxus_ut_assert_grayscale_strip_tile (ldr, tile, stem, W, H, tr, tc));
 }
 
-// A compressed striped TIFF read by the featurize-side loader. The loader selects the directory at
-// the start of every tile, which leaves no strip decoded, so the second tile row -- starting at
-// image row 1024 -- begins inside a strip the codec has to decode from its first row. 100 rows per
-// strip does not divide 1024, a single strip puts every tile inside the same one, and the 300 x 1100
-// geometry is past 1024 in height only, so its tiles are read top to bottom and it is the strip
-// start alone that matters there.
+// A compressed striped TIFF read by the featurize-side loader. The second tile row starts at image
+// row 1024, inside a strip: 100 rows per strip does not divide 1024, and a single strip puts every
+// tile inside the same one. The 300 x 1100 geometry is past 1024 in height only, so its tiles are
+// read top to bottom and its second tile row continues the strip the first one left off in.
 void test_2d_grayscale_tiff_strip_loader_compressed_grid_mechanics()
 {
     ASSERT_NO_FATAL_FAILURE (nyxus_ut_assert_grayscale_strip_grid ("gstrip1100x1100_lzw100", 1100, 1100, COMPRESSION_LZW, 100));
@@ -404,6 +407,57 @@ void test_2d_grayscale_tiff_strip_loader_compressed_revisit_mechanics()
     const size_t order[][2] = { {1,1}, {1,0}, {0,1}, {0,0}, {1,1} };
     for (const auto& t : order)
         ASSERT_NO_FATAL_FAILURE (nyxus_ut_assert_grayscale_strip_tile (ldr, tile, stem, W, H, t[0], t[1]));
+}
+
+// Walk the whole tile grid row-major through both strip loaders, the order the prescan and the
+// feature passes read it in, and expect each loader to have decoded every image row exactly once.
+// Reading the last tile again decodes nothing more.
+static inline void nyxus_ut_assert_strip_grid_decodes_each_row_once (const char* stem, size_t W, size_t H,
+    uint16_t compression, uint32_t rowsPerStrip)
+{
+    NyxusUtStripTiff fixture (stem, W, H, compression, rowsPerStrip);
+
+    RawTiffStripLoader raw (1 /*n_threads*/, fixture.path);
+    NyxusGrayscaleTiffStripLoader<uint32_t> grey (1 /*n_threads*/, fixture.path);
+
+    const size_t tw = raw.tileWidth(0),
+        th = raw.tileHeight(0),
+        nCols = (W + tw - 1) / tw,
+        nRows = (H + th - 1) / th;
+    ASSERT_GT (nCols, (size_t)1) << stem << ": geometry does not produce more than one tile per tile row";
+
+    auto tile = std::make_shared<std::vector<uint32_t>> (grey.tileWidth(0) * grey.tileHeight(0) * grey.tileDepth(0));
+
+    for (size_t tr = 0; tr < nRows; tr++)
+        for (size_t tc = 0; tc < nCols; tc++)
+        {
+            ASSERT_NO_THROW (raw.loadTileFromFile (tr, tc, 0, 0, 0, 0)) << stem << " tile (" << tr << "," << tc << ")";
+            raw.free_tile();
+            ASSERT_NO_THROW (grey.loadTileFromFile (tile, tr, tc, 0, 0, 0, 0)) << stem << " tile (" << tr << "," << tc << ")";
+        }
+
+    EXPECT_EQ (raw.scanlines_decoded(), H) << stem << ": RawTiffStripLoader";
+    EXPECT_EQ (grey.scanlines_decoded(), H) << stem << ": NyxusGrayscaleTiffStripLoader";
+
+    ASSERT_NO_THROW (raw.loadTileFromFile (nRows - 1, nCols - 1, 0, 0, 0, 0));
+    raw.free_tile();
+    ASSERT_NO_THROW (grey.loadTileFromFile (tile, nRows - 1, nCols - 1, 0, 0, 0, 0));
+    EXPECT_EQ (raw.scanlines_decoded(), H) << stem << ": RawTiffStripLoader, last tile read again";
+    EXPECT_EQ (grey.scanlines_decoded(), H) << stem << ": NyxusGrayscaleTiffStripLoader, last tile read again";
+}
+
+// The decode cost of a grid read: the tiles of one tile row share its scanlines, and a top-to-bottom
+// scan of a compressed file continues each strip where the tile row above left the decoder rather
+// than restarting it. A single strip spanning the image is where a restart per tile costs the most
+// -- each tile row would decode the image from row 0 again -- and 100 rows per strip puts row 1024,
+// where the second tile row starts, in the middle of a strip. Uncompressed, the column tiles still
+// share their tile row's scanlines.
+void test_2d_tiff_strip_loaders_decode_each_row_once_mechanics()
+{
+    EXPECT_NO_FATAL_FAILURE (nyxus_ut_assert_strip_grid_decodes_each_row_once ("dstrip2100x2100_lzw1", 2100, 2100, COMPRESSION_LZW, 2100));
+    EXPECT_NO_FATAL_FAILURE (nyxus_ut_assert_strip_grid_decodes_each_row_once ("dstrip2100x2100_lzw100", 2100, 2100, COMPRESSION_LZW, 100));
+    EXPECT_NO_FATAL_FAILURE (nyxus_ut_assert_strip_grid_decodes_each_row_once ("dstrip2100x2100_pb100", 2100, 2100, COMPRESSION_PACKBITS, 100));
+    EXPECT_NO_FATAL_FAILURE (nyxus_ut_assert_strip_grid_decodes_each_row_once ("dstrip2100x2100_none", 2100, 2100, COMPRESSION_NONE, 16));
 }
 
 // Overwrite 64 bytes three quarters of the way into strip `strip` of a single-directory TIFF with

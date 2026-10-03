@@ -24,6 +24,7 @@
 #include "raw_format.h"
 #include "ome/ome_tiff_planes.h"   // OME-XML reading and (z,c,t) -> directory selection
 #include "tiff_sample.h"           // the sample type of each (SampleFormat, BitsPerSample)
+#include "tiff_strip_band.h"       // one tile row of a striped directory, decoded once
 
 class RawTiffTileLoader : public RawFormatLoader
 {
@@ -267,12 +268,10 @@ public:
             });
 
             // A strip image is addressed in tileHeight_ x tileWidth_ tiles like a tiled one: a
-            // read copies its tile's rows and columns out of the scanlines into a buffer
-            // tileWidth_ samples wide.
-            scanline_szb = TIFFScanlineSize(tiff_);
+            // read copies its tile's rows and columns out of the tile row's scanlines into a
+            // buffer tileWidth_ samples wide.
             sample_szb = bitsPerSample_ / 8;
             tile_szb = tileHeight_ * tileWidth_ * sample_szb;
-            line_.resize (scanline_szb);
             buf = _TIFFmalloc (tile_szb);
 
             // fully constructed: ~Loader() owns the handle from here
@@ -339,35 +338,26 @@ public:
         if (endRow - startRow < tileHeight_ || endCol - startCol < tileWidth_)
             std::memset (fub, 0, tile_szb);
 
-        // libtiff reaches an arbitrary row of a strip only in an uncompressed file; a codec
-        // decodes a strip from its first row forward and cannot seek past rows it has not
-        // decoded. Every tile past the first column starts at a row the reader has already
-        // gone by, so in a compressed directory the read starts at the first row of the strip
-        // holding startRow -- a row libtiff always reaches, by (re)starting that strip -- and
-        // the rows above startRow are decoded and dropped.
-        uint16_t compression = COMPRESSION_NONE;
-        uint32_t rowsPerStrip = 0;
-        TIFFGetFieldDefaulted (tiff_, TIFFTAG_COMPRESSION, &compression);
-        TIFFGetFieldDefaulted (tiff_, TIFFTAG_ROWSPERSTRIP, &rowsPerStrip);
-        const size_t firstRow = (compression == COMPRESSION_NONE || rowsPerStrip == 0) ?
-            startRow : (startRow / rowsPerStrip) * rowsPerStrip;
+        // the tile row's scanlines, decoded by the first of its tiles to be read and shared by
+        // the rest (see Nyxus::TiffStripBand for where a compressed strip is decoded from)
+        uint32_t failedRow = 0;
+        int errcode = 0;
+        if (!band_.load (tiff_, (uint32_t) startRow, (uint32_t) endRow, failedRow, errcode))
+        {
+            std::string erm = "error " + std::to_string(errcode) + " calling TIFFReadScanline(row = " + std::to_string(failedRow) + ")";
+            throw (std::runtime_error(erm));
+        }
 
         // rows are addressed in image coordinates and land at the tile's own pitch, so tile
         // (i,j) carries the pixels of image rows [startRow,endRow) x columns [startCol,endCol)
         const size_t lineOffs = startCol * sample_szb,
-            rowBytes = (std::min) ((endCol - startCol) * sample_szb, scanline_szb - lineOffs);
-        for (size_t r = firstRow; r < endRow; r++)
-        {
-            int errcode = TIFFReadScanline (tiff_, line_.data(), (uint32_t) r);
-            if (errcode != 1)
-            {
-                std::string erm = "error " + std::to_string(errcode) + " calling TIFFReadScanline(row = " + std::to_string(r) + ")";
-                throw (std::runtime_error(erm));
-            }
-            if (r >= startRow)
-                std::memcpy (fub + (r - startRow) * tileWidth_ * sample_szb, line_.data() + lineOffs, rowBytes);
-        }
+            rowBytes = (std::min) ((endCol - startCol) * sample_szb, band_.scanline_bytes() - lineOffs);
+        for (size_t r = startRow; r < endRow; r++)
+            std::memcpy (fub + (r - startRow) * tileWidth_ * sample_szb, band_.row ((uint32_t) r) + lineOffs, rowBytes);
     }
+
+    /// @brief Scanlines decoded so far, the rows decoded only to reach a later row included
+    [[nodiscard]] size_t scanlines_decoded() const { return band_.scanlines_decoded(); }
 
     [[nodiscard]] size_t fullHeight([[maybe_unused]] size_t level) const override { return fullHeight_; }
     [[nodiscard]] size_t fullWidth([[maybe_unused]] size_t level) const override { return fullWidth_; }
@@ -436,11 +426,10 @@ private:
     bool is_ome_ = false;         ///< true when IFD-0 carries an OME-XML block
     Nyxus::OmeAxes ome_;          ///< parsed OME dimensions (drives the plane->IFD map)
 
-    // low level buffers: one tile, tileWidth_ samples per row, and one scanline of the file
+    // low level buffers: one tile, tileWidth_ samples per row, and the scanlines of one tile row
     tdata_t buf = nullptr;
-    std::vector<std::uint8_t> line_;
-    size_t scanline_szb = 0,
-        sample_szb = 0,           ///< Bytes per sample, in the file and in 'buf'
+    Nyxus::TiffStripBand band_;
+    size_t sample_szb = 0,        ///< Bytes per sample, in the file and in 'buf'
         tile_szb = 0;             ///< Bytes in 'buf'
 };
 
