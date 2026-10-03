@@ -18,6 +18,7 @@
 #include <limits.h> // for INT_MAX
 #include "ome/ome_tiff_planes.h"   // OME-XML reading and (z,c,t) -> directory selection
 #include "tiff_sample.h"           // the sample type of each (SampleFormat, BitsPerSample)
+#include "tiff_strip_band.h"       // one tile row of a striped directory, decoded once
 
 constexpr size_t STRIP_TILE_HEIGHT = 1024;
 constexpr size_t STRIP_TILE_WIDTH = 1024;
@@ -500,9 +501,6 @@ public:
         Nyxus::select_tiff_plane (tiff_, is_ome_ ? &ome_ : nullptr, fullDepth_,
             indexLayerGlobalTile, indexChannel, indexTimeframe, "NyxusGrayscaleTiffStripLoader");
 
-        // one image scanline; a std::vector so that an error thrown below does not leak it
-        std::vector<uint8_t> line (TIFFScanlineSize(tiff_));
-        tdata_t buf = line.data();
 
         size_t
             startLayer = indexLayerGlobalTile * tileDepth_,
@@ -519,44 +517,31 @@ public:
                 Nyxus::select_tiff_plane (tiff_, is_ome_ ? &ome_ : nullptr, fullDepth_,
                     layer, indexChannel, indexTimeframe, "NyxusGrayscaleTiffStripLoader");
 
-            // libtiff reaches an arbitrary row of a strip only in an uncompressed file; a codec
-            // decodes a strip from its first row forward and cannot skip rows it has not decoded.
-            // Selecting the directory above leaves no strip decoded, so a tile whose startRow is
-            // inside a strip -- every tile row past the first, unless the strip height divides the
-            // tile height -- starts at a row the codec cannot reach directly. In a compressed
-            // directory the read therefore starts at the first row of the strip holding startRow,
-            // a row libtiff always reaches by (re)starting that strip, and the rows above startRow
-            // are decoded and dropped. The same rule as RawTiffStripLoader::loadTileFromFile.
-            uint16_t compression = COMPRESSION_NONE;
-            uint32_t rowsPerStrip = 0;
-            TIFFGetFieldDefaulted(tiff_, TIFFTAG_COMPRESSION, &compression);
-            TIFFGetFieldDefaulted(tiff_, TIFFTAG_ROWSPERSTRIP, &rowsPerStrip);
-            const size_t firstRow = (compression == COMPRESSION_NONE || rowsPerStrip == 0) ?
-                startRow : (startRow / rowsPerStrip) * rowsPerStrip;
-
-            for (row = firstRow; row < endRow; row++)
+            // the tile row's scanlines, decoded by the first of its tiles to be read and shared by
+            // the rest (see Nyxus::TiffStripBand for where a compressed strip is decoded from). A
+            // failed read is an error, never pixels.
+            uint32_t failedRow = 0;
+            int errcode = 0;
+            if (!band_.load (tiff_, (uint32_t) startRow, (uint32_t) endRow, failedRow, errcode))
             {
-                // a failed read leaves the scanline buffer holding whatever it held before, so it
-                // is an error, never pixels
-                if (TIFFReadScanline(tiff_, buf, row) != 1)
-                {
-                    std::stringstream message;
-                    message << "Tile Loader ERROR: TIFFReadScanline failed at row " << row << " of " << TIFFFileName(tiff_);
-                    throw (std::runtime_error(message.str()));
-                }
+                std::stringstream message;
+                message << "Tile Loader ERROR: TIFFReadScanline failed at row " << failedRow << " of " << TIFFFileName(tiff_);
+                throw (std::runtime_error(message.str()));
+            }
 
-                // rows above startRow only bring the codec up to startRow
-                if (row < startRow)
-                    continue;
-
+            for (row = startRow; row < endRow; row++)
+            {
                 // copy at the file's own sample type
                 Nyxus::with_tiff_sample_type (sampleFormat_, bitsPerSample_, "NyxusGrayscaleTiffStripLoader", [&] (auto sample)
                 {
-                    copyRow <decltype(sample)> (buf, tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
+                    copyRow <decltype(sample)> (band_.row (row), tileDataVec, layer - startLayer, row - startRow, startCol, endCol);
                 });
             }
         }
     }
+
+    /// @brief Scanlines decoded so far, the rows decoded only to reach a later row included
+    [[nodiscard]] size_t scanlines_decoded() const { return band_.scanlines_decoded(); }
 
 
     /// @brief Tiff file height
@@ -648,7 +633,7 @@ private:
     /// @param startCol Starting column tile to copy
     /// @param endCol End column tile to copy
     template<typename FileType>
-    void copyRow(tdata_t src,
+    void copyRow(const void* src,
         std::vector<DataType>& dest_as_vector,
         size_t layer,
         size_t row,
@@ -670,7 +655,7 @@ private:
                 // minimum, which is what keeps a signed int16 CT pixel from wrapping to ~4.29e9 and
                 // blowing up the max-intensity-sized grey-bin/histogram allocation (#373), or the
                 // min-max rescale when the slide is real-valued.
-                dataItem = map_intensity ((double)((FileType*)(src))[col]);
+                dataItem = map_intensity ((double)((const FileType*)(src))[col]);
             }
             
             // - Save the informative or zero-filled value
@@ -718,5 +703,7 @@ private:
 
     bool is_ome_ = false;         ///< true when IFD-0 carries an OME-XML block
     Nyxus::OmeAxes ome_;          ///< parsed OME dimensions (drives the plane->IFD map)
+    Nyxus::TiffStripBand band_;   ///< the scanlines of the tile row last read
+
 
 };
