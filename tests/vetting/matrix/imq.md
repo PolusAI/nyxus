@@ -3,11 +3,12 @@
 Axes = the settings the four image-quality feature classes actually read; verdicts are measured, not
 assigned (SPEC §5.1).
 
-**There are none.** `FocusScoreFeature`, `SaturationFeature`, `PowerSpectrumFeature` and
-`SharpnessFeature` each take `const Fsettings&` in `calculate()` and none of the four reads a single
-`NyxSetting` — grep the four `.cpp` files for `NyxSetting`, `STNGS_` or `theEnvironment` and nothing
-comes back. Every knob these features have is a compile-time default on a private static method, so
-the cross-product is over defaults rather than over configuration, and a recipe here names a fixture
+**There is one, and it is not a knob.** `FocusScoreFeature` reads the soft-NaN setting
+(`STNGS_NAN`), the value it publishes for a `LOCAL_FOCUS_SCORE` no tile fits; `SaturationFeature`,
+`PowerSpectrumFeature` and `SharpnessFeature` read no `NyxSetting` at all — grep the four `.cpp`
+files for `NyxSetting`, `STNGS_` or `theEnvironment`. Every knob these features have is a
+compile-time default on a private static method, so the cross-product is over defaults rather than
+over configuration, and a recipe here names a fixture
 and a set of defaults instead of a settings bundle. So the cells below are separated by INPUT, not by
 settings: three of the five IMQ recipes describe the same 8×12 ROI, and the other two exist because
 a constant ROI, a narrow mask and a 24 px short side are the only ways to reach the remaining
@@ -20,20 +21,20 @@ VALID-BUT-PRODUCTION-ONLY and gets a regression guard; recording a defect is not
 one, and a cell whose guard is still outstanding says so in its own row rather than being labelled
 something outside the vocabulary.
 
-**Scope: this matrix vets the in-RAM paths.** Every VALID and VALID-BUT-PRODUCTION-ONLY row below is
-a cell `calculate()` reaches. The out-of-core cell — `osized_calculate()`, entered when a ROI exceeds
-the RAM limit — is classified and described here but **deliberately left unguarded**: closing it
-means changing what these four features publish, which is a source change rather than a vetting
-pass. It ships as one open row, and the follow-up that closes it is scoped at the end of this file.
+**Scope: this matrix vets the in-RAM paths.** Every VALID row below is a cell `calculate()` reaches.
+The out-of-core cell — `osized_calculate()`, entered when a ROI exceeds the RAM limit — is split by
+feature. The two focus scores share their scoring code with `calculate()` and are held bit-equal to
+it by an invariant test. The other three features' out-of-core cells are classified and described
+here but still unguarded, and the follow-up that closes them is scoped at the end of this file.
 
 | feature | knob | value | verdict | recipe / oracle / test |
 |---|---|---|---|---|
 | `FOCUS_SCORE` | `ksize` | 1, the only value `calculate()` passes | VALID | `imq.laplacian_ksize1_zeropad` — opencv, SPEC §7 exact tier |
-| `FOCUS_SCORE` | `ksize` | >1, kernel `{{2,0,2},{0,-8,0},{2,0,2}}` | INVALID | unreachable from `calculate()` and no `cv2.Laplacian` counterpart |
+| `FOCUS_SCORE` | `ksize` | >1, kernel `{{2,0,2},{0,-8,0},{2,0,2}}` | INVALID | unreachable from `calculate()`; the stencil itself is `cv2.Laplacian`'s ksize=3 aperture, pinned by `test_imq_focus_score_kernel_per_call_opencv` |
 | `LOCAL_FOCUS_SCORE` | `scale` | 2, the only value `calculate()` passes | VALID | `imq.laplacian_ksize1_zeropad` — opencv, the mean over the 2×2 tile grid (see below) |
 | `LOCAL_FOCUS_SCORE` | ROI | each tile carrying the texture in turn, both side parities | VALID | analytic, `test_imq_local_focus_score_{each_tile,all_tiles}_analytic` — `20v²/(P·scale²)` per tile (see below) |
-| `LOCAL_FOCUS_SCORE` | ROI side | not a multiple of `scale` | VALID | analytic, `test_imq_local_focus_score_remainder_analytic` — the leftover row/column is in no tile, pinned 0 |
-| `LOCAL_FOCUS_SCORE` | ROI side | shorter than `scale` (a 1 px thin ROI) | VALID | analytic, `test_imq_local_focus_score_thin_roi_analytic` — no tile fits, pinned 0 |
+| `LOCAL_FOCUS_SCORE` | ROI side | not a multiple of `scale` | VALID-BUT-PRODUCTION-ONLY | mechanics, `test_imq_local_focus_score_remainder_mechanics` — the leftover row/column is in no tile, pinned 0; a Nyxus convention, not a closed form |
+| `LOCAL_FOCUS_SCORE` | ROI side | shorter than `scale` (a 1 px thin ROI) | VALID-BUT-PRODUCTION-ONLY | mechanics, `test_imq_local_focus_score_thin_roi_mechanics` — no tile fits, the score is undefined and reads as the soft-NaN setting; `test_imq_local_focus_score_smallest_tiled_roi_mechanics` pins the 2×2 ROI on the other side of that guard at a defined 0 |
 | `LOCAL_FOCUS_SCORE` | `scale` | ≠2 | INVALID | no config reaches it: `calculate()` hardcodes 2, the parameter has a default and no plumbing, and nothing else calls `get_local_focus_score()` |
 | `MIN`/`MAX_SATURATION` | — | in-RAM path | VALID | `imq.saturation_observed_extremum` — cellprofiler, SPEC §7 exact tier |
 | `MIN`/`MAX_SATURATION` | ROI | constant (`min == max`) | VALID-BUT-PRODUCTION-ONLY | CellProfiler computes something else here (below), so no oracle claim — `test_imq_{min,max}_saturation_constant_roi_regression`, pinned 0 and 1 |
@@ -41,24 +42,30 @@ pass. It ships as one open row, and the follow-up that closes it is scoped at th
 | `POWER_SPECTRUM_SLOPE` | ROI short side | < 24 px | VALID-BUT-PRODUCTION-ONLY | `imq.regression_quality_roi` — the pin is the guard's return value, `test_imq_power_spectrum_slope_regression` |
 | `POWER_SPECTRUM_SLOPE` | ROI short side | ≥ 24 px | VALID-BUT-PRODUCTION-ONLY | the algorithm's only reachable cell, and it is defective (below) — `test_imq_power_spectrum_slope_large_roi_regression`, pinned 1.7837481542489078 on a 24×24 ROI |
 | `SHARPNESS` | `width` | 2 | VALID-BUT-PRODUCTION-ONLY | `imq.regression_quality_roi` — the reference DOM measure does not reproduce it (below), `test_imq_sharpness_regression` |
-| any | out-of-core (`osized_calculate`) | — | VALID-BUT-PRODUCTION-ONLY | reachable and **still unguarded** — the one open row; needs an oversized-ROI harness, see below and `not_covered.md` |
+| `FOCUS_SCORE`, `LOCAL_FOCUS_SCORE` | out-of-core (`osized_calculate`) | — | VALID-BUT-PRODUCTION-ONLY | invariant, `test_imq_focus_score_out_of_core_invariant` in `test_imq_invariant.h` and `tests/python/test_imq_ooc_invariant.py` — bit-equal to the in-RAM scores |
+| `MIN`/`MAX_SATURATION`, `POWER_SPECTRUM_SLOPE`, `SHARPNESS` | out-of-core (`osized_calculate`) | — | VALID-BUT-PRODUCTION-ONLY | reachable and **still unguarded** — the open row; see below and `not_covered.md` |
 
 ## Two things that look like knobs and are not
 
 - **The Laplacian kernel.** `laplacian()` picks one of two constant stencils per call from its
   `ksize` argument — `{{0,1,0},{1,-4,1},{0,1,0}}` for 1, `{{2,0,2},{0,-8,0},{2,0,2}}` otherwise — so
-  no call changes the kernel a later one sees. `calculate()` always passes 1.
-  `test_imq_focus_score_kernel_per_call_analytic` runs a `ksize=3` call and then a `ksize=1` one on
-  a single spike and asserts each returns its own stencil.
-- **`Fsettings`** itself. The test files pass a default-constructed one because `assert`-style
-  helpers need something to pass, not because any value in it is read.
+  no call changes the kernel a later one sees. `calculate()` always passes 1. The two stencils are
+  `cv2.Laplacian`'s ksize=1 and ksize=3 apertures exactly, and
+  `test_imq_focus_score_kernel_per_call_opencv` runs a `ksize=3` call and then a `ksize=1` one on a
+  single spike and asserts each against cv2's own unit-spike response, re-verified by
+  `gen_imq_opencv.py`.
+- **`Fsettings`** itself. The test files pass one laid out like the production settings, with the
+  soft-NaN set to a value no focus score can take, so the thin-ROI assertion can tell it from a
+  computed score. Only that one slot is read.
 
 ## `LOCAL_FOCUS_SCORE` is the mean over a `scale × scale` tile grid
 
 `get_local_focus_score()` cuts the ROI into `scale²` non-overlapping tiles of `M = height/scale` by
 `N = width/scale` pixels, tile `(tx, ty)` starting at `(tx·N, ty·M)`, and returns the mean of their
 focus scores. The last `height % scale` rows and `width % scale` columns belong to no tile. A side
-shorter than `scale` gives `M` or `N` = 0: no tile fits and the score is 0. At the `scale=2`
+shorter than `scale` gives `M` or `N` = 0: no tile fits, the score is undefined, and it reads as the
+soft-NaN setting (`--noval`, 0 by default) - the same no-value substitute the texture families
+publish - rather than as a computed score. At the `scale=2`
 `calculate()` passes, the 8×12 fixture has four 4×6 tiles, and `gen_imq_opencv.py` asserts that
 count and prints each tile's score.
 
@@ -137,19 +144,37 @@ tail nothing reads. Neither changes the six above.
 rather than untried; promotion needs the six differences resolved first. Report:
 `audit/imq_pydom_sharpness_vetting_report.md`.
 
-## The out-of-core paths are the one row still without a guard
+## The out-of-core paths
 
-`phase3.cpp:117` calls `osized_scan_whole_image()` on every registered feature method for an
-oversized ROI, and all four IMQ feature methods are registered in `feature_mgr_init.cpp`, so this
-cell is reachable production — VALID-BUT-PRODUCTION-ONLY, not "not covered". It is also the one cell
-in this matrix whose regression guard is **outstanding**: reaching `osized_calculate()` needs an
-oversized-ROI harness (a disk-backed `raw_pixels_NT` and `WriteImageMatrix_nontriv`) which the gtest
-fixture here does not build, and which overlaps the harness the 2D out-of-core repair needs on its
-own branch — building a second one here would leave two to reconcile. Stated as an open row rather
-than closed by relabelling; `not_covered.md` carries the same entry.
+`phase3.cpp:112` calls `osized_scan_whole_image()` on every registered feature method for an
+oversized ROI, and all four IMQ feature methods are registered in `feature_mgr_init.cpp`, so every
+IMQ out-of-core cell is reachable production — VALID-BUT-PRODUCTION-ONLY, not "not covered". The
+feature methods are long-lived: one instance per class serves every oversized ROI of a run, and
+nothing resets it between ROIs.
 
-Everything below is therefore read off the source rather than measured; measuring it is what the
-harness is for. Per feature:
+### The focus scores are held equal to the in-RAM path
+
+`FocusScoreFeature::osized_calculate()` builds the same bounding-box image `calculate()` reads, from
+the ROI's disk-backed pixels, and passes it to the same two scoring templates,
+`laplacian_variance()` and `get_local_focus_score()`. They read the image only through a
+`px(row, col)` accessor and filter it three rows at a time, so an oversized ROI is never held whole,
+and the two paths share every arithmetic step. Both members are assigned on every call, constant
+ROIs included, so nothing carries over from one ROI to the next.
+
+Two invariant tests assert the out-of-core scores **equal** to the in-RAM ones, not close to them:
+
+- `test_imq_focus_score_out_of_core_invariant` in `test_imq_invariant.h` calls `osized_calculate()`
+  directly, through one feature instance, on pseudo-random ROIs larger than 30 px on both sides and
+  on one side only, a constant ROI, a 1 px thin one and the im_quality fixture.
+- `tests/python/test_imq_ooc_invariant.py` drives `ImageQuality(..., ram_limit=0)` through
+  `featurize_directory`, so the real oversized-ROI loop runs, on one slide carrying a textured, a
+  constant and a thin ROI in that order.
+
+Equality with the in-RAM path is the whole claim: it establishes no vetting of its own.
+
+### The other three are still without a guard
+
+Read off the source, not measured:
 
 - **`PowerSpectrumFeature::osized_calculate()` is empty** — `{}` at `power_spectrum.h:28`, overriding
   the base's pure virtual. `FeatureMethod::osized_scan_whole_image()` (`feature_method.cpp:49`) calls
@@ -157,38 +182,19 @@ harness is for. Per feature:
   without anything having computed it.
 - **`SharpnessFeature::osized_calculate()` is empty** — `{}` at `sharpness.h:32`, the same shape,
   publishing `sharpness_`.
-- **`FocusScoreFeature::osized_calculate()` never assigns `local_focus_score_`.** It sets
-  `focus_score_` only (`focus_score.cpp:88`); `local_focus_score_` is assigned at
-  `focus_score.cpp:34`, inside `calculate()`, on the in-RAM path alone — while `save_value()` writes
-  both members either way. So it is three features in this position, not two.
-- **No member has a default initializer.** `slope_`, `sharpness_`, `focus_score_`,
-  `local_focus_score_`, `max_saturation_` and `min_saturation_` are all bare `double x;`, no
-  constructor assigns them, and `cleanup_instance()` is `virtual void cleanup_instance() {}`
-  (`feature_method.h:43`) with no override in any of the four classes. Combined with the three items
-  above, the first oversized ROI publishes an **indeterminate** double rather than a zero.
-- **The early returns leak the previous ROI's values.** `SaturationFeature::osized_calculate()`
-  (`saturation.cpp:58`) and `FocusScoreFeature::osized_calculate()` (`focus_score.cpp:83`) both
-  return early when `aux_max == aux_min`, but the base calls `save_value()` regardless. Feature
-  methods are long-lived singletons registered once in `feature_mgr_init.cpp` and nothing resets them
-  between ROIs, so the second oversized constant ROI publishes the first one's numbers. Same shape as
+- **Their members have no default initializer.** `slope_`, `sharpness_`, `max_saturation_` and
+  `min_saturation_` are bare `double x;`, no constructor assigns them, and `cleanup_instance()` is
+  `virtual void cleanup_instance() {}` (`feature_method.h:43`) with no override in any of the three
+  classes. Combined with the two items above, the first oversized ROI publishes an
+  **indeterminate** double rather than a zero.
+- **The saturation early return leaks the previous ROI's values.** `SaturationFeature::osized_calculate()`
+  (`saturation.cpp:58`) returns early when `aux_max == aux_min`, but the base calls `save_value()`
+  regardless, so the second oversized constant ROI publishes the first one's numbers. Same shape as
   the `NGTDMFeature::n_levels` static the 2D NGTDM pass fixed.
 - **`SaturationFeature::get_percent_max_pixels_NT()` uses two independent `if`s** (`saturation.cpp`
   lines 125-126) where the in-RAM `get_percent_max_pixels()` uses `else if` (lines 87-89), so on a
   constant ROI the two paths disagree by construction — and on that ROI the early return above means
   neither of them runs. One input, three answers.
-- **`FocusScoreFeature::get_focus_score_NT()`** carries four defects of its own. It calls
-  `laplacian (W, conv_buffer, width, height, ksize)` at `focus_score.cpp:134`, passing the width
-  where the definition's first size parameter is the row count — the other branch passes
-  `(winY, winX)` at line 166, which is what identifies line 134 as the bug rather than the
-  convention. It takes `variance()` over the whole `conv_buffer`, sized
-  `(winY + n - 1) * (winX + n - 1) * 2 = 2048`, larger than the region any pixel writes. In the
-  branch taken when the ROI is smaller than one 30×30 window it fills `W`, sized `winY * winX = 900`,
-  with `W[row * width + col]` over the full ROI — a 100×20 ROI writes 2000 entries into 900. And the
-  large-ROI branch steps wrong twice: the horizontal term is `winHor * n_winHor * winX` where one
-  window's stride is `winX`, so it moves `n_winHor` windows sideways per window, and
-  `row * n_winHor * winX` assumes `width == n_winHor * winX`, true only when the width is an exact
-  multiple of 30. Its `tile_variance` vector (`focus_score.cpp:144`), commented "0: abs sum of tile",
-  is declared and never touched.
 - **`PowerSpectrumFeature::featureset` names the wrong feature** (`power_spectrum.h:17`):
   `{ FeatureIMQ::FOCUS_SCORE }` where the constructor provides `POWER_SPECTRUM_SLOPE`. Latent today —
   nothing reads it, and `required()` tests the enum directly — but `SaturationFeature::required()` is
@@ -197,17 +203,16 @@ harness is for. Per feature:
 
 ### What the follow-up carries
 
-One PR, because the harness is what every row needs and the fixes are what make the rows assertable:
+One PR for the three features above:
 
-1. the oversized-ROI harness itself — a disk-backed `raw_pixels_NT` plus `WriteImageMatrix_nontriv`,
-   or the existing `ram_limit` route if IMQ can be driven out-of-core through the Python invariant
-   test the 2D repair already uses;
-2. one matrix row per feature in place of the single family-wide row above, each with its own SPEC
-   §5.1 disposition and its own assertion;
-3. a fix for every defect listed above.
+1. one matrix row per feature in place of the shared open row, each with its own SPEC §5.1
+   disposition and its own assertion — the two focus-score invariant tests are the pattern, and
+   their harnesses (a disk-backed `raw_pixels_NT` in gtest, `ImageQuality(..., ram_limit=0)` in
+   Python) already exist;
+2. a fix for every defect listed above.
 
-It changes what these four features publish on the out-of-core path, so it is a source change and
-lands on its own branch under the standing rule.
+It changes what these features publish on the out-of-core path, so it is a source change and lands
+on its own branch under the standing rule.
 
 Not in it: the `POWER_SPECTRUM_SLOPE` radial-binning defect described earlier. That one is an
 **in-RAM** defect the out-of-core path merely inherits, it is already pinned by
@@ -238,4 +243,4 @@ tolerance and `assert_feature`'s signature ends `double frac_tolerance = 1000`. 
 None of the four features has a GPU path, an IBSI mode, or a 3D twin — `FeatureIMQ` is its own
 enum and `dim=IMQ` is its own registry dimension. IMQ is also the one family with no
 `*_coverage.h` sweep to retire: every feature has a named test, and the features whose matrix has
-more than one reachable cell have one test per cell — sixteen tests over six features.
+more than one reachable cell have one test per cell.

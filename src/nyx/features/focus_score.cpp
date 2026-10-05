@@ -1,7 +1,5 @@
 #include "focus_score.h"
 
-#include <numeric>  // std::reduce / std::transform_reduce used by variance()
-
 using namespace Nyxus;
 
 namespace
@@ -24,14 +22,13 @@ void FocusScoreFeature::calculate (LR& r, const Fsettings& s)
 {
     // Get ahold of the ROI image matrix
     const ImageMatrix& Im0 = r.aux_image_matrix;
+    const pixData& pixels = Im0.ReadablePixels();
+    const size_t width = Im0.width;
+    auto px = [&pixels, width] (int row, int col) { return pixels[row * width + col]; };
 
-    std::vector<double> laplacian_vec(Im0.height * Im0.width, 0);
+    focus_score_ = laplacian_variance (px, 0, 0, Im0.height, Im0.width, 1);
 
-    this->laplacian(Im0.ReadablePixels(), laplacian_vec, Im0.height, Im0.width);
-
-    focus_score_ = this->variance(laplacian_vec);
-
-    local_focus_score_ = this->get_local_focus_score(Im0.ReadablePixels(), Im0.height, Im0.width);
+    local_focus_score_ = get_local_focus_score (px, Im0.height, Im0.width, STNGS_NAN(s));
 }
 
 void FocusScoreFeature::extract (LR& r, const Fsettings& s)
@@ -77,15 +74,20 @@ void FocusScoreFeature::reduce (size_t start, size_t end, std::vector<int>* ptrL
     }
 }
 
-void FocusScoreFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr) 
+void FocusScoreFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr)
 {
-    // Skip calculation in case of noninformative data
-    if (r.aux_max == r.aux_min) return;
-
+    // The same image calculate() reads, disk-backed: the ROI's bounding box, 0 off the mask. A
+    // constant ROI is scored as calculate() scores it, not skipped.
     WriteImageMatrix_nontriv Im0 ("FocusScoreFeature-osized_calculate-Im0", r.label);
     Im0.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
+    auto px = [&Im0] (int row, int col) { return (PixIntens) Im0.yx (row, col); };
 
-    focus_score_ = get_focus_score_NT(Im0, 1);
+    int h = (int) Im0.get_height(),
+        w = (int) Im0.get_width();
+
+    focus_score_ = laplacian_variance (px, 0, 0, h, w, 1);
+
+    local_focus_score_ = get_local_focus_score (px, h, w, STNGS_NAN(s));
 
     save_value(r.fvals);
 }
@@ -95,128 +97,6 @@ void FocusScoreFeature::save_value(std::vector<std::vector<double>>& feature_val
     feature_vals[(int)FeatureIMQ::FOCUS_SCORE][0] = focus_score_;
     feature_vals[(int)FeatureIMQ::LOCAL_FOCUS_SCORE][0] = local_focus_score_;
 
-}
-
-double FocusScoreFeature::get_focus_score_NT(WriteImageMatrix_nontriv& Im, int ksize) {
-
-    int n = 3; // size of kernel nxn
-
-    auto width = Im.get_width(),
-        height = Im.get_height(); 
-    auto xy0 = (int)ceil(double(n) / 2.);
-
-    // Window (N-fold kernel size)
-    int winX = n * 10, 
-        winY = n * 10;
-    std::vector<unsigned int> W (winY * winX);
-
-    // Convolution result buffer
-    std::vector<double> conv_buffer ((winY + n - 1) * (winX + n - 1) * 2);
-
-    // Iterate the image window by window
-    int n_winHor = width / winX, //ceil (float(width) / float(win)), 
-        n_winVert = height / winY; //ceil (float(height) / float(win));
-
-    
-    // ROI smaller than kernel?
-    if (n_winVert == 0 || n_winHor == 0)
-    {
-        // Fill the window with data
-        for (int row=0; row < height; row++) {
-            for (int col = 0; col < width; col++)
-            {
-                size_t idx = row * width + col;
-                W[idx] = Im.get_at(idx);
-            }    
-        }
-
-        // Convolve
-        laplacian (W, conv_buffer, width, height, ksize);
-        
-        return variance(conv_buffer);
-    }
-
-    // Variables for Welford Algorithm for calculating variance
-    double mean = 0.;
-    double M2 = 0.; // sum of squared distance
-    int count = 0;
-
-    std::vector<std::tuple<double, double, int>> tile_variance; // vector of tuples containing 0: abs sum of tile, 1: variance of tile, 2: buffer size
-
-    // ROI larger than kernel
-    // Calculate laplacian of window and then use Welford algorithm to calculate variance of image
-    for (int winVert = 0; winVert < n_winVert; winVert++)
-    {
-        for (int winHor = 0; winHor < n_winHor; winHor++)
-        {
-
-            // Fill the window with data
-            for (int row=0; row<winY; row++) {
-                for (int col = 0; col < winX; col++)
-                {
-                    size_t imIdx = winVert * n_winHor * winY * winX // skip whole windows above
-                        + row * n_winHor * winX  // skip 'row' image-wide horizontal lines
-                        + winHor * n_winHor * winX   // skip winHor-wide line
-                        + col;
-                    W[row * winX + col] = Im.get_at(imIdx);
-                }
-            }
-
-            // Convolve
-            laplacian (W, conv_buffer, winY, winX, ksize);
-
-            // Calculate count, mean, and sum of squared differences (M2)
-            for (const auto& pixel: conv_buffer) {
-                ++count;
-                double delta = pixel - mean;
-                mean += delta / count;
-                M2 += delta * (pixel - mean);
-            }
-        }
-    }
-
-    return M2 / count; // Return variance
-}
-
-double FocusScoreFeature::get_local_focus_score(const std::vector<PixIntens>& image, int height, int width, int ksize, int scale) {
-
-    // The ROI is cut into a scale x scale grid of non-overlapping M x N tiles, and the score is the
-    // mean of the tiles' focus scores. When a side is not a multiple of scale, its last
-    // height % scale rows or width % scale columns belong to no tile.
-    int M = height / scale;
-    int N = width / scale;
-
-    // A side shorter than scale leaves no room for a tile, so there is nothing to average
-    if (M == 0 || N == 0)
-        return 0;
-
-    double local_focus_score = 0;
-
-    std::vector<double> laplacian_vec(M*N);
-    std::vector<PixIntens> image_tile(M*N);
-    for (int ty = 0; ty < scale; ty++) {
-        for (int tx = 0; tx < scale; tx++) {
-
-            int y = ty * M,
-                x = tx * N;
-
-            // Extract image tile
-            for (int i = y; i < y + M; i++) {
-                for (int j = x; j < x + N; j++) {
-                    image_tile[(i-y) * N + (j-x)] = image[i * width + j];
-                }
-            }
-            
-            std::fill(laplacian_vec.begin(), laplacian_vec.end(), 0.);
-            laplacian(image_tile, laplacian_vec, M, N, ksize);
-
-            // calculate focus score for tile
-            local_focus_score += variance(laplacian_vec);
-        }
-
-    }
-
-    return local_focus_score / (scale * scale); // mean over the scale^2 tiles
 }
 
 void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vector<double>& out, int m_image, int n_image, int ksize) {
@@ -258,16 +138,3 @@ void FocusScoreFeature::laplacian(const std::vector<PixIntens>& image, std::vect
     }
 }
 
-double FocusScoreFeature::variance(const std::vector<double>& image) {
-
-    // Population variance of the signed Laplacian, mean((x - mean(x))^2) -- the
-    // Pech-Pacheco focus measure, matching cv2.Laplacian(img, CV_64F).var(). The
-    // absolute value is deliberately not taken: Var(|X|) = E[X^2] - E[|X|]^2 is a
-    // different, smaller statistic whenever mean(x) != 0, and zero padding at the ROI
-    // border keeps mean(x) away from 0.
-    double image_mean = std::reduce(image.begin(), image.end(), 0.0) / image.size();
-
-    return std::transform_reduce(image.begin(), image.end(), 0.0, std::plus<>(), [image_mean](double pix) {
-        return std::pow(pix - image_mean, 2);
-    }) / image.size();
-}

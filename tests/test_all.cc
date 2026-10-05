@@ -93,6 +93,8 @@
 #include "test_imq_opencv.h"
 #include "test_imq_cellprofiler.h"
 #include "test_imq_analytic.h"
+#include "test_imq_mechanics.h"
+#include "test_imq_invariant.h"
 #include "test_3d_nifti_mechanics.h"
 #include "test_3d_layouta_mechanics.h"	// the layoutA (per-Z slice files) path
 #include "test_io_plumbing_mechanics.h"	// guards shared by both dimensions
@@ -4049,19 +4051,29 @@ TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_ALL_TILES_ANALYTIC)
 	ASSERT_NO_THROW(test_imq_local_focus_score_all_tiles_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_REMAINDER_ANALYTIC)
+TEST(TEST_NYXUS, TEST_IMQ_FOCUS_SCORE_KERNEL_PER_CALL_OPENCV)
 {
-	ASSERT_NO_THROW(test_imq_local_focus_score_remainder_analytic());
+	ASSERT_NO_THROW(test_imq_focus_score_kernel_per_call_opencv());
 }
 
-TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_THIN_ROI_ANALYTIC)
+TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_REMAINDER_MECHANICS)
 {
-	ASSERT_NO_THROW(test_imq_local_focus_score_thin_roi_analytic());
+	ASSERT_NO_THROW(test_imq_local_focus_score_remainder_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_IMQ_FOCUS_SCORE_KERNEL_PER_CALL_ANALYTIC)
+TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_THIN_ROI_MECHANICS)
 {
-	ASSERT_NO_THROW(test_imq_focus_score_kernel_per_call_analytic());
+	ASSERT_NO_THROW(test_imq_local_focus_score_thin_roi_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_LOCAL_FOCUS_SCORE_SMALLEST_TILED_ROI_MECHANICS)
+{
+	ASSERT_NO_THROW(test_imq_local_focus_score_smallest_tiled_roi_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_IMQ_FOCUS_SCORE_OUT_OF_CORE_INVARIANT)
+{
+	ASSERT_NO_THROW(test_imq_focus_score_out_of_core_invariant());
 }
 
 //***** 3D i/o ***** 

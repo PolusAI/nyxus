@@ -71,8 +71,9 @@ non-overlapping tiles of :math:`\lfloor\text{height}/\text{scale}\rfloor` by
 zero border condition applied at the tile's own edge, and returns the mean of the
 :math:`\text{scale}^2` tile scores. Nyxus uses :math:`\text{scale}=2`, so the score is the mean over
 the four quadrants. When a side is not a multiple of :math:`\text{scale}`, the rows or columns past
-the grid belong to no tile. An image with a side shorter than :math:`\text{scale}` has no tiles, and
-its Local Focus Score is 0.
+the grid belong to no tile. An image with a side shorter than :math:`\text{scale}` has no tiles, so
+its Local Focus Score is undefined, and Nyxus reports the no-value substitute set by ``--noval``
+(0 by default), as it does for other undefined features.
 
 GLCM Correlation and Dissimilarity
 ----------------------------------

@@ -50,9 +50,10 @@ are the two ways this generator reduces it.
 
 **Conventions to account for:**
 
-- `ksize=1` in cv2 selects the plain `[[0,1,0],[1,-4,1],[0,1,0]]` stencil. cv2's `ksize=3` is a
-  *different, Sobel-derived* Laplacian, scaled differently — using it would produce a value that
-  looks close and is not the same statistic.
+- `ksize=1` in cv2 selects the plain `[[0,1,0],[1,-4,1],[0,1,0]]` stencil, the one `calculate()`
+  uses. cv2's `ksize=3` is `[[2,0,2],[0,-8,0],[2,0,2]]`, Nyxus' `ksize>1` kernel, which no score
+  uses: the generator checks it as a stencil, and computing the scores with it would give a
+  different statistic.
 - `BORDER_CONSTANT` is what matches Nyxus dropping out-of-range taps. `BORDER_REPLICATE`, cv2's
   default, does not.
 - `ndarray.var()` is the population variance. `numpy.var(ddof=1)` would be off by `N/(N-1)`.

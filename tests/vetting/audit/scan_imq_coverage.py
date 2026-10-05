@@ -37,15 +37,20 @@ SOURCES = [
     "test_imq_cellprofiler.h",
     "test_imq_regression.h",
     "test_imq_analytic.h",
+    "test_imq_mechanics.h",
+    "test_imq_invariant.h",
 ]
 # The golden table each file carries, so a key can be checked against the assertions that read it.
 # test_imq_analytic.h has none: its expected values are closed forms computed in the test, so there
-# is no pinned number for an assertion to leave unread.
+# is no pinned number for an assertion to leave unread. Nor do the mechanics and invariant files: one
+# asserts Nyxus' own conventions inline, the other compares two Nyxus paths with each other.
 TABLE_OF = {
     "test_imq_opencv.h": "imq_opencv_ref_vals",
     "test_imq_cellprofiler.h": "imq_cellprofiler_ref_vals",
     "test_imq_regression.h": "imq_regression_ref_vals",
     "test_imq_analytic.h": None,
+    "test_imq_mechanics.h": None,
+    "test_imq_invariant.h": None,
 }
 
 ORACLE_SUFFIX = {"opencv": "opencv", "cellprofiler": "cellprofiler", "analytic": "analytic"}
