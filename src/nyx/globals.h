@@ -133,8 +133,9 @@ namespace Nyxus
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
 
 	// Splits a 2D feature selection by what each family measures. 'on_grid' gets the families
-	// defined on the image grid -- first-order, the intensity histogram, the texture families, Gabor
-	// and the image-quality families -- which an anisotropic run computes on the pixels as acquired.
+	// defined on the image grid -- first-order (HISTOGRAM included), the intensity histogram, the
+	// texture families, Gabor and the image-quality families -- which an anisotropic run computes
+	// on the pixels as acquired.
 	// 'geometric' gets every other family, each a measurement of the ROI's geometry in physical
 	// space, which an anisotropic run computes on the cloud resampled by the spacing.
 	void split_2d_selection (const FeatureSet& requested, FeatureSet& on_grid, FeatureSet& geometric);
@@ -143,9 +144,17 @@ namespace Nyxus
 	// resampled by aniso_x * aniso_y.
 	size_t trivial_footprint_2d (const Environment& env, const LR& r, size_t n_rois);
 	// Takes a 2D ROI's box and pixel count from the cloud the anisotropic scan just cached, for the
-	// geometric families to measure. Refuses a ROI the resampling left with no pixel (raised under
-	// Python, printed otherwise) and returns false.
-	bool adopt_resampled_cloud_2d (LR& r, double ax, double ay);
+	// geometric families to measure. Returns false, touching nothing, for a ROI the resampling left
+	// with no pixel.
+	bool adopt_resampled_cloud_2d (LR& r);
+	// Reports the geometric features 'geometric' enables as not available (NaN, which the writers
+	// emit as the soft-NaN value) for a ROI the resampling at (ax, ay) left with no pixel, with a
+	// warning that names it. Its grid features are measured as usual.
+	void report_unmeasurable_geometry_2d (LR& r, const FeatureSet& geometric, double ax, double ay);
+	// Whether a 2D feature method belongs to a family defined on the image grid (see
+	// split_2d_selection): the out-of-core pass runs these over the pixels as acquired and every
+	// other requested method, dependencies included, over the resampled ROI.
+	bool is_grid_method_2d (FeatureMethod* f);
 
 	// The effective voxel spacing of slide `sidx`. Explicit --aniso* wins; else, when
 	// --use-physical-spacing is on, the slide's OME PhysicalSize* ratio-normalized (min=1).

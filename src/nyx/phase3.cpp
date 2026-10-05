@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <limits>
 #include <string>
@@ -17,33 +18,38 @@
 
 namespace Nyxus
 {
-	// Whether 'f' computes a feature that 'selection' enables
-	static bool provides_any (FeatureMethod* f, const FeatureSet& selection)
-	{
-		for (int c = (int) Feature2D::_FIRST_; c < (int) Feature2D::_COUNT_; c++)
-			if (selection.isEnabled ((Feature2D) c) && f->provides (c))
-				return true;
-		for (int c = (int) FeatureIMQ::_FIRST_; c < (int) FeatureIMQ::_COUNT_; c++)
-			if (selection.isEnabled ((FeatureIMQ) c) && f->provides (c))
-				return true;
-		return false;
-	}
-
 	// Streams the ROI's pixels resampled by (ax, ay) into r.raw_pixels_NT -- every virtual pixel below
 	// (size_t)(extent * factor) carries the physical pixel its coordinate truncates back to, as the
 	// in-RAM anisotropic scan maps them -- and takes the ROI's box and pixel count from that cloud.
-	// Refuses a ROI the resampling leaves with no pixel, as the in-RAM pass does.
-	static bool stream_resampled_roi_2d (ImageLoader& ldr, LR& r, double ax, double ay)
+	// Only the virtual pixels that can map into the ROI's box as acquired (r.aabb, which phase 1
+	// recorded) are visited, so the cost follows the ROI rather than the slide. 'measurable' comes
+	// back false for a ROI the resampling leaves with no pixel; the return value is false only for a
+	// tile that cannot be read.
+	static bool stream_resampled_roi_2d (ImageLoader& ldr, LR& r, double ax, double ay, bool& measurable)
 	{
 		const size_t tw = ldr.get_tile_width(),
 			th = ldr.get_tile_height(),
 			vw = (size_t) (double(ldr.get_full_width()) * ax),
 			vh = (size_t) (double(ldr.get_full_height()) * ay);
 
+		// a virtual column vc maps to (size_t)(vc / ax), which lies in [xmin, xmax] exactly when
+		// xmin * ax <= vc < (xmax + 1) * ax; the bounds below take a column more on either side and
+		// leave the exact test to the label check
+		auto vrange = [](StatsInt lo, StatsInt hi, double a, size_t vext, size_t& v0, size_t& v1)
+		{
+			const double first = std::floor (double(lo) * a) - 1.0,
+				last = std::ceil (double(hi + 1) * a) + 1.0;
+			v0 = first < 0.0 ? 0 : (size_t) first;
+			v1 = (std::min) (vext, (size_t) last);
+		};
+		size_t vc0, vc1, vr0, vr1;
+		vrange (r.aabb.get_xmin(), r.aabb.get_xmax(), ax, vw, vc0, vc1);
+		vrange (r.aabb.get_ymin(), r.aabb.get_ymax(), ay, vh, vr0, vr1);
+
 		r.raw_pixels_NT.init (r.label, "raw_pixels_NT");
 		size_t curt_x = SIZE_MAX, curt_y = SIZE_MAX, n = 0;
-		for (size_t vr = 0; vr < vh; vr++)
-			for (size_t vc = 0; vc < vw; vc++)
+		for (size_t vr = vr0; vr < vr1; vr++)
+			for (size_t vc = vc0; vc < vc1; vc++)
 			{
 				const size_t ph_col = (size_t) (double(vc) / ax),
 					ph_row = (size_t) (double(vr) / ay),
@@ -81,17 +87,9 @@ namespace Nyxus
 				}
 			}
 
-		if (n == 0)
-		{
-			std::string erm = "Error: ROI " + std::to_string(r.label) + " maps to no pixel at anisotropy "
-				+ std::to_string(ax) + "," + std::to_string(ay) + ", so its shape cannot be measured";
-#ifdef WITH_PYTHON_H
-			throw std::runtime_error (erm);
-#endif
-			std::cerr << erm << "\n";
-			return false;
-		}
-		r.aux_area = (unsigned int) n;
+		measurable = n > 0;
+		if (measurable)
+			r.aux_area = (unsigned int) n;
 		return true;
 	}
 
@@ -127,6 +125,8 @@ namespace Nyxus
 				p.inherit_intensity_domain (*scanned);
 			if (! env.theImLoader.open(p, env.fpimageOptions))
 			{
+				// open() can fail having allocated one half of the pair
+				env.theImLoader.close();
 				std::cout << "Terminating\n";
 				return false;
 			}
@@ -181,19 +181,22 @@ namespace Nyxus
 
 			//=== Features requiring non-raster access to pixels
 
-			// which methods run over the pixels as acquired, and which over the resampled ROI
+			// the grid families' methods run over the pixels as acquired, every other method over the
+			// resampled ROI; 'geometric' says whether any geometric feature is requested at all
 			const bool anisotropic = env.anisoOptions.customized();
 			FeatureSet on_grid, geometric;
 			if (anisotropic)
 				split_2d_selection (env.theFeatureSet, on_grid, geometric);
 
-			auto run_methods = [&](const FeatureSet* only)
+			// 'grid' -1 runs every requested method; 1 the grid families' methods; 0 every other
+			// method, which includes the ones requested only as another's dependency
+			auto run_methods = [&](int grid)
 			{
 				int nrf = env.theFeatureMgr.get_num_requested_features();
 				for (int i = 0; i < nrf; i++)
 				{
 					auto f = env.theFeatureMgr.get_feature_method (i);
-					if (only && ! provides_any (f, *only))
+					if (grid >= 0 && is_grid_method_2d (f) != (grid == 1))
 						continue;
 
 					try
@@ -219,18 +222,24 @@ namespace Nyxus
 				}
 			};
 
-			run_methods (anisotropic ? &on_grid : nullptr);
+			run_methods (anisotropic ? 1 : -1);
 
 			if (anisotropic && geometric.numOfEnabled (2))
 			{
+				const double ax = env.anisoOptions.get_aniso_x(),
+					ay = env.anisoOptions.get_aniso_y();
+				bool measurable = false;
 				r.raw_pixels_NT.clear();
-				if (! stream_resampled_roi_2d (env.theImLoader, r, env.anisoOptions.get_aniso_x(), env.anisoOptions.get_aniso_y()))
+				if (! stream_resampled_roi_2d (env.theImLoader, r, ax, ay, measurable))
 				{
 					r.raw_pixels_NT.clear();
 					env.theImLoader.close();
 					return false;
 				}
-				run_methods (&geometric);
+				if (measurable)
+					run_methods (0);
+				else
+					report_unmeasurable_geometry_2d (r, geometric, ax, ay);
 			}
 
 			//=== Clean the ROI's cache

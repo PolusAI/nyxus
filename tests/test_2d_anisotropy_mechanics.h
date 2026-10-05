@@ -33,6 +33,7 @@
 #include "../src/nyx/features/power_spectrum.h"
 #include "../src/nyx/features/saturation.h"
 #include "../src/nyx/features/sharpness.h"
+#include "../src/nyx/features/zernike.h"
 
 namespace Nyxus
 {
@@ -160,6 +161,16 @@ namespace
 		ASSERT_TRUE(e.theImLoader.open (sp, e.fpimageOptions));
 	}
 
+	// label 7: one pixel wide at column 1, which a 0.4 resampling never reads; label 3: a block beside it
+	uint16_t aniso2_thin_label (uint32_t x, uint32_t y)
+	{
+		if (x == 1 && y >= 4 && y <= 12)
+			return 7;
+		if (x >= 8 && x <= 18 && y >= 3 && y <= 14)
+			return 3;
+		return 0;
+	}
+
 	using Aniso2Values = std::vector<std::vector<double>>;
 
 	// Segmented pass over the pair: label -> values
@@ -190,6 +201,18 @@ namespace
 		EXPECT_TRUE(Nyxus::featurize_wholeslide (e, 0, e.theImLoader, vroi));
 		e.theImLoader.close();
 		return vroi.fvals;
+	}
+
+	// ROI 'gone' (the emptied one): geometry not available, grid features measured; ROI 'kept': its
+	// geometry is that of its resampled pixels
+	void expect_aniso2_vanished_roi (const LR& gone, const LR& kept, double ax, double ay)
+	{
+		for (auto f : { Nyxus::Feature2D::AREA_PIXELS_COUNT, Nyxus::Feature2D::CENTROID_X, Nyxus::Feature2D::BBOX_WIDTH })
+			EXPECT_TRUE(std::isnan (gone.fvals[(int) f][0])) << "feature " << (int) f << " of the emptied ROI is " << gone.fvals[(int) f][0];
+		EXPECT_FALSE(std::isnan (gone.fvals[(int) Nyxus::Feature2D::MEAN][0])) << "the emptied ROI's grid features are measured";
+		EXPECT_GT(gone.fvals[(int) Nyxus::Feature2D::MEAN][0], 0.0);
+		EXPECT_EQ(kept.fvals[(int) Nyxus::Feature2D::AREA_PIXELS_COUNT][0],
+			(double) aniso2_virtual_pixels (aniso2_thin_label, 3, ax, ay).size()) << "the ROI beside it was not measured";
 	}
 
 	bool aniso2_same (double a, double b)
@@ -271,32 +294,37 @@ void test_2d_anisotropy_wholeslide_splits_the_families_mechanics()
 }
 
 // A ROI one pixel wide in a column the resampling at 0.4 never reads: no virtual pixel carries it,
-// so it has no geometry to measure. The pass refuses it by name rather than reporting its shape
-// as zeros. What this discriminates: a pass that reduces the empty cloud anyway returns true.
-void test_2d_anisotropy_vanished_roi_is_refused_mechanics()
+// so it has no geometry to measure. Its geometric features are reported as not available (NaN, which
+// the writers emit as the soft-NaN value) with a warning naming it, its grid features are measured,
+// and the run carries on with the ROI beside it. What this discriminates: a pass that stops at the
+// emptied ROI returns false and leaves the other ROI's geometry unmeasured; one that reduces the
+// empty cloud reports a shape of zeros.
+void test_2d_anisotropy_vanished_roi_reports_no_geometry_mechanics()
 {
-	struct Thin
-	{
-		static uint16_t label (uint32_t x, uint32_t y) { return (x == 1 && y >= 4 && y <= 12) ? 7 : 0; }
-	};
-	ASSERT_TRUE(aniso2_virtual_pixels (Thin::label, 7, 0.4, 1.0).empty()) << "the fixture's column is read after all";
+	ASSERT_TRUE(aniso2_virtual_pixels (aniso2_thin_label, 7, 0.4, 1.0).empty()) << "the fixture's column is read after all";
 
-	Aniso2Pair p ("nyxus_2d_aniso_vanished", Thin::label);
+	Aniso2Pair p ("nyxus_2d_aniso_vanished", aniso2_thin_label);
 	Environment e;
 	// the focus-score family is left out: its local-score tile walk does not end on a ROI narrower
-	// than its tile scale, which this one-pixel ROI is
+	// than its tile scale, which the one-pixel ROI is
 	prepare_aniso2_env (e, true, p.inten.string(), p.mask.string(), 0.4, 1.0, /*with_focus=*/ false);
 	ASSERT_TRUE(Nyxus::gatherRoisMetrics (0, p.inten.string(), p.mask.string(), e, e.theImLoader));
-	ASSERT_EQ(e.uniqueLabels.size(), 1u);
-	e.roiData[7].initialize_fvals();
+	ASSERT_EQ(e.uniqueLabels.size(), 2u);
+	for (auto lab : e.uniqueLabels)
+		e.roiData[lab].initialize_fvals();
 
 	testing::internal::CaptureStderr();
-	bool ok = Nyxus::processTrivialRois (e, { 7 }, p.inten.string(), p.mask.string(), e.get_ram_limit());
+	const bool ok = Nyxus::processTrivialRois (e, { 3, 7 }, p.inten.string(), p.mask.string(), e.get_ram_limit());
 	const std::string err = testing::internal::GetCapturedStderr();
 	e.theImLoader.close();
 
-	EXPECT_FALSE(ok) << "a ROI with no resampled pixel was reduced";
+	EXPECT_TRUE(ok) << "one emptied ROI stopped the run";
 	EXPECT_NE(err.find ("ROI 7 maps to no pixel"), std::string::npos) << err;
+	expect_aniso2_vanished_roi (e.roiData[7], e.roiData[3], 0.4, 1.0);
+	EXPECT_TRUE(std::isnan (e.roiData[7].fvals[(int) Nyxus::Feature2D::ZERNIKE2D][0]));
+	EXPECT_EQ(e.roiData[7].fvals[(int) Nyxus::Feature2D::ZERNIKE2D].size(), (size_t) ZernikeFeature::NUM_FEATURE_VALS)
+		<< "the writers read every Zernike sub-value";
+	EXPECT_TRUE(std::isnan (e.roiData[7].fvals[(int) Nyxus::Feature2D::NUM_NEIGHBORS][0])) << "the neighbor pass measured it";
 }
 
 // The whole-slide trivial/oversized decision on an anisotropic run covers the pass over the slide
@@ -368,15 +396,24 @@ void test_2d_anisotropy_wholeslide_sized_as_acquired_mechanics()
 
 namespace
 {
-	// An environment with first-order and basic morphology requested -- the out-of-core pass of both
-	// is the in-RAM one -- at factors (ax, ay), through phase 1 over the pair, with the pair open
-	void prepare_aniso2_ooc_env (Environment& e, const Aniso2Pair& p, double ax, double ay)
+	// first-order with its HISTOGRAM, and basic morphology: the out-of-core pass of both is the
+	// in-RAM one
+	void select_aniso2_ooc_default (FeatureSet& fs)
+	{
+		fs.enableFeatures (PixelIntensityFeatures::featureset);
+		fs.enableFeatures ({ Nyxus::Feature2D::HISTOGRAM });
+		fs.enableFeatures (BasicMorphologyFeatures::featureset);
+	}
+
+	// An environment with 'select' requested at factors (ax, ay), through phase 1 over the pair, with
+	// the pair open
+	void prepare_aniso2_ooc_env (Environment& e, const Aniso2Pair& p, double ax, double ay,
+		void (*select) (FeatureSet&) = select_aniso2_ooc_default)
 	{
 		e.set_dim (2);
 		e.singleROI = false;
 		e.theFeatureSet.enableAll (false);
-		e.theFeatureSet.enableFeatures (PixelIntensityFeatures::featureset);
-		e.theFeatureSet.enableFeatures (BasicMorphologyFeatures::featureset);
+		select (e.theFeatureSet);
 		ASSERT_TRUE(e.theFeatureMgr.compile());
 		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
 		ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
@@ -398,9 +435,11 @@ namespace
 
 // An oversized anisotropic 2D ROI is featurized out-of-core as an in-RAM one is: the grid families
 // over the pixels as acquired, the geometric families over the ROI resampled by the factors. The
-// slide fits one 32-px tile. What this discriminates: an out-of-core pass that streams only the
-// pixels as acquired reports the ROI's shape in pixel units while the same ROI under the RAM limit
-// reports it resampled, so one ROI's geometry would depend on whether it fits in RAM.
+// slide fits one 32-px tile. HISTOGRAM is requested too: it belongs to the first-order method but not
+// to its featureset. What this discriminates: an out-of-core pass that streams only the pixels as
+// acquired reports the ROI's shape in pixel units while the same ROI under the RAM limit reports it
+// resampled; one that files HISTOGRAM as geometric reruns the whole first-order method on the
+// resampled pixels and overwrites MEAN and the rest.
 void test_2d_anisotropy_out_of_core_matches_in_ram_mechanics()
 {
 	Aniso2Pair p ("nyxus_2d_aniso_ooc", aniso2_label, 32);
@@ -424,6 +463,8 @@ void test_2d_anisotropy_out_of_core_matches_in_ram_mechanics()
 				EXPECT_NEAR(got, want, 1e-9 * (std::max) (1.0, std::abs (want)))
 					<< "ROI " << lab << " feature " << (int) f << " differs out-of-core";
 			}
+		EXPECT_EQ(ooc.roiData[lab].fvals[(int) Nyxus::Feature2D::HISTOGRAM], in_ram.roiData[lab].fvals[(int) Nyxus::Feature2D::HISTOGRAM])
+			<< "ROI " << lab << " HISTOGRAM differs out-of-core";
 
 		// and the geometry is the resampled ROI's
 		EXPECT_EQ(ooc.roiData[lab].fvals[(int) Nyxus::Feature2D::AREA_PIXELS_COUNT][0],
@@ -431,26 +472,51 @@ void test_2d_anisotropy_out_of_core_matches_in_ram_mechanics()
 	}
 }
 
-// The out-of-core twin of the vanished-ROI refusal: a ROI the resampling leaves with no pixel is
-// refused by name rather than reported with zero geometry.
-void test_2d_anisotropy_out_of_core_vanished_roi_is_refused_mechanics()
+// The out-of-core twin: the emptied ROI's geometric features are not available, its grid features are
+// measured, and the ROI beside it is featurized.
+void test_2d_anisotropy_out_of_core_vanished_roi_reports_no_geometry_mechanics()
 {
-	struct Thin
-	{
-		static uint16_t label (uint32_t x, uint32_t y) { return (x == 1 && y >= 4 && y <= 12) ? 7 : 0; }
-	};
-	ASSERT_TRUE(aniso2_virtual_pixels (Thin::label, 7, 0.4, 1.0).empty());
-
-	Aniso2Pair p ("nyxus_2d_aniso_ooc_vanished", Thin::label, 32);
+	Aniso2Pair p ("nyxus_2d_aniso_ooc_vanished", aniso2_thin_label, 32);
 	Environment e;
 	prepare_aniso2_ooc_env (e, p, 0.4, 1.0);
-	ASSERT_EQ(e.uniqueLabels.size(), 1u);
+	ASSERT_EQ(e.uniqueLabels.size(), 2u);
 
 	testing::internal::CaptureStderr();
-	const bool ok = Nyxus::processNontrivialRois (e, { 7 }, p.inten.string(), p.mask.string());
+	const bool ok = Nyxus::processNontrivialRois (e, { 3, 7 }, p.inten.string(), p.mask.string());
 	const std::string err = testing::internal::GetCapturedStderr();
 	e.theImLoader.close();
 
-	EXPECT_FALSE(ok) << "a ROI with no resampled pixel was reduced out-of-core";
+	EXPECT_TRUE(ok) << "one emptied ROI stopped the out-of-core run";
 	EXPECT_NE(err.find ("ROI 7 maps to no pixel"), std::string::npos) << err;
+	expect_aniso2_vanished_roi (e.roiData[7], e.roiData[3], 0.4, 1.0);
+}
+
+// The out-of-core resampled pass runs a geometric method requested only as another's dependency.
+// CIRCULARITY comes from the convex-hull method, which needs the contour method's PERIMETER. The
+// out-of-core contour is compared with itself rather than with the in-RAM one, which it does not
+// match even without anisotropy. What this discriminates: a pass that runs only the methods
+// providing a selected feature skips the contour method when CIRCULARITY alone is selected, and
+// CIRCULARITY then comes out 0.
+void test_2d_anisotropy_out_of_core_runs_dependencies_mechanics()
+{
+	struct Select
+	{
+		static void circularity (FeatureSet& fs) { fs.enableFeatures ({ Nyxus::Feature2D::CIRCULARITY }); }
+		static void with_perimeter (FeatureSet& fs) { fs.enableFeatures ({ Nyxus::Feature2D::CIRCULARITY, Nyxus::Feature2D::PERIMETER }); }
+	};
+	Aniso2Pair p ("nyxus_2d_aniso_ooc_deps", aniso2_label, 32);
+	Environment alone, both;
+	prepare_aniso2_ooc_env (alone, p, aniso2_ax, aniso2_ay, Select::circularity);
+	prepare_aniso2_ooc_env (both, p, aniso2_ax, aniso2_ay, Select::with_perimeter);
+	ASSERT_TRUE(Nyxus::processNontrivialRois (alone, { 1, 2 }, p.inten.string(), p.mask.string()));
+	ASSERT_TRUE(Nyxus::processNontrivialRois (both, { 1, 2 }, p.inten.string(), p.mask.string()));
+	alone.theImLoader.close();
+	both.theImLoader.close();
+
+	const int f = (int) Nyxus::Feature2D::CIRCULARITY;
+	for (int lab : { 1, 2 })
+	{
+		EXPECT_GT(alone.roiData[lab].fvals[f][0], 0.0) << "ROI " << lab << ": the contour method did not run";
+		EXPECT_EQ(alone.roiData[lab].fvals[f][0], both.roiData[lab].fvals[f][0]) << "ROI " << lab;
+	}
 }
