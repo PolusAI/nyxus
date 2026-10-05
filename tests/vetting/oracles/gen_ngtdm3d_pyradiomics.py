@@ -42,6 +42,27 @@ table over six grey levels, so two errors in that table can cancel in any one of
 table is pinned as well, from PyRadiomics' own P_ngtdm array -- the quantity it computes before the
 feature formulas, so intercepting it reimplements nothing.
 
+Recipe `ngtdm3d.pyradiomics_binwidth1_ball` is the same binning and NGTDM_RADIUS=1 on a ROI that
+does NOT fill its bounding box: the NGTDM ball phantom
+(tests/data/nifti/compat_int/compat_int_ngtdm_3d_ball.nii + compat_seg/compat_seg_ngtdm_3d_ball.nii,
+label 57), a digital ball of radius 3 whose 7x7x7 bounding box is 64% background. The 4x4x3 phantom
+above has no background voxel at all, so it cannot tell a neighbourhood confined to the ROI from one
+that reaches into the rest of the bounding box; this one can. Its intensities are 0..5 inside the
+ROI too, so a ROI voxel of level 0 and a background cell -- which the binned cube cannot tell apart --
+both occur in every neighbourhood near the surface. make_ball_phantom() defines it, `--write-ball`
+writes the two files, and every run checks the committed files still hold exactly that.
+
+The same seg file carries label 58: two voxels at opposite corners of the volume, neither within
+reach of the other. No voxel of it has a ROI neighbour, so its NGTDM is empty and Nyxus reports all
+five features as NaN (test_3d_ngtdm_isolated_voxels_mechanics). PyRadiomics instead keeps a voxel
+without neighbours, with s_i = 0 -- the one place the two conventions part, and the reason both
+recipes here use ROIs in which every voxel has a neighbour. check_ball_phantom() measures both
+properties.
+
+The out-of-core path is held to PyRadiomics on a larger ellipsoid built in
+tests/python/test_3d_ngtdm_pyradiomics.py, whose footprint forces the oversized path; make_ooc_ellipsoid()
+here is the same volume, and its goldens are pinned in that file's NGTDM_3D_NONBOX_PYRADIOMICS.
+
 Provenance: tool=pyradiomics 3.0.1 (SimpleITK 2.3.1, Python 3.8); env=nyxus_oracle (conda, needs
 Python <= 3.9); generator=tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py. Run offline; CI never
 invokes it.
@@ -62,8 +83,12 @@ DATA = os.path.join(TESTS, "data", "nifti")
 INTEN = os.path.join(DATA, "compat_int", "compat_int_ngtdm_3d.nii")
 MASK = os.path.join(DATA, "compat_seg", "compat_seg_ngtdm_3d.nii")
 TEST_H = os.path.join(TESTS, "test_3d_ngtdm_pyradiomics.h")
+BALL_INTEN = os.path.join(DATA, "compat_int", "compat_int_ngtdm_3d_ball.nii")
+BALL_MASK = os.path.join(DATA, "compat_seg", "compat_seg_ngtdm_3d_ball.nii")
+TEST_OOC_PY = os.path.join(TESTS, "python", "test_3d_ngtdm_pyradiomics.py")
 
 LABEL = 57
+ISOLATED_LABEL = 58          # the ball file's two-voxel ROI with no neighbours
 BINWIDTH = 1
 RELTOL = 1e-12         # the measured residual between the two references is 0 everywhere
 
@@ -72,6 +97,13 @@ RADII = {
     1: ("ngtdm_3d_pyradiomics_ref_vals", "ngtdm_3d_pyradiomics_matrix_ref_vals"),
     2: ("ngtdm_3d_pyradiomics_r2_ref_vals", "ngtdm_3d_pyradiomics_r2_matrix_ref_vals"),
 }
+
+# The ball recipe's header tables, and its valid-voxel count (every one of its 123 voxels).
+BALL_TABLES = ("ngtdm_3d_pyradiomics_ball_ref_vals", "ngtdm_3d_pyradiomics_ball_matrix_ref_vals")
+BALL_NVP = 123
+
+# The out-of-core test's pin table in TEST_OOC_PY.
+OOC_PINS = "NGTDM_3D_NONBOX_PYRADIOMICS"
 
 # Nyxus feature -> PyRadiomics NGTDM feature. These line up by name, unlike the GLCM family's.
 PYRAD = {
@@ -169,6 +201,162 @@ def pyradiomics_ngtdm(img, msk, label, distances):
     return f, rows
 
 
+def phantom_texture(shape, modulus):
+    """-> integer levels 0..modulus-1 over a (z, y, x) volume, deterministic and textured.
+
+    A closed form rather than a seeded generator, so the volume is the same on any numpy and the
+    Python test that builds the out-of-core volume can spell it out in one line.
+    """
+    z, y, x = numpy.indices(shape)
+    return (3 * x + 5 * y + 7 * z + x * y * z) % modulus
+
+
+def make_ball_phantom():
+    """-> (intensity float32, labels uint32), both (z, y, x) = 9x9x9: the ball recipe's phantom.
+
+    Label 57 is the digital ball of radius 3 about the centre voxel (123 voxels in a 7x7x7 bounding
+    box); label 58 is the two corner voxels (0,0,0) and (8,8,8), at levels 0 and 2. The texture
+    covers the whole volume, background included, as a real image's would.
+    """
+    n, c = 9, 4
+    z, y, x = numpy.indices((n, n, n))
+    labels = numpy.zeros((n, n, n), dtype=numpy.uint32)
+    labels[(z - c) ** 2 + (y - c) ** 2 + (x - c) ** 2 <= 9] = LABEL
+    labels[0, 0, 0] = labels[n - 1, n - 1, n - 1] = ISOLATED_LABEL
+    return phantom_texture((n, n, n), 6).astype(numpy.float32), labels
+
+
+def make_ooc_ellipsoid():
+    """-> (intensity uint16, mask bool), (z, y, x) = 24x60x60: the out-of-core test's volume.
+
+    Must stay the volume tests/python/test_3d_ngtdm_pyradiomics.py::_make_nonbox_volume_pair builds.
+    """
+    shape = (24, 60, 60)
+    z, y, x = numpy.indices(shape)
+    mask = ((z - 11.5) / 11.5) ** 2 + ((y - 29.5) / 28.0) ** 2 + ((x - 29.5) / 28.0) ** 2 <= 1.0
+    return phantom_texture(shape, 12).astype(numpy.uint16), mask
+
+
+def write_ball_phantom():
+    inten, labels = make_ball_phantom()
+    for arr, path in ((inten, BALL_INTEN), (labels, BALL_MASK)):
+        sitk.WriteImage(sitk.GetImageFromArray(arr), path)
+        print("wrote %s" % path)
+
+
+def isolated_voxels(roi, delta=1):
+    """-> the number of ROI voxels with no ROI voxel within Chebyshev distance `delta`."""
+    nz, ny, nx = roi.shape
+    count = 0
+    for z, y, x in zip(*numpy.nonzero(roi)):
+        box = roi[max(0, z - delta):z + delta + 1, max(0, y - delta):y + delta + 1,
+                  max(0, x - delta):x + delta + 1]
+        if box.sum() == 1:
+            count += 1
+    return count
+
+
+def check_ball_phantom():
+    """The committed ball files are make_ball_phantom(), and hold the properties the tests rely on.
+    -> failure count."""
+    bad = 0
+    want_i, want_l = make_ball_phantom()
+    have_i = sitk.GetArrayFromImage(sitk.ReadImage(BALL_INTEN))
+    have_l = sitk.GetArrayFromImage(sitk.ReadImage(BALL_MASK))
+    print("\n# the committed ball phantom against make_ball_phantom()")
+    if have_i.shape != want_i.shape or not numpy.array_equal(have_i, want_i):
+        print("  FAIL %s is not make_ball_phantom()'s intensity volume" % BALL_INTEN)
+        bad += 1
+    if have_l.shape != want_l.shape or not numpy.array_equal(have_l, want_l):
+        print("  FAIL %s is not make_ball_phantom()'s label volume" % BALL_MASK)
+        bad += 1
+
+    ball = want_l == LABEL
+    lo = [int(numpy.nonzero(ball)[k].min()) for k in range(3)]
+    hi = [int(numpy.nonzero(ball)[k].max()) for k in range(3)]
+    bbox = int(numpy.prod([h - l + 1 for l, h in zip(lo, hi)]))
+    print("  label %d: %d voxels in a %d-voxel bounding box, %d of them at level 0"
+          % (LABEL, ball.sum(), bbox, int((want_i[ball] == 0).sum())))
+    if ball.sum() == bbox:
+        print("  FAIL label %d fills its bounding box, so it cannot discriminate" % LABEL)
+        bad += 1
+    if not (want_i[ball] == 0).any():
+        print("  FAIL label %d has no voxel at level 0" % LABEL)
+        bad += 1
+    if isolated_voxels(ball, 2):            # radius 1 and 2 both need every voxel to have a neighbour
+        print("  FAIL label %d has a voxel without a neighbour" % LABEL)
+        bad += 1
+    iso = want_l == ISOLATED_LABEL
+    if isolated_voxels(iso) != iso.sum() or len(set(want_i[iso].tolist())) < 2:
+        print("  FAIL label %d is not %d voxels at distinct levels, none with a neighbour"
+              % (ISOLATED_LABEL, iso.sum()))
+        bad += 1
+    return bad
+
+
+def ball_run():
+    """-> ([(level, n_i, p_i, s_i)], {feature: value}) on the ball at radius 1, or None.
+
+    Three readings must agree before anything is pinned: RadiomicsNGTDM on the loaded pair, the
+    numpy reference, and PyRadiomics' public extractor -- which this phantom, having background,
+    can load where the 4x4x3 one cannot.
+    """
+    img = sitk.ReadImage(BALL_INTEN)
+    msk = sitk.Cast(sitk.ReadImage(BALL_MASK), sitk.sitkUInt32)
+    inten, labels = make_ball_phantom()
+    roi = labels == LABEL
+    levels = inten.astype(int) - int(inten[roi].min()) + 1   # binWidth=1: floor(x) - floor(min) + 1
+
+    f, rows = pyradiomics_ngtdm(img, msk, LABEL, radius_distances(1))
+    ref_rows = reference_ngtdm(levels, roi, delta=1)
+    if [r[:2] for r in rows] != [r[:2] for r in ref_rows]:
+        print("  FAIL the two NGTDM references disagree on the ball's levels/counts")
+        return None
+    worst = max(max(rel(a[2], b[2]), rel(a[3], b[3])) for a, b in zip(rows, ref_rows))
+    print("# ball, pyradiomics vs the independent reference NGTDM: worst rel %.3g over %d levels"
+          % (worst, len(rows)))
+
+    feats = {n: float(numpy.asarray(getattr(f, "get%sFeatureValue" % p)()).ravel()[0])
+             for n, p in PYRAD.items()}
+    ref_feats = reference_features(ref_rows)
+    print("# ball, pyradiomics vs the independent reference features: worst rel %.3g"
+          % max(rel(feats[n], ref_feats[n]) for n in PYRAD))
+
+    from radiomics import featureextractor
+    ex = featureextractor.RadiomicsFeatureExtractor(binWidth=BINWIDTH, label=LABEL,
+                                                    distances=radius_distances(1))
+    ex.disableAllFeatures()
+    ex.enableFeatureClassByName("ngtdm")
+    out = ex.execute(BALL_INTEN, BALL_MASK)
+    worstx = max(rel(float(out["original_ngtdm_%s" % p]), feats[n]) for n, p in PYRAD.items())
+    print("# ball, the public extractor vs RadiomicsNGTDM: worst rel %.3g" % worstx)
+    if worstx > RELTOL:
+        print("  FAIL the public extractor and RadiomicsNGTDM disagree on the ball")
+        return None
+    return rows, feats
+
+
+def ooc_run():
+    """-> {feature: value}, PyRadiomics on the out-of-core test's ellipsoid at radius 1."""
+    inten, mask = make_ooc_ellipsoid()
+    img = sitk.GetImageFromArray(inten.astype(float))
+    msk = sitk.GetImageFromArray(mask.astype(numpy.uint32))
+    f, _ = pyradiomics_ngtdm(img, msk, 1, radius_distances(1))
+    print("# out-of-core ellipsoid: %d voxels, %d of them at level 0, %d without a neighbour"
+          % (mask.sum(), int((inten[mask] == 0).sum()), isolated_voxels(mask)))
+    return {n: float(numpy.asarray(getattr(f, "get%sFeatureValue" % p)()).ravel()[0])
+            for n, p in PYRAD.items()}
+
+
+def parse_py_pins(txt, name):
+    """-> {feature: value} out of a `NAME = { "3NGTDM_X": value, ... }` literal in a Python test."""
+    m = re.search(re.escape(name) + r"\s*=\s*\{", txt)
+    if not m:
+        raise RuntimeError("%s not found in %s" % (name, TEST_OOC_PY))
+    body = re.sub(r"#[^\n]*", "", txt[m.end():].split("}", 1)[0])
+    return {n: float(v) for n, v in re.findall(r'"(3NGTDM_[A-Z0-9_]+)"\s*:\s*([-0-9.eE+]+)', body)}
+
+
 def load_phantom():
     img = sitk.ReadImage(INTEN)
     msk = sitk.Cast(sitk.ReadImage(MASK), sitk.sitkUInt32)
@@ -228,12 +416,12 @@ def cross_table_checks(txt):
     makes this the check that a copy-paste into one table and not the other cannot survive.
     """
     bad = 0
-    for radius, (scalar_table, matrix_table) in sorted(RADII.items()):
+    for scalar_table, matrix_table in [RADII[k] for k in sorted(RADII)] + [BALL_TABLES]:
         rows = parse_matrix_pins(txt, matrix_table)
         pins = parse_scalar_pins(txt, scalar_table)
         derived = reference_features(rows)
-        print("\n# cross-table: the %d radius-%d feature pins recomputed from %s"
-              % (len(pins), radius, matrix_table))
+        print("\n# cross-table: the %d feature pins of %s recomputed from %s"
+              % (len(pins), scalar_table, matrix_table))
         for name in sorted(pins):
             bad = compare("%s from %s" % (name, matrix_table), derived[name], pins[name], bad)
     return bad
@@ -247,12 +435,12 @@ def range_checks(txt):
     """
     bad = 0
     print("\n# range and identity checks over every pin in the header")
-    for scalar_table, _ in sorted(RADII.values()):
+    for scalar_table, _ in sorted(RADII.values()) + [BALL_TABLES]:
         for name, v in sorted(parse_scalar_pins(txt, scalar_table).items()):
             if not v > 0:                  # all five are sums of non-negative terms over a
                 print("  FAIL %s %s: %r is not > 0" % (scalar_table, name, v))  # non-degenerate ROI
                 bad += 1
-    matrix_tables = [(m, 48) for _, m in sorted(RADII.values())]
+    matrix_tables = [(m, 48) for _, m in sorted(RADII.values())] + [(BALL_TABLES[1], BALL_NVP)]
     for table, nvp in matrix_tables + [("ngtdm_3d_pyradiomics_docmatrix_ref_vals", 16)]:
         rows = parse_matrix_pins(txt, table)
         levels = [r[0] for r in rows]
@@ -334,7 +522,10 @@ def distances_semantics_check(img, msk, levels, roi):
 
 
 def main():
-    for p in (INTEN, MASK):
+    if "--write-ball" in sys.argv[1:]:
+        write_ball_phantom()
+
+    for p in (INTEN, MASK, BALL_INTEN, BALL_MASK):
         if not os.path.exists(p):
             print("missing phantom: %s" % p)
             return 1
@@ -363,6 +554,11 @@ def main():
     worstd = max(max(rel(a[2], b[2]), rel(a[3], b[3])) for a, b in zip(doc_pyrad, doc_rows))
     print("# doc-example NGTDM, pyradiomics vs the independent reference: worst rel %.3g" % worstd)
 
+    ball = ball_run()
+    if ball is None:
+        return 1
+    ooc_feats = ooc_run()
+
     for radius in sorted(RADII):
         scalar_table, matrix_table = RADII[radius]
         rows, feats = runs[radius]
@@ -379,13 +575,24 @@ def main():
     for lev, n, p, s in doc_pyrad:
         print("\t{ %d, %d, %r, %r }," % (lev, n, p, s))
 
+    print("\n# paste-ready goldens: %s" % BALL_TABLES[0])
+    for name in sorted(ball[1]):
+        print(('\t{"%s", %r},' % (name, ball[1][name])).ljust(56)
+              + "// original_ngtdm_%s" % PYRAD[name])
+    print("\n# paste-ready goldens: %s   { i, n_i, p_i, s_i }" % BALL_TABLES[1])
+    for lev, n, p, s in ball[0]:
+        print("\t{ %d, %d, %r, %r }," % (lev, n, p, s))
+
+    print("\n# paste-ready goldens: %s (%s)" % (OOC_PINS, os.path.relpath(TEST_OOC_PY, TESTS)))
+    for name in sorted(ooc_feats):
+        print('    "%s": %r,' % (name, ooc_feats[name]))
+
     txt_h = open(TEST_H, encoding="utf-8", errors="replace").read()
-    bad = 0
+    bad = check_ball_phantom()
 
     tables = []
-    for radius in sorted(RADII):
-        scalar_table, matrix_table = RADII[radius]
-        rows, feats = runs[radius]
+    scalar_runs = [(RADII[r][0], RADII[r][1], runs[r]) for r in sorted(RADII)]
+    for scalar_table, matrix_table, (rows, feats) in scalar_runs + [BALL_TABLES + (ball,)]:
         tables.append((matrix_table, rows))
 
         pins = parse_scalar_pins(txt_h, scalar_table)
@@ -419,6 +626,15 @@ def main():
                 continue
             bad = compare("%s i=%d p_i" % (table, lev), p, pp, bad)
             bad = compare("%s i=%d s_i" % (table, lev), s, ps, bad)
+
+    txt_py = open(TEST_OOC_PY, encoding="utf-8", errors="replace").read()
+    py_pins = parse_py_pins(txt_py, OOC_PINS)
+    print("\n# verifying %d pinned goldens of %s against this run" % (len(py_pins), OOC_PINS))
+    if sorted(py_pins) != sorted(ooc_feats):
+        print("  FAIL %s pins %s, PyRadiomics produces %s" % (OOC_PINS, sorted(py_pins), sorted(ooc_feats)))
+        bad += 1
+    for name in sorted(set(py_pins) & set(ooc_feats)):
+        bad = compare("%s %s" % (OOC_PINS, name), ooc_feats[name], py_pins[name], bad)
 
     bad += cross_table_checks(txt_h)
     bad += range_checks(txt_h)

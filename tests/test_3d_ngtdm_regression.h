@@ -7,9 +7,10 @@
 //
 // Regenerate with test_3d_ngtdm_dump_regression() below.
 //
-// At NGTDM_GREYDEPTH=64 the binning is MATLAB-style, which makes bin 1 the background level: a voxel
-// binned there is not a matrix row of its own, but it still counts towards its neighbours'
-// neighbourhood means. That is Nyxus' convention for this family and is what these values are of.
+// At NGTDM_GREYDEPTH=64 the binning is MATLAB-style, which puts background and the ROI's dimmest
+// voxels in the same bin, 1. The family reads ROI membership off the voxel cloud, not off that
+// level, so a ROI voxel in bin 1 is a matrix row like any other and the background in the bounding
+// box takes no part -- neither as a centre nor as a neighbour.
 
 // Only what nothing this file already includes supplies: <iomanip> for the dump helper's
 // setprecision. <iostream>, <string>, <tuple>, <vector> and gtest arrive through the common header
@@ -21,11 +22,11 @@
 
 static const ref_vals_map<double> ngtdm_3d_regression_ref_vals
 {
-	{"3NGTDM_COARSENESS", 4.1746559837294642e-05},
-	{"3NGTDM_CONTRAST",   0.63226607482802633},
-	{"3NGTDM_BUSYNESS",   44.389552850401223},
-	{"3NGTDM_COMPLEXITY", 2819.3512285176689},
-	{"3NGTDM_STRENGTH",   0.024654440905359544}
+	{"3NGTDM_COARSENESS", 0.00014425074974265322},
+	{"3NGTDM_CONTRAST",   0.18638838269035204},
+	{"3NGTDM_BUSYNESS",   12.846457488269712},
+	{"3NGTDM_COMPLEXITY", 736.48180228592366},
+	{"3NGTDM_STRENGTH",   0.087615225740905398}
 };
 
 // Defined in test_3d_glcm_pyradiomics.h, which the translation unit includes first.
