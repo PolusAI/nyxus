@@ -14,8 +14,8 @@ two volume rows a reference that can actually be re-run from this tree.
 | MIRP config | `by_slice=False`, `base_feature_families="morphology"`, `base_discretisation_method="none"`, native 1×1×1 spacing |
 | Nyxus config | `D3_SurfaceFeature`, `IBSI=true`, `GREYDEPTH=128`, `PIXELSIZEUM=100` (what `test_3d_morphology_common.h` sets) |
 | Generator | `tests/vetting/oracles/gen_morphology3d_mirp.py` |
-| Test | `test_3d_morphology_mirp.h`, with `test_3d_morphology_analytic.h` as a second, tool-independent oracle for `3MESH_VOLUME` |
-| Tolerance | axes `rel=1e-9`; `3MESH_VOLUME` `rel=1e-6` on a measured residual of 3.8e-08; `3VOXEL_VOLUME` 0.1% band on a measured 2.338e-04% residual; `3VOLUME_CONVEXHULL` 5% band on a measured 3.28% |
+| Test | `test_3d_morphology_mirp.h`, with `test_3d_morphology_analytic.h` as a second, tool-independent oracle for `3MESH_VOLUME` and `3VOLUME_CONVEXHULL` |
+| Tolerance | axes `rel=1e-9`; `3MESH_VOLUME` and `3VOLUME_CONVEXHULL` `rel=1e-6` on measured residuals of 3.8e-08 and 2.7e-08; `3VOXEL_VOLUME` 0.1% band on a measured 2.338e-04% residual |
 
 Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
 `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
@@ -85,7 +85,7 @@ MATLAB is not available in CI, and Octave's `image` package has no `regionprops3
 `tests/vetting/oracles/gen_morphology3d_matlab.m` now makes the comparison reproducible with licensed
 MATLAB R2026a and Image Processing Toolbox.
 
-The three MATLAB values are pinned and asserted in `test_3d_morphology_matlab.h`. MIRP computes the
+The two MATLAB values are pinned and asserted in `test_3d_morphology_matlab.h`. MIRP computes the
 same quantities and is asserted separately in `test_3d_morphology_mirp.h`. The registry therefore
 has two rows for each of these feature/config pairs, one per reference, as SPEC §3 permits:
 
@@ -94,43 +94,47 @@ has two rows for each of these feature/config pairs, one per reference, as SPEC 
 | voxel volume (`morph_vol_approx`) | 274432.0 | 274432.0 | **exact** |
 | convex-hull volume (`morph_volume` / `morph_vol_dens_conv_hull`) | 496958.32 | 497824.0 | 0.17% |
 
-`morphology_3d_mirp_volume_ref_vals` holds all three, `test_3d_morphology_{voxel_volume,
-volume_convex_hull,mesh_volume}_mirp` assert them, and `gen_morphology3d_mirp.py` re-derives them on
-every run (8 pins, all at rel=0). The MATLAB generator produces its two built-in quantities
-(`Volume` and `ConvexVolume`) directly from the
+`morphology_3d_mirp_volume_ref_vals` holds the voxel volume and `morphology_3d_mirp_mesh_ref_vals`
+the mesh volume and the hull; `test_3d_morphology_{voxel_volume,volume_convex_hull,mesh_volume}_mirp`
+assert them, and `gen_morphology3d_mirp.py` re-derives them on every run (8 pins, all at rel=0). The
+MATLAB generator produces its two built-in quantities (`Volume` and `ConvexVolume`) directly from the
 [`PolusAI/nyxus` main fixture](https://github.com/PolusAI/nyxus/blob/main/tests/data/nifti/phantoms/ut_mask57.nii),
-and the three MATLAB-named tests assert those pins against Nyxus.
+and the two MATLAB-named tests assert those pins against Nyxus.
 
-That also relocates the disagreement: Nyxus' `3VOLUME_CONVEXHULL` is 480651.67, which is 3.45% from
-MATLAB and 3.28% from MIRP, while the two tools sit 0.17% apart. The difference is on the Nyxus side —
-a **discrete voxel hull against two separately triangulated ones** — and that sentence is the
-citation SPEC §7 asks for behind the 5% band: a definitional difference between a voxelised and a
-triangulated hull, measured against two tools rather than asserted.
+The 0.17% between the two hull references is a difference of convention, not of noise. MIRP hulls the
+vertices of the marching-cubes mesh; `ConvexVolume` is the number of voxels in `regionprops3`'s
+`ConvexImage`, the hull rasterised back onto the lattice. Nyxus hulls the mesh vertices too, so it
+matches MIRP (below) and sits 0.174% from MATLAB, which the MATLAB row holds to a 0.5% band.
 
-### `3MESH_VOLUME` is the IBSI mesh integral
+### `3MESH_VOLUME` and `3VOLUME_CONVEXHULL` are the IBSI mesh quantities
 
-MIRP reports IBSI's volume (mesh) as `morph_volume` = **274338.34375**. Nyxus computes it from the
-same surface — the marching-cubes triangulation of the mask at the 0.5 isolevel, walked by
-`Nyxus::march_roi_surface` — and reproduces it:
+MIRP reports IBSI's volume (mesh) as `morph_volume` = **274338.34375**, and its convex-hull volume
+backs out of `morph_vol_dens_conv_hull` as **496958.32**. Nyxus builds the same surface — the
+marching-cubes triangulation of the mask at the 0.5 isolevel, walked by `Nyxus::march_roi_surface` —
+integrates it and hulls its vertices, and reproduces both:
 
 | feature | MIRP | Nyxus | rel |
 |---|---:|---:|---:|
 | `3MESH_VOLUME` (`morph_volume`) | 274338.34375 | 274338.33333333331 | 3.8e-08 |
+| `3VOLUME_CONVEXHULL` (`morph_volume / morph_vol_dens_conv_hull`) | 496958.3201121965 | 496958.33333333331 | 2.7e-08 |
 
-This is the same quantity on both sides, so the residual is not a convention gap being absorbed: it
-is MIRP carrying the mesh in `float32`, and the MIRP value is an exactly representable `float32`. The
-pin is `rel=1e-6`, more than an order of magnitude above the residual.
+These are the same quantities on both sides, so the residual is not a convention gap being absorbed:
+it is MIRP carrying the mesh in `float32`. The pins are `rel=1e-6`, more than an order of magnitude
+above the residuals. The hull of the voxel centres, by comparison, is 480651.67 here: 3.3% short,
+because those points sit half a step inside the mesh on every face.
 
 The mesh volume tracks the voxel-counting volume closely — 274338.34 against 274432 — which is what a
 surface integral does on a solid ROI, and is the check that the quantity is a mesh volume at all.
 
 ## A second, tool-independent oracle
 
-`test_3d_morphology_analytic.h` pins `3MESH_VOLUME` against closed-form geometry, so the feature does
-not rest on MIRP alone. A lone voxel's 0.5-isolevel surface is the octahedron with vertices half a
-lattice step out (volume 1/6) and a solid box is a bevelled box whose volume is an exact function of
-its sides; both hold at `rel=1e-12`. Those shapes separate the conventions outright — counting voxels
-returns 1 for the single voxel against 1/6.
+`test_3d_morphology_analytic.h` pins `3MESH_VOLUME` and `3VOLUME_CONVEXHULL` against closed-form
+geometry, so neither feature rests on MIRP alone. A lone voxel's 0.5-isolevel surface is the
+octahedron with vertices half a lattice step out (volume 1/6) and a solid box is a bevelled box whose
+volume is an exact function of its sides; both are convex, so each is its own hull, and both hold at
+`rel=1e-12`. Octahedra and rhombic prisms of voxels pin the hull where it differs from the mesh. Those
+shapes separate the conventions outright — counting voxels returns 1 for the single voxel against
+1/6, and hulling the voxel centres returns 0.
 
 ## The surface-area convention gap stays open
 

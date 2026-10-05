@@ -15,6 +15,11 @@
 //   recipe     = morphology3d.matlab_regionprops3
 //   generator  = tests/vetting/oracles/gen_morphology3d_matlab.m
 //
+// ConvexVolume is the number of voxels in regionprops3's ConvexImage, the hull rasterised back onto
+// the lattice, where 3VOLUME_CONVEXHULL is the volume of the hull of the mesh vertices. The two are
+// different conventions for the same body: measured 497824 against 496958.33, 0.174% apart, held to
+// the 0.5% band in test_3d_morphology_common.h.
+//
 // regionprops3 carries no mesh volume, so it cannot judge 3MESH_VOLUME. That feature is an integral
 // of the ROI surface mesh and is asserted against MIRP's morph_volume in test_3d_morphology_mirp.h
 // and against closed-form solids in test_3d_morphology_analytic.h.

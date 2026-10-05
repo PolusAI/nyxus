@@ -29,12 +29,10 @@ NOTE = {
     "3MESH_VOLUME": "IBSI volume (mesh) = MIRP morph_volume 274338.3438, pinned at rel=1e-6; also "
                     "pinned against closed-form solids in the analytic file. MATLAB regionprops3 "
                     "carries no mesh volume, so it holds no row for this feature",
-    "3VOLUME_CONVEXHULL": "discrete voxel hull (480651.67) vs MIRP's triangulated qhull volume, "
-                          "measured 3.28%; MATLAB regionprops3 separately asserts ConvexVolume "
-                          "497824 at 3.45%; "
-                          "the two oracles agree with each other to 0.17%; also pinned at rel=1e-12 "
-                          "against the voxel-centre hull of boxes, octahedra and rhombic prisms in "
-                          "the analytic file",
+    "3VOLUME_CONVEXHULL": "hull of the mesh vertices = MIRP's hull 496958.3201, pinned at rel=1e-6; "
+                          "MATLAB regionprops3 ConvexVolume 497824 counts the rasterised hull, "
+                          "asserted at 0.174% in a 0.5% band; also pinned at rel=1e-12 against "
+                          "boxes, octahedra and rhombic prisms in the analytic file",
     "3VOXEL_VOLUME": "MIRP morph_vol_approx and MATLAB Volume both report 274432; each separately "
                      "asserts Nyxus 274431.358260 within rel=1e-3 (2.338e-04% residual)",
     "3MAJOR_AXIS_LEN": "the eigenvalue-order defect that once made LEAST>MAJOR is guarded by the MIRP "

@@ -8,7 +8,7 @@
 #include "../feature_method.h"
 #include "../feature_settings.h"
 
-/// @brief A contour is a vector of X and Y coordinates of all the pixels on the border of a ROI. This class uses Moore's algorithm for cnotour detection.
+/// @brief 3D shape features of an ROI: its surface (exposed voxel faces and the marching-cubes mesh), the convex hull of that mesh, the voxel-counting volume and the principal axes.
 class D3_SurfaceFeature : public FeatureMethod
 {
 public:
@@ -22,6 +22,10 @@ public:
 	static void reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 	static void extract (LR& r, const Fsettings& s);
 	static bool required(const FeatureSet& fs);
+
+	// Volume of the convex hull of an integer lattice point cloud; 0 when the points span no volume.
+	// Shared by the in-core and out-of-core paths.
+	static double convex_hull_volume (const std::vector<std::array<double, 3>>& P);
 
 	const constexpr static std::initializer_list<Nyxus::Feature3D> featureset =
 	{
@@ -43,29 +47,6 @@ public:
 
 private:
 
-	// Double, not float: the hull's facet predicate compares plane distances against an epsilon, and
-	// in single precision at ROI coordinate magnitudes the rounding error of those distances swamps
-	// any workable epsilon, so which nearly-coplanar voxels become hull vertices is decided by
-	// compiler-dependent noise rather than by geometry.
-	struct Simplex3
-	{
-		double a[3], b[3], c[3];	// layout: x, y, z
-		Simplex3 (const double* a_, const double* b_, const double* c_)
-		{
-			for (int i = 0; i < 3; i++)
-			{
-				a[i] = a_[i];
-				b[i] = b_[i];
-				c[i] = c_[i];
-			}
-		}
-	};	
-
-	std::vector<Simplex3> hull_complex;
-
-	void build_surface (LR& r);
-	// Build the hull complex from a contour point cloud (shared by in-core + out-of-core paths)
-	void build_hull (const std::vector<std::array<double, 3>>& P);
 	// Every feature of an ROI that fills its whole w x h x d box (single-ROI mode), in closed form
 	void set_whole_box (StatsInt w, StatsInt h, StatsInt d);
 

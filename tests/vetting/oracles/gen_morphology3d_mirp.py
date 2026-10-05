@@ -59,51 +59,57 @@ MIRP = {
     "3FLATNESS": "morph_pca_flatness",
 }
 
-# The volume quantities pinned in test_3d_morphology_mirp.h beside the axes. MATLAB regionprops3
-# supplies separate assertions for the same three feature/config pairs; SPEC 3 permits both rows and
-# counts the feature as vetted when at least one oracle assertion covers it.
+# The voxel-counting volume, pinned in test_3d_morphology_mirp.h beside the axes. MATLAB
+# regionprops3 supplies a separate assertion for the same feature/config pair; SPEC 3 permits both
+# rows and counts the feature as vetted when at least one oracle assertion covers it.
 #
 #   3VOXEL_VOLUME       <- morph_vol_approx, IBSI "volume (voxel counting)": count x voxel volume.
 #                          MIRP and MATLAB both return 274432. Nyxus agrees within the shared
 #                          rel=1e-3 tier; the measured residual is 2.338e-04%.
+MIRP_VOLUME_SOURCES = ("morph_vol_approx",)
+
+# The ROI surface mesh and its convex hull. Nyxus and MIRP build the same surface -- the
+# marching-cubes triangulation of the mask at the 0.5 isolevel -- integrate it, and hull its vertices,
+# so these are the same quantities on both sides and are pinned at rel=1e-6, which is MIRP's own
+# float32 storage and nothing else.
+#
+#   3MESH_VOLUME        <- morph_volume, IBSI volume (mesh).
 #   3VOLUME_CONVEXHULL  <- morph_volume / morph_vol_dens_conv_hull. IBSI defines volume density
 #                          (convex hull) as V_mesh / V_convex, so the hull volume is the mesh volume
-#                          divided by that density. MIRP's hull is triangulated (qhull), Nyxus'
-#                          is the discrete voxel hull, which is the measured ~3.7% divergence.
-#
-#
-# 3MESH_VOLUME is NOT here: it is an integral of the ROI surface mesh, so it belongs to MIRP_MESH
-# below and is pinned against morph_volume directly.
-MIRP_VOLUME_SOURCES = ("morph_vol_approx", "morph_volume", "morph_vol_dens_conv_hull")
-
-# The volume enclosed by the ROI surface mesh. Nyxus and MIRP build the same surface -- the
-# marching-cubes triangulation of the mask at the 0.5 isolevel -- so this is the same quantity on both
-# sides and is pinned at rel=1e-6, which is MIRP's own float32 storage and nothing else.
+#                          divided by that density.
 MIRP_MESH = {
     "3MESH_VOLUME": "morph_volume",
+    "3VOLUME_CONVEXHULL": "morph_volume / morph_vol_dens_conv_hull",
 }
 
 # rel=1e-6 matches assert_3d_morphology_mesh_mirp: same definition on both sides, so the residual is
-# MIRP carrying the mesh in float32 (measured 3.8e-08), not a difference in the integral.
+# MIRP carrying the mesh in float32 (measured 3.8e-08 and 2.7e-08), not a difference in the quantity.
 MESH_RELTOL = 1e-6
 
 
 def volume_pins(extra):
-    """-> {nyxus feature: MIRP value} for the two volume features, from the raw morph_* columns."""
+    """-> {nyxus feature: MIRP value} for the voxel-counting volume, from the raw morph_* columns."""
     missing = [c for c in MIRP_VOLUME_SOURCES if c not in extra]
+    if missing:
+        raise RuntimeError(f"MIRP produced no {missing}")
+    return {"3VOXEL_VOLUME": extra["morph_vol_approx"]}
+
+
+def mesh_pins(extra):
+    """-> {nyxus feature: MIRP value} for the mesh volume and its hull, from the raw morph_* columns."""
+    missing = [c for c in ("morph_volume", "morph_vol_dens_conv_hull") if c not in extra]
     if missing:
         raise RuntimeError(f"MIRP produced no {missing}")
     dens = extra["morph_vol_dens_conv_hull"]
     if not dens > 0:
         raise RuntimeError(f"morph_vol_dens_conv_hull={dens}, cannot back out the hull volume")
-    hull = extra["morph_volume"] / dens
     return {
-        "3VOXEL_VOLUME": extra["morph_vol_approx"],
-        "3VOLUME_CONVEXHULL": hull,
+        "3MESH_VOLUME": extra["morph_volume"],
+        "3VOLUME_CONVEXHULL": extra["morph_volume"] / dens,
     }
 
 
-# Reported for context, and the two the hull pin is derived from. Everything pinned is read from the
+# Reported for context, and the columns the volume pins are read from. Everything pinned is read from the
 # tables above; nothing here is a golden by itself. The area quantities are the measurement behind
 # the convention gap that keeps 3AREA and its five ratios regression-only.
 CROSSCHECK = [
@@ -178,13 +184,8 @@ def run():
         if mrp not in df.columns:
             raise RuntimeError(f"MIRP produced no {mrp} (for {nyx})")
         out[nyx] = float(row[mrp])
-    mesh = {}
-    for nyx, mrp in MIRP_MESH.items():
-        if mrp not in df.columns:
-            raise RuntimeError(f"MIRP produced no {mrp} (for {nyx})")
-        mesh[nyx] = float(row[mrp])
     extra = {c: float(row[c]) for c, _ in CROSSCHECK if c in df.columns}
-    return out, mesh, extra
+    return out, mesh_pins(extra), extra
 
 
 def check_identities(got):
@@ -228,12 +229,10 @@ def main():
 
     vols = volume_pins(extra)
     print("# paste-ready volume goldens (second table)")
-    print(f'\t{{"3VOXEL_VOLUME", {vols["3VOXEL_VOLUME"]!r}}},'.ljust(56)
+    print(f'\t{{"3VOXEL_VOLUME", {vols["3VOXEL_VOLUME"]!r}}}'.ljust(56)
           + "// morph_vol_approx")
-    print(f'\t{{"3VOLUME_CONVEXHULL", {vols["3VOLUME_CONVEXHULL"]!r}}}'.ljust(56)
-          + "// morph_volume / morph_vol_dens_conv_hull")
 
-    print("# paste-ready mesh golden (third table)")
+    print("# paste-ready mesh goldens (third table)")
     for name in MIRP_MESH:
         print(f'\t{{"{name}", {mesh[name]!r}}},'.ljust(56) + f"// {MIRP_MESH[name]}")
 

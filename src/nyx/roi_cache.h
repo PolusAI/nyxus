@@ -70,8 +70,6 @@ public:
 	std::vector<std::vector<Pixel2>> multicontour_;
 	void merge_multicontour (std::vector<Pixel2> &flattened_contour) const;
 
-	std::vector<std::vector<size_t>> contours_3D;
-
 	std::vector<Pixel2> convHull_CH;
 
 	std::vector<std::vector<StatsReal>> fvals;

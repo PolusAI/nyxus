@@ -791,8 +791,8 @@ TEST(TEST_NYXUS, TEST_ARROW_PARQUET_MECHANICS) {
 
 //***** 3D shape *****
 
-// The three volume features have separate MATLAB and MIRP assertions. The five PCA axis features
-// are asserted against MIRP.
+// The voxel-counting and convex-hull volumes have separate MATLAB and MIRP assertions, the mesh
+// volume a MIRP one. The five PCA axis features are asserted against MIRP.
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_VOXEL_VOLUME_MATLAB) {
 	ASSERT_NO_THROW(test_3d_morphology_voxel_volume_matlab());
@@ -826,10 +826,6 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_BOX_MESH_SINGLEROI_ANALYTIC) {
 	ASSERT_NO_THROW(test_3d_morphology_box_mesh_singleroi_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERE_MESH_ANALYTIC) {
-	ASSERT_NO_THROW(test_3d_morphology_sphere_mesh_analytic());
-}
-
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_LATTICE_HULL_VOLUME_ANALYTIC) {
 	ASSERT_NO_THROW(test_3d_morphology_lattice_hull_volume_analytic());
 }
@@ -838,8 +834,24 @@ TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_PLANAR_HULL_VOLUME_ANALYTIC) {
 	ASSERT_NO_THROW(test_3d_morphology_planar_hull_volume_analytic());
 }
 
-TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_EMPTY_ROI_MESH_ANALYTIC) {
-	ASSERT_NO_THROW(test_3d_morphology_empty_roi_mesh_analytic());
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_ZERO_INTENSITY_HULL_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_morphology_zero_intensity_hull_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_TRANSLATED_ROI_INVARIANT) {
+	ASSERT_NO_THROW(test_3d_morphology_translated_roi_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SPHERE_MESH_VOLUME_INVARIANT) {
+	ASSERT_NO_THROW(test_3d_morphology_sphere_mesh_volume_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_EMPTY_ROI_MESH_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_morphology_empty_roi_mesh_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_CONVEX_HULL_VOLUME_DEGENERATE_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_morphology_convex_hull_volume_degenerate_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_SURFACE_PATHS_AGREE_INVARIANT) {

@@ -2,7 +2,8 @@
 """Regenerate and re-verify the quick_hull volume pins in tests/test_3d_morphology_mechanics.h.
 
 These are kernel mechanics, not feature values: the volume of the convex hull of a lattice
-ellipsoid's voxel centres, which is the quantity quick_hull builds 3VOLUME_CONVEXHULL from. The
+ellipsoid's voxel centres. 3VOLUME_CONVEXHULL hands quick_hull integer lattice points of the same kind:
+the ROI's mesh vertices in doubled coordinates. The
 reference is scipy.spatial.ConvexHull, i.e. qhull, an implementation independent of quick_hull.
 
 A hull of lattice points has a volume that is a multiple of 1/6, so each pin is written as that
