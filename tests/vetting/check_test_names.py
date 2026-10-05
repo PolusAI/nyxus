@@ -86,6 +86,8 @@ DIM_AGNOSTIC = {
     "test_cli_mechanics.py":
         "the CLI's exit-status contract, asserted on a 2D whole-slide run and a 3D one",
     "test_feature_calculation_common.h": "the assert_feature template, used from both dims",
+    "test_buffer_from_cloud_mechanics.h":
+        "the 2D and 3D cloud-to-buffer writers and the AABB they check against, asserted side by side",
     "test_vetting_mechanics.py": "self-test of check_coverage.py / check_test_names.py",
     "test_environment_lifecycle_mechanics.py":
         "instance -> Environment binding in the bindings; no image dimensionality involved",

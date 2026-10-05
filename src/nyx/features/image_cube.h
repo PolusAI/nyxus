@@ -1,7 +1,6 @@
 #pragma once
 
-#include <vector>
-#include "pixel.h"
+#include "aabb.h"
 
 /// @brief Generic pixel matrix class
 /// @tparam T - pixel intensity class (int, uint, float, etc)
@@ -58,6 +57,7 @@ public:
 
 		for (auto& pxl : pixelcloud)
 		{
+			aabb.require_contains (pxl.x, pxl.y, pxl.z);
 			auto x = pxl.x - xmin,
 				y = pxl.y - ymin,
 				z = pxl.z - zmin;
