@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <functional>
 #include <vector>
 #include "pixel.h"
@@ -42,15 +43,24 @@ namespace Nyxus
 	/// @brief march_roi_surface() over an in-memory voxel cloud, collecting the triangles.
 	void build_roi_surface_mesh (std::vector<Triangle3>& mesh, const std::vector<Pixel3>& cloud);
 
-	/// @brief Volume enclosed by a closed triangulated surface, by the divergence theorem.
+	/// @brief Volume enclosed by a closed triangulated surface, by the divergence theorem. Each facet's
+	/// term is taken relative to a vertex of the first facet, so on lattice meshes every term is exact
+	/// and the result does not change when the mesh is translated.
 	double mesh_volume (const std::vector<Triangle3>& mesh);
 
 	/// @brief Volume (mesh) of an ROI read plane by plane: the same integral as mesh_volume() over
 	/// march_roi_surface()'s triangles, accumulated as they are emitted, so neither the mask nor the
 	/// mesh is ever held whole. In-memory and out-of-core ROIs share it, and an ROI gets the same
 	/// value from both.
-	double roi_mesh_volume (const LatticeBounds& bounds, const RoiPlaneSource& planes);
+	///
+	/// hull_points, when given, receives the points the surface's convex hull is spanned by: of the
+	/// mesh vertices on each lattice row along x, the two ends -- a vertex between two others on one
+	/// line cannot be a vertex of the hull. They are in doubled coordinates, so the half-integer
+	/// vertices become integers, and are ordered by row.
+	double roi_mesh_volume (const LatticeBounds& bounds, const RoiPlaneSource& planes,
+		std::vector<std::array<double, 3>>* hull_points = nullptr);
 
 	/// @brief roi_mesh_volume() over an in-memory voxel cloud.
-	double roi_mesh_volume (const std::vector<Pixel3>& cloud);
+	double roi_mesh_volume (const std::vector<Pixel3>& cloud,
+		std::vector<std::array<double, 3>>* hull_points = nullptr);
 }

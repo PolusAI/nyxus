@@ -16,10 +16,13 @@
 
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-// MIRP and MATLAB use the same percent relative-error band for each volume feature.
+// Percent relative-error band for the volume features judged against a reference that does not share
+// Nyxus' definition exactly. 3VOXEL_VOLUME: MIRP and MATLAB count voxels, Nyxus applies a packing
+// constant (measured 2.34e-04%). 3VOLUME_CONVEXHULL: only MATLAB, whose ConvexVolume counts the voxels
+// of the rasterised hull where Nyxus integrates the hull of the mesh vertices (measured 0.174%).
 static double morphology_3d_volume_ref_tol_pct (const std::string& fname)
 {
-    return fname == "3VOXEL_VOLUME" ? 0.1 : 5.0;
+    return fname == "3VOXEL_VOLUME" ? 0.1 : 0.5;
 }
 
 // Fixture (SPEC 6.3.1): loads the segmented phantom, runs D3_SurfaceFeature and hands the value

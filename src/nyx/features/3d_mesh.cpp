@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cmath>
+#include <map>
+#include <utility>
 #include <vector>
 #include "3d_mesh.h"
 
@@ -404,13 +406,51 @@ namespace
 	};
 
 	// One facet's term of the divergence-theorem volume: the signed volume of the tetrahedron it spans
-	// with the origin, times 6. Over a closed surface the parts outside the body cancel.
-	double signed_volume6 (const Nyxus::Triangle3& s)
+	// with the reference point o, times 6. Over a closed surface the parts outside the body cancel
+	// whatever o is. Taking o on the surface keeps the coordinates small, so with half-integer
+	// vertices every product is exact and a translated ROI gives the same terms.
+	double signed_volume6 (const Nyxus::Triangle3& s, const double* o)
 	{
-		return s.a[0] * (s.b[1] * s.c[2] - s.b[2] * s.c[1])
-			- s.a[1] * (s.b[0] * s.c[2] - s.b[2] * s.c[0])
-			+ s.a[2] * (s.b[0] * s.c[1] - s.b[1] * s.c[0]);
+		const double a[3] = { s.a[0] - o[0], s.a[1] - o[1], s.a[2] - o[2] },
+			b[3] = { s.b[0] - o[0], s.b[1] - o[1], s.b[2] - o[2] },
+			c[3] = { s.c[0] - o[0], s.c[1] - o[1], s.c[2] - o[2] };
+		return a[0] * (b[1] * c[2] - b[2] * c[1])
+			- a[1] * (b[0] * c[2] - b[2] * c[0])
+			+ a[2] * (b[0] * c[1] - b[1] * c[0]);
 	}
+
+	// The two ends of each lattice row of mesh vertices along x, in doubled (integer) coordinates
+	class RowEnds
+	{
+	public:
+		void add (const double* v)
+		{
+			const long long x = std::llround (2. * v[0]), y = std::llround (2. * v[1]), z = std::llround (2. * v[2]);
+			auto it = rows.find ({ z, y });
+			if (it == rows.end())
+				rows.emplace (std::make_pair (z, y), std::make_pair (x, x));
+			else
+			{
+				it->second.first = std::min (it->second.first, x);
+				it->second.second = std::max (it->second.second, x);
+			}
+		}
+
+		void collect (std::vector<std::array<double, 3>>& points) const
+		{
+			points.clear();
+			for (const auto& row : rows)
+			{
+				const double y = double(row.first.second), z = double(row.first.first);
+				points.push_back ({ double(row.second.first), y, z });
+				if (row.second.second != row.second.first)
+					points.push_back ({ double(row.second.second), y, z });
+			}
+		}
+
+	private:
+		std::map<std::pair<long long, long long>, std::pair<long long, long long>> rows;	// (z, y) -> (min x, max x)
+	};
 }
 
 void Nyxus::build_roi_surface_mesh (std::vector<Triangle3>& mesh, const std::vector<Pixel3>& cloud)
@@ -425,24 +465,51 @@ void Nyxus::build_roi_surface_mesh (std::vector<Triangle3>& mesh, const std::vec
 
 double Nyxus::mesh_volume (const std::vector<Triangle3>& mesh)
 {
-	double v = 0.0;
-	for (const auto& s : mesh)
-		v += signed_volume6 (s);
-	return std::abs (v) / 6.0;
-}
-
-double Nyxus::roi_mesh_volume (const LatticeBounds& bounds, const RoiPlaneSource& planes)
-{
-	double v = 0.0;
-	march_roi_surface (bounds, planes, [&v](const Triangle3& s) { v += signed_volume6 (s); });
-	return std::abs (v) / 6.0;
-}
-
-double Nyxus::roi_mesh_volume (const std::vector<Pixel3>& cloud)
-{
-	if (cloud.empty())
+	if (mesh.empty())
 		return 0.0;
 
+	double v = 0.0;
+	for (const auto& s : mesh)
+		v += signed_volume6 (s, mesh[0].a);
+	return std::abs (v) / 6.0;
+}
+
+double Nyxus::roi_mesh_volume (const LatticeBounds& bounds, const RoiPlaneSource& planes,
+	std::vector<std::array<double, 3>>* hull_points)
+{
+	double v = 0.0, o[3] = { 0., 0., 0. };
+	bool have_o = false;
+	RowEnds ends;
+	march_roi_surface (bounds, planes, [&](const Triangle3& s)
+		{
+			if (! have_o)
+			{
+				std::copy (s.a, s.a + 3, o);
+				have_o = true;
+			}
+			v += signed_volume6 (s, o);
+			if (hull_points)
+			{
+				ends.add (s.a);
+				ends.add (s.b);
+				ends.add (s.c);
+			}
+		});
+
+	if (hull_points)
+		ends.collect (*hull_points);
+	return std::abs (v) / 6.0;
+}
+
+double Nyxus::roi_mesh_volume (const std::vector<Pixel3>& cloud, std::vector<std::array<double, 3>>* hull_points)
+{
+	if (cloud.empty())
+	{
+		if (hull_points)
+			hull_points->clear();
+		return 0.0;
+	}
+
 	CloudPlanes cp (cloud);
-	return roi_mesh_volume (cp.bounds, cp.source (cloud));
+	return roi_mesh_volume (cp.bounds, cp.source (cloud), hull_points);
 }

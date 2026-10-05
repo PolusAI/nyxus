@@ -6,14 +6,14 @@ Two benchmarks on **one fixture** — the segmented phantom
 kernel check that reads no image at all. Because the Nyxus side is identical for both benchmarks, the
 numbers *are* comparable to each other.
 
-The three volume features have two separate oracle assertions at the shared Nyxus config: MATLAB
-`regionprops3` and MIRP. This is intentional redundancy under SPEC §3, whose registry is one row per
+The voxel-counting and convex-hull volumes have two separate oracle assertions at the shared Nyxus
+config, MATLAB `regionprops3` and MIRP; the mesh volume has MIRP's alone. This is intentional redundancy under SPEC §3, whose registry is one row per
 feature × config recipe × oracle assertion and whose rollup asks whether at least one row is vetted.
 
 ## MIRP goldens — `test_3d_morphology_mirp.h`
 
-Recipe `morphology3d.mirp_ibsi`. Covers the five PCA axis features, two volume features
-(voxel-counting and convex hull) and the mesh volume.
+Recipe `morphology3d.mirp_ibsi`. Covers the five PCA axis features, the voxel-counting volume, the
+mesh volume and the convex hull of the mesh.
 
 ```
 python tests/vetting/oracles/gen_morphology3d_mirp.py
@@ -38,16 +38,18 @@ and any identity violation. Needs mirp 2.6.0:
 The two orderings agree only because MAJOR is the largest eigenvalue — which is exactly the
 correspondence a past defect broke, so the generator re-checks it every run.
 
-**The mesh volume.** It is pinned in `morphology_3d_mirp_mesh_ref_vals` at `rel=1e-6`:
+**The mesh volume and its hull.** They are pinned in `morphology_3d_mirp_mesh_ref_vals` at
+`rel=1e-6`:
 
 | Nyxus | MIRP | MIRP value | Nyxus | rel |
 |---|---|---:|---:|---:|
 | `3MESH_VOLUME` | `morph_volume` | 274338.34375 | 274338.33333333331 | 3.8e-08 |
+| `3VOLUME_CONVEXHULL` | `morph_volume / morph_vol_dens_conv_hull` | 496958.3201121965 | 496958.33333333331 | 2.7e-08 |
 
-Both sides integrate the same surface — the marching-cubes triangulation of the mask at the 0.5
-isolevel — so this is the same quantity, not a near one, and the residual is MIRP carrying the mesh in
-`float32`: the MIRP value is an exactly representable `float32`. `rel=1e-6` sits more than an order of
-magnitude above it.
+Both sides build the same surface — the marching-cubes triangulation of the mask at the 0.5
+isolevel — integrate it and hull its vertices, so these are the same quantities, not near ones, and
+the residual is MIRP carrying the mesh in `float32`. `rel=1e-6` sits more than an order of magnitude
+above both.
 
 What MIRP reports and nothing pins: `morph_area_mesh` and the five ratios built from it, which
 `3AREA` does not share a convention with (see the regression section below), and the part Nyxus
@@ -80,6 +82,10 @@ s = regionprops3(M, 'Volume', 'ConvexVolume');
 ```
 
 `Volume` → `3VOXEL_VOLUME` = 274432; `ConvexVolume` → `3VOLUME_CONVEXHULL` = 497824.
+
+`ConvexVolume` is the number of voxels in `regionprops3`'s `ConvexImage`: the hull rasterised back onto
+the lattice, where Nyxus and MIRP integrate the hull of the mesh vertices. The two conventions sit
+0.174% apart on this phantom (497824 against 496958.33), and the MATLAB row holds a 0.5% band on that.
 
 `regionprops3` has no mesh-volume property, so it holds no row for `3MESH_VOLUME`. That feature is an
 integral of the ROI surface mesh and is covered by MIRP's `morph_volume` and by the closed-form
@@ -116,14 +122,18 @@ Both shapes hold at `rel=1e-12`. The same formula is what `D3_SurfaceFeature`'s 
 `SINGLEROI` setting against the same closed form, so the shortcut is held to the value the general path
 produces.
 
-`3VOLUME_CONVEXHULL` is the volume of the convex hull of the voxel centres, so a lattice solid whose
-extreme points are known pins it exactly: a *w*×*h*×*d* box spans (*w*−1)(*h*−1)(*d*−1), the
-octahedron |x|+|y|+|z| ≤ R has 4/3·R³, and the rhombic prism |x|+|y| ≤ R, |z| ≤ H has 4·R²·H. Four
-boxes, three octahedra and two prisms, placed hundreds of voxels from the origin, hold at `rel=1e-12`.
-Voxels confined to one plane span no volume, and that ROI is held to a hull volume of 0.
+`3VOLUME_CONVEXHULL` is the volume of the convex hull of the mesh vertices. Every vertex is an in-ROI
+voxel moved half a step towards an out-of-ROI neighbour, so a lattice solid whose extreme voxels are
+known pins it exactly. The single voxel and the bevelled box are convex, so their hull is the mesh
+volume above, in both `SINGLEROI` settings. The octahedron |x|+|y|+|z| ≤ R gives the octahedron of
+radius R + ½, 4/3·(R + ½)³. The rhombic prism |x|+|y| ≤ R, |z| ≤ H gives a prism of rhombus radius
+R + ½ and height 2H, capped at each end by a frustum of height ½ narrowing to radius R. Four boxes,
+three octahedra and two prisms, placed hundreds of voxels from the origin, hold at `rel=1e-12`; scipy's
+qhull over the same vertices reproduces every one of them to 5e-16.
 
-The two discretised balls are a bound rather than a pin. `3MESH_VOLUME` converges on 4/3·π·r³ (−3.6% at
-r=5, −0.15% by r=15).
+An ROI one slice thick still has a surface with thickness, so it has a hull: the bevelled
+*w*×*h*×1 slab. And the mask alone decides the surface: a box whose voxels are all 0, or whose two
+faces are 0, gives the same bevelled box as a uniform one.
 
 ## In-RAM and out-of-core
 
@@ -132,8 +142,15 @@ disk-backed voxel cloud one Z-plane at a time. `3MESH_VOLUME` goes through the s
 `Nyxus::roi_mesh_volume` on both paths — the marching-cubes walk reads two planes at a time from
 whichever source the path has — so an ROI gets the same triangles, summed in the same order, either
 way. The whole-volume (`SINGLEROI`) closed forms live in one helper both paths call.
-`test_3d_morphology_invariant.h` featurizes a non-convex ROI both ways, in both `SINGLEROI` settings,
-and requires `3MESH_VOLUME` and `3AREA` to be equal exactly and `3VOLUME_CONVEXHULL` to `rel=1e-12`.
+The same walk collects the hull points, so the hull is shared too. `test_3d_morphology_invariant.h`
+featurizes a non-convex ROI both ways, in both `SINGLEROI` settings, and requires `3MESH_VOLUME`,
+`3AREA` and `3VOLUME_CONVEXHULL` to be equal exactly.
+
+The same file holds two more invariants. A ragged ROI translated by thousands of voxels must keep all
+three values bit for bit: both volumes are summed relative to a point on the body from integer
+(doubled) coordinates, so every term is exact. And a lattice ball's mesh volume must sit within 1% of
+4/3·π·r³ (−3.6% at r=5, −0.15% by r=15) and strictly below the voxel count, since on a convex body the
+surface through the face centres cuts every boundary corner off the union of voxel cubes.
 
 ## The marching-cubes case table
 
@@ -210,11 +227,14 @@ pyradiomics integrate a marching-cubes mesh (46739) — a 28% *convention* diffe
 `3AREA` and inherit it. No tolerance turns that into an agreement; settling it means choosing a
 convention, which changes six public feature values.
 
-## The convex hull is built in double, with eps scaled to the ROI
+## The convex hull: mesh vertices, in double, with eps scaled to the ROI
 
-`D3_SurfaceFeature::build_surface` and the out-of-core `osized_calculate`
-(`src/nyx/features/3d_surface.cpp`) load the contour points into `std::array<double,3>`, and the
-`build_hull` they share derives `quick_hull`'s epsilon from the cloud's own coordinate extent:
+The hull is taken over the mesh vertices, which `Nyxus::roi_mesh_volume` collects while it walks the
+surface. Of the vertices on each lattice row along x it keeps the two ends -- a vertex between two
+others on one line is never a hull vertex -- and hands them over in doubled coordinates, so the
+half-integer vertices become integer lattice points. `D3_SurfaceFeature::convex_hull_volume`, which
+the in-core and out-of-core paths share, hulls them and divides the volume by 8. It derives
+`quick_hull`'s epsilon from the cloud's own coordinate extent:
 
 ```cpp
 using Points = std::vector<std::array<double, dim>>;
@@ -226,11 +246,11 @@ quick_hull<typename Points::const_iterator> qh{ dim, eps };
 `quick_hull` deduces its arithmetic from the point's element type, so the element type is the whole
 precision decision. `eps` is the tolerance on "is this point outside the facet plane", and it has to
 sit above the rounding error of the distances it judges and below the smallest real gap between a
-voxel and a facet. Both scale with the ROI, which is why it is derived rather than fixed.
+lattice point and a facet. Both scale with the ROI, which is why it is derived rather than fixed.
 
-**The margin.** The contour voxels are lattice points, so a point that is not exactly coplanar with a
-facet stands at least |det|/|normal| away from it, with `det` a non-zero integer. For integer
-coordinates under 10³ that is upwards of 1e-7, and on the segmented phantom upwards of 1e-5.
+**The margin.** The doubled mesh vertices are lattice points, so a point that is not exactly coplanar
+with a facet stands at least |det|/|normal| away from it, with `det` a non-zero integer. For integer
+coordinates under 10³ that is upwards of 1e-7.
 
 The rounding error of a distance depends on how the facet plane is built. `quick_hull`'s generic
 path takes each normal component and the offset `D` as determinants of the raw coordinates, and `D`
@@ -238,37 +258,46 @@ is of order |point|³ — ~1e6 on the phantom, which leaves ~1e-10 of rounding i
 orders of magnitude above any `eps` scaled to the coordinates. For `dimension_ == 3` the plane is
 instead the cross product of two edges taken through the first vertex: every product is between
 coordinate differences, exact for lattice vertices, and a distance carries rounding of order
-|point| × `DBL_EPSILON`, ~1e-14 on the phantom. `eps` (~4e-13 there) sits between that and the
+|point| × `DBL_EPSILON`, ~1e-14 on the phantom. `eps` (under 1e-12 there) sits between that and the
 lattice gap.
 
 `eps` is also the one tolerance every decision uses: `partition()` puts a point outside a facet when
 its distance exceeds `eps`, `process_visibles()` counts a facet visible from the apex by the same
 test, and `steal_best()` extends the initial simplex only with a point further than `eps` from the
 subspace so far. A facet coplanar with the apex is therefore never removed, no zero-area facet is
-created, and an ROI confined to one plane yields no simplex and a hull volume of 0. With no decision
-left to rounding, the hull volume does not depend on the order a standard library's hash sets visit
-the facets in, which is what lets the regression pin hold at `rel=1e-9`. The triangulation of a hull
-face with more than three vertices still does: those hash sets are keyed on point addresses, so the
-same cloud can come back as 48, 50 or 52 facets that enclose the same volume.
+created, and points confined to a plane yield no simplex and a hull volume of 0; fewer than four
+points never reach `quick_hull` at all. With no decision left to rounding, the facet set encloses the
+exact hull whatever order a standard library's hash sets visit the facets in. The triangulation of a
+hull face with more than three vertices still follows that order: the hash sets are keyed on point
+addresses, so the same cloud can come back as 48, 50 or 52 facets that enclose the same volume.
 
-Each of the three predicates has a test that fails without it, and two of them are driven on the
-kernel directly in `test_3d_morphology_mechanics.h` (recipe `morphology3d.quick_hull_scipy`):
+**The volume sum.** Each facet contributes the triple product of its vertices taken relative to one
+hull vertex. Every coordinate difference is an integer, so every term is exact while it stays under
+2^53, and so is their sum, in any order and wherever the ROI sits in the image. That is what lets the
+regression pin hold at `rel=1e-9`, and what `TEST_3D_MORPHOLOGY_TRANSLATED_ROI_INVARIANT` holds to
+bit-for-bit equality. A sum of `det4` terms on absolute coordinates against a non-integer centre is
+neither: its rounding grows with the distance from the origin, 9.5e-9 at 2000 voxels out.
+
+Each of the three predicates has a test that fails without it, and the degenerate cases are driven
+on the kernel directly in `test_3d_morphology_mechanics.h` (recipe `morphology3d.quick_hull_scipy`):
 `TEST_3D_MORPHOLOGY_QUICK_HULL_LATTICE_ELLIPSOID_MECHANICS` hulls three lattice ellipsoids at six
 placements each and requires no zero-area facet, no point more than `eps` outside a facet, and the
 volume qhull gives; `TEST_3D_MORPHOLOGY_QUICK_HULL_DEGENERATE_BASIS_MECHANICS` requires
-`get_affine_basis()` to stop at three points on a plane and two on a line.
+`get_affine_basis()` to stop at three points on a plane and two on a line; and
+`TEST_3D_MORPHOLOGY_CONVEX_HULL_VOLUME_DEGENERATE_MECHANICS` requires `convex_hull_volume` to return 0
+for no point, one, three and a coplanar set.
 
 | edit, reverted alone | fails |
 |---|---|
-| cofactor plane in place of the cross product | `LATTICE_HULL_VOLUME_ANALYTIC`, `QUICK_HULL_LATTICE_ELLIPSOID_MECHANICS`, `VOLUME_CONVEX_HULL_REGRESSION` |
-| `steal_best()` accepting any distance above 0 | `QUICK_HULL_DEGENERATE_BASIS_MECHANICS`; `PLANAR_HULL_VOLUME_ANALYTIC` aborts on `assert(check())` |
-| `process_visibles()` testing `zero <` | `QUICK_HULL_LATTICE_ELLIPSOID_MECHANICS`, `VOLUME_CONVEX_HULL_REGRESSION` |
+| cofactor plane in place of the cross product | `VOLUME_CONVEX_HULL_MIRP`, `LATTICE_HULL_VOLUME_ANALYTIC`, `TRANSLATED_ROI_INVARIANT`, `QUICK_HULL_LATTICE_ELLIPSOID_MECHANICS`, `VOLUME_CONVEX_HULL_REGRESSION` |
+| `steal_best()` accepting any distance above 0 | `CONVEX_HULL_VOLUME_DEGENERATE_MECHANICS` aborts on `assert(check())`; `QUICK_HULL_DEGENERATE_BASIS_MECHANICS` |
+| `process_visibles()` testing `zero <` | `VOLUME_CONVEX_HULL_MIRP`, `QUICK_HULL_LATTICE_ELLIPSOID_MECHANICS`, `VOLUME_CONVEX_HULL_REGRESSION` |
 
-The planar ROI's volume alone cannot tell the second edit apart: without the asserts, a flat simplex
+A coplanar set's volume alone cannot tell the second edit apart: without the asserts, a flat simplex
 also integrates to 0, which is why the basis is asserted directly. The third edit is invisible to the
 closed-form solids, whose small hulls never put an apex within `eps` of a neighbouring facet; the
-ellipsoids do on most placements, and which placement depends on the hash order, so the test runs all
-eighteen.
+ellipsoids and the phantom do, and which ellipsoid placement depends on the hash order, so the test
+runs all eighteen.
 
 Regenerate or re-verify the ellipsoid volumes with
 
@@ -297,14 +326,12 @@ volume. Measured on the segmented phantom at the time:
 
 Four platforms, one outlier, rel **6.5e-4** — five to six orders of magnitude above what double
 arithmetic on a fixed algorithm leaves, and the reason the pin carried `rel=1e-3` while its seven
-neighbours carried `rel=1e-9`. The double hull returns **480651.66666666395**, which is the exact
-hull volume of the phantom's contour cloud, 1441955/3, as scipy's qhull computes it from the same
-points, and the pin is back at `rel=1e-9` with its neighbours. `TEST_3D_MORPHOLOGY_LATTICE_HULL_VOLUME_ANALYTIC`
-holds the hull to closed-form volumes on boxes, octahedra and rhombic prisms placed far from the
-origin, and `TEST_3D_MORPHOLOGY_PLANAR_HULL_VOLUME_ANALYTIC` holds a single-plane ROI to 0.
-
-The divergence figures quoted against the two hull oracles move with it: **3.28%** from MIRP and
-**3.45%** from MATLAB `regionprops3`, and they no longer carry a toolchain-dependent third digit.
+neighbours carried `rel=1e-9`. That hull was also taken over a different point set, the centres of
+the contour voxels, which sits half a step inside the mesh on every face: 3.3% below MIRP on the
+phantom, with the gap read at the time as voxelised-against-triangulated. Hulled over the mesh
+vertices instead, the phantom returns **496958.33333333331**, which is 1490875/3, the exact hull
+volume qhull computes from the same vertices, 2.7e-08 from MIRP, and the pin is back at `rel=1e-9`
+with its neighbours.
 
 ## The retired coverage sweep
 
@@ -314,7 +341,7 @@ The divergence figures quoted against the two hull oracles move with it: **3.28%
 
 | what the sweep did | where it lives now |
 |---|---|
-| MIRP band check on `3VOXEL_VOLUME`, `3VOLUME_CONVEXHULL`, `3MESH_VOLUME` | `test_3d_morphology_mirp.h`, through named tests; `3MESH_VOLUME` is now pinned against `morph_volume` at `rel=1e-6` rather than against the hull at 5% |
+| MIRP band check on `3VOXEL_VOLUME`, `3VOLUME_CONVEXHULL`, `3MESH_VOLUME` | `test_3d_morphology_mirp.h`, through named tests; `3MESH_VOLUME` and `3VOLUME_CONVEXHULL` are now pinned at `rel=1e-6`, against `morph_volume` and MIRP's hull, rather than both against the hull at 5% |
 | full-precision pins on `3ELONGATION`, `3FLATNESS`, `3LEAST_AXIS_LEN`, `3MAJOR_AXIS_LEN`, `3MINOR_AXIS_LEN` | `test_3d_morphology_mirp.h` — vetted against MIRP at `rel=1e-9`, which is strictly stronger than a self-pin |
 | full-precision pins on `3AREA`, `3AREA_2_VOLUME`, `3COMPACTNESS1`, `3COMPACTNESS2`, `3SPHERICAL_DISPROPORTION`, `3SPHERICITY` | `morphology_3d_regression_ref_vals`, byte-identical, now at `rel=1e-9` instead of 10% |
 | “the name resolves and the feature code matches” | every named test does it: `calculate_3d_morphology_feature_value()` calls `find_3D_FeatureByString` and asserts the returned code |

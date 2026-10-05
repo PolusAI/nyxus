@@ -29,7 +29,7 @@ static const ref_vals_map<double> morphology_3d_regression_ref_vals{
     { "3COMPACTNESS2",  0.039449347281835329 },
     { "3SPHERICAL_DISPROPORTION",   2.9375598657539634 },
     { "3SPHERICITY",    0.34041859424142729 },
-    { "3VOLUME_CONVEXHULL", 480651.66666666395 },
+    { "3VOLUME_CONVEXHULL", 496958.33333333331 },
     { "3VOXEL_VOLUME",  274431.35826022143 }
 };
 
@@ -39,13 +39,15 @@ static const ref_vals_map<double> morphology_3d_regression_ref_vals{
 // 17 digits.
 //
 // 3VOLUME_CONVEXHULL holds the same band because every decision the hull makes has a margin no
-// toolchain can round away. The contour voxels are lattice points, so a point that is not exactly
-// coplanar with a facet stands at least 1/|normal| off it -- upwards of 1e-7 with integer coordinates
-// under 1e3. The facet plane is the cross product of two edges taken through a vertex, which is exact
-// for lattice vertices, so a distance carries rounding of order |point| * DBL_EPSILON (~1e-14 here),
-// and the eps every predicate compares against (~4e-13 here) sits between the two. Coplanar points
-// are therefore never taken for outside ones, whatever order a standard library's hash sets visit the
-// facets in, and the pin is the exact hull volume of the cloud, 1441955/3, on every platform.
+// toolchain can round away. The hull is built over the mesh vertices in doubled coordinates, which are
+// integer lattice points, so a point that is not exactly coplanar with a facet stands at least
+// 1/|normal| off it -- upwards of 1e-7 with coordinates under 1e3. The facet plane is the cross
+// product of two edges taken through a vertex, which is exact for lattice vertices, so a distance
+// carries rounding of order |point| * DBL_EPSILON (~1e-14 here), and the eps every predicate compares
+// against (under 1e-12 here) sits between the two. Coplanar points are therefore never taken for
+// outside ones, whatever order a standard library's hash sets visit the facets in; the volume is then
+// a sum of exact integer triple products. The pin is the exact hull volume of the phantom's mesh
+// vertices, 1490875/3, on every platform.
 static constexpr double MORPHOLOGY_3D_REGRESSION_FRAC_TOLERANCE = 1.e9;
 
 static void assert_3d_morphology_feature_regression (const std::string& fname, const Nyxus::Feature3D& expecting_fcode)

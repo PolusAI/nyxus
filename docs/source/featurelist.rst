@@ -782,7 +782,7 @@ features over the (1-based) bin indices.
    * - 3SPHERICITY
      - measure of the ROI shape's roundness relative to a sphere (value of 1 is a perfect sphere)
    * - 3VOLUME_CONVEXHULL
-     - volume of the triangle mesh of ROI's convex hull
+     - volume of the convex hull of the vertices of the ROI's triangle mesh
    * - 3VOXEL_VOLUME
      - total of volumes of voxels of the ROI
    * - 3MAJOR_AXIS_LEN

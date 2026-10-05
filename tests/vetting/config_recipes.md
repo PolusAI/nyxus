@@ -568,13 +568,13 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `base_discretisation_method="none"`). Used by: `test_3d_morphology_mirp.h`.
 - Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
   `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
-- Covers the five PCA axis features (`morph_pca_*`), `3VOXEL_VOLUME` (`morph_vol_approx`), the
-  convex-hull quantity behind `3VOLUME_CONVEXHULL` (`morph_volume / morph_vol_dens_conv_hull`), and
-  the one mesh feature, `3MESH_VOLUME` (`morph_volume`).
-- `3MESH_VOLUME` is the same quantity on both sides — each integrates the marching-cubes surface of
-  the mask at the 0.5 isolevel — so it is pinned at `rel=1e-6`, which is MIRP's float32 storage of the
-  mesh and nothing else (measured 3.8e-08). The hull rows keep their 5% band: there Nyxus builds a
-  discrete voxel hull where MIRP triangulates, which is a real convention difference.
+- Covers the five PCA axis features (`morph_pca_*`), `3VOXEL_VOLUME` (`morph_vol_approx`), and the
+  two mesh features, `3MESH_VOLUME` (`morph_volume`) and `3VOLUME_CONVEXHULL`
+  (`morph_volume / morph_vol_dens_conv_hull`).
+- The mesh features are the same quantities on both sides — each builds the marching-cubes surface of
+  the mask at the 0.5 isolevel, integrates it and hulls its vertices — so they are pinned at
+  `rel=1e-6`, which is MIRP's float32 storage of the mesh and nothing else (measured 3.8e-08 and
+  2.7e-08).
 - `morph_area_mesh` is not comparable to `3AREA`: MIRP integrates a marching-cubes mesh while Nyxus
   counts exposed voxel faces, so `3AREA` and its five derived features stay on
   `morphology3d.regression_ut_phantom`.
@@ -588,10 +588,12 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - `Volume` verifies `3VOXEL_VOLUME`; `ConvexVolume` verifies `3VOLUME_CONVEXHULL`. Pinned with
   MATLAB R2026a. `regionprops3` carries no mesh volume, so it cannot judge `3MESH_VOLUME`; that
   feature is covered by `morphology3d.mirp_ibsi` and `morphology3d.analytic_lattice_solids`.
+- `ConvexVolume` is the number of voxels in `regionprops3`'s `ConvexImage`, the hull rasterised back
+  onto the lattice, where Nyxus integrates the hull of the mesh vertices: a different convention for
+  the same body, measured 0.174% apart (497824 against 496958.33).
 - Used by: `test_3d_morphology_matlab.h`. Generator:
-  `oracles/gen_morphology3d_matlab.m`. Bands: the existing MIRP bands shared by both oracle files —
-  0.1% (`rel=1e-3`) for voxel volume and 5% for the hull. The measured voxel-volume residual is
-  2.338e-04%, so both rows agree within their declared tolerance.
+  `oracles/gen_morphology3d_matlab.m`. Bands: 0.1% (`rel=1e-3`) for voxel volume, shared with the MIRP
+  row, on a measured 2.338e-04%; 0.5% for the hull on a measured 0.174%.
 
 ## morphology3d.covmatrix_numpy
 - Ten fixed voxel coordinates (`morphology_3d_covmatrix_cloud`, `test_3d_morphology_mechanics.h`),
@@ -609,28 +611,35 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 
 ## morphology3d.analytic_lattice_solids
 - Voxel clouds built in `test_3d_morphology_analytic.h`, run through `D3_SurfaceFeature::calculate`
-  the way the phantom fixtures are (`calculate_3d_morphology_on_cloud`): a single voxel, six solid
-  boxes and two discretised balls for `3MESH_VOLUME`; four boxes, three octahedra and two rhombic
-  prisms for the hull; and one planar cloud for the hull's refusal path. No image is read and no
-  external tool runs. Oracle: `analytic`. Used by: `test_3d_morphology_analytic.h`. The empty-ROI
-  refusal alone calls `Nyxus::build_roi_surface_mesh` and `Nyxus::roi_mesh_volume` directly.
+  the way the phantom fixtures are (`calculate_3d_morphology_on_cloud`): a single voxel and seven
+  solid boxes for both features; four boxes, three octahedra and two rhombic prisms for the hull; a
+  one-slice slab; and a box with zero intensities. No image is read and no external tool runs.
+  Oracle: `analytic`. Used by: `test_3d_morphology_analytic.h`. Every golden is exact and pinned at
+  `rel=1e-12`.
 - A lone voxel's 0.5-isolevel surface is the octahedron with vertices half a lattice step out, so its
   volume is exactly 1/6. A solid w × h × d box comes out bevelled, and its volume is an exact function
-  of w, h and d: whd − (w+h+d−3)/2 − 5/6. Those two shapes are pinned at `rel=1e-12`, which is what
-  double arithmetic on exact half-integer coordinates delivers.
+  of w, h and d: whd − (w+h+d−3)/2 − 5/6. Both are convex, so each is also its own hull.
 - The box formula is also what `D3_SurfaceFeature`'s whole-volume (`SINGLEROI`) branch computes in
-  place of meshing every voxel. The box test runs twice, once per `SINGLEROI` setting, against the same
-  closed form, so the shortcut is held to the value the general path produces.
-- The balls are a bound, not a pin: the mesh volume converges on 4/3·π·r³ (−0.15% by r=15).
-- `3VOLUME_CONVEXHULL` is the volume of the convex hull of the voxel centres, so the hull solids have
-  exact volumes: (w−1)(h−1)(d−1) for a w × h × d box, 4/3·R³ for the octahedron |x|+|y|+|z| ≤ R and
-  4·R²·H for the rhombic prism |x|+|y| ≤ R, |z| ≤ H. They sit hundreds of voxels from the origin and are
-  pinned at `rel=1e-12`. A cloud confined to one plane spans no volume and is held to 0.
+  place of meshing every voxel, for both features. The box test runs twice, once per `SINGLEROI`
+  setting, against the same closed form, so the shortcut is held to the values the general path
+  produces.
+- `3VOLUME_CONVEXHULL` is the volume of the convex hull of the mesh vertices, each an in-ROI voxel
+  moved half a step towards an out-of-ROI neighbour. The octahedron |x|+|y|+|z| ≤ R therefore gives
+  4/3·(R + ½)³, and the rhombic prism |x|+|y| ≤ R, |z| ≤ H a prism of rhombus radius R + ½ and height
+  2H capped by two frusta of height ½ narrowing to radius R. They sit hundreds of voxels from the
+  origin. scipy's qhull over the same vertices reproduces every golden to 5e-16.
+- A one-slice ROI still has a surface with thickness, so its hull is the bevelled slab. The mask alone
+  decides the surface: a box with all voxels at 0, or two faces at 0, gives the uniform box's values.
+- Out of scope: ROIs whose surface has ambiguous faces (two diagonal corners inside, the 120 table
+  entries that depart from the classic triangulation). None of these solids, and no surface cell of the
+  phantom, has one, so no value assertion reaches them; their closure is
+  checked in `test_3d_morphology_mechanics.h`.
 
 ## morphology3d.quick_hull_scipy
 - Lattice ellipsoids built in `test_3d_morphology_mechanics.h` (`morphology_3d_quick_hull_ellipsoids`),
   each hulled at six placements from the origin out to 2e4 by `quick_hull` directly, with the `eps`
-  `D3_SurfaceFeature::build_hull` uses; plus a plane and a line whose affine basis must stop short.
+  `D3_SurfaceFeature::convex_hull_volume` uses; plus a plane and a line whose affine basis must stop
+  short.
   No image and no feature. Reference: `scipy` 1.10.1 `spatial.ConvexHull` (qhull) — **not an
   oracle**: `scipy` is not a SPEC §4 oracle token and a mechanics assertion establishes no vetting.
   Used by: `test_3d_morphology_mechanics.h`. Generator: `oracles/gen_morphology3d_quick_hull_scipy.py`.

@@ -9,7 +9,8 @@
 #include <sstream>
 #include <utility>
 #include "../src/nyx/3rdparty/quickhull.hpp"   // quick_hull
-#include "../src/nyx/features/3d_mesh.h"   // Triangle3, build_roi_surface_mesh
+#include "../src/nyx/features/3d_mesh.h"   // Triangle3, LatticeBounds, build_roi_surface_mesh, mesh_volume, roi_mesh_volume
+#include "../src/nyx/features/3d_surface.h"   // D3_SurfaceFeature::convex_hull_volume
 #include "../src/nyx/features/pixel.h"   // Pixel3
 #include "../src/nyx/helpers/helpers.h"   // Nyxus::calc_eigvals
 #include "test_3d_morphology_common.h"    // gtest, <string>, <vector>, agrees_gt
@@ -144,7 +145,7 @@ void test_3d_morphology_surface_mesh_closed_mechanics()
 }
 
 // The convex hull kernel, quick_hull (src/nyx/3rdparty/quickhull.hpp), driven directly and the way
-// D3_SurfaceFeature::build_hull drives it: double points, eps = 16 * DBL_EPSILON * the largest
+// D3_SurfaceFeature::convex_hull_volume drives it: double points, eps = 16 * DBL_EPSILON * the largest
 // coordinate. The clouds are lattice ellipsoids, every voxel with (x/a)^2 + (y/b)^2 + (z/c)^2 <= 1,
 // because their hull faces carry many voxels exactly on a face or on an edge line -- the points the
 // facet predicates must treat as within eps of a plane, not as above or below it.
@@ -262,8 +263,8 @@ void test_3d_morphology_quick_hull_lattice_ellipsoid_mechanics()
 
 // The refusal path of the same kernel: a cloud that spans no volume has no initial simplex.
 // get_affine_basis() adds a point only if it lies more than eps off the subspace the basis already
-// spans, so a plane stops at three points and a line at two, and build_hull then leaves the hull
-// empty. The clouds are integer points, in an axis-aligned plane, a tilted plane and a tilted line,
+// spans, so a plane stops at three points and a line at two, and convex_hull_volume then reports
+// a volume of 0. The clouds are integer points, in an axis-aligned plane, a tilted plane and a tilted line,
 // far enough from the origin that a point in the subspace sits a rounding error off it rather than
 // exactly on it.
 void test_3d_morphology_quick_hull_degenerate_basis_mechanics()
@@ -303,4 +304,38 @@ void test_3d_morphology_quick_hull_degenerate_basis_mechanics()
         qh.add_points (std::cbegin(c.P), std::cend(c.P));
         ASSERT_EQ (qh.get_affine_basis().size(), c.rank) << c.name << " of " << c.P.size() << " points";
     }
+}
+
+// The refusal paths of the mesh walk: an ROI with no voxels has no surface. The builder must hand back
+// an empty mesh, and the volume integral a zero with no hull points, rather than reading off the end
+// of an empty cloud; bounds that enclose no lattice point give a zero without asking the plane source
+// for a plane.
+void test_3d_morphology_empty_roi_mesh_mechanics()
+{
+    std::vector<Nyxus::Triangle3> mesh;
+    ASSERT_NO_THROW (Nyxus::build_roi_surface_mesh (mesh, std::vector<Pixel3>{}));
+    ASSERT_TRUE (mesh.empty());
+    ASSERT_EQ (Nyxus::mesh_volume (mesh), 0.0);
+
+    std::vector<std::array<double, 3>> hull_points { { 1., 2., 3. } };
+    ASSERT_EQ (Nyxus::roi_mesh_volume (std::vector<Pixel3>{}, &hull_points), 0.0);
+    ASSERT_TRUE (hull_points.empty());
+
+    int planes_asked = 0;
+    const Nyxus::LatticeBounds none = { 5, 4, 0, 3, 0, 3 };
+    ASSERT_EQ (Nyxus::roi_mesh_volume (none, [&planes_asked](StatsInt, std::vector<Pixel3>&) { planes_asked++; }), 0.0);
+    ASSERT_EQ (planes_asked, 0);
+}
+
+// The refusal paths of the hull volume: points that span no volume give 0 rather than reaching
+// quick_hull, whose affine basis reads the first point -- none, one, three, and a set of coplanar
+// points; a tetrahedron, its counterpart, comes back as its exact volume.
+void test_3d_morphology_convex_hull_volume_degenerate_mechanics()
+{
+    using P = std::vector<std::array<double, 3>>;
+    ASSERT_EQ (D3_SurfaceFeature::convex_hull_volume (P{}), 0.0);
+    ASSERT_EQ (D3_SurfaceFeature::convex_hull_volume (P{ { 4., 5., 6. } }), 0.0);
+    ASSERT_EQ (D3_SurfaceFeature::convex_hull_volume (P{ { 0., 0., 0. }, { 2., 0., 0. }, { 0., 2., 0. } }), 0.0);
+    ASSERT_EQ (D3_SurfaceFeature::convex_hull_volume (P{ { 1000., 0., 7. }, { 1002., 0., 7. }, { 1000., 3., 7. }, { 1002., 3., 7. }, { 1001., 1., 7. } }), 0.0);
+    ASSERT_EQ (D3_SurfaceFeature::convex_hull_volume (P{ { 1000., 0., 0. }, { 1006., 0., 0. }, { 1000., 6., 0. }, { 1000., 0., 6. } }), 36.0);
 }
