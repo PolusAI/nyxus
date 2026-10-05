@@ -24,8 +24,8 @@ unusable in the configuration a default run reaches.
 |---|---|
 | Tool | PyRadiomics **3.0.1** (SimpleITK 2.3.1, Python 3.8), conda env `nyxus_oracle` |
 | Generator | `tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py` |
-| Benchmark | `bench_compat_ngtdm_3d` — `compat_int_ngtdm_3d.nii` + `compat_seg_ngtdm_3d.nii`, label 57 |
-| Recipes | `ngtdm3d.pyradiomics_binwidth1`, `ngtdm3d.pyradiomics_binwidth1_r2` |
+| Benchmarks | `bench_compat_ngtdm_3d` — `compat_int_ngtdm_3d.nii` + `compat_seg_ngtdm_3d.nii`, label 57; `bench_compat_ngtdm_3d_ball` — `compat_int_ngtdm_3d_ball.nii` + `compat_seg_ngtdm_3d_ball.nii`, label 57 |
+| Recipes | `ngtdm3d.pyradiomics_binwidth1`, `ngtdm3d.pyradiomics_binwidth1_r2`, `ngtdm3d.pyradiomics_binwidth1_ball` |
 | PyRadiomics settings | `binWidth=1`, `distances=[1]` (or `[1, 2]`), `resampledPixelSpacing=None`, `force2D=False`, `imageType=Original` |
 | Nyxus settings | `GREYDEPTH=100`, `IBSI=false`, `NGTDM_GREYDEPTH=0`, `NGTDM_RADIUS=1` (or 2) |
 
@@ -504,6 +504,47 @@ renaming one of the five to a case that does not exist is reported as
 `test_name ... resolves to no registered case in test_all.cc`.
 
 No row changes status, and no feature in this family lacks an oracle.
+
+## A ROI that does not fill its bounding box
+
+`bench_compat_ngtdm_3d` is its own bounding box, so every assertion above holds equally for a
+neighbourhood confined to the ROI and for one that takes in the whole cube `calculate()` builds. The
+family's neighbourhood is the ROI's: `calculate()` builds a ROI mask over the bounding box from the
+voxel cloud, takes its grey levels from the ROI's voxels alone, and lets only ROI voxels be centres
+or neighbours; `osized_calculate()` does the same with the mask its plane window carries. Value
+alone cannot decide membership, because the binned cube gives background 0 and a ROI voxel of
+intensity 0 is also 0.
+
+`ngtdm3d.pyradiomics_binwidth1_ball` asserts this on `bench_compat_ngtdm_3d_ball`: a digital ball of
+radius 3, 123 voxels in a 7×7×7 box that is 64% background, 18 of them at 0. PyRadiomics' public
+extractor loads it, and the generator requires the extractor, `RadiomicsNGTDM` and the numpy NGTDM to
+agree before pinning (worst 1.8e-16). Nyxus matches all five features and the six-row matrix to
+≤ 3e-16, at `rel=1e-9`.
+
+What the fixture discriminates, measured by running the five assertions against two other
+neighbourhood rules:
+
+| neighbourhood rule | ball assertions | busyness | coarseness |
+|---|---|---|---|
+| ROI voxels only (the family) | pass | 2.8044 | 0.030332 |
+| every cell of the bounding box | fail | ×8.0 | ×0.22 |
+| bounding box, background told apart by value (`!= 0`) | fail | — | — |
+
+The third row fails because the zero-min correction lifts background to 1 along with every ROI level,
+so a test for 0 matches nothing; the ball's ROI voxels at 0 would defeat a test for the lifted value
+just as well.
+
+**The out-of-core path** is asserted against the same oracle in
+`tests/python/test_3d_ngtdm_pyradiomics.py`, on a 24×60×60 ellipsoid (37,792 voxels in an
+86,400-voxel box, 3,664 at level 0) at `ram_limit` 1000 MB and 1 MB; the 1 MB run is reported
+oversized and goes through `osized_calculate()`. The in-RAM/out-of-core equality test in
+`test_ooc_mechanics.py` uses a whole-volume mask and cannot reach this case.
+
+**A ROI none of whose voxels has a neighbour** has an empty matrix; every feature is reported as the
+soft-NaN value (`test_3d_ngtdm_isolated_voxels_mechanics`, label 58 of the ball file). PyRadiomics
+keeps such a voxel as a row with `s_i = 0`, which is the one convention the two tools part on; the
+ball and the out-of-core ellipsoid are both ROIs in which every voxel has a neighbour, and the
+generator measures that for each.
 
 ## Reproduction
 

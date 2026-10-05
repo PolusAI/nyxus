@@ -112,6 +112,24 @@ already spans the whole 4×4×3 volume from every voxel, so radius 3 and radius 
 Tests reaching it today: `test_3d_ngtdm_pyradiomics.h`, `test_3d_ngtdm_mechanics.h`,
 `tests/python/test_nyxus.py::test_3d_ngtdm_compatibility`.
 
+---
+
+## `bench_compat_ngtdm_3d_ball` — the NGTDM ball phantom
+
+| | |
+|---|---|
+| Files | `tests/data/nifti/compat_int/compat_int_ngtdm_3d_ball.nii` + `tests/data/nifti/compat_seg/compat_seg_ngtdm_3d_ball.nii` |
+| ROI | label **57**, a digital ball of radius 3: 123 voxels in a 7×7×7 bounding box; label **58**, two voxels at opposite corners of the volume |
+| Shape | 9×9×9 at 1×1×1 spacing; intensities `(3x + 5y + 7z + xyz) mod 6` over the whole volume, so the ROI holds the levels 0..5 and 18 of its voxels are at 0 |
+| Why it exists | a ROI that does not fill its bounding box — 64% of the ball's box is background — with ROI voxels at the same value the binned cube gives background. `bench_compat_ngtdm_3d` is its own bounding box and cannot reach either case |
+
+Recipe: `ngtdm3d.pyradiomics_binwidth1_ball` (label 57). Label 58 has no voxel with a neighbour and
+carries no oracle claim; `test_3d_ngtdm_isolated_voxels_mechanics` uses it for the empty-matrix path.
+`make_ball_phantom()` in `oracles/gen_ngtdm3d_pyradiomics.py` defines both, and every generator run
+checks the committed files against it.
+
+Tests reaching it today: `test_3d_ngtdm_pyradiomics.h`, `test_3d_ngtdm_mechanics.h`.
+
 **Its mask has no background, and that has a consequence.** All 48 voxels carry label 57, so
 PyRadiomics' `imageoperations.getMask()` rejects it outright — `numpy.unique` on the mask has one
 entry and it raises "No labels found in this mask (i.e. nothing is segmented)!". Any oracle run
