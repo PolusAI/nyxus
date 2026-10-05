@@ -997,8 +997,8 @@ TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WHOLESLIDE_SPLITS_THE_FAMILIES_MECHANICS) {
 	ASSERT_NO_THROW(test_2d_anisotropy_wholeslide_splits_the_families_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_VANISHED_ROI_IS_REFUSED_MECHANICS) {
-	ASSERT_NO_THROW(test_2d_anisotropy_vanished_roi_is_refused_mechanics());
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_VANISHED_ROI_REPORTS_NO_GEOMETRY_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_vanished_roi_reports_no_geometry_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WHOLESLIDE_SIZED_AS_ACQUIRED_MECHANICS) {
@@ -1009,8 +1009,12 @@ TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_MATCHES_IN_RAM_MECHANICS) {
 	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_matches_in_ram_mechanics());
 }
 
-TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_VANISHED_ROI_IS_REFUSED_MECHANICS) {
-	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_vanished_roi_is_refused_mechanics());
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_VANISHED_ROI_REPORTS_NO_GEOMETRY_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_vanished_roi_reports_no_geometry_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_RUNS_DEPENDENCIES_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_runs_dependencies_mechanics());
 }
 
 //***** 3D voxel spacing *****

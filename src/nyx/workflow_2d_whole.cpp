@@ -100,8 +100,11 @@ namespace Nyxus
 			ay = env.anisoOptions.get_aniso_y();
 		if (! scan_trivial_wholeslide_anisotropic (vroi, ifpath, imlo, ax, ay))
 			return false;
-		if (! adopt_resampled_cloud_2d (vroi, ax, ay))
-			return false;
+		if (! adopt_resampled_cloud_2d (vroi))
+		{
+			report_unmeasurable_geometry_2d (vroi, geometric, ax, ay);
+			return true;
+		}
 		reduce_triv_wholeslide_selection (env, vroi, geometric);
 
 		// no need to calculate neighbor features in WSI, returning
