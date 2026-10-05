@@ -259,14 +259,25 @@ namespace
 		}
 	}
 
-	// The voxel volume is the voxel count times a voxel's volume, so the spacing scales it by
-	// sx*sy*sz exactly; a shape family that never saw the spacing leaves it where it was
+	// The voxel volume is the voxel count times a voxel's volume, and the mesh and its convex hull are
+	// built on the lattice, whose linear image a grid of sx*sy*sz voxels is: the spacing scales all
+	// three by sx*sy*sz exactly. A volume that never saw the spacing stays where it was.
 	void expect_aniso_scales_shape (const AnisoValues& iso, const AnisoValues& aniso, const std::string& what,
 		double voxel_volume = aniso_sx * aniso_sy * aniso_sz)
 	{
-		const int f = (int) Nyxus::Feature3D::VOXEL_VOLUME;
-		const double want = iso[f][0] * voxel_volume;
-		EXPECT_NEAR(aniso[f][0], want, 1e-12 * want) << what << ": 3VOXEL_VOLUME does not carry the spacing";
+		const std::pair<Nyxus::Feature3D, const char*> volumes[] =
+		{
+			{ Nyxus::Feature3D::VOXEL_VOLUME, "3VOXEL_VOLUME" },
+			{ Nyxus::Feature3D::MESH_VOLUME, "3MESH_VOLUME" },
+			{ Nyxus::Feature3D::VOLUME_CONVEXHULL, "3VOLUME_CONVEXHULL" }
+		};
+		for (const auto& [fcode, name] : volumes)
+		{
+			const int f = (int) fcode;
+			ASSERT_GT(iso[f][0], 0.0) << what << ": " << name << " without anisotropy";
+			const double want = iso[f][0] * voxel_volume;
+			EXPECT_NEAR(aniso[f][0], want, 1e-12 * want) << what << ": " << name << " does not carry the spacing";
+		}
 	}
 }
 
