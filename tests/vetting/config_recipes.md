@@ -581,6 +581,24 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - Not covered, because Nyxus implements no feature for them: the density family (`morph_*_dens_*`),
   `morph_diam`, `morph_integ_int`, `morph_moran_i`, `morph_geary_c`.
 
+## morphology3d.pyradiomics_anisotropic
+- The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at voxel
+  spacing (1.3, 0.8, 2.5) in x, y, z, through `D3_SurfaceFeature` with the same settings as
+  `morphology3d.mirp_ibsi`; Nyxus is given the spacing as `--aniso*`. Oracle: `pyradiomics` 3.0.1
+  `shape.RadiomicsShape(image, mask, label=57)` with SimpleITK 2.3.1, the same spacing set on both
+  images, origin 0 and identity direction. Used by: `test_3d_morphology_pyradiomics.h`. Generated and
+  re-verified by `tests/vetting/oracles/gen_morphology3d_pyradiomics.py`.
+- Covers what the spacing must reach: `3MESH_VOLUME` (`MeshVolume`), the three axis lengths
+  (`Major/Minor/LeastAxisLength`) and their ratios `3ELONGATION`, `3FLATNESS`. The spacing is unequal on
+  every axis, so an axis length or ratio that took one axis's spacing from another misses its pin;
+  `3MESH_VOLUME` depends on the product sx*sy*sz alone.
+- The axis lengths are 4*sqrt of the covariance eigenvalues of the physical voxel coordinates.
+  pyradiomics normalizes that covariance by the voxel count N, Nyxus (as MIRP) by N-1, so the test
+  compares Nyxus with the pyradiomics pins times sqrt(N/(N-1)), N = 274432. That is Nyxus'
+  normalization, not a tolerance; the ratios cancel it. All six at `rel=1e-9`.
+- `3AREA` and its five ratios are not covered: pyradiomics' `SurfaceArea` is a marching-cubes area,
+  Nyxus' `3AREA` counts exposed voxel faces.
+
 ## morphology3d.matlab_regionprops3
 - The same segmented phantom and Nyxus settings as `morphology3d.mirp_ibsi`. MATLAB Image Processing
   Toolbox reads `ut_mask57.nii`, selects label 57, and calls
