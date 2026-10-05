@@ -1,6 +1,6 @@
 # Regenerating the 3D NGTDM goldens
 
-Three tables, two sources. The oracle tables come from PyRadiomics and are regenerated offline; the
+Two sources. The oracle tables come from PyRadiomics and are regenerated offline; the
 drift guards are Nyxus' own output and are regenerated from the test binary.
 
 | table | file | source |
@@ -8,7 +8,13 @@ drift guards are Nyxus' own output and are regenerated from the test binary.
 | `ngtdm_3d_pyradiomics_ref_vals` | `tests/test_3d_ngtdm_pyradiomics.h` | PyRadiomics 3.0.1 |
 | `ngtdm_3d_pyradiomics_matrix_ref_vals` | same | PyRadiomics `P_ngtdm` |
 | `ngtdm_3d_pyradiomics_docmatrix_ref_vals` | same | PyRadiomics on the 4×4 docstring image |
+| `ngtdm_3d_pyradiomics_ball_ref_vals` | same | PyRadiomics 3.0.1 on the ball phantom |
+| `ngtdm_3d_pyradiomics_ball_matrix_ref_vals` | same | PyRadiomics `P_ngtdm` on the ball phantom |
+| `NGTDM_3D_NONBOX_PYRADIOMICS` | `tests/python/test_3d_ngtdm_pyradiomics.py` | PyRadiomics 3.0.1 on the out-of-core ellipsoid |
 | `ngtdm_3d_regression_ref_vals` | `tests/test_3d_ngtdm_regression.h` | Nyxus |
+
+The ball phantom's two NIfTI files are themselves generated: `--write-ball` on the generator writes
+them from `make_ball_phantom()`, and every run checks the committed files against it.
 
 ## Environment
 
@@ -64,10 +70,16 @@ all five of `Busyness`, `Coarseness`, `Complexity`, `Contrast`, `Strength`.
   docstring's own table shows five.
 - **The PyRadiomics NGTDM docstring's table and its worked arithmetic disagree** on `s_3`: the table
   says `2.63`, the text computes `3.03`, and a run agrees with the text (`91/30`). Pin the run.
-- **`N_v,p` is the count of voxels with at least one neighbour**, which on both of these fixtures is
-  every voxel. Nyxus computes it as the number of zones whose neighbourhood mean is `> 0`; those
-  coincide here because no level is zero after the shift. On a fixture where they do not, this is
-  the first thing to check.
+- **`N_v,p` is the count of voxels with at least one neighbour**, which on every one of these
+  fixtures is every ROI voxel. Nyxus computes it as the number of zones whose neighbourhood mean is
+  `> 0`; those coincide here because no level is zero after the shift. On a fixture where they do
+  not, this is the first thing to check.
+- **A voxel with no neighbour** is a row with `s_i = 0` in PyRadiomics and absent from Nyxus' matrix.
+  Every oracle fixture here avoids it, and the generator checks that; a ROI made only of such voxels
+  is the empty-matrix case `test_3d_ngtdm_isolated_voxels_mechanics` covers.
+- **Neighbours are ROI voxels.** Both tools take a voxel's neighbourhood from the mask, so on a ROI
+  that does not fill its bounding box the background around it takes no part. The ball phantom is
+  the fixture that would show otherwise.
 
 ### Independent reference
 

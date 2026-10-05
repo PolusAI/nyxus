@@ -25,12 +25,14 @@ NOTE = {
                          "in test_3d_ngtdm_matrix_pyradiomics",
 }
 
-# recipe -> the function that asserts AT that recipe. The same five features are read at two
-# PyRadiomics configurations that differ only in neighbourhood radius, so feature, kind and oracle
-# are identical between them and only the function name says which one a row records.
+# recipe -> the function that asserts AT that recipe. The same five features are read at three
+# PyRadiomics configurations -- two radii on one phantom, and the first radius on a phantom that does
+# not fill its bounding box -- so feature, kind and oracle are identical between them and only the
+# function name says which one a row records.
 RECIPE_READER = {
     "ngtdm3d.pyradiomics_binwidth1": re.compile(r"^test_3d_ngtdm_[a-z0-9]+_pyradiomics$"),
     "ngtdm3d.pyradiomics_binwidth1_r2": re.compile(r"^test_3d_ngtdm_[a-z0-9]+_r2_pyradiomics$"),
+    "ngtdm3d.pyradiomics_binwidth1_ball": re.compile(r"^test_3d_ngtdm_[a-z0-9]+_ball_pyradiomics$"),
     "ngtdm3d.regression_ut_phantom": re.compile(r"^test_3d_ngtdm_[a-z0-9]+_regression$"),
 }
 

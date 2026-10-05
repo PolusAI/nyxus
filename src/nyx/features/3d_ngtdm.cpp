@@ -67,7 +67,10 @@ const static ShiftToNeighbor shifts[] =
 
 int nsh = sizeof(shifts) / sizeof(ShiftToNeighbor);
 
-/*static*/ void D3_NGTDM_feature::gather_zones (std::vector<std::pair<PixIntens, double>> &Z, SimpleCube<PixIntens> &D, int cheby_radius, PixIntens zeroI)
+// The family is defined over the ROI, not the bounding box: every ROI voxel is a centre, and its
+// neighbourhood is the ROI voxels within 'cheby_radius' of it. 'M' is nonzero exactly at the ROI's
+// cells of 'D'; a voxel with no ROI neighbour contributes no zone.
+/*static*/ void D3_NGTDM_feature::gather_zones (std::vector<std::pair<PixIntens, double>> &Z, const SimpleCube<PixIntens> &D, const SimpleCube<unsigned char> &M, int cheby_radius)
 {
 	int w = D.width(),
 		h = D.height(),
@@ -79,11 +82,11 @@ int nsh = sizeof(shifts) / sizeof(ShiftToNeighbor);
 		{
 			for (int col = 0; col < w; col++)
 			{
-				PixIntens pi = D.zyx (zslice, row, col);
-
-				// skip background voxels
-				if (pi == zeroI)
+				// skip non-ROI voxels
+				if (M.zyx (zslice, row, col) == 0)
 					continue;
+
+				PixIntens pi = D.zyx (zslice, row, col);
 
 				// examine the neighborhood
 				double neigsI = 0;
@@ -101,8 +104,8 @@ int nsh = sizeof(shifts) / sizeof(ShiftToNeighbor);
 							if (neig_z == zslice && neig_y == row && neig_x == col)
 								continue;
 
-							// skip voxels outside the image
-							if (!D.safe(neig_z, neig_y, neig_x))
+							// skip voxels outside the bounding box and non-ROI voxels inside it
+							if (!M.safe(neig_z, neig_y, neig_x) || M.zyx (neig_z, neig_y, neig_x) == 0)
 								continue;
 
 							// update neighborhood stats
@@ -199,8 +202,22 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 
 	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
 
-	// unique intensities (set)
-	std::unordered_set<PixIntens> U (D.begin(), D.end());
+	// Which cells of the bounding box are the ROI's. The cube fills the rest with 0, which is also
+	// the level a ROI voxel of intensity 0 carries, so only the voxel cloud can tell the two apart.
+	SimpleCube<unsigned char> M;
+	M.allocate (w, h, d);
+	M.fill (0);
+	auto xmin = r.aabb.get_xmin(),
+		ymin = r.aabb.get_ymin(),
+		zmin = r.aabb.get_zmin();
+	for (const auto& p : r.raw_pixels_3D)
+		M.zyx (p.z - zmin, p.y - ymin, p.x - xmin) = 1;
+
+	// unique intensities of the ROI's voxels (set)
+	std::unordered_set<PixIntens> U;
+	for (size_t i = 0; i < D.size(); i++)
+		if (M[i])
+			U.insert (D[i]);
 
 	// unique intensities (sorted vector)
 	if (STNGS_IBSI(s))
@@ -227,9 +244,6 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 		std::for_each (D.begin(), D.end(), [](PixIntens& x) {x += 1;});
 	}
 
-	// zero (backround) intensity at given grey binning method
-	PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
-
 	// is binned data informative?
 	if (I.size() < 2)
 	{
@@ -243,9 +257,20 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 
 	// gather zones
 	int neig_r = STNGS_NGTDM_RADIUS (s);
-	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of all 8 neighbors)
+	using AveNeighborhoodInte = std::pair<PixIntens, double>;	// Pairs of (intensity, average intensity of the voxel's ROI neighbours)
 	std::vector<AveNeighborhoodInte> Z;	// list of intensity clusters (zones)
-	D3_NGTDM_feature::gather_zones (Z, D, neig_r, zeroI);
+	D3_NGTDM_feature::gather_zones (Z, D, M, neig_r);
+
+	// no ROI voxel has a ROI neighbour: the matrix is empty and every feature undefined
+	if (Z.empty())
+	{
+		_coarseness =
+		_contrast =
+		_busyness =
+		_complexity =
+		_strength = STNGS_NAN(s);
+		return;
+	}
 
 	// fill the NGTD-matrix
 
@@ -275,9 +300,10 @@ void D3_NGTDM_feature::osized_add_online_pixel(size_t x, size_t y, uint32_t inte
 
 void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 {
-	// The radius neighbourhood spans 2*radius+1 planes, which is the window. Grey levels are the
-	// unique levels of the whole binned cube, background included, lifted by one when the lowest is
-	// 0, and the neighbourhood average takes in background neighbours, as calculate() does.
+	// The radius neighbourhood spans 2*radius+1 planes, which is the window. As in calculate(), grey
+	// levels are the unique levels of the ROI's voxels, lifted by one when the lowest is 0, and both
+	// the centres and their neighbours are ROI voxels only -- the window carries the ROI mask beside
+	// each plane, since a background cell and a ROI voxel of level 0 hold the same value.
 	clear_buffers();
 	I.clear();
 
@@ -288,11 +314,11 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	auto bin_of = [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); };
 
-	// --- unique binned levels over the whole cube (mask + background if the bbox has any)
+	// --- unique binned levels of the ROI's voxels
 	Nyxus::OocBinnedVolume scan (r, bin_of, bg, 1);
 	const int W = scan.width(), H = scan.height(), Dz = scan.depth();
 	PixIntens maxbin = 0;
-	std::set<PixIntens> U = scan.levels (/*with_background=*/ true, /*drop_zero=*/ false, maxbin);
+	std::set<PixIntens> U = scan.levels (/*with_background=*/ false, /*drop_zero=*/ false, maxbin);
 	Ngp = (int) U.size();
 
 	// --- grey levels I: IBSI uses a linspace [0, max]; otherwise the unique set. Then sort.
@@ -308,7 +334,6 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	if (shift)
 		for (auto& x : I) x += 1;
 	const PixIntens bgv = bg + (shift ? 1 : 0);				// background value in the shifted planes
-	const PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
 
 	// is binned data informative?
 	if (I.size() < 2)
@@ -329,18 +354,19 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	// --- the binned cube with the shift baked into its levels
 	const PixIntens lift = shift ? 1 : 0;
-	Nyxus::OocBinnedVolume vol (r, [bin_of, lift](PixIntens v) { return bin_of (v) + lift; }, bgv, 2 * rad + 1);
+	Nyxus::OocBinnedVolume vol (r, [bin_of, lift](PixIntens v) { return bin_of (v) + lift; }, bgv, 2 * rad + 1, /*with_mask=*/ true);
 
 	for (int c = 0; c < Dz; c++)
 	{
 		const std::vector<PixIntens>& cur = vol.plane (c);
+		const std::vector<unsigned char>& curMask = vol.mask (c);
 
 		for (int y = 0; y < H; y++)
 			for (int x = 0; x < W; x++)
 			{
-				PixIntens pi = cur[(size_t) y * W + x];
-				if (pi == zeroI)			// skip background/off-mask voxels
+				if (! curMask[(size_t) y * W + x])	// skip non-ROI voxels
 					continue;
+				PixIntens pi = cur[(size_t) y * W + x];
 
 				double neigsI = 0;
 				int nd = 0;
@@ -352,6 +378,8 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 								continue;
 							int nz = c + dz, ny = y + dy, nx = x + dx;
 							if (nz < 0 || nz >= Dz || ny < 0 || ny >= H || nx < 0 || nx >= W)
+								continue;
+							if (! vol.mask (nz)[(size_t) ny * W + nx])
 								continue;
 							neigsI += vol.plane (nz)[(size_t) ny * W + nx];
 							nd++;
@@ -372,8 +400,16 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	Nvc = 0;
 	for (size_t i = 0; i < N.size(); i++)
 		Nvc += N[i];
+
+	// no ROI voxel has a ROI neighbour: the matrix is empty and every feature undefined
+	if (Nvc == 0)
+	{
+		_coarseness = _contrast = _busyness = _complexity = _strength = STNGS_NAN(s);
+		return;
+	}
+
 	for (size_t i = 0; i < N.size(); i++)
-		P[i] = (Nvc > 0) ? (double) N[i] / Nvc : 0.0;
+		P[i] = (double) N[i] / Nvc;
 
 	_coarseness = calc_Coarseness();
 	_contrast = calc_Contrast();

@@ -295,6 +295,30 @@ TEST(TEST_NYXUS, TEST_3D_NGTDM_MATRIX_R2_PYRADIOMICS) {
 	ASSERT_NO_THROW(test_3d_ngtdm_matrix_r2_pyradiomics());
 }
 
+TEST(TEST_NYXUS, TEST_3D_NGTDM_BUSYNESS_BALL_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_busyness_ball_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COARSENESS_BALL_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_coarseness_ball_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COMPLEXITY_BALL_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_complexity_ball_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_CONTRAST_BALL_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_contrast_ball_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_STRENGTH_BALL_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_strength_ball_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_MATRIX_BALL_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_matrix_ball_pyradiomics());
+}
+
 TEST(TEST_NYXUS, TEST_3D_NGTDM_DOCMATRIX_PYRADIOMICS) {
 	ASSERT_NO_THROW(test_3d_ngtdm_docmatrix_pyradiomics());
 }
@@ -329,6 +353,10 @@ TEST(TEST_NYXUS, TEST_3D_NGTDM_DUMP_REGRESSION) {
 
 TEST(TEST_NYXUS, TEST_3D_NGTDM_DEFAULT_RADIUS_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_ngtdm_default_radius_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_ISOLATED_VOXELS_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_isolated_voxels_mechanics());
 }
 
 //***** 3D GLRLM compatibility *****

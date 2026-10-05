@@ -46,6 +46,30 @@ static std::tuple<std::string, std::string, int> get_3d_compat_ngtdm_phantom()
 	return { ipath, mpath, 57 };
 }
 
+// The NGTDM ball phantom, 9x9x9, which holds two ROIs.
+//
+// Label 57 is a digital ball of radius 3 -- 123 voxels in a 7x7x7 bounding box, so 64% of the box is
+// background, and 18 of the ROI's own voxels are at intensity 0, the value the cube gives background.
+// It is the fixture the phantom above cannot be: a neighbourhood that reached past the ROI into its
+// bounding box, or that told ROI from background by value, moves every number this one produces.
+// Intensities are 0..5 as above, so binWidth=1 and Nyxus' zero-min correction again agree on 1..6.
+//
+// Label 58 is two voxels at opposite corners of the volume, (0,0,0) at 0 and (8,8,8) at 2. Neither
+// is within any neighbourhood of the other, so no voxel of that ROI has a neighbour.
+//
+// Both are made by tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py (make_ball_phantom), which also
+// checks the committed files against it.
+static std::tuple<std::string, std::string, int, int> get_3d_ngtdm_ball_phantom()
+{
+	fs::path this_fpath(__FILE__);
+	fs::path pp = this_fpath.parent_path();
+
+	fs::path f1("/data/nifti/compat_int/compat_int_ngtdm_3d_ball.nii");
+	fs::path f2("/data/nifti/compat_seg/compat_seg_ngtdm_3d_ball.nii");
+
+	return { pp.string() + f1.make_preferred().string(), pp.string() + f2.make_preferred().string(), 57, 58 };
+}
+
 // The settings a 3D NGTDM assertion runs on. 'ngtdm_greydepth' is the family's own binning
 // (0 = none, i.e. the raw levels; a positive value is a MATLAB-style bin count) and 'ngtdm_radius'
 // is the Chebyshev radius of the neighbourhood.

@@ -32,11 +32,11 @@ regression: 121  invariant: 0  untested: 0
 
 ## Verdicts
 
-1014 of 1014 assertion rows agree with the tree.
+1019 of 1019 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 1014 | the claim and the tree say the same thing |
+| `agree` | 1019 | the claim and the tree say the same thing |
 
 ### How far each verdict reaches
 
@@ -47,7 +47,7 @@ regression: 121  invariant: 0  untested: 0
 |---|---:|---|
 | `feature` | 533 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
 | `row` | 274 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
-| `row+config` | 207 | the case named in `test_name` asserts this feature at this `config_recipe` |
+| `row+config` | 212 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
 ## Every oracle a feature was matched against
 

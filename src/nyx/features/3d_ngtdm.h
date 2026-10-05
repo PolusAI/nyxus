@@ -50,7 +50,9 @@ public:
 		return fs.anyEnabled (D3_NGTDM_feature::featureset);
 	}
 
-	static void gather_zones (std::vector<std::pair<PixIntens, double>> &Z, SimpleCube<PixIntens> &D, int cheby_radius, PixIntens zeroI);
+	// One (level, mean ROI-neighbour level) pair per ROI voxel of 'D' that has a ROI neighbour;
+	// 'M' is nonzero exactly at the ROI's cells
+	static void gather_zones (std::vector<std::pair<PixIntens, double>> &Z, const SimpleCube<PixIntens> &D, const SimpleCube<unsigned char> &M, int cheby_radius);
 
 	// returns Nvp
 	static double calc_NGTDM(
