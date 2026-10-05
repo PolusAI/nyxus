@@ -22,7 +22,12 @@ namespace Nyxus
 	/// A strip loader addresses its image in tiles, so the tiles of one tile row all need the same
 	/// image rows, each a different column segment of them. The band holds those rows whole: the
 	/// first tile of a tile row decodes them and every other tile of the row copies its columns out
-	/// of the band without touching libtiff. Its footprint is one tile row of scanlines.
+	/// of the band without touching libtiff.
+	///
+	/// Its footprint is one tile row of scanlines, tile height x image width x bytes per sample --
+	/// 1024 x 60000 x 2 bytes, about 123 MB, for a 60,000-pixel-wide uint16 slide -- held for the
+	/// loader's lifetime. Every strip loader holds its own band, so a featurize pass that reads an
+	/// intensity and a mask image holds two, and ram_limit does not count either of them.
 	///
 	/// libtiff reaches an arbitrary row of a strip only in an uncompressed file; a codec decodes a
 	/// strip from its first row forward and cannot skip rows it has not decoded, although it can
