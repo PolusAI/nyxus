@@ -21,6 +21,10 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 	std::string & int_fpath = p.fname_int,
 		& seg_fpath = p.fname_seg;
 
+	// Opening replaces whatever pair the loader holds: its tile loaders and file handles are
+	// released here, so a caller that opens one pair after another never leaks the previous one.
+	close();
+
 	// A newly opened pair is read at its first plane until stream_volume_planes() selects another
 	cur_channel = 0;
 	cur_timeframe = 0;
