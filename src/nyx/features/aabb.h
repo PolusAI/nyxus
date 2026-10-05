@@ -2,10 +2,18 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 #include <vector>
 #include "pixel.h"
+
+// The out-of-line half of a check whose comparisons are meant to inline into a per-pixel loop
+#if defined(_MSC_VER)
+#define NYX_AABB_NOINLINE __declspec(noinline)
+#else
+#define NYX_AABB_NOINLINE __attribute__((noinline))
+#endif
 
 /// @brief Class encapsulating ROI axis aligned bounding box
 class AABB
@@ -79,8 +87,12 @@ public:
 		return {bb.get_xmin(), bb.get_ymin(), bb.get_xmax(), bb.get_ymax()};
 	}
 
+	// An empty cloud has no box, so it is refused rather than given one
 	void update_from_voxelcloud (const std::vector<Pixel3> & V)
 	{
+		if (V.empty())
+			throw std::invalid_argument ("AABB::update_from_voxelcloud: the voxel cloud is empty, so it has no bounding box");
+
 		auto cmpX = [](const Pixel3& p1, const Pixel3& p2) {return p1.x < p2.x; };
 		StatsInt minx = (*std::min_element(V.begin(), V.end(), cmpX)).x;
 		StatsInt maxx = (*std::max_element(V.begin(), V.end(), cmpX)).x;
@@ -112,6 +124,22 @@ public:
 		return retval;
 	}
 
+	// The buffers sized from a box index each pixel by its offset from the box's low corner, so a
+	// pixel outside the box would land in another row, or past the end of the buffer. These throw
+	// std::out_of_range naming the pixel and the box instead. The comparisons stay inline in the
+	// writers' loops; the message is built out of line, only when a pixel is refused.
+	void require_contains (StatsInt x, StatsInt y) const
+	{
+		if (x < xmin || x > xmax || y < ymin || y > ymax)
+			throw_outside (x, y);
+	}
+
+	void require_contains (StatsInt x, StatsInt y, StatsInt z) const
+	{
+		if (x < xmin || x > xmax || y < ymin || y > ymax || z < zmin || z > zmax)
+			throw_outside (x, y, z);
+	}
+
 	inline void apply_anisotropy (double ax, double ay, double az = 1.0)
 	{
 		xmin = StatsInt(xmin * ax);
@@ -135,7 +163,22 @@ public:
 	}
 
 private:
-	StatsInt xmin = INT32_MAX, 
+	[[noreturn]] NYX_AABB_NOINLINE void throw_outside (StatsInt x, StatsInt y) const
+	{
+		throw std::out_of_range ("pixel (" + std::to_string(x) + "," + std::to_string(y)
+			+ ") lies outside the bounding box x " + std::to_string(xmin) + ".." + std::to_string(xmax)
+			+ ", y " + std::to_string(ymin) + ".." + std::to_string(ymax) + " that sizes its buffer");
+	}
+
+	[[noreturn]] NYX_AABB_NOINLINE void throw_outside (StatsInt x, StatsInt y, StatsInt z) const
+	{
+		throw std::out_of_range ("voxel (" + std::to_string(x) + "," + std::to_string(y) + "," + std::to_string(z)
+			+ ") lies outside the bounding box x " + std::to_string(xmin) + ".." + std::to_string(xmax)
+			+ ", y " + std::to_string(ymin) + ".." + std::to_string(ymax)
+			+ ", z " + std::to_string(zmin) + ".." + std::to_string(zmax) + " that sizes its buffer");
+	}
+
+	StatsInt xmin = INT32_MAX,
 		xmax = INT32_MIN, 
 		ymin = INT32_MAX, 
 		ymax = INT32_MIN, 
