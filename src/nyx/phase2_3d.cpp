@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cassert>
 #include <fstream>
 #include <functional>
 #include <string>
@@ -283,20 +282,6 @@ namespace Nyxus
 			// the voxels as acquired, as in the batch loop above
 			if (! scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel))
 				return false;
-
-			for (auto lab : Pending)
-			{
-				LR& r = env.roiData[lab];
-				for (Pixel3& vox : r.raw_pixels_3D)
-				{
-					assert (vox.x >= r.aabb.get_xmin());
-					assert (vox.x <= r.aabb.get_xmax());
-					assert (vox.y >= r.aabb.get_ymin());
-					assert (vox.y <= r.aabb.get_ymax());
-					assert (vox.z >= r.aabb.get_zmin());
-					assert (vox.z <= r.aabb.get_zmax());
-				}
-			}
 
 			// Allocate memory
 			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");

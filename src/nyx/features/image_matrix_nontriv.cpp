@@ -148,6 +148,7 @@ void WriteImageMatrix_nontriv::allocate_from_cloud (const OutOfRamPixelCloud & c
 	for (size_t i = 0; i < cloud.size(); i++)
 	{
 		const Pixel2 p = cloud.get_at(i);
+		aabb.require_contains (p.x, p.y);
 		auto y = p.y - aabb.get_ymin(),
 			x = p.x - aabb.get_xmin();
 		set_at (y, x, p.inten + maskMagic);
@@ -166,6 +167,7 @@ void WriteImageMatrix_nontriv::allocate_from_cloud_coarser_grayscale (const OutO
 	for (size_t i = 0; i < cloud.size(); i++)
 	{
 		const Pixel2 p = cloud.get_at(i);
+		aabb.require_contains (p.x, p.y);
 		auto y = p.y - aabb.get_ymin(),
 			x = p.x - aabb.get_xmin();
 		PixIntens newI = Nyxus::to_grayscale (p.inten, min_inten, inten_range, n_grays);
@@ -458,6 +460,7 @@ Power2PaddedImageMatrix_NT::Power2PaddedImageMatrix_NT (const std::string& _name
 
 	for (auto pxl : raw_pixels)
 	{
+		original_aabb.require_contains (pxl.x, pxl.y);
 		auto x = pxl.x - original_aabb.get_xmin() + padOffsetX,
 			y = pxl.y - original_aabb.get_ymin() + padOffsetY;
 		set_at(y * width + x, pxl.inten * attenuation + base_level);

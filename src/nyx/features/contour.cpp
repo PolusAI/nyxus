@@ -694,6 +694,7 @@ void ContourFeature::buildRegularContour_nontriv (LR& r, const Fsettings& s)
 
 	for (auto px : r.raw_pixels_NT)
 	{
+		r.aabb.require_contains (px.x, px.y);
 		auto x = px.x - minx + 1,
 			y = px.y - miny + 1;
 		paddedImage.set_at(x + y * (width + 2), px.inten + 1);	// Decorate the intensity

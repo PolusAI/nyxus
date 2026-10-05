@@ -288,6 +288,8 @@ void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 		r.raw_voxels_NT.read_slab (z, slab);
 		if (slab.empty())
 			continue;
+		for (const auto& v : slab)
+			r.aabb.require_contains (v.x, v.y, v.z);
 
 		// -- this plane's occupancy bitmap + online covariance sums
 		std::vector<char> curOcc ((size_t) W * H, 0);

@@ -115,6 +115,7 @@
 #include "test_3d_ooc_segmented_mechanics.h"	// the segmented 3D out-of-core pass: its voxels and its status
 #include "test_3d_anisotropy_mechanics.h"	// voxel spacing reaches shape alone, on every volumetric path
 #include "test_2d_anisotropy_mechanics.h"	// grid families on the pixels as acquired, geometric ones resampled
+#include "test_buffer_from_cloud_mechanics.h"	// a pixel outside the box that sizes its buffer is refused
 #include "test_3d_morphology_pyradiomics.h"
 #include "test_3d_ngldm_mirp.h"
 #include "test_3d_ngldm_regression.h"
@@ -1015,6 +1016,36 @@ TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_VANISHED_ROI_REPORTS_NO_GEOMETRY
 
 TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_RUNS_DEPENDENCIES_MECHANICS) {
 	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_runs_dependencies_mechanics());
+}
+
+//***** ROI buffers built from a cloud *****
+
+TEST(TEST_NYXUS, TEST_BUFFER_FROM_CLOUD_PLACES_PIXELS_MECHANICS) {
+	ASSERT_NO_THROW(test_buffer_from_cloud_places_pixels_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_BUFFER_FROM_CLOUD_REFUSES_PIXEL_OUTSIDE_BOX_MECHANICS) {
+	ASSERT_NO_THROW(test_buffer_from_cloud_refuses_pixel_outside_box_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_BUFFER_FROM_CLOUD_REFUSES_EMPTY_VOXEL_CLOUD_MECHANICS) {
+	ASSERT_NO_THROW(test_buffer_from_cloud_refuses_empty_voxel_cloud_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_BUFFER_FROM_CLOUD_BOX_FACES_MECHANICS) {
+	ASSERT_NO_THROW(test_buffer_from_cloud_box_faces_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_BUFFER_FROM_CLOUD_OOC_PLACES_PIXELS_MECHANICS) {
+	ASSERT_NO_THROW(test_buffer_from_cloud_ooc_places_pixels_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_BUFFER_FROM_CLOUD_OOC_REFUSES_PIXEL_OUTSIDE_BOX_MECHANICS) {
+	ASSERT_NO_THROW(test_buffer_from_cloud_ooc_refuses_pixel_outside_box_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_BUFFER_FROM_CLOUD_OOC_FEATURES_REFUSE_PIXEL_OUTSIDE_BOX_MECHANICS) {
+	ASSERT_NO_THROW(test_buffer_from_cloud_ooc_features_refuse_pixel_outside_box_mechanics());
 }
 
 //***** 3D voxel spacing *****
