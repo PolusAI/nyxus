@@ -1060,7 +1060,8 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   tier, an absolute 1e-9 band.
 - The `im_quality_intensity` / `im_quality_mask` fixture (`test_data.h`) loaded through
   `load_masked_test_roi_data`, giving one 8x12 ROI image matrix. `FocusScoreFeature::calculate()`
-  reads no `NyxSetting`, so the recipe has no settings to name beyond the fixture: the kernel is the
+  reads one `NyxSetting`, the soft-NaN, and only for a ROI too thin for any tile, which this fixture
+  is not, so the recipe has no settings to name beyond the fixture: the kernel is the
   `ksize=1` Laplacian `{{0,1,0},{1,-4,1},{0,1,0}}` compiled into `focus_score.cpp`, out-of-range
   taps are dropped (zero padding), and the tile scale is the `scale=2` default of
   `get_local_focus_score()`. Oracle: `opencv`. Used by: `test_imq_opencv.h`.
@@ -1075,25 +1076,28 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - `LOCAL_FOCUS_SCORE` is the mean over the 2x2 grid of 4x6 tiles `get_local_focus_score()` cuts
   the fixture into at `scale=2`. The grid is Nyxus' definition, reproduced in the generator; which
   tiles take part is asserted tile by tile in `test_imq_analytic.h`. See `matrix/imq.md`.
-- **Outside this recipe:** the `ksize>1` kernel `{{2,0,2},{0,-8,0},{2,0,2}}`, which has no
-  `cv2.Laplacian` counterpart and which `calculate()` never selects; and the out-of-core
-  `get_focus_score_NT()` path, which no assertion reaches.
+- The `ksize>1` kernel `{{2,0,2},{0,-8,0},{2,0,2}}` is `cv2.Laplacian`'s ksize=3 aperture exactly.
+  `calculate()` never selects it, so it is vetted as a stencil rather than as a score: both stencils
+  are pinned from cv2's unit-spike response in `test_imq_opencv.h`, and the generator also asserts
+  the ksize=3 filtered fixture equal to cv2's cell for cell.
+- **Outside this recipe:** the out-of-core path. It shares the scoring code with `calculate()` and is
+  held bit-equal to it by `test_imq_invariant.h`, an invariant rather than an oracle assertion.
 
 ## imq.local_focus_single_spike
 - No benchmark; config matrix `matrix/imq.md`. Exact assertions, an absolute band of 0.
 - Synthetic ROIs built in `test_imq_analytic.h`: 8x12, 9x12, 8x13 and 9x13 rectangles, full mask,
   0 everywhere except single spikes of height 6. At the `scale=2` default of
   `get_local_focus_score()` every one of them is a 2x2 grid of 4x6 tiles, and the odd sides add a
-  row or column that belongs to no tile; a 5x1 and a 1x5 ROI are too thin for any tile.
-  `FocusScoreFeature::calculate()` reads no `NyxSetting`. Oracle: `analytic`. Used by:
-  `test_imq_analytic.h`.
+  row or column that belongs to no tile. Oracle: `analytic`. Used by: `test_imq_analytic.h`.
 - The closed form: a spike of height `v` at least one pixel inside its tile has a ksize=1 Laplacian
   of `-4v` at the spike and `+v` at its four neighbours, mean exactly 0, so the tile scores
   `20v^2/P` (`P` = 24 pixels) and an all-zero tile scores 0. `LOCAL_FOCUS_SCORE` is then
   `20*36/24/4 = 7.5` for one spiked tile and 30 for four. Integer arithmetic throughout, exact in
   double.
 - The even sides are the ones that separate a full tiling from one whose loop stops after the
-  first tile; the odd sides pin the leftover row and column.
+  first tile. What the leftover row and column contribute, and what an ROI too thin for any tile
+  returns, are Nyxus conventions rather than closed forms: they are pinned as mechanics in
+  `test_imq_mechanics.h`, outside this recipe.
 
 ## imq.saturation_observed_extremum
 - Benchmark `bench_imq_quality_roi`; config matrix `matrix/imq.md`. Assertions at SPEC 7's exact

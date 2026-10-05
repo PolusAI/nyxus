@@ -21,19 +21,22 @@ what `cv2.Laplacian(img, cv2.CV_64F).var()` computes. Two independent parts:
   2. The variance. Plain population variance of the signed filtered image,
      mean((x - mean(x))^2) == numpy/cv2 .var() (ddof=0).
 
-SCOPE OF THE CLAIM -- what these two assertions do and do not cover:
-  * ksize=1 only. The ksize>1 kernel [[2,0,2],[0,-8,0],[2,0,2]] is a Nyxus/CellProfiler convention
-    with no cv2.Laplacian counterpart (cv2's ksize=3 Sobel-derived Laplacian is the same stencil
-    scaled differently), and Nyxus never calls it from calculate() -- not covered here.
+Also re-verified: laplacian()'s two stencils. The test pins cv2's response to a unit spike at
+ksize=1 and ksize=3 (imq_opencv_laplacian_ksize1 / _ksize3), which is cv2's kernel itself; this
+generator recomputes both and requires them equal to the pins, and asserts cv2's ksize=3 filtered
+fixture equal to laplacian()'s ksize>1 kernel [[2,0,2],[0,-8,0],[2,0,2]] cell for cell.
+
+SCOPE OF THE CLAIM -- what these assertions do and do not cover:
+  * The two scores at ksize=1, the only kernel calculate() selects. The ksize>1 kernel is
+    cv2.Laplacian's ksize=3 aperture exactly, and is vetted as a stencil, not as a score.
   * LOCAL_FOCUS_SCORE is the mean of the focus scores of a scale x scale grid of non-overlapping
     (height/scale) x (width/scale) tiles; rows and columns past that grid belong to no tile. cv2
     supplies each tile's Laplacian and variance; the grid is Nyxus' definition, reproduced here. The
     generator asserts the tile count and prints every tile's score, and carries a SPEC 4 negative
     control: the pin must reject the one-tile value a `y < height - M` loop bound produces on this
     even-sided fixture, so the golden tells the full tiling from the truncated one.
-  * The out-of-core path (get_focus_score_NT) is not covered: it convolves through a fixed 30x30
-    window buffer, passes (width, height) to laplacian() in the (m_image, n_image) order, and takes
-    the variance over the whole conv_buffer including the part no pixel wrote. Out of scope here.
+  * The out-of-core path is not run here. It shares the in-RAM scoring code and
+    test_imq_invariant.h holds it bit-equal to the in-RAM path.
 
 NOT vetted here: MIN_SATURATION / MAX_SATURATION (-> gen_imq_cellprofiler.py),
 POWER_SPECTRUM_SLOPE and SHARPNESS (-> test_imq_regression.h; see tests/vetting/matrix/imq.md).
@@ -59,6 +62,9 @@ TEST_H = os.path.join(TESTS, "test_imq_opencv.h")
 TABLE = "imq_opencv_ref_vals"
 
 KERNEL = np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]], float)  # focus_score.cpp, ksize=1
+KERNEL3 = np.array([[2, 0, 2], [0, -8, 0], [2, 0, 2]], float)  # focus_score.cpp, ksize>1
+# The stencil tables the test pins, {name: cv2 ksize}
+STENCIL_TABLES = {"imq_opencv_laplacian_ksize1": 1, "imq_opencv_laplacian_ksize3": 3}
 SCALE = 2       # FocusScoreFeature::get_local_focus_score default
 EXPECTED_TILES = SCALE * SCALE
 # The pins in the header are the TOOL's own digits printed at %.17g, so re-verifying them against a
@@ -131,12 +137,25 @@ def parse_pins(path, table):
     return pins
 
 
-def cv_laplacian(img):
-    return cv2.Laplacian(img, cv2.CV_64F, ksize=1, borderType=cv2.BORDER_CONSTANT)
+def parse_stencil(path, table):
+    """The 3x3 stencil `table` the header pins, as a 3x3 array."""
+    txt = open(path, encoding="utf-8", errors="replace").read()
+    m = re.search(re.escape(table) + r"\s*\[\s*9\s*\]\s*=\s*\{([^}]*)\}", txt)
+    if not m:
+        raise RuntimeError("stencil %s not found in %s" % (table, os.path.basename(path)))
+    body = re.sub(r"//[^\n]*", "", m.group(1))   # a commented-out value is not a pin
+    vals = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", body)]
+    if len(vals) != 9:
+        raise RuntimeError("stencil %s holds %d values, not 9" % (table, len(vals)))
+    return np.array(vals, float).reshape(3, 3)
 
 
-def nyxus_laplacian(img):
-    """Reimplementation of FocusScoreFeature::laplacian() (zero padding, ksize=1)."""
+def cv_laplacian(img, ksize=1):
+    return cv2.Laplacian(img, cv2.CV_64F, ksize=ksize, borderType=cv2.BORDER_CONSTANT)
+
+
+def nyxus_laplacian(img, kernel=KERNEL):
+    """Reimplementation of FocusScoreFeature::laplacian() (zero padding)."""
     h, w = img.shape
     out = np.zeros((h, w), float)
     for i in range(h):
@@ -145,7 +164,7 @@ def nyxus_laplacian(img):
                 for jk in range(3):
                     ii, jj = i + 1 - ik, j + 1 - jk
                     if 0 <= ii < h and 0 <= jj < w:
-                        out[i, j] += img[ii, jj] * KERNEL[ik, jk]
+                        out[i, j] += img[ii, jj] * kernel[ik, jk]
     return out
 
 
@@ -194,6 +213,25 @@ def main():
           % ("OK " if ok else "FAIL", conv_diff))
     print("       raw Laplacian mean = %r (non-zero -> abs()-before-variance would understate it)"
           % float(cv_laplacian(img).mean()))
+
+    # (1b) laplacian()'s ksize>1 kernel is cv2's ksize=3 aperture: same filtered image, cell for cell
+    conv3_diff = float(np.abs(cv_laplacian(img, 3) - nyxus_laplacian(img, KERNEL3)).max())
+    ok = conv3_diff == 0.0
+    all_ok &= ok
+    print("  %s convolution: max|cv2 ksize=3 - nyxus ksize>1 laplacian| = %r"
+          % ("OK " if ok else "FAIL", conv3_diff))
+
+    # (1c) the stencils the test pins are cv2's: its response to a unit spike, at each ksize
+    spike = np.zeros((5, 5), float)
+    spike[2, 2] = 1.0
+    for table, ksize in sorted(STENCIL_TABLES.items()):
+        pinned = parse_stencil(TEST_H, table)
+        produced_stencil = cv_laplacian(spike, ksize)[1:4, 1:4]
+        ok = np.array_equal(produced_stencil, pinned)
+        all_ok &= ok
+        print("  %s stencil %s: cv2 ksize=%d unit-spike response %s, pinned %s"
+              % ("OK " if ok else "FAIL", table, ksize,
+                 produced_stencil.astype(int).tolist(), pinned.astype(int).tolist()))
 
     # (2) the tiling LOCAL_FOCUS_SCORE is defined over, asserted rather than assumed
     tiles = nyxus_tiles(img, SCALE)

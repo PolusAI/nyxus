@@ -80,21 +80,24 @@ reduce to.
 
 ## What the two assertions do not cover
 
-**`ksize > 1`.** `focus_score.cpp` carries a second kernel, `{{2,0,2},{0,-8,0},{2,0,2}}`, selected
-when `ksize != 1`. It has no `cv2.Laplacian` counterpart, and `calculate()` never selects it —
-`laplacian()` is only ever called with the default. Out of scope, and recorded as INVALID in
-`matrix/imq.md` rather than left implied.
+**`ksize > 1` as a score.** `focus_score.cpp` carries a second kernel, `{{2,0,2},{0,-8,0},{2,0,2}}`,
+selected when `ksize != 1`. `calculate()` never selects it, so no score is computed with it, and the
+cell is recorded as INVALID in `matrix/imq.md` rather than left implied.
 
-The two kernels are constant arrays, and `laplacian()` picks one per call from its `ksize`
-argument, so no call changes the kernel a later call sees;
-`test_imq_focus_score_kernel_per_call_analytic` asserts it.
+The kernel itself is vetted. It is `cv2.Laplacian`'s ksize=3 aperture exactly: the generator asserts
+cv2's ksize=3 filtered fixture equal to Nyxus' cell for cell, and `test_imq_opencv.h` pins both
+stencils from cv2's response to a unit spike. The two kernels are constant arrays and `laplacian()`
+picks one per call from its `ksize` argument, so no call changes the kernel a later call sees;
+`test_imq_focus_score_kernel_per_call_opencv` runs a ksize=3 call and then a ksize=1 one and asserts
+each against cv2's stencil.
 
 **The tile grid is Nyxus' definition, reproduced rather than taken from the tool.** cv2 supplies
 each tile's Laplacian and variance. Which sub-arrays are tiles — a `scale × scale` grid of
 `(height/scale) × (width/scale)` tiles, with any leftover row or column in no tile — is Nyxus'
 own convention, and no tool publishes it. The generator reproduces the grid and asserts its tile
-count; `test_imq_analytic.h` pins which tiles take part, the leftover row and column, and the ROI too
-thin for any tile.
+count; `test_imq_analytic.h` pins which tiles take part, and `test_imq_mechanics.h` the two
+conventions no closed form gives: the leftover row and column, and the soft-NaN of an ROI too thin
+for any tile.
 
 **Negative control: the pin rejects a truncated tiling.** A tile loop bounded by `y < height - M`
 stops after the first tile on an even side while still dividing by `scale²`. On this 8×12 fixture
@@ -102,15 +105,10 @@ that visits one tile of four and gives **7.5763888888888902** against the full *
 — 73% apart. The generator asserts that gap: were it to vanish, the `LOCAL_FOCUS_SCORE` pin could not
 tell the full tiling from the truncated one.
 
-**The out-of-core path.** `FocusScoreFeature::get_focus_score_NT()` is reached by
-`osized_calculate()` and by no assertion in the tree. Reading it (not measuring — nothing exercises
-it): it passes `(width, height)` to `laplacian()` where the signature's first size parameter is the
-row count; it takes the variance over the whole `conv_buffer`, sized `(winY+2)*(winX+2)*2 = 2048`
-and larger than the region any pixel writes; and in the branch taken when the ROI is smaller than
-one 30×30 window it fills `W`, sized `winY*winX = 900`, with `W[row*width + col]` over the full ROI
-— for a 100×20 ROI that is 2000 entries into 900. It also declares a `tile_variance` vector, whose
-comment still reads "0: abs sum of tile", that nothing ever touches. Recorded in `matrix/imq.md` and
-`not_covered.md`; out of scope for a vetting pass.
+**The out-of-core path.** `osized_calculate()` scores an oversized ROI with the same
+`laplacian_variance()` and `get_local_focus_score()` templates `calculate()` uses, reading the
+disk-backed image instead of the in-RAM one. It is not run against cv2; `test_imq_invariant.h` and
+`tests/python/test_imq_ooc_invariant.py` hold it bit-equal to the in-RAM path, which is.
 
 ## Reproduction
 
