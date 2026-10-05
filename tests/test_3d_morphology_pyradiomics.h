@@ -76,7 +76,7 @@ namespace
 	}
 
 	// 'scale' takes pyradiomics' value to nyxus' definition where the two normalize differently
-	void expect_3d_morphology_aniso_pyradiomics (const std::string& fname, Nyxus::Feature3D fcode, double scale = 1.0)
+	void assert_3d_morphology_aniso_pyradiomics (const std::string& fname, Nyxus::Feature3D fcode, double scale = 1.0)
 	{
 		auto it = morphology_3d_pyradiomics_ref_vals.find (fname);
 		ASSERT_TRUE(it != morphology_3d_pyradiomics_ref_vals.end()) << fname;
@@ -90,7 +90,7 @@ namespace
 // The mesh volume is the lattice mesh volume times a voxel's volume, exact up to summation order
 void test_3d_morphology_aniso_mesh_volume_pyradiomics()
 {
-	expect_3d_morphology_aniso_pyradiomics ("3MESH_VOLUME", Nyxus::Feature3D::MESH_VOLUME);
+	assert_3d_morphology_aniso_pyradiomics ("3MESH_VOLUME", Nyxus::Feature3D::MESH_VOLUME);
 }
 
 // The axis lengths are 4*sqrt of the covariance eigenvalues of the physical voxel coordinates.
@@ -101,25 +101,25 @@ static const double aniso_axis_len_sample_cov = std::sqrt (274432. / 274431.);
 
 void test_3d_morphology_aniso_major_axis_len_pyradiomics()
 {
-	expect_3d_morphology_aniso_pyradiomics ("3MAJOR_AXIS_LEN", Nyxus::Feature3D::MAJOR_AXIS_LEN, aniso_axis_len_sample_cov);
+	assert_3d_morphology_aniso_pyradiomics ("3MAJOR_AXIS_LEN", Nyxus::Feature3D::MAJOR_AXIS_LEN, aniso_axis_len_sample_cov);
 }
 
 void test_3d_morphology_aniso_minor_axis_len_pyradiomics()
 {
-	expect_3d_morphology_aniso_pyradiomics ("3MINOR_AXIS_LEN", Nyxus::Feature3D::MINOR_AXIS_LEN, aniso_axis_len_sample_cov);
+	assert_3d_morphology_aniso_pyradiomics ("3MINOR_AXIS_LEN", Nyxus::Feature3D::MINOR_AXIS_LEN, aniso_axis_len_sample_cov);
 }
 
 void test_3d_morphology_aniso_least_axis_len_pyradiomics()
 {
-	expect_3d_morphology_aniso_pyradiomics ("3LEAST_AXIS_LEN", Nyxus::Feature3D::LEAST_AXIS_LEN, aniso_axis_len_sample_cov);
+	assert_3d_morphology_aniso_pyradiomics ("3LEAST_AXIS_LEN", Nyxus::Feature3D::LEAST_AXIS_LEN, aniso_axis_len_sample_cov);
 }
 
 void test_3d_morphology_aniso_elongation_pyradiomics()
 {
-	expect_3d_morphology_aniso_pyradiomics ("3ELONGATION", Nyxus::Feature3D::ELONGATION);
+	assert_3d_morphology_aniso_pyradiomics ("3ELONGATION", Nyxus::Feature3D::ELONGATION);
 }
 
 void test_3d_morphology_aniso_flatness_pyradiomics()
 {
-	expect_3d_morphology_aniso_pyradiomics ("3FLATNESS", Nyxus::Feature3D::FLATNESS);
+	assert_3d_morphology_aniso_pyradiomics ("3FLATNESS", Nyxus::Feature3D::FLATNESS);
 }

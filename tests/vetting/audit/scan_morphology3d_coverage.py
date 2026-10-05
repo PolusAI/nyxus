@@ -15,6 +15,7 @@ SOURCES = [
     "test_3d_morphology_analytic.h",
     "test_3d_morphology_matlab.h",
     "test_3d_morphology_mirp.h",
+    "test_3d_morphology_pyradiomics.h",
     "test_3d_morphology_regression.h",
 ]
 
@@ -44,7 +45,8 @@ NOTE = {
 FAMILY = scanlib.Family(
     dim="3D", family="morphology",
     sources=SOURCES,
-    oracle_suffix={"analytic": "analytic", "matlab": "matlab", "mirp": "mirp"},
+    oracle_suffix={"analytic": "analytic", "matlab": "matlab", "mirp": "mirp",
+                   "pyradiomics": "pyradiomics"},
     notes=NOTE,
     enum_dim_prefix=True,
     enum_alias="MORPHOLOGY",
