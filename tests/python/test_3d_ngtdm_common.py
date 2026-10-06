@@ -31,11 +31,19 @@ print("MARK" + json.dumps({f: float(df.iloc[0][f]) for f in FEATURES}), flush=Tr
 def featurize_3d_ngtdm(intp, segp, ram_limit, radius):
     """-> ({feature: value}, True if the backend processed the ROI as oversized).
 
-    Raw levels (3ngtdm/greydepth=0) at the given Chebyshev radius, one ROI per call.
+    Raw levels (3ngtdm/greydepth=0) at the given Chebyshev radius, one ROI per call -- on the in-RAM
+    path. An oversized ROI does not see either setting: out-of-core 3D runs ignore set_metaparam and
+    use the defaults, greydepth 0 and radius 1 (PN-140). Those coincide with what this helper sets only
+    at radius 1, so an oversized run at any other radius is refused here rather than returned as if it
+    had been computed at that radius.
     """
     proc = subprocess.run([sys.executable, "-c", _CHILD, intp, segp, str(ram_limit), str(radius)],
                           capture_output=True, text=True, timeout=600)
     assert proc.returncode == 0, "featurisation failed:\n%s\n%s" % (proc.stdout, proc.stderr)
     values = [ln[len(_MARK):] for ln in proc.stdout.splitlines() if ln.startswith(_MARK)]
     assert len(values) == 1, proc.stdout
-    return json.loads(values[0]), "processing oversized 3D ROI" in proc.stdout
+    oversized = "processing oversized 3D ROI" in proc.stdout
+    assert not (oversized and radius != 1), (
+        "the ROI was processed out-of-core, and out-of-core 3D runs ignore set_metaparam and use the "
+        "defaults (greydepth 0, radius 1), so these values are not at radius %d (PN-140)" % radius)
+    return json.loads(values[0]), oversized
