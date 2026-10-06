@@ -26,6 +26,7 @@ rather than one usable cell.
 |---|---|---|---|---|
 | 0 (no binning) | false | 1 | **VALID(pyradiomics)** | `ngtdm3d.pyradiomics_binwidth1` — all five features on `bench_compat_ngtdm_3d`, plus the 18-entry matrix, at `rel=1e-9`; measured residual **0** |
 | 0 (no binning) | false | 1 | **VALID(pyradiomics)** | `ngtdm3d.pyradiomics_binwidth1_ball` — the same config point on `bench_compat_ngtdm_3d_ball`, a ROI that does not fill its bounding box: all five features plus the six-row matrix at `rel=1e-9`; measured residual **≤ 3e-16**. The out-of-core path is asserted against the same oracle in `tests/python/test_3d_ngtdm_pyradiomics.py` |
+| 0 (no binning) | false | 1 | **VALID(mirp)** | `ngtdm3d.mirp_fbn_mixed` — the same config point on label 59 of `bench_compat_ngtdm_3d_ball`, a ROI holding voxels with a neighbour and one without, at a level of its own: all five features and the three-row matrix (one row empty, `N_g,p = 2`) against MIRP 2.6.0 at `rel=1e-9`; measured residual **0**. Held to MIRP, not PyRadiomics, because PyRadiomics keeps a voxel with no neighbour (see below). The out-of-core path is asserted against the same oracle in `tests/python/test_3d_ngtdm_mirp.py` |
 | 64 (MATLAB) | false | 1 | **VALID-prod-only** → regression | `ngtdm3d.regression_ut_phantom`; five pins in `test_3d_ngtdm_regression.h` on `bench_ut57_3d` at `rel=1e-9` |
 | any | true | ≥1 | **not exercised** | IBSI mode builds the `0..max` ladder, which includes levels with `n_i = 0`; PyRadiomics deletes empty levels, so the two are not directly comparable and no assertion runs it |
 | any | any | **0** | **INVALID — degenerate** | the neighbourhood is empty, no voxel is recorded as having a neighbour, the matrix is empty and every feature is reported as the soft-NaN value — the same path a ROI none of whose voxels has a neighbour takes (`test_3d_ngtdm_isolated_voxels_mechanics`). `compile_feature_settings()` defaults `NGTDM_RADIUS` to 1, and `test_3d_ngtdm_default_radius_mechanics` holds it there |
@@ -54,6 +55,19 @@ the voxel cloud — the binned cube gives background the same value, 0, as a ROI
 and `bench_compat_ngtdm_3d_ball` is the fixture that holds it to that: 64% of the ball's bounding box
 is background, and 18 of its ROI voxels are at 0. Its grey levels are 0..5 as well, so the
 coincidence of the two discretisations described above carries over unchanged.
+
+## A voxel with no ROI neighbour, and why that case is held to MIRP
+
+Nyxus follows IBSI, as MIRP does: a ROI voxel with no other ROI voxel within the radius is in no
+matrix row and counts towards none of `n_i`, `N_v,p`, `N_v,c` or `N_g,p`, and `N_g,p` is the number of
+non-empty rows. A ROI with no neighboured voxel at all has an empty matrix and reports the soft-NaN
+value, which MIRP's NaN agrees with (`test_3d_ngtdm_isolated_voxels_mechanics` in RAM,
+`test_3d_ngtdm_ooc_empty_matrix_mechanics` out of core).
+
+PyRadiomics keeps such a voxel as a row with `s_i = 0`. So **any** ROI holding one parts from
+PyRadiomics on all five features, not only the all-isolated ROI. Every PyRadiomics fixture is
+therefore a ROI in which every voxel has a neighbour, which the generator enforces, and the mixed case
+is the MIRP row `ngtdm3d.mirp_fbn_mixed` above.
 
 ## Why the MATLAB-binning cell carries no oracle
 

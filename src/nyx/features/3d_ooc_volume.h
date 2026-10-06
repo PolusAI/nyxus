@@ -167,4 +167,19 @@ namespace Nyxus
 			lut[v] = (int) (std::lower_bound (I.begin(), I.end(), v) - I.begin());
 		return lut;
 	}
+
+	/// @brief The in-core counterpart of OocBinnedVolume::mask(): which cells of the ROI's
+	/// bounding-box cube ('w' x 'h' x 'd', the shape of r.aux_image_cube) are the ROI's (1) and which
+	/// are background (0), read off the voxel cloud. The cube fills background with the same value
+	/// a ROI voxel of intensity 0 carries, so the cloud is the only source of membership.
+	inline void roi_mask_3d (SimpleCube<unsigned char>& M, const LR& r, int w, int h, int d)
+	{
+		M.allocate (w, h, d);
+		M.fill (0);
+		auto xmin = r.aabb.get_xmin(),
+			ymin = r.aabb.get_ymin(),
+			zmin = r.aabb.get_zmin();
+		for (const auto& p : r.raw_pixels_3D)
+			M.zyx (p.z - zmin, p.y - ymin, p.x - xmin) = 1;
+	}
 }

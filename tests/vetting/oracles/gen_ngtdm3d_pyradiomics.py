@@ -54,10 +54,16 @@ writes the two files, and every run checks the committed files still hold exactl
 
 The same seg file carries label 58: two voxels at opposite corners of the volume, neither within
 reach of the other. No voxel of it has a ROI neighbour, so its NGTDM is empty and Nyxus reports all
-five features as NaN (test_3d_ngtdm_isolated_voxels_mechanics). PyRadiomics instead keeps a voxel
-without neighbours, with s_i = 0 -- the one place the two conventions part, and the reason both
-recipes here use ROIs in which every voxel has a neighbour. check_ball_phantom() measures both
-properties.
+five features as the soft-NaN value (test_3d_ngtdm_isolated_voxels_mechanics), as MIRP reports NaN.
+
+A VOXEL WITH NO ROI NEIGHBOUR is where PyRadiomics parts from IBSI. Nyxus follows IBSI, as MIRP does:
+the voxel is in no row and counts towards none of n_i, Nvp or Ngp, and Ngp is the number of non-empty
+rows. PyRadiomics keeps the voxel as a row with s_i = 0. So ANY ROI holding one such voxel differs
+from PyRadiomics on all five features, not only an all-isolated ROI like label 58 -- which is why
+every PyRadiomics fixture here is a ROI in which every voxel has a neighbour, and the generator fails
+on the ball or the out-of-core ellipsoid otherwise. Label 59 of the same file mixes the two kinds of
+voxel and is held to MIRP instead, by gen_ngtdm3d_mirp.py. check_ball_phantom() measures the
+properties of all three labels.
 
 The out-of-core path is held to PyRadiomics on a larger ellipsoid built in
 tests/python/test_3d_ngtdm_pyradiomics.py, whose footprint forces the oversized path; make_ooc_ellipsoid()
@@ -89,6 +95,13 @@ TEST_OOC_PY = os.path.join(TESTS, "python", "test_3d_ngtdm_pyradiomics.py")
 
 LABEL = 57
 ISOLATED_LABEL = 58          # the ball file's two-voxel ROI with no neighbours
+MIXED_LABEL = 59             # the ball file's ROI with both neighboured voxels and an isolated one
+
+# Label 59's voxels, (z, y, x): a three-voxel chain along x on the volume's z=0, y=0 edge, and one
+# voxel at the far z face that nothing of label 59 reaches at radius 1. gen_ngtdm3d_mirp.py reads the
+# committed files, so the coordinates live in one place: here.
+MIXED_CHAIN = ((0, 0, 5), (0, 0, 6), (0, 0, 7))
+MIXED_LONE = (8, 0, 0)
 BINWIDTH = 1
 RELTOL = 1e-12         # the measured residual between the two references is 0 everywhere
 
@@ -215,14 +228,17 @@ def make_ball_phantom():
     """-> (intensity float32, labels uint32), both (z, y, x) = 9x9x9: the ball recipe's phantom.
 
     Label 57 is the digital ball of radius 3 about the centre voxel (123 voxels in a 7x7x7 bounding
-    box); label 58 is the two corner voxels (0,0,0) and (8,8,8), at levels 0 and 2. The texture
-    covers the whole volume, background included, as a real image's would.
+    box); label 58 is the two corner voxels (0,0,0) and (8,8,8), at levels 0 and 2; label 59 is
+    MIXED_CHAIN, at levels 3, 0, 3, plus MIXED_LONE at level 2 -- a level no chain voxel carries. The
+    texture covers the whole volume, background included, as a real image's would.
     """
     n, c = 9, 4
     z, y, x = numpy.indices((n, n, n))
     labels = numpy.zeros((n, n, n), dtype=numpy.uint32)
     labels[(z - c) ** 2 + (y - c) ** 2 + (x - c) ** 2 <= 9] = LABEL
     labels[0, 0, 0] = labels[n - 1, n - 1, n - 1] = ISOLATED_LABEL
+    for v in MIXED_CHAIN + (MIXED_LONE,):
+        labels[v] = MIXED_LABEL
     return phantom_texture((n, n, n), 6).astype(numpy.float32), labels
 
 
@@ -291,6 +307,28 @@ def check_ball_phantom():
         print("  FAIL label %d is not %d voxels at distinct levels, none with a neighbour"
               % (ISOLATED_LABEL, iso.sum()))
         bad += 1
+
+    # label 59: some voxels with a neighbour and some without, at least two levels among the former,
+    # and every level of the latter carried by no voxel of the former -- so the isolated voxels' levels
+    # have empty NGTDM rows, which is the one configuration where the count of non-empty rows (Ngp)
+    # differs from the count of the ROI's levels
+    mixed = want_l == MIXED_LABEL
+    if (mixed & ((want_l == LABEL) | iso)).any():
+        print("  FAIL label %d overlaps label %d or %d" % (MIXED_LABEL, LABEL, ISOLATED_LABEL))
+        bad += 1
+    lone = numpy.zeros_like(mixed)
+    for zz, yy, xx in zip(*numpy.nonzero(mixed)):
+        box = mixed[max(0, zz - 1):zz + 2, max(0, yy - 1):yy + 2, max(0, xx - 1):xx + 2]
+        lone[zz, yy, xx] = box.sum() == 1
+    linked = mixed & ~lone
+    linked_levels = set(want_i[linked].tolist())
+    lone_levels = set(want_i[lone].tolist())
+    print("  label %d: %d voxels with a neighbour at levels %s, %d without at levels %s"
+          % (MIXED_LABEL, linked.sum(), sorted(linked_levels), lone.sum(), sorted(lone_levels)))
+    if not lone.any() or len(linked_levels) < 2 or lone_levels & linked_levels:
+        print("  FAIL label %d is not a mix of neighboured voxels at >= 2 levels and isolated voxels"
+              " at levels of their own" % MIXED_LABEL)
+        bad += 1
     return bad
 
 
@@ -337,15 +375,22 @@ def ball_run():
 
 
 def ooc_run():
-    """-> {feature: value}, PyRadiomics on the out-of-core test's ellipsoid at radius 1."""
+    """-> ({feature: value}, failure count), PyRadiomics on the out-of-core test's ellipsoid at
+    radius 1. A voxel without a neighbour is a failure: PyRadiomics keeps it and Nyxus does not, so
+    one such voxel would part the two on every feature."""
     inten, mask = make_ooc_ellipsoid()
     img = sitk.GetImageFromArray(inten.astype(float))
     msk = sitk.GetImageFromArray(mask.astype(numpy.uint32))
     f, _ = pyradiomics_ngtdm(img, msk, 1, radius_distances(1))
+    lone = isolated_voxels(mask)
     print("# out-of-core ellipsoid: %d voxels, %d of them at level 0, %d without a neighbour"
-          % (mask.sum(), int((inten[mask] == 0).sum()), isolated_voxels(mask)))
+          % (mask.sum(), int((inten[mask] == 0).sum()), lone))
+    bad = 0
+    if lone:
+        print("  FAIL the out-of-core ellipsoid has %d voxel(s) without a neighbour" % lone)
+        bad += 1
     return {n: float(numpy.asarray(getattr(f, "get%sFeatureValue" % p)()).ravel()[0])
-            for n, p in PYRAD.items()}
+            for n, p in PYRAD.items()}, bad
 
 
 def parse_py_pins(txt, name):
@@ -557,7 +602,7 @@ def main():
     ball = ball_run()
     if ball is None:
         return 1
-    ooc_feats = ooc_run()
+    ooc_feats, ooc_bad = ooc_run()
 
     for radius in sorted(RADII):
         scalar_table, matrix_table = RADII[radius]
@@ -588,7 +633,7 @@ def main():
         print('    "%s": %r,' % (name, ooc_feats[name]))
 
     txt_h = open(TEST_H, encoding="utf-8", errors="replace").read()
-    bad = check_ball_phantom()
+    bad = check_ball_phantom() + ooc_bad
 
     tables = []
     scalar_runs = [(RADII[r][0], RADII[r][1], runs[r]) for r in sorted(RADII)]
