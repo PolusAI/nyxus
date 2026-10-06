@@ -5,6 +5,9 @@
 // spans its own number of Z-planes, but all of them need the same three things -- the bbox
 // geometry, a plane of the binned cube, and the set of grey levels the ROI's voxels carry -- so
 // those live here once instead of in each family's osized_calculate().
+//
+// It also holds roi_mask_3d(), the in-core counterpart of OocBinnedVolume::mask(): the ROI mask over
+// the bounding-box cube that calculate() of 3D NGTDM and 3D NGLDM build from the voxel cloud.
 
 #include <algorithm>
 #include <set>
