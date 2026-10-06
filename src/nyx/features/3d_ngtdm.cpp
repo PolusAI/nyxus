@@ -124,6 +124,13 @@ int nsh = sizeof(shifts) / sizeof(ShiftToNeighbor);
 	}
 }
 
+// Ngp: the grey levels that have at least one voxel with a ROI neighbour, i.e. the non-empty
+// rows. A level carried only by neighbourless voxels has an empty row and is not counted.
+/*static*/ int D3_NGTDM_feature::count_nonempty_rows (const std::vector<int>& N)
+{
+	return (int) std::count_if (N.begin(), N.end(), [](int n) { return n > 0; });
+}
+
 //
 // returns Nvp
 //
@@ -205,13 +212,7 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 	// Which cells of the bounding box are the ROI's. The cube fills the rest with 0, which is also
 	// the level a ROI voxel of intensity 0 carries, so only the voxel cloud can tell the two apart.
 	SimpleCube<unsigned char> M;
-	M.allocate (w, h, d);
-	M.fill (0);
-	auto xmin = r.aabb.get_xmin(),
-		ymin = r.aabb.get_ymin(),
-		zmin = r.aabb.get_zmin();
-	for (const auto& p : r.raw_pixels_3D)
-		M.zyx (p.z - zmin, p.y - ymin, p.x - xmin) = 1;
+	Nyxus::roi_mask_3d (M, r, w, h, d);
 
 	// unique intensities of the ROI's voxels (set)
 	std::unordered_set<PixIntens> U;
@@ -275,9 +276,9 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 	// fill the NGTD-matrix
 
 	// --dimensions
-	Ng = (int)I.size();	
-	Ngp = (int)U.size();
+	Ng = (int)I.size();
 	Nvp = D3_NGTDM_feature::calc_NGTDM (N, P, S, Z, I);
+	Ngp = count_nonempty_rows (N);
 
 	// Calculate features
 	_coarseness = calc_Coarseness();
@@ -319,7 +320,6 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	const int W = scan.width(), H = scan.height(), Dz = scan.depth();
 	PixIntens maxbin = 0;
 	std::set<PixIntens> U = scan.levels (/*with_background=*/ false, /*drop_zero=*/ false, maxbin);
-	Ngp = (int) U.size();
 
 	// --- grey levels I: IBSI uses a linspace [0, max]; otherwise the unique set. Then sort.
 	if (ibsi)
@@ -400,6 +400,7 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	Nvc = 0;
 	for (size_t i = 0; i < N.size(); i++)
 		Nvc += N[i];
+	Ngp = count_nonempty_rows (N);
 
 	// no ROI voxel has a ROI neighbour: the matrix is empty and every feature undefined
 	if (Nvc == 0)

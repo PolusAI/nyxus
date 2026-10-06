@@ -125,6 +125,7 @@
 #include "test_3d_ngtdm_pyradiomics.h"
 #include "test_3d_ngtdm_regression.h"
 #include "test_3d_ngtdm_mechanics.h"
+#include "test_3d_ngtdm_mirp.h"
 #include "test_3d_glrlm_pyradiomics.h"
 #include "test_3d_glrlm_regression.h"
 #include "test_3d_glszm_pyradiomics.h"
@@ -357,6 +358,34 @@ TEST(TEST_NYXUS, TEST_3D_NGTDM_DEFAULT_RADIUS_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_3D_NGTDM_ISOLATED_VOXELS_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_ngtdm_isolated_voxels_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_OOC_EMPTY_MATRIX_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_ngtdm_ooc_empty_matrix_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_BUSYNESS_MIXED_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngtdm_busyness_mixed_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COARSENESS_MIXED_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngtdm_coarseness_mixed_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_COMPLEXITY_MIXED_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngtdm_complexity_mixed_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_CONTRAST_MIXED_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngtdm_contrast_mixed_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_STRENGTH_MIXED_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngtdm_strength_mixed_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGTDM_MATRIX_MIXED_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngtdm_matrix_mixed_mirp());
 }
 
 //***** 3D GLRLM compatibility *****

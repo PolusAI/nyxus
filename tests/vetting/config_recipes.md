@@ -856,16 +856,41 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   cube also gives background, so it equally rejects a family that tells ROI from background by value.
 - The ball's levels are 0..5, so binWidth=1 and the zero-min correction agree on 1..6 exactly as on
   the compatibility phantom. Every ROI voxel has a neighbour, so the one convention the two tools
-  part on — PyRadiomics keeps a voxel without neighbours as a row with `s_i = 0`, Nyxus leaves it out
-  — does not arise.
+  part on — PyRadiomics keeps a voxel without neighbours as a row with `s_i = 0`; Nyxus, like MIRP,
+  follows IBSI and leaves it out of every count — does not arise. Any ROI holding even one such voxel
+  parts from PyRadiomics on all five features; that case is `ngtdm3d.mirp_fbn_mixed`.
 - PyRadiomics' public extractor loads this phantom (its mask has background), and the generator
   checks it against `RadiomicsNGTDM` and the numpy NGTDM before pinning. `make_ball_phantom()` in
   the generator defines the volume and every run checks the committed files against it.
 - The same seg file holds label 58, two voxels with no neighbour, for
-  `test_3d_ngtdm_isolated_voxels_mechanics`; it carries no oracle claim.
+  `test_3d_ngtdm_isolated_voxels_mechanics`; it carries no oracle claim. Label 59 is the next recipe's.
 - The out-of-core path is held to the same oracle by
   `tests/python/test_3d_ngtdm_pyradiomics.py` on a 24×60×60 ellipsoid (37,792 voxels in an
   86,400-voxel box), at `ram_limit` 1000 MB and 1 MB.
+
+## ngtdm3d.mirp_fbn_mixed
+- Label 59 of the NGTDM ball phantom (`compat_int/compat_int_ngtdm_3d_ball.nii` +
+  `compat_seg/compat_seg_ngtdm_3d_ball.nii`) at the Nyxus settings of `ngtdm3d.pyradiomics_binwidth1`:
+  `GREYDEPTH=100`, `IBSI=false`, `NGTDM_GREYDEPTH=0`, `NGTDM_RADIUS=1`. Oracle: `mirp` 2.6.0,
+  `by_slice=False`, distance 1, `base_discretisation_method="fixed_bin_number"` with 4 bins;
+  generator `tests/vetting/oracles/gen_ngtdm3d_mirp.py`. Used by the five `*_mixed_mirp` assertions and
+  `test_3d_ngtdm_matrix_mixed_mirp` in `test_3d_ngtdm_mirp.h`.
+- **What it is for.** A ROI that holds voxels with a ROI neighbour and one without: a chain of three
+  at levels 3, 0, 3, and a lone voxel at level 2 that no other voxel of the ROI reaches. Nyxus
+  follows IBSI, as MIRP does: the lone voxel is in no row and counts towards none of `n_i`, `N_v,p`
+  or `N_g,p`. Its level is carried by no chain voxel, so its row is empty and `N_g,p`, the number of
+  non-empty rows, is 2 against the ROI's 3 levels; Contrast divides by `N_g,p (N_g,p − 1)`.
+- **Why MIRP.** PyRadiomics keeps the lone voxel as a row with `s_i = 0` and gives different values
+  on all five features (Coarseness 0.2667 against MIRP's 0.2). MIRP drops it, and reports NaN on a
+  ROI none of whose voxels has a neighbour, which is what Nyxus' soft-NaN value stands for.
+- **The bin count reproduces the raw levels.** Over integer levels min..max, `fixed_bin_number` with
+  `max − min + 1` bins maps `x` to `x − min + 1`: here 0..3 to 1..4, the levels Nyxus' zero-min
+  correction produces. The generator asserts the identity per ROI, reruns MIRP with no
+  discretisation on the lifted levels, and checks both against an independent numpy NGTDM.
+- The out-of-core path is held to the same oracle by `tests/python/test_3d_ngtdm_mirp.py`: the
+  ellipsoid of the recipe above plus one corner voxel outside its reach at level 12 (13 bins), at
+  `ram_limit` 1000 MB and 1 MB. Under IBSI the corner voxel changes nothing, and the MIRP values equal
+  the ellipsoid's PyRadiomics ones to 1e-15.
 
 ## ngtdm3d.regression_ut_phantom
 - The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at

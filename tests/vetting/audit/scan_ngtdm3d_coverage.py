@@ -15,6 +15,7 @@ import scanlib
 
 SOURCES = [
     "test_3d_ngtdm_pyradiomics.h",
+    "test_3d_ngtdm_mirp.h",
     "test_3d_ngtdm_regression.h",
     "test_3d_ngtdm_mechanics.h",
     os.path.join("python", "test_nyxus.py"),
@@ -28,18 +29,20 @@ NOTE = {
 # recipe -> the function that asserts AT that recipe. The same five features are read at three
 # PyRadiomics configurations -- two radii on one phantom, and the first radius on a phantom that does
 # not fill its bounding box -- so feature, kind and oracle are identical between them and only the
-# function name says which one a row records.
+# function name says which one a row records. The fourth oracle recipe is MIRP's, on a ROI that holds
+# a voxel with no neighbour, where PyRadiomics does not follow IBSI.
 RECIPE_READER = {
     "ngtdm3d.pyradiomics_binwidth1": re.compile(r"^test_3d_ngtdm_[a-z0-9]+_pyradiomics$"),
     "ngtdm3d.pyradiomics_binwidth1_r2": re.compile(r"^test_3d_ngtdm_[a-z0-9]+_r2_pyradiomics$"),
     "ngtdm3d.pyradiomics_binwidth1_ball": re.compile(r"^test_3d_ngtdm_[a-z0-9]+_ball_pyradiomics$"),
+    "ngtdm3d.mirp_fbn_mixed": re.compile(r"^test_3d_ngtdm_[a-z0-9]+_mixed_mirp$"),
     "ngtdm3d.regression_ut_phantom": re.compile(r"^test_3d_ngtdm_[a-z0-9]+_regression$"),
 }
 
 FAMILY = scanlib.Family(
     dim="3D", family="ngtdm",
     sources=SOURCES,
-    oracle_suffix={"pyradiomics": "pyradiomics"},
+    oracle_suffix={"pyradiomics": "pyradiomics", "mirp": "mirp"},
     notes=NOTE,
     enum_dim_prefix=True,
     other_note="asserted",
