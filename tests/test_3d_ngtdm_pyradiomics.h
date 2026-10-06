@@ -40,17 +40,6 @@ static const ref_vals_map<double> ngtdm_3d_pyradiomics_ref_vals
 	{"3NGTDM_STRENGTH", 1.245800596888454}          // original_ngtdm_Strength
 };
 
-// One row of an NGTDM: the grey level, the number of voxels carrying it that have at least one
-// neighbour, that count as a fraction of all such voxels, and the sum over them of the absolute
-// difference between the level and its neighbourhood mean.
-struct Ngtdm3dMatrixRow
-{
-	unsigned int level;
-	int n;
-	double p;
-	double s;
-};
-
 // The NGTDM of the phantom itself, from PyRadiomics' P_ngtdm array -- the table it builds before any
 // feature formula runs. All five features above are contractions of these eighteen numbers, so a
 // scalar assertion alone cannot tell a correct matrix from two errors in it that cancel.
