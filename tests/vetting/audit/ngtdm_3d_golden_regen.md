@@ -11,10 +11,14 @@ drift guards are Nyxus' own output and are regenerated from the test binary.
 | `ngtdm_3d_pyradiomics_ball_ref_vals` | same | PyRadiomics 3.0.1 on the ball phantom |
 | `ngtdm_3d_pyradiomics_ball_matrix_ref_vals` | same | PyRadiomics `P_ngtdm` on the ball phantom |
 | `NGTDM_3D_NONBOX_PYRADIOMICS` | `tests/python/test_3d_ngtdm_pyradiomics.py` | PyRadiomics 3.0.1 on the out-of-core ellipsoid |
+| `ngtdm_3d_mirp_mixed_ref_vals` | `tests/test_3d_ngtdm_mirp.h` | MIRP 2.6.0 on label 59 of the ball phantom |
+| `ngtdm_3d_mirp_mixed_matrix_ref_vals` | same | numpy NGTDM, cross-checked against the MIRP values |
+| `NGTDM_3D_MIXED_MIRP` | `tests/python/test_3d_ngtdm_mirp.py` | MIRP 2.6.0 on the out-of-core ellipsoid plus a lone voxel |
 | `ngtdm_3d_regression_ref_vals` | `tests/test_3d_ngtdm_regression.h` | Nyxus |
 
-The ball phantom's two NIfTI files are themselves generated: `--write-ball` on the generator writes
-them from `make_ball_phantom()`, and every run checks the committed files against it.
+The ball phantom's two NIfTI files are themselves generated: `--write-ball` on
+`gen_ngtdm3d_pyradiomics.py` writes them from `make_ball_phantom()` (labels 57, 58 and 59), and every
+run checks the committed files against it.
 
 ## Environment
 
@@ -64,19 +68,23 @@ all five of `Busyness`, `Coarseness`, `Complexity`, `Contrast`, `Strength`.
   whose minimum is 0 that is `x + 1`. Nyxus at `NGTDM_GREYDEPTH=0` does not bin, but shifts every
   level by one when the minimum is zero. Same result here — but only because the minimum is zero and
   the values are integers. On any other fixture the two have to be matched deliberately.
-- **Empty levels are dropped by both.** A level with `n_i = 0` is absent from `P_ngtdm` (PyRadiomics
-  deletes it in `_calculateMatrix`) and absent from Nyxus' `I` (which is built from the set of values
-  present). The 4×4 docstring image has no 4s, so its table has four rows and not five — the
-  docstring's own table shows five.
+- **Empty levels.** A level no ROI voxel carries is absent from `P_ngtdm` (PyRadiomics deletes it in
+  `_calculateMatrix`) and absent from Nyxus' `I` (which is built from the set of values present).
+  The 4×4 docstring image has no 4s, so its table has four rows and not five — the docstring's own
+  table shows five. A level that only neighbourless voxels carry is the exception: Nyxus keeps its
+  row with `n_i = 0` and leaves it out of `N_g,p` (see the MIRP section below).
 - **The PyRadiomics NGTDM docstring's table and its worked arithmetic disagree** on `s_3`: the table
   says `2.63`, the text computes `3.03`, and a run agrees with the text (`91/30`). Pin the run.
 - **`N_v,p` is the count of voxels with at least one neighbour**, which on every one of these
   fixtures is every ROI voxel. Nyxus computes it as the number of zones whose neighbourhood mean is
   `> 0`; those coincide here because no level is zero after the shift. On a fixture where they do
   not, this is the first thing to check.
-- **A voxel with no neighbour** is a row with `s_i = 0` in PyRadiomics and absent from Nyxus' matrix.
-  Every oracle fixture here avoids it, and the generator checks that; a ROI made only of such voxels
-  is the empty-matrix case `test_3d_ngtdm_isolated_voxels_mechanics` covers.
+- **A voxel with no neighbour** is a row with `s_i = 0` in PyRadiomics. Nyxus follows IBSI, as MIRP
+  does: the voxel is in no row and counts towards none of `n_i`, `N_v,p`, `N_v,c` or `N_g,p`. So any
+  ROI holding even one such voxel parts from PyRadiomics on all five features. Every PyRadiomics
+  fixture here avoids it, and the generator fails if one does not; the mixed case is pinned to MIRP
+  instead (below), and a ROI made only of such voxels is the empty-matrix case
+  `test_3d_ngtdm_isolated_voxels_mechanics` covers.
 - **Neighbours are ROI voxels.** Both tools take a voxel's neighbourhood from the mask, so on a ROI
   that does not fill its bounding box the background around it takes no part. The ball phantom is
   the fixture that would show otherwise.
@@ -87,6 +95,23 @@ all five of `Busyness`, `Coarseness`, `Complexity`, `Contrast`, `Strength`.
 arithmetic with no `radiomics` import in its path, and the generator refuses to print anything if the
 two disagree on levels or counts. Keep it: the oracle is being driven through a non-public entry
 point, and this is what says the pins are the definition's values rather than one implementation's.
+
+## MIRP — the mixed-ROI tables
+
+```
+conda run -n nyxus_mirp python tests/vetting/oracles/gen_ngtdm3d_mirp.py
+```
+
+Feeds `ngtdm_3d_mirp_mixed_ref_vals` and `ngtdm_3d_mirp_mixed_matrix_ref_vals` in
+`tests/test_3d_ngtdm_mirp.h` (label 59 of the ball phantom) and `NGTDM_3D_MIXED_MIRP` in
+`tests/python/test_3d_ngtdm_mirp.py` (the out-of-core ellipsoid plus a lone corner voxel at level 12).
+It prints them paste-ready and re-verifies every pin. MIRP runs at `by_slice=False`, distance 1,
+`fixed_bin_number` with `max − min + 1` bins, which maps the ROI's integer levels to the same
+`x − min + 1` Nyxus' zero-min correction gives; the generator asserts that identity per ROI, runs
+MIRP a second time with no discretisation on the lifted levels, and checks both against a numpy
+NGTDM. The matrix table is the numpy one, in Nyxus' layout (the lone voxel's level as an empty row),
+and the five MIRP values are recomputed from it. It also checks that MIRP reports NaN on label 58.
+The mirp env has no NIfTI library, so the generator parses the uncompressed NIfTI header itself.
 
 ## Nyxus — the drift guards
 

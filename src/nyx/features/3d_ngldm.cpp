@@ -198,22 +198,15 @@ void D3_NGLDM_feature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGL
 	//==== Temps
 	/*const*/ SimpleCube<PixIntens> & I = r.aux_image_cube;
 
-	//==== One pass over the ROI voxels builds both the ROI mask over the bounding box (which voxels of
-	// the cube are the ROI's) and the set of unique binned intensities, so the background filling the
-	// rest of the bounding box contributes no grey level
+	//==== The ROI mask over the bounding box (which voxels of the cube are the ROI's) and the set of
+	// unique binned intensities, both read off the ROI's voxels, so the background filling the rest of
+	// the bounding box contributes no grey level
 	SimpleCube<unsigned char> roi_mask;
-	roi_mask.allocate (I.width(), I.height(), I.depth());
-	roi_mask.fill (0);
-	auto xmin = r.aabb.get_xmin(),
-		ymin = r.aabb.get_ymin(),
-		zmin = r.aabb.get_zmin();
+	Nyxus::roi_mask_3d (roi_mask, r, I.width(), I.height(), I.depth());
 	PixIntens range = r.aux_max - 0;
 	std::unordered_set<PixIntens> U;
 	for (const auto& p : r.raw_pixels_3D)
-	{
-		roi_mask.zyx (p.z - zmin, p.y - ymin, p.x - xmin) = 1;
 		U.insert (Nyxus::to_grayscale (p.inten, 0, range, n_greys, ibsi));
-	}
 
 	// Cast the set to vector to be able to access intensities by indices
 	grey_levels_LUT.insert (grey_levels_LUT.end(), U.begin(), U.end());
