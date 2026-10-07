@@ -21,7 +21,7 @@ it does not define the surface. The remaining 120 masks keep the derived
 triangulation, because the classic table leaves those cubes open.
 
 scikit-image is a generation-time reference only, never a Nyxus build or CI
-dependency (BSD-3-Clause; SPEC 6.4). Without it the derivation and every check
+dependency (BSD-3-Clause; SPEC §4). Without it the derivation and every check
 below still run; only the classic triangulation cannot be adopted, and --emit
 refuses.
 
