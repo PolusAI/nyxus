@@ -176,6 +176,9 @@ classic table leaves those cubes open. scikit-image is a generation-time referen
 The script's own checks: the surface closes on random volumes exercising all 256 masks, a lone voxel
 gives exactly 1/6 and √3, and every solid box matches the closed form above.
 
+How this mesh compares with PyRadiomics' `MeshVolume`, which uses the classic 128-entry table, is in
+`morphology_3d_pyradiomics_comparison.md`; `compare_mesh_volume_pyradiomics.py` reproduces it.
+
 ## Covariance / eigenvalue kernel — `test_3d_morphology_mechanics.h`
 
 Recipe `morphology3d.covmatrix_numpy`. No image and no feature: ten fixed voxel coordinates, their
