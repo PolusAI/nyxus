@@ -159,7 +159,8 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 	}
 
 	// mesh volume: the volume enclosed by the ROI's marching-cubes surface, which is the surface IBSI
-	// section 3.1 defines volume (mesh) over and the one MIRP and pyradiomics integrate. The convex hull
+	// section 3.1 defines volume (mesh) over. MIRP and pyradiomics integrate the same kind of surface;
+	// theirs can differ from this one where a cube face is ambiguous. The convex hull
 	// is the hull of that surface: of its vertices, which the same walk collects in doubled coordinates.
 	// Both are taken on the lattice, where they are exact, and a grid of sx*sy*sz voxels is its linear
 	// image: the surface and its hull scale with it, so each volume is the lattice one times a voxel's.
