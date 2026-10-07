@@ -1,6 +1,6 @@
 # 3D mesh volume vs PyRadiomics — comparison report
 
-`3MESH_VOLUME` and PyRadiomics `MeshVolume` agree exactly on every solid shape tested. They differ
+`3MESH_VOLUME` and PyRadiomics `MeshVolume` agree bit for bit on every solid shape tested. They differ
 where a face of the lattice is ambiguous (two diagonal corners inside, two outside) and PyRadiomics
 cuts it differently in the two cubes that share it. There, PyRadiomics' mesh is open, and its volume
 depends on where the ROI sits in the image. The Nyxus mesh is closed on every mask tested, and its
@@ -22,7 +22,7 @@ python tests/vetting/audit/compare_mesh_volume_pyradiomics.py
 
 The script reads the shipped table, so it always checks the table in the tree, but it does not run
 the Nyxus binary. It runs PyRadiomics at unit spacing, so both sides report volume in voxel units.
-PyRadiomics is a reference only, never a build or CI dependency (BSD-3-Clause; SPEC 6.4).
+PyRadiomics is a reference only, never a build or CI dependency (BSD-3-Clause; SPEC §4).
 
 ## What both implementations share
 
@@ -40,9 +40,9 @@ the Nyxus triangles only to compare the two meshes.
 
 | aspect | PyRadiomics 3.0.1 | Nyxus | consequence |
 |---|---|---|---|
-| case table | classic 128-entry table; a cube whose eighth corner is inside is served by complementing its mask and flipping the volume's sign | all 256 masks, derived by `derive_marching_cubes_table.py`; ambiguous faces always separate the inside corners | PyRadiomics' surface is open on an ambiguous face shared by a complemented cube and a plain one, which cut it differently; elsewhere the triangles are the same |
+| case table | classic 128-entry table; a cube whose corner 7 (in `cshape.c`'s numbering) is inside is served by complementing its mask and flipping the volume's sign | all 256 masks, derived by `derive_marching_cubes_table.py`; ambiguous faces always separate the inside corners | PyRadiomics' surface is open on an ambiguous face shared by a complemented cube and a plain one, which cut it differently; elsewhere the triangles are the same |
 | volume reference point | the image origin, after padding | the first vertex of the surface | an open mesh makes PyRadiomics' volume depend on placement; Nyxus terms are exact products of half-integer coordinates and do not depend on placement |
-| voxel spacing | each vertex scaled by the physical spacing; volume in physical units (mm³) | never physical units: anisotropic data is resampled by the spacing ratios, smallest axis 1, and the volume is in units of that voxel | equal only at unit spacing; at an isotropic spacing *s*, PyRadiomics' volume is *s*³ times Nyxus' |
+| voxel spacing | each vertex scaled by the physical spacing; volume in physical units (mm³) | never physical units: anisotropic data is resampled by the `--aniso*` factors as given or, with physical spacing on, by the spacing ratios with the smallest axis 1, and the volume is in units of the resampled voxel | equal only at unit spacing; at an isotropic spacing *s*, PyRadiomics' volume is *s*³ times Nyxus' |
 | convex-hull volume | no 3D hull feature | `3VOLUME_CONVEXHULL`, the hull of the mesh vertices | no PyRadiomics counterpart |
 | surface area and its ratios | `SurfaceArea` is the mesh area; `Sphericity`, `SurfaceVolumeRatio` and the deprecated `Compactness1`, `Compactness2`, `SphericalDisproportion` use mesh area and mesh volume | `3AREA` counts exposed voxel faces; `3AREA_2_VOLUME`, `3COMPACTNESS1/2`, `3SPHERICAL_DISPROPORTION`, `3SPHERICITY` use `3AREA` and `3VOXEL_VOLUME` | different definitions, not comparable |
 
@@ -65,18 +65,19 @@ but the Nyxus `3AREA` feature is the face count, not this mesh area.
 | random 50% fill, 8³ | 249 | 198.208333 | 198.208333 | 203.166667 | 185.666667 | 562.485921 | 570.553568 | yes |
 | random 70% fill, 8³ | 361 | 346.791667 | 346.791667 | 364.416667 | 376.083333 | 594.229507 | 562.946064 | yes |
 
-**The solid shapes tested agree exactly**, area as well as volume. The two-voxel masks agree too. The
+**The solid shapes tested agree**: volume bit for bit, area to 1e-14 relative (summation order). The
+two-voxel masks agree the same way. The
 edge-contact pair has an ambiguous face, but both cubes that share it hold the same two corners and
 cut it the same way. The corner-contact pair touches only across a cube's body diagonal and has no
 ambiguous face.
 
 **Ambiguous faces split the two.** On the pitted ball PyRadiomics sits 0.42% below Nyxus, and its
-volume changes by 7.0 voxel³ when the ROI moves. On the noise masks the gap is up to 5.1% in place
-and up to 15% after the move, on either side of the Nyxus value. The Nyxus volume is the same in both
+volume changes by 7.0 voxel³ when the ROI moves. On the noise masks PyRadiomics sits 2.5–5.1% above
+Nyxus in place; after the move it is up to 15% off, below Nyxus on two masks and above on the third. The Nyxus volume is the same in both
 placements on every mask.
 
 **PyRadiomics' mesh is open, and that is why.** This was checked once outside the script, which
-cannot do it: the pip package ships `cShape` compiled, without its tables. Rebuilding PyRadiomics'
+cannot do it: the pip package ships `cShape` compiled, without the C source that holds its tables. Rebuilding PyRadiomics'
 triangles from the `gridAngles`, `triTable` and `vertList` tables in 3.0.1's `radiomics/src/cshape.c`
 reproduces `cShape`'s volume exactly on all ten masks. The rebuilt mesh is closed on the four solid
 shapes and the two two-voxel masks. On the pitted ball and the 30%, 50% and 70% noise masks, 184, 184,
@@ -85,7 +86,8 @@ complemented cube and a plain one.
 
 "Closed" means every directed edge of the mesh is traversed as often in reverse. Where two sheets of
 the surface touch along a lattice edge, four triangles share that edge, two in each direction. This
-happens a few times in the 50% and 70% noise masks and leaves the surface closed.
+happens on 2 edges of the 50% noise mask and 12 of the 70% one, and leaves the surface closed; every
+other edge of every mask is shared by exactly two triangles.
 
 ## Performance
 

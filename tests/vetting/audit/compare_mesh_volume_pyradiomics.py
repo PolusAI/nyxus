@@ -24,7 +24,7 @@ markdown table of both volumes, both moved volumes, both areas and whether the
 Nyxus mesh is closed (every directed edge matched by its reverse).
 
 PyRadiomics (BSD-3-Clause) is a reference only, never a Nyxus build or CI
-dependency (SPEC 6.4).
+dependency (SPEC §4).
 """
 
 import os
