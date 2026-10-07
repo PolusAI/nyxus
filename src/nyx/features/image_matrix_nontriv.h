@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>		// WriteImageMatrix_nontriv::get_row
 #include "aabb.h"
 #include "pixel.h"
 #include "../image_loader.h"
@@ -157,6 +158,7 @@ public:
 	void set_at(int row, int col, double val);
 	void set_at(size_t idx,  double val);
 	double yx (size_t row, size_t col);
+	void get_row (size_t row, std::vector<double>& out);	// the whole row in one read; out is resized to the width
 	double get_at (size_t idx);
 	double get_max();
 	size_t size();

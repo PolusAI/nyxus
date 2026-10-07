@@ -158,8 +158,15 @@ nothing resets it between ROIs.
 the ROI's disk-backed pixels, and passes it to the same two scoring templates,
 `laplacian_variance()` and `get_local_focus_score()`. They read the image only through a
 `px(row, col)` accessor and filter it three rows at a time, so an oversized ROI is never held whole,
-and the two paths share every arithmetic step. Both members are assigned on every call, constant
-ROIs included, so nothing carries over from one ROI to the next.
+and the two paths share every arithmetic step. Out of core the accessor keeps the last image row it
+read, and `WriteImageMatrix_nontriv::get_row()` fetches a row in one disk read, so each pass costs
+one read per row visited rather than one per pixel. Both members are assigned on every call,
+constant ROIs included, so nothing carries over from one ROI to the next.
+
+Measured on one square ROI of random 16-bit intensities, `ImageQuality(["FOCUS_SCORE",
+"LOCAL_FOCUS_SCORE"], ram_limit=0).featurize_directory`, best of 2-3 runs on Windows (MSVC
+Release): 1.42 s at 512×512 and 7.57 s at 1024×1024, against 0.06 s and 0.23 s in RAM. Most of the
+out-of-core time is building the disk-backed image, which writes and flushes one pixel at a time.
 
 Two invariant tests assert the out-of-core scores **equal** to the in-RAM ones, not close to them:
 

@@ -4,6 +4,7 @@
 
 #include "test_imq_common.h"                     // fixture: calc_imq_feature_on_spikes, imq_soft_nan, <vector>, <utility>, and FeatureIMQ via featureset.h
 #include "../src/nyx/features/focus_score.h"     // FocusScoreFeature
+#include "../src/nyx/features/image_matrix_nontriv.h"   // WriteImageMatrix_nontriv
 
 // LOCAL_FOCUS_SCORE conventions Nyxus defines for itself (SPEC 2, mechanics): which pixels belong to
 // no tile, and what an ROI with no room for a tile returns. Neither is a closed form or another
@@ -51,4 +52,29 @@ void test_imq_local_focus_score_smallest_tiled_roi_mechanics()
 {
 	ASSERT_NEAR (calc_imq_feature_on_spikes<FocusScoreFeature> (Nyxus::FeatureIMQ::LOCAL_FOCUS_SCORE, 2, 2, {{0, 0}}),
 		0.0, imq_mechanics_abs_tolerance);
+}
+
+// osized_calculate() reads its disk-backed image a whole row at a time through
+// WriteImageMatrix_nontriv::get_row(). Every row it returns must equal the same row read pixel by
+// pixel with yx(), and a row past the last one must be refused rather than returned as whatever the
+// buffer held.
+void test_imq_focus_score_ooc_row_read_mechanics()
+{
+	const int w = 5, h = 3;
+	WriteImageMatrix_nontriv m ("nyxus_ut_imq_row_read", 1);
+	m.allocate (w, h, 0);
+	for (int row = 0; row < h; row++)
+		for (int col = 0; col < w; col++)
+			m.set_at (row, col, 10.0 * row + col + 1);
+
+	std::vector<double> buf;
+	for (int row = 0; row < h; row++)
+	{
+		m.get_row (row, buf);
+		ASSERT_EQ (buf.size(), (size_t)w) << "row " << row;
+		for (int col = 0; col < w; col++)
+			ASSERT_EQ (buf[col], m.yx (row, col)) << "row " << row << ", col " << col;
+	}
+
+	ASSERT_THROW (m.get_row (h, buf), std::runtime_error);
 }

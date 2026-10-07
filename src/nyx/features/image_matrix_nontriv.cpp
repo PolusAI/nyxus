@@ -226,6 +226,16 @@ double WriteImageMatrix_nontriv::yx (size_t row, size_t col)
 	return val;
 }
 
+void WriteImageMatrix_nontriv::get_row (size_t row, std::vector<double>& out)
+{
+	out.resize (width);
+	size_t offs = row * width * item_size;
+	fseek (pF, offs, SEEK_SET);
+	size_t n = fread ((void*)out.data(), item_size, width, pF);
+	if (n != (size_t)width)
+		throw std::runtime_error ("Error: short read of row " + std::to_string(row) + " from " + info());
+}
+
 double WriteImageMatrix_nontriv::get_max()
 {
 	bool blank = true;
