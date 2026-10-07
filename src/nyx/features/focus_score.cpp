@@ -80,7 +80,20 @@ void FocusScoreFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
     // constant ROI is scored as calculate() scores it, not skipped.
     WriteImageMatrix_nontriv Im0 ("FocusScoreFeature-osized_calculate-Im0", r.label);
     Im0.allocate_from_cloud (r.raw_pixels_NT, r.aabb, false);
-    auto px = [&Im0] (int row, int col) { return (PixIntens) Im0.yx (row, col); };
+
+    // The templates walk the image row by row, so the accessor keeps the last row read: each row
+    // costs one disk read per visit rather than one per pixel
+    std::vector<double> row_buf;
+    int buffered_row = -1;
+    auto px = [&] (int row, int col)
+    {
+        if (row != buffered_row)
+        {
+            Im0.get_row (row, row_buf);
+            buffered_row = row;
+        }
+        return (PixIntens) row_buf[col];
+    };
 
     int h = (int) Im0.get_height(),
         w = (int) Im0.get_width();

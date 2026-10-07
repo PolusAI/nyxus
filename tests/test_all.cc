@@ -4076,6 +4076,11 @@ TEST(TEST_NYXUS, TEST_IMQ_FOCUS_SCORE_OUT_OF_CORE_INVARIANT)
 	ASSERT_NO_THROW(test_imq_focus_score_out_of_core_invariant());
 }
 
+TEST(TEST_NYXUS, TEST_IMQ_FOCUS_SCORE_OOC_ROW_READ_MECHANICS)
+{
+	ASSERT_NO_THROW(test_imq_focus_score_ooc_row_read_mechanics());
+}
+
 //***** 3D i/o ***** 
 
 TEST(TEST_NYXUS, TEST_3D_NIFTI_LOADER_MECHANICS) {
