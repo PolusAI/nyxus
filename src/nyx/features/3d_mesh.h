@@ -25,8 +25,9 @@ namespace Nyxus
 	using RoiPlaneSource = std::function<void (StatsInt z, std::vector<Pixel3>& voxels)>;
 
 	/// @brief Triangulates the ROI's surface with marching cubes at the 0.5 isolevel of the voxel
-	/// mask, which is the surface IBSI's volume (mesh) is the integral of, and the one MIRP and
-	/// pyradiomics build. Every vertex lands on the midpoint between an in-ROI voxel centre and an
+	/// mask, which is the surface IBSI's volume (mesh) is the integral of. MIRP and pyradiomics build
+	/// the same kind of surface, with the same vertices; their triangles can differ from these where a
+	/// cube face is ambiguous. Every vertex lands on the midpoint between an in-ROI voxel centre and an
 	/// out-of-ROI one, because the field is binary and the isolevel sits halfway.
 	///
 	/// The cells are walked one z-layer at a time against two voxel planes, which 'planes' supplies,

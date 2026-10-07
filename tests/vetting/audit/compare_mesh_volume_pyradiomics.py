@@ -6,22 +6,32 @@ SurfaceArea) on the same masks.
 Both sides contour the binary mask with marching cubes at the 0.5 isolevel, one
 voxel of padding around it, every vertex at an edge midpoint, and integrate the
 enclosed volume as a sum of signed tetrahedra. They differ in the case table:
-PyRadiomics (radiomics/src/cshape.c) carries the classic 128-entry table and
-serves the other 128 masks by complementing the mask and flipping the volume's
-sign, while Nyxus carries all 256 masks (see derive_marching_cubes_table.py).
+PyRadiomics (radiomics/src/cshape.c) carries its own 128-entry table and serves
+the other 128 masks by complementing the mask and flipping the volume's sign,
+while Nyxus carries all 256 masks (see derive_marching_cubes_table.py).
 
 The Nyxus side here is a replay of the MC_TRIANGLES table read from
 src/nyx/features/3d_mesh.cpp, walked the way march_roi_surface() walks it and
 integrated from the first vertex the way roi_mesh_volume() does. It reads the
 shipped table, so it follows any change to it; it does not run the Nyxus binary.
 The PyRadiomics side calls the compiled radiomics.cShape.calculate_coefficients
-that shape.py calls, on a [z, y, x] mask padded by one voxel, at unit spacing.
+that shape.py calls, at unit spacing, on the mask cropped to its bounding box,
+transposed to [z, y, x] and padded by one voxel -- the array shape.py builds
+from what PyRadiomics' extractor hands it. (The extractor itself refuses a
+one-voxel mask; that case is a direct call.)
 
-Each mask is also run a second time on both sides, placed further from the image
-origin. Over a closed surface the volume integral does not depend on that
-placement, so a change there means the mesh is open. The script prints a
-markdown table of both volumes, both moved volumes, both areas and whether the
-Nyxus mesh is closed (every directed edge matched by its reverse).
+Each mask is run in four orientations on both sides: as built, and mirrored
+along each of its three axes. A mirrored ROI is the same body, so a volume that
+changes under mirroring depends on the mesh's orientation conventions rather
+than on the ROI. PyRadiomics is also called once on the mask placed further from
+the array's corner, which its extractor never does (it crops first): over a
+closed surface the volume does not depend on the reference point, so a change
+there means its mesh is open.
+
+The script prints a markdown table of both volumes as built, the range each
+takes over the four orientations, the range of the PyRadiomics-vs-Nyxus gap over
+them, the moved PyRadiomics volume, both mesh areas and whether the Nyxus mesh
+is closed (every directed edge matched by its reverse).
 
 PyRadiomics (BSD-3-Clause) is a reference only, never a Nyxus build or CI
 dependency (SPEC §4).
@@ -44,7 +54,7 @@ EDGE = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6),
         (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
 EMID = np.array([[0.5 * (CORNER[a][t] + CORNER[b][t]) for t in range(3)] for a, b in EDGE])
 
-MOVE = 7    # voxels of extra padding before the mask in the moved PyRadiomics run
+MOVE = 7    # voxels of extra padding before the mask in the moved PyRadiomics call
 
 
 def load_table():
@@ -114,6 +124,12 @@ def ball(r):
     return x * x + y * y + z * z <= r * r
 
 
+def crop(mask):
+    """The mask cut to its bounding box, as PyRadiomics' extractor cuts it."""
+    idx = np.nonzero(mask)
+    return mask[tuple(slice(i.min(), i.max() + 1) for i in idx)]
+
+
 def cases():
     out = {"single voxel": np.ones((1, 1, 1), bool),
            "box 3x4x5": np.ones((3, 4, 5), bool),
@@ -133,27 +149,37 @@ def cases():
     pitted = ball(10)
     shell = pitted & ~np.pad(ball(9), 1)
     pitted[shell & (rng.random(pitted.shape) < 0.15)] = False
-    out["ball r=10, 15% surface pits"] = pitted
+    out["pitted ball r=10"] = pitted
 
     rng = np.random.default_rng(1)
     for fill in (0.3, 0.5, 0.7):
         out[f"random {int(fill * 100)}% fill, 8^3"] = rng.random((8, 8, 8)) < fill
-    return out
+    return {name: crop(mask) for name, mask in out.items()}
+
+
+def span(values, fmt):
+    lo, hi = min(values), max(values)
+    return fmt.format(lo) if lo == hi else (fmt + " to " + fmt).format(lo, hi)
 
 
 def main():
     table = load_table()
-    head = ("mask", "voxels", "nyxus V", "nyxus V moved", "PyRadiomics V", "PyRadiomics V moved",
-            "nyxus A", "PyRadiomics A", "nyxus closed")
+    head = ("mask", "voxels", "Nyxus V", "Nyxus V, 4 orientations", "PyRadiomics V",
+            "PyRadiomics V, 4 orientations", "gap, 4 orientations", "PyRadiomics V moved",
+            "Nyxus mesh A", "PyRadiomics A", "Nyxus mesh closed")
     print("| " + " | ".join(head) + " |")
-    print("|" + "---|" * len(head))
+    print("|---|---:|" + "---:|" * (len(head) - 3) + "---|")
     for name, mask in cases().items():
         tris = nyxus_mesh(mask, table)
         nv, na = nyxus_volume_area(tris)
-        nv_moved, _ = nyxus_volume_area(nyxus_mesh(np.pad(mask, ((MOVE, 0),) * 3), table))
         pv, pa = pyradiomics_volume_area(mask)
+        orientations = [mask] + [np.flip(mask, axis) for axis in range(3)]
+        nvs = [nyxus_volume_area(nyxus_mesh(m, table))[0] for m in orientations]
+        pvs = [pyradiomics_volume_area(m)[0] for m in orientations]
+        gaps = [100.0 * (p - n) / n for p, n in zip(pvs, nvs)]
         pv_moved, _ = pyradiomics_volume_area(mask, before=1 + MOVE)
-        print(f"| {name} | {int(mask.sum())} | {nv:.6f} | {nv_moved:.6f} | {pv:.6f} | {pv_moved:.6f} | "
+        print(f"| {name} | {int(mask.sum())} | {nv:.6f} | {span(nvs, '{:.6f}')} | {pv:.6f} | "
+              f"{span(pvs, '{:.6f}')} | {span(gaps, '{:+.2f}%')} | {pv_moved:.6f} | "
               f"{na:.6f} | {pa:.6f} | {'yes' if closed(tris) else 'NO'} |")
 
 

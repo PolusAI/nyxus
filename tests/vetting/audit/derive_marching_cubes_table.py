@@ -14,10 +14,11 @@ assembled surface is watertight.
 
 A loop still admits several triangulations, and they differ in area by a few parts
 in a thousand. For the 134 masks with no ambiguous face this script takes the
-classic triangulation from scikit-image's marching_cubes(method='lorensen'), the
-one MIRP and pyradiomics integrate, but only after checking that it triangulates
-exactly the loops derived above -- so the reference settles an arbitrary choice,
-it does not define the surface. The remaining 120 masks keep the derived
+classic triangulation from scikit-image's marching_cubes(method='lorensen'), but
+only after checking that it triangulates exactly the loops derived above -- so
+the reference settles an arbitrary choice, it does not define the surface.
+(MIRP calls marching_cubes with its default method, 'lewiner', and pyradiomics
+carries its own 128-entry table; neither is this triangulation.) The remaining 120 masks keep the derived
 triangulation, because the classic table leaves those cubes open.
 
 scikit-image is a generation-time reference only, never a Nyxus build or CI
