@@ -181,15 +181,17 @@ namespace Nyxus
 
 			//=== Features requiring non-raster access to pixels
 
-			// the grid families' methods run over the pixels as acquired, every other method over the
-			// resampled ROI; 'geometric' says whether any geometric feature is requested at all
+			// the grid families' methods run over the pixels as acquired, and the as-acquired features
+			// are measured on them too; every other method runs over the resampled ROI. 'geometric'
+			// says whether any geometric feature is requested at all
 			const bool anisotropic = env.anisoOptions.customized();
-			FeatureSet on_grid, geometric;
+			FeatureSet on_grid, as_acquired, geometric;
 			if (anisotropic)
-				split_2d_selection (env.theFeatureSet, on_grid, geometric);
+				split_2d_selection (env.theFeatureSet, on_grid, as_acquired, geometric);
 
 			// 'grid' -1 runs every requested method; 1 the grid families' methods; 0 every other
-			// method, which includes the ones requested only as another's dependency
+			// method but those whose features are all as-acquired, which includes the ones requested
+			// only as another's dependency
 			auto run_methods = [&](int grid)
 			{
 				int nrf = env.theFeatureMgr.get_num_requested_features();
@@ -197,6 +199,8 @@ namespace Nyxus
 				{
 					auto f = env.theFeatureMgr.get_feature_method (i);
 					if (grid >= 0 && is_grid_method_2d (f) != (grid == 1))
+						continue;
+					if (grid == 0 && is_as_acquired_method_2d (f))
 						continue;
 
 					try
@@ -224,10 +228,25 @@ namespace Nyxus
 
 			run_methods (anisotropic ? 1 : -1);
 
+			// the as-acquired features (see split_2d_selection) over the cloud streamed above, held
+			// across the geometric pass (see hold_as_acquired_2d)
+			const double ax = env.anisoOptions.get_aniso_x(),
+				ay = env.anisoOptions.get_aniso_y();
+			const bool any_as_acquired = anisotropic && as_acquired.numOfEnabled (2) > 0;
+			if (any_as_acquired)
+			{
+				// materialized, as the out-of-core moment and Zernike methods do: the contour, the
+				// distances to it and the unit disk need every pixel at once
+				r.rebuild_raw_pixels_from_cloud();
+				r.rebuild_aux_image_matrix_from_cloud();
+				measure_as_acquired_2d (env, r, as_acquired, ax, ay);
+				std::vector<Pixel2>().swap (r.raw_pixels);
+				std::vector<PixIntens>().swap (r.aux_image_matrix._pix_plane);
+			}
+
 			if (anisotropic && geometric.numOfEnabled (2))
 			{
-				const double ax = env.anisoOptions.get_aniso_x(),
-					ay = env.anisoOptions.get_aniso_y();
+				const auto held = hold_as_acquired_2d (r, as_acquired);
 				bool measurable = false;
 				r.raw_pixels_NT.clear();
 				if (! stream_resampled_roi_2d (env.theImLoader, r, ax, ay, measurable))
@@ -237,7 +256,10 @@ namespace Nyxus
 					return false;
 				}
 				if (measurable)
+				{
 					run_methods (0);
+					restore_as_acquired_2d (r, as_acquired, held);
+				}
 				else
 					report_unmeasurable_geometry_2d (r, geometric, ax, ay);
 			}

@@ -1125,7 +1125,7 @@ public:
 		return false;
 	}
 	// returns the number of enabled features resolved by dimensionality
-	int numOfEnabled (int dim) 
+	int numOfEnabled (int dim) const
 	{
 		int cnt = 0;
 

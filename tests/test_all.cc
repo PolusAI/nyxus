@@ -1017,6 +1017,30 @@ TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_RUNS_DEPENDENCIES_MECHANICS) {
 	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_runs_dependencies_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WEIGHTED_GEOMETRY_AS_ACQUIRED_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_weighted_geometry_as_acquired_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WEIGHTED_GEOMETRY_AS_ACQUIRED_ALONE_AND_OUT_OF_CORE_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_weighted_geometry_as_acquired_alone_and_out_of_core_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WHOLESLIDE_WEIGHTED_GEOMETRY_AS_ACQUIRED_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_wholeslide_weighted_geometry_as_acquired_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WEIGHTED_GEOMETRY_SCALE_INVARIANT_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_weighted_geometry_scale_invariant_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_RADIAL_ZERNIKE_EDGE_SCALE_INVARIANT_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_radial_zernike_edge_scale_invariant_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_PIXEL_SCALED_DISTANCES_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_pixel_scaled_distances_mechanics());
+}
+
 //***** 3D voxel spacing *****
 
 TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_IN_RAM_LEAVES_INTENSITY_AND_TEXTURE_ALONE_MECHANICS) {

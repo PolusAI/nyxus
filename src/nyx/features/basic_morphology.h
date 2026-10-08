@@ -35,6 +35,11 @@ public:
 	void osized_calculate (LR& roi, const Fsettings& settings, ImageLoader& imloader);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void extract (LR& roi, const Fsettings& settings); // extracts the feature of- and saves to the ROI
+	// Measures WEIGHTED_CENTROID_X/Y and MASS_DISPLACEMENT over the ROI's cached pixels as pixels of
+	// size (sx, sy) and saves them to the ROI. A pixel lies at its centre, (x + 1/2) sx - 1/2 along X,
+	// which is where the cloud resampled by (sx, sy) puts it, so the centroids are in the frame of the
+	// resampled cloud's CENTROID_X/Y and of the pixel itself when sx = sy = 1.
+	static void extract_weighted_centroid (LR& roi, double sx, double sy);
 	static void parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & fst, const Dataset & ds);
 	void cleanup_instance();
 	static bool required(const FeatureSet& fs);

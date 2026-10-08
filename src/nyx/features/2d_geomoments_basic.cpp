@@ -43,8 +43,8 @@ void BasicGeomoms2D::apply_dist2contour_weighting(
     {
         auto& p = cloud[i];
 
-        // pixel distance
-        double mind2 = p.min_sqdist(contour);
+        // pixel distance, in units of length
+        double mind2 = p.min_sqdist(contour, pixel_w, pixel_h);
         double dist = std::sqrt(mind2);
 
         // weighted intensity
@@ -81,11 +81,11 @@ void BasicGeomoms2D::apply_dist2contour_weighting_wholeslide(
             continue;
         }
 
-        // min distance
-        double d1 = p.dist_to_segment(c0, c1),
-            d2 = p.dist_to_segment(c1, c2),
-            d3 = p.dist_to_segment(c2, c3),
-            d4 = p.dist_to_segment(c3, c0);
+        // min distance, in units of length
+        double d1 = p.dist_to_segment(c0, c1, pixel_w, pixel_h),
+            d2 = p.dist_to_segment(c1, c2, pixel_w, pixel_h),
+            d3 = p.dist_to_segment(c2, c3, pixel_w, pixel_h),
+            d4 = p.dist_to_segment(c3, c0, pixel_w, pixel_h);
 
         double dist = std::min(std::min(d1, d2), std::min(d3, d4));
 
@@ -95,9 +95,11 @@ void BasicGeomoms2D::apply_dist2contour_weighting_wholeslide(
     }
 }
 
-void BasicGeomoms2D::calculate(LR& r, const Fsettings& s, intenfunction ifun)
+void BasicGeomoms2D::calculate(LR& r, const Fsettings& s, intenfunction ifun, double sx, double sy)
 {
     INTEN = ifun;
+    pixel_w = sx;
+    pixel_h = sy;
   
     // Cache ROI frame of reference
     baseX = r.aabb.get_xmin();
@@ -135,21 +137,23 @@ void BasicGeomoms2D::calculate(LR& r, const Fsettings& s, intenfunction ifun)
 
 double BasicGeomoms2D::moment(const pixcloud& cloud, int p, int q)
 {
-    double q_ = q, p_ = p, sum = 0;
+    // a pixel weighs its intensity times its area, at its offset from the box's first pixel in units of length
+    double q_ = q, p_ = p, sum = 0, area = pixel_w * pixel_h;
     for (auto& pxl : cloud)
-        sum += INTEN(double(pxl.inten)) * pow(double(pxl.x - baseX), p_) * pow(double(pxl.y - baseY), q_);
+        sum += INTEN(double(pxl.inten)) * area * pow(double(pxl.x - baseX) * pixel_w, p_) * pow(double(pxl.y - baseY) * pixel_h, q_);
     return sum;
 }
 
 double BasicGeomoms2D::moment(const pixcloud& c, const reintenvec& real_intens, int p, int q)
 {
-    double q_ = q, p_ = p, sum = 0.0;
+    // weighed and placed as in moment(cloud, p, q)
+    double q_ = q, p_ = p, sum = 0.0, area = pixel_w * pixel_h;
     size_t n = c.size();
     for (size_t i = 0; i < n; i++)
     {
         const Pixel2& pxl = c[i];
-        double I = real_intens[i];
-        sum += I * pow(double(pxl.x - baseX), p_) * pow(double(pxl.y - baseY), q_);
+        double I = real_intens[i] * area;
+        sum += I * pow(double(pxl.x - baseX) * pixel_w, p_) * pow(double(pxl.y - baseY) * pixel_h, q_);
     }
     return sum;
 }
@@ -181,11 +185,12 @@ inline double int_pow (double a, int b)
 /// @brief Calculates the central 2D moment of order q,p of ROI pixel cloud
 double BasicGeomoms2D::centralMom(const pixcloud& cloud, int p, int q)
 {
-    double sum = 0;
+    // weighed and placed as in moment(), whose ratios put the origin in the same units
+    double sum = 0, area = pixel_w * pixel_h;
     for (auto& pxl : cloud)
     {
-        double I = INTEN(double(pxl.inten));
-        sum += I * int_pow(double(pxl.x - baseX) - originOfX, p) * int_pow(double(pxl.y - baseY) - originOfY, q);
+        double I = INTEN(double(pxl.inten)) * area;
+        sum += I * int_pow(double(pxl.x - baseX) * pixel_w - originOfX, p) * int_pow(double(pxl.y - baseY) * pixel_h - originOfY, q);
     }
     return sum;
 }
@@ -193,12 +198,13 @@ double BasicGeomoms2D::centralMom(const pixcloud& cloud, int p, int q)
 /// @brief Calculates the central 2D moment of order q,p of ROI pixel cloud using real-valued intensities
 double BasicGeomoms2D::centralMom(const pixcloud& cloud, const reintenvec& realintens, int p, int q)
 {
-    double sum = 0;
+    // weighed and placed as in moment(cloud, realintens, p, q)
+    double sum = 0, area = pixel_w * pixel_h;
     size_t n = cloud.size();
     for (size_t i = 0; i < n; i++)
     {
         auto& pxl = cloud[i];
-        sum += realintens[i] * int_pow(double(pxl.x - baseX) - originOfX, p) * int_pow(double(pxl.y - baseY) - originOfY, q);
+        sum += realintens[i] * area * int_pow(double(pxl.x - baseX) * pixel_w - originOfX, p) * int_pow(double(pxl.y - baseY) * pixel_h - originOfY, q);
     }
     return sum;
 }

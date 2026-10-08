@@ -136,9 +136,31 @@ namespace Nyxus
 	// defined on the image grid -- first-order (HISTOGRAM included), the intensity histogram, the
 	// texture families, Gabor and the image-quality families -- which an anisotropic run computes
 	// on the pixels as acquired.
-	// 'geometric' gets every other family, each a measurement of the ROI's geometry in physical
+	// 'as_acquired' gets the intensity-weighted features of the geometric families -- the EDGE_*
+	// statistics, WEIGHTED_CENTROID_X/Y, MASS_DISPLACEMENT, the intensity moments IMOM_*, the radial
+	// distribution and ZERNIKE2D -- which an anisotropic run measures on the pixels as acquired, as
+	// pixels of the spacing's size (measure_as_acquired_2d): resampling copies some pixels and drops
+	// others, and so would reweigh their intensities.
+	// 'geometric' gets every other feature, each a measurement of the ROI's geometry in physical
 	// space, which an anisotropic run computes on the cloud resampled by the spacing.
-	void split_2d_selection (const FeatureSet& requested, FeatureSet& on_grid, FeatureSet& geometric);
+	void split_2d_selection (const FeatureSet& requested, FeatureSet& on_grid, FeatureSet& as_acquired, FeatureSet& geometric);
+	// Measures the features 'as_acquired' enables over the ROI's cached pixels as acquired, as pixels
+	// of size (ax, ay), and saves them to the ROI: coordinates, distances and angles are taken in
+	// units of length, and a pixel weighs its intensity times its area. The edge statistics, the
+	// moments and the radial distribution take the contour of these pixels, which this traces;
+	// ZERNIKE2D takes the ROI's image matrix, which the caller builds.
+	void measure_as_acquired_2d (const Environment& env, LR& r, const FeatureSet& as_acquired, double ax, double ay);
+	// The as-acquired features (see split_2d_selection) of the contour and basic-morphology methods;
+	// the moment, radial and Zernike methods' features are all as-acquired.
+	constexpr std::initializer_list<Feature2D> as_acquired_contour_2d = { Feature2D::EDGE_INTEGRATED_INTENSITY,
+		Feature2D::EDGE_MAX_INTENSITY, Feature2D::EDGE_MIN_INTENSITY, Feature2D::EDGE_MEAN_INTENSITY, Feature2D::EDGE_STDDEV_INTENSITY };
+	constexpr std::initializer_list<Feature2D> as_acquired_basic_morphology_2d = { Feature2D::WEIGHTED_CENTROID_X,
+		Feature2D::WEIGHTED_CENTROID_Y, Feature2D::MASS_DISPLACEMENT };
+	// The values of the features 'as_acquired' enables. The geometric pass runs the methods that
+	// provide them whenever it needs the methods' other features, which overwrites them, so a caller
+	// holds them across that pass and puts them back with restore_as_acquired_2d.
+	std::vector<std::vector<double>> hold_as_acquired_2d (const LR& r, const FeatureSet& as_acquired);
+	void restore_as_acquired_2d (LR& r, const FeatureSet& as_acquired, const std::vector<std::vector<double>>& held);
 	// The RAM a trivial 2D ROI needs at once: on an anisotropic run the larger of its two passes,
 	// the one over the pixels as acquired, which phase 1 measured, and the one over the cloud
 	// resampled by aniso_x * aniso_y.
@@ -155,6 +177,9 @@ namespace Nyxus
 	// split_2d_selection): the out-of-core pass runs these over the pixels as acquired and every
 	// other requested method, dependencies included, over the resampled ROI.
 	bool is_grid_method_2d (FeatureMethod* f);
+	// Whether every feature a 2D feature method provides is an as-acquired one (see
+	// split_2d_selection), so the out-of-core resampled pass has nothing to run it for.
+	bool is_as_acquired_method_2d (FeatureMethod* f);
 
 	// The effective voxel spacing of slide `sidx`. Explicit --aniso* wins; else, when
 	// --use-physical-spacing is on, the slide's OME PhysicalSize* ratio-normalized (min=1).

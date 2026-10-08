@@ -45,6 +45,13 @@ void Imoms2D_feature::extract (LR& r, const Fsettings& s)
     f.save_value (r.fvals);
 }
 
+void Imoms2D_feature::extract (LR& r, const Fsettings& s, double sx, double sy)
+{
+    Imoms2D_feature f;
+    f.BasicGeomoms2D::calculate (r, s, intenAsInten, sx, sy);
+    f.save_value (r.fvals);
+}
+
 void Imoms2D_feature::parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
     for (auto i = start; i < end; i++)

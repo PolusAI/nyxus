@@ -59,7 +59,7 @@ void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 	this->cached_num_pixels = raw_pixels.size();
 
 	// Find the center (most distant pixel from the edge)
-	int idxO = Pixel2::find_center(raw_pixels, K);
+	int idxO = Pixel2::find_center(raw_pixels, K, pixel_w, pixel_h);
 
 	// Cache it
 	this->cached_center_x = raw_pixels[idxO].x;
@@ -69,12 +69,12 @@ void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 	const Pixel2& pxO = raw_pixels[idxO];
 
 	// Max radius
-	double dstOC = std::sqrt (pxO.max_sqdist (K)); //std::sqrt(pxContour.sqdist(pxO));
+	double dstOC = std::sqrt (pxO.max_sqdist (K, pixel_w, pixel_h)); //std::sqrt(pxContour.sqdist(pxO));
 
 	for (auto& pxA : raw_pixels)
 	{
 		// Distance center to cloud pixel
-		double dstOA = std::sqrt(pxA.sqdist(pxO));		
+		double dstOA = std::sqrt(pxA.sqdist(pxO, pixel_w, pixel_h));		
 		
 		// Find the radial bin index
 		double rat = dstOA / dstOC;
@@ -89,7 +89,7 @@ void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 		// Cache this pixel's intensity for calculating the CV
 		int dx = pxA.x - cached_center_x,
 			dy = pxA.y - cached_center_y;
-		double ang = std::atan2(dy, dx);
+		double ang = std::atan2(dy * pixel_h, dx * pixel_w);
 		if (ang < 0)
 			ang = 2.0 * M_PI + ang;
 		double angW = 2.0 * M_PI / double(num_bins);
@@ -195,6 +195,15 @@ void RadialDistributionFeature::save_value(std::vector<std::vector<double>>& fva
 void RadialDistributionFeature::extract (LR& r, const Fsettings& s)
 {
 	RadialDistributionFeature rdf;
+	rdf.calculate (r, s);
+	rdf.save_value (r.fvals);
+}
+
+void RadialDistributionFeature::extract (LR& r, const Fsettings& s, double sx, double sy)
+{
+	RadialDistributionFeature rdf;
+	rdf.pixel_w = sx;
+	rdf.pixel_h = sy;
 	rdf.calculate (r, s);
 	rdf.save_value (r.fvals);
 }

@@ -14,6 +14,9 @@
 #include "environment.h"
 #include "globals.h"
 #include "helpers/timing.h"
+#include "features/2d_geomoments.h"
+#include "features/basic_morphology.h"
+#include "features/contour.h"
 #include "features/focus_score.h"
 #include "features/gabor.h"
 #include "features/glcm.h"
@@ -535,9 +538,25 @@ namespace Nyxus
 			|| dynamic_cast<SharpnessFeature*>(f) != nullptr;
 	}
 
-	void split_2d_selection (const FeatureSet& requested, FeatureSet& on_grid, FeatureSet& geometric)
+	bool is_as_acquired_method_2d (FeatureMethod* f)
 	{
+		return dynamic_cast<Imoms2D_feature*>(f) != nullptr
+			|| dynamic_cast<RadialDistributionFeature*>(f) != nullptr
+			|| dynamic_cast<ZernikeFeature*>(f) != nullptr;
+	}
+
+	void split_2d_selection (const FeatureSet& requested, FeatureSet& on_grid, FeatureSet& as_acquired, FeatureSet& geometric)
+	{
+		as_acquired = requested;
+		as_acquired.enableAll (false);
+		for (auto F : { as_acquired_contour_2d, as_acquired_basic_morphology_2d, Imoms2D_feature::featureset,
+			RadialDistributionFeature::featureset, ZernikeFeature::featureset })
+			for (auto f : F)
+				if (requested.isEnabled (f))
+					as_acquired.enableFeatures ({ f }, true);
+
 		geometric = requested;
+		geometric.subtract (as_acquired);
 		for (auto F : { PixelIntensityFeatures::featureset, IntensityHistogramFeatures::featureset,
 			GLCMFeature::featureset, GLRLMFeature::featureset, GLDZMFeature::featureset, GLSZMFeature::featureset,
 			GLDMFeature::featureset, NGLDMfeature::featureset, NGTDMFeature::featureset, GaborFeature::featureset })
@@ -551,6 +570,42 @@ namespace Nyxus
 
 		on_grid = requested;
 		on_grid.subtract (geometric);
+		on_grid.subtract (as_acquired);
+	}
+
+	void measure_as_acquired_2d (const Environment& env, LR& r, const FeatureSet& as_acquired, double ax, double ay)
+	{
+		// the contour of the pixels as acquired, for the edge statistics and for the moments and the
+		// radial distribution, which weigh or bin each pixel by its distance to it
+		if (as_acquired.anyEnabled (as_acquired_contour_2d) || as_acquired.anyEnabled (Imoms2D_feature::featureset)
+			|| as_acquired.anyEnabled (RadialDistributionFeature::featureset))
+			ContourFeature::extract (r, env.fsett_Contour);
+
+		if (as_acquired.anyEnabled (as_acquired_basic_morphology_2d))
+			BasicMorphologyFeatures::extract_weighted_centroid (r, ax, ay);
+		if (as_acquired.anyEnabled (Imoms2D_feature::featureset))
+			Imoms2D_feature::extract (r, env.fsett_Imoms2D, ax, ay);
+		if (as_acquired.anyEnabled (RadialDistributionFeature::featureset))
+			RadialDistributionFeature::extract (r, env.fsett_RadialDistribution, ax, ay);
+		if (as_acquired.anyEnabled (ZernikeFeature::featureset))
+			ZernikeFeature::extract (r, env.fsett_Zernike, ax, ay);
+	}
+
+	std::vector<std::vector<double>> hold_as_acquired_2d (const LR& r, const FeatureSet& as_acquired)
+	{
+		std::vector<std::vector<double>> held;
+		for (int f = (int) Feature2D::_FIRST_; f < (int) Feature2D::_COUNT_; f++)
+			if (as_acquired.isEnabled ((Feature2D) f))
+				held.push_back (r.fvals[f]);
+		return held;
+	}
+
+	void restore_as_acquired_2d (LR& r, const FeatureSet& as_acquired, const std::vector<std::vector<double>>& held)
+	{
+		size_t i = 0;
+		for (int f = (int) Feature2D::_FIRST_; f < (int) Feature2D::_COUNT_; f++)
+			if (as_acquired.isEnabled ((Feature2D) f))
+				r.fvals[f] = held[i++];
 	}
 
 	size_t trivial_footprint_2d (const Environment& env, const LR& r, size_t n_rois)
@@ -607,9 +662,12 @@ namespace Nyxus
 		}
 	}
 
-	// Reduces the families 'selection' enables over the ROIs' cached pixels, then frees them. The
-	// user's selection is put back on the way out, a throw included.
-	static void reduce_trivial_batch_selection (Environment& env, std::vector<int>& Pending, const FeatureSet& selection)
+	// Reduces the families 'selection' enables over the ROIs' cached pixels, then frees them. With
+	// 'as_acquired', the features it enables are first measured over the same pixels as pixels of
+	// size (ax, ay) (measure_as_acquired_2d). The user's selection is put back on the way out, a
+	// throw included.
+	static void reduce_trivial_batch_selection (Environment& env, std::vector<int>& Pending, const FeatureSet& selection,
+		const FeatureSet* as_acquired = nullptr, double ax = 1.0, double ay = 1.0)
 	{
 		struct Restore
 		{
@@ -625,20 +683,31 @@ namespace Nyxus
 		dump_all_roi();
 #endif
 
-		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
-		env.theFeatureSet = selection;
-		reduce_trivial_rois_manual (Pending, env);
+		if (as_acquired)
+		{
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tmeasuring the as-acquired features\n");
+			for (auto lab : Pending)
+				measure_as_acquired_2d (env, env.roiData[lab], *as_acquired, ax, ay);
+		}
+
+		if (selection.numOfEnabled (2))
+		{
+			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
+			env.theFeatureSet = selection;
+			reduce_trivial_rois_manual (Pending, env);
+		}
 
 		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
 		freeTrivialRoisBuffers (Pending, env.roiData);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
 	}
 
 	// Scans and reduces one batch of trivial ROIs. An anisotropic batch is scanned twice: the
-	// families defined on the image grid reduce the pixels as acquired, then the geometric families
-	// reduce the cloud resampled by the spacing. Each pass computes only its own families, so
-	// together they fill every requested feature once. After the second pass each ROI's box and
-	// pixel count describe the resampled cloud, as its contour does, which is the geometry the
-	// neighbor pass after the batches measures. A ROI the resampling leaves with no pixel has its
+	// families defined on the image grid reduce the pixels as acquired, and the intensity-weighted
+	// geometric features are measured on them too, as pixels of the spacing's size; then the
+	// geometric families reduce the cloud resampled by the spacing. Together the passes fill every
+	// requested feature once. After the second pass each ROI's box and pixel count describe the
+	// resampled cloud, as its contour does, which is the geometry the neighbor pass after the batches
+	// measures. A ROI the resampling leaves with no pixel has its
 	// geometric features reported as not available and is added to 'unmeasurable', which the
 	// neighbor pass leaves out.
 	static bool scan_reduce_trivial_batch (Environment& env, std::vector<int>& Pending, const std::string& intens_fpath, const std::string& label_fpath,
@@ -652,20 +721,28 @@ namespace Nyxus
 			return true;
 		}
 
-		FeatureSet on_grid, geometric;
-		split_2d_selection (env.theFeatureSet, on_grid, geometric);
+		FeatureSet on_grid, as_acquired, geometric;
+		split_2d_selection (env.theFeatureSet, on_grid, as_acquired, geometric);
+		const double ax = env.anisoOptions.get_aniso_x(),
+			ay = env.anisoOptions.get_aniso_y();
+		const bool any_as_acquired = as_acquired.numOfEnabled (2) > 0;
 
-		if (on_grid.numOfEnabled (2))
+		if (on_grid.numOfEnabled (2) || any_as_acquired)
 		{
 			if (! scanTrivialRois (Pending, intens_fpath, label_fpath, env, env.theImLoader))
 				return false;
-			reduce_trivial_batch_selection (env, Pending, on_grid);
+			reduce_trivial_batch_selection (env, Pending, on_grid, any_as_acquired ? &as_acquired : nullptr, ax, ay);
 		}
 		if (! geometric.numOfEnabled (2))
 			return true;
 
-		const double ax = env.anisoOptions.get_aniso_x(),
-			ay = env.anisoOptions.get_aniso_y();
+		// the geometric pass may run the methods that provide the as-acquired features, for the
+		// geometric features they also provide, and those overwrite them; they are put back after it
+		std::unordered_map<int, std::vector<std::vector<double>>> held;
+		if (any_as_acquired)
+			for (auto lab : Pending)
+				held[lab] = hold_as_acquired_2d (env.roiData[lab], as_acquired);
+
 		if (! scanTrivialRois_anisotropic (Pending, intens_fpath, label_fpath, env, env.theImLoader, ax, ay))
 			return false;
 		std::vector<int> measurable;
@@ -682,6 +759,9 @@ namespace Nyxus
 		}
 		if (! measurable.empty())
 			reduce_trivial_batch_selection (env, measurable, geometric);
+		if (any_as_acquired)
+			for (auto lab : measurable)
+				restore_as_acquired_2d (env.roiData[lab], as_acquired, held[lab]);
 		return true;
 	}
 

@@ -10,7 +10,7 @@ bool operator == (const Pixel2& p1, const Pixel2& p2)
 	return true;
 }
 
-double Pixel2::min_sqdist(const std::vector<Pixel2>& cloud) const
+double Pixel2::min_sqdist(const std::vector<Pixel2>& cloud, double sx, double sy) const
 {
 	#if 0	
 	//
@@ -42,14 +42,14 @@ double Pixel2::min_sqdist(const std::vector<Pixel2>& cloud) const
 
 	size_t n = cloud.size();
 	size_t a = 0, b = n;
-	auto extrem_d = sqdist(cloud[a]);
+	auto extrem_d = sqdist(cloud[a], sx, sy);
 	auto extrem_i = a;
 	int step = (b - a) / log(b - a);
 	do
 	{
 		for (size_t i = a + step; i < b; i += step)
 		{
-			auto dist = sqdist(cloud[i]);
+			auto dist = sqdist(cloud[i], sx, sy);
 			if (extrem_d > dist)
 			{
 				extrem_d = dist;
@@ -87,7 +87,7 @@ double Pixel2::exact_min_sqdist(const std::vector<Pixel2>& cloud) const
 	return extrem_d;
 }
 
-double Pixel2::max_sqdist(const std::vector<Pixel2>& cloud) const
+double Pixel2::max_sqdist(const std::vector<Pixel2>& cloud, double sx, double sy) const
 {
 	#if 0	
 	//
@@ -115,14 +115,14 @@ double Pixel2::max_sqdist(const std::vector<Pixel2>& cloud) const
 	//
 	size_t n = cloud.size();
 	size_t a = 0, b = n;
-	auto extrem_d = sqdist(cloud[a]);
+	auto extrem_d = sqdist(cloud[a], sx, sy);
 	auto extrem_i = a;
 	int step = (b - a) / log(b - a);
 	do
 	{
 		for (size_t i = a + step; i < b; i += step)
 		{
-			auto dist = sqdist(cloud[i]);
+			auto dist = sqdist(cloud[i], sx, sy);
 			if (extrem_d < dist)
 			{
 				extrem_d = dist;
@@ -143,14 +143,14 @@ double Pixel2::max_sqdist(const std::vector<Pixel2>& cloud) const
 	return extrem_d;
 }
 
-/*static*/ int Pixel2::find_center(const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour)
+/*static*/ int Pixel2::find_center(const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour, double sx, double sy)
 {
 	int idxMinDif = 0;
-	auto minmaxDist = cloud[idxMinDif].min_max_sqdist(contour);
+	auto minmaxDist = cloud[idxMinDif].min_max_sqdist(contour, sx, sy);
 	double minDif = minmaxDist.second - minmaxDist.first;
 	for (size_t n = cloud.size(), i = 1; i < n; i++)
 	{
-		auto minmaxDist = cloud[i].min_max_sqdist(contour);
+		auto minmaxDist = cloud[i].min_max_sqdist(contour, sx, sy);
 		double dif = minmaxDist.second - minmaxDist.first;
 		if (dif < minDif)
 		{
@@ -161,10 +161,10 @@ double Pixel2::max_sqdist(const std::vector<Pixel2>& cloud) const
 	return idxMinDif;
 }
 
-std::pair<double, double> Pixel2::min_max_sqdist(const std::vector<Pixel2>& contour) const
+std::pair<double, double> Pixel2::min_max_sqdist(const std::vector<Pixel2>& contour, double sx, double sy) const
 {
-	auto mind = min_sqdist(contour),
-		maxd = max_sqdist(contour);
+	auto mind = min_sqdist(contour, sx, sy),
+		maxd = max_sqdist(contour, sx, sy);
 	return { mind, maxd };
 }
 
@@ -194,16 +194,20 @@ double Pixel2::sqdist_to_segment (const Pixel2& p1, const Pixel2& p2) const
 	return std::abs(retval);
 }
 
-double Pixel2::dist_to_segment (const Pixel2 & p1, const Pixel2 & p2) const
+double Pixel2::dist_to_segment (const Pixel2 & p1, const Pixel2 & p2, double sx, double sy) const
 {
-	double dx = p2.x - p1.x,
-		dy = p2.y - p1.y;
+	// the three points in units of length
+	double x0 = this->x * sx, y0 = this->y * sy,
+		x1 = p1.x * sx, y1 = p1.y * sy,
+		x2 = p2.x * sx, y2 = p2.y * sy;
+	double dx = x2 - x1,
+		dy = y2 - y1;
 
 	double h = dx * dx + dy * dy;
 	if (h <= 0)
 		return (double)INT_MAX;
 
-	double retval = std::fabs(dy*this->x - dx*this->y + p2.x*p1.y - p2.y*p1.x) / sqrt(h);
+	double retval = std::fabs(dy*x0 - dx*y0 + x2*y1 - y2*x1) / sqrt(h);
 	return retval;
 }
 
@@ -218,16 +222,16 @@ double Pixel2::sum_sqdist(const std::vector<Pixel2>& cloud) const
 	return retval;
 }
 
-double Pixel2::sqdist(const Pixel2& px) const
+double Pixel2::sqdist(const Pixel2& px, double sx, double sy) const
 {
-	double retval = sqdist(px.x, px.y);
+	double retval = sqdist(px.x, px.y, sx, sy);
 	return retval;
 }
 
-double Pixel2::sqdist(int x, int y) const
+double Pixel2::sqdist(int x, int y, double sx, double sy) const
 {
-	double dx = (double)x - double(this->x),
-		dy = (double)y - double(this->y);
+	double dx = ((double)x - double(this->x)) * sx,
+		dy = ((double)y - double(this->y)) * sy;
 	double retval = dx * dx + dy * dy;
 	return retval;
 }

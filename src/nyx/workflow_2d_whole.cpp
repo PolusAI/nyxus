@@ -33,8 +33,11 @@
 namespace Nyxus
 {
 	// Reduces the families 'selection' enables over the vROI's cached pixels, then frees the image
-	// matrix and the pixels. The user's selection is put back on the way out, a throw included.
-	static void reduce_triv_wholeslide_selection (Environment& env, LR& vroi, const FeatureSet& selection)
+	// matrix and the pixels. With 'as_acquired', the features it enables are first measured over the
+	// same pixels as pixels of size (ax, ay) (measure_as_acquired_2d). The user's selection is put
+	// back on the way out, a throw included.
+	static void reduce_triv_wholeslide_selection (Environment& env, LR& vroi, const FeatureSet& selection,
+		const FeatureSet* as_acquired = nullptr, double ax = 1.0, double ay = 1.0)
 	{
 		struct Restore
 		{
@@ -51,10 +54,19 @@ namespace Nyxus
 		// calculate the image matrix or cube
 		vroi.aux_image_matrix.calculate_from_pixelcloud (vroi.raw_pixels, vroi.aabb);
 
+		if (as_acquired)
+		{
+			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\tmeasuring the as-acquired features\n");
+			measure_as_acquired_2d (env, vroi, *as_acquired, ax, ay);
+		}
+
 		// calculate features
-		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\treducing whole slide\n");
-		env.theFeatureSet = selection;
-		reduce_trivial_wholeslide (env, vroi);	// counterpart of segmented reduce_trivial_rois_manual()
+		if (selection.numOfEnabled (2))
+		{
+			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\treducing whole slide\n");
+			env.theFeatureSet = selection;
+			reduce_trivial_wholeslide (env, vroi);	// counterpart of segmented reduce_trivial_rois_manual()
+		}
 
 		// free buffers of feature helpers
 		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\tfreeing vROI buffers\n");
@@ -80,24 +92,27 @@ namespace Nyxus
 			return true;
 		}
 
-		FeatureSet on_grid, geometric;
-		split_2d_selection (env.theFeatureSet, on_grid, geometric);
+		FeatureSet on_grid, as_acquired, geometric;
+		split_2d_selection (env.theFeatureSet, on_grid, as_acquired, geometric);
+		const double ax = env.anisoOptions.get_aniso_x(),
+			ay = env.anisoOptions.get_aniso_y();
+		const bool any_as_acquired = as_acquired.numOfEnabled (2) > 0;
 
 		// the pixels as acquired, on the slide's own box (featurize_wholeslide sized it so)
-		if (on_grid.numOfEnabled (2))
+		if (on_grid.numOfEnabled (2) || any_as_acquired)
 		{
 			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
 			if (! scan_trivial_wholeslide (vroi, ifpath, imlo))
 				return false;
-			reduce_triv_wholeslide_selection (env, vroi, on_grid);
+			reduce_triv_wholeslide_selection (env, vroi, on_grid, any_as_acquired ? &as_acquired : nullptr, ax, ay);
 		}
 		if (! geometric.numOfEnabled (2))
 			return true;
 
-		// the cloud resampled by the spacing, on the box it spans
+		// the cloud resampled by the spacing, on the box it spans; the as-acquired features are held
+		// across it (see hold_as_acquired_2d)
 		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
-		const double ax = env.anisoOptions.get_aniso_x(),
-			ay = env.anisoOptions.get_aniso_y();
+		const auto held = hold_as_acquired_2d (vroi, as_acquired);
 		if (! scan_trivial_wholeslide_anisotropic (vroi, ifpath, imlo, ax, ay))
 			return false;
 		if (! adopt_resampled_cloud_2d (vroi))
@@ -106,6 +121,7 @@ namespace Nyxus
 			return true;
 		}
 		reduce_triv_wholeslide_selection (env, vroi, geometric);
+		restore_as_acquired_2d (vroi, as_acquired, held);
 
 		// no need to calculate neighbor features in WSI, returning
 		return true;

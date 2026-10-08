@@ -173,16 +173,16 @@ void ZernikeFeature::mb_Znl (double* X, double* Y, double* P, int size, double D
   where zernike features are useful.
 */
 
-void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues) 
+void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues, double sx, double sy) 
 {
 	int cols = Im.width;
 	int rows = Im.height;
 	readOnlyPixels I_pix_plane = Im.ReadablePixels();
 
-	int L, N, D;
+	int L, D;
 
-	// N is the smaller of Im.width and Im.height
-	N = Im.width < Im.height ? Im.width : Im.height;
+	// N is the smaller of Im.width and Im.height, in units of length
+	double N = (std::min) (Im.width * sx, Im.height * sy);
 	//--alternatively-- N = Im.width > Im.height ? Im.width : Im.height; //MM: This change is needed for bounding box implementations to ensure disk is covering the entire area of the Image
 
 	if (order > 0) 
@@ -259,7 +259,7 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 	{
 		// In the paper, the center of the unit circle was the center of the image
 		//	x = (double)(2*i+1-N)/(double)D;
-		x = (i + 1 - m10_m00) / rad;
+		x = ((i + 1 - m10_m00) * sx) / rad;
 		for (j = 0; j < rows; j++) 
 		{
 			if (std::isnan((double)I_pix_plane.yx(j, i))) 
@@ -267,7 +267,7 @@ void ZernikeFeature::mb_zernike2D (const ImageMatrix& Im, double order, double r
 
 		// In the paper, the center of the unit circle was the center of the image
 		//	y = (double)(2*j+1-N)/(double)D;
-			y = (j + 1 - m01_m00) / rad;
+			y = ((j + 1 - m01_m00) * sy) / rad;
 			r2 = x * x + y * y;
 			r = sqrt(r2);
 			if (r < DBL_EPSILON || r > 1.0) 
@@ -363,12 +363,21 @@ void ZernikeFeature::calculate (LR& r, const Fsettings& s)
 	coeffs.resize (ZernikeFeature::NUM_FEATURE_VALS, 0);
 
 	// Calculate features
-	mb_zernike2D (r.aux_image_matrix, ZernikeFeature::ZERNIKE2D_ORDER, 0/*rad*/, coeffs.data());
+	mb_zernike2D (r.aux_image_matrix, ZernikeFeature::ZERNIKE2D_ORDER, 0/*rad*/, coeffs.data(), pixel_w, pixel_h);
 }
 
 void ZernikeFeature::extract (LR& r, const Fsettings& s)
 {
 	ZernikeFeature f;
+	f.calculate (r, s);
+	f.save_value (r.fvals);
+}
+
+void ZernikeFeature::extract (LR& r, const Fsettings& s, double sx, double sy)
+{
+	ZernikeFeature f;
+	f.pixel_w = sx;
+	f.pixel_h = sy;
 	f.calculate (r, s);
 	f.save_value (r.fvals);
 }

@@ -197,6 +197,36 @@ void BasicMorphologyFeatures::extract (LR & r, const Fsettings & s)
 	f.save_value (r.fvals);	
 }
 
+void BasicMorphologyFeatures::extract_weighted_centroid (LR& r, double sx, double sy)
+{
+	double x_sum = 0, y_sum = 0, x_mass = 0, y_mass = 0, mass = 0;
+	for (auto& px : r.raw_pixels)
+	{
+		double x = (px.x + 0.5) * sx - 0.5,
+			y = (px.y + 0.5) * sy - 0.5;
+		x_sum += x;
+		y_sum += y;
+		x_mass += x * px.inten;
+		y_mass += y * px.inten;
+		mass += px.inten;
+	}
+
+	double n = (double) r.raw_pixels.size(),
+		cx = x_sum / n,
+		cy = y_sum / n,
+		wcx = 0,
+		wcy = 0;
+	if (mass > 0)
+	{
+		wcx = x_mass / mass;
+		wcy = y_mass / mass;
+	}
+
+	r.fvals[(int)Feature2D::WEIGHTED_CENTROID_X][0] = wcx;
+	r.fvals[(int)Feature2D::WEIGHTED_CENTROID_Y][0] = wcy;
+	r.fvals[(int)Feature2D::MASS_DISPLACEMENT][0] = std::sqrt ((wcx - cx) * (wcx - cx) + (wcy - cy) * (wcy - cy));
+}
+
 void BasicMorphologyFeatures::parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
 {
 	// Calculate the feature for each batch ROI item 
