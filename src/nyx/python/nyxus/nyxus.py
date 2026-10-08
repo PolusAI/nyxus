@@ -148,9 +148,12 @@ class Nyxus:
     anisotropy_x: float (optional, default 1.0)
         Size of a pixel along X relative to Y. The geometric features are computed on the pixels resampled by
         the anisotropy; intensity and texture features on the pixels as acquired, so it does not change them.
-        The EDGE_* intensity statistics are taken along the contour the geometric pass traces, so they follow
-        the anisotropy. Applies to featurize_directory() and featurize_files(); featurize() on in-memory
-        arrays does not apply anisotropy.
+        The intensity-weighted geometric features -- the EDGE_* statistics, WEIGHTED_CENTROID_X/Y,
+        MASS_DISPLACEMENT, the intensity moments IMOM_*, the radial distribution and ZERNIKE2D -- are computed
+        on the pixels as acquired too, each pixel at its position scaled by the anisotropy and weighted by its
+        intensity times its area, with distances to the contour and the Zernike unit disk in the same units.
+        Applies to featurize_directory() and featurize_files(); featurize() on in-memory arrays does not
+        apply anisotropy.
     anisotropy_y: float (optional, default 1.0)
         Y-dimension counterpart of anisotropy_x
     """

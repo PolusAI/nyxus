@@ -88,9 +88,9 @@ void initialize_environment(
     bool is_imq,
     int ram_limit_mb,
     int verb_lvl,
-    float aniso_x,
-    float aniso_y,
-    float aniso_z,
+    double aniso_x,
+    double aniso_y,
+    double aniso_z,
     bool merge_labels = false,
     bool preserve_hu = false,		// float slides: offset map instead of min-max rescale
     bool use_physical_spacing = false)	// opt-in OME PhysicalSize* voxel spacing (3D)

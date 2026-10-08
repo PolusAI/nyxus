@@ -38,6 +38,9 @@ public:
 	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void extract (LR& roi, const Fsettings& s);
+	// Measures the features over the ROI's cached pixels and contour as pixels of size (sx, sy):
+	// distances and angles are taken in units of length
+	static void extract (LR& roi, const Fsettings& s, double sx, double sy);
 	static void parallel_process_1_batch (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
 	// Constants used in the output
@@ -80,4 +83,8 @@ private:
 		cached_center_y = -1;
 	int cached_num_pixels = 0;
 	const double epsilon = 0.000000001;
+
+	// pixel size along X and Y that calculate() takes distances and angles in
+	double pixel_w = 1.0,
+		pixel_h = 1.0;
 };

@@ -25,6 +25,9 @@ public:
 	void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
 	void save_value(std::vector<std::vector<double>>& feature_vals);
 	static void extract (LR& roi, const Fsettings& s);
+	// Measures the features over the ROI's image matrix as pixels of size (sx, sy): the unit disk is
+	// laid in units of length
+	static void extract (LR& roi, const Fsettings& s, double sx, double sy);
 	static void parallel_process_1_batch (size_t firstitem, size_t lastitem, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & ds);
 
 	static const short ZERNIKE2D_ORDER = 9, NUM_FEATURE_VALS = 30;
@@ -42,9 +45,16 @@ private:
 	/// @brief Algorithms for fast computation of Zernike momentsand their numerical stability
 	/// Chandan Singhand Ekta Walia, Imageand Vision Computing 29 (2011) 251�259 implemented from 
 	/// pseudo-code by Ilya Goldberg
-	void mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues);
+	/// Pixels are sx by sy: a pixel's offset from the centroid is scaled by its size, and the default
+	/// radius is the smaller side of the image in units of length. Every pixel has the same area,
+	/// so the intensity weights do not change.
+	void mb_zernike2D (const ImageMatrix& Im, double order, double rad, double* zvalues, double sx = 1.0, double sy = 1.0);
 
 	std::vector<double> coeffs;
+
+	// pixel size along X and Y that calculate() lays the unit disk in
+	double pixel_w = 1.0,
+		pixel_h = 1.0;
 };
 
 #define MAX_L 32
