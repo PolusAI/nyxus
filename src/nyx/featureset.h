@@ -1017,9 +1017,16 @@ public:
 		for (auto f : F)
 			m_enabledFeatures[(int)f] = enable;
 	}
-	void enableFeatures(const std::initializer_list<Nyxus::FeatureIMQ>& desiredFeatures) {
+	void enableFeatures(const std::initializer_list<Nyxus::FeatureIMQ>& desiredFeatures, bool enable = true) {
 		for (auto f : desiredFeatures)
-			m_enabledFeatures[(int)f] = true;
+			m_enabledFeatures[(int)f] = enable;
+	}
+	// disables every feature 'other' enables
+	void subtract (const FeatureSet& other)
+	{
+		for (size_t i = 0; i < sizeof(m_enabledFeatures); i++)
+			if (other.m_enabledFeatures[i])
+				m_enabledFeatures[i] = false;
 	}
 	void enableFeature (int fcode)
 	{
@@ -1118,7 +1125,7 @@ public:
 		return false;
 	}
 	// returns the number of enabled features resolved by dimensionality
-	int numOfEnabled (int dim) 
+	int numOfEnabled (int dim) const
 	{
 		int cnt = 0;
 

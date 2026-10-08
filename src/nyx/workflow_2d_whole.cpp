@@ -32,46 +32,96 @@
 
 namespace Nyxus
 {
-	// Featurizes a whole slide that fits in RAM. The caller owns the oversized decision -- it
-	// refuses anything at or above the RAM limit before reaching here, off the same estimate,
-	// so a second test of it here could never fire.
-	bool featurize_triv_wholeslide (Environment & env, size_t sidx, ImageLoader & imlo, LR & vroi)
+	// Reduces the families 'selection' enables over the vROI's cached pixels, then frees the image
+	// matrix and the pixels. With 'as_acquired', the features it enables are first measured over the
+	// same pixels as pixels of size (ax, ay) (measure_as_acquired_2d). The user's selection is put
+	// back on the way out, a throw included.
+	static void reduce_triv_wholeslide_selection (Environment& env, LR& vroi, const FeatureSet& selection,
+		const FeatureSet* as_acquired = nullptr, double ax = 1.0, double ay = 1.0)
 	{
-		const std::string & ifpath = env.dataset.dataset_props[sidx].fname_int;
-
-		// read the slide into a pixel cloud
-		if (env.anisoOptions.customized() == false)
+		struct Restore
 		{
-			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
-			if (! scan_trivial_wholeslide (vroi, ifpath, imlo))	// counterpart of segmented scanTrivialRois ()
-				return false;
-		}
-		else
-		{
-			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
-			double aniso_x = env.anisoOptions.get_aniso_x(),
-				aniso_y = env.anisoOptions.get_aniso_y();
-			if (! scan_trivial_wholeslide_anisotropic (vroi, ifpath, imlo, aniso_x, aniso_y))	// counterpart of segmented scanTrivialRois ()
-				return false;
-		}
+			Environment& env;
+			FeatureSet requested;
+			~Restore() { env.theFeatureSet = requested; }
+		} restore { env, env.theFeatureSet };
 
 		// allocate buffers of feature helpers (image matrix, etc)
 		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\tallocating vROI buffers\n");
 		size_t h = vroi.aabb.get_height(), w = vroi.aabb.get_width();
-		size_t len = w * h;
 		vroi.aux_image_matrix.allocate (w, h);
 
-		// calculate the image matrix or cube 
+		// calculate the image matrix or cube
 		vroi.aux_image_matrix.calculate_from_pixelcloud (vroi.raw_pixels, vroi.aabb);
 
-		// calculate features 
-		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\treducing whole slide\n");
-		reduce_trivial_wholeslide (env, vroi);	// counterpart of segmented reduce_trivial_rois_manual()
+		if (as_acquired)
+		{
+			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\tmeasuring the as-acquired features\n");
+			measure_as_acquired_2d (env, vroi, *as_acquired, ax, ay);
+		}
 
-		// free buffers of feature helperss
+		// calculate features
+		if (selection.numOfEnabled (2))
+		{
+			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\treducing whole slide\n");
+			env.theFeatureSet = selection;
+			reduce_trivial_wholeslide (env, vroi);	// counterpart of segmented reduce_trivial_rois_manual()
+		}
+
+		// free buffers of feature helpers
 		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\tfreeing vROI buffers\n");
-		if (vroi.aux_image_matrix._pix_plane.size())
-			std::vector<PixIntens>().swap(vroi.aux_image_matrix._pix_plane);
+		std::vector<PixIntens>().swap (vroi.aux_image_matrix._pix_plane);
+		std::vector<Pixel2>().swap (vroi.raw_pixels);
+	}
+
+	// Featurizes a whole slide that fits in RAM. The caller owns the oversized decision -- it
+	// refuses anything at or above the RAM limit before reaching here, off the same estimate,
+	// so a second test of it here could never fire. An anisotropic slide is scanned twice, as a
+	// segmented batch is (processTrivialRois): the families defined on the image grid reduce the
+	// pixels as acquired, the geometric families the cloud resampled by the spacing.
+	bool featurize_triv_wholeslide (Environment & env, size_t sidx, ImageLoader & imlo, LR & vroi)
+	{
+		const std::string & ifpath = env.dataset.dataset_props[sidx].fname_int;
+
+		if (! env.anisoOptions.customized())
+		{
+			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
+			if (! scan_trivial_wholeslide (vroi, ifpath, imlo))	// counterpart of segmented scanTrivialRois ()
+				return false;
+			reduce_triv_wholeslide_selection (env, vroi, env.theFeatureSet);
+			return true;
+		}
+
+		FeatureSet on_grid, as_acquired, geometric;
+		split_2d_selection (env.theFeatureSet, on_grid, as_acquired, geometric);
+		const double ax = env.anisoOptions.get_aniso_x(),
+			ay = env.anisoOptions.get_aniso_y();
+		const bool any_as_acquired = as_acquired.numOfEnabled (2) > 0;
+
+		// the pixels as acquired, on the slide's own box (featurize_wholeslide sized it so)
+		if (on_grid.numOfEnabled (2) || any_as_acquired)
+		{
+			VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide()\n");
+			if (! scan_trivial_wholeslide (vroi, ifpath, imlo))
+				return false;
+			reduce_triv_wholeslide_selection (env, vroi, on_grid, any_as_acquired ? &as_acquired : nullptr, ax, ay);
+		}
+		if (! geometric.numOfEnabled (2))
+			return true;
+
+		// the cloud resampled by the spacing, on the box it spans; the as-acquired features are held
+		// across it (see hold_as_acquired_2d)
+		VERBOSLVL2(env.get_verbosity_level(), std::cout << "\nscan_trivial_wholeslide_ANISO()\n");
+		const auto held = hold_as_acquired_2d (vroi, as_acquired);
+		if (! scan_trivial_wholeslide_anisotropic (vroi, ifpath, imlo, ax, ay))
+			return false;
+		if (! adopt_resampled_cloud_2d (vroi))
+		{
+			report_unmeasurable_geometry_2d (vroi, geometric, ax, ay);
+			return true;
+		}
+		reduce_triv_wholeslide_selection (env, vroi, geometric);
+		restore_as_acquired_2d (vroi, as_acquired, held);
 
 		// no need to calculate neighbor features in WSI, returning
 		return true;
@@ -94,17 +144,17 @@ namespace Nyxus
 		vroi.aux_min = (PixIntens) p.to_grey_level (p.min_preroi_inten);
 		vroi.aux_max = (PixIntens) p.to_grey_level (p.max_preroi_inten);
 
-		// fix the AABB with respect to anisotropy
-		if (env.anisoOptions.customized() == false)
-			vroi.aabb.apply_anisotropy(
-				env.anisoOptions.get_aniso_x(), 
-				env.anisoOptions.get_aniso_y());
+		// The prescan scales the box by the anisotropy factors, but an anisotropic slide is scanned
+		// twice, once as acquired and once resampled, so it is sized from the slide as acquired and
+		// the estimate covers the larger of the two passes, as a segmented ROI's does
+		if (env.anisoOptions.customized())
+			vroi.aabb.init_from_wh (imlo.get_full_width(), imlo.get_full_height());
 
 		// prepare (zero) ROI's feature value buffer
 		vroi.initialize_fvals();
 
 		// assess ROI's memory footprint and check if we can featurize it as phase 2 (trivially) ?
-		size_t roiFootprint = vroi.get_ram_footprint_estimate (1),		// 1 since single ROI
+		size_t roiFootprint = trivial_footprint_2d (env, vroi, 1),		// 1 since single ROI
 			ramLim = env.get_ram_limit();
 		if (roiFootprint >= ramLim)
 		{

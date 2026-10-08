@@ -29,12 +29,17 @@ class BasicGeomoms2D
 {
 public:
 
-    void calculate (LR& r, const Fsettings& s, intenfunction ifun);
+    // The moments of the ROI's cached pixels as pixels of size (sx, sy): each coordinate, and each
+    // distance to the contour, is scaled by its pixel size, and each pixel's weight by the pixel's
+    // area, so a uniform spacing leaves the normalized moments and the Hu invariants of the
+    // unweighted moments as they are on the unit grid. (1, 1) is the unit grid.
+    void calculate (LR& r, const Fsettings& s, intenfunction ifun, double sx = 1.0, double sy = 1.0);
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {} // Not supporting online for image moments
 
 protected:
 
     StatsInt baseX = 0, baseY = 0; // cached min X and Y of the ROI. Reason - Pixel2's X and Y are absolute so we need to make them relative. Must be set in calculate() prior to calculating any 2D moment
+    double pixel_w = 1, pixel_h = 1;   // pixel size along X and Y that the moments and the distances to the contour scale by
     double originOfX = 0, originOfY = 0; // centroids
     double m00 = 0, m01 = 0, m02 = 0, m03 = 0, m10 = 0, m11 = 0, m12 = 0, m13 = 0, m20 = 0, m21 = 0, m22 = 0, m23 = 0, m30 = 0;    // spatial moments
     double wm00 = 0, wm01 = 0, wm02 = 0, wm03 = 0, wm10 = 0, wm11 = 0, wm12 = 0, wm20 = 0, wm21 = 0, wm30 = 0;    // weighted spatial moments
@@ -209,6 +214,9 @@ public:
 
     Imoms2D_feature();
     void calculate (LR& r, const Fsettings& s);
+    // Measures the features over the ROI's cached pixels and contour as pixels of size (sx, sy) and
+    // saves them to the ROI
+    static void extract (LR& r, const Fsettings& s, double sx, double sy);
     void osized_add_online_pixel(size_t x, size_t y, uint32_t intensity);
     void osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr);
     void save_value(std::vector<std::vector<double>>& feature_vals);

@@ -101,11 +101,14 @@ struct Pixel2 : public Point2i
 		return this->x == p.x || this->y == p.y;
 	}
 
+	// The distances below take the size of a pixel along X and Y, 'sx' and 'sy', and measure in units
+	// of length: (1, 1) measures in pixels.
+
 	/// @brief Returns squared distance between 'x' and 'y'
-	double sqdist(int x, int y) const;
+	double sqdist(int x, int y, double sx = 1.0, double sy = 1.0) const;
 
 	/// @brief Returns the squared distance between this pixel and 'px'
-	double sqdist(const Pixel2& px) const;
+	double sqdist(const Pixel2& px, double sx = 1.0, double sy = 1.0) const;
 
 	/// @brief Returns the sum of squared distances from this pixel to each pixel of 'cloud'
 	double sum_sqdist(const std::vector<Pixel2>& cloud) const;
@@ -114,7 +117,7 @@ struct Pixel2 : public Point2i
 	double sqdist_to_segment(const Pixel2& p1, const Pixel2& p2) const;
 
 	/// @brief Returns the distance from this pixel to segment 'p1,p2'
-		double dist_to_segment (const Pixel2 & p1, const Pixel2 & p2) const;
+		double dist_to_segment (const Pixel2 & p1, const Pixel2 & p2, double sx = 1.0, double sy = 1.0) const;
 
 	/// @brief Returns true if this and 'other' pixels share the same location
 	bool colocating(const Pixel2& other) const
@@ -126,12 +129,12 @@ struct Pixel2 : public Point2i
 	bool belongs_to(const std::vector<Pixel2>& cloud) const;
 
 	/// @brief Returns an index in argument 'cloud'
-	static int find_center(const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour);
+	static int find_center(const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour, double sx = 1.0, double sy = 1.0);
 
-	std::pair<double, double> min_max_sqdist(const std::vector<Pixel2>& contour) const;
+	std::pair<double, double> min_max_sqdist(const std::vector<Pixel2>& contour, double sx = 1.0, double sy = 1.0) const;
 
 	/// @brief Returns the minimum squared distance squared distance from <this> pixel to the <cloud>
-	double min_sqdist (const std::vector<Pixel2>& cloud) const;
+	double min_sqdist (const std::vector<Pixel2>& cloud, double sx = 1.0, double sy = 1.0) const;
 
 	/// @brief Exact minimum squared distance from <this> pixel to <cloud> via a full linear scan.
 	/// min_sqdist() is an approximate hill-descent (v2) that assumes a locally-unimodal
@@ -142,7 +145,7 @@ struct Pixel2 : public Point2i
 	double exact_min_sqdist (const std::vector<Pixel2>& cloud) const;
 
 	/// @brief Returns the maximum squared distance squared distance from <this> pixel to the <cloud>
-	double max_sqdist (const std::vector<Pixel2>& cloud) const;
+	double max_sqdist (const std::vector<Pixel2>& cloud, double sx = 1.0, double sy = 1.0) const;
 
 	/// @brief Returns the angle in radians between this pixel and 'other' relative to the origin 
 	double angle(const Pixel2& other) const;

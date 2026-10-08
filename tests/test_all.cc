@@ -113,6 +113,9 @@
 #include "test_3d_gldzm_mirp.h"
 #include "test_3d_gldzm_regression.h"
 #include "test_3d_ooc_segmented_mechanics.h"	// the segmented 3D out-of-core pass: its voxels and its status
+#include "test_3d_anisotropy_mechanics.h"	// voxel spacing reaches shape alone, on every volumetric path
+#include "test_2d_anisotropy_mechanics.h"	// grid families on the pixels as acquired, geometric ones resampled
+#include "test_3d_morphology_pyradiomics.h"
 #include "test_3d_ngldm_mirp.h"
 #include "test_3d_ngldm_regression.h"
 #include "test_3d_firstorder_pyradiomics.h"
@@ -981,6 +984,111 @@ TEST(TEST_NYXUS, TEST_3D_OOC_MULTIROI_KEEPS_LABELS_APART_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_3D_OOC_FAILED_FEATURE_FAILS_PAIR_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_ooc_failed_feature_fails_pair_mechanics());
+}
+
+
+//***** 2D anisotropy *****
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_SEGMENTED_SPLITS_THE_FAMILIES_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_segmented_splits_the_families_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WHOLESLIDE_SPLITS_THE_FAMILIES_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_wholeslide_splits_the_families_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_VANISHED_ROI_REPORTS_NO_GEOMETRY_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_vanished_roi_reports_no_geometry_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WHOLESLIDE_SIZED_AS_ACQUIRED_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_wholeslide_sized_as_acquired_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_MATCHES_IN_RAM_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_matches_in_ram_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_VANISHED_ROI_REPORTS_NO_GEOMETRY_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_vanished_roi_reports_no_geometry_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_OUT_OF_CORE_RUNS_DEPENDENCIES_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_out_of_core_runs_dependencies_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WEIGHTED_GEOMETRY_AS_ACQUIRED_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_weighted_geometry_as_acquired_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WEIGHTED_GEOMETRY_AS_ACQUIRED_ALONE_AND_OUT_OF_CORE_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_weighted_geometry_as_acquired_alone_and_out_of_core_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WHOLESLIDE_WEIGHTED_GEOMETRY_AS_ACQUIRED_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_wholeslide_weighted_geometry_as_acquired_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_WEIGHTED_GEOMETRY_SCALE_INVARIANT_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_weighted_geometry_scale_invariant_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_ANISOTROPY_RADIAL_ZERNIKE_EDGE_SCALE_INVARIANT_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_anisotropy_radial_zernike_edge_scale_invariant_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_PIXEL_SCALED_DISTANCES_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_pixel_scaled_distances_mechanics());
+}
+
+//***** 3D voxel spacing *****
+
+TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_IN_RAM_LEAVES_INTENSITY_AND_TEXTURE_ALONE_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_anisotropy_in_ram_leaves_intensity_and_texture_alone_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_OUT_OF_CORE_LEAVES_INTENSITY_AND_TEXTURE_ALONE_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_anisotropy_out_of_core_leaves_intensity_and_texture_alone_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_WHOLE_VOLUME_LEAVES_INTENSITY_AND_TEXTURE_ALONE_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_anisotropy_whole_volume_leaves_intensity_and_texture_alone_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_25D_LEAVES_INTENSITY_AND_TEXTURE_ALONE_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_anisotropy_25d_leaves_intensity_and_texture_alone_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_25D_TAKES_PHYSICAL_SPACING_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_anisotropy_25d_takes_physical_spacing_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_THIN_ROI_IS_FEATURIZED_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_anisotropy_thin_roi_is_featurized_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_ANISO_MESH_VOLUME_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_morphology_aniso_mesh_volume_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_ANISO_MAJOR_AXIS_LEN_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_morphology_aniso_major_axis_len_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_ANISO_MINOR_AXIS_LEN_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_morphology_aniso_minor_axis_len_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_ANISO_LEAST_AXIS_LEN_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_morphology_aniso_least_axis_len_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_ANISO_ELONGATION_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_morphology_aniso_elongation_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_MORPHOLOGY_ANISO_FLATNESS_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_3d_morphology_aniso_flatness_pyradiomics());
 }
 
 
@@ -4546,7 +4654,7 @@ TEST(TEST_NYXUS, TEST_OMEZARR_WHOLE_Z_CHUNK_IS_UNSTREAMABLE_MECHANICS) {
 	ASSERT_NO_THROW (test_omezarr_whole_z_chunk_is_unstreamable_mechanics());
 }
 
-// The prescan's ROI geometry follows --use-physical-spacing, as every other pass does.
+// The prescan reads the voxel size under --use-physical-spacing and records the box as acquired.
 TEST(TEST_NYXUS, TEST_OMEZARR_PHYSICAL_SPACING_PRESCAN_MECHANICS) {
 	ASSERT_NO_THROW (test_omezarr_physical_spacing_prescan_mechanics());
 }
@@ -5170,11 +5278,11 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_STREAMS_OOC_MECHANICS) {
 	EXPECT_EQ(ooc_row, ram_row) << "the out-of-core whole-volume row must match the in-RAM row exactly";
 }
 
-// The whole-volume ROI takes the extent the prescan recorded, which is already on the resampled
-// grid: scan_slide_props resolves the same spacing and scales each ROI's box before recording
-// max_roi_w/h/d. What this discriminates: scaling that box a second time squares the resampling
-// (with --aniso-z 4, a Z extent of 14 becomes 54), and the oversized check built on it then sends
-// a volume that fits comfortably in RAM down the out-of-core path or rejects it outright.
+// The whole-volume ROI takes the extent the prescan recorded, which is the volume as acquired
+// whatever the spacing: every scan caches the voxels as acquired, and only the shape family sees
+// the spacing. What this discriminates: a prescan that scales the box by the spacing (with
+// --aniso-z 4, a Z extent of 8 becomes 29) builds the oversized check on four times the voxels the
+// scan will hold, and sends a volume that fits comfortably in RAM down the out-of-core path.
 TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_ANISOTROPIC_PRESCAN_BOX_MECHANICS) {
 	// a volume big enough that the two footprints below straddle a whole megabyte, the granularity
 	// Environment::set_ram_limit takes
@@ -5214,10 +5322,10 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_ANISOTROPIC_PRESCAN_BOX_MECHANICS) {
 	ASSERT_TRUE(Nyxus::scan_slide_props(p, 3, aniso_z4, false, e.fpimageOptions, e.resultOptions.need_annotation()));
 	EXPECT_EQ(p.max_roi_w, (size_t) W);
 	EXPECT_EQ(p.max_roi_h, (size_t) H);
-	EXPECT_GT(p.max_roi_d, (size_t) D) << "the prescan records the resampled Z extent";
+	EXPECT_EQ(p.max_roi_d, (size_t) D) << "the prescan records the Z extent as acquired";
 
-	// the footprint of the box the prescan's extent gives, and of that box resampled a second
-	// time -- the RAM limit goes between them, so only a doubly-resampled box reads as oversized
+	// the footprint of the box the prescan's extent gives, and of that box scaled by the spacing --
+	// the RAM limit goes between them, so only a scaled box reads as oversized
 	LR once(1), twice(1);
 	Nyxus::init_wholevolume_vroi (p, 0, once);
 	Nyxus::init_wholevolume_vroi (p, 0, twice);
@@ -5250,21 +5358,19 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_ANISOTROPIC_PRESCAN_BOX_MECHANICS) {
 
 	EXPECT_TRUE(ok) << (erm ? *erm : std::string("(no error message)"));
 	EXPECT_EQ(out.find("oversized whole volume"), std::string::npos)
-		<< "this volume fits the limit; only a box resampled a second time reads as oversized";
+		<< "this volume fits the limit; only a box scaled by the spacing reads as oversized";
 	fs::remove_all(outdir);
 	std::error_code ec;
 	fs::remove(ds, ec);
 }
 
-// The out-of-core voxel cloud is resampled on a non-cubic grid, like the in-RAM scan: both must
-// hold the same voxels at the same virtual coordinates, and the ROI's extent and voxel count must
-// describe that resampled cloud. What this discriminates: a streaming pass that ignores the
-// spacing writes the physical cloud, so one slide mixes resampled in-RAM ROIs with unresampled
-// oversized ones.
+// The out-of-core voxel cloud holds the voxels the in-RAM scan caches, at the same coordinates and
+// in the same order, whatever the spacing: neither pass resamples, so a slide cannot mix ROIs
+// featurized on two different grids. What this discriminates: a streaming pass that resamples on
+// its own writes a cloud of a different size and extent from the in-RAM one.
 TEST(TEST_NYXUS, TEST_3D_OOC_ANISOTROPIC_CLOUD_MATCHES_IN_RAM_MECHANICS) {
 	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
 	ASSERT_TRUE(fs::exists(ds)) << ds.string();
-	const double ax = 1.0, ay = 1.0, az = 2.0;
 
 	SlideProps p;
 	p.fname_int = ds.string();
@@ -5273,21 +5379,20 @@ TEST(TEST_NYXUS, TEST_3D_OOC_ANISOTROPIC_CLOUD_MATCHES_IN_RAM_MECHANICS) {
 	ImageLoader il;
 	ASSERT_TRUE(il.open(p, fp)) << ds.string();
 
-	// in-RAM: the resampled cloud phase 2 caches
+	// in-RAM: the cloud phase 2 caches
 	LR ram(1);
-	ASSERT_TRUE(Nyxus::scan_trivial_wholevolume_anisotropic(ram, ds.string(), il, ax, ay, az, 0, 0));
+	ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(ram, ds.string(), il, 0, 0));
 
-	// out-of-core: the same volume streamed to the disk-backed cloud
+	// out-of-core: the same volume streamed to the disk-backed cloud, on a z-anisotropic slide
 	LR ooc(1);
 	ooc.aabb.init_from_whd (8, 6, 4);
 	ooc.aux_area = 8 * 6 * 4;
-	ASSERT_NO_THROW(Nyxus::populate_3d_voxel_cloud(il, ooc, 0, 0, /*wholevolume=*/ true, /*singleroi=*/ false, ax, ay, az, ds.string(), ""));
+	ooc.set_spacing (1.0, 1.0, 2.0);
+	ASSERT_NO_THROW(Nyxus::populate_3d_voxel_cloud(il, ooc, 0, 0, /*wholevolume=*/ true, /*singleroi=*/ false, ds.string(), ""));
 
 	ASSERT_EQ(ooc.raw_voxels_NT.size(), ram.raw_pixels_3D.size());
-	EXPECT_EQ(ooc.raw_voxels_NT.size(), (size_t)(8 * 6 * 8));	// Z resampled 2x
+	EXPECT_EQ(ooc.raw_voxels_NT.size(), (size_t)(8 * 6 * 4));	// every voxel once
 	EXPECT_EQ(ooc.aux_area, (unsigned int) ram.raw_pixels_3D.size());
-	EXPECT_EQ(ooc.aabb.get_z_depth(), (StatsInt)8);
-	EXPECT_EQ(ooc.aabb.get_width(), (StatsInt)8);
 
 	for (size_t i = 0; i < ram.raw_pixels_3D.size(); i++)
 	{
@@ -5510,14 +5615,11 @@ TEST(TEST_NYXUS, TEST_3D_LAYOUTA_UNREADABLE_PLANE_FAILS_THE_PASS_MECHANICS) {
 TEST(TEST_NYXUS, TEST_3D_LAYOUTA_ANISOTROPIC_TILE_INDEX_MECHANICS) {
 	ASSERT_NO_THROW (test_3d_layouta_anisotropic_tile_index_mechanics());
 }
-TEST(TEST_NYXUS, TEST_3D_LAYOUTA_ANISOTROPIC_RESAMPLING_MECHANICS) {
-	ASSERT_NO_THROW (test_3d_layouta_anisotropic_resampling_mechanics());
-}
 TEST(TEST_NYXUS, TEST_3D_LAYOUTA_ANISOTROPIC_CLOUD_FITS_ITS_AABB_MECHANICS) {
 	ASSERT_NO_THROW (test_3d_layouta_anisotropic_cloud_fits_its_aabb_mechanics());
 }
-TEST(TEST_NYXUS, TEST_3D_LAYOUTA_ANISOTROPIC_VANISHED_ROI_IS_REFUSED_MECHANICS) {
-	ASSERT_NO_THROW (test_3d_layouta_anisotropic_vanished_roi_is_refused_mechanics());
+TEST(TEST_NYXUS, TEST_3D_LAYOUTA_ANISOTROPIC_THIN_ROI_IS_FEATURIZED_MECHANICS) {
+	ASSERT_NO_THROW (test_3d_layouta_anisotropic_thin_roi_is_featurized_mechanics());
 }
 
 
@@ -5736,8 +5838,8 @@ TEST(TEST_NYXUS, TEST_CSV_MULTICHANNEL_NO_OVERWRITE_MECHANICS) {
 	fs::remove_all(outdir);
 }
 
-// Physical-calibration logic (negative + positive). resolve_slide_anisotropy
-// must NOT engage the anisotropic (resampling) path unless it's genuinely warranted:
+// Physical-calibration logic (negative + positive). resolve_slide_anisotropy reports a non-cubic
+// spacing only when it is genuinely there:
 //   - flag off                      -> false, (1,1,1)   even with anisotropic spacing
 //   - degenerate spacing (a 0 axis) -> false, (1,1,1)   (guarded, no div-by-zero)
 //   - isotropic spacing (all equal) -> false, (1,1,1)   (nothing to correct)
@@ -5778,19 +5880,19 @@ TEST(TEST_NYXUS, TEST_RESOLVE_SLIDE_ANISOTROPY_MECHANICS) {
 }
 
 // TEST_RESOLVE_SLIDE_ANISOTROPY_MECHANICS covers the DECISION (physical spacing -> ratios). This covers
-// that the resolved ratios actually RESCALE ROI geometry end-to-end: the 3D prescan's
-// anisotropic branch (make_anisotropic_aabb 3-arg -> AABB::apply_anisotropy) was never
-// exercised -- every other test uses make_nonanisotropic_aabb. A customized az=4 must scale the
-// ROI's z-depth ~4x while leaving x/y (ax=ay=1) unchanged; without applying anisotropy the
-// depth would be identical to the isotropic run. dim3_mask's ROI spans all Z (depth 4).
-TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_RESCALES_ROI_DEPTH_MECHANICS) {
+// what the resolved spacing does NOT do: the 3D prescan records the ROI's box as acquired, since
+// every scan caches the voxels as acquired and only the shape family sees the spacing. A customized
+// az=4 must leave the box exactly as the isotropic prescan records it. What this discriminates: a
+// prescan that scales the box reports a depth near 4x the cached one, and the memory estimate
+// built from it budgets voxels no scan holds. dim3_mask's ROI spans all Z (depth 4).
+TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_LEAVES_ROI_BOX_MECHANICS) {
 	fs::path ip = ometiff_data_path("dim5.ome.tif");
 	fs::path mp = ometiff_data_path("dim3_mask.ome.tif");
 	ASSERT_TRUE(fs::exists(ip) && fs::exists(mp));
 	Environment e;
 
 	SlideProps iso (ip.string(), mp.string());
-	AnisotropyOptions aniso_off;                       // un-customized -> isotropic AABB
+	AnisotropyOptions aniso_off;                       // un-customized
 	ASSERT_FALSE(aniso_off.customized());
 	ASSERT_TRUE(Nyxus::scan_slide_props(iso, 3, aniso_off, false, e.fpimageOptions, e.resultOptions.need_annotation()));
 
@@ -5800,98 +5902,71 @@ TEST(TEST_NYXUS, TEST_3D_ANISOTROPY_RESCALES_ROI_DEPTH_MECHANICS) {
 	ASSERT_TRUE(aniso_z4.customized());
 	ASSERT_TRUE(Nyxus::scan_slide_props(ani, 3, aniso_z4, false, e.fpimageOptions, e.resultOptions.need_annotation()));
 
-	EXPECT_GT(ani.max_roi_d, iso.max_roi_d) << "z-anisotropy did not rescale ROI depth";
-	EXPECT_GE(ani.max_roi_d, iso.max_roi_d * 3) << "z-depth not scaled ~4x";
-	EXPECT_EQ(ani.max_roi_w, iso.max_roi_w) << "x (ax=1) must be unchanged";
-	EXPECT_EQ(ani.max_roi_h, iso.max_roi_h) << "y (ay=1) must be unchanged";
+	EXPECT_EQ(ani.max_roi_d, iso.max_roi_d) << "z-anisotropy must not rescale the ROI's depth";
+	EXPECT_EQ(ani.max_roi_w, iso.max_roi_w);
+	EXPECT_EQ(ani.max_roi_h, iso.max_roi_h);
+	EXPECT_EQ(ani.max_roi_area, iso.max_roi_area);
 }
 
-// The whole-volume anisotropic scan (scan_trivial_wholevolume_anisotropic) walks the virtual
-// grid with its own loop counter, indexes rows by fullW, and leaves vroi.aabb and aux_area
-// describing the resampled cloud it just built. What this discriminates: a scan that clobbers
-// its counter with the physical voxel index can run far past nVox before its exit condition
-// holds again -- a hang, not a slowdown; one that indexes rows by fullH reads the wrong
-// voxels; and one that leaves the pre-resample physical geometry in place sizes
-// aux_image_cube too small for the resampled cloud (an out-of-bounds write) and divides MEAN
-// by the wrong voxel count, putting it out by exactly the resampling factor. Every other 3D
-// anisotropy test covers only the prescan's aabb, not the featurize-and-reduce this drives.
-// MIN/MAX are structurally invariant to nearest-neighbour upsampling, and so is MEAN under
-// this scan's truncation mapping (every physical voxel is duplicated the same number of
-// times) -- so the run must match the isotropic one exactly, not merely look plausible.
+// The whole-volume pass under --use-physical-spacing, end to end through featurize_wholevolume:
+// the volume is featurized on its voxels as acquired, so every intensity value is the isotropic
+// run's, and the spacing reaches the shape family, so the voxel volume scales by it. dim3_zyx is
+// given z 4x thicker than x/y, regardless of the fixture's own metadata. What this discriminates:
+// a pass that resamples by the spacing caches four times the voxels, which moves every count-based
+// intensity value; one that ignores the spacing leaves the voxel volume at the isotropic run's.
 TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_ANISOTROPIC_REDUCE_MATCHES_ISOTROPIC_MECHANICS) {
 	fs::path ds = ometiff_data_path("dim3_zyx.ome.tif");	// 3D X8 Y6 Z4
 	ASSERT_TRUE(fs::exists(ds)) << ds.string();
 
-	Environment e;
-	e.theFeatureSet.enableAll(false);
-	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+	auto run = [&](bool physical) -> std::vector<std::vector<double>>
+	{
+		Environment e;
+		e.set_dim (3);
+		e.theFeatureSet.enableAll(false);
+		e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+		e.theFeatureSet.enableFeatures(D3_SurfaceFeature::featureset);
+		EXPECT_TRUE(e.theFeatureMgr.compile());
+		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
+		EXPECT_TRUE(e.theFeatureMgr.init_feature_classes());
+		e.compile_feature_settings();
+		e.refresh_feature_settings_singleroi();
+		EXPECT_TRUE(e.set_ram_limit (64));
 
-	e.dataset.dataset_props.reserve(1);
-	SlideProps& sp = e.dataset.dataset_props.emplace_back(ds.string(), "");
-	ASSERT_TRUE(Nyxus::scan_slide_props(sp, 3, e.anisoOptions, e.use_physical_spacing(), e.fpimageOptions, e.resultOptions.need_annotation()));
-	e.dataset.update_dataset_props_extrema();
-	// force anisotropic calibration (z 4x thicker than x/y) regardless of the fixture's own metadata
-	sp.phys_x = 0.5; sp.phys_y = 0.5; sp.phys_z = 2.0;
-	e.use_physical_spacing_ = true;
+		SlideProps& sp = e.dataset.dataset_props.emplace_back(ds.string(), "");
+		EXPECT_TRUE(Nyxus::scan_slide_props(sp, 3, e.anisoOptions, e.use_physical_spacing(), e.fpimageOptions, e.resultOptions.need_annotation()));
+		e.dataset.update_dataset_props_extrema();
+		if (physical)
+		{
+			sp.phys_x = 0.5; sp.phys_y = 0.5; sp.phys_z = 2.0;
+			e.use_physical_spacing_ = true;
+			double ax, ay, az;
+			EXPECT_TRUE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
+			EXPECT_DOUBLE_EQ(az, 4.0);
+		}
 
-	double ax, ay, az;
-	ASSERT_TRUE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
-	ASSERT_DOUBLE_EQ(ax, 1.0); ASSERT_DOUBLE_EQ(ay, 1.0); ASSERT_DOUBLE_EQ(az, 4.0);
+		ImageLoader ilo;
+		EXPECT_TRUE(ilo.open(sp, e.fpimageOptions)) << ds.string();
+		LR vroi(1);
+		EXPECT_TRUE(Nyxus::featurize_wholevolume (e, 0, ilo, vroi, 0, 0));
+		ilo.close();
+		return vroi.fvals;
+	};
+	auto iso = run (false), phys = run (true);
 
-	FpImageOptions fp;
-
-	// anisotropic run
-	ImageLoader ilo_a;
-	ASSERT_TRUE(ilo_a.open(sp, fp)) << ds.string();
-	LR vroi_a(1);
-	vroi_a.slide_idx = 0;
-	vroi_a.aux_area = sp.max_roi_area;
-	vroi_a.aabb.init_from_whd(sp.max_roi_w, sp.max_roi_h, sp.max_roi_d);
-	vroi_a.aux_min = (PixIntens)0;
-	vroi_a.aux_max = (PixIntens)(sp.max_preroi_inten - sp.min_preroi_inten);
-	ASSERT_NO_THROW(vroi_a.initialize_fvals());
-	ASSERT_TRUE(Nyxus::scan_trivial_wholevolume_anisotropic(vroi_a, ds.string(), ilo_a, ax, ay, az, 0, 0));
-	// the fix under test (mirrors workflow_3d_whole.cpp's featurize_triv_wholevolume):
-	vroi_a.aabb.update_from_voxelcloud(vroi_a.raw_pixels_3D);
-	vroi_a.aux_area = (unsigned int) vroi_a.raw_pixels_3D.size();
-	vroi_a.aux_image_cube.allocate(vroi_a.aabb.get_width(), vroi_a.aabb.get_height(), vroi_a.aabb.get_z_depth());
-	ASSERT_NO_THROW(vroi_a.aux_image_cube.calculate_from_pixelcloud(vroi_a.raw_pixels_3D, vroi_a.aabb));
-	ASSERT_NO_THROW(Nyxus::reduce_trivial_3d_wholevolume(e, vroi_a));
-	ilo_a.close();
-
-	// isotropic baseline, same fixture
-	ImageLoader ilo_i;
-	ASSERT_TRUE(ilo_i.open(sp, fp)) << ds.string();
-	LR vroi_i(1);
-	vroi_i.slide_idx = 0;
-	vroi_i.aux_area = sp.max_roi_area;
-	vroi_i.aabb.init_from_whd(sp.max_roi_w, sp.max_roi_h, sp.max_roi_d);
-	vroi_i.aux_min = (PixIntens)0;
-	vroi_i.aux_max = (PixIntens)(sp.max_preroi_inten - sp.min_preroi_inten);
-	ASSERT_NO_THROW(vroi_i.initialize_fvals());
-	ASSERT_TRUE(Nyxus::scan_trivial_wholevolume(vroi_i, ds.string(), ilo_i, 0, 0));
-	vroi_i.aux_image_cube.allocate(vroi_i.aabb.get_width(), vroi_i.aabb.get_height(), vroi_i.aabb.get_z_depth());
-	ASSERT_NO_THROW(vroi_i.aux_image_cube.calculate_from_pixelcloud(vroi_i.raw_pixels_3D, vroi_i.aabb));
-	ASSERT_NO_THROW(Nyxus::reduce_trivial_3d_wholevolume(e, vroi_i));
-	ilo_i.close();
-
-	// the resampled cloud really is ~4x bigger (z upsampled), not stuck at the physical count
-	EXPECT_GE(vroi_a.raw_pixels_3D.size(), vroi_i.raw_pixels_3D.size() * 3);
-
-	double mean_a = vroi_a.get_fvals((int)Nyxus::Feature3D::MEAN)[0];
-	double mean_i = vroi_i.get_fvals((int)Nyxus::Feature3D::MEAN)[0];
-	EXPECT_DOUBLE_EQ(mean_a, mean_i) << "MEAN must be resampling-invariant under uniform duplication";
-	EXPECT_DOUBLE_EQ(vroi_a.get_fvals((int)Nyxus::Feature3D::MIN)[0], vroi_i.get_fvals((int)Nyxus::Feature3D::MIN)[0]);
-	EXPECT_DOUBLE_EQ(vroi_a.get_fvals((int)Nyxus::Feature3D::MAX)[0], vroi_i.get_fvals((int)Nyxus::Feature3D::MAX)[0]);
+	for (auto f : D3_VoxelIntensityFeatures::featureset)
+	{
+		const double a = phys[(int) f][0], b = iso[(int) f][0];
+		EXPECT_TRUE((std::isnan(a) && std::isnan(b)) || a == b) << "feature " << (int) f << ": " << a << " with physical spacing, " << b << " without";
+	}
+	const int vv = (int) Nyxus::Feature3D::VOXEL_VOLUME;
+	EXPECT_NEAR(phys[vv][0], 4.0 * iso[vv][0], 1e-12 * iso[vv][0]) << "the spacing did not reach the voxel volume";
 }
 
-// Regression (segmented counterpart): processTrivialRois_3D's anisotropic branch
-// (scanTrivialRois_3D_anisotropic) populates raw_pixels_3D with the RESAMPLED voxel cloud,
-// but aux_area (set during Phase 1 from the PHYSICAL, pre-resample voxel count) was never
-// updated to match -- caught in two places (the main batch loop AND the "remaining pending"
-// cleanup block are near-identical but NOT textually identical, so fixing one via a
-// find-and-replace silently missed the other). MEAN (and anything else that divides by
-// aux_area) was off by the resampling factor. aux_area must always equal the actual cloud size.
+// Segmented counterpart under --use-physical-spacing: phase 1 records each ROI's box and voxel count
+// on the grid as acquired and its spacing alongside, and the phase-2 scan caches exactly that
+// cloud. What this discriminates: a phase 1 that scales the box by the spacing, or a scan that
+// resamples, leaves aux_area -- which divides every averaging feature -- or the box describing a
+// cloud the scan never cached.
 TEST(TEST_NYXUS, TEST_3D_SEGMENTED_ANISOTROPIC_AUX_AREA_MATCHES_VOXELCLOUD_MECHANICS) {
 	fs::path ip = ometiff_data_path("dim5.ome.tif");
 	fs::path mp = ometiff_data_path("dim3_mask.ome.tif");
@@ -5905,50 +5980,36 @@ TEST(TEST_NYXUS, TEST_3D_SEGMENTED_ANISOTROPIC_AUX_AREA_MATCHES_VOXELCLOUD_MECHA
 	SlideProps& sp = e.dataset.dataset_props.emplace_back(ip.string(), mp.string());
 	ASSERT_TRUE(Nyxus::scan_slide_props(sp, 3, e.anisoOptions, e.use_physical_spacing(), e.fpimageOptions, e.resultOptions.need_annotation()));
 	e.dataset.update_dataset_props_extrema();
-	sp.phys_x = 0.5; sp.phys_y = 0.5; sp.phys_z = 2.0;   // force anisotropic (z 4x)
+	sp.phys_x = 0.5; sp.phys_y = 0.5; sp.phys_z = 2.0;   // z 4x thicker
 	e.use_physical_spacing_ = true;
 
 	clear_slide_rois (e.uniqueLabels, e.roiData);
 	ASSERT_TRUE(gatherRoisMetrics_3D(e, 0, ip.string(), mp.string(), 0, 0));
 	ASSERT_GT(e.uniqueLabels.size(), 0u);
 	std::vector<int> labels (e.uniqueLabels.begin(), e.uniqueLabels.end());
-	std::unordered_map<int, unsigned int> physical_area;   // Phase 1's PRE-resample count, per label
-	for (auto lab : labels)
-	{
-		e.roiData[lab].initialize_fvals();
-		physical_area[lab] = e.roiData[lab].aux_area;
-	}
-
-	double ax, ay, az;
-	ASSERT_TRUE(Nyxus::resolve_slide_anisotropy(e, 0, ax, ay, az));
-	ASSERT_DOUBLE_EQ(az, 4.0);
-
-	// Call the scan directly (bypassing processTrivialRois_3D's batching, which has its own
-	// unrelated, pre-existing bug: get_ram_footprint_estimate(Pending.size()) underflows when
-	// Pending.size()==0 on the very first loop iteration, size_t(0-1)*sizeof(int) wrapping to
-	// an astronomical value that can route even a tiny single-ROI batch through the "oversized"
-	// immediate-scan branch unpredictably -- a separate footprint-estimation bug, not what this
-	// test targets) -- exercises the exact fix under test (see the identical logic and its
-	// rationale at both of processTrivialRois_3D's call sites in phase2_3d.cpp).
-	ASSERT_TRUE(Nyxus::scanTrivialRois_3D_anisotropic(e, labels, ip.string(), mp.string(), 0, 0, ax, ay, az));
+	std::unordered_map<int, AABB> phase1_box;
 	for (auto lab : labels)
 	{
 		LR& r = e.roiData[lab];
-		r.aabb.update_from_voxelcloud(r.raw_pixels_3D);
-		r.aux_area = (unsigned int) r.raw_pixels_3D.size();
+		r.initialize_fvals();
+		phase1_box[lab] = r.aabb;
+		EXPECT_DOUBLE_EQ(r.spacing_x, 1.0) << "label " << lab;
+		EXPECT_DOUBLE_EQ(r.spacing_y, 1.0) << "label " << lab;
+		EXPECT_DOUBLE_EQ(r.spacing_z, 4.0) << "label " << lab << ": the ROI does not carry the slide's spacing";
 	}
 
+	ASSERT_TRUE(Nyxus::scanTrivialRois_3D(e, labels, ip.string(), mp.string(), 0, 0));
 	for (auto lab : labels)
 	{
 		LR& r = e.roiData[lab];
-		EXPECT_GT(r.raw_pixels_3D.size(), 0u) << "label " << lab;
+		ASSERT_GT(r.raw_pixels_3D.size(), 0u) << "label " << lab;
 		EXPECT_EQ(r.aux_area, r.raw_pixels_3D.size())
-			<< "label " << lab << ": aux_area must track the RESAMPLED cloud, not the stale physical count";
-		// resampling z 4x must have grown the cloud past the PRE-resample physical count (not
-		// an exact 4x -- the rounding-based nearest-neighbor mapping under- or over-represents
-		// the boundary slice by up to one duplication step, so the growth factor isn't clean)
-		EXPECT_GT(r.raw_pixels_3D.size(), physical_area[lab])
-			<< "label " << lab << ": resampling did not grow the cloud past its physical count of " << physical_area[lab];
+			<< "label " << lab << ": aux_area must count the cloud the scan cached";
+		AABB cloud;
+		cloud.update_from_voxelcloud (r.raw_pixels_3D);
+		EXPECT_EQ(cloud.get_z_depth(), phase1_box[lab].get_z_depth()) << "label " << lab;
+		EXPECT_EQ(cloud.get_width(), phase1_box[lab].get_width()) << "label " << lab;
+		EXPECT_EQ(cloud.get_height(), phase1_box[lab].get_height()) << "label " << lab;
 	}
 }
 

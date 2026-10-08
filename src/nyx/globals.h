@@ -88,11 +88,6 @@ namespace Nyxus
 	bool gatherRoisMetrics_25D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, const std::vector<std::string>& z_indices);
 	bool gatherRoisMetrics_3D (Environment& env, size_t sidx, const std::string& intens_fpath, const std::string& mask_fpath, size_t t_index, size_t channel);
 	bool processTrivialRois (Environment& env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
-	// The 2.5D anisotropic scan, declared so a test can assert the mapping it caches: each
-	// virtual voxel carries the intensity of the physical pixel it maps back to.
-	bool scanTrivialRois_25D_anisotropic (Environment& env, const std::vector<int>& batch_labels,
-		const std::string& intens_fpath, const std::string& label_fpath,
-		const std::vector<std::string>& z_indices, double aniso_x, double aniso_y, double aniso_z);
 	bool processTrivialRois_25D (Environment & env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit, const std::vector<std::string>& z_indices);
 	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, size_t channel, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit);
 	bool processNontrivialRois (Environment& env, const std::vector<int>& nontrivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath);
@@ -107,15 +102,15 @@ namespace Nyxus
 	std::string ooc_unstreamable_reason (ImageLoader& imlo);
 	// Streams r.raw_voxels_NT from 'imlo' plane-by-plane; when wholevolume is true every voxel is
 	// kept (no mask), otherwise only voxels matching r.label -- or, when singleroi is true, every
-	// nonzero mask voxel, which is the ROI single-ROI mode's phase 1 measured. On a non-cubic grid (ax,ay,az from
-	// resolve_anisotropy) the cloud is resampled and r.aabb/r.aux_area follow it. Shared by the segmented and whole-volume
+	// nonzero mask voxel, which is the ROI single-ROI mode's phase 1 measured. The cloud is on the grid the
+	// volume was acquired on, whatever its spacing (r.spacing_*). Shared by the segmented and whole-volume
 	// out-of-core paths (processNontrivialRois_3D, workflow_3d_whole.cpp's oversized branch).
 	// Returns false without touching the cloud when the loader cannot be streamed within a bounded
 	// footprint (it delivers the whole cube in one read, e.g. NIfTI), and false after
 	// Nyxus::stream_volume_checked has reported an intensity/mask shape mismatch itself -- which is
 	// why the callers' own refusal message is guarded by ImageLoader::streams_bounded().
 	bool populate_3d_voxel_cloud (ImageLoader& imlo, LR& r, size_t channel, size_t timeframe, bool wholevolume,
-		bool singleroi, double ax, double ay, double az, const std::string& intens_fpath, const std::string& mask_fpath);
+		bool singleroi, const std::string& intens_fpath, const std::string& mask_fpath);
 	// Runs every requested feature's out-of-core path over an already-populated r.raw_voxels_NT,
 	// guarded by is_3d_ooc_supported(); writes into r.fvals via save_value(). Shared the same way.
 	// Returns false once a feature fails (on the CLI build; under Python it raises), and the
@@ -137,24 +132,70 @@ namespace Nyxus
 	bool scan_trivial_wholeslide (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr);	// reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	bool scan_trivial_wholeslide_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y);
 
-	// resolve the effective 3D voxel spacing for slide `sidx` and whether the
-	// anisotropic (resampling) scan path should run. Explicit --aniso* wins; else, when
+	// Splits a 2D feature selection by what each family measures. 'on_grid' gets the families
+	// defined on the image grid -- first-order (HISTOGRAM included), the intensity histogram, the
+	// texture families, Gabor and the image-quality families -- which an anisotropic run computes
+	// on the pixels as acquired.
+	// 'as_acquired' gets the intensity-weighted features of the geometric families -- the EDGE_*
+	// statistics, WEIGHTED_CENTROID_X/Y, MASS_DISPLACEMENT, the intensity moments IMOM_*, the radial
+	// distribution and ZERNIKE2D -- which an anisotropic run measures on the pixels as acquired, as
+	// pixels of the spacing's size (measure_as_acquired_2d): resampling copies some pixels and drops
+	// others, and so would reweigh their intensities.
+	// 'geometric' gets every other feature, each a measurement of the ROI's geometry in physical
+	// space, which an anisotropic run computes on the cloud resampled by the spacing.
+	void split_2d_selection (const FeatureSet& requested, FeatureSet& on_grid, FeatureSet& as_acquired, FeatureSet& geometric);
+	// Measures the features 'as_acquired' enables over the ROI's cached pixels as acquired, as pixels
+	// of size (ax, ay), and saves them to the ROI: coordinates, distances and angles are taken in
+	// units of length, and a pixel weighs its intensity times its area. The edge statistics, the
+	// moments and the radial distribution take the contour of these pixels, which this traces;
+	// ZERNIKE2D takes the ROI's image matrix, which the caller builds.
+	void measure_as_acquired_2d (const Environment& env, LR& r, const FeatureSet& as_acquired, double ax, double ay);
+	// The as-acquired features (see split_2d_selection) of the contour and basic-morphology methods;
+	// the moment, radial and Zernike methods' features are all as-acquired.
+	constexpr std::initializer_list<Feature2D> as_acquired_contour_2d = { Feature2D::EDGE_INTEGRATED_INTENSITY,
+		Feature2D::EDGE_MAX_INTENSITY, Feature2D::EDGE_MIN_INTENSITY, Feature2D::EDGE_MEAN_INTENSITY, Feature2D::EDGE_STDDEV_INTENSITY };
+	constexpr std::initializer_list<Feature2D> as_acquired_basic_morphology_2d = { Feature2D::WEIGHTED_CENTROID_X,
+		Feature2D::WEIGHTED_CENTROID_Y, Feature2D::MASS_DISPLACEMENT };
+	// The values of the features 'as_acquired' enables. The geometric pass runs the methods that
+	// provide them whenever it needs the methods' other features, which overwrites them, so a caller
+	// holds them across that pass and puts them back with restore_as_acquired_2d.
+	std::vector<std::vector<double>> hold_as_acquired_2d (const LR& r, const FeatureSet& as_acquired);
+	void restore_as_acquired_2d (LR& r, const FeatureSet& as_acquired, const std::vector<std::vector<double>>& held);
+	// The RAM a trivial 2D ROI needs at once: on an anisotropic run the larger of its two passes,
+	// the one over the pixels as acquired, which phase 1 measured, and the one over the cloud
+	// resampled by aniso_x * aniso_y.
+	size_t trivial_footprint_2d (const Environment& env, const LR& r, size_t n_rois);
+	// Takes a 2D ROI's box and pixel count from the cloud the anisotropic scan just cached, for the
+	// geometric families to measure. Returns false, touching nothing, for a ROI the resampling left
+	// with no pixel.
+	bool adopt_resampled_cloud_2d (LR& r);
+	// Reports the geometric features 'geometric' enables as not available (NaN, which the writers
+	// emit as the soft-NaN value) for a ROI the resampling at (ax, ay) left with no pixel, with a
+	// warning that names it. Its grid features are measured as usual.
+	void report_unmeasurable_geometry_2d (LR& r, const FeatureSet& geometric, double ax, double ay);
+	// Whether a 2D feature method belongs to a family defined on the image grid (see
+	// split_2d_selection): the out-of-core pass runs these over the pixels as acquired and every
+	// other requested method, dependencies included, over the resampled ROI.
+	bool is_grid_method_2d (FeatureMethod* f);
+	// Whether every feature a 2D feature method provides is an as-acquired one (see
+	// split_2d_selection), so the out-of-core resampled pass has nothing to run it for.
+	bool is_as_acquired_method_2d (FeatureMethod* f);
+
+	// The effective voxel spacing of slide `sidx`. Explicit --aniso* wins; else, when
 	// --use-physical-spacing is on, the slide's OME PhysicalSize* ratio-normalized (min=1).
 	// Returns false (and ax=ay=az=1) when the grid is effectively isotropic.
 	bool resolve_slide_anisotropy (const Environment& env, size_t sidx, double& ax, double& ay, double& az);
 
 	// The whole-volume ROI of slide 'sidx' as the prescan described it: extent, voxel count and
-	// grey-level range, on the voxel spacing the prescan resolved.
+	// grey-level range, on the grid the volume was acquired on, and its voxel spacing.
 	void init_wholevolume_vroi (const SlideProps& p, size_t sidx, LR& vroi);
 	// The same rule for a caller that has the slide's properties but no Environment (the prescan).
 	bool resolve_anisotropy (const AnisotropyOptions& aniso, bool use_physical_spacing, const SlideProps& p, double& ax, double& ay, double& az);
 
 	// channel/timeframe select which C/T plane the whole-volume read assembles
 	bool scan_trivial_wholevolume (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, size_t channel, size_t timeframe);
-	bool scan_trivial_wholevolume_anisotropic (LR& vroi, const std::string& intens_fpath, ImageLoader& ldr, double aniso_x, double aniso_y, double aniso_z, size_t channel, size_t timeframe);
 
 	bool scanTrivialRois_3D (Environment& env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index, size_t channel);
-	bool scanTrivialRois_3D_anisotropic (Environment& env, const std::vector<int>& batch_labels, const std::string& intens_fpath, const std::string& label_fpath, size_t t_index, size_t channel, double aniso_x, double aniso_y, double aniso_z);
 
 	// Streams plane (channel, t_index) of the pair open in 'ilo' to 'sink' Z-plane by Z-plane
 	// (ImageLoader::stream_volume_planes; the mask at the plane that pairs with it), refusing a

@@ -36,10 +36,8 @@ def test_ometiff_micrometer_and_nanometer_stores_agree_regression(tmp_path):
     shutil.copy(cal_nm, nm_dir / cal_nm.name)
 
     # NOTE: deliberately NOT use_physical_spacing=True -- phys_x/y/z/phys_unit are emitted
-    # regardless of that flag (it only controls whether ANISOTROPIC RESAMPLING is applied),
-    # and enabling it here hit an unrelated hang in the resampling path for this fixture's
-    # multi-channel/timeframe + anisotropic (4x Z:XY) combination. Out of scope for this fix
-    # (units, not resampling); flagging separately rather than chasing it here.
+    # regardless of that flag, which only decides whether the shape features measure the
+    # volume in the declared spacing. This test is about the units the columns report.
     n = nyxus.Nyxus3D(["*3D_ALL_INTENSITY*"])
     df_um = n.featurize_directory(str(um_dir), str(um_dir), ".*")
     df_nm = n.featurize_directory(str(nm_dir), str(nm_dir), ".*")
