@@ -123,6 +123,29 @@ thirds of the volume, which is why `n_1 = 32` dominates the matrix.
 
 ---
 
+## `bench_compat_ngtdm_3d_ball` — the NGTDM ball phantom
+
+| | |
+|---|---|
+| Files | `tests/data/nifti/compat_int/compat_int_ngtdm_3d_ball.nii` + `tests/data/nifti/compat_seg/compat_seg_ngtdm_3d_ball.nii` |
+| ROI | label **57**, a digital ball of radius 3: 123 voxels in a 7×7×7 bounding box; label **58**, two voxels at opposite corners of the volume; label **59**, a chain of three voxels at (z,y,x) = (0,0,5..7), levels 3, 0, 3, and a lone voxel at (8,0,0), level 2 |
+| Shape | 9×9×9 at 1×1×1 spacing; intensities `(3x + 5y + 7z + xyz) mod 6` over the whole volume, so the ROI holds the levels 0..5 and 18 of its voxels are at 0 |
+| Why it exists | a ROI that does not fill its bounding box — 64% of the ball's box is background — with ROI voxels at the same value the binned cube gives background. `bench_compat_ngtdm_3d` is its own bounding box and cannot reach either case. Labels 58 and 59 hold voxels with no ROI neighbour: all of them, and one beside three that have one |
+
+Recipes: `ngtdm3d.pyradiomics_binwidth1_ball` (label 57); `ngtdm3d.mirp_fbn_mixed` (label 59), held
+to MIRP because PyRadiomics keeps a voxel with no neighbour and Nyxus, like MIRP, follows IBSI and
+leaves it out. The lone voxel's level is carried by no chain voxel, so its NGTDM row is empty and
+`N_g,p` (2) is smaller than the ROI's number of levels (3). Label 58 has no voxel with a neighbour and
+carries no oracle claim; `test_3d_ngtdm_isolated_voxels_mechanics` uses it for the empty-matrix path,
+where MIRP's NaN agrees with Nyxus' soft-NaN value. `make_ball_phantom()` in
+`oracles/gen_ngtdm3d_pyradiomics.py` defines all three, and every generator run checks the committed
+files against it.
+
+Tests reaching it today: `test_3d_ngtdm_pyradiomics.h`, `test_3d_ngtdm_mechanics.h`,
+`test_3d_ngtdm_mirp.h`.
+
+---
+
 ## `bench_compat_gldzm_3d` — the 16x16x16 GLDZM phantom
 
 | | |

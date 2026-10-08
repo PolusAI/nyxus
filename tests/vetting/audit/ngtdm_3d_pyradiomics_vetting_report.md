@@ -24,8 +24,8 @@ unusable in the configuration a default run reaches.
 |---|---|
 | Tool | PyRadiomics **3.0.1** (SimpleITK 2.3.1, Python 3.8), conda env `nyxus_oracle` |
 | Generator | `tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py` |
-| Benchmark | `bench_compat_ngtdm_3d` — `compat_int_ngtdm_3d.nii` + `compat_seg_ngtdm_3d.nii`, label 57 |
-| Recipes | `ngtdm3d.pyradiomics_binwidth1`, `ngtdm3d.pyradiomics_binwidth1_r2` |
+| Benchmarks | `bench_compat_ngtdm_3d` — `compat_int_ngtdm_3d.nii` + `compat_seg_ngtdm_3d.nii`, label 57; `bench_compat_ngtdm_3d_ball` — `compat_int_ngtdm_3d_ball.nii` + `compat_seg_ngtdm_3d_ball.nii`, label 57 |
+| Recipes | `ngtdm3d.pyradiomics_binwidth1`, `ngtdm3d.pyradiomics_binwidth1_r2`, `ngtdm3d.pyradiomics_binwidth1_ball`; and against MIRP 2.6.0 (`nyxus_mirp`, `gen_ngtdm3d_mirp.py`), `ngtdm3d.mirp_fbn_mixed` on label 59 of the ball file — see "Voxels with no ROI neighbour" |
 | PyRadiomics settings | `binWidth=1`, `distances=[1]` (or `[1, 2]`), `resampledPixelSpacing=None`, `force2D=False`, `imageType=Original` |
 | Nyxus settings | `GREYDEPTH=100`, `IBSI=false`, `NGTDM_GREYDEPTH=0`, `NGTDM_RADIUS=1` (or 2) |
 
@@ -505,10 +505,84 @@ renaming one of the five to a case that does not exist is reported as
 
 No row changes status, and no feature in this family lacks an oracle.
 
+## A ROI that does not fill its bounding box
+
+`bench_compat_ngtdm_3d` is its own bounding box, so every assertion above holds equally for a
+neighbourhood confined to the ROI and for one that takes in the whole cube `calculate()` builds. The
+family's neighbourhood is the ROI's: `calculate()` builds a ROI mask over the bounding box from the
+voxel cloud, takes its grey levels from the ROI's voxels alone, and lets only ROI voxels be centres
+or neighbours; `osized_calculate()` does the same with the mask its plane window carries. Value
+alone cannot decide membership, because the binned cube gives background 0 and a ROI voxel of
+intensity 0 is also 0.
+
+`ngtdm3d.pyradiomics_binwidth1_ball` asserts this on `bench_compat_ngtdm_3d_ball`: a digital ball of
+radius 3, 123 voxels in a 7×7×7 box that is 64% background, 18 of them at 0. PyRadiomics' public
+extractor loads it, and the generator requires the extractor, `RadiomicsNGTDM` and the numpy NGTDM to
+agree before pinning (worst 1.8e-16). Nyxus matches all five features and the six-row matrix to
+≤ 3e-16, at `rel=1e-9`.
+
+What the fixture discriminates, measured by running the five assertions against two other
+neighbourhood rules:
+
+| neighbourhood rule | ball assertions | busyness | coarseness |
+|---|---|---|---|
+| ROI voxels only (the family) | pass | 2.8044 | 0.030332 |
+| every cell of the bounding box | fail | ×8.0 | ×0.22 |
+| bounding box, background told apart by value (`!= 0`) | fail | — | — |
+
+The third row fails because the zero-min correction lifts background to 1 along with every ROI level,
+so a test for 0 matches nothing; the ball's ROI voxels at 0 would defeat a test for the lifted value
+just as well.
+
+**The out-of-core path** is asserted against the same oracle in
+`tests/python/test_3d_ngtdm_pyradiomics.py`, on a 24×60×60 ellipsoid (37,792 voxels in an
+86,400-voxel box, 3,664 at level 0) at `ram_limit` 1000 MB and 1 MB; the 1 MB run is reported
+oversized and goes through `osized_calculate()`. The in-RAM/out-of-core equality test in
+`test_ooc_mechanics.py` uses a whole-volume mask and cannot reach this case.
+
+## Voxels with no ROI neighbour: Nyxus follows IBSI, so the oracle is MIRP
+
+A ROI voxel with no other ROI voxel within the radius has no neighbourhood mean. Nyxus follows IBSI
+here, as MIRP does: such a voxel is in no matrix row and counts towards none of `n_i`, `N_v,p`,
+`N_v,c` or `N_g,p`. `N_g,p`, the denominator of Contrast's `N_g,p (N_g,p − 1)` and the `N_g,p = 1`
+test in Busyness, is the number of **non-empty rows**, so a level that only such voxels carry keeps a
+row with `n_i = 0` and does not count. IBSI, MIRP (`n_p` after the neighbourless voxels are removed)
+and PyRadiomics (`sum(n_i > 0)`) all define `N_g,p` that way.
+
+PyRadiomics parts from the other two on the voxel itself: it keeps it as a row with `s_i = 0`, which
+adds to `n_i`, `N_v,p` and `N_g,p`. So **any ROI holding even one such voxel** gives different values
+in PyRadiomics on all five features, not only a ROI made of nothing else. That is why every
+PyRadiomics fixture in this report is a ROI in which every voxel has a neighbour (the generator fails
+on the ball or the out-of-core ellipsoid otherwise), and why the mixed case is held to MIRP.
+
+| ROI | Nyxus | MIRP 2.6.0 | PyRadiomics 3.0.1 |
+|---|---|---|---|
+| none of its voxels has a neighbour (label 58 of the ball file) | soft-NaN, all five (`test_3d_ngtdm_isolated_voxels_mechanics`; out-of-core: `test_3d_ngtdm_ooc_empty_matrix_mechanics`) | NaN, all five | Coarseness 1e6, the other four 0 |
+| some voxels have a neighbour, one does not, at a level of its own (label 59) | the MIRP values | Coarseness 0.2, Contrast 6, Busyness 1.0714, Complexity 10, Strength 2 | Coarseness 0.2667, Contrast 1.125, Busyness 0.5357, Complexity 11, Strength 2.1111 |
+
+Recipe **`ngtdm3d.mirp_fbn_mixed`**: label 59 of `bench_compat_ngtdm_3d_ball` — three voxels in a
+chain at levels 3, 0, 3 and a lone voxel at level 2 — at the Nyxus settings of
+`ngtdm3d.pyradiomics_binwidth1`. MIRP runs at `by_slice=False`, distance 1,
+`base_discretisation_method="fixed_bin_number"` with 4 bins; over the ROI's integer levels 0..3 that
+maps `x` to `x + 1`, the levels Nyxus' zero-min correction produces, and the generator asserts the
+identity rather than relying on it. It also requires MIRP without discretisation on the lifted levels,
+and an independent numpy NGTDM, to agree before pinning (residual 0). `test_3d_ngtdm_mirp.h` asserts
+the five features at `rel=1e-9` (measured residual 0) and the matrix: the lone voxel's level keeps an
+empty row, `N_v,p = 3`, and `N_g,p = 2`, not the ROI's three levels.
+
+The out-of-core path is held to the same recipe in `tests/python/test_3d_ngtdm_mirp.py`: the
+out-of-core ellipsoid plus one voxel at a corner, outside its reach, at level 12, which the ellipsoid
+(levels 0..11) does not carry. MIRP runs with 13 bins. Under the IBSI convention that voxel changes
+nothing, and the five MIRP values equal the ellipsoid's PyRadiomics ones to 1e-15; the in-RAM run and
+the 1 MB run, which the run's own log reports oversized, both match at `rel=1e-9`. The level-12 row is
+what moves Contrast if `N_g,p` counts the ROI's levels rather than the non-empty rows: by
+12·11 / (13·12), a factor of 0.846.
+
 ## Reproduction
 
 ```
 conda run -n nyxus_oracle python tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py
+conda run -n nyxus_mirp python tests/vetting/oracles/gen_ngtdm3d_mirp.py
 python tests/vetting/audit/scan_ngtdm3d_coverage.py --check
 python tests/vetting/check_coverage.py --check
 python tests/vetting/check_test_names.py --check
