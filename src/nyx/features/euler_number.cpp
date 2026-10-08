@@ -160,6 +160,7 @@ void EulerNumberFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoade
 	for (auto i = 0; i < cloud.size(); i++)
 	{
 		const auto& p = cloud.get_at(i);
+		aabb.require_contains (p.x, p.y);
 		int col = p.x - min_x + 1,
 			row = p.y - min_y + 1,
 			idx = row * width + col;

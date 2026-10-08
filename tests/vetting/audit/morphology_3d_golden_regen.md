@@ -168,15 +168,16 @@ separating them, a rule that reads only that face's own four corners, so two cub
 always cut it the same way. For the 134 masks with no ambiguous face it adopts the classic
 triangulation of those loops, taken from `skimage.measure.marching_cubes(method='lorensen')` and
 accepted only after checking that it spans exactly the loops derived here; that settles an arbitrary
-diagonal choice the loops leave open, worth a few parts in a thousand of area, in favour of the one
-MIRP and pyradiomics integrate. The other 120 masks keep the derived triangulation, because the
-classic table leaves those cubes open. scikit-image is a generation-time reference only
+diagonal choice the loops leave open, worth a few parts in a thousand of area. It is not the
+triangulation MIRP or pyradiomics use: MIRP calls `marching_cubes` with its default `method='lewiner'`,
+and pyradiomics carries its own 128-entry table. The other 120 masks keep the derived triangulation,
+because the lorensen table leaves those cubes open. scikit-image is a generation-time reference only
 (BSD-3-Clause), never a build or CI dependency.
 
 The script's own checks: the surface closes on random volumes exercising all 256 masks, a lone voxel
 gives exactly 1/6 and √3, and every solid box matches the closed form above.
 
-How this mesh compares with PyRadiomics' `MeshVolume`, which uses the classic 128-entry table, is in
+How this mesh compares with PyRadiomics' `MeshVolume`, which uses its own 128-entry table, is in
 `morphology_3d_pyradiomics_comparison.md`; `compare_mesh_volume_pyradiomics.py` reproduces it.
 
 ## Covariance / eigenvalue kernel — `test_3d_morphology_mechanics.h`

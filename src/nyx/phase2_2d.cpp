@@ -1,4 +1,5 @@
 #include <fstream>
+#include <limits>
 #include <string>
 #include <sstream>
 #include <vector>
@@ -13,6 +14,22 @@
 #include "environment.h"
 #include "globals.h"
 #include "helpers/timing.h"
+#include "features/focus_score.h"
+#include "features/gabor.h"
+#include "features/glcm.h"
+#include "features/gldm.h"
+#include "features/gldzm.h"
+#include "features/glrlm.h"
+#include "features/glszm.h"
+#include "features/intensity.h"
+#include "features/intensity_histogram.h"
+#include "features/ngldm.h"
+#include "features/ngtdm.h"
+#include "features/power_spectrum.h"
+#include "features/radial_distribution.h"
+#include "features/saturation.h"
+#include "features/sharpness.h"
+#include "features/zernike.h"
 
 namespace Nyxus
 {
@@ -500,9 +517,177 @@ namespace Nyxus
 //		delete ImageMatrixBuffer;
 	}
 
+	bool is_grid_method_2d (FeatureMethod* f)
+	{
+		return dynamic_cast<PixelIntensityFeatures*>(f) != nullptr
+			|| dynamic_cast<IntensityHistogramFeatures*>(f) != nullptr
+			|| dynamic_cast<GLCMFeature*>(f) != nullptr
+			|| dynamic_cast<GLRLMFeature*>(f) != nullptr
+			|| dynamic_cast<GLDZMFeature*>(f) != nullptr
+			|| dynamic_cast<GLSZMFeature*>(f) != nullptr
+			|| dynamic_cast<GLDMFeature*>(f) != nullptr
+			|| dynamic_cast<NGLDMfeature*>(f) != nullptr
+			|| dynamic_cast<NGTDMFeature*>(f) != nullptr
+			|| dynamic_cast<GaborFeature*>(f) != nullptr
+			|| dynamic_cast<FocusScoreFeature*>(f) != nullptr
+			|| dynamic_cast<PowerSpectrumFeature*>(f) != nullptr
+			|| dynamic_cast<SaturationFeature*>(f) != nullptr
+			|| dynamic_cast<SharpnessFeature*>(f) != nullptr;
+	}
+
+	void split_2d_selection (const FeatureSet& requested, FeatureSet& on_grid, FeatureSet& geometric)
+	{
+		geometric = requested;
+		for (auto F : { PixelIntensityFeatures::featureset, IntensityHistogramFeatures::featureset,
+			GLCMFeature::featureset, GLRLMFeature::featureset, GLDZMFeature::featureset, GLSZMFeature::featureset,
+			GLDMFeature::featureset, NGLDMfeature::featureset, NGTDMFeature::featureset, GaborFeature::featureset })
+			geometric.enableFeatures (F, false);
+		for (auto F : { FocusScoreFeature::featureset, PowerSpectrumFeature::featureset, SaturationFeature::featureset,
+			SharpnessFeature::featureset })
+			geometric.enableFeatures (F, false);
+		// PixelIntensityFeatures also provides HISTOGRAM, which its featureset leaves out so that
+		// *ALL_INTENSITY* does not request it
+		geometric.enableFeatures ({ Feature2D::HISTOGRAM }, false);
+
+		on_grid = requested;
+		on_grid.subtract (geometric);
+	}
+
+	size_t trivial_footprint_2d (const Environment& env, const LR& r, size_t n_rois)
+	{
+		size_t fp = r.get_ram_footprint_estimate (n_rois);
+		if (env.anisoOptions.customized())
+		{
+			const double area = env.anisoOptions.get_aniso_x() * env.anisoOptions.get_aniso_y();
+			if (area > 1.0)
+				fp = (size_t) (double(fp) * area);
+		}
+		return fp;
+	}
+
+	bool adopt_resampled_cloud_2d (LR& r)
+	{
+		// A ROI thinner than the factor's step maps to no virtual pixel at all: every virtual
+		// coordinate that would carry it truncates back to a physical one outside it
+		if (r.raw_pixels.empty())
+			return false;
+
+		r.aabb.init_x (r.raw_pixels[0].x);
+		r.aabb.init_y (r.raw_pixels[0].y);
+		for (const Pixel2& p : r.raw_pixels)
+		{
+			r.aabb.update_x (p.x);
+			r.aabb.update_y (p.y);
+		}
+		r.aux_area = (unsigned int) r.raw_pixels.size();
+		return true;
+	}
+
+	void report_unmeasurable_geometry_2d (LR& r, const FeatureSet& geometric, double ax, double ay)
+	{
+		std::cerr << "Warning: ROI " << r.label << " maps to no pixel at anisotropy " << ax << "," << ay
+			<< ", so its geometric features are reported as not available\n";
+
+		// as many values as the writers read for each feature
+		const double nan = std::numeric_limits<double>::quiet_NaN();
+		for (int f = (int) Feature2D::_FIRST_; f < (int) Feature2D::_COUNT_; f++)
+		{
+			if (! geometric.isEnabled ((Feature2D) f))
+				continue;
+			size_t n = 1;
+			switch ((Feature2D) f)
+			{
+			case Feature2D::ZERNIKE2D: n = ZernikeFeature::NUM_FEATURE_VALS; break;
+			case Feature2D::FRAC_AT_D: n = RadialDistributionFeature::num_features_FracAtD; break;
+			case Feature2D::MEAN_FRAC: n = RadialDistributionFeature::num_features_MeanFrac; break;
+			case Feature2D::RADIAL_CV: n = RadialDistributionFeature::num_features_RadialCV; break;
+			default: break;
+			}
+			r.fvals[f].assign (n, nan);
+		}
+	}
+
+	// Reduces the families 'selection' enables over the ROIs' cached pixels, then frees them. The
+	// user's selection is put back on the way out, a throw included.
+	static void reduce_trivial_batch_selection (Environment& env, std::vector<int>& Pending, const FeatureSet& selection)
+	{
+		struct Restore
+		{
+			Environment& env;
+			FeatureSet requested;
+			~Restore() { env.theFeatureSet = requested; }
+		} restore { env, env.theFeatureSet };
+
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
+		allocateTrivialRoisBuffers (Pending, env.roiData, env.hostCache);
+
+#ifdef DUMP_ALL_ROI
+		dump_all_roi();
+#endif
+
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
+		env.theFeatureSet = selection;
+		reduce_trivial_rois_manual (Pending, env);
+
+		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
+		freeTrivialRoisBuffers (Pending, env.roiData);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+	}
+
+	// Scans and reduces one batch of trivial ROIs. An anisotropic batch is scanned twice: the
+	// families defined on the image grid reduce the pixels as acquired, then the geometric families
+	// reduce the cloud resampled by the spacing. Each pass computes only its own families, so
+	// together they fill every requested feature once. After the second pass each ROI's box and
+	// pixel count describe the resampled cloud, as its contour does, which is the geometry the
+	// neighbor pass after the batches measures. A ROI the resampling leaves with no pixel has its
+	// geometric features reported as not available and is added to 'unmeasurable', which the
+	// neighbor pass leaves out.
+	static bool scan_reduce_trivial_batch (Environment& env, std::vector<int>& Pending, const std::string& intens_fpath, const std::string& label_fpath,
+		std::vector<int>& unmeasurable)
+	{
+		if (! env.anisoOptions.customized())
+		{
+			if (! scanTrivialRois (Pending, intens_fpath, label_fpath, env, env.theImLoader))
+				return false;
+			reduce_trivial_batch_selection (env, Pending, env.theFeatureSet);
+			return true;
+		}
+
+		FeatureSet on_grid, geometric;
+		split_2d_selection (env.theFeatureSet, on_grid, geometric);
+
+		if (on_grid.numOfEnabled (2))
+		{
+			if (! scanTrivialRois (Pending, intens_fpath, label_fpath, env, env.theImLoader))
+				return false;
+			reduce_trivial_batch_selection (env, Pending, on_grid);
+		}
+		if (! geometric.numOfEnabled (2))
+			return true;
+
+		const double ax = env.anisoOptions.get_aniso_x(),
+			ay = env.anisoOptions.get_aniso_y();
+		if (! scanTrivialRois_anisotropic (Pending, intens_fpath, label_fpath, env, env.theImLoader, ax, ay))
+			return false;
+		std::vector<int> measurable;
+		for (auto lab : Pending)
+		{
+			LR& r = env.roiData[lab];
+			if (adopt_resampled_cloud_2d (r))
+				measurable.push_back (lab);
+			else
+			{
+				report_unmeasurable_geometry_2d (r, geometric, ax, ay);
+				unmeasurable.push_back (lab);
+			}
+		}
+		if (! measurable.empty())
+			reduce_trivial_batch_selection (env, measurable, geometric);
+		return true;
+	}
+
 	bool processTrivialRois (Environment & env, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
 	{
-		std::vector<int> Pending;
+		std::vector<int> Pending, unmeasurable;
 		size_t batchDemand = 0;
 		int roiBatchNo = 1;
 
@@ -510,7 +695,7 @@ namespace Nyxus
 		{
 			LR& r = env.roiData[lab];
 
-			size_t itemFootprint = r.get_ram_footprint_estimate (trivRoiLabels.size());
+			size_t itemFootprint = trivial_footprint_2d (env, r, trivRoiLabels.size());
 
 			// Check if we are good to accumulate this ROI in the current batch or should close the batch and reduce it
 			if (batchDemand + itemFootprint < memory_limit)
@@ -531,27 +716,8 @@ namespace Nyxus
 						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-				if (env.anisoOptions.customized() == false)
-					scanTrivialRois (Pending, intens_fpath, label_fpath, env, env.theImLoader);
-				else
-				{
-					double ax = env.anisoOptions.get_aniso_x(), 
-						ay = env.anisoOptions.get_aniso_y();
-					scanTrivialRois_anisotropic (Pending, intens_fpath, label_fpath, env, env.theImLoader, ax, ay);
-				}
-
-				// Allocate memory
-				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
-				allocateTrivialRoisBuffers (Pending, env.roiData, env.hostCache);
-
-				// Reduce them
-				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
-				// reduce_trivial_rois(Pending);	
-				reduce_trivial_rois_manual (Pending, env);
-
-				// Free memory
-				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
-				freeTrivialRoisBuffers (Pending, env.roiData);	// frees what's allocated by feed_pixel_2_cache() and allocateTrivialRoisBuffers()
+				if (! scan_reduce_trivial_batch (env, Pending, intens_fpath, label_fpath, unmeasurable))
+					return false;
 
 				// Reset the RAM footprint accumulator
 				batchDemand = 0;
@@ -589,34 +755,8 @@ namespace Nyxus
 					std::cout << ">>> (ROIs " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-				if (env.anisoOptions.customized() == false)
-				{
-					scanTrivialRois (Pending, intens_fpath, label_fpath, env, env.theImLoader);
-				}
-				else
-				{
-					double	ax = env.anisoOptions.get_aniso_x(), 
-								ay = env.anisoOptions.get_aniso_y();
-					scanTrivialRois_anisotropic (Pending, intens_fpath, label_fpath, env, env.theImLoader, ax, ay);
-				}
-
-			// Allocate memory
-			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");
-			allocateTrivialRoisBuffers (Pending, env.roiData, env.hostCache);
-
-			// Dump ROIs for use in unit testing
-#ifdef DUMP_ALL_ROI
-			dump_all_roi();
-#endif
-
-			// Reduce them
-			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing ROIs\n");
-			//reduce_trivial_rois(Pending):
-			reduce_trivial_rois_manual (Pending, env);
-
-			// Free memory
-			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tfreeing ROI buffers\n");
-			freeTrivialRoisBuffers (Pending, env.roiData);
+			if (! scan_reduce_trivial_batch (env, Pending, intens_fpath, label_fpath, unmeasurable))
+				return false;
 
 			#ifdef WITH_PYTHON_H
 			// Allow keyboard interrupt
@@ -629,7 +769,18 @@ namespace Nyxus
 		}
 
 		VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\treducing neighbor features and their depends for all ROIs\n");
-		reduce_neighbors_and_dependencies_manual (env);
+		// A ROI with no resampled geometry has no contour for the neighbor pass to measure, so the
+		// pass runs without it and its geometric features stay not available
+		if (unmeasurable.empty())
+			reduce_neighbors_and_dependencies_manual (env);
+		else
+		{
+			const auto all = env.uniqueLabels;
+			for (auto lab : unmeasurable)
+				env.uniqueLabels.erase (lab);
+			reduce_neighbors_and_dependencies_manual (env);
+			env.uniqueLabels = all;
+		}
 
 		return true;
 	}

@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <cassert>
 #include <fstream>
 #include <functional>
 #include <string>
@@ -23,12 +22,10 @@ namespace Nyxus
 {
 	// The effective 3D voxel spacing of a slide. Explicit --aniso* (anisoOptions.customized())
 	// always wins. Otherwise, when --use-physical-spacing is on, the slide's OME PhysicalSize*
-	// ratio-normalized so the smallest axis == 1 (the anisotropic path resamples by the
-	// multiplier, so ratios - not absolute units - are what correct for non-cubic voxels).
-	// Returns false + (1,1,1) when the grid is isotropic. Every pass over a volume resolves its
-	// spacing here -- the prescan and phase-1 bounding boxes, the memory estimate, the in-RAM
-	// voxel caches and the out-of-core clouds -- so one slide cannot mix resampled and
-	// unresampled geometry.
+	// ratio-normalized so the smallest axis == 1, so shape is reported in units of the finest
+	// axis. Returns false + (1,1,1) when the grid is isotropic. A volume's voxels are cached on
+	// the grid they were acquired on; the spacing resolved here travels with each ROI
+	// (BasicLR::spacing_*) to the shape family, the only one that measures physical geometry.
 	bool resolve_anisotropy (const AnisotropyOptions& aniso, bool use_physical_spacing, const SlideProps& p, double& ax, double& ay, double& az)
 	{
 		ax = ay = az = 1.0;
@@ -174,100 +171,6 @@ namespace Nyxus
 	}
 
 	//
-	// Loads ROI voxels into voxel clouds
-	//
-	bool scanTrivialRois_3D_anisotropic(
-		Environment& env,
-		const std::vector<int>& batch_labels,
-		const std::string& intens_fpath,
-		const std::string& label_fpath,
-		size_t t_index,
-		size_t channel,
-		double aniso_x,
-		double aniso_y,
-		double aniso_z)
-	{
-		// Sort the batch's labels to enable binary searching in it
-		std::vector<int> whiteList = batch_labels;
-		std::sort (whiteList.begin(), whiteList.end());
-
-		if (! open_scanned_pair (env, batch_labels.empty() ? -1 : env.roiData[batch_labels[0]].slide_idx, intens_fpath, label_fpath))
-			return false;
-
-		const size_t
-			w = env.theImLoader.get_full_width(),
-			h = env.theImLoader.get_full_height(),
-			d = env.theImLoader.get_full_depth();
-
-		// virtual dimensions
-		const size_t virt_h = h * aniso_y,
-			virt_w = w * aniso_x,
-			virt_d = d * aniso_z;
-
-		// Stream this (channel, timeframe)'s volume plane by plane and fill each virtual voxel with
-		// the physical voxel nearest to it. A virtual plane's physical plane never decreases with
-		// its index, so each virtual plane is filled when its physical plane arrives.
-		size_t vZ = 0;	// the next virtual plane to fill
-		bool ok = stream_volume_checked (env.theImLoader, channel, t_index, intens_fpath, label_fpath,
-			[&](size_t z, const std::vector<uint32_t>& dataI, const std::vector<uint32_t>& dataL)
-			{
-				for (; vZ < virt_d; vZ++)
-				{
-					const size_t pZ = vZ / aniso_z + 0.5;
-					if (pZ > z)
-						break;		// its physical plane is still to come
-					if (pZ < z)
-						continue;
-
-					for (size_t vY = 0; vY < virt_h; vY++)
-						for (size_t vX = 0; vX < virt_w; vX++)
-						{
-							// physical position; casting from virtual to physical can land outside
-							// the physical bounds
-							const size_t pY = vY / aniso_y + 0.5,
-								pX = vX / aniso_x + 0.5;
-							if (pX >= w || pY >= h)
-								continue;
-							const size_t i = pY * w + pX;
-
-							// skip non-mask pixels
-							auto lbl = dataL[i];
-							if (!lbl)
-								continue;
-
-							// skip this ROI if the label isn't in the pending set of a multi-ROI mode
-							if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), lbl))
-								continue;
-
-							// collapse all the labels to one if single-ROI mde is requested
-							if (env.singleROI)
-								lbl = 1;
-
-							// cache this voxel
-							LR& r = env.roiData[lbl];
-							feed_pixel_2_cache_3D_LR (vX, vY, vZ, dataI[i], r);
-						}
-				}
-			});
-		if (! ok)
-		{
-			// the pair this function opened is its to release on the way out too
-			env.theImLoader.close();
-			return false;
-		}
-
-		// The scan is finished and nothing below reads the pair, so it is released here rather
-		// than after the interrupt check, which leaves by a throw.
-		env.theImLoader.close();
-
-	#ifdef WITH_PYTHON_H
-		// allow keyboard interrupt
-		if (PyErr_CheckSignals() != 0)
-			throw pybind11::error_already_set();
-	#endif
-		return true;
-	}
-	//
 	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
 	//
 	bool scan_trivial_wholevolume (
@@ -291,53 +194,6 @@ namespace Nyxus
 			});
 	}
 
-	//
-	// Reads pixels of whole slide 'intens_fpath' into virtual ROI 'vroi'
-	//
-	bool scan_trivial_wholevolume_anisotropic (
-		LR& vroi,
-		const std::string& intens_fpath,
-		ImageLoader& ilo,
-		double aniso_x,
-		double aniso_y,
-		double aniso_z,
-		size_t channel,
-		size_t timeframe)
-	{
-		const size_t fullW = ilo.get_full_width(),
-			fullH = ilo.get_full_height(),
-			fullD = ilo.get_full_depth();
-
-		const size_t vh = (size_t) (double(fullH) * aniso_y),
-			vw = (size_t) (double(fullW) * aniso_x),
-			vd = (size_t) (double(fullD) * aniso_z);
-
-		// Stream the X*Y*Z volume of this (channel, timeframe) plane by plane and fill each virtual
-		// voxel with the physical voxel it falls in, clamped against float rounding at the ratio
-		// boundary. A virtual plane's physical plane never decreases with its index, so each
-		// virtual plane is filled when its physical plane arrives. Whole-slide has no mask.
-		size_t z = 0;	// the next virtual plane to fill
-		return stream_volume_checked (ilo, channel, timeframe, intens_fpath, "",
-			[&](size_t pz, const std::vector<uint32_t>& dataI, const std::vector<uint32_t>&)
-			{
-				for (; z < vd; z++)
-				{
-					const size_t ph_z = (std::min<size_t>) ((size_t) (double(z) / aniso_z), fullD - 1);
-					if (ph_z > pz)
-						break;		// its physical plane is still to come
-					if (ph_z < pz)
-						continue;
-
-					for (size_t y = 0; y < vh; y++)
-						for (size_t x = 0; x < vw; x++)
-						{
-							const size_t ph_x = (std::min<size_t>) ((size_t) (double(x) / aniso_x), fullW - 1),
-								ph_y = (std::min<size_t>) ((size_t) (double(y) / aniso_y), fullH - 1);
-							feed_pixel_2_cache_3D_LR ((int) x, (int) y, (int) z, dataI[ph_y * fullW + ph_x], vroi);
-						}
-				}
-			});
-	}
 
 
 	bool processTrivialRois_3D (Environment & env, size_t sidx, size_t t_index, size_t channel, const std::vector<int>& trivRoiLabels, const std::string& intens_fpath, const std::string& label_fpath, size_t memory_limit)
@@ -371,29 +227,10 @@ namespace Nyxus
 						std::cout << ">>> (ROI labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-				// --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
-				double ax, ay, az;
-				if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
-				{
-					if (! scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel))
-						return false;
-				}
-				else
-				{
-					if (! scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az))
-						return false;
-
-					// The ROI's extent and voxel count describe the cloud that was just cached.
-					// gatherRoisMetrics_3D recorded them from the PHYSICAL grid, and the anisotropic
-					// scan caches the resampled (virtual) cloud, which has both a different extent and
-					// a different voxel count -- and aux_area divides every feature that averages.
-					for (auto lbl : Pending)
-					{
-						LR& r = env.roiData[lbl];
-						r.aabb.update_from_voxelcloud (r.raw_pixels_3D);
-						r.aux_area = (unsigned int) r.raw_pixels_3D.size();
-					}
-				}
+				// the voxels as acquired, whatever the spacing; the shape family takes the spacing
+				// from each ROI (gatherRoisMetrics_3D recorded it)
+				if (! scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel))
+					return false;
 
 				// Allocate memory
 				VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n";)
@@ -442,41 +279,9 @@ namespace Nyxus
 				std::cout << ">>> (labels " << Pending[0] << " ... " << Pending[Pending.size() - 1] << ")\n";
 				);
 
-			// --aniso* (explicit) or opt-in OME physical spacing selects the anisotropic path
-			double ax, ay, az;
-			if (! resolve_slide_anisotropy (env, sidx, ax, ay, az))
-			{
-				if (! scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel))
-					return false;
-			}
-			else
-			{
-				if (! scanTrivialRois_3D_anisotropic (env, Pending, intens_fpath, label_fpath, t_index, channel, ax, ay, az))
-					return false;
-
-				// rescan and update ROI's AABB and voxel count -- see the identical fix (and
-				// its rationale) in the main batch loop above.
-				for (auto lbl : Pending)
-				{
-					LR& r = env.roiData[lbl];
-					r.aabb.update_from_voxelcloud(r.raw_pixels_3D);
-					r.aux_area = (unsigned int) r.raw_pixels_3D.size();
-				}
-			}
-
-			for (auto lab : Pending)
-			{
-				LR& r = env.roiData[lab];
-				for (Pixel3& vox : r.raw_pixels_3D)
-				{
-					assert (vox.x >= r.aabb.get_xmin());
-					assert (vox.x <= r.aabb.get_xmax());
-					assert (vox.y >= r.aabb.get_ymin());
-					assert (vox.y <= r.aabb.get_ymax());
-					assert (vox.z >= r.aabb.get_zmin());
-					assert (vox.z <= r.aabb.get_zmax());
-				}
-			}
+			// the voxels as acquired, as in the batch loop above
+			if (! scanTrivialRois_3D (env, Pending, intens_fpath, label_fpath, t_index, channel))
+				return false;
 
 			// Allocate memory
 			VERBOSLVL2 (env.get_verbosity_level(), std::cout << "\tallocating ROI buffers\n");

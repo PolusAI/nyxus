@@ -185,43 +185,45 @@ void test_3d_layouta_unreadable_plane_fails_the_pass_mechanics()
     fs::remove_all (s.dir);
 }
 
-// An anisotropic 2.5D pass over a multi-tile slide. The virtual grid is walked by mapping each
-// virtual pixel back to its physical one and taking the tile from that, which cannot ask for a
-// tile the slide does not have. What this discriminates: deriving the tile from a VIRTUAL tile
-// width instead -- (tile * factor), truncated -- lets the virtual extent exceed tile_count *
-// virtual_tile_width, so the last column asks for one tile past the end. Here 32 px of 16-px tiles
-// at 0.8 gives a virtual width of 25 over a virtual tile of 12, and virtual column 24 asks for
-// tile 2 of 2. load_tile refuses it, and since the pass now carries its scan's status, an
-// ordinary anisotropy factor fails the whole run on legitimate input.
+// An anisotropic 2.5D pass over a multi-tile slide reads the stack as acquired, every tile of every
+// plane once, and reports the values the isotropic pass reports: the factors reach the shape family
+// alone. What this discriminates: a pass that resamples by the factors walks a virtual grid whose
+// tile arithmetic can ask for a tile past the end of the grid (32 px of 16-px tiles at 0.8), and
+// whose duplicated and dropped voxels move every first-order value.
 void test_3d_layouta_anisotropic_tile_index_mechanics()
 {
     Z25Stack s;
     make_25d_stack (s, "aniso", 32, 32, 16, 2);   // a 2x2 tile grid
 
-    Environment e;
-    enable_3d_intensity (e);
-    prescan_25d_stack (e, s);
-    ASSERT_TRUE(e.set_ram_limit (64));
-    e.anisoOptions.set_aniso_x (0.8);
-    e.anisoOptions.set_aniso_y (0.8);
-    ASSERT_TRUE(e.anisoOptions.customized()) << "the anisotropic branch is the one under test";
+    auto run = [&](bool anisotropic) -> std::vector<std::vector<double>>
+    {
+        Environment e;
+        enable_3d_intensity (e);
+        prescan_25d_stack (e, s);
+        EXPECT_TRUE(e.set_ram_limit (64));
+        if (anisotropic)
+        {
+            e.anisoOptions.set_aniso_x (0.8);
+            e.anisoOptions.set_aniso_y (0.8);
+            EXPECT_TRUE(e.anisoOptions.customized());
+        }
 
-    ASSERT_TRUE(Nyxus::gatherRoisMetrics_25D (e, 0, s.int_pattern, s.seg_pattern, s.z_indices));
-    ASSERT_EQ(e.uniqueLabels.size(), (size_t) 1);
-    for (auto lab : e.uniqueLabels)
-        e.roiData[lab].initialize_fvals();
-    std::vector<int> triv (e.uniqueLabels.begin(), e.uniqueLabels.end());
+        EXPECT_TRUE(Nyxus::gatherRoisMetrics_25D (e, 0, s.int_pattern, s.seg_pattern, s.z_indices));
+        EXPECT_EQ(e.uniqueLabels.size(), (size_t) 1);
+        for (auto lab : e.uniqueLabels)
+            e.roiData[lab].initialize_fvals();
+        std::vector<int> triv (e.uniqueLabels.begin(), e.uniqueLabels.end());
 
-    ASSERT_TRUE(Nyxus::processTrivialRois_25D (e, triv, s.int_pattern, s.seg_pattern,
-        e.get_ram_limit(), s.z_indices))
-        << "an ordinary anisotropy factor must not ask for a tile past the end of the grid";
+        EXPECT_TRUE(Nyxus::processTrivialRois_25D (e, triv, s.int_pattern, s.seg_pattern,
+            e.get_ram_limit(), s.z_indices));
+        return e.roiData[1].fvals;
+    };
+    auto iso = run (false), aniso = run (true);
 
-    // and the walk reached the ROI rather than stopping short: the reduce, which frees the cloud
-    // behind it, produced values inside the range the ROI's voxels carry
-    const double vmin = e.roiData[1].get_fvals ((int) Nyxus::Feature3D::MIN)[0],
-        vmax = e.roiData[1].get_fvals ((int) Nyxus::Feature3D::MAX)[0];
-    EXPECT_GT(vmax, 0.0);
-    EXPECT_GE(vmax, vmin);
+    for (auto f : { Nyxus::Feature3D::MIN, Nyxus::Feature3D::MAX, Nyxus::Feature3D::MEAN,
+        Nyxus::Feature3D::ENERGY, Nyxus::Feature3D::STANDARD_DEVIATION })
+        EXPECT_EQ(aniso[(int) f][0], iso[(int) f][0]) << "feature " << (int) f << " moved with the factors";
+    EXPECT_GT(iso[(int) Nyxus::Feature3D::MAX][0], 0.0) << "the walk reached the ROI";
 
     fs::remove_all (s.dir);
 }
@@ -251,99 +253,14 @@ static void make_25d_full_plane (Z25Stack& s, const std::string& tag, uint32_t W
     s.seg_pattern = (s.dir / "m_z*.tif").string();
 }
 
-// The anisotropic scan's MAPPING, not just its grid walk: every virtual voxel must carry the
-// intensity of the physical pixel it maps back to, at the virtual coordinate it was asked for.
+// The ROI's extent and voxel count describe the cloud the scan caches, which is the stack as
+// acquired whatever the factors, and the ROI carries the factors for the shape family. The extent
+// sizes aux_image_cube, which calculate_from_pixelcloud fills by coordinate, and the voxel count
+// divides every feature that averages.
 //
-// What this discriminates, and why the other anisotropic fixtures cannot: the mapping is
-// verifiably identical to any plausible wrong one when the factors are 1, when they divide
-// exactly (0.5, 2.0), when they are equal on both axes, or when the slide is a single tile --
-// which is every anisotropic fixture in the tree. This slide is oblong (48x32 over 16-px tiles,
-// so 3 tile columns by 2 rows), its factors differ per axis and divide nothing exactly (0.6 and
-// 1.4), and one of them is above 1, so the virtual extent exceeds the physical one. A transposed
-// map, an off-by-one reverse map, or a bound that compares virtual coordinates against physical
-// extents each change the values or the count here.
-void test_3d_layouta_anisotropic_resampling_mechanics()
-{
-    const uint32_t W = 48, H = 32, TILE = 16;
-    const double AX = 0.6, AY = 1.4;
-
-    Z25Stack s;
-    make_25d_full_plane (s, "resample", W, H, TILE);
-
-    Environment e;
-    enable_3d_intensity (e);
-    prescan_25d_stack (e, s);
-    ASSERT_TRUE(e.set_ram_limit (64));
-
-    // the same factors the scan below is given: phase 1 reads them to build the ROI's extent, so
-    // leaving them unset would size the ROI from the physical grid while the scan caches a virtual
-    // cloud, and the two would be describing different geometry
-    e.anisoOptions.set_aniso_x (AX);
-    e.anisoOptions.set_aniso_y (AY);
-    ASSERT_TRUE(e.anisoOptions.customized());
-
-    ASSERT_TRUE(Nyxus::gatherRoisMetrics_25D (e, 0, s.int_pattern, s.seg_pattern, s.z_indices));
-    ASSERT_EQ(e.uniqueLabels.size(), (size_t) 1);
-    std::vector<int> batch (e.uniqueLabels.begin(), e.uniqueLabels.end());
-    for (auto lab : batch)
-        e.roiData[lab].initialize_fvals();
-
-    ASSERT_TRUE(Nyxus::scanTrivialRois_25D_anisotropic (e, batch, s.int_pattern, s.seg_pattern,
-        s.z_indices, AX, AY, 1.0));
-
-    LR& r = e.roiData[1];
-    const size_t vw = (size_t) (double(W) * AX), vh = (size_t) (double(H) * AY);
-    EXPECT_EQ(r.raw_pixels_3D.size(), vw * vh)
-        << "one virtual voxel per cell of the virtual grid: " << vw << " x " << vh;
-
-    // every voxel, at its own coordinate, carries its physical pixel's value
-    size_t checked = 0, wrong = 0;
-    std::string first_wrong;
-    for (auto& px : r.raw_pixels_3D)
-    {
-        const size_t vc = (size_t) px.x, vr = (size_t) px.y;
-        ASSERT_LT(vc, vw);
-        ASSERT_LT(vr, vh);
-        const uint32_t ph_col = (uint32_t) (double(vc) / AX), ph_row = (uint32_t) (double(vr) / AY);
-        ASSERT_LT(ph_col, W);
-        ASSERT_LT(ph_row, H);
-        const uint32_t want = plane_enc (W, ph_col, ph_row);
-        if ((uint32_t) px.inten != want)
-        {
-            if (wrong == 0)
-                first_wrong = "virtual (" + std::to_string(vc) + "," + std::to_string(vr) + ") -> physical ("
-                    + std::to_string(ph_col) + "," + std::to_string(ph_row) + "): got "
-                    + std::to_string((uint32_t) px.inten) + ", want " + std::to_string(want);
-            wrong++;
-        }
-        checked++;
-    }
-    EXPECT_EQ(wrong, (size_t) 0) << wrong << " of " << checked << " voxels carry the wrong pixel; first: " << first_wrong;
-    EXPECT_EQ(checked, vw * vh);
-
-    // and the far corner is present: a virtual row past the physical height must not be dropped
-    const size_t last_vr = vh - 1;
-    EXPECT_GT(last_vr, (size_t) H - 1) << "the fixture must have more virtual rows than physical ones";
-    bool saw_last_row = false;
-    for (auto& px : r.raw_pixels_3D)
-        if ((size_t) px.y == last_vr) { saw_last_row = true; break; }
-    EXPECT_TRUE(saw_last_row) << "the last virtual row is part of the cloud";
-
-    fs::remove_all (s.dir);
-}
-
-
-// The ROI's extent and voxel count must describe the cloud the anisotropic scan cached. The extent
-// sizes aux_image_cube and calculate_from_pixelcloud writes each voxel at its own coordinate, so a
-// voxel outside the extent lands in the cube's next row, or past its end from the last row; the
-// voxel count divides every feature that averages.
-//
-// What this discriminates, and why the other anisotropic fixtures cannot: an extent taken from the
-// ROI's PHYSICAL box and scaled agrees with the scan at 1, at factors that divide exactly, and at
-// every factor below 2 -- which is all of them elsewhere in this tree. The two part company once a
-// factor passes 2, because the scaled box ends at (last physical column * factor) while the scan
-// runs to the virtual width, (width * factor) - 1. Here x is 2.5, so they differ by a column, and
-// y is 1.4, so the axes cannot agree by being equal.
+// What this discriminates: x is 2.5 and y is 1.4, so a box scaled by the factors reaches column
+// 118 and row 43 where the cloud ends at 47 and 31, and a resampled cloud holds 120 x 44 voxels
+// where the stack has 48 x 32.
 void test_3d_layouta_anisotropic_cloud_fits_its_aabb_mechanics()
 {
     const uint32_t W = 48, H = 32, TILE = 16;
@@ -370,33 +287,31 @@ void test_3d_layouta_anisotropic_cloud_fits_its_aabb_mechanics()
     ASSERT_TRUE(Nyxus::processTrivialRois_25D (e, triv, s.int_pattern, s.seg_pattern,
         e.get_ram_limit(), s.z_indices));
 
-    // the virtual grid, derived the way the scan derives it
-    const size_t vw = (size_t)(double(W) * AX), vh = (size_t)(double(H) * AY);
-    ASSERT_GT(vw, (size_t)(double(W - 1) * AX) + 1)
-        << "the fixture's x factor must be one where a scaled physical box falls short of the virtual grid";
-
     LR& r = e.roiData[1];
     EXPECT_EQ((size_t) r.aabb.get_xmin(), (size_t) 0);
     EXPECT_EQ((size_t) r.aabb.get_ymin(), (size_t) 0);
-    EXPECT_EQ((size_t) r.aabb.get_xmax(), vw - 1) << "the extent's last column is the scan's last virtual column";
-    EXPECT_EQ((size_t) r.aabb.get_ymax(), vh - 1) << "the extent's last row is the scan's last virtual row";
-    EXPECT_EQ((size_t) r.aux_area, vw * vh) << "the voxel count is the virtual grid's, not the physical one's";
+    EXPECT_EQ((size_t) r.aabb.get_xmax(), (size_t) W - 1) << "the extent's last column is the stack's";
+    EXPECT_EQ((size_t) r.aabb.get_ymax(), (size_t) H - 1) << "the extent's last row is the stack's";
+    EXPECT_EQ((size_t) r.aux_area, (size_t) W * H) << "the voxel count is the stack's";
+    EXPECT_DOUBLE_EQ(r.spacing_x, AX);
+    EXPECT_DOUBLE_EQ(r.spacing_y, AY);
+    EXPECT_DOUBLE_EQ(r.spacing_z, 1.0);
 
     fs::remove_all (s.dir);
 }
 
-// A ROI thinner than the factor's step maps to no virtual voxel at all: at 0.3 the scan's virtual
-// columns land on physical 0, 3, 6, 10, ... so a ROI one pixel wide at column 5 is never sampled,
-// and the same holds for its row. There is no cloud to take an extent or a voxel count from, so
-// the pass names the ROI and refuses instead of reducing a cube of zeros.
-void test_3d_layouta_anisotropic_vanished_roi_is_refused_mechanics()
+// A one-pixel ROI at factors 0.3 is featurized like any other: the stack is read as acquired, so
+// its pixel is cached and reduced. What this discriminates: a pass that resampled by 0.3 would
+// read physical columns 0, 3, 6, 10, ... only, never reach column 5, and have no voxel of this ROI
+// to featurize.
+void test_3d_layouta_anisotropic_thin_roi_is_featurized_mechanics()
 {
     const uint32_t W = 48, H = 32, TILE = 16, RX = 5, RY = 5;
     const double AX = 0.3, AY = 0.3;
 
     Z25Stack s;
     make_25d_full_plane (s, "aniso_vanished", W, H, TILE);
-    // one pixel, at a position no virtual coordinate maps back to
+    // one pixel, at a position a 0.3 resampling never reads
     write_tiled_plane_u16 (s.dir / "m_z1.tif", W, H, TILE,
         [RX, RY](uint32_t x, uint32_t y) { return (uint16_t)((x == RX && y == RY) ? 1 : 0); });
     s.rx0 = RX; s.rx1 = RX + 1; s.ry0 = RY; s.ry1 = RY + 1;
@@ -410,15 +325,16 @@ void test_3d_layouta_anisotropic_vanished_roi_is_refused_mechanics()
     ASSERT_TRUE(e.anisoOptions.customized());
 
     ASSERT_TRUE(Nyxus::gatherRoisMetrics_25D (e, 0, s.int_pattern, s.seg_pattern, s.z_indices));
-    ASSERT_EQ(e.uniqueLabels.size(), (size_t) 1) << "phase 1 finds the ROI on the physical grid";
+    ASSERT_EQ(e.uniqueLabels.size(), (size_t) 1);
     std::vector<int> triv (e.uniqueLabels.begin(), e.uniqueLabels.end());
     for (auto lab : triv)
         e.roiData[lab].initialize_fvals();
 
-    EXPECT_FALSE(Nyxus::processTrivialRois_25D (e, triv, s.int_pattern, s.seg_pattern,
-        e.get_ram_limit(), s.z_indices))
-        << "a ROI the resampling drops cannot be featurized, and the pass says so";
-    EXPECT_TRUE(e.roiData[1].raw_pixels_3D.empty()) << "and it is empty because the scan reached no voxel of it";
+    ASSERT_TRUE(Nyxus::processTrivialRois_25D (e, triv, s.int_pattern, s.seg_pattern,
+        e.get_ram_limit(), s.z_indices)) << "a one-pixel ROI is featurized whatever the factors";
+    const double want = plane_enc (W, RX, RY);
+    EXPECT_EQ(e.roiData[1].get_fvals ((int) Nyxus::Feature3D::MIN)[0], want);
+    EXPECT_EQ(e.roiData[1].get_fvals ((int) Nyxus::Feature3D::MAX)[0], want);
 
     fs::remove_all (s.dir);
 }

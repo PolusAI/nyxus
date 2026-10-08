@@ -247,6 +247,7 @@ public:
 		// Read pixels
 		for (auto& pxl : labels_raw_pixels)
 		{
+			aabb.require_contains (pxl.x, pxl.y);
 			auto x = pxl.x - aabb.get_xmin(),
 				y = pxl.y - aabb.get_ymin();
 			_pix_plane[y * width + x] = pxl.inten;
@@ -297,6 +298,7 @@ public:
 			ymin = original_aabb.get_ymin();
 		for (auto& pxl : labels_raw_pixels)
 		{
+			original_aabb.require_contains (pxl.x, pxl.y);
 			auto x = pxl.x - xmin,
 				y = pxl.y - ymin;
 			_pix_plane[y * width + x] = pxl.inten;
