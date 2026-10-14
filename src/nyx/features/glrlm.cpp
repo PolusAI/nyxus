@@ -378,6 +378,8 @@ void GLRLMFeature::calc_SRE(AngledFtrs& af)
 			}
 		}
 
+		// Run lengths and grey levels are squared in double: j^2 passes INT_MAX at a run of 46,341,
+		// and a grey level times a run passes UINT_MAX once their product reaches 65,536.
 		for (int j = 1; j <= Nr; ++j) {
 			f += rj[j] / (double(j) * double(j));
 		}
@@ -597,7 +599,7 @@ void GLRLMFeature::calc_GLV(AngledFtrs& af)
 		double mu = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
-			double inten = (double) I[i-1];
+			auto inten = I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
 				mu += P.matlab(i, j) / sum_p[ai] * inten;
@@ -607,7 +609,7 @@ void GLRLMFeature::calc_GLV(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
-			double inten = (double) I[i-1];
+			auto inten = I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
 				double mu2 = (inten - mu) * (inten - mu);
@@ -714,7 +716,7 @@ void GLRLMFeature::calc_LGLRE (AngledFtrs& af)
 			double inten = (double) I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) / double(inten*inten);
+				f += P.matlab(i, j) / (inten * inten);
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -746,7 +748,7 @@ void GLRLMFeature::calc_HGLRE(AngledFtrs& af)
 			double inten = (double) I[i - 1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * double(inten * inten);
+				f += P.matlab(i, j) * (inten * inten);
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -778,7 +780,7 @@ void GLRLMFeature::calc_SRLGLE(AngledFtrs& af)
 			double inten = (double) I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) / double(inten * inten * j * j);
+				f += P.matlab(i, j) / (inten * inten * (double(j) * double(j)));
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -810,7 +812,7 @@ void GLRLMFeature::calc_SRHGLE(AngledFtrs& af)
 			double inten = (double) I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * double(inten * inten) / (double(j) * double(j));
+				f += P.matlab(i, j) * (inten * inten) / (double(j) * double(j));
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -841,7 +843,7 @@ void GLRLMFeature::calc_LRLGLE(AngledFtrs& af)
 			double inten = (double) I[i-1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * (double(j) * double(j)) / double(inten*inten);
+				f += P.matlab(i, j) * (double(j) * double(j)) / (inten * inten);
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -873,7 +875,7 @@ void GLRLMFeature::calc_LRHGLE(AngledFtrs& af)
 			double inten = (double) I[i - 1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * double(inten * inten * j * j);
+				f += P.matlab(i, j) * (inten * inten * (double(j) * double(j)));
 			}
 		}
 		double retval = f / double(sum_p[ai]);
