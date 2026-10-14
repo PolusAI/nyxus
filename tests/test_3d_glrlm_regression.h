@@ -1,14 +1,11 @@
 #pragma once
 
-#include <gtest/gtest.h>
+// gtest, <iostream>, fs and the roi_cache graph arrive with test_3d_glrlm_common.h.
 #include <iomanip>
-#include <iostream>
 #include <tuple>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
-#include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glrlm.h"
-#include "../src/nyx/helpers/fsystem.h"
 #include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
 #include "test_3d_glrlm_common.h"   // make_glrlm3d_settings
 
