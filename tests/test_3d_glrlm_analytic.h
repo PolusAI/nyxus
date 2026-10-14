@@ -17,7 +17,7 @@ static void run_3d_glrlm_on_volume (
     int w, int h, int d)
 {
     D3_GLRLM_feature f;
-    run_3d_feature_on_volume (fvals, voxels, w, h, d, make_glrlm3d_settings (64, 0), f);
+    run_3d_feature_on_volume (fvals, voxels, w, h, d, make_glrlm3d_settings (64/*greydepth, inert for GLRLM*/, 0/*no binning*/), f);
 }
 
 static void assert_3d_glrlm_closed_form (const std::vector<std::vector<double>>& fvals, Feature3D fcode, int angle, double expected)
@@ -47,12 +47,12 @@ void test_3d_glrlm_long_run_emphasis_analytic()
 
     const int along_x = 12;
     const double L2 = double(L) * double(L);
-    assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRE, along_x, 1.0 / L2);
-    assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRE, along_x, L2);
-    assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRLGLE, along_x, 0.625 / L2);
-    assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRHGLE, along_x, 2.5 / L2);
-    assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRLGLE, along_x, 0.625 * L2);
-    assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRHGLE, along_x, 2.5 * L2);
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRE, along_x, 1.0 / L2));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRE, along_x, L2));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRLGLE, along_x, 0.625 / L2));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRHGLE, along_x, 2.5 / L2));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRLGLE, along_x, 0.625 * L2));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRHGLE, along_x, 2.5 * L2));
 }
 
 // bench_glrlm_3d_high_grey_pair -- two adjacent voxels at intensities 1 and G = 70,000. Every one of
@@ -73,11 +73,11 @@ void test_3d_glrlm_high_grey_level_emphasis_analytic()
         high = (1.0 + G * G) / 2.0;
     for (int angle = 0; angle < 13; angle++)
     {
-        assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LGLRE, angle, low);
-        assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRLGLE, angle, low);
-        assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRLGLE, angle, low);
-        assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_HGLRE, angle, high);
-        assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRHGLE, angle, high);
-        assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRHGLE, angle, high);
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LGLRE, angle, low));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRLGLE, angle, low));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRLGLE, angle, low));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_HGLRE, angle, high));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRHGLE, angle, high));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRHGLE, angle, high));
     }
 }
