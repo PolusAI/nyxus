@@ -356,6 +356,7 @@ Tests reaching it today: `test_3d_glrlm_analytic.h`.
 | Why it exists | the six grey-level emphases in all 13 directions, with `G^2` past `UINT_MAX` |
 
 Tests reaching it today: `test_3d_glrlm_analytic.h`.
+
 ---
 
 ## `bench_constant_roi_3d` — a nonempty ROI of one intensity
