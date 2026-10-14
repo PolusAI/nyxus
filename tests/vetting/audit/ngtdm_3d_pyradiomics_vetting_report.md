@@ -536,9 +536,14 @@ just as well.
 
 **The out-of-core path** is asserted against the same oracle in
 `tests/python/test_3d_ngtdm_pyradiomics.py`, on a 24×60×60 ellipsoid (37,792 voxels in an
-86,400-voxel box, 3,664 at level 0) at `ram_limit` 1000 MB and 1 MB; the 1 MB run is reported
-oversized and goes through `osized_calculate()`. The in-RAM/out-of-core equality test in
-`test_ooc_mechanics.py` uses a whole-volume mask and cannot reach this case.
+86,400-voxel box, 3,664 at level 0) at `ram_limit` 1000 MB and 1 MB, each at `NGTDM_RADIUS` 1 and 2
+(PyRadiomics `distances=[1]` and `[1, 2]`); the test reads the run's log to confirm the 1 MB run is
+processed as oversized and goes through `osized_calculate()`. Radius 1 is the default, so it cannot
+show that a path reads the requested radius; radius 2 can, and with `osized_calculate()` held at
+radius 1 the out-of-core radius-2 case is the one that fails. The generator cross-checks both
+radii's goldens against its numpy NGTDM (worst 1.6e-15 at radius 1, 6.9e-16 at radius 2). The
+in-RAM/out-of-core equality test in `test_ooc_mechanics.py` uses a whole-volume mask and cannot
+reach this case.
 
 ## Voxels with no ROI neighbour: Nyxus follows IBSI, so the oracle is MIRP
 

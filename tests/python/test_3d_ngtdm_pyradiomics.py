@@ -9,13 +9,17 @@ test_ooc_mechanics.py::test_ooc_3d_ngtdm_matches_in_ram_mechanics holds the two 
 a whole-volume mask, which has no background in its bounding box; two paths that both took background
 into the neighbourhood would agree there. This holds each of them to the oracle instead.
 
+Both paths are held at NGTDM_RADIUS 1 and 2. Radius 1 is the default, so only radius 2 shows that a
+path reads the radius it is given rather than falling back to the default.
+
 Goldens: tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py (make_ooc_ellipsoid), which re-verifies
-NGTDM_3D_NONBOX_PYRADIOMICS below on every run.
+NGTDM_3D_NONBOX_PYRADIOMICS and NGTDM_3D_NONBOX_R2_PYRADIOMICS below on every run, each against the
+generator's independent numpy NGTDM as well.
 """
 import numpy as np
 import pytest
 
-import nyxus
+from test_3d_ngtdm_common import featurize_3d_ngtdm
 
 tifffile = pytest.importorskip("tifffile")
 
@@ -31,6 +35,18 @@ NGTDM_3D_NONBOX_PYRADIOMICS = {
     "3NGTDM_CONTRAST": 0.5461918932271368,
     "3NGTDM_STRENGTH": 0.004876244827762912,
 }
+
+# The same at NGTDM_RADIUS=2: PyRadiomics distances=[1, 2], the solid Chebyshev cube -2..2 that Nyxus
+# scans (distances=[2] alone is the shell at exactly 2; the generator measures the difference).
+NGTDM_3D_NONBOX_R2_PYRADIOMICS = {
+    "3NGTDM_BUSYNESS": 186.19903681374532,
+    "3NGTDM_COARSENESS": 9.714731184455259e-05,
+    "3NGTDM_COMPLEXITY": 165.921455925093,
+    "3NGTDM_CONTRAST": 0.5318695400013043,
+    "3NGTDM_STRENGTH": 0.005007553909382228,
+}
+
+NGTDM_3D_NONBOX_BY_RADIUS = {1: NGTDM_3D_NONBOX_PYRADIOMICS, 2: NGTDM_3D_NONBOX_R2_PYRADIOMICS}
 
 
 def _make_nonbox_volume_pair(tmp_path):
@@ -49,25 +65,25 @@ def _make_nonbox_volume_pair(tmp_path):
     return str(intp), str(segp)
 
 
+@pytest.mark.parametrize("radius", [1, 2], ids=["r1", "r2"])
 @pytest.mark.parametrize("ram_limit", [RAM_LIMIT_LARGE_MB, 1], ids=["in_ram", "out_of_core"])
-def test_3d_ngtdm_nonbox_pyradiomics(tmp_path, ram_limit):
+def test_3d_ngtdm_nonbox_pyradiomics(tmp_path, ram_limit, radius):
     """The five 3D NGTDM features of the ellipsoid, at ram_limit 1000 MB (in-RAM) and 1 MB
-    (out-of-core), each against PyRadiomics at rel=1e-9.
+    (out-of-core) and at NGTDM_RADIUS 1 and 2, each against PyRadiomics at rel=1e-9. The run's own
+    log says which path it took.
 
     Raw levels (3ngtdm/greydepth=0) with Nyxus' zero-min correction match binWidth=1 on a ROI whose
     lowest level is 0, so no binning convention separates the two.
     """
     intp, segp = _make_nonbox_volume_pair(tmp_path)
-    nyx = nyxus.Nyxus3D(["*3D_NGTDM*"], ram_limit=ram_limit)
-    nyx.set_metaparam("3ngtdm/greydepth=0")
-    nyx.set_metaparam("3ngtdm/radius=1")
-    df = nyx.featurize_files([intp], [segp], False)
-    assert len(df) == 1
+    got, oversized = featurize_3d_ngtdm(intp, segp, ram_limit, radius)
+    assert oversized == (ram_limit == 1), "ram_limit=%d took the %s path" % (
+        ram_limit, "oversized" if oversized else "in-RAM")
 
-    row = df.iloc[0]
     bad = [
-        (f, float(row[f]), want)
-        for f, want in NGTDM_3D_NONBOX_PYRADIOMICS.items()
-        if abs(float(row[f]) - want) > 1e-9 * abs(want)
+        (f, got[f], want)
+        for f, want in NGTDM_3D_NONBOX_BY_RADIUS[radius].items()
+        if abs(got[f] - want) > 1e-9 * abs(want)
     ]
-    assert not bad, "3D NGTDM (ram_limit=%d) diverges from PyRadiomics: %r" % (ram_limit, bad)
+    assert not bad, "3D NGTDM (ram_limit=%d, radius %d) diverges from PyRadiomics: %r" % (
+        ram_limit, radius, bad)

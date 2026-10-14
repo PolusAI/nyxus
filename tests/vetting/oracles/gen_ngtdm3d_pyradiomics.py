@@ -67,7 +67,9 @@ properties of all three labels.
 
 The out-of-core path is held to PyRadiomics on a larger ellipsoid built in
 tests/python/test_3d_ngtdm_pyradiomics.py, whose footprint forces the oversized path; make_ooc_ellipsoid()
-here is the same volume, and its goldens are pinned in that file's NGTDM_3D_NONBOX_PYRADIOMICS.
+here is the same volume. Its goldens are pinned at NGTDM_RADIUS=1 and 2, in that file's
+NGTDM_3D_NONBOX_PYRADIOMICS and NGTDM_3D_NONBOX_R2_PYRADIOMICS, and each is cross-checked against
+reference_ngtdm() at the same radius before it is compared with the pins.
 
 Provenance: tool=pyradiomics 3.0.1 (SimpleITK 2.3.1, Python 3.8); env=nyxus_oracle (conda, needs
 Python <= 3.9); generator=tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py. Run offline; CI never
@@ -115,8 +117,11 @@ RADII = {
 BALL_TABLES = ("ngtdm_3d_pyradiomics_ball_ref_vals", "ngtdm_3d_pyradiomics_ball_matrix_ref_vals")
 BALL_NVP = 123
 
-# The out-of-core test's pin table in TEST_OOC_PY.
-OOC_PINS = "NGTDM_3D_NONBOX_PYRADIOMICS"
+# Chebyshev neighbourhood radius -> the out-of-core test's pin table in TEST_OOC_PY.
+OOC_PINS = {
+    1: "NGTDM_3D_NONBOX_PYRADIOMICS",
+    2: "NGTDM_3D_NONBOX_R2_PYRADIOMICS",
+}
 
 # Nyxus feature -> PyRadiomics NGTDM feature. These line up by name, unlike the GLCM family's.
 PYRAD = {
@@ -374,23 +379,39 @@ def ball_run():
     return rows, feats
 
 
-def ooc_run():
-    """-> ({feature: value}, failure count), PyRadiomics on the out-of-core test's ellipsoid at
-    radius 1. A voxel without a neighbour is a failure: PyRadiomics keeps it and Nyxus does not, so
-    one such voxel would part the two on every feature."""
+def ooc_run(radius):
+    """-> ({feature: value}, failure count), PyRadiomics on the out-of-core test's ellipsoid at one
+    NGTDM_RADIUS. A voxel without a neighbour is a failure: PyRadiomics keeps it and Nyxus does not,
+    so one such voxel would part the two on every feature. So is any disagreement with
+    reference_ngtdm() at the same radius, on the levels, the counts or a feature."""
     inten, mask = make_ooc_ellipsoid()
     img = sitk.GetImageFromArray(inten.astype(float))
     msk = sitk.GetImageFromArray(mask.astype(numpy.uint32))
-    f, _ = pyradiomics_ngtdm(img, msk, 1, radius_distances(1))
-    lone = isolated_voxels(mask)
-    print("# out-of-core ellipsoid: %d voxels, %d of them at level 0, %d without a neighbour"
-          % (mask.sum(), int((inten[mask] == 0).sum()), lone))
+    f, rows = pyradiomics_ngtdm(img, msk, 1, radius_distances(radius))
+    lone = isolated_voxels(mask, radius)
+    print("# out-of-core ellipsoid, radius %d: %d voxels, %d of them at level 0, %d without a neighbour"
+          % (radius, mask.sum(), int((inten[mask] == 0).sum()), lone))
     bad = 0
     if lone:
         print("  FAIL the out-of-core ellipsoid has %d voxel(s) without a neighbour" % lone)
         bad += 1
-    return {n: float(numpy.asarray(getattr(f, "get%sFeatureValue" % p)()).ravel()[0])
-            for n, p in PYRAD.items()}, bad
+    feats = {n: float(numpy.asarray(getattr(f, "get%sFeatureValue" % p)()).ravel()[0])
+             for n, p in PYRAD.items()}
+
+    # binWidth=1 over a volume whose minimum is 0: level = value + 1, as in load_phantom()
+    ref_rows = reference_ngtdm(inten.astype(int) - int(inten[mask].min()) + 1, mask, delta=radius)
+    if [r[:2] for r in rows] != [r[:2] for r in ref_rows]:
+        print("  FAIL the two NGTDM references disagree on the ellipsoid's levels/counts at radius %d"
+              % radius)
+        return feats, bad + 1
+    ref_feats = reference_features(ref_rows)
+    worst = max(rel(feats[n], ref_feats[n]) for n in PYRAD)
+    print("# out-of-core ellipsoid, radius %d, pyradiomics vs the independent reference features:"
+          " worst rel %.3g" % (radius, worst))
+    if worst > RELTOL:
+        print("  FAIL pyradiomics and the reference NGTDM disagree on the ellipsoid at radius %d" % radius)
+        bad += 1
+    return feats, bad
 
 
 def parse_py_pins(txt, name):
@@ -602,7 +623,8 @@ def main():
     ball = ball_run()
     if ball is None:
         return 1
-    ooc_feats, ooc_bad = ooc_run()
+    ooc_runs = {radius: ooc_run(radius) for radius in sorted(OOC_PINS)}
+    ooc_bad = sum(b for _, b in ooc_runs.values())
 
     for radius in sorted(RADII):
         scalar_table, matrix_table = RADII[radius]
@@ -628,9 +650,11 @@ def main():
     for lev, n, p, s in ball[0]:
         print("\t{ %d, %d, %r, %r }," % (lev, n, p, s))
 
-    print("\n# paste-ready goldens: %s (%s)" % (OOC_PINS, os.path.relpath(TEST_OOC_PY, TESTS)))
-    for name in sorted(ooc_feats):
-        print('    "%s": %r,' % (name, ooc_feats[name]))
+    for radius in sorted(OOC_PINS):
+        ooc_feats = ooc_runs[radius][0]
+        print("\n# paste-ready goldens: %s (%s)" % (OOC_PINS[radius], os.path.relpath(TEST_OOC_PY, TESTS)))
+        for name in sorted(ooc_feats):
+            print('    "%s": %r,' % (name, ooc_feats[name]))
 
     txt_h = open(TEST_H, encoding="utf-8", errors="replace").read()
     bad = check_ball_phantom() + ooc_bad
@@ -673,13 +697,15 @@ def main():
             bad = compare("%s i=%d s_i" % (table, lev), s, ps, bad)
 
     txt_py = open(TEST_OOC_PY, encoding="utf-8", errors="replace").read()
-    py_pins = parse_py_pins(txt_py, OOC_PINS)
-    print("\n# verifying %d pinned goldens of %s against this run" % (len(py_pins), OOC_PINS))
-    if sorted(py_pins) != sorted(ooc_feats):
-        print("  FAIL %s pins %s, PyRadiomics produces %s" % (OOC_PINS, sorted(py_pins), sorted(ooc_feats)))
-        bad += 1
-    for name in sorted(set(py_pins) & set(ooc_feats)):
-        bad = compare("%s %s" % (OOC_PINS, name), ooc_feats[name], py_pins[name], bad)
+    for radius in sorted(OOC_PINS):
+        table, ooc_feats = OOC_PINS[radius], ooc_runs[radius][0]
+        py_pins = parse_py_pins(txt_py, table)
+        print("\n# verifying %d pinned goldens of %s against this run" % (len(py_pins), table))
+        if sorted(py_pins) != sorted(ooc_feats):
+            print("  FAIL %s pins %s, PyRadiomics produces %s" % (table, sorted(py_pins), sorted(ooc_feats)))
+            bad += 1
+        for name in sorted(set(py_pins) & set(ooc_feats)):
+            bad = compare("%s %s" % (table, name), ooc_feats[name], py_pins[name], bad)
 
     bad += cross_table_checks(txt_h)
     bad += range_checks(txt_h)
