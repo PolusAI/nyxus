@@ -3,10 +3,8 @@
 // 2D GLRLM emphases against their closed form, on ROIs whose run lengths and grey levels are large
 // enough that a squared term no longer fits in 32 bits (SPEC 4, oracle `analytic`).
 
-// gtest and <vector> are this file's own; GLRLMFeature, Feature2D, the IBSI settings recipe and the
-// ROI loader arrive with the common header.
-#include <gtest/gtest.h>
-#include <vector>
+// Nothing of its own: gtest, <vector>, GLRLMFeature, Feature2D, the IBSI settings recipe and the
+// ROI loader all arrive with the common header.
 #include "test_2d_glrlm_common.h"
 
 // Featurises one fully masked ROI given as (x, y, intensity) pixels, at the IBSI recipe, which keeps
