@@ -117,8 +117,8 @@ namespace NyxusGpu
 			return;
 
 		float s = SJ[j];
-		atomicAdd(&state[f_SAE], s / (j * j));
-		atomicAdd(&state[f_LAE], s * (j * j));
+		atomicAdd(&state[f_SAE], s / (float(j) * float(j)));
+		atomicAdd(&state[f_LAE], s * (float(j) * float(j)));
 		atomicAdd(&state[f_SZN], s * s);
 		atomicAdd(&state[f_SZNN], s * s);
 	}
