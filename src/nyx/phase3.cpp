@@ -164,7 +164,7 @@ namespace Nyxus
 						// Pixel intensity and global position
 						auto intens = dataI[i];
 						size_t row = tileIdx / env.theImLoader.get_num_tiles_hor(),
-							col = tileIdx / env.theImLoader.get_num_tiles_hor(),
+							col = tileIdx % env.theImLoader.get_num_tiles_hor(),
 							th = env.theImLoader.get_tile_height(),
 							tw = env.theImLoader.get_tile_width();
 						int y = row * th + i / tw,
