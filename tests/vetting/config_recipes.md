@@ -995,6 +995,19 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   narrowing the intercept is `src/` work on its own branch — these rows are what will fail when it
   happens.
 
+## glszm3d.analytic_two_large_zones
+- `bench_glszm_3d_two_large_zones` — a 64x64x32 volume built in
+  `test_3d_glszm_large_zone_size_emphasis_analytic()`, slices 0-15 at intensity 1 and 16-31 at 2 — at
+  `GREYDEPTH=64`, `IBSI=false` and `GLSZM_GREYDEPTH=0`, so the two levels are read as they are.
+  Oracle: `analytic`. Used by `test_3d_glszm_analytic.h`, for `3GLSZM_SAE` and `3GLSZM_LAE` only.
+- **What it is for.** Each half is one 26-connected zone of `L = 65,536` voxels, so the matrix has
+  two cells, both in column `L`, and `SAE = 1/L^2`, `LAE = L^2` exactly. `L^2 = 2^32` is past
+  `INT_MAX`, so the values are right only if the square of the zone size is taken in double. A zone
+  of 46,341 voxels already needs that, and a whole-organ ROI reaches it routinely; the family's
+  PyRadiomics fixtures stop at a largest zone of 634 voxels.
+- The band is `rel=1e-12` rather than SPEC 7's absolute exact tier, because `LAE` is 4.3e9 and an
+  absolute 1e-9 is below its last bit.
+
 ## gldm3d.pyradiomics_bincount20
 - The compat phantom (`compat_int/compat_int_mri.nii` + `compat_seg/compat_seg_liver.nii`, label 1) at
   `GREYDEPTH=100`, `IBSI=false`, `GLDM_GREYDEPTH=-20` (negative activates radiomics binCount-based

@@ -12,6 +12,7 @@ import sys
 import scanlib
 
 SOURCES = [
+    "test_2d_glrlm_analytic.h",
     "test_2d_glrlm_ibsi.h",
     "test_2d_glrlm_mirp.h",
     "test_2d_glrlm_pyradiomics.h",
@@ -24,7 +25,7 @@ AVE = ("angle average; the tools report one value over the 4 directions, so it s
 FAMILY = scanlib.Family(
     dim="2D", family="glrlm",
     sources=SOURCES,
-    oracle_suffix={"ibsi": "ibsi", "mirp": "mirp", "pyradiomics": "pyradiomics"},
+    oracle_suffix={"ibsi": "ibsi", "mirp": "mirp", "pyradiomics": "pyradiomics", "analytic": "analytic"},
     notes=lambda feature, cov: AVE if feature.endswith("_AVE") else "",
     # the two family-wide oracle tests loop a golden table keyed by feature name and never spell a
     # feature on an assertion line
