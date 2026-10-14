@@ -311,9 +311,8 @@ size-zone or run-length emphasis lies past the 32-bit range while every feature 
 closed form: a zone or run of `L >= 46,341` puts `L^2` past `INT_MAX`, and a grey level
 `G >= 65,536` puts `G^2` past `UINT_MAX`. All are read with no binning (2D at `IBSI=true`, 3D at a
 family grey depth of 0), so the levels written are the levels used. Each carries two levels, because
-a ROI of one intensity is intercepted before any matrix is built. Only this one has a recipe: the 2D
-GLSZM, 2D GLRLM and 3D GLRLM registries keep one row per feature, so the other five appear in those
-rows' `current_test` instead.
+a ROI of one intensity is intercepted before any matrix is built. Each has its own recipe, named on
+its `Recipes:` line, and its own `analytic` rows in the registry.
 
 ---
 
@@ -325,6 +324,8 @@ rows' `current_test` instead.
 | ROI | a 216×432 rectangle, the top half at intensity 1 and the bottom half at 2 |
 | Shape | two zones of `L = 46,656` pixels |
 | Why it exists | `GLSZM_SAE = 1/L^2` and `GLSZM_LAE = L^2`, with `L^2` past `INT_MAX` |
+
+Recipes: `glszm.analytic_two_large_zones`.
 
 Tests reaching it today: `test_2d_glszm_analytic.h`.
 
@@ -339,6 +340,8 @@ Tests reaching it today: `test_2d_glszm_analytic.h`.
 | Shape | at 0 degrees, two runs of `L = 46,656`, one per level |
 | Why it exists | the six run-length emphases at 0 degrees, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
 
+Recipes: `glrlm.analytic_two_long_runs`.
+
 Tests reaching it today: `test_2d_glrlm_analytic.h`.
 
 ---
@@ -351,6 +354,8 @@ Tests reaching it today: `test_2d_glrlm_analytic.h`.
 | ROI | two adjacent pixels at intensities 1 and `G = 70,000` |
 | Shape | two runs of length 1 in every direction |
 | Why it exists | the six grey-level emphases in all 4 directions, with `G^2` past `UINT_MAX` |
+
+Recipes: `glrlm.analytic_high_grey_pair`.
 
 Tests reaching it today: `test_2d_glrlm_analytic.h`.
 
@@ -365,6 +370,8 @@ Tests reaching it today: `test_2d_glrlm_analytic.h`.
 | Shape | along x, direction slot 12, two runs of `L = 46,656`, one per level |
 | Why it exists | the six run-length emphases along x, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
 
+Recipes: `glrlm3d.analytic_two_long_runs`.
+
 Tests reaching it today: `test_3d_glrlm_analytic.h`.
 
 ---
@@ -376,7 +383,9 @@ Tests reaching it today: `test_3d_glrlm_analytic.h`.
 | Data | built inline in `test_3d_glrlm_high_grey_level_emphasis_analytic()` (`tests/test_3d_glrlm_analytic.h`) |
 | ROI | two adjacent voxels at intensities 1 and `G = 70,000` |
 | Shape | two runs of length 1 in every one of the 13 directions |
-| Why it exists | the six grey-level emphases in all 13 directions, with `G^2` past `UINT_MAX` |
+| Why it exists | the six grey-level emphases in all 13 directions, with `G^2` past `UINT_MAX`; `3GLRLM_HGLRE` multiplies the level as `double(inten) * double(inten)`, so for it the fixture pins the value without telling a 32-bit square from a double one |
+
+Recipes: `glrlm3d.analytic_high_grey_pair`.
 
 Tests reaching it today: `test_3d_glrlm_analytic.h`.
 
