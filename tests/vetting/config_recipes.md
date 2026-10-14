@@ -760,7 +760,9 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `glrlm3d.analytic_two_long_runs`. Oracle: `analytic`. Used by `test_3d_glrlm_analytic.h`, for the
   six grey-level emphases, in all 13 directions.
 - **What it is for.** Every direction sees two runs of length 1. `G^2 = 4.9e9` is past `UINT_MAX`, so
-  the values are right only if the grey level is squared in double.
+  the values are right only if the grey level is squared in double. `3GLRLM_HGLRE` multiplies the level
+  as `double(inten) * double(inten)`, so for it the fixture pins the value without telling a 32-bit
+  square from a double one.
 - The band is `rel=1e-12`, because `HGLRE` is 2.45e9 and an absolute 1e-9 is below its last bit.
 
 ## ngldm3d.regression_ut_phantom
