@@ -342,10 +342,9 @@ double D3_GLRLM_feature::calc_SRE (const SimpleMatrix<int> &P, const double sum_
 		}
 	}
 
+	// Run lengths are squared in double: j^2 passes INT_MAX at a run of 46,341.
 	for (int j = 1; j <= Nr; ++j) 
 	{
-		// Run lengths and grey levels are squared in double: j^2 passes INT_MAX at a run of 46,341,
-		// and a grey level times a run passes UINT_MAX once their product reaches 65,536.
 		f += rj[j] / (double(j) * double(j));
 	}
 
@@ -580,6 +579,8 @@ double D3_GLRLM_feature::calc_LGLRE (const SimpleMatrix<int> &P, const std::vect
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
+		// Grey levels are taken in double: a level squared passes UINT_MAX at 65,536, and so does a
+		// level times a run once their product reaches 65,536.
 		double inten = (double) I[i - 1];
 		for (int j = 1; j <= Nr; j++)
 		{
