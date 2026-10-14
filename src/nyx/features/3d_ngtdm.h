@@ -50,7 +50,9 @@ public:
 		return fs.anyEnabled (D3_NGTDM_feature::featureset);
 	}
 
-	static void gather_zones (std::vector<std::pair<PixIntens, double>> &Z, SimpleCube<PixIntens> &D, int cheby_radius, PixIntens zeroI);
+	// One (level, mean ROI-neighbour level) pair per ROI voxel of 'D' that has a ROI neighbour;
+	// 'M' is nonzero exactly at the ROI's cells
+	static void gather_zones (std::vector<std::pair<PixIntens, double>> &Z, const SimpleCube<PixIntens> &D, const SimpleCube<unsigned char> &M, int cheby_radius);
 
 	// returns Nvp
 	static double calc_NGTDM(
@@ -71,12 +73,16 @@ public:
 	const std::vector<double>& get_P() const { return P; }
 	const std::vector<double>& get_S() const { return S; }
 	int get_Nvp() const { return Nvp; }
+	int get_Ngp() const { return Ngp; }
+
+	// Number of entries of 'N' greater than 0
+	static int count_nonempty_rows (const std::vector<int>& N);
 
 private:
 
 	bool bad_roi_data = false;	// used to prevent calculation of degenerate ROIs
 	int Ng = 0;	// number of discrete intensity values in the image
-	int Ngp = 0; // number of non-zero gray levels. Since we keep only informative (non-zero) levels, Ngp is always ==Ng
+	int Ngp = 0; // number of grey levels whose matrix row is non-empty (n_i > 0); at most Ng
 	int Nvp = 0;	// number of "valid voxels" i.e. those voxels that have at least 1 neighbor
 	int Nd = 0; // number of discrete dependency sizes in the image
 	int Nz = 0; // number of dependency zones in the ROI, Nz = sum(sum(P[i,j]))

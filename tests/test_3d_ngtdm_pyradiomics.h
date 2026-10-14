@@ -12,6 +12,10 @@
 // 26 offsets at distance 1, while Nyxus scans the solid cube -2..2; the generator measures both
 // readings so the recipe's distances list is a measurement and not a reading of the documentation.
 //
+// Recipe ngtdm3d.pyradiomics_binwidth1_ball is the radius-1 recipe on the NGTDM ball phantom, a ROI
+// that does not fill its bounding box. The compatibility phantom is its own bounding box, so only
+// this recipe holds the neighbourhood to the ROI.
+//
 // Goldens and their reproduction: tests/vetting/oracles/gen_ngtdm3d_pyradiomics.py, which also
 // re-verifies every pin below. Measurements and the PyRadiomics-loader limitation this phantom runs
 // into: tests/vetting/audit/ngtdm_3d_pyradiomics_vetting_report.md.
@@ -34,17 +38,6 @@ static const ref_vals_map<double> ngtdm_3d_pyradiomics_ref_vals
 	{"3NGTDM_COMPLEXITY", 32.13037220400344},       // original_ngtdm_Complexity
 	{"3NGTDM_CONTRAST", 0.23138014315250832},       // original_ngtdm_Contrast
 	{"3NGTDM_STRENGTH", 1.245800596888454}          // original_ngtdm_Strength
-};
-
-// One row of an NGTDM: the grey level, the number of voxels carrying it that have at least one
-// neighbour, that count as a fraction of all such voxels, and the sum over them of the absolute
-// difference between the level and its neighbourhood mean.
-struct Ngtdm3dMatrixRow
-{
-	unsigned int level;
-	int n;
-	double p;
-	double s;
 };
 
 // The NGTDM of the phantom itself, from PyRadiomics' P_ngtdm array -- the table it builds before any
@@ -87,6 +80,29 @@ static const ref_vals_list<Ngtdm3dMatrixRow> ngtdm_3d_pyradiomics_r2_matrix_ref_
 	{ 6, 3, 0.0625, 12.576899696048631 }
 };
 
+// Recipe ngtdm3d.pyradiomics_binwidth1_ball: the five features on the NGTDM ball phantom (label 57)
+// at NGTDM_RADIUS=1, otherwise the recipe above. PyRadiomics' public extractor loads this phantom,
+// and the generator checks it against RadiomicsNGTDM and the plain-numpy NGTDM before pinning.
+static const ref_vals_map<double> ngtdm_3d_pyradiomics_ball_ref_vals
+{
+	{"3NGTDM_BUSYNESS", 2.804391213158604},         // original_ngtdm_Busyness
+	{"3NGTDM_COARSENESS", 0.03033180259044324},     // original_ngtdm_Coarseness
+	{"3NGTDM_COMPLEXITY", 20.665572546932825},      // original_ngtdm_Complexity
+	{"3NGTDM_CONTRAST", 0.30598032301206524},       // original_ngtdm_Contrast
+	{"3NGTDM_STRENGTH", 0.3556109624351716}         // original_ngtdm_Strength
+};
+
+// The ball's NGTDM, from PyRadiomics' P_ngtdm array. The n_i count ROI voxels only, 123 of them.
+static const ref_vals_list<Ngtdm3dMatrixRow> ngtdm_3d_pyradiomics_ball_matrix_ref_vals
+{
+	{ 1, 18, 0.14634146341463414, 47.02647653000595 },
+	{ 2, 24, 0.1951219512195122, 35.764102564102565 },
+	{ 3, 24, 0.1951219512195122, 11.88543352072764 },
+	{ 4, 15, 0.12195121951219512, 9.567521367521367 },
+	{ 5, 21, 0.17073170731707318, 34.076051007815714 },
+	{ 6, 21, 0.17073170731707318, 57.427350427350426 }
+};
+
 // The 4x4 image PyRadiomics' NGTDM documentation works through by hand, driven here as a
 // single-slice volume. Its published s_i carry three significant figures; these are the
 // full-precision values of a PyRadiomics run on the same image, which the generator also reproduces
@@ -115,14 +131,18 @@ static const std::vector<PixIntens> ngtdm_3d_pyradiomics_doc_image
 // and the eighteen matrix entries is at the last bit.
 static const double ngtdm_3d_pyradiomics_frac_tolerance = 1e9;
 
-// One feature at one neighbourhood radius, against the table pinning that recipe's goldens.
-static void assert_3d_ngtdm_feature_pyradiomics_at (
+// One feature of one phantom ROI at one neighbourhood radius, against the table pinning that
+// recipe's goldens.
+static void assert_3d_ngtdm_feature_pyradiomics_on (
 	const Nyxus::Feature3D& expecting_fcode,
 	const std::string& fname,
+	const std::string& ipath,
+	const std::string& mpath,
+	int label,
 	int radius,
 	const ref_vals_map<double>& expected)
 {
-	SCOPED_TRACE ("NGTDM_RADIUS " + std::to_string (radius));
+	SCOPED_TRACE ("NGTDM_RADIUS " + std::to_string (radius) + ", label " + std::to_string (label));
 
 	// a name with no golden is a failure, not a comparison against whatever a lookup would invent
 	auto iter = expected.find(fname);
@@ -131,7 +151,6 @@ static void assert_3d_ngtdm_feature_pyradiomics_at (
 	int fcode = -1;
 	ASSERT_NO_FATAL_FAILURE(resolve_3d_ngtdm_fcode (fcode, expecting_fcode, fname));
 
-	auto [ipath, mpath, label] = get_3d_compat_ngtdm_phantom();
 	Fsettings s = make_ngtdm3d_settings (100/*greydepth*/, 0/*no ngtdm binning*/, radius);
 	std::vector<std::vector<double>> fvals;
 	SimpleCube<PixIntens> cube;
@@ -139,6 +158,18 @@ static void assert_3d_ngtdm_feature_pyradiomics_at (
 
 	ASSERT_TRUE (agrees_gt (fvals[fcode][0], iter->second,
 	                        ngtdm_3d_pyradiomics_frac_tolerance)) << fname;
+}
+
+// The same, on the 4x4x3 compatibility phantom.
+static void assert_3d_ngtdm_feature_pyradiomics_at (
+	const Nyxus::Feature3D& expecting_fcode,
+	const std::string& fname,
+	int radius,
+	const ref_vals_map<double>& expected)
+{
+	auto [ipath, mpath, label] = get_3d_compat_ngtdm_phantom();
+	ASSERT_NO_FATAL_FAILURE(assert_3d_ngtdm_feature_pyradiomics_on (
+		expecting_fcode, fname, ipath, mpath, label, radius, expected));
 }
 
 void assert_3d_ngtdm_feature_pyradiomics (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
@@ -154,6 +185,16 @@ void assert_3d_ngtdm_feature_pyradiomics_r2 (const Nyxus::Feature3D& expecting_f
 {
 	ASSERT_NO_FATAL_FAILURE(assert_3d_ngtdm_feature_pyradiomics_at (
 		expecting_fcode, fname, 2, ngtdm_3d_pyradiomics_r2_ref_vals));
+}
+
+// The same five features on the ball, the ROI that does not fill its bounding box. The compatibility
+// phantom's assertions pass whether or not the neighbourhood is confined to the ROI, since that
+// phantom has no background; these are the ones that fail if it is not.
+void assert_3d_ngtdm_feature_pyradiomics_ball (const Nyxus::Feature3D& expecting_fcode, const std::string& fname)
+{
+	auto [ipath, mpath, label, isolated_label] = get_3d_ngtdm_ball_phantom();
+	ASSERT_NO_FATAL_FAILURE(assert_3d_ngtdm_feature_pyradiomics_on (
+		expecting_fcode, fname, ipath, mpath, label, 1, ngtdm_3d_pyradiomics_ball_ref_vals));
 }
 
 // Asserts one NGTD matrix against a pinned oracle table, level by level. 'expected_nvp' is the
@@ -216,6 +257,24 @@ void test_3d_ngtdm_matrix_r2_pyradiomics()
 	assert_3d_ngtdm_phantom_matrix_pyradiomics (2, ngtdm_3d_pyradiomics_r2_matrix_ref_vals);
 }
 
+// The ball's matrix, from the same run its five feature assertions make. Its n_i add up to the 123
+// ROI voxels, not to the 343 cells of the bounding box, and its levels and n_i are the ROI's alone:
+// background cells taken for centres, or a level-0 ROI voxel taken for background, change the counts
+// here before they change any feature.
+void test_3d_ngtdm_matrix_ball_pyradiomics()
+{
+	auto [ipath, mpath, label, isolated_label] = get_3d_ngtdm_ball_phantom();
+	Fsettings s = make_ngtdm3d_settings (100/*greydepth*/, 0/*no ngtdm binning*/, 1/*radius*/);
+	std::vector<std::vector<double>> fvals;
+	SimpleCube<PixIntens> cube;
+	Ngtdm3dMatrix m;
+	ASSERT_NO_FATAL_FAILURE(extract_3d_ngtdm (fvals, cube, ipath, mpath, label, s, &m));
+
+	// the bounding box is 7x7x7 and every one of the ROI's 123 voxels has a neighbour
+	ASSERT_EQ (cube.size(), size_t(7 * 7 * 7));
+	ASSERT_NO_FATAL_FAILURE(assert_3d_ngtdm_matrix_rows (m, ngtdm_3d_pyradiomics_ball_matrix_ref_vals, 123));
+}
+
 // The doc example keeps a literal, and for it that is the right shape: the 4x4 image IS the
 // fixture -- it is published, there is no file to read it from, and the generator runs
 // PyRadiomics on the same literal.
@@ -236,8 +295,13 @@ void test_3d_ngtdm_docmatrix_pyradiomics()
 	m.I.assign (U.begin(), U.end());
 	std::sort (m.I.begin(), m.I.end());
 
+	// the doc example's ROI is the whole image
+	SimpleCube<unsigned char> M;
+	M.allocate (4/*width*/, 4/*height*/, 1/*depth*/);
+	M.fill (1);
+
 	std::vector<std::pair<PixIntens, double>> Zones;
-	D3_NGTDM_feature::gather_zones (Zones, D, 1/*radius*/, 0/*zeroI: no level is background here*/);
+	D3_NGTDM_feature::gather_zones (Zones, D, M, 1/*radius*/);
 	m.Nvp = (int) D3_NGTDM_feature::calc_NGTDM (m.N, m.P, m.S, Zones, m.I);
 
 	ASSERT_NO_FATAL_FAILURE(assert_3d_ngtdm_matrix_rows (
@@ -307,4 +371,24 @@ void test_3d_ngtdm_contrast_r2_pyradiomics() {
 
 void test_3d_ngtdm_strength_r2_pyradiomics() {
 	assert_3d_ngtdm_feature_pyradiomics_r2 (Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
+}
+
+void test_3d_ngtdm_busyness_ball_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_ball (Nyxus::Feature3D::NGTDM_BUSYNESS, "3NGTDM_BUSYNESS");
+}
+
+void test_3d_ngtdm_coarseness_ball_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_ball (Nyxus::Feature3D::NGTDM_COARSENESS, "3NGTDM_COARSENESS");
+}
+
+void test_3d_ngtdm_complexity_ball_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_ball (Nyxus::Feature3D::NGTDM_COMPLEXITY, "3NGTDM_COMPLEXITY");
+}
+
+void test_3d_ngtdm_contrast_ball_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_ball (Nyxus::Feature3D::NGTDM_CONTRAST, "3NGTDM_CONTRAST");
+}
+
+void test_3d_ngtdm_strength_ball_pyradiomics() {
+	assert_3d_ngtdm_feature_pyradiomics_ball (Nyxus::Feature3D::NGTDM_STRENGTH, "3NGTDM_STRENGTH");
 }
