@@ -3292,11 +3292,13 @@ TEST(TEST_NYXUS, TEST_2D_GLRLM_RE_IBSI)
 	ASSERT_NO_THROW(test_2d_glrlm_re_ibsi());
 }
 
-//***** IBSI tests of GLSZM ***** 
+//***** closed-form tests of GLSZM *****
 
 TEST(TEST_NYXUS, TEST_2D_GLSZM_LARGE_ZONE_SIZE_EMPHASIS_ANALYTIC) {
 	ASSERT_NO_THROW(test_2d_glszm_large_zone_size_emphasis_analytic());
 }
+
+//***** IBSI tests of GLSZM ***** 
 
 TEST(TEST_NYXUS, TEST_2D_GLSZM_SAE_IBSI) {
 	ASSERT_NO_THROW(test_2d_glszm_sae_ibsi());
