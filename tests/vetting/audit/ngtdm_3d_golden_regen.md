@@ -10,7 +10,8 @@ drift guards are Nyxus' own output and are regenerated from the test binary.
 | `ngtdm_3d_pyradiomics_docmatrix_ref_vals` | same | PyRadiomics on the 4×4 docstring image |
 | `ngtdm_3d_pyradiomics_ball_ref_vals` | same | PyRadiomics 3.0.1 on the ball phantom |
 | `ngtdm_3d_pyradiomics_ball_matrix_ref_vals` | same | PyRadiomics `P_ngtdm` on the ball phantom |
-| `NGTDM_3D_NONBOX_PYRADIOMICS` | `tests/python/test_3d_ngtdm_pyradiomics.py` | PyRadiomics 3.0.1 on the out-of-core ellipsoid |
+| `NGTDM_3D_NONBOX_PYRADIOMICS` | `tests/python/test_3d_ngtdm_pyradiomics.py` | PyRadiomics 3.0.1 on the out-of-core ellipsoid, radius 1 |
+| `NGTDM_3D_NONBOX_R2_PYRADIOMICS` | same | the same at radius 2, `distances=[1, 2]` |
 | `ngtdm_3d_mirp_mixed_ref_vals` | `tests/test_3d_ngtdm_mirp.h` | MIRP 2.6.0 on label 59 of the ball phantom |
 | `ngtdm_3d_mirp_mixed_matrix_ref_vals` | same | numpy NGTDM, cross-checked against the MIRP values |
 | `NGTDM_3D_MIXED_MIRP` | `tests/python/test_3d_ngtdm_mirp.py` | MIRP 2.6.0 on the out-of-core ellipsoid plus a lone voxel |

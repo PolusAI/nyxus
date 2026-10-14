@@ -884,7 +884,9 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `test_3d_ngtdm_isolated_voxels_mechanics`; it carries no oracle claim. Label 59 is the next recipe's.
 - The out-of-core path is held to the same oracle by
   `tests/python/test_3d_ngtdm_pyradiomics.py` on a 24×60×60 ellipsoid (37,792 voxels in an
-  86,400-voxel box), at `ram_limit` 1000 MB and 1 MB.
+  86,400-voxel box), at `ram_limit` 1000 MB and 1 MB and at `NGTDM_RADIUS` 1 and 2 (PyRadiomics
+  `distances=[1]` and `[1, 2]`). Radius 1 is the default, so radius 2 is the case that shows the
+  out-of-core path reads the radius it is given.
 
 ## ngtdm3d.mirp_fbn_mixed
 - Label 59 of the NGTDM ball phantom (`compat_int/compat_int_ngtdm_3d_ball.nii` +
