@@ -344,6 +344,8 @@ double D3_GLRLM_feature::calc_SRE (const SimpleMatrix<int> &P, const double sum_
 
 	for (int j = 1; j <= Nr; ++j) 
 	{
+		// Run lengths and grey levels are squared in double: j^2 passes INT_MAX at a run of 46,341,
+		// and a grey level times a run passes UINT_MAX once their product reaches 65,536.
 		f += rj[j] / (double(j) * double(j));
 	}
 
@@ -490,7 +492,7 @@ double D3_GLRLM_feature::calc_GLV (const SimpleMatrix<int> &P, const std::vector
 	double mu = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i - 1];
+		auto inten = I[i - 1];
 		for (int j = 1; j <= Nr; j++)
 		{
 			mu += P.matlab(i, j) / sum_p * inten;
@@ -500,7 +502,7 @@ double D3_GLRLM_feature::calc_GLV (const SimpleMatrix<int> &P, const std::vector
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		double inten = (double) I[i - 1];
+		auto inten = I[i - 1];
 		for (int j = 1; j <= Nr; j++)
 		{
 			double mu2 = (inten - mu) * (inten - mu);
@@ -581,7 +583,7 @@ double D3_GLRLM_feature::calc_LGLRE (const SimpleMatrix<int> &P, const std::vect
 		double inten = (double) I[i - 1];
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) / double(inten * inten);
+			f += P.matlab(i, j) / (inten * inten);
 		}
 	}
 	double retval = f / double(sum_p);
@@ -604,7 +606,7 @@ double D3_GLRLM_feature::calc_HGLRE (const SimpleMatrix<int> &P, const std::vect
 		double inten = (double) I[i - 1];
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) * double(inten) * double(inten);
+			f += P.matlab(i, j) * (inten * inten);
 		}
 	}
 	double retval = f / double(sum_p);
@@ -627,7 +629,7 @@ double D3_GLRLM_feature::calc_SRLGLE (const SimpleMatrix<int> &P, const std::vec
 			double inten = (double) I[i - 1];
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) / double(inten * inten * j * j);
+				f += P.matlab(i, j) / (inten * inten * (double(j) * double(j)));
 			}
 		}
 		double retval = f / sum_p;
@@ -650,7 +652,7 @@ double D3_GLRLM_feature::calc_SRHGLE (const SimpleMatrix<int> &P, const std::vec
 		double inten = (double) I[i - 1];
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) * double(inten * inten) / (double(j) * double(j));
+			f += P.matlab(i, j) * (inten * inten) / (double(j) * double(j));
 		}
 	}
 	double retval = f / sum_p;
@@ -673,7 +675,7 @@ double D3_GLRLM_feature::calc_LRLGLE (const SimpleMatrix<int> &P, const std::vec
 		double inten = (double) I[i - 1];
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) * (double(j) * double(j)) / double(inten * inten);
+			f += P.matlab(i, j) * (double(j) * double(j)) / (inten * inten);
 		}
 	}
 	double retval = f / sum_p;
@@ -696,7 +698,7 @@ double D3_GLRLM_feature::calc_LRHGLE (const SimpleMatrix<int> &P, const std::vec
 		double inten = (double) I[i - 1];
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) * double(inten * inten * j * j);
+			f += P.matlab(i, j) * (inten * inten * (double(j) * double(j)));
 		}
 	}
 	double retval = f / sum_p;

@@ -300,7 +300,7 @@ was never written pass.
 | Data | built inline in `test_3d_glszm_large_zone_size_emphasis_analytic()` (`tests/test_3d_glszm_analytic.h`) |
 | ROI | all 131,072 voxels of a 64×64×32 volume, slices 0-15 at intensity 1 and slices 16-31 at 2 |
 | Shape | two 26-connected zones of `L = 65,536` voxels, so the size-zone matrix has two cells, both in column `L` |
-| Why it exists | `L^2 = 2^32` is past `INT_MAX` -- in 32-bit arithmetic it is exactly 0 -- so `3GLSZM_SAE = 1/L^2` and `3GLSZM_LAE = L^2` are right only if the square of the zone size is taken in double |
+| Why it exists | `L^2 = 2^32` is past `INT_MAX`, so `3GLSZM_SAE = 1/L^2` and `3GLSZM_LAE = L^2` are right only if the square of the zone size is taken in double |
 
 Recipes: `glszm3d.analytic_two_large_zones`.
 

@@ -10,6 +10,7 @@
 #include "../src/nyx/features/3d_glrlm.h"
 #include "../src/nyx/helpers/fsystem.h"
 #include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
+#include "test_3d_glrlm_common.h"   // make_glrlm3d_settings
 
 // Drift guards on the segmented phantom (ut_inten.nii + ut_mask57.nii, label 57), at binCount-20
 // grey binning, averaged over the 13 3D angles. Nyxus' own output, so these claim no oracle
@@ -134,18 +135,7 @@ static void run_3d_glrlm_pipeline (Environment& e, int grey_depth, int glrlm_gre
     ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
     // (5) feature settings
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = grey_depth;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = false;
-    s[(int)NyxSetting::GLRLM_GREYDEPTH].ival = glrlm_grey_depth;
+    Fsettings s = make_glrlm3d_settings (grey_depth, glrlm_grey_depth);
 
     // (6) feature extraction
     LR& r = e.roiData[label];

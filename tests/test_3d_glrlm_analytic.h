@@ -3,60 +3,21 @@
 // 3D GLRLM emphases against their closed form, on volumes whose run lengths and grey levels are large
 // enough that a squared term no longer fits in 32 bits (SPEC 4, oracle `analytic`).
 
-#include <gtest/gtest.h>
-#include <vector>
-#include "../src/nyx/features/3d_glrlm.h"     // D3_GLRLM_feature, and SimpleCube / PixIntens with it
-#include "test_main_nyxus.h"                  // the Environment / roi_cache graph, Fsettings with it
+// gtest, <vector>, Fsettings and the volume runner arrive with the common headers; the feature method
+// is this file's own.
+#include "../src/nyx/features/3d_glrlm.h"     // D3_GLRLM_feature
+#include "test_3d_glrlm_common.h"             // make_glrlm3d_settings
 
-// No binning (GLRLM_GREYDEPTH = 0), which keeps the levels of a fixture as they are.
-static Fsettings make_glrlm3d_nobinning_settings()
-{
-    Fsettings s;
-    s.resize ((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 64;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = false;
-    s[(int)NyxSetting::GLRLM_GREYDEPTH].ival = 0;
-    return s;
-}
-
-// Featurises a w x h x d volume held in memory, every non-zero voxel inside the ROI, into 'fvals'
-// (indexed by Nyxus 3D feature code). The LR is built the way the prescan hands one to calculate():
-// the voxel cube, the voxel cloud and the running intensity extrema.
+// Featurises a volume held in memory, every non-zero voxel inside the ROI, into 'fvals' (indexed by
+// Nyxus 3D feature code), with no binning (GLRLM_GREYDEPTH = 0), which keeps the levels of a fixture
+// as they are.
 static void run_3d_glrlm_on_volume (
     std::vector<std::vector<double>>& fvals,
     const std::vector<PixIntens>& voxels,
     int w, int h, int d)
 {
-    ASSERT_EQ (voxels.size(), size_t(w) * size_t(h) * size_t(d));
-
-    LR r;
-    r.aux_image_cube = SimpleCube<PixIntens> (voxels, w, h, d);
-    for (int z = 0; z < d; z++)
-        for (int y = 0; y < h; y++)
-            for (int x = 0; x < w; x++)
-            {
-                PixIntens v = r.aux_image_cube.zyx (z, y, x);
-                if (!v)
-                    continue;
-                r.raw_pixels_3D.push_back (Pixel3 (x, y, z, v));
-                if (v < r.aux_min)
-                    r.aux_min = v;
-                if (v > r.aux_max)
-                    r.aux_max = v;
-            }
-
     D3_GLRLM_feature f;
-    ASSERT_NO_THROW (r.initialize_fvals());
-    ASSERT_NO_THROW (f.calculate (r, make_glrlm3d_nobinning_settings()));
-    f.save_value (r.fvals);
-    fvals = r.fvals;
+    run_3d_feature_on_volume (fvals, voxels, w, h, d, make_glrlm3d_settings (64, 0), f);
 }
 
 static void assert_3d_glrlm_closed_form (const std::vector<std::vector<double>>& fvals, Feature3D fcode, int angle, double expected)

@@ -421,6 +421,7 @@ double GLSZMFeature::calc_SAE()
 {
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
+	// Zone sizes are squared in double: j^2 passes INT_MAX at a zone of 46,341.
 	for (int j = 1; j <= Ns; j++)
 	{
 		f += sj[j] / (double(j) * double(j));
