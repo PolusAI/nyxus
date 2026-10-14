@@ -20,6 +20,7 @@ configure once the discretisation is fixed.
 |---|---|---|---|---|
 | True | none (identity on an already-discrete fixture) | phantom's own 1..6 | VALID, 15 features | `glszm.ibsi_phantom_2d` — mirp + ibsi, at SPEC §7's exact tier |
 | True | none | phantom's own 1..6 | VALID, 1 feature at a wider band | `GLSZM_ZE` — same oracles, `rel=4e-3`, the `fast_log10` residual |
+| True | none | 1 and 2, zones of 46,656 | VALID, 2 features | `GLSZM_SAE`, `GLSZM_LAE` on zones whose squared size is past `INT_MAX` — analytic, `rel=1e-12`, `test_2d_glszm_analytic.h` |
 | False | MATLAB (`GREYDEPTH > 0`) | 64 | VALID-prod-only, all 16 | no oracle reproduces it → `test_2d_glszm_regression.h` |
 | False | radiomics (`GREYDEPTH < 0`) | any | NOT MEASURED | see below |
 | any | any | ROI with `aux_min == aux_max` | INVALID | degenerate — a blank ROI has no zones; `calculate()` returns NaN before building a matrix, guarded in code rather than by an oracle |

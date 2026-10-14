@@ -293,6 +293,94 @@ was never written pass.
 
 ---
 
+## `bench_glszm_3d_two_large_zones` — two 3D zones whose squared size is 2^32
+
+| | |
+|---|---|
+| Data | built inline in `test_3d_glszm_large_zone_size_emphasis_analytic()` (`tests/test_3d_glszm_analytic.h`) |
+| ROI | all 131,072 voxels of a 64×64×32 volume, slices 0-15 at intensity 1 and slices 16-31 at 2 |
+| Shape | two 26-connected zones of `L = 65,536` voxels, so the size-zone matrix has two cells, both in column `L` |
+| Why it exists | `L^2 = 2^32` is past `INT_MAX` -- in 32-bit arithmetic it is exactly 0 -- so `3GLSZM_SAE = 1/L^2` and `3GLSZM_LAE = L^2` are right only if the square of the zone size is taken in double |
+
+Recipes: `glszm3d.analytic_two_large_zones`.
+
+Tests reaching it today: `test_3d_glszm_analytic.h`.
+
+**One of six 32-bit range fixtures.** Each of the six below is built so that a squared term of a
+size-zone or run-length emphasis lies past the 32-bit range while every feature it feeds keeps a
+closed form: a zone or run of `L >= 46,341` puts `L^2` past `INT_MAX`, and a grey level
+`G >= 65,536` puts `G^2` past `UINT_MAX`. All are read with no binning (2D at `IBSI=true`, 3D at a
+family grey depth of 0), so the levels written are the levels used. Each carries two levels, because
+a ROI of one intensity is intercepted before any matrix is built. Only this one has a recipe: the 2D
+GLSZM, 2D GLRLM and 3D GLRLM registries keep one row per feature, so the other five appear in those
+rows' `current_test` instead.
+
+---
+
+## `bench_glszm_2d_two_large_zones` — two 2D zones of 46,656 pixels
+
+| | |
+|---|---|
+| Data | `make_glszm_2d_two_large_zones()` in `tests/test_2d_glszm_analytic.h` |
+| ROI | a 216×432 rectangle, the top half at intensity 1 and the bottom half at 2 |
+| Shape | two zones of `L = 46,656` pixels |
+| Why it exists | `GLSZM_SAE = 1/L^2` and `GLSZM_LAE = L^2`, with `L^2` past `INT_MAX` |
+
+Tests reaching it today: `test_2d_glszm_analytic.h`.
+
+---
+
+## `bench_glrlm_2d_two_long_runs` — two 2D runs of 46,656 pixels
+
+| | |
+|---|---|
+| Data | built inline in `test_2d_glrlm_long_run_emphasis_analytic()` (`tests/test_2d_glrlm_analytic.h`) |
+| ROI | one row of 93,312 pixels, the left half at intensity 1 and the right half at 2 |
+| Shape | at 0 degrees, two runs of `L = 46,656`, one per level |
+| Why it exists | the six run-length emphases at 0 degrees, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
+
+Tests reaching it today: `test_2d_glrlm_analytic.h`.
+
+---
+
+## `bench_glrlm_2d_high_grey_pair` — two 2D pixels at 1 and 70,000
+
+| | |
+|---|---|
+| Data | built inline in `test_2d_glrlm_high_grey_level_emphasis_analytic()` (`tests/test_2d_glrlm_analytic.h`) |
+| ROI | two adjacent pixels at intensities 1 and `G = 70,000` |
+| Shape | two runs of length 1 in every direction |
+| Why it exists | the six grey-level emphases in all 4 directions, with `G^2` past `UINT_MAX` |
+
+Tests reaching it today: `test_2d_glrlm_analytic.h`.
+
+---
+
+## `bench_glrlm_3d_two_long_runs` — two 3D runs of 46,656 voxels
+
+| | |
+|---|---|
+| Data | built inline in `test_3d_glrlm_long_run_emphasis_analytic()` (`tests/test_3d_glrlm_analytic.h`) |
+| ROI | a 93,312×1×1 line, the first half at intensity 1 and the second at 2 |
+| Shape | along x, direction slot 12, two runs of `L = 46,656`, one per level |
+| Why it exists | the six run-length emphases along x, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
+
+Tests reaching it today: `test_3d_glrlm_analytic.h`.
+
+---
+
+## `bench_glrlm_3d_high_grey_pair` — two 3D voxels at 1 and 70,000
+
+| | |
+|---|---|
+| Data | built inline in `test_3d_glrlm_high_grey_level_emphasis_analytic()` (`tests/test_3d_glrlm_analytic.h`) |
+| ROI | two adjacent voxels at intensities 1 and `G = 70,000` |
+| Shape | two runs of length 1 in every one of the 13 directions |
+| Why it exists | the six grey-level emphases in all 13 directions, with `G^2` past `UINT_MAX` |
+
+Tests reaching it today: `test_3d_glrlm_analytic.h`.
+---
+
 ## `bench_constant_roi_3d` — a nonempty ROI of one intensity
 
 | | |

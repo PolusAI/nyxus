@@ -32,11 +32,11 @@ regression: 122  invariant: 0  untested: 0
 
 ## Verdicts
 
-1030 of 1030 assertion rows agree with the tree.
+1032 of 1032 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 1030 | the claim and the tree say the same thing |
+| `agree` | 1032 | the claim and the tree say the same thing |
 
 ### How far each verdict reaches
 
@@ -47,7 +47,7 @@ regression: 122  invariant: 0  untested: 0
 |---|---:|---|
 | `feature` | 533 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
 | `row` | 280 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
-| `row+config` | 217 | the case named in `test_name` asserts this feature at this `config_recipe` |
+| `row+config` | 219 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
 ## Every oracle a feature was matched against
 
@@ -62,8 +62,8 @@ that alone understates every family that corroborates.
 | 2D | glcm | . | . | . | 55 | . | . | 59 | . | 59 | . | . |
 | 2D | gldm | . | . | . | 14 | . | . | . | . | 14 | . | . |
 | 2D | gldzm | . | . | . | 14 | . | . | 16 | . | . | . | 2 |
-| 2D | glrlm | . | . | . | 32 | . | . | 32 | . | 32 | . | . |
-| 2D | glszm | . | . | . | 16 | . | . | 16 | . | . | . | . |
+| 2D | glrlm | 8 | . | . | 32 | . | . | 32 | . | 32 | . | . |
+| 2D | glszm | 2 | . | . | 16 | . | . | 16 | . | . | . | . |
 | 2D | intensity_histogram | 26 | . | . | 16 | . | . | 23 | . | . | . | 4 |
 | 2D | moments | . | . | . | . | . | . | . | . | . | 118 | 62 |
 | 2D | morphology | 5 | 5 | 2 | . | 20 | 33 | . | . | . | 7 | 30 |
@@ -76,13 +76,13 @@ that alone understates every family that corroborates.
 | 3D | glcm | . | . | . | . | . | . | . | . | 59 | . | . |
 | 3D | gldm | . | . | . | . | . | . | . | . | 14 | . | . |
 | 3D | gldzm | . | . | . | . | . | . | 16 | . | . | . | 2 |
-| 3D | glrlm | . | . | . | . | . | . | . | . | 32 | . | . |
-| 3D | glszm | . | . | . | . | . | . | . | . | 16 | . | . |
+| 3D | glrlm | 8 | . | . | . | . | . | . | . | 32 | . | . |
+| 3D | glszm | 2 | . | . | . | . | . | . | . | 16 | . | . |
 | 3D | morphology | 2 | . | . | . | . | 2 | 8 | . | 6 | . | 6 |
 | 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | 5 | . | 5 | . | . |
 | IMQ | imq | 1 | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **41** | **9** | **2** | **181** | **20** | **95** | **213** | **2** | **272** | **126** | **122** |
+| | **all** | **61** | **9** | **2** | **181** | **20** | **95** | **213** | **2** | **272** | **126** | **122** |
 
 ## By dimensionality
 
