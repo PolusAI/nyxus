@@ -47,12 +47,12 @@ void test_2d_glrlm_long_run_emphasis_analytic()
     ASSERT_NO_FATAL_FAILURE (run_2d_glrlm_on_pixels (roidata, intensity));
 
     const double L2 = double(L) * double(L);
-    assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRE, 0, 1.0 / L2);
-    assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRE, 0, L2);
-    assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRLGLE, 0, 0.625 / L2);
-    assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRHGLE, 0, 2.5 / L2);
-    assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRLGLE, 0, 0.625 * L2);
-    assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRHGLE, 0, 2.5 * L2);
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRE, 0, 1.0 / L2));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRE, 0, L2));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRLGLE, 0, 0.625 / L2));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRHGLE, 0, 2.5 / L2));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRLGLE, 0, 0.625 * L2));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRHGLE, 0, 2.5 * L2));
 }
 
 // bench_glrlm_2d_high_grey_pair -- two adjacent pixels at intensities 1 and G = 70,000. Every
@@ -73,11 +73,11 @@ void test_2d_glrlm_high_grey_level_emphasis_analytic()
         high = (1.0 + G * G) / 2.0;
     for (int angle = 0; angle < 4; angle++)
     {
-        assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LGLRE, angle, low);
-        assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRLGLE, angle, low);
-        assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRLGLE, angle, low);
-        assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_HGLRE, angle, high);
-        assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRHGLE, angle, high);
-        assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRHGLE, angle, high);
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LGLRE, angle, low));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRLGLE, angle, low));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRLGLE, angle, low));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_HGLRE, angle, high));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRHGLE, angle, high));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRHGLE, angle, high));
     }
 }
