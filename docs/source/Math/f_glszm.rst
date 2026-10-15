@@ -534,7 +534,8 @@ Very large zones and bounding boxes
    Large area emphasis is wrong as soon as a zone has more than 46 340 pixels. On a 250 × 250 ROI
    holding one zone of 62 499 pixels and one of 1 pixel, Nyxus returns -194 421 147 instead of
    1 953 062 501, and on a 300 × 300 ROI with a zone of 89 999 pixels, -245 057 295 instead of
-   4 049 910 001. Small area emphasis sums over every zone size up to the size of the bounding box.
+   4 049 910 001. The overflow is undefined behaviour, so a build can also return the true value;
+   one macOS ARM build did. Small area emphasis sums over every zone size up to the size of the bounding box.
    When the bounding box has 65 536 pixels or more, one of those terms is undefined and the value
    is replaced by the ``--noval`` substitute (0 by default; ``-0.0`` in Arrow and Parquet files),
    whatever the zones: a random texture of four grey levels gives about 0.5 in a 255 × 256 box and

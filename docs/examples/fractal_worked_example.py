@@ -4,6 +4,7 @@
 import json
 import math
 import os
+import platform
 from pathlib import Path
 
 # example-start
@@ -95,7 +96,10 @@ check(fd(square(25)), [1.842, 1.0], "one square")
 lone = np.zeros((80, 80), np.uint32)
 lone[0:40, 0:40] = 1
 lone[70, 70] = 1
-for value, quoted in ((100, 1.4156), (4294967295, 1.4951)):
+# the out-of-range conversion is undefined: x86-64 builds give 0 and drop the pixel, ARM builds
+# saturate and count it
+arm = platform.machine().lower() in ("arm64", "aarch64")
+for value, quoted in ((100, 1.4156), (4294967295, 1.4156 if arm else 1.4951)):
     inten = lone * 100
     inten[70, 70] = value
     check([Nyxus(F).featurize(inten, lone)["FRACT_DIM_BOXCOUNT"][0]], [quoted], f"lone pixel {value}")
