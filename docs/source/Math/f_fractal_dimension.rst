@@ -417,8 +417,9 @@ Largest 32-bit intensity
    In memory, on ROIs whose padded side :math:`S` exceeds 32, box counting marks each ROI pixel
    with its intensity plus 1, computed in double precision and converted to a 32-bit unsigned
    integer. For a pixel of intensity 4294967295 the sum is out of range and the result depends on
-   the compiler; on the builds tested it is 0, and the pixel is not counted. A 40 × 40 square with
-   one separate pixel reads 1.4156; with that pixel at intensity 4294967295 it reads 1.4951. Out of
+   the platform: on x86-64 builds it is 0, and the pixel is not counted; on ARM builds it
+   saturates, and the pixel is counted. A 40 × 40 square with one separate pixel reads 1.4156;
+   with that pixel at intensity 4294967295 it reads 1.4951 on x86-64. Out of
    core the pixel is counted, and the ROI reads 1.4156 at both intensities.
 
 
