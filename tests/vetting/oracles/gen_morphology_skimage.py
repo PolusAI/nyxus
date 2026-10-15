@@ -25,10 +25,11 @@ ORIENTATION -- regionprops(...).orientation is the major-axis angle from the ROW
   though the AXIS LENGTHS differ ~1.4%. Those are vetted against MATLAB instead, which applies the
   same +1/12 correction Nyxus does -- see gen_morphology_matlab.m.
 
-EROSIONS_2_VANISH -- number of binary erosions until the object disappears. Nyxus uses a 3x3
-  (8-connected) structuring element == skimage.morphology.footprint_rectangle((3, 3)). The
-  4-connected disk(1) gives a different count (2 vs 1), so the value also pins the connectivity
-  convention. (EROSIONS_2_VANISH_COMPLEMENT is a degenerate 0 on this fixture -- the complement is
+EROSIONS_2_VANISH -- number of binary erosions until the object disappears. Nyxus erodes with the
+  4-connected 3x3 cross and reports one less than the number of erosions it performs;
+  skimage.morphology.footprint_rectangle((3, 3)) counts every erosion of an 8-connected square.
+  Both give 1 on this fixture, so the value is pinned but the structuring element and the counting
+  convention are not. (EROSIONS_2_VANISH_COMPLEMENT is a degenerate 0 on this fixture -- the complement is
   the bbox background ring -- and is not vetted.)
 
 DIAMETER_EQUAL_AREA -- regionprops(...).equivalent_diameter_area = sqrt(4*Area/pi), the same closed
