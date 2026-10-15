@@ -2,7 +2,8 @@
 
 // Shared fixture for the 3D GLRLM tests: the settings a 3D GLRLM assertion runs on.
 
-#include "test_main_nyxus.h"                  // Fsettings, NyxSetting and run_3d_feature_on_volume, with the roi_cache graph
+#include "../src/nyx/feature_settings.h"    // Fsettings, NyxSetting
+#include "test_main_nyxus.h"                  // run_3d_feature_on_volume, with the roi_cache graph
 
 // D3_GLRLM_feature::calculate() reads SOFTNAN, IBSI and GLRLM_GREYDEPTH; 'grey_depth' is inert for
 // this family and passed only so a caller can state the profile it reproduces. 'glrlm_grey_depth'
