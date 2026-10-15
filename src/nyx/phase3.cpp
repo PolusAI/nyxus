@@ -163,12 +163,12 @@ namespace Nyxus
 
 						// Pixel intensity and global position
 						auto intens = dataI[i];
-						size_t row = tileIdx / env.theImLoader.get_num_tiles_hor(),
-							col = tileIdx % env.theImLoader.get_num_tiles_hor(),
+						size_t tileRow = tileIdx / ntHor,
+							tileCol = tileIdx % ntHor,
 							th = env.theImLoader.get_tile_height(),
 							tw = env.theImLoader.get_tile_width();
-						int y = row * th + i / tw,
-							x = col * tw + i % tw;
+						int y = tileRow * th + i / tw,
+							x = tileCol * tw + i % tw;
 
 						// Track the streamed extrema (see the aux_min/aux_max reset above)
 						r.aux_min = (std::min)(r.aux_min, (PixIntens)intens);
