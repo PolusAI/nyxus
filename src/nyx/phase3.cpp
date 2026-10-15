@@ -284,6 +284,7 @@ namespace Nyxus
 			#endif
 		}
 
+		env.theImLoader.close();
 		return true;
 	}
 
