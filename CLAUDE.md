@@ -6,18 +6,29 @@ Guidance for Claude Code (and humans) working in this repository.
 
 Nyxus is a scalable C++/Python library that computes engineered features
 (intensity, texture, morphology, moments, digital-filter) from segmented and
-whole-slide/whole-volume images. It computes 450+ 2D features and a large 3D
-feature set at the ROI or whole-image level, and is designed to operate at any
-scale by assembling ROIs that span multiple image tiles and files.
+whole-slide/whole-volume images. It computes 758 features in all, 539 for 2D
+images, 213 for 3D volumes and 6 image quality features, at the ROI or
+whole-image level (`docs/tools/gen_feature_reference.py --check` keeps these
+counts equal to the code), and is
+designed to operate at any scale by assembling ROIs that span multiple image
+tiles and files.
 
 - **Python API**: classes `Nyxus` (2D), `Nyxus3D` (3D volumes), `Nested`
   (hierarchical parent/child ROIs), `ImageQuality`. Results come back as a
   pandas DataFrame; Arrow IPC and Parquet output are also supported.
 - **CLI**: the `nyxus` executable (built with `-DBUILD_CLI=ON`).
-- **IO**: 2D from OME-TIFF, OME-Zarr, DICOM; 3D from NIFTI (compressed and
-  uncompressed); in-memory NumPy arrays via the Python API.
+- **IO**: TIFF/OME-TIFF and OME-Zarr as 2D images or 3D volumes (OME files up
+  to 5D, X/Y/Z/C/T); DICOM 2D; NIFTI (compressed and uncompressed); in-memory
+  NumPy arrays via the Python API.
 - Upstream is [PolusAI/nyxus](https://github.com/PolusAI/nyxus). C++20,
-  CMake build system. Version is derived from git tags via `setuptools_scm`.
+  CMake build system. Releases are cut by release-please
+  (`release-please-config.json`, `.release-please-manifest.json`) from the
+  Conventional Commit subjects on `main`; on each release the release and
+  wheel builds run `ci-utils/sync_version.py` to stamp the version into
+  `.version`, `src/nyx/version.h` (`PROJECT_VER`, printed by the CLI) and
+  `plugin.json` of the build.
+  The Python package version is derived from the release's git tag via
+  `setuptools_scm`.
 
 ## Repository layout
 
@@ -26,7 +37,7 @@ CMakeLists.txt          top-level build; feature/IO/GPU options
 pyproject.toml          Python packaging (package-dir = src/nyx/python)
 environment.yml         conda deps
 ci-utils/envs/          conda dep lists: conda_cpp.txt, conda_py.txt, conda_gpu.txt, ...
-ci-utils/install_prereq_windows.bat / install_prereq_linux.sh   non-conda dep builders
+ci-utils/install_prereq_win.bat / install_prereq_linux.sh   non-conda dep builders
 .github/workflows/      CI: build_and_test_{windows,ubuntu,mac}.yml + wheel/publish jobs
 docs/                   Sphinx docs (Read the Docs); docs/source/featurelist.rst
 tests/python/           pytest suite (this is what CI runs)
@@ -51,7 +62,7 @@ src/nyx/                all C++ sources
     1:1 code-correspondence check, cyclic-dependency resolution, user-selection
     compilation, `init_feature_classes()`.
   - **`feature_mgr_init.cpp`** — the concrete registration list
-    (`register_feature(new GLCMFeature()); ...` for every 2D/3D feature).
+    (`register_feature(new GLCMFeature()); ...` for every 2D, 3D and image-quality feature class).
     **Start here to see what is actually wired in.**
   - `env_features.cpp`, `environment*.cpp/h`, `feature_settings.h` — parsing the
     requested feature set / groups (e.g. `*ALL*`, `*ALL_GLCM*`, `*WHOLESLIDE*`,
@@ -76,18 +87,20 @@ src/nyx/                all C++ sources
 - **Analysis pipeline** (three phases, declared in `globals.h`, dispatched from
   `main_nyxus.cpp`): dataset drivers `workflow_2d_segmented.cpp`,
   `workflow_2d_whole.cpp`, `workflow_3d_segmented.cpp`, `workflow_3d_whole.cpp`,
-  `workflow_pythonapi.cpp`; then `phase1.cpp` (gather ROI metrics, decide
-  trivial vs oversized), `phase2_2d.cpp` / `phase2_25d.cpp` / `phase2_3d.cpp`
-  (feature calc), `phase3.cpp` (output). ROIs over the memory limit go through
-  `processNontrivialRois()` + each feature's streaming
-  `osized_scan_whole_image()` / `osized_add_online_pixel()`; in-RAM ROIs go
+  `workflow_pythonapi.cpp`; then `phase1.cpp` (gather ROI metrics; the
+  workflow files then sort ROIs into trivial and oversized), `phase2_2d.cpp` / `phase2_25d.cpp` / `phase2_3d.cpp`
+  (feature calc), `phase3.cpp` / `phase3_3d.cpp` (oversized ROIs, out of core);
+  output in `output_2_csv.cpp`, `output_2_buffer.cpp`, `output_2_apache.cpp`.
+  ROIs over the memory limit go through `processNontrivialRois()` (`phase3.cpp`)
+  and `processNontrivialRois_3D()` (`phase3_3d.cpp`), which call each feature's
+  `osized_scan_whole_image()`; in-RAM ROIs go
   through `processTrivialRois*()`. See also `reduce_trivial_rois.cpp`,
   `pixel_feed.cpp`, `features_calc_workflow.cpp`.
 - **Image loading**: `image_loader*.cpp/h`, `raw_image_loader.*`, and format
   backends `raw_tiff.h`, `raw_omezarr.h`, `raw_dicom.h`, `raw_nifti.*`,
   `grayscale_tiff.h`, `abs_tile_loader.h`; NIFTI support under `io/nifti/`.
 - **GPU (CUDA)**: `src/nyx/gpu/*.cu/.cuh` — GPU kernels for the compute-heavy
-  features (Gabor, erosion, geometric moments). Guarded by `-DUSEGPU=ON` /
+  features (Gabor, erosion, geometric moments, GLSZM). Guarded by `-DUSEGPU=ON` /
   `USE_GPU`. Enabled at runtime with `--useGpu=true` (CLI) or the constructor.
 - **Arrow/Parquet output**: `arrow_helpers.cpp`, `arrow_output_stream.*`
   (guarded by `USE_ARROW`).
@@ -119,8 +132,8 @@ A C++20 compiler + CMake ≥ 3.20 are required. Key CMake options:
 
 Deps are easiest via conda (`ci-utils/envs/conda_cpp.txt` + `conda_py.txt`); set
 `NYXUS_DEP_DIR=$CONDA_PREFIX` (or `$CONDA_PREFIX/Library` on Windows) so CMake
-finds them. The README "Building from source" section has full Linux/Windows and
-Docker recipes.
+finds them. The "Building from source" section of the installation guide
+(`docs/source/installation.rst`) has the full recipes.
 
 ### Windows (MSVC + optional CUDA)
 
@@ -135,14 +148,19 @@ build cannot link them. Full-feature + CUDA build (paths below are placeholders:
    ```
 2. Configure with the **Ninja** generator so `nvcc` can use `cl` as its host
    compiler (no CUDA MSBuild integration needed): run the Visual Studio
-   `vcvars64.bat` first, then `cmake -G Ninja -DCMAKE_CXX_COMPILER=cl
-   -DBUILD_CLI=ON -DALLEXTRAS=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$ENV\Library
-   -DNYXUS_DEP_DIR=$ENV\Library ..` then `cmake --build . --config Release`.
+   `vcvars64.bat` first, then `cmake -S . -B build-cli -G Ninja
+   -DCMAKE_CXX_COMPILER=cl -DCMAKE_BUILD_TYPE=Release -DBUILD_CLI=ON
+   -DALLEXTRAS=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$ENV\Library` then
+   `cmake --build build-cli`. With MSVC, CMake presets `Debug` for Ninja and
+   `--config` has no effect there, so `-DCMAKE_BUILD_TYPE=Release` is required.
+   (`NYXUS_DEP_DIR` is read only as an environment variable, not as a `-D`
+   cache variable.)
 3. To run, put `$ENV\Library\bin` (dependency DLLs) and the CUDA toolkit `bin`
    on PATH.
 
 **Fast Python-extension build** for running the test suite (tiff-only CPU):
-same as above but `-DBUILD_LIB=ON -DALLEXTRAS=OFF -DUSEGPU=OFF
+same as above (keep `-DCMAKE_BUILD_TYPE=Release`, which
+`CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE` below relies on) but `-DBUILD_LIB=ON -DALLEXTRAS=OFF -DUSEGPU=OFF
 -DPYTHON_EXECUTABLE=$ENV\python.exe -Dpybind11_DIR=$ENV\Lib\site-packages\pybind11\share\cmake\pybind11`
 and `--target backend`, with `-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE` pointed at
 `src\nyx\python\nyxus` so the `.pyd` lands in the package. With `ALLEXTRAS=OFF`
@@ -172,15 +190,17 @@ test can hide such failures. Requires an importable `nyxus.backend` (`.pyd` on
 `serial`, `skip_ci`. Key files: `test_nyxus.py` (main API) plus the oracle /
 regression suites listed under "Feature validation" below.
 
-**C++ (GoogleTest, `tests/`)** — target `runAllTests` (enabled from the
-top-level `CMakeLists.txt`; gtest fetched via `tests/CMakeLists.txt` +
-`CMakeLists.txt.gtest`). `tests/test_all.cc` is the single gtest `main` and
+**C++ (GoogleTest, `tests/`)** — target `runAllTests` (enabled with
+`-DRUN_GTEST=ON` in the top-level `CMakeLists.txt`, which fetches gtest at
+configure time from `tests/CMakeLists.txt.gtest` and adds `tests/`).
+`tests/test_all.cc` is the single gtest `main` and
 `#include`s the many `test_*.h` headers (they are intentionally **not** listed
-in CMake — see the note in `tests/CMakeLists.txt`). Headers are grouped by
-feature and by oracle: `test_<feat>_ibsi.h` (IBSI conformance),
-`test_<feat>_pyradiomics.h`, `test_<feat>_regression.h`,
-`test_<feat>_mechanics.h`, and `test_3d_<feat>*.h`; fixtures in `test_data.h`.
-Images live in `tests/data/`.
+in CMake — see the note in `tests/CMakeLists.txt`). Headers are named
+`test_<dim>_<family>_<kind-or-oracle>.h` (see "Feature validation" below):
+e.g. `test_2d_glcm_ibsi.h` (IBSI conformance), `test_2d_glcm_pyradiomics.h`,
+`test_3d_glcm_regression.h`, `test_2d_glcm_mechanics.h`; a family's shared
+fixtures are in `test_<dim>_<family>_common.h`, the general ones in
+`test_data.h`. Images live in `tests/data/`.
 
 ## Feature validation ("oracle") framework
 
@@ -199,9 +219,9 @@ governing documents are:
   authoring checklist for adding a vetted feature. Any new or changed test must
   follow it — taxonomy, naming, tolerances, and registry update included.
 - `tests/vetting/oracle_coverage.csv` — the single source of truth: one row per
-  assertion (`feature × config_recipe × oracle`) with its `outcome`
-  (`vetted` / `regression` / `invariant` / `not_tested` / `not_implemented` /
-  `dropped_invalid`), tolerance, backing test, and benchmark. A feature counts
+  assertion (`feature × config_recipe × oracle`) with its `status`
+  (`vetted` / `regression` / `invariant` / `untested`; only a `vetted` row
+  names an `oracle`), tolerance, backing test, and benchmark. A feature counts
   as vetted iff it has ≥1 `vetted` oracle row.
 - `tests/vetting/config_recipes.md` — the exact Nyxus + tool settings that make
   a feature directly comparable to a reference (referenced by id from the
@@ -210,7 +230,7 @@ governing documents are:
   supporting guides.
 - Allowed oracle tokens (SPEC §4): pyradiomics, radiomicsj, skimage, mirp,
   matlab, cellprofiler, mitk, feature2djava, wndcharm, imea, imagej, fraclac,
-  pydicom, ibsi, analytic. Oracle goldens are generated **offline** by a
+  pydicom, opencv, ibsi, analytic. Oracle goldens are generated **offline** by a
   checked-in generator (`tests/vetting/oracles/gen_<family>_<oracle>.*`) and
   pinned with full provenance — **reference tools are never CI runtime
   dependencies**.
@@ -232,9 +252,9 @@ tolerance loose enough to pass a known-bad value is itself a test bug.
 
 - **Branches** are cut from and named after their base branch as
   `main-<topic>` (not `fix/` or `feat/`).
-- **Annotate changed source lines**: when fixing a defect, add a brief comment
-  on the changed line(s) explaining the defect and the fix, so the reason
-  survives in the code.
+- **Comment changed source lines** with what the code does and why it does it
+  that way. The history of a change (the defect and the fix) belongs in the
+  commit message, not in the code.
 - Match the density, naming, and idiom of the surrounding code.
 - **Run `pytest tests/python/` (the full directory) locally before proposing a
   push** — it mirrors CI and catches cross-test pollution.
@@ -263,6 +283,7 @@ tolerance loose enough to pass a known-bad value is itself a test bug.
 ## Docs
 
 Feature reference: `docs/source/featurelist.rst`. Rendered docs at
-https://nyxus.readthedocs.io. The README has extensive Python/CLI usage
-examples (directory/file/NumPy featurization, whole-slide, 3D, nested ROIs,
-Hounsfield/CT handling, anisotropy, Arrow/Parquet output).
+https://nyxus.readthedocs.io. Usage examples (directory/file/NumPy
+featurization, whole-slide, 3D, nested ROIs, Hounsfield/CT handling,
+anisotropy, Arrow/Parquet output) are in the documentation, starting at
+`docs/source/cmdline_and_examples.rst`; the README has only a short quick start.

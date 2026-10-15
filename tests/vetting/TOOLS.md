@@ -1,6 +1,6 @@
 # Oracle tools — local setup & coverage (research findings)
 
-How to stand up each oracle tool locally (Docker or Python venv; MATLAB excluded — license). One
+How to stand up each oracle tool locally (Docker or Python venv; MATLAB needs a licensed install and is never a CI dependency). One
 research pass per tool; see per-tool detail below and the setup matrix first.
 
 ## Setup matrix
