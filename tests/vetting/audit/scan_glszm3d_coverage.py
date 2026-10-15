@@ -33,7 +33,7 @@ SOURCES = [
 # by grey level rather than by feature and cover no feature at all.
 TABLE_OWNER = {
     "glszm_3d_pyradiomics_gapped_ref_vals": "test_3d_glszm_ibsi_gapped_pyradiomics",
-    "glszm_3d_regression_nobinning_ref_vals": "test_3d_glszm_default_greydepth_regression",
+    "glszm_3d_regression_nobinning_ref_vals": "test_3d_glszm_no_binning_regression",
 }
 
 ORACLE_SUFFIX = {"pyradiomics": "pyradiomics"}
@@ -48,7 +48,7 @@ RECIPE_READER = {
     "glszm3d.pyradiomics_ibsi_gapped": re.compile(r"^test_3d_glszm_ibsi_gapped_pyradiomics$"),
     "glszm3d.regression_ut_phantom": re.compile(r"^test_3d_glszm_[a-z0-9]+_regression$"),
     "glszm3d.regression_ut_phantom_nobinning":
-        re.compile(r"^test_3d_glszm_default_greydepth_regression$"),
+        re.compile(r"^test_3d_glszm_no_binning_regression$"),
     "glszm3d.regression_constant_roi": re.compile(r"^test_3d_glszm_constant_roi_regression$"),
 }
 

@@ -233,3 +233,50 @@ void test_3d_gldzm_zde_radiomics_mirp() {
 	assert_3d_gldzm_feature_mirp (Nyxus::Feature3D::GLDZM_ZDE, "3GLDZM_ZDE",
 		make_gldzm3d_settings(-8, false));
 }
+
+// ---------------------------------------------------------------------------------------------------
+// The negative coarse grey depth at a bin count that re-bins, recipe gldzm3d.mirp_fbn20_negdepth:
+// GREYDEPTH = -20 on the segmented phantom (ut_inten.nii + ut_mask57.nii, label 57), whose 2001 levels
+// it folds into 20 PyRadiomics-style bins over the ROI's own [min, max] -- IBSI's fixed bin number --
+// against MIRP base_discretisation_method="fixed_bin_number", n_bins=20, each tool discretising for
+// itself. gldzm3d.mirp_compat_phantom_radiomics above runs the same scheme where it is the identity;
+// this is the point where it is not. MIRP is handed the integer levels Nyxus loads the float phantom
+// as (the loader's shift, not a binning step).
+//
+// Provenance (SPEC 6.4): tool=mirp 2.6.0, by_slice=False;
+// generator=tests/vetting/oracles/gen_negative_greydepth_mirp.py (re-verifies every pin with --check).
+// Measured residual 2.4e-16 worst case, 4.1e-15 on 3GLDZM_ZDE; asserted at rel=1e-9, and at
+// rel=1e-6 for 3GLDZM_ZDE, the family's one logarithm.
+static const ref_vals_map<double> gldzm_3d_mirp_negdepth_ref_vals{
+		{ "3GLDZM_SDE",	0.6842603639540243 },		// dzm_sde_3d_fbn_n20
+		{ "3GLDZM_LDE",	3.147037956722242 },		// dzm_lde_3d_fbn_n20
+		{ "3GLDZM_LGLZE",	0.006184750720985788 },		// dzm_lgze_3d_fbn_n20
+		{ "3GLDZM_HGLZE",	247.83682156793188 },		// dzm_hgze_3d_fbn_n20
+		{ "3GLDZM_SDLGLE",	0.0028345794792165105 },		// dzm_sdlge_3d_fbn_n20
+		{ "3GLDZM_SDHGLE",	201.29563699595957 },		// dzm_sdhge_3d_fbn_n20
+		{ "3GLDZM_LDLGLE",	0.03740473942858066 },		// dzm_ldlge_3d_fbn_n20
+		{ "3GLDZM_LDHGLE",	508.3433841787868 },		// dzm_ldhge_3d_fbn_n20
+		{ "3GLDZM_GLNU",	482.0610145441646 },		// dzm_glnu_3d_fbn_n20
+		{ "3GLDZM_GLNUN",	0.08550213099399868 },		// dzm_glnu_norm_3d_fbn_n20
+		{ "3GLDZM_ZDNU",	2540.028024122029 },		// dzm_zdnu_3d_fbn_n20
+		{ "3GLDZM_ZDNUN",	0.4505193373753156 },		// dzm_zdnu_norm_3d_fbn_n20
+		{ "3GLDZM_ZP",	0.02054425139925373 },		// dzm_z_perc_3d_fbn_n20
+		{ "3GLDZM_GLV",	14.773653316112062 },		// dzm_gl_var_3d_fbn_n20
+		{ "3GLDZM_ZDV",	0.7135929028191487 },		// dzm_zd_var_3d_fbn_n20
+		{ "3GLDZM_ZDE",	4.552263594474714 }		// dzm_zd_entr_3d_fbn_n20
+};
+
+void test_3d_gldzm_negative_greydepth_mirp()
+{
+	auto [ipath, mpath, label] = get_3d_segmented_phantom();
+	std::vector<std::vector<double>> fvals;
+	ASSERT_NO_FATAL_FAILURE (extract_3d_gldzm (fvals, ipath, mpath, label, make_gldzm3d_settings (-20, false)));
+
+	for (const auto& [name, golden] : gldzm_3d_mirp_negdepth_ref_vals)
+	{
+		SCOPED_TRACE ("MIRP_ORACLE__" + name);
+		const double actual = fvals[(int)Nyxus::UserFacing_3D_featureNames.at(name)][0];
+		const double frac = name == "3GLDZM_ZDE" ? 1e6 : 1e9;
+		ASSERT_TRUE (agrees_gt (actual, golden, frac)) << name << " actual=" << std::setprecision(17) << actual;
+	}
+}

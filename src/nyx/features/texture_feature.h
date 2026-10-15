@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cmath>
 #include "image_matrix.h"
 #include "image_cube.h"
 
@@ -98,17 +99,35 @@ public:
 		}
 	}
 
+	// NGLDM's grey level of intensity 'x' of a ROI spanning [min_I_inten, max_I_inten]. The sign of
+	// 'greybin_info' selects the kind of scheme as it does for bin_pixel(), 0 keeping the raw level and
+	// a negative value taking abs() PyRadiomics bins over [min, max]; IBSI keeps the raw level. A
+	// positive value n is NGLDM's own scheme, not bin_pixel()'s MATLAB one: Nyxus::to_grayscale()
+	// truncates n x / max, so [0, max] maps onto the n + 1 levels 0..n, where bin_pixel() gives 1..n.
+	static PixIntens ngldm_grey_level (PixIntens x, PixIntens min_I_inten, PixIntens max_I_inten, int greybin_info, bool ibsi)
+	{
+		if (ibsi || ibsi_grey_binning(greybin_info))
+			return x;
+		if (radiomics_grey_binning(greybin_info))
+			return to_grayscale_radiomix (x, min_I_inten, max_I_inten, std::abs(greybin_info));
+		return Nyxus::to_grayscale (x, 0, max_I_inten, greybin_info);
+	}
+
 	static inline bool matlab_grey_binning (int greybinning_info) { return greybinning_info > 0; }
 	static inline bool radiomics_grey_binning (int greybinning_info) { return greybinning_info < 0; }
 	static inline bool ibsi_grey_binning (int greybinning_info) { return greybinning_info == 0; }
 
-	// returns 1-based bin indices
+	// returns 1-based bin indices: IBSI's fixed bin number, floor(n (x - min) / (max - min)) + 1. The
+	// product is taken before the division so that a level on a bin edge -- n (x - min) a multiple of
+	// (max - min), exact in double for integer levels -- lands in the bin above it, as it does in
+	// PyRadiomics and MIRP. A ROI of one intensity has a range of zero width, which is one bin.
 	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__, PixIntens max__, int binCount)
 	{
 		if (x)
 		{
-			double binW = double(max__ - min__) / double(binCount);
-			PixIntens y = (PixIntens) (double(x - min__) / binW + 1);
+			if (max__ <= min__)
+				return 1;
+			PixIntens y = (PixIntens) (std::floor (double(binCount) * double(x - min__) / double(max__ - min__)) + 1);
 			if (y > binCount)
 				y = binCount;	// the last bin is +1 unit wider
 			return y;

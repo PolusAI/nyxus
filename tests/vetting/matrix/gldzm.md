@@ -24,7 +24,7 @@ angle or alpha axis at all, unlike GLCM, GLRLM or NGLDM.
 | True | none (identity on an already-discrete fixture) | phantom's own 1..6 | VALID | `gldzm.ibsi_phantom_2d` — mirp + ibsi |
 | True | none | phantom's own 1..6 | VALID-prod-only, 2 features | `GLDZM_GLM`, `GLDZM_ZDM` — no oracle exposes either → `test_2d_gldzm_regression.h` |
 | False | MATLAB (`GREYDEPTH > 0`) | any | NOT MEASURED | see below |
-| False | radiomics (`GREYDEPTH < 0`) | any | NOT MEASURED | see below |
+| False | radiomics (`GREYDEPTH < 0`) | 20 bins | VALID, 6 features | `gldzm.mirp_fbn20_negdepth` — mirp on `bench_square12_graded`, the six features that read no border distance; the other ten NOT MEASURED, see below |
 | any | any | ROI with `aux_min == aux_max` | INVALID | degenerate — a blank ROI has no zones; `calculate()` returns NaN before building a matrix, guarded in code rather than by an oracle |
 
 ## Why the IBSI point is one row and not one per level count
@@ -80,8 +80,15 @@ value is a bug in the test, and per SPEC §6.3.1 a table named `_ibsi` may not h
 
 The production path (`IBSI=false`) is reachable for 2D GLDZM and is a genuinely different level
 assignment, in two variants: MATLAB binning at `coarse_gray_depth` and radiomics binning at
-`GREYDEPTH < 0`. **No 2D GLDZM assertion in the tree runs on either** — every test in
-`test_2d_gldzm_{ibsi,mirp,regression}.h` calls `make_gldzm2d_settings(true)` — and this family's
-vetting did not measure them. They are recorded here as open points rather than omitted, so the next
-revisit knows they were never triaged rather than assuming they were ruled out. Note this is a
-weaker position than GLDM's, which at least drift-pins its MATLAB-binned production point.
+`GREYDEPTH < 0`.
+
+**MATLAB binning** has no assertion in the tree and was not measured. It is recorded here as an open
+point rather than omitted, so the next revisit knows it was never triaged. Note this is a weaker
+position than GLDM's, which at least drift-pins its MATLAB-binned production point.
+
+**Radiomics binning** is vetted on six features, `gldzm.mirp_fbn20_negdepth`. The other ten read a
+zone's border distance, and the fixture cannot judge them: `bench_square12_graded` fills its bounding
+box, so a zone's distance to the ROI border is its distance to the frame under any definition. On a
+ROI with background inside it the 2D distance map and IBSI's part -- measured on a disk over a
+gradient at no binning, `GLDZM_SDE` 0.0607 against MIRP's 0.0993 -- so the ten wait on that, not on
+the binning.

@@ -308,7 +308,7 @@ void IntensityHistogramFeatures::calculate (LR& r, const Fsettings& s, const Dat
 		return;
 	}
 
-	int nbins = STNGS_MISSING(s) ? DEFAULT_NUM_HISTO_BINS : STNGS_NGREYS(s);
+	int nbins = STNGS_MISSING(s) ? DEFAULT_NUM_HISTO_BINS : histogram_bin_count (STNGS_NGREYS(s));
 	double mn = r.aux_min, mx = r.aux_max;
 	size_t cnt = r.raw_pixels.size();
 
@@ -346,7 +346,7 @@ void IntensityHistogramFeatures::osized_calculate (LR& r, const Fsettings& s, co
 		return;
 	}
 
-	int nbins = STNGS_MISSING(s) ? DEFAULT_NUM_HISTO_BINS : STNGS_NGREYS(s);
+	int nbins = STNGS_MISSING(s) ? DEFAULT_NUM_HISTO_BINS : histogram_bin_count (STNGS_NGREYS(s));
 	double mn = r.aux_min, mx = r.aux_max;
 	size_t cnt = r.raw_pixels_NT.size();
 

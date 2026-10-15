@@ -86,11 +86,9 @@ own profile, so a table and its assertions cannot drift apart.
 Sanity checks worth running on any regenerated set, both of which the pre-2026-08 goldens failed:
 
 - `SRE`, `RP`, `GLNN` and `RLNN` are bounded in **[0,1]** and `LRE` is **≥ 1**. A value outside those
-  is a broken golden — or, for `RP` at positive grey depths, the open implementation defect recorded
-  in `glrlm_3d_pyradiomics_vetting_report.md`. That is why the `glrlm3d.regression_ut_phantom`
-  benchmark uses binCount binning and not a positive `GLRLM_GREYDEPTH`. The grey64 table below is the
-  one deliberate exception and it does trip this check — 4 of `RP`'s 13 angles read 1.0231 — which is
-  the filed defect showing through, not a broken golden.
+  is a broken golden. `TEST_3D_GLRLM_BOUNDED_FEATURES_INVARIANT` asserts the five bounds on all 13
+  directions of the same phantom across binCount, unbinned and MATLAB grey depths, so a regenerated
+  table that broke one would already have failed it.
 - The magnitudes must be consistent with the bin count. Unbinned, `HGLRE` reaches 4.3e6; at 64 grey
   levels the ceiling is ~4e3. An `HGLRE` in the millions means `GLRLM_GREYDEPTH` was never set.
 
@@ -99,6 +97,12 @@ Sanity checks worth running on any regenerated set, both of which the pre-2026-0
 Recipe `glrlm3d.regression_ut_phantom_grey64`: the same segmented phantom at `GLRLM_GREYDEPTH=+64`,
 which `bin_intensities_3d()` routes through `matlab_grey_binning` — a fixed 64-level count — instead
 of the binCount binning derived from the ROI's own min/max.
+
+The ROI does not fill its bounding box, and MATLAB binning sends intensity 0 to level 1, so at this
+recipe what counts as background decides every value: the family takes it from the ROI's voxel cloud
+and gives it level 0, at which no run is counted. The table was regenerated on that code, and that is
+why its 16 means differ from the retired sweep's literals described below, which counted the
+background's runs at level 1 and put `RP` above 1 on 4 of the 13 angles.
 
 It pins **every slot of all 32 features**: the 13 angled values of each base feature and the single
 mean its `*_AVE` twin stores. The family's retired coverage sweep pinned only the 16 means, and
@@ -126,9 +130,8 @@ Checks run mechanically over the whole table rather than spot-checked (`revet.tx
 
 | check | result |
 |---|---|
-| every `*_AVE` pin == arithmetic mean of its own 13 per-angle pins | worst `rel=2.9e-16` (`LRLGLE_AVE`), passes at `rel=1e-12` |
-| `SRE`, `GLNN`, `RLNN` ∈ [0,1] over all 13 angles and the mean | pass |
-| `RP` ∈ [0,1] | **fails on 4 of 13 angles** (1.0231) — the filed defect, see below |
+| every `*_AVE` pin == arithmetic mean of its own 13 per-angle pins | worst `rel=1.5e-16` (`RLN_AVE`), passes at `rel=1e-12` |
+| `SRE`, `GLNN`, `RLNN`, `RP` ∈ [0,1] over all 13 angles and the mean | pass |
 | `LRE` ≥ 1 | pass |
 | `RE`, `GLV`, `RV` ≥ 0 | pass |
 

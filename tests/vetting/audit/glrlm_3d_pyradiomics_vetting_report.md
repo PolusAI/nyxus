@@ -190,44 +190,36 @@ base assertions compare every direction; the `*_AVE` assertions keep the directi
 still read the stored feature. Planted-defect check: a 1e-5 relative error in a single direction of a
 single feature fails the base assertion, where the averaged form passed it.
 
-## `3GLRLM_RP` leaves its mathematical bound — filed, not fixed here
+## `3GLRLM_RP` and the other bounded features, across every binning
 
-Run Percentage is runs / voxels and cannot exceed 1. On the `ut_` segmented phantom, averaged over
-the 13 angles, it does:
+Run Percentage is runs / voxels and lies in [0, 1]; `SRE`, `RLNN` and `GLNN` do too, and `LRE` is at
+least 1. On the `ut_` segmented phantom, averaged over the 13 angles:
 
 | `GLRLM_GREYDEPTH` | `RP` | `SRE` | `RLNN` | `GLNN` | `LRE` |
 |---|---|---|---|---|---|
 | −20 (binCount 20) | 0.703 | 0.841 | 0.676 | 0.052 | 4.73 |
 | −100 (binCount 100) | 0.917 | 0.961 | 0.907 | 0.010 | 1.59 |
 | 0 (unbinned) | 0.990 | 0.994 | 0.986 | 0.0006 | 1.04 |
-| 32 | 0.819 | 0.766 | 0.556 | 0.052 | 33.5 |
-| 64 | 0.940 | 0.846 | 0.688 | 0.030 | 27.0 |
-| 100 | 0.987 | 0.872 | 0.736 | 0.023 | 25.0 |
-| 128 | **1.007** | 0.882 | 0.757 | 0.020 | 24.3 |
-| 256 | **1.045** | 0.901 | 0.794 | 0.014 | 23.0 |
+| 32 | 0.721 | 0.845 | 0.682 | 0.048 | 4.08 |
+| 64 | 0.842 | 0.923 | 0.824 | 0.024 | 2.35 |
+| 100 | 0.890 | 0.947 | 0.875 | 0.015 | 1.84 |
+| 128 | 0.909 | 0.957 | 0.898 | 0.012 | 1.66 |
+| 256 | 0.948 | 0.974 | 0.937 | 0.006 | 1.32 |
 
-It grows monotonically with the bin count and crosses 1 at positive grey depths ≥ 128 for the
-13-angle average (≥ 64 for a single angle). Every other bounded feature in the family stays in range
-across the whole sweep, so this is specific to `RP`. More runs than voxels is impossible, and the
-monotone growth points at a denominator that does not track the binning.
+Every value is in range, and at positive grey depths the five move with the bin count the way they
+do under binCount binning. The ROI does not fill its bounding box, and MATLAB binning (a positive
+grey depth) sends intensity 0 to level 1, the level the ROI's darkest voxels carry; the family takes
+the background from the ROI's voxel cloud instead and gives it level 0, at which no run is counted.
+Counted at level 1, the background's runs put `RP` above 1 on 4 of the 13 angles at +64 (1.0231) and
+on the 13-angle average from +128 up, and pushed `LRE` to 23–34.
 
-The per-angle figure is now pinned rather than described. At `GLRLM_GREYDEPTH=+64`,
-`glrlm_3d_regression_grey64_ref_vals` records **4 of the 13 angles at 1.0231204815764925** — angles
-0, 2, 6 and 8 — against a 13-angle average of 0.9400989344144661. The average is what the table used
-to hold on its own, and it is in range, which is precisely why an aggregate-only pin could not have
-shown this.
+`test_3d_glrlm_bounded_features_invariant` asserts all five bounds on every one of the 13 angles of
+this phantom, at −100, −20, 0, 32, 64, 128 and 256. It checks per angle because the average can stay
+in range while single angles leave it, which is what an aggregate-only pin could not have shown.
 
-**Not fixed here** — it is a behaviour change in a public feature and belongs on its own branch,
-alongside a cheap invariant test (`RP ≤ 1`, `SRE ≤ 1`, `LRE ≥ 1`) so the class of defect cannot return
-silently. That check is what found this one.
-
-Both of this branch's benchmarks use binCount binning, where `RP` is in range, and the
-`3GLRLM_RP_AVE` registry row says so explicitly rather than claiming the feature holds at every
-config. A third benchmark joined the file when the family's coverage sweep was retired — the grey64
-table in `test_3d_glrlm_regression.h`, at `GLRLM_GREYDEPTH=+64` — and because it pins per angle
-rather than only the mean, it is the first artifact in the tree that carries the out-of-bound values
-themselves. They are pinned as a drift guard with a comment naming this section, not endorsed: the
-fix will show up as a diff on four numbers instead of as a silent change.
+Both of this branch's benchmarks use binCount binning. A third joined the file when the family's
+coverage sweep was retired: the grey64 table in `test_3d_glrlm_regression.h`, at
+`GLRLM_GREYDEPTH=+64`, pinned per angle.
 
 ## Include hygiene and file-level observations
 

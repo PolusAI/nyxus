@@ -7,13 +7,13 @@
 // GLSZM_GREYDEPTH=64, whose positive sign selects MATLAB-style binning into that many levels, so bin 1
 // is the background level and a voxel binned there starts no zone of its own.
 //
-// Recipe glszm3d.regression_ut_phantom_nobinning: the same phantom at GLSZM_GREYDEPTH=0, which is the
-// value a run that passes no --3glszm/greydepth reaches the feature with. It is a third binning
-// scheme rather than a coarser version of the second -- the background is intensity 0 there and bin 1
-// under MATLAB binning -- so it gets its own table. Nothing vets it: PyRadiomics has no counterpart
-// for reading raw levels off an unbinned volume, so these are Nyxus' own numbers and catch movement
-// only. What the family's default DOES have an oracle for is the same setting on a fixture small
-// enough for one: test_3d_glszm_ibsi_gapped_pyradiomics.
+// Recipe glszm3d.regression_ut_phantom_nobinning: the same phantom at GLSZM_GREYDEPTH=0, no binning,
+// which --coarseGrayDepth=0 or 3glszm/greydepth=0 selects. A run that names neither bins at the coarse
+// grey depth, 64, which is the recipe above. It is a third binning scheme rather than a coarser version
+// of the second -- the background is intensity 0 there and bin 1 under MATLAB binning -- so it gets
+// its own table. Nothing vets it here: PyRadiomics has no counterpart for reading raw levels off an
+// unbinned volume, so these are Nyxus' own numbers and catch movement only. The same setting does
+// have an oracle on a fixture small enough for one: test_3d_glszm_ibsi_gapped_pyradiomics.
 //
 // Pins are the program's own %.17g output -- a value truncated to five digits eats a third of a
 // rel=1e-3 band before the test starts. Regenerate them with
@@ -217,11 +217,11 @@ void test_3d_glszm_ze_regression() {
 	assert_3d_glszm_feature_regression (Nyxus::Feature3D::GLSZM_ZE, "3GLSZM_ZE");
 }
 
-// The family at the settings a run with no --3glszm/greydepth flag reaches it with, pinned rather
-// than merely asserted finite (test_3d_glszm_mechanics.h does the finiteness). One case for the
+// The family with no binning, pinned rather than merely asserted finite (test_3d_glszm_mechanics.h
+// does the finiteness, at the default depth). One case for the
 // sixteen because one phantom read answers all of them, and at this setting the matrix is Ng = the
 // phantom's largest raw level wide, which is not a read to repeat sixteen times.
-void test_3d_glszm_default_greydepth_regression()
+void test_3d_glszm_no_binning_regression()
 {
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();
 	Fsettings s = make_glszm3d_settings (64/*greydepth, inert for this family*/, 0/*no binning*/);

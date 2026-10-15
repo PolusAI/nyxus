@@ -316,6 +316,25 @@ goldens' meaning — see `audit/gabor_2d_skimage_vetting_report.md` §4.1.
 
 ---
 
+## `bench_square12_graded` — a 12x12 ROI whose levels land on bin edges
+
+| | |
+|---|---|
+| Data | `Nyxus::make_2d_square12_graded_phantom()` in `tests/test_main_nyxus.h` |
+| ROI | the 12x12 interior of a 14x14 frame, at levels `100 + 3 ((7x + 11y + xy) mod 37)` |
+| Shape | 36 distinct levels over 100-208; at 20 PyRadiomics-style bins (range 108, bin width 5.4) five of the 144 pixels sit exactly on a bin edge |
+| Why it exists | the smallest fixture that separates IBSI's fixed bin number, `floor(n (x - min) / (max - min)) + 1`, from a formula that divides by a rounded bin width and puts an edge level one bin low. The IBSI phantom has six levels, which 20 bins leave where they are, so it cannot show this |
+
+Recipes: `ngldm.mirp_fbn20_negdepth`, `gldzm.mirp_fbn20_negdepth`.
+
+Tests reaching it today: `test_2d_ngldm_mirp.h`, `test_2d_ngldm_mechanics.h`, `test_2d_gldzm_mirp.h`.
+
+It lives in `test_main_nyxus.h` because two families read it (SPEC 6.3.1).
+`oracles/gen_negative_greydepth_mirp.py` builds the same array for MIRP and `--check` compares the
+formula in the header with its own. It fills its bounding box, so a GLDZM zone's border distance on
+it is the distance to the frame -- which is why 2D GLDZM pins only its six features that read none.
+
+---
 ## `bench_scene7_5roi_enclosed` — five labelled ROIs in one 7×7 scene
 
 | | |

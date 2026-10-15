@@ -1,3 +1,6 @@
+#include <cerrno>
+#include <climits>
+#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -189,7 +192,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tDefault: 1 \n"
 		<< "\t\t" << OPT << clo_PXLDIST << "=<number of pixels as neighbor features radius> \n"
 		<< "\t\t\tDefault: 5 \n"
-		<< "\t\t" << OPT << clo_COARSEGRAYDEPTH << "=<custom number of grayscale levels> \n"
+		<< "\t\t" << OPT << clo_COARSEGRAYDEPTH << "=<texture grey binning: N > 0 is N MATLAB-style levels, 0 is no binning, N < 0 is |N| PyRadiomics-style bins> \n"
 		<< "\t\t\tDefault: 64 \n"
 		<< "\t\t" << OPT << clo_GLCMANGLES << "=<one or more comma separated rotation angles from set {0, 45, 90, and 135}> \n"
 		<< "\t\t\tDefault: 0,45,90,135 \n"
@@ -665,12 +668,24 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	// parse COARSEGRAYDEPTH
 	if (!raw_coarse_grayscale_depth.empty())
 	{
-		// string -> integer
-		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1)
+		// string -> integer, as strtol reads one: optional leading whitespace and sign, then digits that
+		// must end the text. Every sign is meaningful, and the magnitude is a level or bin count, so it
+		// has to be an int: INT_MIN and anything strtol reports out of range are refused rather than wrapped
+		const char* raw = raw_coarse_grayscale_depth.c_str();
+		char* end = nullptr;
+		errno = 0;
+		long v = std::strtol (raw, &end, 10);
+		if (end == raw || *end != '\0')
 		{
 			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting an integer constant\n";
 			return false;
 		}
+		if (errno == ERANGE || v <= INT_MIN || v > INT_MAX)
+		{
+			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": out of range, the magnitude must be at most " << INT_MAX << "\n";
+			return false;
+		}
+		coarse_grayscale_depth = (int) v;
 	}
 
 	if (!rawVerbosity.empty())
@@ -930,7 +945,7 @@ int Environment::get_coarse_gray_depth()
 	return coarse_grayscale_depth;
 }
 
-void Environment::set_coarse_gray_depth(unsigned int new_depth)
+void Environment::set_coarse_gray_depth(int new_depth)
 {
 	coarse_grayscale_depth = new_depth;
 }

@@ -13,6 +13,7 @@ import scanlib
 
 SOURCES = [
     "test_2d_ngldm_ibsi.h",
+    "test_2d_ngldm_mechanics.h",
     "test_2d_ngldm_mirp.h",
     "test_2d_ngldm_regression.h",
 ]
@@ -34,6 +35,7 @@ FAMILY = scanlib.Family(
     dim="2D", family="ngldm",
     sources=SOURCES,
     oracle_suffix={"mirp": "mirp", "ibsi": "ibsi"},
+    table_owner={"ngldm_2d_mirp_negdepth_ref_vals": "test_2d_ngldm_negative_greydepth_mirp"},
     notes=scanlib.dual_oracle_notes(NOTE, DUAL_ORACLE),
 )
 

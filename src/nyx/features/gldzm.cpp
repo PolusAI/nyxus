@@ -100,8 +100,11 @@ void GLDZMFeature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLDZM, 
 			if (int(inten) == VISITED)
 				continue;
 
-			// Skip 0-intensity pixels (usually out of mask pixels)
-			if (ibsi_grey_binning(greyInfo))
+			// Skip 0-intensity pixels, the level the background outside the mask keeps under no
+			// binning and under PyRadiomics binning, and which is no row of the matrix. MATLAB binning
+			// sends 0 to level 1, so there the background is binned like a ROI pixel and its zones are
+			// counted at level 1.
+			if (ibsi_grey_binning(greyInfo) || radiomics_grey_binning(greyInfo))
 				if (inten == 0)
 					continue;
 
