@@ -6,1107 +6,125 @@
 [![Conda](https://img.shields.io/conda/v/conda-forge/nyxus)](https://anaconda.org/conda-forge/nyxus)
 [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/nyxus?label=Conda%20downloads)](https://anaconda.org/conda-forge/nyxus)
 
-Scalable Python library for calculating engineered geometric features from segmented and whole-slide images and volumes
+Nyxus computes intensity, texture, morphology and image quality features for every region of
+interest (ROI) in 2D images and 3D volumes: 758 features in all, 539 for 2D images, 213 for 3D
+volumes and 6 image quality features. It runs from Python or the command line, reads TIFF,
+OME-TIFF, OME-Zarr, NIfTI and DICOM files (OME-TIFF and OME-Zarr with up to five dimensions), and
+assembles ROIs that span several image tiles. Each feature's validation against reference tools
+such as PyRadiomics, MIRP, MATLAB and CellProfiler is listed in the documentation.
 
-## Overview
-Nyxus is a feature-rich, optimized, Python/C++ application capable of analyzing images of arbitrary size and assembling complex regions of interest (ROIs) split across multiple image tiles and files. This accomplished through multi-threaded tile prefetching and a three phase analysis pipeline shown below. 
+ROIs larger than the memory budget are processed out of core when they come from files; from
+arrays, and as 2D whole-slide images, they stop the run with an error. Out of core, 3D ROIs keep
+their in-memory values, but the run stops with an error when one read of the file returns the
+whole volume (NIfTI, or OME-Zarr chunked over all of Z). Out of core on an image read as one tile,
+most 2D features keep their in-memory values: the contour-based and weighted-moment features
+differ, the fractal features can differ, the neighbor, polygonality and hexagonality features are
+not computed, and the family pages list the other exceptions. On an image read as several tiles, most 2D feature families
+raise an error out of core or give wrong values (see
+[large images](https://nyxus.readthedocs.io/en/latest/large_images.html)).
 
-![](docs/source/nyxus_workflow.jpg)
+![The Nyxus pipeline](https://raw.githubusercontent.com/PolusAI/nyxus/main/docs/source/nyxus_workflow.png)
 
-Nyxus can be used via Python or command line and is available in containerized form for reproducible execution. Nyxus computes over 450 combined intensity, texture, and morphological features at the ROI or whole image level with more in development. Key features that make Nyxus unique among other image feature extraction applications is its ability to operate at any scale, its highly validated algorithms, and its modular nature that makes the addition of new features straightforward.
+**Documentation:** <https://nyxus.readthedocs.io>
 
-Currently, Nyxus can read 2D image data from OME-TIFF, OME-Zarr, and DICOM 2D Grayscale images. Nyxus reads 3D volumes from compressed and uncompressed NIFTI files, and natively from OME-TIFF and OME-Zarr (NGFF 0.4 and 0.5), including 5-dimensional (X, Y, Z, C, T) datasets whose axis order is taken from the file's own metadata rather than assumed. Nyxus Python API supports featurizing in-memory 2D image data represented by NumPy arrays. 
-
-The docs can be found at [Read the Docs](https://nyxus.readthedocs.io/en/latest/).
-
-## Getting started 
-
-For use in python, the latest version of Nyxus can be installed via the [Pip package manager](https://pypi.org/project/pip) or [Conda package manager](https://docs.conda.io/en/latest/):
+## Installation
 
 ```
 pip install nyxus
 ```
 
-or 
+or
+
 ```
 conda install nyxus -c conda-forge
 ```
 
-## Usage
+The conda-forge package has no build for Apple Silicon Macs or Linux aarch64; use `pip` there.
+On Windows, the PyPI wheels do not read OME-Zarr or compressed NIfTI (`.nii.gz`), and the
+conda-forge packages of 0.11.0 need Visual Studio installed (they were built in Debug mode).
+GPU wheels, the Docker image and building from source are described in
+[Installation](https://nyxus.readthedocs.io/en/latest/installation.html).
 
-The library provides class `Nyxus` for 2-dimensional TIFF, OME.TIFF, OME.ZARR, and DICOM slides and intensity-mask slide pairs, and class `Nyxus3D` for NIFTI, OME-TIFF, and OME-Zarr volumes and intensity-volume volume pairs. Additionally to a single-file representation, a volume can be represented by its z-slices residing in separate 2-dimensional TIFF or ONE.TIFF slides (so called "layout A"). Slides and volumes can be featurized as all the files in a  directory filtered with a file pattern passed specified. Alternatively, explicit file name pairs and pair lists can be featurized. Alternatively, 2D and 3D NumPy arrays can be featurized. 
+## Quick start
 
-### 2D usage
+### 2D, from arrays in memory
 
-Given `intensities` and `labels` folders, Nyxus pairs up intensity-segmentation mask images and extracts features from all of them. A summary of the available feature are [listed below](#available-features).
-
-#### featurizing data in file system directories
-
-```python 
-from nyxus import Nyxus
-nyx = Nyxus (["*ALL*"])
-intensityDir = "/path/to/images/intensities/"
-maskDir = "/path/to/images/labels/"
-features = nyx.featurize_directory (intensityDir, maskDir) # selecting all the .ome.tif slides (default)
-```
-
-#### featurizing explicitly defined lists of files
-Alternatively, Nyxus can process explicitly defined pairs of intensity-mask images thus specifying custom 1:N and M:N mapping between segmentation mask and intensity image files. 
-The following example extracts all the features (note parameter "*ALL*") from intensity images 'i1', 'i2', and 'i3' related with mask images 'm1' and 'm2' via a custom mapping:
-
-```python 
-from nyxus import Nyxus
-nyx = Nyxus (["*ALL*"])
-features = nyx.featurize_files(
-    [
-        "/path/to/images/intensities/i1.ome.tif", 
-        "/path/to/images/intensities/i2.ome.tif",
-        "/path/to/images/intensities/i3.ome.tif" 
-    ], 
-    [
-        "/path/to/images/labels/m1.ome.tif", 
-        "/path/to/images/labels/m2.ome.tif",
-        "/path/to/images/labels/m2.ome.tif"
-    ],
-	False) # pass True to featurize intensity files as whole segments
-```
-
-The result variable `features` is a Pandas dataframe similar to what is shown below. Note that if multiple segments are stored in a segmentation mask file, each segment's features in the resultcan be identified by the mask file name and segment mask label.
-
-|     | mask_image           | intensity_image      |   label |    MEAN |   MEDIAN |...|    GABOR_6 |
-|----:|:---------------------|:---------------------|--------:|--------:|---------:|--:|-----------:|
-|   0 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       1 | 45366.9 |  46887   |...|   0.873016 |
-|   1 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       2 | 27122.8 |  27124.5 |...|   1.000000 |
-|   2 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       3 | 34777.4 |  33659   |...|   0.942857 |
-|   3 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       4 | 35808.2 |  36924   |...|   0.824074 |
-|   4 | p1_y2_r51_c0.ome.tif | p1_y2_r51_c0.ome.tif |       5 | 36739.7 |  37798   |...|   0.854067 |
-| ... | ...                  | ...                  |     ... | ...     |  ...     |...|   ...      |
-| 734 | p5_y0_r51_c0.ome.tif | p5_y0_r51_c0.ome.tif |     223 | 54573.3 |  54573.3 |...|   0.980769 |
-
-#### featurizing in-memory 2D images; featurizing a montage
-
-Nyxus can also featurize in-memory intensity-mask pairs that are loaded as NumPy arrays using the `featurize` method. This method takes in either a single pair of 2D intensity-mask pairs
-or a pair of 3D arrays containing 2D intensity and mask images. There is also two optional parameters to supply names to the resulting dataframe, . 
-
-```python 
-from nyxus import Nyxus
+```python
 import numpy as np
+from nyxus import Nyxus
 
-nyx = Nyxus (["*ALL*"])
+intensity = np.array([[1, 4, 4, 1],
+                      [1, 4, 6, 1],
+                      [4, 1, 6, 4],
+                      [4, 4, 6, 4]], dtype=np.uint16)
+labels = np.array([[1, 1, 0, 2],
+                   [1, 1, 0, 2],
+                   [1, 1, 0, 2],
+                   [1, 1, 0, 2]], dtype=np.uint32)
 
-intens = np.array([
-    [[1, 4, 4, 1, 1],
-     [1, 4, 6, 1, 1],
-     [4, 1, 6, 4, 1],
-     [4, 4, 6, 4, 1]],
-])
-
-seg = np.array([
-    [[1, 1, 1, 1, 1],
-     [1, 1, 1, 1, 1],
-     [0, 1, 1, 1, 1],
-     [1, 1, 1, 1, 1]]
-])
-
-features = nyx.featurize(intens, seg)
+nyx = Nyxus(["*ALL_INTENSITY*"])
+features = nyx.featurize(intensity, labels)
+print(features[["ROI_label", "MEAN", "MAX"]])
 ```
 
-<u>Note:</u> if array `intens` contains negative values similarly to intensities in Hounsfeld units observed in CT-scan datasets, method `featurize()` automatically adjusts values of of array `intens` while passing them to Nyxus backend so as to make them zero-based, like in the following example:
+A directory of image files and their label images is featurized with
+`nyx.featurize_directory("intensities/", "labels/")`.
 
-```
+### 3D, from volume files
+
+This example writes its volume with tifffile (`pip install tifffile`).
+
+```python
 import numpy as np
-import nyxus
-I = np.array([
-  [-1024.74,      -1019.67,      -1005.70,       -998.60,       -998.66,      -1005.82,      -1019.65,      -1024.72],
-  [-1019.44,      -1001.22,      -1023.82,      -1034.34,      -1035.81,      -1027.00,      -1001.89,      -1019.62],
-  [-1011.86,      -1002.17,       -724.06,       -521.43,       -471.04,       -671.30,      -1006.98,      -1010.62],
-  [-1008.78,       -703.58,         21.66,         44.32,        130.35,        113.37,       -608.11,      -1056.33],
-  [-415.46,       -106.08,         69.80,         59.70,         97.64,        120.62,        -49.77,       -480.57],
-  [-464.06,       -176.81,         76.79,         93.34,        131.99,         73.16,       -106.70,       -348.06],
-  [-1012.75,       -740.21,       -502.72,       -370.36,       -377.42,       -497.65,       -719.82,      -1000.82],
-  [-1032.57,       -979.63,       -867.71,       -815.30,       -830.90,       -875.08,       -983.76,      -1033.78]], np.float64)
-M = np.array([
-  [0,      0,      0,       0,       0,      0,      0,      0],
-  [0,      0,      1,       1,       1,      1,      0,      0],
-  [0,      1,      1,       1,       1,      1,      1,      0],
-  [0,      1,      1,       1,       1,      1,      1,      0],
-  [0,      1,      1,       1,       1,      1,      1,      0],
-  [0,      1,      1,       1,       1,      1,      1,      0],
-  [0,      0,      1,       1,       1,      1,      0,      0],
-  [0,      0,      0,       0,       0,      0,      0,      0]], np.uint16)
-nyx = nyxus.Nyxus (["*ALL_INTENSITY*"])
-f = nyx.featurize (I, M, intensity_names=['I'], label_names=['M'])
+import tifffile
+from nyxus import Nyxus3D
+
+volume = np.random.default_rng(0).integers(1, 100, size=(8, 32, 32), dtype=np.uint16)
+labels = np.zeros_like(volume)
+labels[2:6, 8:24, 8:24] = 1
+tifffile.imwrite("volume.ome.tif", volume, ome=True, metadata={"axes": "ZYX"})
+tifffile.imwrite("labels.ome.tif", labels, ome=True, metadata={"axes": "ZYX"})
+
+nyx = Nyxus3D(["*3D_ALL_INTENSITY*"])
+features = nyx.featurize_files(["./volume.ome.tif"], ["./labels.ome.tif"], False)
+print(features[["ROI_label", "3MEAN", "3MAX"]])
 ```
 
+### Command line
 
-The `features` variable is a Pandas dataframe similar to what is shown below.
-
-|     | mask_image    | intensity_image | label | MEAN    |   MEDIAN |...|    GABOR_6 |
-|----:|:--------------|:----------------|------:|--------:|---------:|--:|-----------:|
-|   0 | Segmentation1 | Intensity1      |     1 | 45366.9 |  46887   |...|   0.873016 |
-|   1 | Segmentation1 | Intensity1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
-|   2 | Segmentation1 | Intensity1      |     3 | 34777.4 |  33659   |...|   0.942857 |
-|   3 | Segmentation1 | Intensity1      |     4 | 35808.2 |  36924   |...|   0.824074 |
-| ... | ...           | ...             |   ... | ...     |  ...     |...|   ...      |
-|  14 | Segmentation2 | Intensity2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
-
-Note that in this case, default names of virtual image files were provided for the `mask_image` and `intensity_image` columns. To override default names 'Intensity<k>' and 'Segmentation<k>' appearing in these columns, the optional arguments `intensity_names` and `label_names` are used by passing lists of names in. 
-The length of the lists must be the same as the length of the mask and intensity arrays. The following example sets mask and intensity images in the output to desired values:
-
-```python 
-intens_names = ['int1', 'int2']
-seg_names = ['seg1', 'seg2']
-features = nyx.featurize(intens, seg, intens_name, seg_name)
-```
-
-The `features` variable will now use the custom names, as shown below
-
-|     | mask_image       | intensity_image          | label | MEAN    |   MEDIAN |...|    GABOR_6 |
-|----:|:-----------------|:-------------------------|------:|--------:|---------:|--:|-----------:|
-|   0 | seg1 | int1      |     1 | 45366.9 |  46887   |...|   0.873016 |
-|   1 | seg1 | int1      |     2 | 27122.8 |  27124.5 |...|   1.000000 |
-|   2 | seg1 | int1      |     3 | 34777.4 |  33659   |...|   0.942857 |
-|   3 | seg1 | int1      |     4 | 35808.2 |  36924   |...|   0.824074 |
-| ... | ...              | ...                      |   ... | ...     |  ...     |...|   ...      |
-|  14 | seg2 | int2      |     6 | 54573.3 |  54573.3 |...|   0.980769 |
-
-### 3D usage
-
-Featurizing a directory of volume files is similar to the 2D case except class `Nyxus3D` should be used, and the "all" feature group nickname string should be passed as "*3D_ALL*":
-
-```python
-import nyxus
-nyx = nyxus.Nyxus3D (["*3D_ALL*"])
-
-# dataset
-idir = "/dataset1/input"
-mdir = "/dataset1/masks"
-
-# selecting only uncompressed NIFTI files
-features1 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii")
-
-# selecting only compressed NIFTI files
-features2 = nyx.featurize_directory (idir, mdir, file_pattern=".*\.nii\.gz")
-```
-<u>Note on CT datasets:</u> voxel intensities recorded in the Hounsfield units are automatically read by Nyxus as 0-based values by adding the minimum value of an original file (typically -1024).
-
-Volumes are also read natively from OME-TIFF and OME-Zarr, including 5-dimensional (X, Y, Z, C, T) datasets. The axis order comes from the file's own metadata, so non-canonical layouts are addressed correctly rather than assumed to be `TCZYX`:
-
-```python
-import nyxus
-nyx = nyxus.Nyxus3D (["*3D_ALL*"])
-
-features = nyx.featurize_directory (idir, mdir, file_pattern=".*\.ome\.zarr")
-```
-
-Each channel and timeframe of a multi-channel or time-series volume is featurized as a volume of its own, and the resulting rows carry `c_index` and `t_index` columns identifying which one they came from. A single-channel mask is reused across all intensity channels.
-
-<u>Note on physical voxel spacing:</u> OME-TIFF and OME-Zarr files may declare a physical size per axis. Passing `use_physical_spacing=True` makes Nyxus use each volume's declared spacing as its voxel anisotropy, ratio-normalized so that the smallest axis is 1:
-
-```python
-nyx = nyxus.Nyxus3D (["*3D_ALL*"], use_physical_spacing=True)
-```
-
-It is off by default, so the default cubic-voxel behavior is unchanged, and explicitly specified `anisotropy_x/y/z` values take precedence over the declared spacing. The spacing actually applied is reported in the `phys_x`, `phys_y`, `phys_z`, and `phys_unit` output columns, canonicalized to micrometers so that files declaring their sizes in different units stay numerically comparable.
-
-Featurizing explicitly specified volume files is straightforward, too:
-
-```python
-import nyxus
-nyx = nyxus.Nyxus3D (["*3D_ALL*"])
-
-idir = [
-	"/patient123/mri.nii.gz", 
-	"/patient123/mri.nii.gz", 
-	"/patient123/mri.nii.gz"]
-
-mdir = [
-	"/patient123/segmentation/kidney_right.nii.gz", 
-	"/patient123/segmentation/liver.nii.gz", 
-	"/patient123/segmentation/kidney_left.nii.gz"]
-
-nyx.featurize_files (idir, mdir, False) # pass True to featurize intensity files as whole segments
-```
-
-### Whole-slide and whole-volume feature extraction
-
-Nyxus provides dedicated workflows for extracting features from whole 2D slides and volumes. The workflows scale across CPU cores as controlled by constructor parameter `n_feature_calc_threads` of classes Nyxus and Nyxus3D.
-
-Example -- whole-slide featurization with 4 threads: 
+The Python packages do not include the command-line program; run it from the Docker image or
+build it from source (see [Installation](https://nyxus.readthedocs.io/en/latest/installation.html)).
+The output directory must already exist.
 
 ```
-dir = "/2d_dataset/intensity"
-import nyxus
-nyx = nyxus.Nyxus (features=["*WHOLESLIDE*"], n_feature_calc_threads=4)
-f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir)
+nyxus --features="*ALL_INTENSITY*,*ALL_MORPHOLOGY*" --intDir=/data/int --segDir=/data/seg --outDir=/data/out --outputType=singlecsv
 ```
 
-Note: feature group `*WHOLESLIDE*` but not `*ALL*` is used to avoid calculation of shape features meaningless in case of the trivial rectangular shape of unsegmented slides. particularly, group `*WHOLESLIDE*` disables the time-consuming group GLDZM, basic morphology features (AREA_PIXELS_COUNT, AREA_UM2, ASPECT_RATIO, BBOX_XMIN, BBOX_YMIN, BBOX_WIDTH, BBOX_HEIGHT, CENTROID_X, CENTROID_Y, COMPACTNESS, DIAMETER_EQUAL_AREA, EXTENT, MASS_DISPLACEMENT, WEIGHTED_CENTROID_X, WEIGHTED_CENTROID_Y), enclosing/inscribing/circumscribing circle features, convex hull based features (CONVEX_HULL_AREA, SOLIDITY, CIRCULARITY, POLYGONALITY_AVE, HEXAGONALITY_AVE, HEXAGONALITY_STDDEV),  fractal dimension features, geodetic  features, ROI neighbor features, ROI radius features, ellipse fitting features, extrema features, morphological erosion features, Caliper and chords features. 
-
-Disabled features can be requested by explicitly specifying them, for example enforcing calculation of the grey level distance zone matrix based (GLDZM) features:
-
-```
-dir = "/2d_dataset/intensity"
-import nyxus
-nyx = nyxus.Nyxus (features=["*WHOLESLIDE*", "*ALL_GLDZM*"], n_feature_calc_threads=4)
-f = nyx.featurize_directory (intensity_dir=dir, label_dir=dir)
-```
-
-
-## Further steps
-
-For more information on all of the available options and features, check out [the documentation](#).
-
-Nyxus can also be [built from source](#building-from-source) and used from the command line, or via a pre-built Docker container. 
-
-## Getting and setting parameters of Nyxus
-
-All parameters to configure Nyxus are available to set within the constructor. These parameters can also be updated after the object is created using the `set_params`
-method. This method takes in keyword arguments where the key is a valid parameter in Nyxus and the value is the updated value for the parameter. For example, 
-to update the `coarse_gray_depth` to 256 and the `gabor_f0` parameter to 0.1, the following can be done:
-
-```python 
-from nyxus import Nyxus
-nyx = Nyxus(["*ALL*"])
-intensityDir = "/path/to/images/intensities/"
-maskDir = "/path/to/images/labels/"
-features = nyx.featurize_directory (intensityDir, maskDir)
-nyx.set_params(coarse_gray_depth=256, gabor_f0=0.1)
-```
-
-A list of valid parameters is included in the documentation for this method.
-
-To get the values of the parameters in Nyxus, the `get_params` method is used. If no arguments are passed to this function, then a dictionary mapping all of the variable names to the respective value is returned. For example,
-
-```python 
-from nyxus import Nyxus
-nyx = Nyxus(["*ALL*"])
-intensityDir = "/path/to/images/intensities/"
-maskDir = "/path/to/images/labels/"
-features = nyx.featurize_directory (intensityDir, maskDir)
-print(nyx.get_params())
-```
-
-will print the dictionary
-
-```bash
-{'coarse_gray_depth': 256, 
-'features': ['*ALL*'], 
-'gabor_f0': 0.1, 
-'gabor_freqs': [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0], 
-'gabor_gamma': 0.1, 
-'gabor_kersize': 16, 
-'gabor_sig2lam': 0.8, 
-'gabor_theta': 45.0, 
-'gabor_thold': 0.025, 
-'ibsi': 0, 
-'n_loader_threads': 1, 
-'n_feature_calc_threads': 4, 
-'neighbor_distance': 5, 
-'pixels_per_micron': 1.0}
-```
-
-There is also the option to pass arguments to this function to only receive a subset of parameter values. The arguments should be 
-valid parameter names as string, separated by commas. For example,
-
-```python 
-from nyxus import Nyxus
-nyx = Nyxus(["*ALL*"])
-intensityDir = "/path/to/images/intensities/"
-maskDir = "/path/to/images/labels/"
-features = nyx.featurize_directory (intensityDir, maskDir)
-print(nyx.get_params('coarse_gray_depth', 'features', 'gabor_f0'))
-```
-will print the dictionary
-
-```python
-{ 
-  'coarse_gray_depth': 256, 
-  'features': ['*ALL*'], 
-  'gabor_f0': 0.1 
-}
-```
-
-## Using Arrow for feature results
-
-Nyxus provides the ability to get the results of the feature calculations in Arrow IPC and Parquet formats. 
-
-To create an Arrow IPC or Parquet file, use `output_type="arrowipc"` or `output_type="parquet"` in `Nyxus.featurize*` calls. 
-Optionally, an `output_path` argument can be passed to specify the location of the output file. For example,
-
-```python
-    from nyxus import Nyxus
-    import numpy as np
-
-    intens = np.array([
-        [[1, 4, 4, 1, 1],
-            [1, 4, 6, 1, 1],
-            [4, 1, 6, 4, 1],
-            [4, 4, 6, 4, 1]],
-                    
-        [[1, 4, 4, 1, 1],
-            [1, 1, 6, 1, 1],
-            [1, 1, 3, 1, 1],
-            [4, 4, 6, 1, 1]],
-        
-        [[1, 4, 4, 1, 1],
-            [1, 1, 1, 1, 1],
-            [1, 1, 6, 1, 1],
-            [1, 1, 6, 1, 1]],
-        
-        [[1, 4, 4, 1, 1],
-            [1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1],
-            [1, 1, 6, 1, 1]],
-    ])
-
-    seg = np.array([
-        [[1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1]],
-                    
-        [[1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1],
-            [0, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1]],
-        
-        [[1, 1, 1, 0, 0],
-            [1, 1, 1, 1, 1],
-            [1, 1, 0, 1, 1],
-            [1, 1, 1, 1, 1]],
-                    
-        [[1, 1, 1, 0, 0],
-            [1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1]]
-        
-    ])
-
-    nyx = Nyxus(["*ALL_INTENSITY*"])
-
-    arrow_file = nyx.featurize(intens, seg, output_type="arrowipc", output_path="some_path")
-
-    print(arrow_file)
-
-```
-
-The output is:
-
-```bash
-    NyxusFeatures.arrow
-```
-
-This functionality is also available in the through the command line using the flag `--outputType`. If this flag is set to `--outputType=arrowipc` then the results will be written to an Arrow IPC file in the output directory and `--outputType=parquet` will write to a Parquet file.
-
-## Available 2D features 
-The feature extraction plugin extracts morphology and intensity based features from pairs of intensity/binary mask images and produces a csv file output. The input image should be in tiled [OME TIFF format](https://docs.openmicroscopy.org/ome-model/6.2.0/ome-tiff/specification.html).  The plugin extracts the following features:
-
-Nyxus provides a set of pixel intensity, morphology, texture, intensity distribution features, digital filter based features and image moments
-
-------------------
-| Nyxus feature code | Description |
-|--------|-------|
-| INTEGRATED_INTENSITY | Integrated intensity of the region of interest (ROI) |
-| MEAN, MAX, MEDIAN, STANDARD_DEVIATION, MODE | Mean/max/median/stddev/mode intensity value of the ROI | 
-| SKEWNESS, KURTOSIS, HYPERSKEWNESS, HYPERFLATNESS  | higher standardized moments | 
-| MEAN_ABSOLUTE_DEVIATION  | Mean absolute deviation | 
-| ENERGY  | ROI energy | 
-| ROOT_MEAN_SQUARED  | Root of mean squared deviation | 
-| ENTROPY  | ROI entropy - a measure of the amount of information in the ROI | 
-| UNIFORMITY  | Uniformity - measures how uniform the distribution of ROI intensities is | 
-| UNIFORMITY_PIU  | Percent image uniformity, another measure of intensity distribution uniformity | 
-| P01, P10, P25, P75, P90, P99  | 1%, 10%, 25%, 75%, 90%, and 99% percentiles of intensity distribution | 
-| INTERQUARTILE_RANGE  | Distribution's interquartile range | 
-| ROBUST_MEAN_ABSOLUTE_DEVIATION  | Robust mean absolute deviation | 
-| MASS_DISPLACEMENT  | ROI mass displacement | 
-| AREA_PIXELS_COUNT | ROI area in the number of pixels |
-| COMPACTNESS  | Mean squared distance of the object’s pixels from the centroid divided by the area |
-| BBOX_YMIN | Y-position and size of the smallest axis-aligned box containing the ROI |
-| BBOX_XMIN | X-position and size of the smallest axis-aligned box containing the ROI |
-| BBOX_HEIGHT | Height of the smallest axis-aligned box containing the ROI |
-| BBOX_WIDTH | Width of the smallest axis-aligned box containing the ROI |
-| MAJOR/MINOR_AXIS_LENGTH, ECCENTRICITY, ORIENTATION, ROUNDNESS | Inertia ellipse features |
-| NUM_NEIGHBORS, PERCENT_TOUCHING | The number of neighbors bordering the ROI's perimeter and related neighbor methods |
-| EXTENT | Proportion of the pixels in the bounding box that are also in the region |
-| CONVEX_HULL_AREA | Area of ROI's convex hull |
-| SOLIDITY | Ratio of pixels in the ROI common with its convex hull image |
-| PERIMETER | Number of pixels in ROI's contour |
-| EQUIVALENT_DIAMETER | Diameter of the circle having circumference equal to the ROI's perimeter |
-| EDGE_MEAN/MAX/MIN/STDDEV_INTENSITY | Intensity statistics of ROI's contour pixels |
-| CIRCULARITY | Represents how similar a shape is to circle. Clculated based on ROI's area and its convex perimeter |
-| EROSIONS_2_VANISH | Number of erosion operations for a ROI to vanish in its axis aligned bounding box |
-| EROSIONS_2_VANISH_COMPLEMENT | Number of erosion operations for a ROI to vanish in its convex hull |
-| FRACT_DIM_BOXCOUNT, FRACT_DIM_PERIMETER | Fractal dimension features |
-| GLCM | Grey level co-occurrence Matrix features |
-| GLRLM | Grey level run-length matrix based features |
-| GLDZM | Grey level distance zone matrix based features |
-| GLSZM | Grey level size zone matrix based features |
-| GLDM | Grey level dependency matrix based features |
-| NGTDM | Neighbouring grey tone difference matrix features |
-| ZERNIKE2D, FRAC_AT_D, RADIAL_CV, MEAN_FRAC | Radial distribution features |
-| GABOR | A set of Gabor filters of varying frequencies and orientations |
-
-For the complete list of features see [Nyxus provided features](docs/source/featurelist.rst)
-
-## 2D feature groups
-
-Apart from defining your feature set by explicitly specifying comma-separated feature code, Nyxus lets a user specify popular feature groups. Supported feature groups are:
-
-------------------------------------
-| Group code | Belonging features |
-|--------------------|-------------|
-| \*all_intensity\* | integrated_intensity, mean, median, min, max, range, standard_deviation, standard_error, uniformity, skewness, kurtosis, hyperskewness, hyperflatness, mean_absolute_deviation, energy, root_mean_squared, entropy, mode, uniformity, p01, p10, p25, p75, p90, p99, interquartile_range, robust_mean_absolute_deviation, mass_displacement
-| \*all_morphology\* | area_pixels_count, area_um2, centroid_x, centroid_y, weighted_centroid_y, weighted_centroid_x, compactness, bbox_ymin, bbox_xmin, bbox_height, bbox_width, major_axis_length, minor_axis_length, eccentricity, orientation, num_neighbors, extent, aspect_ratio, equivalent_diameter, convex_hull_area, solidity, perimeter, edge_mean_intensity, edge_stddev_intensity, edge_max_intensity, edge_min_intensity, circularity
-| \*basic_morphology\* | area_pixels_count, area_um2, centroid_x, centroid_y, bbox_ymin, bbox_xmin, bbox_height, bbox_width
-| \*geomoms\* | shape and intensity geometric moments, equivalent to \*igeomoms\* and \*sgeomoms\* combined
-| \*igeomoms\* | intensity raw moments IMOM_RM_pq, central moments IMOM_CM_pq, normalized raw moments IMOM_NRM_pq, normalized central moments IMOM_NCM_pq, Hu invariants IMOM_HUk, weighted raw moments IMOM_WRM_pq, weighted central moments IMOM_WCM_pq, weighted normalized central moments IMOM_WNCM_pq, weighted Hu invariants IMOM_WHUk
-| \*sgeomoms\* | shape raw moments SPAT_MOMENT_pq, central moments CENTRAL_MOMENT_pq, normalized raw moments NORM_SPAT_MOMENT_pq, normalized central moments NORM_CENTRAL_MOMENT_pq, Hu invariants HU_Mk, weighted raw moments WEIGHTED_SPAT_MOMENT_pq, weighted central moments WEIGHTED_CENTRAL_MOMENT_pq, weighted normalized central moments WT_NORM_CTR_MOM_pq, weighted Hu invariants WEIGHTED_HU_Mk
-| \*all_glcm\* | glcm_asm, glcm_acor, glcm_cluprom, glcm_clushade, glcm_clutend, glcm_contrast, glcm_correlation, glcm_difave, glcm_difentro, glcm_difvar, glcm_dis, glcm_energy, glcm_entropy, glcm_hom1, glcm_hom2, glcm_id, glcm_idn, glcm_idm, glcm_idmn, glcm_infomeas1, glcm_infomeas2, glcm_iv, glcm_jave, glcm_je, glcm_jmax, glcm_jvar, glcm_sumaverage, glcm_sumentropy, glcm_sumvariance, glcm_variance
-| \*all_glrlm\* | glrlm_sre, glrlm_lre, glrlm_gln, glrlm_glnn, glrlm_rln, glrlm_rlnn, glrlm_rp, glrlm_glv, glrlm_rv, glrlm_re, glrlm_lglre, glrlm_hglre, glrlm_srlgle, glrlm_srhgle, glrlm_lrlgle, glrlm_lrhgle
-| \*all_glszm\* | glszm_sae, glszm_lae, glszm_gln, glszm_glnn, glszm_szn, glszm_sznn, glszm_zp, glszm_glv, glszm_zv, glszm_ze, glszm_lglze, glszm_hglze, glszm_salgle, glszm_sahgle, glszm_lalgle, glszm_lahgle
-| \*all_gldm\* | gldm_sde, gldm_lde, gldm_gln, gldm_dn, gldm_dnn, gldm_glv, gldm_dv, gldm_de, gldm_lgle, gldm_hgle, gldm_sdlgle, gldm_sdhgle, gldm_ldlgle, gldm_ldhgle
-| \*all_ngtdm\* | ngtdm_coarseness, ngtdm_contrast, ngtdm_busyness, ngtdm_complexity, ngtdm_strength
-| \*wholeslide\* | Only features relevant to the whole-slides whose single ROIs match the images themselves, except shape features meaningless in the whole-slide use case and certain time-consuming texture features (GLDZM features).
-| \*all\* | All the features 
-
-## Available 3D features 
-------------------
-| Nyxus feature code | Description |
-|--------|-------|
-| <b>Intensity</b> | |
-| 3COV | Coefficient of variation|
-| 3COVERED_IMAGE_INTENSITY_RANGE | Covered image intensity range |
-| 3ENERGY | Energy |
-| 3ENTROPY | Entropy |
-| 3EXCESS_KURTOSIS | Excess kurtosis |
-| 3HYPERFLATNESS | Hyperflatness |
-| 3HYPERSKEWNESS | Hyperskewness |
-| 3INTEGRATED_INTENSITY | Integrated intensity |
-| 3INTERQUARTILE_RANGE | Interquartile range |
-| 3KURTOSIS | Kurtosis |
-| 3MAX | Max |
-| 3MEAN | Mean |
-| 3MEAN_ABSOLUTE_DEVIATION | Mean absolute deviation |
-| 3MEDIAN | Median |
-| 3MEDIAN_ABSOLUTE_DEVIATION | Median absolute deviation |
-| 3MIN | Min |
-| 3MODE | Mode |
-| 3P01, 3P10, 3P25, 3P75, 3P90, 3P99 | 1%, 10%, 25%, 75%, 90%, 99% percentiles |
-| 3QCOD | Quantile coefficient of dispersion |
-| 3RANGE | Range |
-| 3ROBUST_MEAN | Robust mean |
-| 3ROBUST_MEAN_ABSOLUTE_DEVIATION | Robust mean absolute deviation |
-| 3ROOT_MEAN_SQUARED | Root mean squared |
-| 3SKEWNESS | Skewness |
-| 3STANDARD_DEVIATION | Standard deviation |
-| 3STANDARD_DEVIATION_BIASED | Biased standard deviation |
-| 3STANDARD_ERROR | Standard error |
-| 3UNIFORMITY | Uniformity |
-| 3UNIFORMITY_PIU | Uniformity in PIU units |
-| 3VARIANCE | Variance |
-| 3VARIANCE_BIASED | Biased variance |
-| <b>shape</b> |  |
-| 3AREA | Surface area |
-| 3AREA_2_VOLUME | Surface area to volume ratio |
-| 3COMPACTNESS1 | Compactness1 |
-| 3COMPACTNESS2 | Compactness2 |
-| 3MESH_VOLUME | Mesh volume |
-| 3SPHERICAL_DISPROPORTION | Spherical disproportion |
-| 3SPHERICITY | Sphericity |
-| 3VOLUME_CONVEXHULL | Volume of the convex hull |
-| 3VOXEL_VOLUME | Volume as total of volumes of voxels |
-| 3MAJOR_AXIS_LEN | Major axis length |
-| 3MINOR_AXIS_LEN | Minor axis length |
-| 3LEAST_AXIS_LEN | Least axis length |
-| 3ELONGATION | Elongation |
-| 3FLATNESS | Flatness |
-| <b>texture</b> | |
-| 3GLCM_ACOR | Autocorrelation (grey level co-occurrence matrix) |
-| 3GLCM_ASM | Angular second moment (grey level co-occurrence matrix) |
-| 3GLCM_CLUPROM | Cluster prominence (grey level co-occurrence matrix) |
-| 3GLCM_CLUSHADE | Cluster shade (grey level co-occurrence matrix) |
-| 3GLCM_CLUTEND | Cluster tendency (grey level co-occurrence matrix) |
-| 3GLCM_CONTRAST | Contrast (grey level co-occurrence matrix) |
-| 3GLCM_CORRELATION | Correlation (grey level co-occurrence matrix) |
-| 3GLCM_DIFAVE | Defference average (grey level co-occurrence matrix) |
-| 3GLCM_DIFENTRO | Difference entropy (grey level co-occurrence matrix) |
-| 3GLCM_DIFVAR | Difference variance (grey level co-occurrence matrix) |
-| 3GLCM_DIS | Dissimilarity (grey level co-occurrence matrix) |
-| 3GLCM_ENERGY | Energy (grey level co-occurrence matrix) |
-| 3GLCM_ENTROPY | Entropy (grey level co-occurrence matrix) |
-| 3GLCM_HOM1 | Homogeneity-1 (grey level co-occurrence matrix) |
-| 3GLCM_HOM2 | Homogeneity-2 (grey level co-occurrence matrix) |
-| 3GLCM_ID | Inverse difference (grey level co-occurrence matrix) |
-| 3GLCM_IDN | Normalized inverse difference (grey level co-occurrence matrix) |
-| 3GLCM_IDM | Inverse difference moment (grey level co-occurrence matrix) |
-| 3GLCM_IDMN | Normalized inverse difference moment (grey level co-occurrence matrix) |
-| 3GLCM_INFOMEAS1 | 1st information measure of correlation (grey level co-occurrence matrix) |
-| 3GLCM_INFOMEAS2 | 2nd information measure of correlation (grey level co-occurrence matrix) |
-| 3GLCM_IV | Inverse variance (grey level co-occurrence matrix) |
-| 3GLCM_JAVE | Joint average (grey level co-occurrence matrix) |
-| 3GLCM_JE | Joint entropy (grey level co-occurrence matrix) |
-| 3GLCM_JMAX | Joint maximum aka "max probability" (grey level co-occurrence matrix) |
-| 3GLCM_JVAR | Joint variance aka "sum of squares" (grey level co-occurrence matrix) |
-| 3GLCM_SUMAVERAGE | Sum average (grey level co-occurrence matrix) |
-| 3GLCM_SUMENTROPY | Sum entropy (grey level co-occurrence matrix) |
-| 3GLCM_SUMVARIANCE | Sum variance (grey level co-occurrence matrix) |
-| 3GLCM_VARIANCE | Variance (grey level co-occurrence matrix) |
-| 3GLCM_ASM_AVE | directional average of 3GLCM_ASM |
-| 3GLCM_ACOR_AVE | directional average of 3GLCM_ACOR |
-| 3GLCM_CLUPROM_AVE | directional average of 3GLCM_CLUPROM |
-| 3GLCM_CLUSHADE_AVE | directional average of 3GLCM_CLUSHADE |
-| 3GLCM_CLUTEND_AVE | directional average of 3GLCM_CLUTEND |
-| 3GLCM_CONTRAST_AVE | directional average of 3GLCM_CONTRAST |
-| 3GLCM_CORRELATION_AVE | directional average of 3GLCM_CORRELATION |
-| 3GLCM_DIFAVE_AVE | directional average of 3GLCM_DIFAVE |
-| 3GLCM_DIFENTRO_AVE | directional average of 3GLCM_DIFENTRO |
-| 3GLCM_DIFVAR_AVE | directional average of 3GLCM_DIFVAR |
-| 3GLCM_DIS_AVE | directional average of 3GLCM_DIS |
-| 3GLCM_ENERGY_AVE | directional average of 3GLCM_ENERGY |
-| 3GLCM_ENTROPY_AVE | directional average of 3GLCM_ENTROPY |
-| 3GLCM_HOM1_AVE | directional average of 3GLCM_HOM1 |
-| 3GLCM_ID_AVE | directional average of 3GLCM_ID |
-| 3GLCM_IDN_AVE | directional average of 3GLCM_IDN |
-| 3GLCM_IDM_AVE | directional average of 3GLCM_IDM |
-| 3GLCM_IDMN_AVE | directional average of 3GLCM_IDMN |
-| 3GLCM_IV_AVE | directional average of 3GLCM_IV |
-| 3GLCM_JAVE_AVE | directional average of 3GLCM_JAVE |
-| 3GLCM_JE_AVE | directional average of 3GLCM_JE |
-| 3GLCM_INFOMEAS1_AVE | directional average of 3GLCM_INFOMEAS1 |
-| 3GLCM_INFOMEAS2_AVE | directional average of 3GLCM_INFOMEAS2 |
-| 3GLCM_VARIANCE_AVE | directional average of 3GLCM_VARIANCE |
-| 3GLCM_JMAX_AVE | directional average of 3GLCM_JMAX |
-| 3GLCM_JVAR_AVE | directional average of 3GLCM_JVAR |
-| 3GLCM_SUMAVERAGE_AVE | directional average of 3GLCM_SUMAVERAGE |
-| 3GLCM_SUMENTROPY_AVE | directional average of 3GLCM_SUMENTROPY |
-| 3GLCM_SUMVARIANCE_AVE | directional average of 3GLCM_SUMVARIANCE |
-| 3GLDM_SDE | Small dependence emphasis (grey level dependence matrix) |
-| 3GLDM_LDE | Large dependence emphasis (grey level dependence matrix) |
-| 3GLDM_GLN | Gray level non-uniformity (grey level dependence matrix) |
-| 3GLDM_DN | Dependence non-uniformity (grey level dependence matrix) |
-| 3GLDM_DNN | Normalized dependence non-uniformity (grey level dependence matrix) |
-| 3GLDM_GLV | Gray level variance (grey level dependence matrix) |
-| 3GLDM_DV | Dependence variance (grey level dependence matrix) |
-| 3GLDM_DE | Dependence entropy (grey level dependence matrix) |
-| 3GLDM_LGLE | Low gray level emphasis (grey level dependence matrix) |
-| 3GLDM_HGLE | High gray level emphasis (grey level dependence matrix) |
-| 3GLDM_SDLGLE | Small dependence low gray level emphasis (grey level dependence matrix) |
-| 3GLDM_SDHGLE | Small dependence high gray level emphasis (grey level dependence matrix) |
-| 3GLDM_LDLGLE | Large dependence low gray level emphasis (grey level dependence matrix) |
-| 3GLDM_LDHGLE | Large dependence high gray level emphasis (grey level dependence matrix) |
-| 3GLDZM_SDE | Small distance emphasis (grey level distance zone matrix) |
-| 3GLDZM_LDE | Large distance emphasis (grey level distance zone matrix) |
-| 3GLDZM_LGLZE | Low grey level zone emphasis (grey level distance zone matrix) |
-| 3GLDZM_HGLZE | High grey level zone emphasis (grey level distance zone matrix) |
-| 3GLDZM_SDLGLE | Small distance low grey level emphasis (grey level distance zone matrix) |
-| 3GLDZM_SDHGLE | Small distance high grey level emphasis (grey level distance zone matrix) |
-| 3GLDZM_LDLGLE | Large distance low grey level emphasis (grey level distance zone matrix) |
-| 3GLDZM_LDHGLE | Large distance high grey level emphasis (grey level distance zone matrix) |
-| 3GLDZM_GLNU | Grey level non uniformity (grey level distance zone matrix) |
-| 3GLDZM_GLNUN | Normalized grey level non uniformity (grey level distance zone matrix) |
-| 3GLDZM_ZDNU | Zone distance non uniformity (grey level distance zone matrix) |
-| 3GLDZM_ZDNUN | Normalized zone distance non uniformity (grey level distance zone matrix) |
-| 3GLDZM_ZP | Zone percentage (grey level distance zone matrix) |
-| 3GLDZM_GLM | Grey level mean (grey level distance zone matrix) |
-| 3GLDZM_GLV | Grey level variance (grey level distance zone matrix) |
-| 3GLDZM_ZDM | Zone distance mean (grey level distance zone matrix) |
-| 3GLDZM_ZDV | Zone distance variance (grey level distance zone matrix) |
-| 3GLDZM_ZDE | Zone distance entropy (grey level distance zone matrix) |
-| 3GLRLM_SRE | Short run emphasis (grey level run length matrix) |
-| 3GLRLM_LRE | Long run emphasis (grey level run length matrix) |
-| 3GLRLM_GLN | Gray level non-uniformity (grey level run length matrix) |
-| 3GLRLM_GLNN | Normalized gray level non-uniformity (grey level run length matrix) |
-| 3GLRLM_RLN | Run length non-uniformity (grey level run length matrix) |
-| 3GLRLM_RLNN | Normalized run length non-uniformity (grey level run length matrix) |
-| 3GLRLM_RP | Run percentage (grey level run length matrix) |
-| 3GLRLM_GLV | Gray level variance (grey level run length matrix) |
-| 3GLRLM_RV | Run variance (grey level run length matrix) |
-| 3GLRLM_RE | Run entropy (grey level run length matrix) |
-| 3GLRLM_LGLRE | Low gray level run emphasis (grey level run length matrix) |
-| 3GLRLM_HGLRE | High gray level run emphasis (grey level run length matrix) |
-| 3GLRLM_SRLGLE | Short run low gray level emphasis (grey level run length matrix) |
-| 3GLRLM_SRHGLE | Short run high gray level emphasis (grey level run length matrix) |
-| 3GLRLM_LRLGLE | Long run low gray level emphasis (grey level run length matrix) |
-| 3GLRLM_LRHGLE | Long run high gray level emphasis (grey level run length matrix) |
-| 3GLRLM_SRE_AVE | directional average of 3GLRLM_SRE  |
-| 3GLRLM_LRE_AVE | directional average of 3GLRLM_LRE  |
-| 3GLRLM_GLN_AVE | directional average of 3GLRLM_GLN  |
-| 3GLRLM_GLNN_AVE | directional average of 3GLRLM_GLNN | 
-| 3GLRLM_RLN_AVE | directional average of 3GLRLM_RLN |
-| 3GLRLM_RLNN_AVE | directional average of 3GLRLM_RLNN |
-| 3GLRLM_RP_AVE | directional average of 3GLRLM_RP |
-| 3GLRLM_GLV_AVE | directional average of 3GLRLM_GLV |
-| 3GLRLM_RV_AVE | directional average of 3GLRLM_RV |
-| 3GLRLM_RE_AVE | directional average of 3GLRLM_RE |
-| 3GLRLM_LGLRE_AVE | directional average of 3GLRLM_LGLRE |
-| 3GLRLM_HGLRE_AVE | directional average of 3GLRLM_HGLRE |
-| 3GLRLM_SRLGLE_AVE | directional average of 3GLRLM_SRLGLE |
-| 3GLRLM_SRHGLE_AVE | directional average of 3GLRLM_SRHGLE |
-| 3GLRLM_LRLGLE_AVE | directional average of 3GLRLM_LRLGLE |
-| 3GLRLM_LRHGLE_AVE | directional average of 3GLRLM_LRHGLE |
-| 3GLSZM_SAE | Small area emphasis (grey level size zone matrix) |
-| 3GLSZM_LAE | Large area emphasis (grey level size zone matrix) |
-| 3GLSZM_GLN | Gray level non-uniformity (grey level size zone matrix) |
-| 3GLSZM_GLNN | Normalized gray level non-uniformity (grey level size zone matrix) |
-| 3GLSZM_SZN | Size-zone non-uniformity (grey level size zone matrix) |
-| 3GLSZM_SZNN | Normalized size-zone non-uniformity (grey level size zone matrix) |
-| 3GLSZM_ZP | Zone percentage (grey level size zone matrix) |
-| 3GLSZM_GLV | Gray level variance (grey level size zone matrix) |
-| 3GLSZM_ZV | Zone variance (grey level size zone matrix) |
-| 3GLSZM_ZE | Zone entropy (grey level size zone matrix) |
-| 3GLSZM_LGLZE | Low gray level zone emphasis (grey level size zone matrix) |
-| 3GLSZM_HGLZE | High gray level zone emphasis (grey level size zone matrix) |
-| 3GLSZM_SALGLE | Small area low gray level emphasis (grey level size zone matrix) |
-| 3GLSZM_SAHGLE | Small area high gray level emphasis (grey level size zone matrix) |
-| 3GLSZM_LALGLE | Large area low gray level emphasis (grey level size zone matrix) |
-| 3GLSZM_LAHGLE | Large area high gray level emphasis (grey level size zone matrix) |
-| 3NGLDM_LDE | Low dependence emphasis (neighbouring grey level dependence matrix) |
-| 3NGLDM_HDE | High dependence emphasis (neighbouring grey level dependence matrix) |
-| 3NGLDM_LGLCE | Low grey level count emphasis (neighbouring grey level dependence matrix) |
-| 3NGLDM_HGLCE | High grey level count emphasis (neighbouring grey level dependence matrix) |
-| 3NGLDM_LDLGLE | Low dependence low grey level emphasis (neighbouring grey level dependence matrix) |
-| 3NGLDM_LDHGLE | Low dependence high grey level emphasis (neighbouring grey level dependence matrix) |
-| 3NGLDM_HDLGLE | High dependence low grey level emphasis (neighbouring grey level dependence matrix) |
-| 3NGLDM_HDHGLE | High dependence high grey level emphasis (neighbouring grey level dependence matrix) |
-| 3NGLDM_GLNU | Grey level non-uniformity (neighbouring grey level dependence matrix) |
-| 3NGLDM_GLNUN | Grey level non-uniformity normalised (neighbouring grey level dependence matrix) |
-| 3NGLDM_DCNU | Dependence count non-uniformity (neighbouring grey level dependence matrix) |
-| 3NGLDM_DCNUN | Dependence count non-uniformity normalised (neighbouring grey level dependence matrix) |
-| 3NGLDM_DCP | Dependence count percentage (neighbouring grey level dependence matrix) |
-| 3NGLDM_GLM | Grey level mean (neighbouring grey level dependence matrix) |
-| 3NGLDM_GLV | Grey level variance (neighbouring grey level dependence matrix) |
-| 3NGLDM_DCM | Dependence count mean (neighbouring grey level dependence matrix) |
-| 3NGLDM_DCV | Dependence count variance (neighbouring grey level dependence matrix) |
-| 3NGLDM_DCENT | Dependence count entropy (neighbouring grey level dependence matrix) |
-| 3NGLDM_DCENE | Dependence count energy (neighbouring grey level dependence matrix) |
-| 3NGTDM_COARSENESS | Coarseness (neighbouring grey tone difference matrix) |
-| 3NGTDM_CONTRAST | Contrast (neighbouring grey tone difference matrix) |
-| 3NGTDM_BUSYNESS | Busyness (neighbouring grey tone difference matrix) |
-| 3NGTDM_COMPLEXITY | Complexity (neighbouring grey tone difference matrix) |
-| 3NGTDM_STRENGTH | Strength (neighbouring grey tone difference matrix) |
-
-
-## 3D feature groups
-------------------------------------
-| Group code | Belonging features |
-|--------------------|-------------|
-| \*3D_ALL\* | All the 3D features | 
-| \*3D_ALL_INTENSITY\* | 3COV, 3COVERED_IMAGE_INTENSITY_RANGE, 3ENERGY, 3ENTROPY, 3EXCESS_KURTOSIS, 3HYPERFLATNESS, 3HYPERSKEWNESS, 3INTEGRATED_INTENSITY, 3INTERQUARTILE_RANGE, 3KURTOSIS, 3MAX, 3MEAN, 3MEAN_ABSOLUTE_DEVIATION, 3MEDIAN, 3MEDIAN_ABSOLUTE_DEVIATION, 3MIN, 3MODE, 3P01, 3P10, 3P25, 3P75, 3P90, 3P99, 3QCOD, 3RANGE, 3ROBUST_MEAN, 3ROBUST_MEAN_ABSOLUTE_DEVIATION, 3ROOT_MEAN_SQUARED, 3SKEWNESS, 3STANDARD_DEVIATION, 3STANDARD_DEVIATION_BIASED, 3STANDARD_ERROR, 3UNIFORMITY, 3UNIFORMITY_PIU, 3VARIANCE, and 3VARIANCE_BIASED |
-| \*3D_ALL_MORPHOLOGY\* | 3AREA, 3AREA_2_VOLUME, 3COMPACTNESS1 and -2, 3MESH_VOLUME, 3SPHERICAL_DISPROPORTION, 3SPHERICITY, 3VOLUME_CONVEXHULL, 3VOXEL_VOLUME, 3MAJOR_AXIS_LEN, 3MINOR_AXIS_LEN, 3LEAST_AXIS_LEN, 3ELONGATION, and 3FLATNESS |
-| \*3D_ALL_TEXTURE\* | All the 3GLCM_... 3GLDM_... 3GLDZM_... 3GLSZM_... 3GLRLM_... 3NGLDM_... and 3NGTDM_... features |
-| \*3D_GLCM\* | All the 3GLCM_... features |
-| \*3D_GLDM\* | All the 3GLDM_... features |
-| \*3D_GLDZM\* | All the 3GLDZM_... features |
-| \*3D_GLSZM\* | All the 3GLSZM_... features |
-| \*3D_GLRLM\* | All the 3GLRLM_... features |
-| \*3D_NGLDM\* | All the 3NGLDM_... features |
-| \*3D_NGTDM\* | All the 3NGTDM_... features |
-
-
-## Command line usage
-
-Assuming you [built the Nyxus binary](#building-from-source) as outlined below, the following parameters are available for the command line interface:
-
-| <div style="width:150px">Parameter</div> | Description | Type |
-|------|-------------|------|
---outputType | Output type for feature values (speratecsv, singlecsv, arrow, parquet). Default value: '--outputType=separatecsv' | string constant
---features | String constant or comma-seperated list of constants requesting a group of features or particular feature. Default value: '--features=\*ALL\*' | string
---filePattern | Regular expression to match image files in directories specified by parameters '--intDir' and '--segDir'. To match all the files, use '--filePattern=.\*' | string
---intDir | Directory of intensity image collection | path
---outDir | Output directory | path
---segDir | Directory of labeled image collection | path
---useGpu | ${\color{red}\textsf{(optional)}}$ Calculate compute-expensive features on an NVIDIA GPU device specified by parameter --gpuDeviceID. Default: '--useGpu=false'. Example: --useGpu=true | boolean
---gpuDeviceID | ${\color{red}\textsf{(optional)}}$ ID of a GPU device to be used when '--useGpu=true'. Default: '--gpuDeviceID=0'. Example 1 (single GPU device): '--useGpu=true --gpuDeviceID=2' to strictly use device 2. Example 2 (multiple GPU devices, usually in SLURM scenarios): '--useGpu=true --gpuDeviceID=0,1,3' to use the GPU device having maximum free RAM of devices 0, 1, and 3. | integer or list of integers
---coarseGrayDepth | ${\color{red}\textsf{(optional)}}$ Custom number of greyscale level bins used in texture features. Default: '--coarseGrayDepth=256' | integer
---glcmAngles | ${\color{red}\textsf{(optional)}}$ Enabled direction angles of the GLCM feature. Superset of values: 0, 45, 90, and 135. Default: '--glcmAngles=0,45,90,135' | list of integers
---intSegMapDir | ${\color{red}\textsf{(optional)}}$ Data collection of the ad-hoc intensity-to-mask file mapping. Must be used in combination with parameter '--intSegMapFile' | path
---intSegMapFile | ${\color{red}\textsf{(optional)}}$ Name of the text file containing an ad-hoc intensity-to-mask file mapping. The files are assumed to reside in corresponding intensity and label collections. Must be used in combination with parameter '--intSegMapDir' | string
---pixelDistance | ${\color{red}\textsf{(optional)}}$ Number of pixels to treat ROIs within specified distance as neighbors. Default value: '--pixelDistance=5' | integer
---pixelsPerCentimeter | ${\color{red}\textsf{(optional)}}$ Number of pixels in centimeter used by unit length-related features. Default value: 0 | real
---ramLimit | ${\color{red}\textsf{(optional)}}$ Amount of memory not to exceed by Nyxus, in megabytes. Default value: 50\% of available memory. Example: '--ramLimit=2000' to use 2,000 megabytes | integer
---reduceThreads | ${\color{red}\textsf{(optional)}}$ Number of CPU threads used on the feature calculation step. Default: '--reduceThreads=1' | integer
---skiproi | ${\color{red}\textsf{(optional)}}$ Skip ROIs having specified labels. Example: '--skiproi=image1.tif:2,3,4;image2.tif:45,56' | string
---tempDir | ${\color{red}\textsf{(optional)}}$ Directory used by temporary out-of-RAM objects. Default value: system temporary directory | path
---hsig | ${\color{red}\textsf{(optional)}}$ Channel signature Example: "--hsig=_c" to match images whose file names have channel info starting substring '_c' like in 'p0_y1_r1_c1.ome.tiff' | string
---hpar | ${\color{red}\textsf{(optional)}}$ Channel number that should be used as a provider of parent segments. Example: '--hpar=1' | integer
---hchi | ${\color{red}\textsf{(optional)}}$ Channel number that should be used as a provider of child segments. Example: '--hchi=0' | integer
---hag | ${\color{red}\textsf{(optional)}}$ Name of a method how to aggregate features of segments recognized as children of same parent segment. Valid options are 'SUM', 'MEAN', 'MIN', 'MAX', 'WMA' (weighted mean average), and 'NONE' (no aggregation, instead, same parent child segments will be laid out horizontally) | string
---fpimgdr | ${\color{red}\textsf{(optional)}}$ Desired dynamic range of voxels of a floating point TIFF image. Example: --fpimgdr=240 makes intensities be read in range 0-240. Default value: 10e4 | unsigned integer
---fpimgmin | ${\color{red}\textsf{(optional)}}$ Minimum intensity of voxels of a floating point TIFF image. Default value: 0.0 | real
---fpimgmax | ${\color{red}\textsf{(optional)}}$ Maximum intensity of voxels of a floating point TIFF image. Default value: 1.0 | real
---preserve-hu | ${\color{red}\textsf{(optional)}}$ NOT needed for CT -- Hounsfield units are preserved and reported either way, despite the name. Carries a floating-point slide on the offset-preserving map (1 grey level = 1 intensity unit, offset by the slide's floored minimum) instead of the min-max rescaling into --fpimgdr used by --fpimgmin/--fpimgmax. A DICOM or integer NIfTI slide takes it instead of the stored map, which keeps the stored integers as grey levels and carries RescaleSlope/RescaleIntercept (scl_slope/scl_inter) in the recorded inverse, so a fractional slope loses no stored level. Other integer slides take the offset map regardless of this flag. The DICOM and NIfTI rescale reaches the reported values either way, so CT Hounsfield Units survive the load either way. Whichever map a slide takes is recorded and undone on the way out, so every intensity feature is reported in the slide's own domain -- a CT is reported in Hounsfield units, negatives included. Shape and texture features are unaffected. Example: --preserve-hu=true. Default value: false | boolean
---anisox | ${\color{red}\textsf{(optional)}}$ x-anisotropy: the size of a pixel or voxel along x relative to the other axes. Only geometric features see it. A volume (3D or 2.5D) is featurized on its voxels as acquired, and the shape features scale their coordinates by the anisotropy; a 2D slide's geometric features are computed on its pixels resampled by the anisotropy. Intensity and texture features are computed on the pixels or voxels as acquired either way, so they report the same values with or without anisotropy. On a 2D slide, the intensity-weighted geometric features -- the EDGE_* statistics, WEIGHTED_CENTROID_X/Y, MASS_DISPLACEMENT, the intensity moments IMOM_*, the radial distribution (FRAC_AT_D, MEAN_FRAC, RADIAL_CV) and ZERNIKE2D -- are computed on the pixels as acquired too, each pixel at its position scaled by the anisotropy and weighted by its intensity times its area, with distances to the contour and the Zernike unit disk taken in the same units. Default value: 1.0 | real
---anisoy | ${\color{red}\textsf{(optional)}}$ y-anisotropy, as --anisox. Default value: 1.0 | real
---anisoz | ${\color{red}\textsf{(optional)}}$ z-anisotropy (for 3D datasets), as --anisox. Default value: 1.0 | real
----
-
-## Examples
-
-<span style="color:blue">Example 1:</span> __Running Nyxus to process images of specific image channel__
-
-Suppose we need to process intensity/mask images of channel 1 :
-```    
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.*_c1\.ome\.tif --outputType=singlecsv 
-```
-<span style="color:blue">Example 2:</span> __Running Nyxus to process specific image__
-
-Suppose we need to process intensity/mask file p1_y2_r68_c1.ome.tif :
-```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=p1_y2_r68_c1\.ome\.tif --outputType=singlecsv 
-```
-
-<span style="color:blue">Example 3:</span> __Running Nyxus to extract only intensity and basic morphology features__
-
-```
-./nyxus --features=*all_intensity*,*basic_morphology* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --outputType=singlecsv 
-```
-
-<span style="color:blue">Example 4:</span> __Skipping specified ROIs while extracting features__
-
-Suppose we need to blacklist ROI labels 2 and 3 from the kurtosis feature extraction globally, in each image. The command line way to do that is using option __--skiproi__ :
-```shell 
-./nyxus --skiproi=2,3 --features=KURTOSIS --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --outputType=singlecsv 
-```
-
-As a result, the default feature extraction result produced without option --skiproi looking like
-
-<pre>
-          mask_image  intensity_image  label    KURTOSIS
-0    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      1   -0.134216
-1    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      2   -0.130024<b>
-2    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      3   -1.259801
-3    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      4   -0.934786</b>
-4    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      5   -1.072111
-..          ...             ...           ...      ...
-</pre>
-
-will start looking like 
-
-<pre>
-          mask_image  intensity_image  label    KURTOSIS
-0    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      1   -0.134216
-1    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      4   -0.934786
-2    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      5   -1.072111
-3    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      6   -0.347741
-4    p0_y1_r1_c0.tif  p0_y1_r1_c0.tif      7   -1.283468
-..          ...             ...           ...      ...
-</pre>
-
-
-Note the comma character separator <span style="background-color:lightgrey">&nbsp;&nbsp;<b>,</b>&nbsp;&nbsp;</span> in the blacklisted ROI label list.
-
-If we need to blacklist ROI labels 15 and 16 only in image image421.tif ROI label 17 in image image422.tif, we can do it via a per-file blacklist :
-```
-./nyxus --skiproi=image421.tif:15,16;image421.tif:17 --features=KURTOSIS --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output --filePattern=.* --outputType=singlecsv 
-```
-Note the colon character <span style="background-color:lightgrey">&nbsp;&nbsp;<b>:</b>&nbsp;&nbsp;</span> between the file name and  backlisted labels within this file and semicolon character separator <span style="background-color:lightgrey">&nbsp;&nbsp;<b>;</b>&nbsp;&nbsp;</span> of file blacklists.
-
-<span style="color:blue">Example 5:</span> __Skipping specified ROIs while extracting features (via Python API)__
-
-The Nyxus Python API equivalent of global ROI blacklisting is implemented by method __blacklist_roi(*string*)__ called before a call of method __featurize...()__, for example, labels 15, 16, and 17 can be globally blacklisted as follows:
-```python
-from nyxus import Nyxus
-nyx = Nyxus(features=["KURTOSIS"])
-nyx.blacklist_roi('15,16,17')
-features = nyx.featurize_directory (intensity_dir="/path/to/intensity/images", label_dir="/path/to/mask/images", file_pattern=".*")
-```
-
-Similarly, per-file ROI blacklists are defined in a way similar to the command line interface:
-```python
-from nyxus import Nyxus
-nyx = Nyxus(features=["KURTOSIS"])
-nyx.blacklist_roi('p0_y1_r1_c0.ome.tif:15,16;p0_y1_r2_c0.ome.tif:17')
-features = nyx.featurize_directory (intensity_dir="/path/to/intensity/images", label_dir="/path/to/mask/images", file_pattern=".*")
-```
-
-See also methods __clear_roi_blacklist()__ and __roi_blacklist_get_summary()__ .
-
-
-<span style="color:blue">Example 6:</span> __Specifying anisotropy in 3D (via command line)__
-
-Applying a 1.5 x 2.0 x 2.5 anisotropy correction to all the volumes in a compressed NIFTI dataset:
-```
---anisox=1.5  --anisoy=2  --anisoz=2.5 --dim=3 --filePattern="*\.nii\.gz"  --features=*3D_ALL*  --resultFname=3d-features --outputType=singlecsv --intDir=/data/patient123/intensity --segDir=/data/patient123/masks --outDir=/output/patient123
-```
-
-2D compatibility: 
-
-```
---anisox=1.5  --anisoy=2 --filePattern="*\.ome\.tiff" --features=*ALL*  --resultFname=features1 --outputType=singlecsv --intDir=/data/plate123/int --segDir=/data/plate123/seg --outDir=/output/plate123
-```
-
-Instead of stating the anisotropy explicitly, it can be derived from the physical voxel spacing that OME-TIFF and OME-Zarr volumes declare in their own metadata:
-
-```
---use-physical-spacing=true --dim=3 --filePattern=".*\.ome\.zarr" --features=*3D_ALL* --resultFname=3d-features --outputType=singlecsv --intDir=/data/patient123/intensity --segDir=/data/patient123/masks --outDir=/output/patient123
-```
-
-## Nested ROIs 
-
-Hierarchical ROI analysis in a form of finding ROIs nested geometrically as nested AABBs and aggregating features of child ROIs within corresponding parent is available as an optional extra step after the feature extraction of the whole image set is finished. To enable this step, all the command line options '--hsig', '--hpar', '--hchi', and '--hag' need to have non-blank valid values. 
-
-Valid aggregation options are SUM, MEAN, MIN, MAX, WMA (weighted mean average), or NONE (no aggregation).
-
-<span style="color:blue">Example 6:</span> __Processing an image set with nested ROI postprocessing__ 
-
-```
-nyxus --features=*ALL_intensity* --intDir=/path/to/intensity/images --segDir=/path/to/mask/images --outDir=/path/to/output/directory --filePattern=.* --outputType=separatecsv --reduceThreads=4 --hsig=_c --hpar=1 --hchi=0 --hag=WMA 
-```
-
-As a result, 2 additional CSV files will be produced for each mask image whose channel number matches the value of option '--hpar': file 
-
-```
-<imagename>_nested_features.csv
-``` 
-
-where features of the detected child ROIs are laid next to their parent ROIs on same lines and auxiliary file 
-
-```
-<imagename>_nested_relations.csv
-``` 
-
-serving as a relational table of  parent and child ROI labels within parent ROI channel image ```<imagename>```.
-
-### Nested features Python API
-
-The nested features functionality can also be utilized in Python using the `Nested` class in `nyxus`. The `Nested` class
-contains two methods, `find_relations` and `featurize`. 
-
-The `find_relations` method takes in a path to the label files, along with a child 
-filepattern to identify the files in the child channel and a parent filepattern to match the files in the parent channel. The `find_relation` method 
-returns a Pandas DataFrame containing a mapping between parent ROIs and the respective child ROIs.
-
-The `featurize` method takes in the parent-child mapping along with the features of the ROIs in the child channel. If a list of aggregate functions
-is provided to the constructor, this method will return a pivoted DataFrame where the rows are the ROI labels and the columns are grouped by the features.
-
-
-__Example 7__: Using aggregate functions
-
-``` python
-
-from nyxus import Nyxus, Nested
-import numpy as np
-
-int_path = 'path/to/intensity'
-seg_path = 'path/to/segmentation'
-
-nyx = Nyxus(['GABOR'])
-
-child_features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
-
-nest = Nested(['sum', 'mean', 'min', ('nanmean', lambda x: np.nanmean(x))])
-
-df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
-
-df2 = nest.featurize(df, features)
-```
-
-The parent-child map is
-
-``` bash
-    Image              Parent_Label  Child_Label
-    0  /path/to/image          72             65
-    1  /path/to/image          71             66
-    2  /path/to/image          70             64
-    3  /path/to/image          68             61
-    4  /path/to/image          67             65
-
-```
-
-and the aggregated DataFrame is 
-
-``` bash
-            GABOR_0                                  GABOR_1                                  GABOR_2              ... 
-            sum        mean      min       nanmean    sum      mean       min       nanmean   sum      mean        ...
-    label                                                                                                          ...                                                                                                      
-     1      24.010227  0.666951  0.000000  0.666951  19.096262  0.530452  0.001645  0.530452  17.037345  0.473260  ... 
-     2      13.374170  0.445806  0.087339  0.445806   7.279187  0.242640  0.075000  0.242640   6.390529  0.213018  ...  
-     3       5.941783  0.198059  0.000000  0.198059   3.364149  0.112138  0.000000  0.112138   2.426409  0.080880  ...  
-     4      13.428773  0.559532  0.000000  0.559532  12.021938  0.500914  0.008772  0.500914   9.938915  0.414121  ...  
-     5       6.535722  0.181548  0.000000  0.181548   1.833463  0.050930  0.000000  0.050930   2.083023  0.057862  ...
-
-```
-
-<span style="color:blue">Example 8:</span> __Without aggregate functions__
-
-``` python
-
-from nyxus import Nyxus, Nested
-import numpy as np
-
-int_path = 'path/to/intensity'
-seg_path = 'path/to/segmentation'
-
-nyx = Nyxus(['GABOR'])
-
-child_features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
-
-nest = Nested()
-
-df = nest.find_relations(seg_path, 'p{r}_y{c}_r{z}_c1.ome.tif', 'p{r}_y{c}_r{z}_c0.ome.tif')
-
-df2 = nest.featurize(df, features)
-```
-
-the parent-child map remains the same but the `featurize` result becomes
-
-``` bash
-                     GABOR_0                                                                ...    
-    Child_Label       1          2         3         4         5    6    7    8    9    10  ...    
-    label                                                                                   ...
-    1            0.666951       NaN       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
-    2                 NaN  0.445806       NaN       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
-    3                 NaN       NaN  0.198059       NaN       NaN  NaN  NaN  NaN  NaN  NaN  ...     
-    4                 NaN       NaN       NaN  0.559532       NaN  NaN  NaN  NaN  NaN  NaN  ...     
-    5                 NaN       NaN       NaN       NaN  0.181548  NaN  NaN  NaN  NaN  NaN  ...
-
-```
-
-## Building from source
-Nyxus uses `CMake` as the build system and needs a `C++17` supported compiler to build from the source.
-
-### __Dependencies__
-To build Nyxus from source, several build dependencies are needed to be satisfied. These dependencies arise from Nyxus's need to read and write various data format. The dependencies are listed below.
-* Tiff Support:  libtiff, libdeflate, zlib
-* Zarr Support: z5, xtensor, nlohman_json, blosc, zlib
-* Dicom Support: dcmtk, fmjpeg, zlib
-* Apache Arrow Support: arrow-cpp, pyarrow
-* Python Interface: pybind11
-
-These packages also have underlying dependencies and at times, these dependency resolution may appear challenging. We prefer     `conda` to help with resolving these dependencies. However, for users without access to a `conda` enviornment, we have also provided installation script to build and install all the dependencies except `Apache Arrow`.
-
-By default, Nyxus can be built with a minimal set of dependecies (Tiff support and Python interface). To build Nyxus with all the supported IO options mentioned above, pass `-DALLEXTRAS=ON` in the `cmake` command.
-
-### __Adding GPU Support__
-Nyxus also can be build with NVIDIA GPU support. To do so, a `CUDA` Development toolkit compatible with the host `C++` compiler need to be present in the system. For building with GPU support, pass `-DUSEGPU=ON` flag in the `cmake` command. 
-
-### __Inside Conda__
-To build the command line interface, pass `-DBUILD_CLI=ON` in the `cmake` command.
-
-
-Below is an example of how to build Nyxus inside a `conda` environment on Linux.
-
-```bash
-conda create -n nyxus_build python=3.12
-conda activate nyxus_build
-git clone https://github.com/PolusAI/nyxus.git
-cd nyxus
-conda install mamba -c conda-forge
-mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt 
-export NYXUS_DEP_DIR=$CONDA_PREFIX
-mkdir build
-cd build
-cmake -DBUILD_CLI=ON -DALLEXTRAS=ON  -DUSEGPU=ON ..
-make -j4
-```
-
-To install the python package in the `conda` environment on Linux, use the following direction.
-```bash
-conda create -n nyxus_build python=3.12
-conda activate nyxus_build
-git clone https://github.com/PolusAI/nyxus.git
-cd nyxus
-conda install mamba -c conda-forge
-mamba install -y -c conda-forge --file ci-utils/envs/conda_cpp.txt --file ci-utils/envs/conda_py.txt
-export NYXUS_DEP_DIR=$CONDA_PREFIX
-CMAKE_ARGS="-DUSEGPU=ON -DALLEXTRAS=ON -DPython_ROOT_DIR=$CONDA_PREFIX -DPython_FIND_VIRTUALENV=ONLY" python -m pip install . -vv
-```
-
-If there's no system wide compatible C++ compiler, we may install it using conda and the configuration script will pick it up.
-```bash
-...
-conda activate nyxus_build
-conda install cxx-compiler -y 
-export NYXUS_DEP_DIR=$CONDA_PREFIX
-...
-```
-
-### __Without Using Conda__
-To build Nyxus outside of a `conda` environment, we will first need to build and install all the required and optional dependecies. `ci-utils/install_prereq_windwos.bat` and `ci-utils/install_prereq_linux.sh` performs the task for Windows and Linux (and Mac) respectively. These script take a `--min_build yes` option to only build the minimal dependencies. Below, we provide an example for Windows OS.
-
-```bash
-git clone https://github.com/PolusAI/nyxus.git
-cd nyxus
-mkdir build
-cd build
-..\ci-utils\install_prereq_windows.bat
-cmake -DBUILD_CLI=ON -DUSEGPU=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=.\local_install -DCMAKE_INSTALL_PREFIX=.\local_install ..
-cmake --build . --config Release
-set PATH=%PATH%;%cd%\local_install\bin
-```
-To install the python package in the environment on Linux, use the following direction.
-
-```bash
-python -m virtualenv venv
-venv\Scripts\activate.bat
-git clone https://github.com/PolusAI/nyxus.git
-cd nyxus
-mkdir build_dep
-cd build_dep
-..\ci-utils\install_prereq_windows.bat
-cd ..
-set NYXUS_DEP_DIR=%cd%\build_dep\local_install
-set CMAKE_ARGS=-DUSEGPU=ON -DALLEXTRAS=ON
-python -m pip install . -vv
-xcopy /E /I /y %NYXUS_DEP_DIR%\bin\*.dll %VIRTUAL_ENV%\lib\site-packages\nyxus
-```
-Note that, in both cases, the `dll`s of the dependencies need to be in the `PATH` (for CLI) or in the `site-packages` location (for Python package).
-
-## Running via Docker 
-Running Nyxus from a local directory freshly made Docker container is a good idea. It allows one to test-run conteinerized Nyxus before it reaches Docker cloud deployment.
-
-To search available Nyxus images run command 
-```
-docker search nyxus
-```
-and you'll be shown that it's available at least via organization 'polusai'. To pull it, run
-```
-docker pull polusai/nyxus
-``` 
-
-The following command line is an example of running the dockerized feature extractor (image hash 87f3b560bbf2) with only intensity features selected:
-```
-docker run -it [--gpus all] --mount type=bind,source=/images/collections,target=/data 87f3b560bbf2 --intDir=/data/c1/int --segDir=/data/c1/seg --outDir=/data/output --filePattern=.* --outputType=separatecsv --features=entropy,kurtosis,skewness,max_intensity,mean_intensity,min_intensity,median,mode,standard_deviation
-```
-
-## WIPP Usage
-
-Nyxus is available as plugin for [WIPP](https://isg.nist.gov/deepzoomweb/software/wipp). 
-
-__Label image collection:__
-The input should be a labeled image in tiled OME TIFF format (.ome.tif). Extracting morphology features, Feret diameter statistics, neighbors, hexagonality and polygonality scores requires the segmentation labels image. If extracting morphological features is not required, the label image collection can be not specified.
-
-__Intensity image collection:__
-Extracting intensity-based features requires intensity image in tiled OME TIFF format. This is an optional parameter - the input for this parameter is required only when intensity-based features needs to be extracted.
-
-__File pattern:__
-Enter file pattern to match the intensity and labeled/segmented images to extract features (https://pypi.org/project/filepattern/) Filepattern will sort and process files in the labeled and intensity image folders alphabetically if universal selector(.*.ome.tif) is used. If a more specific file pattern is mentioned as input, it will get matches from labeled image folder and intensity image folder based on the pattern implementation.
-
-__Pixel distance:__
-Enter value for this parameter if neighbors touching cells needs to be calculated. The default value is 5. This parameter is optional.
-
-__Features:__
-Comma separated list of features to be extracted. If all the features are required, then choose option __*all*__.
-
-__Outputtype:__
-There are 4 options available under this category. __*Separatecsv*__ - to save all the features extracted for each image in separate csv file. __*Singlecsv*__ - to save all the features extracted from all the images in the same csv file. __*Arrow*__ - to save all the features extracted from all the images in Apache Arrow format. __*Parquet*__ - to save all the features extracted from all the images in Apache Parquet format
-
-__Embedded pixel size:__
-This is an optional parameter. Use this parameter only if units are present in the metadata and want to use those embedded units for the features extraction. If this option is selected, value for the length of unit and pixels per unit parameters are not required.
-
-__Length of unit:__
-Unit name for conversion. This is also an optional parameter. This parameter will be displayed in plugin's WIPP user interface only when embedded pixel size parameter is not selected (ckrresponding check box checked).
-
-__Pixels per unit:__
-If there is a metric mentioned in Length of unit, then Pixels per unit cannot be left blank and hence the scale per unit value must be mentioned in this parameter. This parameter will be displayed in plugin's user interface only when embedded pixel size parameter is not selected.
-
-__Note:__ If Embedded pixel size is not selected and values are entered in Length of unit and Pixels per unit, then the metric unit mentioned in length of unit will be considered.
-If Embedded pixel size, Length of unit and Pixels per unit is not selected and the unit and pixels per unit fields are left blank, the unit will be assumed to be pixels.
-
-__Output:__
-The output is a csv file containing the value of features required.
-
-For more information on WIPP, visit the [official WIPP page](https://github.com/usnistgov/WIPP/tree/master/user-guide).
-
-  
+## Where to go next
+
+- [Troubleshooting](https://nyxus.readthedocs.io/en/latest/troubleshooting.html): the common
+  error messages and what they mean
+- [Command line and Python examples](https://nyxus.readthedocs.io/en/latest/cmdline_and_examples.html)
+  and [supported formats](https://nyxus.readthedocs.io/en/latest/supported_formats.html)
+- [3D volumes](https://nyxus.readthedocs.io/en/latest/volumetric.html) and
+  [large images](https://nyxus.readthedocs.io/en/latest/large_images.html)
+- [Output formats and columns](https://nyxus.readthedocs.io/en/latest/output.html),
+  [GPU acceleration](https://nyxus.readthedocs.io/en/latest/gpu.html) and
+  [IBSI mode](https://nyxus.readthedocs.io/en/latest/ibsi_mode.html)
+- [Feature list](https://nyxus.readthedocs.io/en/latest/featurelist.html),
+  [feature groups](https://nyxus.readthedocs.io/en/latest/featuregroups.html) and
+  [how features are validated](https://nyxus.readthedocs.io/en/latest/validation.html)
+- [Python API](https://nyxus.readthedocs.io/en/latest/Reference.html) and
+  [command-line reference](https://nyxus.readthedocs.io/en/latest/cli_reference.html)
+- [WIPP plugin](https://nyxus.readthedocs.io/en/latest/wipp.html)
+- [Developer guide](https://nyxus.readthedocs.io/en/latest/devguide.html) and
+  [contributing](https://github.com/PolusAI/nyxus/blob/main/CONTRIBUTING.md)
+
+## Citing Nyxus
+
+If you use Nyxus in your work, please cite it as described in [CITATION.cff](https://github.com/PolusAI/nyxus/blob/main/CITATION.cff);
+GitHub's *Cite this repository* button gives APA and BibTeX.
+
+## License
+
+Nyxus is released under the [MIT License](https://github.com/PolusAI/nyxus/blob/main/LICENSE).
