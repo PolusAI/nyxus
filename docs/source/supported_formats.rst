@@ -1,93 +1,185 @@
+Supported image formats
+=======================
 
-Supported Image Formats
-=========================
+Nyxus reads grayscale images in TIFF, OME-TIFF, OME-Zarr, NIfTI and DICOM files, as 2D images or as
+3D volumes. It picks the reader from the file's last extension, ignoring case, and refuses any other
+name with an error that lists the accepted extensions.
 
-Currently, Nyxus supports OME-TIFF, OME-Zarr and DICOM 2D Grayscale images.
+.. list-table::
+   :header-rows: 1
+   :widths: 16 22 14 48
 
-Nyxus chooses a reader by file extension, case-insensitively, and refuses any other name:
-``.tif``, ``.tiff``, ``.ome.tif`` and ``.ome.tiff`` (TIFF and OME-TIFF), ``.zarr`` and
-``.ome.zarr`` (OME-Zarr), ``.dcm`` and ``.dicom`` (DICOM), ``.nii`` and ``.nii.gz`` (NIfTI). A TIFF
-stored under another extension, such as ``.btf`` or ``.tf8``, is refused until it is renamed.
+   * - Format
+     - Extensions
+     - Dimensions
+     - Pixel types
+   * - TIFF, OME-TIFF
+     - ``.tif``, ``.tiff``, ``.ome.tif``, ``.ome.tiff``
+     - 2D, 3D, with channels and timepoints in OME-TIFF
+     - unsigned and signed integers of 8, 16, 32 and 64 bits; floating point of 16, 32 and 64 bits
+   * - OME-Zarr
+     - ``.zarr``, ``.ome.zarr``
+     - 2D, 3D, with channels and timepoints
+     - unsigned and signed integers of 8, 16, 32 and 64 bits; floating point of 32 and 64 bits
+   * - NIfTI
+     - ``.nii``, ``.nii.gz``
+     - 2D, 3D, with timepoints
+     - unsigned and signed integers of 8, 16, 32 and 64 bits; floating point of 32 and 64 bits
+   * - DICOM
+     - ``.dcm``, ``.dicom``
+     - 2D
+     - unsigned and signed integers of 8 and 16 bits; 1-bit segmentation frames
 
-OME-TIFF images uses the standard TIFF specification to store one or multiple image planes. OME-TIFF images are always structured as 
-5D data((T)ime, (C)hannel, Z, Y and X). For 2D single channel image, Z, C and T dimensions are constrained to be one. OME-TIFF images also contain an XML 
-document stored under the ``IMAGE_DESCRIPTION`` tag. This XML document contains the metadata to extract Image File Directory (IFD) for a 
-given T, C and Z position. Since, Nyxus only processes grayscale 2D images at a fixed time point, the images are 
-assumed to have only one IFD, and the internal loader reads the first IFD even if the image file contains multiple IFDs. 
-Nyxus can process both uncompressed and compressed TIFF images by internally using ``libdeflate`` and ``zlib`` to decode compressed images.
+A TIFF stored under another extension, such as ``.btf`` or ``.tf8``, must be renamed first. Images
+must have one sample per pixel: RGB images are refused. ``--filePattern`` alone decides which files
+in a directory are read, so a file with an unsupported extension that matches the pattern stops the
+run with that error.
 
-OME-Zarr images uses Zarr v2 specification to store image data in multiple chunked files instead of a single file.
-Similar to OME-TIFF, OME-Zarr files are also structured as 5D data to store 2D snapshot at various Z, C and T value. The root level
-*.zattr* file stores an XML document which contains dimensional parameters defining the scope of the image pixels 
-(e.g. resolution, number of focal planes, number of time points, number of channels). Similar to OME-TIFF, Nyxus assumes that the 
-Z, C and T indices are 0 when retrieving the X and Y pixel values. Nyxus uses ``blosc`` as the compression library which supports all 
-the compression schemes that are supported by Zarr v2 specification.
+OME-Zarr and DICOM support are optional parts of a source build (see the CMake options in
+:doc:`installation`). The PyPI and conda packages include both, except that the Windows wheels
+on PyPI have no OME-Zarr support since 0.9.3, and the first conda-forge Windows builds of
+0.11.0 (build number 0) have neither. Reading ``.nii.gz`` needs zlib, which a build includes
+together with OME-Zarr support, so those packages do not read ``.nii.gz`` either.
 
-Nyxus can process both Single Frame and Whole Slide Grayscale DICOM images. It also supports binary segmentation images. The following 
-Transfer Syntax UID supports are available in Nyxus by utilizing ``dcmtk`` and ``fmjpeg2koj`` library.
+TIFF and OME-TIFF
+-----------------
 
-* Single Frame Image 
+When the first image description holds OME-XML, Nyxus reads the image size along X, Y, Z, C and T,
+the dimension order, the ``TiffData`` plane map and the physical pixel size from it, and finds each
+plane through that metadata. A plain TIFF is read as one channel and one timepoint, with one Z plane
+per page; consecutive pages of the same size form the volume.
 
-    * Explicit VR Little Endian
-    * RLE Lossless
-    * JPEG Lossless
-    * JPEG Baseline
-    * JPEG Extended
-    * JPEG-LS Lossless
-    * JPEG-LS Lossy
-    * JPEG 2000 
+* Tiled and striped TIFF are both read, but an intensity image and its label image must both be
+  striped, or both be tiled with the same tile size. Decompression is done by libtiff, so the supported codecs
+  are those of the libtiff that Nyxus is built against; the packaged builds include Deflate, LZW,
+  JPEG and Zstandard.
+* Only the full-resolution image is read. Pyramid levels and reduced-resolution pages are skipped.
+* An OME-TIFF whose planes are stored in companion files (multi-file OME-TIFF) is refused. Combine
+  the planes into one file first.
+* Label values are read as integers: a floating-point label image is accepted and its values
+  truncated.
 
-* Multi-frame Image
+OME-Zarr
+--------
 
-    * Explicit VR Little Endian
-    * JPEG 2000
+Nyxus reads OME-Zarr image groups in Zarr format version 2 and version 3, including sharded
+version 3 arrays, with OME-NGFF metadata version 0.4 or 0.5. The metadata is read from ``.zattrs``
+(version 2) or ``zarr.json`` (version 3).
 
-CT / Hounsfield Units
----------------------
+* The full-resolution level, the first dataset of the first multiscale, is read.
+* The axis order comes from the ``axes`` metadata. T and C may stand anywhere; Z, Y and X must
+  come in that order, as OME-NGFF requires. An array with X before Y is read with its pixels out
+  of place, without an error; a fix is coming.
+* The physical pixel size comes from the level's ``scale`` transformation.
+* Arrays may be uncompressed or compressed with Blosc or zlib; Zstandard is read when the build
+  includes it.
+* Big-endian arrays are refused. bioformats2raw before version 0.12 writes them; convert again with
+  a newer version.
+* The root of a bioformats2raw store is not an image group: open the numbered series inside it,
+  for example ``store.zarr/0``, under a name that ends in ``.zarr``.
 
-Nyxus carries pixels internally as unsigned integers, so a slide holding negative values --
-every CT does, air sitting at roughly -1000 HU -- is offset at load time by its own floored
-minimum, ``value - floor(slide_min)``, which keeps one grey level equal to one intensity unit
-and stops the negatives wrapping on the unsigned cast. **That offset is recorded per slide and
-undone on the way out**: reported intensity features are in the slide's own domain, so a CT read
-in Hounsfield units is reported in Hounsfield units, negative values included. A slide with no
-negative pixel takes no offset at all.
+NIfTI
+-----
 
-A DICOM slide, or a NIfTI volume of integer samples, carries a rescale in its header
-(``RescaleSlope`` / ``RescaleIntercept``, ``scl_slope`` / ``scl_inter``). Such a slide keeps its
-stored integers as its grey levels, shifted the same way, and the rescale joins the recorded
-inverse instead of being applied at load. Nothing is narrowed, so a slope well below 1 -- a PET or
-SUV series, an MR volume -- keeps every stored level, and a fractional rescaled value is reported
-exactly. For a CT with a slope of 1 the grey levels are the ones the offset map gives.
+Nyxus reads single-file NIfTI-1 and NIfTI-2 volumes (``.nii``, or ``.nii.gz`` compressed) with up
+to four dimensions: X, Y, Z and time. The ``scl_slope`` and ``scl_inter`` rescale is applied to the
+reported intensities (see :ref:`intensity-units`). The voxel spacing in the header is not read, so
+NIfTI volumes are treated as having unit spacing.
 
-.. note::
+DICOM
+-----
 
-   **Despite its name, you do not need** ``--preserve-hu`` **to get Hounsfield units.** A CT is
-   read and reported in Hounsfield units either way. The flag is named for the case it was first
-   written for; what it actually selects is described below, and it applies to floating-point
-   slides only.
+Nyxus reads 2D grayscale DICOM images of 8- or 16-bit integers, and binary (1-bit) segmentation
+images as label images. Compressed pixel data is decoded with DCMTK: JPEG, JPEG-LS and RLE, and
+JPEG 2000 when the build includes it. ``RescaleSlope`` and ``RescaleIntercept`` are applied to the
+reported intensities (see :ref:`intensity-units`). Pixel spacing is not read.
 
-``--preserve-hu`` (CLI) or ``preserve_hu=True`` (Python) is what a **floating-point** slide needs
-to take that same offset map. Left off, a float slide is instead min-max rescaled into
-``[0, --fpimgdr]``, which keeps its shape but quantizes it; that rescale is likewise recorded and
-undone, so its features come back in the slide's own float range rather than in quantization
-steps. Integer slides, DICOM and NIfTI do not need the flag. Given the flag, a DICOM or integer NIfTI
-slide is rescaled at load and takes the offset map, one grey level per intensity unit, with each
-value rounded to the nearest unit.
+Dimensions, channels and timepoints
+-----------------------------------
 
-Which feature families the load-time map touches:
+* **2D** (the default, ``--dim=2``): each file is one image. Nyxus reads its first Z plane; the
+  label image must have as many Z planes as the intensity image, or the pair is refused. An
+  OME-TIFF or OME-Zarr file with more than one channel or timepoint is refused in 2D.
+* **3D** (``--dim=3``, or the ``Nyxus3D`` class): each file is a volume, and every channel and
+  timepoint in it is processed as a separate volume. A volume cannot currently be assembled from a
+  series of 2D slice files (see :doc:`volumetric`); stack the slices into one file first.
 
-* All intensity features -- location (mean, median, mode, percentiles, min, max), dispersion,
-  and the sum/energy family (integrated intensity, energy, root-mean-squared) -- are reported in
-  the slide's own intensity domain, as are the Intensity Histogram (``IH_*``) features.
-* Shift-invariant intensity features (variance, standard deviation, skewness, kurtosis, range,
-  interquartile range) and all shape/texture features are unaffected by the offset.
-* Sub-unit precision survives where the stored integers are kept (DICOM and integer NIfTI read
-  without ``--preserve-hu``). Elsewhere grey levels are integers, so a value that is not
-  integer-valued is reported as the grey level it was stored as: truncated, or rounded to nearest
-  under ``--preserve-hu``. Hounsfield units are integer-valued, so CT is unaffected.
+A label image is paired with each channel and timepoint of its intensity image: label frame *n* with
+intensity frame *n* when the label image has as many frames, otherwise its first frame.
 
+Every result row starts with these columns, followed by the features:
 
+.. list-table::
+   :header-rows: 1
+   :widths: 20 80
 
+   * - Column
+     - Content
+   * - ``intensity_image``
+     - Intensity file name (or the image name for in-memory input).
+   * - ``mask_image``
+     - Label file name.
+   * - ``phys_unit``
+     - Unit of the physical pixel size, empty when the file declares none.
+   * - ``anno0``, ``anno1``, ...
+     - Annotations from the file name, only with ``--annot=true`` and CSV output.
+   * - ``ROI_label``
+     - The ROI's label value.
+   * - ``t_index``, ``c_index``
+     - Timepoint and channel of the processed volume, 0 for single-plane files.
+   * - ``phys_x``, ``phys_y``, ``phys_z``
+     - Physical pixel size along each axis, 1 when the file declares none.
 
+In 3D, ``--use-physical-spacing=true`` (Python: ``use_physical_spacing=True``) scales the shape
+features by the OME physical pixel size, normalised so the smallest axis is 1. The voxels are not
+resampled, so intensity and texture features do not change. A factor other than 1 in
+any of ``--anisox``, ``--anisoy`` and ``--anisoz`` replaces the physical spacing on all three
+axes; the axes not given then use 1.
 
+.. _intensity-units:
+
+Intensity units and CT images
+-----------------------------
+
+Nyxus stores pixels as unsigned integer grey levels. When it loads an image it maps the stored
+values to grey levels, records that map, and converts the intensity features back through it, so
+they are reported in the image's own units:
+
+* An image without negative values is used as it is.
+* An image with negative values anywhere, such as a CT in Hounsfield units, is shifted up by its
+  floored minimum, so one grey level is one intensity unit.
+* A floating-point TIFF or OME-Zarr image is rescaled from its own minimum and maximum into
+  ``0 .. --fpimgdr`` grey levels (10000 by default). ``--fpimgmin`` and ``--fpimgmax`` replace the
+  image's own range with a fixed one; giving any of the three options switches every
+  floating-point image to that fixed range, which is 0 to 1 unless set.
+* A floating-point NIfTI volume is not rescaled: its values are truncated to whole units (after
+  the shift, when it has negative values), so fractional values are lost.
+* A DICOM image, or an integer NIfTI volume, keeps its stored integers as grey levels and applies
+  its rescale slope and intercept when converting back, so a fractional rescaled value is reported
+  exactly.
+
+``--preserve-hu=true`` (Python: ``preserve_hu=True``) changes the map for two cases: a
+floating-point image is shifted by its floored minimum instead of rescaled, and a DICOM or integer
+NIfTI image is rescaled when it is loaded and then shifted, with each value rounded to the nearest
+unit. It is not needed to get Hounsfield units: a CT is reported in Hounsfield units either way.
+
+Only these features are converted back to the image's units:
+
+* the 2D and 3D intensity features. Location features (minimum, maximum, mean, median, mode,
+  percentiles, robust mean, integrated intensity, energy, root mean square) go through the whole
+  map; spread features (range, interquartile range, absolute deviations, standard deviation,
+  standard error, covered intensity range) are scaled by its slope, and variance by the square of
+  the slope; ratios (coefficient of variation, quartile coefficient of dispersion) are recomputed;
+* the IBSI intensity histogram (``IH_*``) features.
+
+All other features, including texture features, intensity-weighted moments and centroids, edge
+intensity features and image quality features, are computed on grey levels.
+
+Python arrays
+-------------
+
+``Nyxus.featurize`` takes numpy arrays instead of files. Their values are converted to unsigned
+32-bit integers: an array with negative values is first shifted up by its minimum, and fractional
+values are truncated. No map is recorded for in-memory images, so their intensity features are
+reported in these shifted grey levels, not in the array's original units. To get features in the
+original units, write the image to a file and use ``featurize_files`` or ``featurize_directory``.
