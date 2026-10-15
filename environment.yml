@@ -1,6 +1,5 @@
 channels:
   - conda-forge
-  - https://repo.continuum.io/pkgs/free
   - defaults
 dependencies:
   - python>=3.8
@@ -17,17 +16,11 @@ dependencies:
   - numpy
   - pip>=20.1
   - pyarrow
-  - fmjpeg2koj 
+  - fmjpeg2koj
   - arrow-cpp[version='>=10.0.0']
-  - parquet-cpp
   - pip:
-    - sphinx
-    - sphinx_rtd_theme
-    - autodocsumm
-    - sphinx-autodoc-typehints
     - setuptools-scm>=8
     - ghapi==0.1.20
     - nox==2022.1.7
     - pytest==6.2.4
     - rich==12.4.4
-    - sphinx_rtd_theme==1.0.0

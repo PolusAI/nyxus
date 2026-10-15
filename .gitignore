@@ -571,3 +571,6 @@ src/nyx/python/nyxus/_version.py
 # default result filename stem (Environment::nyxus_result_fname); the extension follows whichever
 # writer ran, so pytest leaves .arrow and .parquet behind on every run of tests/python/.
 NyxusFeatures.*
+
+# Sphinx autosummary output
+docs/source/References/stubs/
