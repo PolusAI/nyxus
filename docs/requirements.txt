@@ -1,0 +1,8 @@
+# Python packages needed to build the documentation. The compiled extension is
+# not needed: docs/source/conf.py mocks nyxus.backend.
+sphinx>=7,<9
+pydata-sphinx-theme>=0.15
+sphinx-design>=0.5
+sphinx-autodoc-typehints>=2
+numpy
+pandas
