@@ -360,7 +360,7 @@ Tests reaching it today: `test_3d_glrlm_analytic.h`.
 | Data | built inline in `test_3d_glrlm_high_grey_level_emphasis_analytic()` (`tests/test_3d_glrlm_analytic.h`) |
 | ROI | two adjacent voxels at intensities 1 and `G = 70,000` |
 | Shape | two runs of length 1 in every one of the 13 directions |
-| Why it exists | the six grey-level emphases in all 13 directions, with `G^2` past `UINT_MAX`; `3GLRLM_HGLRE` multiplies the level as `double(inten) * double(inten)`, so for it the fixture pins the value without telling a 32-bit square from a double one |
+| Why it exists | the six grey-level emphases in all 13 directions, with `G^2` past `UINT_MAX`; `3GLRLM_HGLRE` converts the level to double before squaring it in every version of the code, so for it the fixture pins the value without telling a 32-bit square from a double one |
 
 Recipes: `glrlm3d.analytic_high_grey_pair`.
 
