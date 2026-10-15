@@ -117,7 +117,7 @@ namespace NyxusGpu
 			return;
 
 		float s = SJ[j];
-		// Zone sizes are squared in float, the accumulators' type: j^2 passes INT_MAX at a zone of 46,341.
+		// Zone sizes are squared in floating point: j^2 passes INT_MAX at a zone of 46,341.
 		atomicAdd(&state[f_SAE], s / (float(j) * float(j)));
 		atomicAdd(&state[f_LAE], s * (float(j) * float(j)));
 		atomicAdd(&state[f_SZN], s * s);

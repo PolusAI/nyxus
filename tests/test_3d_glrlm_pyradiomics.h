@@ -442,7 +442,7 @@ void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode
     // binCount-based grey binning
     Fsettings s = make_glrlm3d_settings (100, -20);
 
-    // (5) feature extraction
+    // (4) feature extraction
 
     // make it find the feature code by name
     int fcode = -1;
@@ -456,11 +456,11 @@ void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode
     D3_GLRLM_feature f;
     ASSERT_NO_THROW(f.calculate(r, s));
 
-    // (6) get values
+    // (5) get values
 
     f.save_value(r.fvals);
 
-    // (7) verdict, one direction at a time
+    // (6) verdict, one direction at a time
     //
     // The base feature holds one value per 3D angle, so each angle is compared against its own
     // PyRadiomics value. Averaging here instead -- which is what this assertion used to do -- lets
