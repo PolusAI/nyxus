@@ -104,8 +104,10 @@ for n, wrapped, true in ((250, -194421147, 1953062501), (300, -245057295, 404991
     big = np.full((n, n), 5, dtype=np.uint32)
     big[n - 1, n - 1] = 9
     f = glszm(big, np.ones_like(big), ibsi=True)
-    # signed overflow is undefined: most builds wrap, a build may also return the true value
-    assert f["GLSZM_LAE"][0] in (wrapped, true), f"{n}x{n} GLSZM_LAE = {f['GLSZM_LAE'][0]}, page says {wrapped}"
+    # the overflow is undefined: most builds wrap the square as a signed 32-bit integer (the page's
+    # value); a build may square in unsigned 32-bit arithmetic instead
+    unsigned = (((n * n - 1) ** 2) % 2 ** 32 + 1) / 2
+    assert f["GLSZM_LAE"][0] in (wrapped, unsigned), f"{n}x{n} GLSZM_LAE = {f['GLSZM_LAE'][0]}, page says {wrapped}"
     assert ((n * n - 1) ** 2 + 1) / 2 == true, f"{n}x{n} true large area emphasis"
 rng = np.random.default_rng(1)
 for shape, low, high in (((255, 256), 0.45, 0.55), ((300, 300), 0, 0)):
