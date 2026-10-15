@@ -28,134 +28,232 @@ import pandas as pd
 from typing import Optional, List
 
 class Nyxus:
-    r"""Nyxus image feature extraction library
+    r"""Extract 2D features from images and their ROI masks.
 
-    Scalably extracts features from images.
-    
-    Example:
-    nyx = Nyxus(
-            features = [["*ALL*"]],
-            neighbor_distance = 5,
-            pixels_per_micron = 1.0,
-            coarse_gray_depth= 256, 
-            n_feature_calc_threads = 4,
-            use_gpu_device = 2,
-            ibsi = False,
-            gabor_kersize = 16,
-            gabor_gamma = 0.1,
-            gabor_sig2lam = 0.8,
-            gabor_f0 = 0.1,
-            gabor_thold = 0.025,
-            gabor_thetas = [0, 45, 90, 135],
-            gabor_freqs = [4, 16, 32, 64]
-        )
+    Each instance holds its own settings. Features are computed for every
+    labelled ROI of each intensity/mask image pair, from numpy arrays
+    (:meth:`featurize`), a directory (:meth:`featurize_directory`) or lists of
+    files (:meth:`featurize_files`).
 
     Parameters
     ----------
-    features : list[str]
-        List of features to be calculated. Individual features can be
-        provided or pre-specified feature groups. Valid groups include:
-            *ALL*
-            *ALL_INTENSITY*
-            *ALL_MORPHOLOGY*
-            *BASIC_MORPHOLOGY*
-            *ALL_GLCM*
-            *ALL_GLRM*
-            *ALL_GLSZM*
-            *ALL_GLDM*
-            *ALL_NGTDM*
-            *ALL_BUT_GABOR*
-            *ALL_BUT_GLCM*
-        Both individual features and feature groups are case sensitive.
-    neighbor_distance: int (optional, default 5)
-        Any two objects separated by a Euclidean distance (pixel units) greater than this
-        value will not be be considered neighbors. This cutoff is used by all features which
-        rely on neighbor identification.
-    pixels_per_micron: float (optional, default 1.0)
-        Specify the image resolution in terms of pixels per micron for unit conversion
-        of non-unitless features.
-    coarse_gray_depth: int (optional, default 64)
-        Custom number of levels in grayscale denoising used in texture features.
-    n_feature_calc_threads: int (optional, default 4)
-        Number of threads to use for feature calculation parallelization purposes.
-    use_gpu_device: int (optional, default -1)
-        Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
-        The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
-        thread for feature calculation. 
-    ibsi: bool (optional, default false)
-       IBSI available features will be IBSI compliant when true. Required to enable
-       the Intensity Histogram (IH_*) feature family (*ALL_IH*).
-    mergerois: bool (optional, default false)
-       Merge all nonzero mask labels into a single whole-foreground ROI (background
-       excluded) instead of one ROI per label.
-    gabor_kersize: int (optional, default 16)
-        Size of filter kernel's side
-    gabor_gamma: float (optional, default 0.1)
-        Aspect ratio of the Gaussian factor
-    gabor_sig2lam: float (optional, default 0.8)
-        Spatial frequency bandwidth.
-    gabor_f0: float (optional, default 0.1)
-        frequency of the baseline lowpass filter as denominator of `\pi`.
-    gabor_thetas: list[float] (optional, default [0, 45, 90, 135]): 
-        Orientation of the Gaussian in degrees 0-180.
-    gabor_thold: float (optional, 0.025)
-        lower threshold of the filtered image to baseline ratio. 
-    gabor_freqs: list[float] (optional, default [4, 16, 32, 64])
-        comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor.
-    channel_signature: (optional)
-        Channel signature to match files with the given channel name, such as channel_signature='c' for '_c' like in 'p0_y1_r1_c1.ome.tiff'
-    parent_channel: (optional)
-        Channel number that should be used as a provider of parent segments
-    child_channel: (optional)
-        Channel number that should be used as a provider of child segments
-    aggregate: (optional)
-        Name of a method how to aggregate features of segments recognized as children of same parent segment.
-        Options are 'SUM', 'MEAN', 'MIN', 'MAX', 'WMA', and 'NONE'.
-    dynamic_range: (optional)
-        Desired dynamic range of voxels of a floating point TIFF image.
-    min_intensity: (optional, default 0.0)
-        Minimum intensity of voxels of a floating point TIFF image.
-    max_intensity: (optional, default 1.0)
-        Maximum intensity of voxels of a floating point TIFF image.
-    preserve_hu: bool (optional, default False)
-        NOT needed for CT: Hounsfield units are preserved and reported either way,
-        despite this option's name. What it actually does:
-        Carry a FLOATING-POINT slide on the offset-preserving map (1 grey level = 1
-        intensity unit, offset by the slide's floored minimum) instead of the min-max
-        rescaling controlled by dynamic_range/min_intensity/max_intensity. A DICOM or
-        integer NIfTI slide takes it instead of the stored map, which keeps the stored
-        integers as grey levels and carries RescaleSlope/RescaleIntercept (scl_slope/
-        scl_inter) in the recorded inverse, so a fractional slope loses no stored level.
-        Other integer slides take the offset map regardless of this flag. The DICOM and
-        NIfTI rescale reaches the reported values either way, so CT Hounsfield Units survive
-        the load either way and negative values never wrap.
+    features : list of str
+        Feature names and feature groups to compute. 2D groups:
+        ``*ALL*``, ``*WHOLESLIDE*``, ``*ALL_INTENSITY*``, ``*ALL_MORPHOLOGY*``,
+        ``*BASIC_MORPHOLOGY*``, ``*ALL_GLCM*``, ``*ALL_GLRLM*``, ``*ALL_GLDZM*``,
+        ``*ALL_GLSZM*``, ``*ALL_GLDM*``, ``*ALL_NGLDM*``, ``*ALL_NGTDM*``,
+        ``*ALL_NEIGHBOR*``, ``*ALL_IH*``, ``*GEOMOMS*``, ``*IGEOMOMS*`` and
+        ``*SGEOMOMS*``.
+        ``*ALL_IH*`` (the Intensity Histogram family) is computed only when
+        `ibsi` is True; without it the IH features are dropped silently.
+        Names are case-sensitive and must be upper case: ``"MEAN"`` is accepted,
+        ``"mean"`` raises ValueError. (The command-line tool upper-cases its
+        ``--features`` list; the Python API does not.) Entries are applied left to
+        right; a leading ``-`` removes a feature or group enabled by an earlier
+        entry (except ``-COV`` and ``-*ALL*``, which add) and a leading ``+``
+        adds it, e.g. ``["*ALL_INTENSITY*", "-MEAN"]``. An empty list computes
+        no features (the command line instead falls back to ``*ALL*``).
+    neighbor_distance : int, optional
+        Default 5. Two ROIs farther apart than this Euclidean distance, in
+        pixels, are not neighbors. Used by every neighbor-based feature.
+        Must be positive.
+    pixels_per_micron : float, optional
+        Default 1.0. Must be positive. Stored and reported by
+        :meth:`get_params`; no feature currently depends on it
+        (``AREA_UM2`` is reported as 0).
+    coarse_gray_depth : int, optional
+        Default 64. Must be positive. Number of grey levels intensities are
+        binned to for the texture features, and the number of bins of the
+        ``ENTROPY``, ``UNIFORMITY``, ``HISTOGRAM`` and ``IH_*`` histograms.
+    n_feature_calc_threads : int, optional
+        Default 4. Number of feature calculation threads. Must be at least 1.
+    use_gpu_device : int, optional
+        Default -1 (CPU). Any non-negative value turns the GPU on for erosion
+        and the 2D moments (leave it off when computing ``GABOR`` and when
+        passing arrays to :meth:`featurize`, where it can end the process); the
+        computation runs on CUDA device 0 whatever the value (see
+        :func:`get_gpu_properties` and the GPU page). A
+        non-negative id raises ValueError when no GPU is available; a value
+        below -1 raises RuntimeError when this build of Nyxus has no GPU
+        support.
+    ibsi : bool, optional
+        Default False. Compute the IBSI-compliant variant of the features that
+        have one, and enable the Intensity Histogram (``IH_*``) family.
+    mergerois : bool, optional
+        Default False. Merge all nonzero mask labels into one whole-foreground
+        ROI (background excluded) instead of one ROI per label.
+    gabor_kersize : int, optional
+        Default 16. Side of the Gabor filter kernel, in pixels.
+    gabor_gamma : float, optional
+        Default 0.1. Aspect ratio of the Gaussian factor.
+    gabor_sig2lam : float, optional
+        Default 0.8. Spatial frequency bandwidth (sigma to lambda ratio).
+    gabor_f0 : float, optional
+        Default 0.1. Angular frequency of the baseline low-pass filter, in
+        radians per pixel; its wavelength is :math:`2\pi/f_0` pixels.
+    gabor_thold : float, optional
+        Default 0.025. Lower threshold of the filtered-image to baseline
+        ratio.
+    gabor_thetas : list of float, optional
+        Default [0, 45, 90, 135]. Orientations of the Gaussian, in degrees,
+        conventionally 0-180 (not enforced), one per entry of `gabor_freqs`.
+    gabor_freqs : list of float, optional
+        Default [4, 16, 32, 64]. Angular frequencies of the filters' harmonic
+        factor, in radians per pixel (wavelength :math:`2\pi/f` pixels), one
+        per entry of `gabor_thetas`.
+    dynamic_range : float, optional
+        Default 10000. Number of grey levels a floating-point image is
+        rescaled to.
+    min_intensity : float, optional
+        Default 0.0. Intensity of a floating-point image mapped to the lowest
+        grey level.
+    max_intensity : float, optional
+        Default 1.0. Intensity of a floating-point image mapped to
+        `dynamic_range`.
+    preserve_hu : bool, optional
+        Default False. Not needed for CT: Hounsfield units are preserved and
+        reported either way, despite the option's name. What it does: carries
+        a floating-point slide on the offset-preserving map (1 grey level = 1
+        intensity unit, offset by the slide's floored minimum) instead of the
+        min-max rescaling controlled by `dynamic_range`, `min_intensity` and
+        `max_intensity`. A DICOM or integer NIfTI slide takes it instead of
+        the stored map, which keeps the stored integers as grey levels and
+        carries RescaleSlope/RescaleIntercept (scl_slope/scl_inter) in the
+        recorded inverse, so a fractional slope loses no stored level. Other
+        integer slides take the offset map regardless of this flag. The DICOM
+        and NIfTI rescale reaches the reported values either way, so CT
+        Hounsfield units survive the load and negative values never wrap.
+
         Whichever map a slide takes is recorded and undone on the way out:
-          * Every intensity feature -- location (mean, median, mode, percentiles, min, max),
-            dispersion, the sum/energy family, and the Intensity Histogram (IH_*) features --
-            is reported in the slide's own intensity domain. A CT read in Hounsfield units is
-            reported in Hounsfield units, negatives included.
-          * Shift-invariant intensity features (variance, standard deviation, skewness,
-            kurtosis, range, interquartile range) and all shape/texture features: unaffected.
-          * Sub-unit precision survives on the stored map, which reports a fractional
-            rescaled value exactly. Elsewhere grey levels are integers, so a value that is not
-            integer-valued is reported as the grey level it was stored as: truncated, or
-            rounded to nearest under preserve_hu. Hounsfield units are integer-valued, so CT
-            is unaffected.
-    ram_limit: int (optional)
-        Maximum amount of ram to be used by Nyxus in megabytes
-    verbose: int (optional, default 0)
-        Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
-    anisotropy_x: float (optional, default 1.0)
-        Size of a pixel along X relative to Y. The geometric features are computed on the pixels resampled by
-        the anisotropy; intensity and texture features on the pixels as acquired, so it does not change them.
-        The intensity-weighted geometric features -- the EDGE_* statistics, WEIGHTED_CENTROID_X/Y,
-        MASS_DISPLACEMENT, the intensity moments IMOM_*, the radial distribution and ZERNIKE2D -- are computed
-        on the pixels as acquired too, each pixel at its position scaled by the anisotropy and weighted by its
-        intensity times its area, with distances to the contour and the Zernike unit disk in the same units.
-        Applies to featurize_directory() and featurize_files(); featurize() on in-memory arrays does not
-        apply anisotropy.
-    anisotropy_y: float (optional, default 1.0)
-        Y-dimension counterpart of anisotropy_x
+
+        * Every intensity feature -- location (mean, median, mode,
+          percentiles, min, max), dispersion, the sum/energy family, and the
+          Intensity Histogram (IH_*) features -- is reported in the slide's
+          own intensity domain. A CT read in Hounsfield units is reported in
+          Hounsfield units, negatives included.
+        * Shift-invariant intensity features (variance, standard deviation,
+          skewness, kurtosis, range, interquartile range) and all
+          shape/texture features are unaffected.
+        * Sub-unit precision survives on the stored map, which reports a
+          fractional rescaled value exactly. Elsewhere grey levels are
+          integers, so a value that is not integer-valued is reported as the
+          grey level it was stored as: truncated, or rounded to nearest under
+          `preserve_hu`. Hounsfield units are integer-valued, so CT is
+          unaffected.
+
+        Applies to images read from files; arrays passed to ``featurize`` do
+        not go through the file loaders.
+    ram_limit : int, optional
+        Memory budget in megabytes. A ROI read from files with a mask whose
+        estimated footprint reaches it is processed out of core. Arrays passed
+        to :meth:`featurize` are never processed out of core (the call raises
+        RuntimeError), and a whole-slide image that reaches it is refused.
+        Default -1 keeps the built-in limit, half
+        of the physical memory available when the instance is created. A
+        value larger than the available memory is rejected with a message on
+        standard error and the previous limit is kept.
+    verbose : int, optional
+        Default 0 (silent). Level of diagnostic output. Must be non-negative.
+    anisotropy_x : float, optional
+        Default 1.0. Size of a pixel along X relative to Y. Must be positive.
+        The geometric features are computed on the pixels resampled by the
+        anisotropy; intensity and texture features on the pixels as acquired,
+        so it does not change them. The intensity-weighted geometric features
+        -- the EDGE_* statistics, WEIGHTED_CENTROID_X/Y, MASS_DISPLACEMENT, the
+        intensity moments IMOM_*, the radial distribution and ZERNIKE2D -- are
+        computed on the pixels as acquired too, each pixel at its position
+        scaled by the anisotropy and weighted by its intensity times its area,
+        with distances to the contour and the Zernike unit disk in the same
+        units. Applies to ``featurize_directory`` and ``featurize_files``;
+        ``featurize`` on in-memory arrays does not apply anisotropy.
+    anisotropy_y : float, optional
+        Default 1.0. Y-dimension counterpart of `anisotropy_x`. Must be
+        positive.
+
+    Other Parameters
+    ----------------
+    use_physical_spacing : bool, optional
+        Default False. Accepted for parity with :class:`Nyxus3D`; it only
+        affects 3D volumes.
+    channel_signature, parent_channel, child_channel, aggregate
+        Accepted without a warning and ignored. Use :class:`Nested` for
+        parent-child analysis.
+
+    Raises
+    ------
+    ValueError
+        If a feature name or group is not recognized, or a numeric parameter
+        is out of range, or `use_gpu_device` is non-negative and no GPU is
+        available.
+    RuntimeError
+        If `use_gpu_device` is below -1 and this build has no GPU support.
+
+    Notes
+    -----
+    Unknown keyword arguments print a warning and are ignored.
+
+    The enabled feature set and the per-feature settings derived from
+    `coarse_gray_depth` are fixed when the instance is constructed. Changing
+    `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
+    :meth:`get_params` reports but not the features computed by this
+    instance; construct a new instance to change them.
+
+    Gabor parameters are process-wide, not per instance: every constructor
+    call that accepts ``gabor_*`` arguments sets them (to the defaults when
+    omitted), and :meth:`set_gabor_feature_params` changes them for all
+    instances.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from nyxus import Nyxus
+    >>> intens = np.zeros((32, 32), dtype=np.uint16)
+    >>> labels = np.zeros((32, 32), dtype=np.uint16)
+    >>> intens[4:12, 4:12] = 100
+    >>> labels[4:12, 4:12] = 1
+    >>> intens[16:28, 16:28] = 200
+    >>> labels[16:28, 16:28] = 2
+    >>> nyx = Nyxus(["MEAN", "AREA_PIXELS_COUNT"])
+    >>> df = nyx.featurize(intens, labels)
+    >>> df[["ROI_label", "MEAN", "AREA_PIXELS_COUNT"]].values.tolist()
+    [[1.0, 100.0, 64.0], [2.0, 200.0, 144.0]]
+
+    Every keyword with its default value:
+
+    >>> nyx = Nyxus(
+    ...     ["*ALL_INTENSITY*", "*ALL_GLCM*"],
+    ...     neighbor_distance=5,
+    ...     pixels_per_micron=1.0,
+    ...     coarse_gray_depth=64,
+    ...     n_feature_calc_threads=4,
+    ...     use_gpu_device=-1,
+    ...     ibsi=False,
+    ...     mergerois=False,
+    ...     gabor_kersize=16,
+    ...     gabor_gamma=0.1,
+    ...     gabor_sig2lam=0.8,
+    ...     gabor_f0=0.1,
+    ...     gabor_thold=0.025,
+    ...     gabor_thetas=[0, 45, 90, 135],
+    ...     gabor_freqs=[4, 16, 32, 64],
+    ...     dynamic_range=10000,
+    ...     min_intensity=0.0,
+    ...     max_intensity=1.0,
+    ...     preserve_hu=False,
+    ...     ram_limit=-1,
+    ...     verbose=0,
+    ...     anisotropy_x=1.0,
+    ...     anisotropy_y=1.0,
+    ... )
+    >>> nyx.get_params("coarse_gray_depth")
+    {'coarse_gray_depth': 64}
+
+    Feature names are case-sensitive:
+
+    >>> Nyxus(["mean"])
+    Traceback (most recent call last):
+        ...
+    ValueError: Error: 'mean' is not a valid 2D feature name
     """
 
     def __del__(self):
@@ -221,7 +319,7 @@ class Nyxus:
             raise ValueError("Pixels per micron must be greater than zero.")
 
         if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be non-negative.")
+            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be positive.")
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -281,17 +379,46 @@ class Nyxus:
     def set_metaparam(
         self, 
         paramval: str):
-        """ Sets feature-specific parameter to a new value
-        Example: nyx.set_metaparam("glcm/greydepth=25")
+        r"""Set a feature-specific parameter.
 
         Parameters
-        -------------
+        ----------
         paramval : str
-        feature-specific value, for example: "3glcm/greydepth=25"
+            Assignment of the form ``"<feature>/<parameter>=<value>"``, for
+            example ``"glcm/greydepth=32"``.
+            Recognized names: ``glcm/greydepth``, ``glcm/offset``,
+            ``3glcm/greydepth``, ``3glcm/offset``, ``3glcm/numang``,
+            ``3glcm/sparseintensities``, ``3gldm/greydepth``, ``3ngtdm/greydepth``,
+            ``3ngtdm/radius``, ``3glrlm/greydepth`` and ``3glszm/greydepth``. The
+            value is an integer, except ``3glcm/sparseintensities`` which takes
+            ``true`` or ``false``.
 
-        Returns
-        ---------
-        success and optional error details
+        Raises
+        ------
+        ValueError
+            If the string is malformed, the feature or parameter is not
+            recognized, or the value cannot be parsed.
+
+        Notes
+        -----
+        A name without a ``/`` (e.g. ``"greydepth=8"``) is accepted and has no
+        effect. ``glcm/greydepth`` does not change the 2D co-occurrence
+        matrix, which is binned with `coarse_gray_depth`; it sets only the grey
+        depth of the constant-ROI test, so it decides whether a ROI whose
+        minimum and maximum fall into one bin returns the missing-value
+        substitute.
+
+        See Also
+        --------
+        get_metaparam
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["*ALL_GLCM*"])
+        >>> nyx.set_metaparam("glcm/greydepth=32")
+        >>> nyx.get_metaparam("glcm/greydepth")
+        32.0
         """
         ok,errordetails = set_metaparam_imp (id(self), paramval)
         if ok==False:
@@ -300,17 +427,40 @@ class Nyxus:
     def get_metaparam (
         self, 
         paramname: str):
-        """ Gets feature-specific parameter
-        Example: n_greys = nyx.get_metaparam("glcm/greydepth")
+        r"""Get a feature-specific parameter.
 
         Parameters
-        -------------
-        paramval : str
-        feature-specific value, for example: "3glcm/greydepth"
+        ----------
+        paramname : str
+            Name of the form ``"<feature>/<parameter>"``, for example
+            ``"glcm/greydepth"``. See :meth:`set_metaparam` for the names.
 
         Returns
-        ---------
-        requested value or throws an exception
+        -------
+        float
+            Current value.
+
+        Raises
+        ------
+        NameError
+            If the feature or parameter is not recognized.
+
+        Notes
+        -----
+        The ``3glcm/*`` names read the 2D ``glcm`` values, not the ones set
+        through ``3glcm/*``. ``3glszm/greydepth`` is read under the name
+        ``3glsz/greydepth``. A name without a ``/`` returns an undefined value.
+
+        See Also
+        --------
+        set_metaparam
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["*ALL_GLCM*"])
+        >>> nyx.get_metaparam("glcm/greydepth")
+        64.0
         """
         val,errordetails = get_metaparam_imp (id(self), paramname)
         if len(errordetails) > 0:
@@ -325,38 +475,73 @@ class Nyxus:
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = "",
     ):
-        """Extract features from all the images satisfying the file pattern of provided image directories.
+        r"""Extract features from the images in a directory.
 
-        Extracts all the requested features at the image level from the images
-        present in `intensity_dir`. If `label_dir` is specified, features will be
-        extracted for each unique label present in the label images. The file names
-        of the label images are expected to match those of the intensity images.
+        Pairs each intensity image in `intensity_dir` with the mask image of the
+        same file name in `label_dir` and computes the features of every ROI.
+        Without `label_dir` each intensity image is processed as a single ROI.
 
         Parameters
         ----------
         intensity_dir : str
-            Path to directory containing intensity images.
-        label_dir : str (optional, default None)
-            Path to directory containing label images.
-        file_pattern: str (optional, default ".*")
-            Regular expression used to filter the images present in both
-            `intensity_dir` and `label_dir`
-        output_type: str (optional, default "pandas")
-            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_path: str (optional, default "")
-            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-            The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
-                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
+            Directory of intensity images.
+        label_dir : str, optional
+            Directory of mask (label) images. Default None processes each
+            intensity image as one ROI covering the whole image.
+        file_pattern : str, optional
+            Default ".*". Regular expression selecting the files, matched against
+            file names in both directories.
+        output_type : {"pandas", "arrowipc", "parquet"}, optional
+            Output format. Default "pandas" returns a DataFrame; "arrowipc" and
+            "parquet" write a file and return its path.
+        output_path : str, optional
+            Destination of the Arrow IPC or Parquet file; ignored for "pandas".
+            Default "" writes ``NyxusFeatures.arrow`` or ``NyxusFeatures.parquet``
+            in the current working directory. A path with a file name
+            (``out/features.arrow``) writes that file; a directory path (``out``)
+            writes the default file name inside it. A missing last directory is
+            created; if its parent is missing too, the call raises RuntimeError (a
+            fix is coming).
 
         Returns
         -------
-        df : pd.DataFrame or str
-            if output_type == pandas
-            Pandas DataFrame containing the requested features with one row per label
-            per image.
-            Otherwise, arrow file path
+        pandas.DataFrame or str
+            For "pandas", a DataFrame with one row per ROI per image: the columns
+            ``intensity_image``, ``mask_image``, ``phys_unit``, ``ROI_label``,
+            ``t_index``, ``c_index``, ``phys_x``, ``phys_y``, ``phys_z``, then one
+            column per feature. Otherwise the path of the written file.
+
+        Raises
+        ------
+        OSError
+            If `intensity_dir` or `label_dir` does not exist.
+        ValueError
+            If `output_type` is not recognized or `file_pattern` is not a valid
+            pattern.
+        RuntimeError
+            If the dataset cannot be read.
+
+        Notes
+        -----
+        ROIs on the ROI blacklist (:meth:`blacklist_roi`) are skipped.
+
+        Examples
+        --------
+        The file-based examples assume the working directory holds the ``int`` and
+        ``seg`` folders of the two-image sample under ``tests/python/data`` in the
+        Nyxus repository.
+
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["*ALL_INTENSITY*"])
+        >>> df = nyx.featurize_directory("int", "seg")
+        >>> df.shape
+        (139, 45)
+        >>> df = nyx.featurize_directory("int", "seg", file_pattern=r".*_c0\.ome\.tif")
+        >>> df.shape
+        (66, 45)
+        >>> nyx.featurize_directory("int", "seg", output_type="arrowipc",
+        ...                         output_path="out/features.arrow")
+        'out/features.arrow'
         """
         if not os.path.exists(intensity_dir):
             raise IOError(
@@ -409,40 +594,77 @@ class Nyxus:
         output_path: Optional[str] = "",
         
     ):
-        """Extract features from a single image pair in a 2D np.array or for all the images in a 3D np.array.
+        r"""Extract features from images held in numpy arrays.
 
-        Extracts all the requested features at the image level from the images
-        in `intensity_images`. Features will be extracted for each unique label 
-        present in the label images. The name of resulting features in df will be
-        autogenerated if no intensity and label names are provided. Note that if
-        names are provided, the number of names must be the same as the number of images.
+        Computes the features of every labelled ROI of one image pair (2D arrays)
+        or of a stack of image pairs (3D arrays, first axis = image).
 
         Parameters
         ----------
-        intensity_images : np.ndarray
-            2D image or 3D collection of intensity images.
-        label_images : np.ndarray
-            2D image or 3D collection of label images.
-        intensity_names: list (optional, default []) 
-            names for the images in for the DataFrame output. 
-        label_names: list (optional, default []) 
-            names for the labels in for the DataFrame output.
-        output_type: str (optional, default "pandas")
-            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_path: str (optional, default "")
-            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-            The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
-                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
-            
+        intensity_images : numpy.ndarray
+            One 2D intensity image, or a 3D stack of them.
+        label_images : numpy.ndarray
+            Mask (label) images matching `intensity_images` in shape; 0 is
+            background.
+        intensity_names : list of str, optional
+            Names reported in the ``intensity_image`` column, one per image.
+            Default ``Intensity0``, ``Intensity1``, ...
+        label_names : list of str, optional
+            Names reported in the ``mask_image`` column, one per image. Default
+            ``Segmentation0``, ``Segmentation1``, ...
+        output_type : {"pandas", "arrowipc", "parquet"}, optional
+            Output format. Default "pandas" returns a DataFrame; "arrowipc" and
+            "parquet" write a file and return its path.
+        output_path : str, optional
+            Destination of the Arrow IPC or Parquet file; ignored for "pandas".
+            Default "" writes ``NyxusFeatures.arrow`` or ``NyxusFeatures.parquet``
+            in the current working directory. A path with a file name
+            (``out/features.arrow``) writes that file; a directory path (``out``)
+            writes the default file name inside it. A missing last directory is
+            created; if its parent is missing too, the call raises RuntimeError (a
+            fix is coming).
+
         Returns
         -------
-        df : pd.DataFrame or str
-            if output_type == pandas
-            Pandas DataFrame containing the requested features with one row per label
-            per image.
-            Otherwise, arrow file path
+        pandas.DataFrame or str
+            For "pandas", a DataFrame with one row per ROI per image: the columns
+            ``intensity_image``, ``mask_image``, ``phys_unit``, ``ROI_label``,
+            ``t_index``, ``c_index``, ``phys_x``, ``phys_y``, ``phys_z``, then one
+            column per feature. Otherwise the path of the written file.
+
+        Raises
+        ------
+        ValueError
+            If an argument is not a numpy array, the arrays are not both 2D or
+            both 3D, their shapes differ, the number of names does not match the
+            number of images, or `output_type` is not recognized.
+        RuntimeError
+            If a ROI's estimated footprint reaches `ram_limit`: arrays are not
+            processed out of core.
+
+        Notes
+        -----
+        Intensities are converted to ``uint32`` before featurization: an array
+        whose minimum is negative is first shifted so the minimum becomes 0, and
+        fractional values are truncated (1.7 becomes 1). A 3D array is shifted in
+        place, so the caller's array changes. Labels are converted to ``uint32``.
+        The file-loader options (`dynamic_range`, `min_intensity`,
+        `max_intensity`, `preserve_hu`) do not apply to arrays, and the ROI
+        blacklist is not applied.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from nyxus import Nyxus
+        >>> intens = np.zeros((2, 16, 16), dtype=np.uint16)
+        >>> labels = np.zeros((2, 16, 16), dtype=np.uint16)
+        >>> intens[:, 2:8, 2:8] = [[[10]], [[20]]]
+        >>> labels[:, 2:8, 2:8] = 1
+        >>> nyx = Nyxus(["MEAN"])
+        >>> df = nyx.featurize(intens, labels, intensity_names=["a", "b"],
+        ...                    label_names=["a_mask", "b_mask"])
+        >>> df[["intensity_image", "mask_image", "MEAN"]].values.tolist()
+        [['a', 'a_mask', 10.0], ['b', 'b_mask', 20.0]]
         """
         if (output_type != "" and output_type not in self._valid_output_types):
             raise ValueError(f'Invalid output type: {output_type}. Valid options are: {self._valid_output_types}')
@@ -536,6 +758,27 @@ class Nyxus:
                 
     
     def use_gpu_device (self, gpu_device_id: int):
+        r"""Switch GPU computation on or off for this instance.
+
+        Parameters
+        ----------
+        gpu_device_id : int
+            Interpreted as a flag: nonzero switches GPU computation on, 0
+            switches it off. It does not select a device: from Python the
+            computation runs on CUDA device 0.
+
+        Raises
+        ------
+        RuntimeError
+            If this build of Nyxus has no GPU support.
+
+        Examples
+        --------
+        >>> import nyxus
+        >>> nyx = nyxus.Nyxus(["MEAN"])
+        >>> if nyxus.gpu_is_available(id(nyx)):
+        ...     nyx.use_gpu_device(1)
+        """
         use_gpu (id(self), gpu_device_id)
 
     def featurize_files (
@@ -546,33 +789,69 @@ class Nyxus:
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = "",
     ):
-        """Extract features from image file pairs passed as lists
-
-        Extracts all the requested features at the image level from the intensity images
-        present in list `intensity_files` with respect to region of interest masks presented in 
-        list `mask_files`. Single-ROI feature extraction is enforced via passing 'True' as parameter 'single_roi'
+        r"""Extract features from lists of image files.
 
         Parameters
         ----------
-        intensity_files : list of intensity image file paths
-        mask_files : list of mask image file paths
-        single_roi : 'True' to treat items of 'intensity_files' as single-ROI ('mask_files' will be ignored), 'False' to treat items of 'intensity_files' and 'mask_files' as intensity/segmentation image pairs
-        output_type: str (optional, default "pandas")
-            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_path: str (optional, default "")
-            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-            The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
-                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
+        intensity_files : list of str
+            Paths of intensity images.
+        mask_files : list of str
+            Paths of mask (label) images, paired with `intensity_files` by
+            position. May be None when `single_roi` is True.
+        single_roi : bool
+            True processes each intensity image as one ROI covering the whole
+            image and ignores `mask_files`; False pairs `intensity_files` with
+            `mask_files`.
+        output_type : {"pandas", "arrowipc", "parquet"}, optional
+            Output format. Default "pandas" returns a DataFrame; "arrowipc" and
+            "parquet" write a file and return its path.
+        output_path : str, optional
+            Destination of the Arrow IPC or Parquet file; ignored for "pandas".
+            Default "" writes ``NyxusFeatures.arrow`` or ``NyxusFeatures.parquet``
+            in the current working directory. A path with a file name
+            (``out/features.arrow``) writes that file; a directory path (``out``)
+            writes the default file name inside it. A missing last directory is
+            created; if its parent is missing too, the call raises RuntimeError (a
+            fix is coming).
 
         Returns
         -------
-        df : pd.DataFrame or str
-            if output_type == pandas
-            Pandas DataFrame containing the requested features with one row per label
-            per image.
-            Otherwise, arrow file path
+        pandas.DataFrame or str
+            For "pandas", a DataFrame with one row per ROI per image: the columns
+            ``intensity_image``, ``mask_image``, ``phys_unit``, ``ROI_label``,
+            ``t_index``, ``c_index``, ``phys_x``, ``phys_y``, ``phys_z``, then one
+            column per feature. Otherwise the path of the written file.
+
+        Raises
+        ------
+        OSError
+            If `intensity_files` is None, or `mask_files` is None while
+            `single_roi` is False.
+        ValueError
+            If `output_type` is not recognized.
+        RuntimeError
+            If `intensity_files` is empty, a file does not exist, the two
+            lists differ in length while `single_roi` is False, or
+            featurization fails.
+
+        Notes
+        -----
+        ROIs on the ROI blacklist (:meth:`blacklist_roi`) are skipped.
+
+        Examples
+        --------
+        The file-based examples assume the working directory holds the ``int`` and
+        ``seg`` folders of the two-image sample under ``tests/python/data`` in the
+        Nyxus repository.
+
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["*ALL_INTENSITY*"])
+        >>> df = nyx.featurize_files(["int/p0_y1_r1_c0.ome.tif"],
+        ...                          ["seg/p0_y1_r1_c0.ome.tif"], False)
+        >>> df.shape
+        (66, 45)
+        >>> nyx.featurize_files(["int/p0_y1_r1_c0.ome.tif"], None, True).shape
+        (1, 45)
         """
 
         if intensity_files is None:
@@ -611,21 +890,37 @@ class Nyxus:
 
 
     def blacklist_roi(self, blacklist:str):
-        """Defines the application-wide ROI blacklist
+        r"""Set the ROI blacklist.
 
-        Defines a set of ROI labels that need to be skipped during feature extraction and in the output. Examples: 
-        '27,28,30' - defines a global blacklist of ROI labels 27, 28, and 30
-        'file1.ome.tif:5,6,7;file2.ome.tif:11,12,13,14' - defines 2 file-specific blacklists
+        Blacklisted ROI labels are skipped during featurization of files
+        (:meth:`featurize_directory`, :meth:`featurize_files`) and do not appear in
+        the output. Each call replaces the previous blacklist.
 
         Parameters
         ----------
-        blacklist : blacklist definition (string)
+        blacklist : str
+            Either a global list of labels, ``"27,28,30"``, or per-file lists
+            separated by semicolons, ``"file1.ome.tif:5,6,7;file2.ome.tif:11,12"``.
 
-        Returns
-        -------
-        None
+        Raises
+        ------
+        OSError
+            If `blacklist` is None or blank.
+        RuntimeError
+            If `blacklist` cannot be parsed.
 
-        """        
+        See Also
+        --------
+        clear_roi_blacklist, roi_blacklist_get_summary
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["MEAN"])
+        >>> nyx.blacklist_roi("27,28,30")
+        >>> nyx.roi_blacklist_get_summary()
+        'global 27 28 30'
+        """
         if blacklist is None:
             raise IOError ("ROI blacklist argument is empty")
 
@@ -635,31 +930,43 @@ class Nyxus:
         blacklist_roi_imp (id(self), blacklist)
 
     def clear_roi_blacklist(self):
-        """Clears the ROI blacklist
+        r"""Clear the ROI blacklist.
 
-        Parameters
-        ----------
-        None
+        See Also
+        --------
+        blacklist_roi
 
-        Returns
-        -------
-        None
-
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["MEAN"])
+        >>> nyx.blacklist_roi("5")
+        >>> nyx.clear_roi_blacklist()
+        >>> nyx.roi_blacklist_get_summary() is None
+        True
         """
         clear_roi_blacklist_imp (id(self))
 
     def roi_blacklist_get_summary (self):
-        """Returns a human-friendly text of the summary of the application-wide ROI blacklist
-
-        Parameters
-        ----------
-        None
+        r"""Describe the ROI blacklist.
 
         Returns
         -------
-        text of blacklist summary (string)
+        str or None
+            Human-readable summary of the blacklist, or None when it is empty.
 
-        """ 
+        See Also
+        --------
+        blacklist_roi
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["MEAN"])
+        >>> nyx.blacklist_roi("file1.ome.tif:5,6;file2.ome.tif:7")
+        >>> nyx.roi_blacklist_get_summary()
+        'file1.ome.tif : 5 6 file2.ome.tif : 7'
+        """
         s = roi_blacklist_get_summary_imp (id(self))
         s = s.strip()
         if len(s) == 0:
@@ -667,16 +974,54 @@ class Nyxus:
         return s
     
     def set_gabor_feature_params (self, **kwargs):
-        r"""Sets parameters of feature GABOR
+        r"""Set the parameters of the GABOR feature.
 
-        Keyword args:
-        * kersize (int): size of filter kernel's side. Example: customize_gabor_feature(kersize=16)
-        * gamma (float): aspect ratio of the Gaussian factor. Example: customize_gabor_feature(gamma=0.1)
-        * sig2lam (float): spatial frequency bandwidth. Example: customize_gabor_feature(sig2lam=0.8)
-        * f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: customize_gabor_feature(f0=0.1)
-        * thold (float): lower threshold of the filtered image to baseline ratio. Example: customize_gabor_feature(thold=0.025)
-        * thetas (list[int]): list of orientations of the Gaussian in degrees 0-180 matching 'freqs'. Example: customize_gabor_feature(theta=1.5708)
-        * freqs (list[int]): list of denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: customize_gabor_feature(freqs="1,2,4,8,16,32,64")
+        Only the parameters passed are changed.
+
+        Parameters
+        ----------
+        kersize : int, optional
+            Side of the filter kernel, in pixels.
+        gamma : float, optional
+            Aspect ratio of the Gaussian factor.
+        sig2lam : float, optional
+            Spatial frequency bandwidth (sigma to lambda ratio).
+        f0 : float, optional
+            Angular frequency of the baseline low-pass filter, in radians per
+            pixel; its wavelength is :math:`2\pi/f_0` pixels.
+        thold : float, optional
+            Lower threshold of the filtered-image to baseline ratio.
+        thetas : list of float, optional
+            Orientations of the Gaussian, in degrees, conventionally 0-180
+            (not enforced), one per entry of `freqs`. Must be a list; a
+            comma-separated string is rejected.
+        freqs : list of float, optional
+            Angular frequencies of the filters' harmonic factor, in radians per
+            pixel (wavelength :math:`2\pi/f` pixels), one per entry of `thetas`.
+            Must be a list.
+
+        Raises
+        ------
+        ValueError
+            If a keyword is not one of the above, or a value is invalid (for
+            example `thetas` and `freqs` of different lengths).
+        OSError
+            If no keyword is passed.
+
+        Notes
+        -----
+        Gabor parameters are process-wide: the change applies to every instance,
+        and the next :class:`Nyxus` constructor call resets them.
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["GABOR"])
+        >>> nyx.set_gabor_feature_params(kersize=16, gamma=0.1, sig2lam=0.8,
+        ...                              f0=0.1, thold=0.025,
+        ...                              thetas=[0, 90], freqs=[4, 16])
+        >>> nyx.get_params("gabor_thetas", "gabor_freqs")
+        {'gabor_freqs': [4.0, 16.0], 'gabor_thetas': [0.0, 90.0]}
         """
 
         params = [
@@ -718,26 +1063,63 @@ class Nyxus:
 
     
     def set_environment_params (self, **params):
-        """Sets parameters of the environment for Nyxus
-        
-        Keyword args:
-        *neighbor_distance: int 
-            Any two objects separated by a Euclidean distance (pixel units) greater than this
-            value will not be be considered neighbors. This cutoff is used by all features which
-            rely on neighbor identification.
-        * pixels_per_micron: float
-            Specify the image resolution in terms of pixels per micron for unit conversion
-            of non-unitless features.
-        * coarse_gray_depth: int 
-            Custom number of levels in grayscale denoising used in texture features.
-        * n_feature_calc_threads: int (optional, default 4)
-            Number of threads to use for feature calculation parallelization purposes.
-        * use_gpu_device: int (optional, default -1)
-            GPU device -1 means GPU is not used
-        * verbose: int (optional, non-negative, default 0)
-            Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
-        * ram_limit: int (optional)
-            Maximum amount of ram to be used by Nyxus in megabytes
+        r"""Change environment parameters of this instance.
+
+        Only the parameters passed are changed, except `verbose` (see Notes).
+
+        Parameters
+        ----------
+        features : list of str, optional
+            Stored and reported by :meth:`get_params`, but the enabled feature
+            set does not change (see Notes).
+        neighbor_distance : int, optional
+            Neighbor cutoff distance, in pixels.
+        pixels_per_micron : float, optional
+            Stored and reported by :meth:`get_params`; no feature currently
+            depends on it.
+        coarse_gray_depth : int, optional
+            Number of grey levels for texture features (see Notes).
+        n_feature_calc_threads : int, optional
+            Number of feature calculation threads.
+        use_gpu_device : int, optional
+            Accepted and ignored.
+        verbose : int, optional
+            Level of diagnostic output.
+        dynamic_range : float, optional
+            Number of grey levels a floating-point image is rescaled to.
+        min_intensity : float, optional
+            Intensity mapped to the lowest grey level. Negative values are
+            ignored.
+        max_intensity : float, optional
+            Intensity mapped to `dynamic_range`. Negative values are ignored.
+        ram_limit : int, optional
+            Memory budget in megabytes, with the same effect as the
+            constructor's `ram_limit`. A
+            value larger than the available memory is rejected with a message on
+            standard error and the previous limit is kept.
+
+        Raises
+        ------
+        ValueError
+            If a keyword is not one of the above.
+
+        Notes
+        -----
+        `verbose` is applied on every call and falls back to 0 when omitted.
+
+        The enabled feature set and the per-feature settings derived from
+        `coarse_gray_depth` are fixed when the instance is constructed. Changing
+        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
+        :meth:`get_params` reports but not the features computed by this
+        instance; construct a new instance to change them.
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["MEAN"])
+        >>> nyx.set_environment_params(neighbor_distance=3, pixels_per_micron=2.0)
+        >>> nyx.get_params("neighbor_distance", "pixels_per_micron")
+        {'neighbor_distance': 3, 'pixels_per_micron': 2.0}
         """
         
         valid_params = [
@@ -784,28 +1166,52 @@ class Nyxus:
                                    verb_lvl)
         
     def set_params(self, **params):
-        r"""Sets parameters of the Nyxus class
+        r"""Change parameters of this instance.
 
-        Keyword args:
-        
-        * features: List[str],
-        * neighbor_distance
-        * pixels_per_micron
-        * coarse_gray_depth
-        * n_feature_calc_threads
-        * use_gpu_device
-        * ibsi: bool
-        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
-        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
-        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
-    
-        * gabor_kersize (int): size of filter kernel's side. Example: set_params(gabor_kersize=16)
-        * gabor_gamma (float): aspect ratio of the Gaussian factor. Example: set_params(gabor_gamma=0.1)
-        * gabor_sig2lam (float): spatial frequency bandwidth. Example: set_params(gabor_sig2lam=0.8)
-        * gabor_f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: set_params(gabor_f0=0.1)
-        * gabor_thetas (str): comma-separated orientations of the Gaussian in degrees 0-180. Example: set_params(gabor_thetas="0,45,60")
-        * gabor_thold (float): lower threshold of the filtered image to baseline ratio. Example: set_params(gabor_thold=0.025)
-        * gabor_freqs (str): comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: set_params(gabor_freqs="1,2,4,8,16,32,64")
+        Accepts the keywords of :meth:`set_environment_params`, plus `ibsi` and
+        the ``gabor_*`` keywords of the constructor, which are forwarded to
+        :meth:`set_gabor_feature_params` without the ``gabor_`` prefix.
+
+        Parameters
+        ----------
+        **params
+            Any of `features`, `neighbor_distance`, `pixels_per_micron`,
+            `coarse_gray_depth`, `n_feature_calc_threads`, `use_gpu_device`,
+            `ibsi` (bool), `dynamic_range`, `min_intensity`, `max_intensity`,
+            `ram_limit`, `verbose`, `gabor_kersize`, `gabor_gamma`,
+            `gabor_sig2lam`, `gabor_f0`, `gabor_thold`, `gabor_thetas` (list) and
+            `gabor_freqs` (list).
+
+        Raises
+        ------
+        ValueError
+            If a keyword is not recognized or a Gabor value is invalid.
+
+        Notes
+        -----
+        The enabled feature set and the per-feature settings derived from
+        `coarse_gray_depth` are fixed when the instance is constructed. Changing
+        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
+        :meth:`get_params` reports but not the features computed by this
+        instance; construct a new instance to change them. Changing `ibsi` afterwards does not enable the
+        Intensity Histogram (``IH_*``) family.
+
+        Gabor parameters are process-wide, not per instance: every constructor
+        call that accepts ``gabor_*`` arguments sets them (to the defaults when
+        omitted), and :meth:`set_gabor_feature_params` changes them for all
+        instances.
+
+        See Also
+        --------
+        set_environment_params, set_gabor_feature_params, get_params
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["MEAN"])
+        >>> nyx.set_params(neighbor_distance=3, gabor_thetas=[0, 90], gabor_freqs=[4, 16])
+        >>> nyx.get_params("neighbor_distance", "gabor_thetas")
+        {'gabor_thetas': [0.0, 90.0], 'neighbor_distance': 3}
         """
         
         available_environment_params = [
@@ -848,36 +1254,31 @@ class Nyxus:
 
 
     def get_params(self, *args):
-        r"""Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
-        
-        Valid parameters are:
-        
-        * features: List[str],
-        * neighbor_distance
-        * pixels_per_micron
-        * coarse_gray_depth
-        * n_feature_calc_threads
-        * using_gpu
-        * gpu_device_id
-        * ibsi: bool
-        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
-        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
-        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
-    
-        * gabor_kersize (int): size of filter kernel's side. Example: set_params(gabor_kersize=16)
-        * gabor_gamma (float): aspect ratio of the Gaussian factor. Example: set_params(gabor_gamma=0.1)
-        * gabor_sig2lam (float): spatial frequency bandwidth. Example: set_params(gabor_sig2lam=0.8)
-        * gabor_f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: set_params(gabor_f0=0.1)
-        * gabor_thetas (str): comma-separated orientations of the Gaussian in degrees 0-180. Example: set_params(gabor_thetas="45,60,70")
-        * gabor_thold (float): lower threshold of the filtered image to baseline ratio. Example: set_params(gabor_thold=0.025)
-        * gabor_freqs (str): comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: set_params(gabor_freqs="1,2,4,8,16,32,64")
-        
+        r"""Return parameters of this instance.
+
         Parameters
         ----------
-            args: Strings containing parameter names to get the value of. (Optional)
+        *args : str
+            Names of the parameters to return. With no names, all are returned.
+            Unknown names are ignored. Available names: ``features``,
+            ``neighbor_distance``, ``pixels_per_micron``, ``coarse_gray_depth``,
+            ``n_feature_calc_threads``, ``ibsi``, ``dynamic_range``,
+            ``min_intensity``, ``max_intensity``, ``ram_limit`` (megabytes),
+            ``gabor_kersize``, ``gabor_gamma``, ``gabor_sig2lam``, ``gabor_f0``,
+            ``gabor_thold``, ``gabor_thetas`` and ``gabor_freqs``.
 
-        Returns:
-            dict: A dictionary mapping the parameter name to the value
+        Returns
+        -------
+        dict
+            Parameter name to value. ``ibsi`` is reported as 0 or 1. The GPU
+            settings and `verbose` are not reported.
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["MEAN"])
+        >>> nyx.get_params("coarse_gray_depth", "neighbor_distance", "ibsi")
+        {'coarse_gray_depth': 64, 'ibsi': 0, 'neighbor_distance': 5}
         """
         vars = list(args)
         
@@ -885,16 +1286,31 @@ class Nyxus:
         
     
     def get_arrow_ipc_file(self):
-        """Returns the path to the Arrow IPC file.
-
-        Parameters
-        ----------
-        None
+        r"""Return the path of the last Arrow IPC file written by this instance.
 
         Returns
         -------
-        Path to the Arrow IPC file (string)
+        str
+            Path of the most recent Arrow IPC or Parquet output file. The same
+            path is returned by :meth:`get_arrow_ipc_file` and
+            :meth:`get_parquet_file`, whichever format was written last.
 
+        Raises
+        ------
+        RuntimeError
+            If this build of Nyxus has no Arrow support.
+
+        Examples
+        --------
+        The file-based examples assume the working directory holds the ``int`` and
+        ``seg`` folders of the two-image sample under ``tests/python/data`` in the
+        Nyxus repository.
+
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["MEAN"])
+        >>> path = nyx.featurize_directory("int", "seg", output_type="arrowipc", output_path="out")
+        >>> nyx.get_arrow_ipc_file() == path
+        True
         """
         
         if self.arrow_is_enabled():
@@ -903,16 +1319,31 @@ class Nyxus:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
         
     def get_parquet_file(self):
-        """Returns the path to the Arrow IPC file.
-
-        Parameters
-        ----------
-        None
+        r"""Return the path of the last Parquet file written by this instance.
 
         Returns
         -------
-        Path to the Parquet file (string)
+        str
+            Path of the most recent Arrow IPC or Parquet output file. The same
+            path is returned by :meth:`get_arrow_ipc_file` and
+            :meth:`get_parquet_file`, whichever format was written last.
 
+        Raises
+        ------
+        RuntimeError
+            If this build of Nyxus has no Arrow support.
+
+        Examples
+        --------
+        The file-based examples assume the working directory holds the ``int`` and
+        ``seg`` folders of the two-image sample under ``tests/python/data`` in the
+        Nyxus repository.
+
+        >>> from nyxus import Nyxus
+        >>> nyx = Nyxus(["MEAN"])
+        >>> path = nyx.featurize_directory("int", "seg", output_type="parquet", output_path="out")
+        >>> nyx.get_parquet_file() == path
+        True
         """
         if self.arrow_is_enabled():
             return get_parquet_file_imp (id(self))
@@ -922,15 +1353,17 @@ class Nyxus:
 
     
     def arrow_is_enabled(self):
-        """Returns true if arrow support is enabled.
-
-        Parameters
-        ----------
-        None
+        r"""Report whether this build of Nyxus supports Arrow IPC and Parquet output.
 
         Returns
         -------
-        bool: If arrow support is enabled 
+        bool
+            True when the "arrowipc" and "parquet" output types are available.
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus
+        >>> enabled = Nyxus(["MEAN"]).arrow_is_enabled()
         """
         
 
@@ -938,93 +1371,155 @@ class Nyxus:
        
 
 class Nyxus3D:
-    """Nyxus3D image feature extraction library
+    r"""Extract 3D features from volumes and their ROI masks.
 
-    Scalably extracts features from images.
-    
-    Example:
-    nyx = Nyxus3D(
-            features = [["*3D_ALL*"]],
-            neighbor_distance = 5,
-            pixels_per_micron = 1.0,
-            coarse_gray_depth= 64, 
-            n_feature_calc_threads = 4,
-            use_gpu_device = -1,
-            ibsi = False,
-            gabor_kersize = 16,
-            gabor_gamma = 0.1,
-            gabor_sig2lam = 0.8,
-            gabor_f0 = 0.1,
-            gabor_thold = 0.025,
-            gabor_thetas = [0, 45, 90, 135],
-            gabor_freqs = [4, 16, 32, 64]
-        )
+    Volumes are read from files (:meth:`featurize_directory`,
+    :meth:`featurize_files`); there is no numpy-array entry point.
 
     Parameters
     ----------
-    features : list[str]
-        List of features to be calculated. Individual features can be
-        provided or pre-specified feature groups. Valid groups include:
-            *3D_ALL*
-            *3D_ALL_INTENSITY*
-        Both individual features and feature groups are case sensitive.
-    neighbor_distance: int (optional, default 5)
-        Any two objects separated by a Euclidean distance (pixel units) greater than this
-        value will not be be considered neighbors. This cutoff is used by all features which
-        rely on neighbor identification.
-    pixels_per_micron: float (optional, default 1.0)
-        Specify the image resolution in terms of pixels per micron for unit conversion
-        of non-unitless features.
-    coarse_gray_depth: int (optional, default 64)
-        Custom number of levels in grayscale denoising used in texture features.
-    n_feature_calc_threads: int (optional, default 4)
-        Number of threads to use for feature calculation parallelization purposes.
-    use_gpu_device: int (optional, default -1)
-        Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
-        The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
-        thread for feature calculation. 
-    ibsi: bool (optional, default false)
-       IBSI available features will be IBSI compliant when true.
-    dynamic_range: (optional)
-        Desired dynamic range of voxels of a floating point TIFF image.
-    min_intensity: (optional, default 0.0)
-        Minimum intensity of voxels of a floating point TIFF image.
-    max_intensity: (optional, default 1.0)
-        Maximum intensity of voxels of a floating point TIFF image.
-    preserve_hu: bool (optional, default False)
-        NOT needed for CT: Hounsfield units are preserved and reported either way,
-        despite this option's name. What it actually does:
-        Carry a FLOATING-POINT slide on the offset-preserving map (1 grey level = 1
-        intensity unit, offset by the slide's floored minimum) instead of the min-max
-        rescaling controlled by dynamic_range/min_intensity/max_intensity. A DICOM or
-        integer NIfTI slide takes it instead of the stored map, which keeps the stored
-        integers as grey levels and carries RescaleSlope/RescaleIntercept (scl_slope/
-        scl_inter) in the recorded inverse, so a fractional slope loses no stored level.
-        Other integer slides take the offset map regardless of this flag. The DICOM and
-        NIfTI rescale reaches the reported values either way, so CT Hounsfield Units survive
-        the load either way and negative values never wrap.
+    features : list of str
+        3D feature names and feature groups to compute. 3D groups:
+        ``*3D_ALL*``, ``*3D_ALL_INTENSITY*``, ``*3D_ALL_MORPHOLOGY*``,
+        ``*3D_ALL_TEXTURE*``, ``*3D_GLCM*``, ``*3D_GLDM*``, ``*3D_GLDZM*``,
+        ``*3D_GLSZM*``, ``*3D_GLRLM*``, ``*3D_NGLDM*`` and ``*3D_NGTDM*``.
+        Names are case-sensitive and must be upper case: ``"3MEAN"`` is accepted,
+        ``"3mean"`` raises ValueError. (The command-line tool upper-cases its
+        ``--features`` list; the Python API does not.) Entries are applied left to
+        right; a leading ``-`` removes a feature or group enabled by an earlier
+        entry and a leading ``+`` adds it, e.g. ``["*3D_ALL_INTENSITY*", "-3MEAN"]``.
+    neighbor_distance : int, optional
+        Default 5. Must be positive. There are no 3D neighbor features; the
+        value is stored and reported by :meth:`get_params` only.
+    pixels_per_micron : float, optional
+        Default 1.0. Must be positive. Stored and reported by
+        :meth:`get_params`; no 3D feature depends on it.
+    coarse_gray_depth : int, optional
+        Default 64. Must be positive. Grey depth of the MATLAB-style binning
+        of 3D GLCM and 3D GLDZM, of the 3D NGLDM conversion, and the bin count
+        of ``3ENTROPY`` and ``3UNIFORMITY``. 3D GLRLM, GLSZM, GLDM and NGTDM
+        ignore it: they bin to their own ``greydepth`` metaparameter (see
+        :meth:`set_metaparam`), 0 (no binning) by default.
+    n_feature_calc_threads : int, optional
+        Default 4. Number of feature calculation threads. Must be at least 1.
+    use_gpu_device : int, optional
+        Default -1 (CPU). No 3D feature uses the GPU, and the value is not
+        passed to CUDA. A non-negative id forces `n_feature_calc_threads` to
+        1, and falls back to -1 with a printed message when no GPU is
+        available. A value below -1 raises RuntimeError on a build without
+        GPU support.
+    ibsi : bool, optional
+        Default False. Compute the IBSI-compliant variant of the features that
+        have one.
+    dynamic_range : float, optional
+        Default 10000. Number of grey levels a floating-point image is
+        rescaled to.
+    min_intensity : float, optional
+        Default 0.0. Intensity of a floating-point image mapped to the lowest
+        grey level.
+    max_intensity : float, optional
+        Default 1.0. Intensity of a floating-point image mapped to
+        `dynamic_range`.
+    preserve_hu : bool, optional
+        Default False. Not needed for CT: Hounsfield units are preserved and
+        reported either way, despite the option's name. What it does: carries
+        a floating-point slide on the offset-preserving map (1 grey level = 1
+        intensity unit, offset by the slide's floored minimum) instead of the
+        min-max rescaling controlled by `dynamic_range`, `min_intensity` and
+        `max_intensity`. A DICOM or integer NIfTI slide takes it instead of
+        the stored map, which keeps the stored integers as grey levels and
+        carries RescaleSlope/RescaleIntercept (scl_slope/scl_inter) in the
+        recorded inverse, so a fractional slope loses no stored level. Other
+        integer slides take the offset map regardless of this flag. The DICOM
+        and NIfTI rescale reaches the reported values either way, so CT
+        Hounsfield units survive the load and negative values never wrap.
+
         Whichever map a slide takes is recorded and undone on the way out:
-          * Every intensity feature -- location (mean, median, mode, percentiles, min, max),
-            dispersion, the sum/energy family, and the Intensity Histogram (IH_*) features --
-            is reported in the slide's own intensity domain. A CT read in Hounsfield units is
-            reported in Hounsfield units, negatives included.
-          * Shift-invariant intensity features (variance, standard deviation, skewness,
-            kurtosis, range, interquartile range) and all shape/texture features: unaffected.
-          * Sub-unit precision survives on the stored map, which reports a fractional
-            rescaled value exactly. Elsewhere grey levels are integers, so a value that is not
-            integer-valued is reported as the grey level it was stored as: truncated, or
-            rounded to nearest under preserve_hu. Hounsfield units are integer-valued, so CT
-            is unaffected.
-    verbose: int (optional, default 0)
-        Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
-    anisotropy_x: float (optional, default 1.0)
-        Size of a voxel along X relative to the other axes. The volume is featurized on its voxels as
-        acquired and the shape features scale their coordinates by the anisotropy, so it changes only
-        shape values.
-    anisotropy_y: float (optional, default 1.0)
-        Y-dimension counterpart of anisotropy_x
-    anisotropy_z: float (optional, default 1.0)
-        Z-dimension counterpart of anisotropy_x
+
+        * Every intensity feature -- location (mean, median, mode,
+          percentiles, min, max), dispersion and the sum/energy family -- is
+          reported in the slide's own intensity domain. A CT read in Hounsfield
+          units is reported in Hounsfield units, negatives included.
+        * Shift-invariant intensity features (variance, standard deviation,
+          skewness, kurtosis, range, interquartile range) and all
+          shape/texture features are unaffected.
+        * Sub-unit precision survives on the stored map, which reports a
+          fractional rescaled value exactly. Elsewhere grey levels are
+          integers, so a value that is not integer-valued is reported as the
+          grey level it was stored as: truncated, or rounded to nearest under
+          `preserve_hu`. Hounsfield units are integer-valued, so CT is
+          unaffected.
+    use_physical_spacing : bool, optional
+        Default False. Take the voxel spacing from the OME ``PhysicalSize*``
+        metadata and treat non-cubic voxels as anisotropic. An anisotropy
+        factor other than 1.0 in `anisotropy_x`, `anisotropy_y` or
+        `anisotropy_z` takes precedence, and then all three come from those
+        arguments. A factor of 1.0 cannot be told from the default and does
+        not override the metadata.
+    ram_limit : int, optional
+        Memory budget in megabytes. ROIs whose estimated footprint reaches it
+        are processed out of core, except when one read of the file returns
+        the whole volume (NIfTI, or OME-Zarr chunked over all of Z): then such
+        a ROI stops the run with RuntimeError. Default -1 keeps the built-in limit, half
+        of the physical memory available when the instance is created. A
+        value larger than the available memory is rejected with a message on
+        standard error and the previous limit is kept.
+    verbose : int, optional
+        Default 0 (silent). Level of diagnostic output. Must be non-negative.
+    anisotropy_x : float, optional
+        Default 1.0. Size of a voxel along X relative to the other axes. Must
+        be positive. The volume is featurized on its voxels as acquired and
+        the shape features scale their coordinates by the anisotropy, so it
+        changes only shape values.
+    anisotropy_y : float, optional
+        Default 1.0. Y-dimension counterpart of `anisotropy_x`. Must be
+        positive.
+    anisotropy_z : float, optional
+        Default 1.0. Z-dimension counterpart of `anisotropy_x`. Must be
+        positive.
+
+    Other Parameters
+    ----------------
+    channel_signature, parent_channel, child_channel, aggregate
+        Accepted without a warning and ignored.
+
+    Raises
+    ------
+    ValueError
+        If a feature name or group is not recognized or a numeric parameter
+        is out of range.
+    RuntimeError
+        If `use_gpu_device` is below -1 and this build has no GPU support.
+
+    Notes
+    -----
+    Unknown keyword arguments print a warning and are ignored. The ``gabor_*``
+    keywords are not accepted: there is no 3D Gabor feature.
+
+    An OME-TIFF takes its Z, C and T sizes from the OME metadata; a plain
+    multi-page TIFF is read as one volume with one Z plane per page.
+
+    The enabled feature set and the per-feature settings derived from
+    `coarse_gray_depth` are fixed when the instance is constructed. Changing
+    `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
+    :meth:`get_params` reports but not the features computed by this
+    instance; construct a new instance to change them.
+
+    Examples
+    --------
+    >>> import numpy as np, os, tifffile
+    >>> from nyxus import Nyxus3D
+    >>> vol = np.zeros((6, 12, 12), dtype=np.uint16)
+    >>> vol[1:5, 2:9, 2:9] = 7
+    >>> os.makedirs("vol_int", exist_ok=True)
+    >>> os.makedirs("vol_seg", exist_ok=True)
+    >>> tifffile.imwrite("vol_int/v.ome.tif", vol, ome=True, metadata={"axes": "ZYX"})
+    >>> tifffile.imwrite("vol_seg/v.ome.tif", (vol > 0).astype(np.uint16),
+    ...                  ome=True, metadata={"axes": "ZYX"})
+    >>> nyx = Nyxus3D(["3MEAN", "3VOXEL_VOLUME"])
+    >>> df = nyx.featurize_directory("vol_int", "vol_seg", ".*")
+    >>> df[["ROI_label", "3MEAN"]].values.tolist()
+    [[1.0, 7.0]]
     """
 
     def __del__(self):
@@ -1084,7 +1579,7 @@ class Nyxus3D:
             raise ValueError("Pixels per micron must be greater than zero.")
 
         if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be non-negative.")
+            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be positive.")
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -1140,17 +1635,42 @@ class Nyxus3D:
     def set_metaparam(
         self, 
         paramval: str):
-        """ Sets feature-specific parameter to a new value
-        Example: nyx.set_metaparam("3glcm/greydepth=25")
+        r"""Set a feature-specific parameter.
 
         Parameters
-        -------------
+        ----------
         paramval : str
-        feature-specific value, for example: "3glcm/greydepth=25"
+            Assignment of the form ``"<feature>/<parameter>=<value>"``, for
+            example ``"3ngtdm/radius=2"``.
+            Recognized names: ``glcm/greydepth``, ``glcm/offset``,
+            ``3glcm/greydepth``, ``3glcm/offset``, ``3glcm/numang``,
+            ``3glcm/sparseintensities``, ``3gldm/greydepth``, ``3ngtdm/greydepth``,
+            ``3ngtdm/radius``, ``3glrlm/greydepth`` and ``3glszm/greydepth``. The
+            value is an integer, except ``3glcm/sparseintensities`` which takes
+            ``true`` or ``false``.
 
-        Returns
-        ---------
-        success and optional error details
+        Raises
+        ------
+        ValueError
+            If the string is malformed, the feature or parameter is not
+            recognized, or the value cannot be parsed.
+
+        Notes
+        -----
+        A name without a ``/`` (e.g. ``"greydepth=8"``) is accepted and has no
+        effect.
+
+        See Also
+        --------
+        get_metaparam
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus3D
+        >>> nyx = Nyxus3D(["*3D_NGTDM*"])
+        >>> nyx.set_metaparam("3ngtdm/radius=2")
+        >>> nyx.get_metaparam("3ngtdm/radius")
+        2.0
         """
         ok,errordetails = set_metaparam_imp (id(self), paramval)
         if ok==False:
@@ -1159,17 +1679,41 @@ class Nyxus3D:
     def get_metaparam (
         self, 
         paramname: str):
-        """ Gets feature-specific parameter
-        Example: n_greys = nyx.get_metaparam("3glcm/greydepth")
+        r"""Get a feature-specific parameter.
 
         Parameters
-        -------------
-        paramval : str
-        feature-specific value, for example: "3glcm/greydepth"
+        ----------
+        paramname : str
+            Name of the form ``"<feature>/<parameter>"``, for example
+            ``"3ngtdm/radius"``. See :meth:`set_metaparam` for the names.
 
         Returns
-        ---------
-        requested value or throws an exception
+        -------
+        float
+            Current value.
+
+        Raises
+        ------
+        NameError
+            If the feature or parameter is not recognized.
+
+        Notes
+        -----
+        The ``3glcm/*`` names read the 2D ``glcm`` values, not the ones set
+        through ``3glcm/*``. ``3glszm/greydepth`` is read under the name
+        ``3glsz/greydepth``. A name without a ``/`` returns an undefined value.
+
+        See Also
+        --------
+        set_metaparam
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus3D
+        >>> nyx = Nyxus3D(["*3D_GLRLM*"])
+        >>> nyx.set_metaparam("3glrlm/greydepth=32")
+        >>> nyx.get_metaparam("3glrlm/greydepth")
+        32.0
         """
         val,errordetails = get_metaparam_imp (id(self), paramname)
         if len(errordetails) > 0:
@@ -1184,38 +1728,54 @@ class Nyxus3D:
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = "",
     ):
-        """Extract features from all the images satisfying the file pattern of provided image directories.
+        r"""Extract 3D features from the volumes in a directory.
 
-        Extracts all the requested features at the image level from the images
-        present in `intensity_dir`. If `label_dir` is specified, features will be
-        extracted for each unique label present in the label images. The file names
-        of the label images are expected to match those of the intensity images.
+        Pairs each intensity volume in `intensity_dir` with the mask volume of
+        the same file name in `label_dir` and computes the features of every ROI.
 
         Parameters
         ----------
         intensity_dir : str
-            Path to directory containing intensity images.
-        label_dir : str (optional, default None)
-            Path to directory containing label images.
-        file_pattern: str
-            Regular expression used to filter the images present in both
-            `intensity_dir` and `label_dir`
-        output_type: str (optional, default "pandas")
-            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_path: str (optional, default "")
-            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-            The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
-                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
+            Directory of intensity volumes.
+        label_dir : str or None
+            Directory of mask (label) volumes. None processes each intensity
+            volume as one ROI.
+        file_pattern : str
+            Regular expression selecting the files, matched against file names in
+            both directories. Required; pass ".*" for all files.
+        output_type : {"pandas", "arrowipc", "parquet"}, optional
+            Output format. Default "pandas" returns a DataFrame; "arrowipc" and
+            "parquet" write a file and return its path.
+        output_path : str, optional
+            Destination of the Arrow IPC or Parquet file; ignored for "pandas".
+            Default "" writes ``NyxusFeatures.arrow`` or ``NyxusFeatures.parquet``
+            in the current working directory. A path with a file name
+            (``out/features.arrow``) writes that file; a directory path (``out``)
+            writes the default file name inside it. A missing last directory is
+            created; if its parent is missing too, the call raises RuntimeError (a
+            fix is coming).
 
         Returns
         -------
-        df : pd.DataFrame or str
-            if output_type == pandas
-            Pandas DataFrame containing the requested features with one row per label
-            per image.
-            Otherwise, arrow file path
+        pandas.DataFrame or str
+            For "pandas", a DataFrame with one row per ROI per image: the columns
+            ``intensity_image``, ``mask_image``, ``phys_unit``, ``ROI_label``,
+            ``t_index``, ``c_index``, ``phys_x``, ``phys_y``, ``phys_z``, then one
+            column per feature. Otherwise the path of the written file.
+
+        Raises
+        ------
+        OSError
+            If `intensity_dir` or `label_dir` does not exist.
+        ValueError
+            If `output_type` is not recognized or `file_pattern` is not a valid
+            pattern.
+        RuntimeError
+            If the dataset cannot be read.
+
+        Examples
+        --------
+        See :class:`Nyxus3D`.
         """
         if not os.path.exists(intensity_dir):
             raise IOError(
@@ -1259,33 +1819,67 @@ class Nyxus3D:
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = "",
     ):
-        """Extract features from image file pairs passed as lists
-
-        Extracts all the requested features at the image level from the intensity images
-        present in list `intensity_files` with respect to region of interest masks presented in 
-        list `mask_files`. Single-ROI feature extraction is enforced via passing 'True' as parameter 'single_roi'
+        r"""Extract 3D features from lists of volume files.
 
         Parameters
         ----------
-        intensity_files : list of intensity image file paths
-        mask_files : list of mask image file paths
-        single_roi : 'True' to treat items of 'intensity_files' as single-ROI ('mask_files' will be ignored), 'False' to treat items of 'intensity_files' and 'mask_files' as intensity/segmentation image pairs
-        output_type: str (optional, default "pandas")
-            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_path: str (optional, default "")
-            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-            The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
-                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
+        intensity_files : list of str
+            Paths of intensity images.
+        mask_files : list of str
+            Paths of mask (label) volumes, paired with `intensity_files` by
+            position. Required, one mask per intensity file, whatever
+            `single_roi` is.
+        single_roi : bool
+            True merges every nonzero label of each mask into one ROI (label 1)
+            and computes the 3D shape features from that ROI's bounding box;
+            voxels where the mask is 0 stay out. Use
+            :meth:`featurize_directory` with `label_dir` None for whole-volume
+            ROIs.
+        output_type : {"pandas", "arrowipc", "parquet"}, optional
+            Output format. Default "pandas" returns a DataFrame; "arrowipc" and
+            "parquet" write a file and return its path.
+        output_path : str, optional
+            Destination of the Arrow IPC or Parquet file; ignored for "pandas".
+            Default "" writes ``NyxusFeatures.arrow`` or ``NyxusFeatures.parquet``
+            in the current working directory. A path with a file name
+            (``out/features.arrow``) writes that file; a directory path (``out``)
+            writes the default file name inside it. A missing last directory is
+            created; if its parent is missing too, the call raises RuntimeError (a
+            fix is coming).
 
         Returns
         -------
-        df : pd.DataFrame or str
-            if output_type == pandas
-            Pandas DataFrame containing the requested features with one row per label
-            per image.
-            Otherwise, arrow file path
+        pandas.DataFrame or str
+            For "pandas", a DataFrame with one row per ROI per image: the columns
+            ``intensity_image``, ``mask_image``, ``phys_unit``, ``ROI_label``,
+            ``t_index``, ``c_index``, ``phys_x``, ``phys_y``, ``phys_z``, then one
+            column per feature. Otherwise the path of the written file.
+
+        Raises
+        ------
+        OSError
+            If `intensity_files` or `mask_files` is None.
+        ValueError
+            If `output_type` is not recognized.
+        RuntimeError
+            If a list is empty, the lists differ in length, a file does not
+            exist, or featurization fails.
+
+        Examples
+        --------
+        >>> import numpy as np, os, tifffile
+        >>> from nyxus import Nyxus3D
+        >>> vol = np.zeros((6, 12, 12), dtype=np.uint16)
+        >>> vol[1:5, 2:9, 2:9] = 7
+        >>> os.makedirs("vol_int", exist_ok=True)
+        >>> os.makedirs("vol_seg", exist_ok=True)
+        >>> tifffile.imwrite("vol_int/v.ome.tif", vol, ome=True, metadata={"axes": "ZYX"})
+        >>> tifffile.imwrite("vol_seg/v.ome.tif", (vol > 0).astype(np.uint16),
+        ...                  ome=True, metadata={"axes": "ZYX"})
+        >>> nyx = Nyxus3D(["3MEAN"])
+        >>> df = nyx.featurize_files(["vol_int/v.ome.tif"], ["vol_seg/v.ome.tif"], False)
+        >>> df["3MEAN"].tolist()
+        [7.0]
         """
 
         if intensity_files is None:
@@ -1320,28 +1914,61 @@ class Nyxus3D:
             featurize_fname_lists_3D_imp (id(self), intensity_files, mask_files, single_roi, output_type, output_path)
             return get_arrow_file_imp (id(self))
 
-    
+
     def set_environment_params (self, **params):
-        """Sets parameters of the environment for Nyxus
-        
-        Keyword args:
-        *neighbor_distance: int 
-            Any two objects separated by a Euclidean distance (pixel units) greater than this
-            value will not be be considered neighbors. This cutoff is used by all features which
-            rely on neighbor identification.
-        * pixels_per_micron: float
-            Specify the image resolution in terms of pixels per micron for unit conversion
-            of non-unitless features.
-        * coarse_gray_depth: int 
-            Custom number of levels in grayscale denoising used in texture features.
-        * n_feature_calc_threads: int (optional, default 4)
-            Number of threads to use for feature calculation parallelization purposes.
-        * use_gpu_device: int 
-            Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
-            The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
-            thread for feature calculation. 
-        * verbose: int (optional, non-negative, default 0)
-            Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
+        r"""Change environment parameters of this instance.
+
+        Only the parameters passed are changed, except `verbose` (see Notes).
+
+        Parameters
+        ----------
+        features : list of str, optional
+            Stored and reported by :meth:`get_params`, but the enabled feature
+            set does not change (see Notes).
+        neighbor_distance : int, optional
+            Stored and reported by :meth:`get_params`; no feature currently
+            depends on it.
+        pixels_per_micron : float, optional
+            Stored and reported by :meth:`get_params`; no feature currently
+            depends on it.
+        coarse_gray_depth : int, optional
+            Number of grey levels for texture features (see Notes).
+        n_feature_calc_threads : int, optional
+            Number of feature calculation threads.
+        use_gpu_device : int, optional
+            Accepted and ignored.
+        verbose : int, optional
+            Level of diagnostic output.
+        dynamic_range : float, optional
+            Number of grey levels a floating-point image is rescaled to.
+        min_intensity : float, optional
+            Intensity mapped to the lowest grey level. Negative values are
+            ignored.
+        max_intensity : float, optional
+            Intensity mapped to `dynamic_range`. Negative values are ignored.
+
+        Raises
+        ------
+        ValueError
+            If a keyword is not one of the above.
+
+        Notes
+        -----
+        `verbose` is applied on every call and falls back to 0 when omitted.
+
+        The enabled feature set and the per-feature settings derived from
+        `coarse_gray_depth` are fixed when the instance is constructed. Changing
+        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
+        :meth:`get_params` reports but not the features computed by this
+        instance; construct a new instance to change them.
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus3D
+        >>> nyx = Nyxus3D(["3MEAN"])
+        >>> nyx.set_environment_params(neighbor_distance=3, pixels_per_micron=2.0)
+        >>> nyx.get_params("neighbor_distance", "pixels_per_micron")
+        {'neighbor_distance': 3, 'pixels_per_micron': 2.0}
         """
         
         valid_params = [
@@ -1387,21 +2014,39 @@ class Nyxus3D:
                                    verb_lvl)
         
     def set_params(self, **params):
-        r"""Sets parameters of the Nyxus class
+        r"""Change parameters of this instance.
 
-        Keyword args:
-        
-        * features: List[str],
-        * neighbor_distance
-        * pixels_per_micron
-        * coarse_gray_depth
-        * n_feature_calc_threads
-        * using_gpu
-        * ibsi: bool
-        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
-        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
-        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
-    
+        Accepts the keywords of :meth:`set_environment_params` except
+        `use_gpu_device` and `verbose`, plus `ibsi`.
+
+        Parameters
+        ----------
+        **params
+            Any of `features`, `neighbor_distance`, `pixels_per_micron`,
+            `coarse_gray_depth`, `n_feature_calc_threads`, `ibsi` (bool),
+            `dynamic_range`, `min_intensity` and `max_intensity`.
+
+        Raises
+        ------
+        ValueError
+            If a keyword is not recognized. ``using_gpu`` passes the first check
+            but is rejected by :meth:`set_environment_params`.
+
+        Notes
+        -----
+        The enabled feature set and the per-feature settings derived from
+        `coarse_gray_depth` are fixed when the instance is constructed. Changing
+        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
+        :meth:`get_params` reports but not the features computed by this
+        instance; construct a new instance to change them.
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus3D
+        >>> nyx = Nyxus3D(["3MEAN"])
+        >>> nyx.set_params(neighbor_distance=3, ibsi=True)
+        >>> nyx.get_params("neighbor_distance", "ibsi")
+        {'ibsi': 1, 'neighbor_distance': 3}
         """
         
         available_environment_params = [
@@ -1438,27 +2083,31 @@ class Nyxus3D:
             self.set_environment_params(**environment_params)
     
     def get_params(self, *args):
-        r"""Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
-        
-        Valid parameters are:
-        
-        * features: List[str],
-        * neighbor_distance
-        * pixels_per_micron
-        * coarse_gray_depth
-        * n_feature_calc_threads
-        * using_gpu
-        * ibsi: bool
-        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
-        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
-        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
-        
+        r"""Return parameters of this instance.
+
         Parameters
         ----------
-            args: Strings containing parameter names to get the value of. (Optional)
+        *args : str
+            Names of the parameters to return. With no names, all are returned.
+            Unknown names are ignored. Available names: ``features``,
+            ``neighbor_distance``, ``pixels_per_micron``, ``coarse_gray_depth``,
+            ``n_feature_calc_threads``, ``ibsi``, ``dynamic_range``,
+            ``min_intensity``, ``max_intensity``, ``ram_limit`` (megabytes),
+            ``gabor_kersize``, ``gabor_gamma``, ``gabor_sig2lam``, ``gabor_f0``,
+            ``gabor_thold``, ``gabor_thetas`` and ``gabor_freqs``.
 
-        Returns:
-            dict: A dictionary mapping the parameter name to the value
+        Returns
+        -------
+        dict
+            Parameter name to value. ``ibsi`` is reported as 0 or 1. The GPU
+            settings and `verbose` are not reported.
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus3D
+        >>> nyx = Nyxus3D(["3MEAN"])
+        >>> nyx.get_params("coarse_gray_depth", "neighbor_distance", "ibsi")
+        {'coarse_gray_depth': 64, 'ibsi': 0, 'neighbor_distance': 5}
         """
         vars = list(args)
         
@@ -1466,16 +2115,31 @@ class Nyxus3D:
         
     
     def get_arrow_ipc_file(self):
-        """Returns the path to the Arrow IPC file.
-
-        Parameters
-        ----------
-        None
+        r"""Return the path of the last Arrow IPC file written by this instance.
 
         Returns
         -------
-        Path to the Arrow IPC file (string)
+        str
+            Path of the most recent Arrow IPC or Parquet output file. The same
+            path is returned by :meth:`get_arrow_ipc_file` and
+            :meth:`get_parquet_file`, whichever format was written last.
 
+        Raises
+        ------
+        RuntimeError
+            If this build of Nyxus has no Arrow support.
+
+        Examples
+        --------
+        The file-based examples assume the working directory holds the ``int`` and
+        ``seg`` folders of the two-image sample under ``tests/python/data`` in the
+        Nyxus repository.
+
+        >>> from nyxus import Nyxus3D
+        >>> nyx = Nyxus3D(["3MEAN"])
+        >>> path = nyx.featurize_directory("int", "seg", ".*", output_type="arrowipc", output_path="out")
+        >>> nyx.get_arrow_ipc_file() == path
+        True
         """
         
         if self.arrow_is_enabled():
@@ -1484,16 +2148,31 @@ class Nyxus3D:
             raise RuntimeError("Nyxus was not built with Arrow. To use this functionality, rebuild Nyxus with Arrow support on.")
         
     def get_parquet_file(self):
-        """Returns the path to the Arrow IPC file.
-
-        Parameters
-        ----------
-        None
+        r"""Return the path of the last Parquet file written by this instance.
 
         Returns
         -------
-        Path to the Parquet file (string)
+        str
+            Path of the most recent Arrow IPC or Parquet output file. The same
+            path is returned by :meth:`get_arrow_ipc_file` and
+            :meth:`get_parquet_file`, whichever format was written last.
 
+        Raises
+        ------
+        RuntimeError
+            If this build of Nyxus has no Arrow support.
+
+        Examples
+        --------
+        The file-based examples assume the working directory holds the ``int`` and
+        ``seg`` folders of the two-image sample under ``tests/python/data`` in the
+        Nyxus repository.
+
+        >>> from nyxus import Nyxus3D
+        >>> nyx = Nyxus3D(["3MEAN"])
+        >>> path = nyx.featurize_directory("int", "seg", ".*", output_type="parquet", output_path="out")
+        >>> nyx.get_parquet_file() == path
+        True
         """
         if self.arrow_is_enabled():
             return get_parquet_file_imp (id(self))
@@ -1503,99 +2182,107 @@ class Nyxus3D:
 
     
     def arrow_is_enabled(self):
-        """Returns true if arrow support is enabled.
-
-        Parameters
-        ----------
-        None
+        r"""Report whether this build of Nyxus supports Arrow IPC and Parquet output.
 
         Returns
         -------
-        bool: If arrow support is enabled 
+        bool
+            True when the "arrowipc" and "parquet" output types are available.
+
+        Examples
+        --------
+        >>> from nyxus import Nyxus3D
+        >>> enabled = Nyxus3D(["3MEAN"]).arrow_is_enabled()
         """
         
 
         return arrow_is_enabled_imp (id(self))
 
 class ImageQuality:
-    """Image quality extraction library
+    r"""Extract image quality features.
 
-    Scalably extracts features from images.
-    Extracts image quality features from images
-    
-    Example:
-    nyx = ImageQuality(
-            features = [["*ALL_IMQ*"]],
-            neighbor_distance = 5,
-            pixels_per_micron = 1.0,
-            coarse_gray_depth= 256, 
-            n_feature_calc_threads = 4,
-            ibsi = False,
-        )
+    Image quality features (FOCUS_SCORE, LOCAL_FOCUS_SCORE,
+    POWER_SPECTRUM_SLOPE, MAX_SATURATION, MIN_SATURATION, SHARPNESS) are
+    computed per ROI, or per whole image when no mask is given.
 
     Parameters
     ----------
-    features : list[str]
-        List of features to be calculated. Individual features can be
-        provided or pre-specified feature groups. Valid groups include:
-            *ALL*
-        Both individual features and feature groups are case sensitive.
-    neighbor_distance: int (optional, default 5)
-        Any two objects separated by a Euclidean distance (pixel units) greater than this
-        value will not be be considered neighbors. This cutoff is used by all features which
-        rely on neighbor identification.
-    pixels_per_micron: float (optional, default 1.0)
-        Specify the image resolution in terms of pixels per micron for unit conversion
-        of non-unitless features.
-    coarse_gray_depth: int (optional, default 256)
-        Custom number of levels in grayscale denoising used in texture features.
-    n_feature_calc_threads: int (optional, default 4)
-        Number of threads to use for feature calculation parallelization purposes.
-    ibsi: bool (optional, default false)
-       IBSI available features will be IBSI compliant when true.
-    channel_signature: (optional)
-        Channel signature to match files with the given channel name, such as channel_signature='c' for '_c' like in 'p0_y1_r1_c1.ome.tiff'
-    parent_channel: (optional)
-        Channel number that should be used as a provider of parent segments
-    child_channel: (optional)
-        Channel number that should be used as a provider of child segments
-    dynamic_range: (optional)
-        Desired dynamic range of voxels of a floating point TIFF image.
-    min_intensity: (optional, default 0.0)
-        Minimum intensity of voxels of a floating point TIFF image.
-    max_intensity: (optional, default 1.0)
-        Maximum intensity of voxels of a floating point TIFF image.
-    preserve_hu: bool (optional, default False)
-        NOT needed for CT: Hounsfield units are preserved and reported either way,
-        despite this option's name. What it actually does:
-        Carry a FLOATING-POINT slide on the offset-preserving map (1 grey level = 1
-        intensity unit, offset by the slide's floored minimum) instead of the min-max
-        rescaling controlled by dynamic_range/min_intensity/max_intensity. A DICOM or
-        integer NIfTI slide takes it instead of the stored map, which keeps the stored
-        integers as grey levels and carries RescaleSlope/RescaleIntercept (scl_slope/
-        scl_inter) in the recorded inverse, so a fractional slope loses no stored level.
-        Other integer slides take the offset map regardless of this flag. The DICOM and
-        NIfTI rescale reaches the reported values either way, so CT Hounsfield Units survive
-        the load either way and negative values never wrap.
-        Whichever map a slide takes is recorded and undone on the way out:
-          * Every intensity feature -- location (mean, median, mode, percentiles, min, max),
-            dispersion, the sum/energy family, and the Intensity Histogram (IH_*) features --
-            is reported in the slide's own intensity domain. A CT read in Hounsfield units is
-            reported in Hounsfield units, negatives included.
-          * Shift-invariant intensity features (variance, standard deviation, skewness,
-            kurtosis, range, interquartile range) and all shape/texture features: unaffected.
-          * Sub-unit precision survives on the stored map, which reports a fractional
-            rescaled value exactly. Elsewhere grey levels are integers, so a value that is not
-            integer-valued is reported as the grey level it was stored as: truncated, or
-            rounded to nearest under preserve_hu. Hounsfield units are integer-valued, so CT
-            is unaffected.
-    verbose: int (optional, default 0)
-        Level of diagnostic information in the standard output. Non-negative. 0 is no diagnostic output.
-    anisotropy_x: float (optional, default 1.0)
-        Size of a pixel along X relative to Y. Image-quality features are computed on the pixels as acquired,
-        so it does not change them.
-    anisotropy_y: float (optional, default 1.0)
-        Y-dimension counterpart of anisotropy_x
+    features : list of str
+        Image quality feature names, or the group ``*ALL_IMQ*``. The 2D
+        groups of :class:`Nyxus` (``*ALL*`` and others) are not accepted.
+        Names are case-sensitive and must be upper case.
+    neighbor_distance, pixels_per_micron, coarse_gray_depth, ibsi : optional
+        Accepted for parity with :class:`Nyxus` (defaults 5, 1.0, 256,
+        False), validated as there, and reported by :meth:`get_params`. No
+        image quality feature depends on them.
+    n_feature_calc_threads : int, optional
+        Default 4. Number of feature calculation threads. Must be at least 1.
+    min_intensity : float, optional
+        Default 0.0. Intensity of a floating-point image mapped to the lowest
+        grey level.
+    max_intensity : float, optional
+        Default 1.0. Intensity of a floating-point image mapped to the
+        highest grey level.
+    ram_limit : int, optional
+        Memory budget in megabytes. With a mask image, a ROI whose estimated
+        footprint reaches it is processed out of core, where
+        ``POWER_SPECTRUM_SLOPE`` and ``SHARPNESS`` are not computed. In
+        whole-image mode, and for arrays passed to :meth:`featurize`, such an
+        image or ROI raises RuntimeError instead. Default -1 keeps the built-in limit, half
+        of the physical memory available when the instance is created. A
+        value larger than the available memory is rejected with a message on
+        standard error and the previous limit is kept.
+    verbose : int, optional
+        Default 0 (silent). Level of diagnostic output. Must be non-negative.
+    anisotropy_x : float, optional
+        Default 1.0. Size of a pixel along X relative to Y. Must be positive.
+        With files, ``POWER_SPECTRUM_SLOPE`` is computed on the ROI resampled
+        by the factors; a fix is coming. The other five features are computed
+        on the pixels as acquired and do not change, and in-memory arrays are
+        not affected.
+    anisotropy_y : float, optional
+        Default 1.0. Y-dimension counterpart of `anisotropy_x`. Must be
+        positive.
+
+    Other Parameters
+    ----------------
+    dynamic_range, preserve_hu, use_physical_spacing
+        Applied as in :class:`Nyxus` (defaults 10000, False, False), but the
+        constructor also prints an "unexpected keyword argument" warning for
+        them.
+    gabor_kersize, gabor_gamma, gabor_sig2lam, gabor_f0, channel_signature
+        Accepted without a warning and ignored.
+
+    Raises
+    ------
+    ValueError
+        If a feature name is not recognized or a numeric parameter is out of
+        range.
+
+    Notes
+    -----
+    Unknown keyword arguments print a warning and are ignored, except
+    ``using_gpu``: it also prints the warning, but a non-negative value sets
+    `n_feature_calc_threads` to 1, and a value below -1 raises RuntimeError
+    on a build without GPU support. GPU computation is not available for
+    image quality features.
+
+    The enabled feature set and the per-feature settings derived from
+    `coarse_gray_depth` are fixed when the instance is constructed. Changing
+    `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
+    :meth:`get_params` reports but not the features computed by this
+    instance; construct a new instance to change them.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from nyxus import ImageQuality
+    >>> rng = np.random.default_rng(0)
+    >>> image = rng.integers(0, 1000, (64, 64)).astype(np.uint16)
+    >>> imq = ImageQuality(["*ALL_IMQ*"])
+    >>> df = imq.featurize(image)
+    >>> df.shape
+    (1, 15)
     """
 
     def __del__(self):
@@ -1655,7 +2342,7 @@ class ImageQuality:
             raise ValueError("Pixels per micron must be greater than zero.")
 
         if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=256) must be non-negative.")
+            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=256) must be positive.")
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -1713,38 +2400,61 @@ class ImageQuality:
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = "",
     ):
-        """Extract image quality features from all the images satisfying the file pattern of provided image directories.
+        r"""Extract image quality features from the images in a directory.
 
-        Extracts all the requested features at the image level from the images
-        present in `intensity_dir`. If `label_dir` is specified, features will be
-        extracted for each unique label present in the label images. The file names
-        of the label images are expected to match those of the intensity images.
+        Pairs each intensity image in `intensity_dir` with the mask image of the
+        same file name in `label_dir`. Without `label_dir` each image is one ROI.
 
         Parameters
         ----------
         intensity_dir : str
-            Path to directory containing intensity images.
-        label_dir : str (optional, default None)
-            Path to directory containing label images.
-        file_pattern: str (optional, default ".*")
-            Regular expression used to filter the images present in both
-            `intensity_dir` and `label_dir`
-        output_type: str (optional, default "pandas")
-            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_path: str (optional, default "")
-            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-            The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
-                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
+            Directory of intensity images.
+        label_dir : str, optional
+            Directory of mask (label) images. Default None processes each
+            intensity image as one ROI covering the whole image.
+        file_pattern : str, optional
+            Default ".*". Regular expression selecting the files, matched against
+            file names in both directories.
+        output_type : {"pandas", "arrowipc", "parquet"}, optional
+            Output format. Default "pandas" returns a DataFrame; "arrowipc" and
+            "parquet" write a file and return its path.
+        output_path : str, optional
+            Destination of the Arrow IPC or Parquet file; ignored for "pandas".
+            Default "" writes ``NyxusFeatures.arrow`` or ``NyxusFeatures.parquet``
+            in the current working directory. A path with a file name
+            (``out/features.arrow``) writes that file; a directory path (``out``)
+            writes the default file name inside it. A missing last directory is
+            created; if its parent is missing too, the call raises RuntimeError (a
+            fix is coming).
 
         Returns
         -------
-        df : pd.DataFrame or str
-            if output_type == pandas
-            Pandas DataFrame containing the requested features with one row per label
-            per image.
-            Otherwise, arrow file path
+        pandas.DataFrame or str
+            For "pandas", a DataFrame with one row per ROI per image: the columns
+            ``intensity_image``, ``mask_image``, ``phys_unit``, ``ROI_label``,
+            ``t_index``, ``c_index``, ``phys_x``, ``phys_y``, ``phys_z``, then one
+            column per feature. Otherwise the path of the written file.
+
+        Raises
+        ------
+        OSError
+            If `intensity_dir` or `label_dir` does not exist.
+        ValueError
+            If `output_type` is not recognized or `file_pattern` is not a valid
+            pattern.
+        RuntimeError
+            If the dataset cannot be read.
+
+        Examples
+        --------
+        The file-based examples assume the working directory holds the ``int`` and
+        ``seg`` folders of the two-image sample under ``tests/python/data`` in the
+        Nyxus repository.
+
+        >>> from nyxus import ImageQuality
+        >>> imq = ImageQuality(["*ALL_IMQ*"])
+        >>> imq.featurize_directory("int").shape
+        (2, 15)
         """
         if not os.path.exists(intensity_dir):
             raise IOError(
@@ -1795,40 +2505,67 @@ class ImageQuality:
         output_path: Optional[str] = "",
         
     ):
-        """Extract image quality features from a single image pair in a 2D np.array or for all the images in a 3D np.array.
-
-        Extracts all the requested features at the image level from the images
-        in `intensity_images`. Features will be extracted for each unique label 
-        present in the label images. The name of resulting features in df will be
-        autogenerated if no intensity and label names are provided. Note that if
-        names are provided, the number of names must be the same as the number of images.
+        r"""Extract image quality features from images held in numpy arrays.
 
         Parameters
         ----------
-        intensity_images : np.ndarray
-            2D image or 3D collection of intensity images.
-        label_images : np.ndarray (optional, default np.array([[]]))
-            2D image or 3D collection of label images. If not supplied, the intensity_images with be processed in whole slide (single ROI) mode.
-        intensity_names: list (optional, default []) 
-            names for the images in for the DataFrame output. 
-        label_names: list (optional, default []) 
-            names for the labels in for the DataFrame output.
-        output_type: str (optional, default "pandas")
-            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_path: str (optional, default "")
-            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-            The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
-                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
-            
+        intensity_images : numpy.ndarray
+            One 2D image, or a 3D stack of them (first axis = image).
+        label_images : numpy.ndarray, optional
+            Mask (label) images matching `intensity_images` in shape. When
+            omitted, each image is processed as one ROI covering the whole image.
+        intensity_names : list of str, optional
+            Names reported in the ``intensity_image`` column, one per image.
+            Default ``Intensity0``, ``Intensity1``, ...
+        label_names : list of str, optional
+            Names reported in the ``mask_image`` column, one per image. Default
+            ``Segmentation0``, ``Segmentation1``, ...
+        output_type : {"pandas", "arrowipc", "parquet"}, optional
+            Output format. Default "pandas" returns a DataFrame; "arrowipc" and
+            "parquet" write a file and return its path.
+        output_path : str, optional
+            Destination of the Arrow IPC or Parquet file; ignored for "pandas".
+            Default "" writes ``NyxusFeatures.arrow`` or ``NyxusFeatures.parquet``
+            in the current working directory. A path with a file name
+            (``out/features.arrow``) writes that file; a directory path (``out``)
+            writes the default file name inside it. A missing last directory is
+            created; if its parent is missing too, the call raises RuntimeError (a
+            fix is coming).
+
         Returns
         -------
-        df : pd.DataFrame or str
-            if output_type == pandas
-            Pandas DataFrame containing the requested features with one row per label
-            per image.
-            Otherwise, arrow file path
+        pandas.DataFrame or str
+            For "pandas", a DataFrame with one row per ROI per image: the columns
+            ``intensity_image``, ``mask_image``, ``phys_unit``, ``ROI_label``,
+            ``t_index``, ``c_index``, ``phys_x``, ``phys_y``, ``phys_z``, then one
+            column per feature. Otherwise the path of the written file.
+
+        Raises
+        ------
+        ValueError
+            If the arrays are not both 2D or both 3D, their shapes differ, the
+            number of names does not match the number of images, or
+            `output_type` is not recognized.
+        RuntimeError
+            If a ROI's estimated footprint reaches `ram_limit`.
+
+        Notes
+        -----
+        The arrays are cast to ``uint32`` by the backend: fractional values
+        are truncated, and unlike :meth:`Nyxus.featurize` negative values are
+        not shifted first, so they wrap around to large positive values.
+        Shift negative images to a non-negative range before calling.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from nyxus import ImageQuality
+        >>> rng = np.random.default_rng(0)
+        >>> images = rng.integers(0, 1000, (2, 64, 64)).astype(np.uint16)
+        >>> imq = ImageQuality(["FOCUS_SCORE", "SHARPNESS"])
+        >>> df = imq.featurize(images, intensity_names=["a", "b"])
+        >>> df["intensity_image"].tolist()
+        ['a', 'b']
         """
         if (output_type != "" and output_type not in self._valid_output_types):
             raise ValueError(f'Invalid output type: {output_type}. Valid options are: {self._valid_output_types}')
@@ -1927,33 +2664,63 @@ class ImageQuality:
         output_type: Optional[str] = "pandas",
         output_path: Optional[str] = "",
     ):
-        """Extract image quality features from image file pairs passed as lists
-
-        Extracts all the requested features at the image level from the intensity images
-        present in list `intensity_files` with respect to region of interest masks presented in 
-        list `mask_files`. Single-ROI feature extraction is enforced via passing 'True' as parameter 'single_roi'
+        r"""Extract image quality features from lists of image files.
 
         Parameters
         ----------
-        intensity_files : list of intensity image file paths
-        mask_files : list of mask image file paths
-        single_roi : 'True' to treat items of 'intensity_files' as single-ROI ('mask_files' will be ignored), 'False' to treat items of 'intensity_files' and 'mask_files' as intensity/segmentation image pairs
-        output_type: str (optional, default "pandas")
-            Output format for the features values. Valid options are "pandas", "arrowipc", and "parquet".
-        output_path: str (optional, default "")
-            Output filepath for Arrow IPC and Parquet output formats. Default is "", which is the current directory.
-            The output_path can either be to a directory or filename. For example,
-                - If 'output_path=/path/to/directory' then a file with the default name NyxusFeatures.<extension> will be created. If the directory does not exist, it will be created.
-                - If 'output_path=/path/to/directory/some_file_name.arrow' then this file will be created. If the directory does not exist, it will also be created.
-                - If 'output_path=some_file_name.arrow' then this file will be created in the current working directory.
+        intensity_files : list of str
+            Paths of intensity images.
+        mask_files : list of str, optional
+            Paths of mask (label) images, paired with `intensity_files` by
+            position. Default []. Must be a list; pass [] rather than None.
+        single_roi : bool, optional
+            Default True: each intensity image is one ROI covering the whole
+            image and `mask_files` is ignored. False pairs `intensity_files`
+            with `mask_files`.
+        output_type : {"pandas", "arrowipc", "parquet"}, optional
+            Output format. Default "pandas" returns a DataFrame; "arrowipc" and
+            "parquet" write a file and return its path.
+        output_path : str, optional
+            Destination of the Arrow IPC or Parquet file; ignored for "pandas".
+            Default "" writes ``NyxusFeatures.arrow`` or ``NyxusFeatures.parquet``
+            in the current working directory. A path with a file name
+            (``out/features.arrow``) writes that file; a directory path (``out``)
+            writes the default file name inside it. A missing last directory is
+            created; if its parent is missing too, the call raises RuntimeError (a
+            fix is coming).
 
         Returns
         -------
-        df : pd.DataFrame or str
-            if output_type == pandas
-            Pandas DataFrame containing the requested features with one row per label
-            per image.
-            Otherwise, arrow file path
+        pandas.DataFrame or str
+            For "pandas", a DataFrame with one row per ROI per image: the columns
+            ``intensity_image``, ``mask_image``, ``phys_unit``, ``ROI_label``,
+            ``t_index``, ``c_index``, ``phys_x``, ``phys_y``, ``phys_z``, then one
+            column per feature. Otherwise the path of the written file.
+
+        Raises
+        ------
+        OSError
+            If `intensity_files` is None, or `mask_files` is None while
+            `single_roi` is False.
+        TypeError
+            If `mask_files` is None while `single_roi` is True.
+        ValueError
+            If `output_type` is not recognized.
+        RuntimeError
+            If `intensity_files` is empty, a file does not exist, the two
+            lists differ in length while `single_roi` is False, or
+            featurization fails.
+
+        Examples
+        --------
+        The file-based examples assume the working directory holds the ``int`` and
+        ``seg`` folders of the two-image sample under ``tests/python/data`` in the
+        Nyxus repository.
+
+        >>> from nyxus import ImageQuality
+        >>> imq = ImageQuality(["*ALL_IMQ*"])
+        >>> imq.featurize_files(["int/p0_y1_r1_c0.ome.tif"]).shape
+        (1, 15)
         """
 
         if intensity_files is None:
@@ -1990,21 +2757,37 @@ class ImageQuality:
 
 
     def blacklist_roi(self, blacklist:str):
-        """Defines the application-wide ROI blacklist
+        r"""Set the ROI blacklist.
 
-        Defines a set of ROI labels that need to be skipped during feature extraction and in the output. Examples: 
-        '27,28,30' - defines a global blacklist of ROI labels 27, 28, and 30
-        'file1.ome.tif:5,6,7;file2.ome.tif:11,12,13,14' - defines 2 file-specific blacklists
+        Blacklisted ROI labels are skipped during featurization of files
+        (:meth:`featurize_directory`, :meth:`featurize_files`) and do not appear in
+        the output. Each call replaces the previous blacklist.
 
         Parameters
         ----------
-        blacklist : blacklist definition (string)
+        blacklist : str
+            Either a global list of labels, ``"27,28,30"``, or per-file lists
+            separated by semicolons, ``"file1.ome.tif:5,6,7;file2.ome.tif:11,12"``.
 
-        Returns
-        -------
-        None
+        Raises
+        ------
+        OSError
+            If `blacklist` is None or blank.
+        RuntimeError
+            If `blacklist` cannot be parsed.
 
-        """        
+        See Also
+        --------
+        clear_roi_blacklist, roi_blacklist_get_summary
+
+        Examples
+        --------
+        >>> from nyxus import ImageQuality
+        >>> nyx = ImageQuality(["*ALL_IMQ*"])
+        >>> nyx.blacklist_roi("27,28,30")
+        >>> nyx.roi_blacklist_get_summary()
+        'global 27 28 30'
+        """
         if blacklist is None:
             raise IOError ("ROI blacklist argument is empty")
 
@@ -2014,31 +2797,43 @@ class ImageQuality:
         blacklist_roi_imp (id(self), blacklist)
 
     def clear_roi_blacklist(self):
-        """Clears the ROI blacklist
+        r"""Clear the ROI blacklist.
 
-        Parameters
-        ----------
-        None
+        See Also
+        --------
+        blacklist_roi
 
-        Returns
-        -------
-        None
-
+        Examples
+        --------
+        >>> from nyxus import ImageQuality
+        >>> nyx = ImageQuality(["*ALL_IMQ*"])
+        >>> nyx.blacklist_roi("5")
+        >>> nyx.clear_roi_blacklist()
+        >>> nyx.roi_blacklist_get_summary() is None
+        True
         """
         clear_roi_blacklist_imp (id(self))
 
     def roi_blacklist_get_summary (self):
-        """Returns a human-friendly text of the summary of the application-wide ROI blacklist
-
-        Parameters
-        ----------
-        None
+        r"""Describe the ROI blacklist.
 
         Returns
         -------
-        text of blacklist summary (string)
+        str or None
+            Human-readable summary of the blacklist, or None when it is empty.
 
-        """ 
+        See Also
+        --------
+        blacklist_roi
+
+        Examples
+        --------
+        >>> from nyxus import ImageQuality
+        >>> nyx = ImageQuality(["*ALL_IMQ*"])
+        >>> nyx.blacklist_roi("file1.ome.tif:5,6;file2.ome.tif:7")
+        >>> nyx.roi_blacklist_get_summary()
+        'file1.ome.tif : 5 6 file2.ome.tif : 7'
+        """
         s = roi_blacklist_get_summary_imp (id(self))
         s = s.strip()
         if len(s) == 0:
@@ -2046,16 +2841,54 @@ class ImageQuality:
         return s
     
     def set_gabor_feature_params (self, **kwargs):
-        r"""Sets parameters of feature GABOR
+        r"""Set the parameters of the GABOR feature.
 
-        Keyword args:
-        * kersize (int): size of filter kernel's side. Example: customize_gabor_feature(kersize=16)
-        * gamma (float): aspect ratio of the Gaussian factor. Example: customize_gabor_feature(gamma=0.1)
-        * sig2lam (float): spatial frequency bandwidth. Example: customize_gabor_feature(sig2lam=0.8)
-        * f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: customize_gabor_feature(f0=0.1)
-        * thold (float): lower threshold of the filtered image to baseline ratio. Example: customize_gabor_feature(thold=0.025)
-        * thetas (list[int]): list of orientations of the Gaussian in degrees 0-180 matching 'freqs'. Example: customize_gabor_feature(theta=1.5708)
-        * freqs (list[int]): list of denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: customize_gabor_feature(freqs="1,2,4,8,16,32,64")
+        Only the parameters passed are changed.
+
+        Parameters
+        ----------
+        kersize : int, optional
+            Side of the filter kernel, in pixels.
+        gamma : float, optional
+            Aspect ratio of the Gaussian factor.
+        sig2lam : float, optional
+            Spatial frequency bandwidth (sigma to lambda ratio).
+        f0 : float, optional
+            Angular frequency of the baseline low-pass filter, in radians per
+            pixel; its wavelength is :math:`2\pi/f_0` pixels.
+        thold : float, optional
+            Lower threshold of the filtered-image to baseline ratio.
+        thetas : list of float, optional
+            Orientations of the Gaussian, in degrees, conventionally 0-180
+            (not enforced), one per entry of `freqs`. Must be a list; a
+            comma-separated string is rejected.
+        freqs : list of float, optional
+            Angular frequencies of the filters' harmonic factor, in radians per
+            pixel (wavelength :math:`2\pi/f` pixels), one per entry of `thetas`.
+            Must be a list.
+
+        Raises
+        ------
+        ValueError
+            If a keyword is not one of the above, or a value is invalid (for
+            example `thetas` and `freqs` of different lengths).
+        OSError
+            If no keyword is passed.
+
+        Notes
+        -----
+        Gabor parameters are process-wide: the change applies to every instance,
+        and the next :class:`Nyxus` constructor call resets them.
+
+        Examples
+        --------
+        >>> from nyxus import ImageQuality
+        >>> nyx = ImageQuality(["*ALL_IMQ*"])
+        >>> nyx.set_gabor_feature_params(kersize=16, gamma=0.1, sig2lam=0.8,
+        ...                              f0=0.1, thold=0.025,
+        ...                              thetas=[0, 90], freqs=[4, 16])
+        >>> nyx.get_params("gabor_thetas", "gabor_freqs")
+        {'gabor_freqs': [4.0, 16.0], 'gabor_thetas': [0.0, 90.0]}
         """
 
         params = [
@@ -2097,26 +2930,59 @@ class ImageQuality:
 
     
     def set_environment_params (self, **params):
-        """Sets parameters of the environment for Nyxus
-        
-        Keyword args:
-        *neighbor_distance: int 
-            Any two objects separated by a Euclidean distance (pixel units) greater than this
-            value will not be be considered neighbors. This cutoff is used by all features which
-            rely on neighbor identification.
-        * pixels_per_micron: float
-            Specify the image resolution in terms of pixels per micron for unit conversion
-            of non-unitless features.
-        * coarse_gray_depth: int 
-            Custom number of levels in grayscale denoising used in texture features.
-        * n_feature_calc_threads: int (optional, default 4)
-            Number of threads to use for feature calculation parallelization purposes.
-        * use_gpu_device: int 
-            Id of the gpu to use. To find available gpus along with ids, using nyxus.get_gpu_properties().
-            The default value of -1 uses cpu calculations. Note that the gpu features only support a single 
-            thread for feature calculation. 
-        * verbose: int (optional, non-negative, default 0)
-            Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
+        r"""Change environment parameters of this instance.
+
+        Only the parameters passed are changed, except `verbose` (see Notes).
+
+        Parameters
+        ----------
+        features : list of str, optional
+            Stored and reported by :meth:`get_params`, but the enabled feature
+            set does not change (see Notes).
+        neighbor_distance : int, optional
+            Stored and reported by :meth:`get_params`; no feature currently
+            depends on it.
+        pixels_per_micron : float, optional
+            Stored and reported by :meth:`get_params`; no feature currently
+            depends on it.
+        coarse_gray_depth : int, optional
+            Number of grey levels for texture features (see Notes).
+        n_feature_calc_threads : int, optional
+            Number of feature calculation threads.
+        use_gpu_device : int, optional
+            Accepted and ignored.
+        verbose : int, optional
+            Level of diagnostic output.
+        dynamic_range : float, optional
+            Number of grey levels a floating-point image is rescaled to.
+        min_intensity : float, optional
+            Intensity mapped to the lowest grey level. Negative values are
+            ignored.
+        max_intensity : float, optional
+            Intensity mapped to `dynamic_range`. Negative values are ignored.
+
+        Raises
+        ------
+        ValueError
+            If a keyword is not one of the above.
+
+        Notes
+        -----
+        `verbose` is applied on every call and falls back to 0 when omitted.
+
+        The enabled feature set and the per-feature settings derived from
+        `coarse_gray_depth` are fixed when the instance is constructed. Changing
+        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
+        :meth:`get_params` reports but not the features computed by this
+        instance; construct a new instance to change them.
+
+        Examples
+        --------
+        >>> from nyxus import ImageQuality
+        >>> nyx = ImageQuality(["*ALL_IMQ*"])
+        >>> nyx.set_environment_params(neighbor_distance=3, pixels_per_micron=2.0)
+        >>> nyx.get_params("neighbor_distance", "pixels_per_micron")
+        {'neighbor_distance': 3, 'pixels_per_micron': 2.0}
         """
         
         valid_params = [
@@ -2162,28 +3028,42 @@ class ImageQuality:
                                    verb_lvl)
         
     def set_params(self, **params):
-        r"""Sets parameters of the Nyxus class
+        r"""Change parameters of this instance.
 
-        Keyword args:
-        
-        * features: List[str],
-        * neighbor_distance
-        * pixels_per_micron
-        * coarse_gray_depth
-        * n_feature_calc_threads
-        * using_gpu
-        * ibsi: bool
-        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
-        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
-        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
-    
-        * gabor_kersize (int): size of filter kernel's side. Example: set_params(gabor_kersize=16)
-        * gabor_gamma (float): aspect ratio of the Gaussian factor. Example: set_params(gabor_gamma=0.1)
-        * gabor_sig2lam (float): spatial frequency bandwidth. Example: set_params(gabor_sig2lam=0.8)
-        * gabor_f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: set_params(gabor_f0=0.1)
-        * gabor_thetas (str): comma-separated orientations of the Gaussian in degrees 0-180. Example: set_params(gabor_thetas="0,45,60")
-        * gabor_thold (float): lower threshold of the filtered image to baseline ratio. Example: set_params(gabor_thold=0.025)
-        * gabor_freqs (str): comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: set_params(gabor_freqs="1,2,4,8,16,32,64")
+        Accepts the keywords of :meth:`set_environment_params` except
+        `use_gpu_device`, plus `ibsi` and the ``gabor_*`` keywords, which are
+        forwarded to :meth:`set_gabor_feature_params` without the prefix.
+
+        Parameters
+        ----------
+        **params
+            Any of `features`, `neighbor_distance`, `pixels_per_micron`,
+            `coarse_gray_depth`, `n_feature_calc_threads`, `ibsi` (bool),
+            `dynamic_range`, `min_intensity`, `max_intensity`, `verbose`,
+            `gabor_kersize`, `gabor_gamma`, `gabor_sig2lam`, `gabor_f0`,
+            `gabor_thold`, `gabor_thetas` (list) and `gabor_freqs` (list).
+
+        Raises
+        ------
+        ValueError
+            If a keyword is not recognized. ``using_gpu`` passes the first check
+            but is rejected by :meth:`set_environment_params`.
+
+        Notes
+        -----
+        The enabled feature set and the per-feature settings derived from
+        `coarse_gray_depth` are fixed when the instance is constructed. Changing
+        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
+        :meth:`get_params` reports but not the features computed by this
+        instance; construct a new instance to change them.
+
+        Examples
+        --------
+        >>> from nyxus import ImageQuality
+        >>> imq = ImageQuality(["*ALL_IMQ*"])
+        >>> imq.set_params(neighbor_distance=3)
+        >>> imq.get_params("neighbor_distance")
+        {'neighbor_distance': 3}
         """
         
         available_environment_params = [
@@ -2226,35 +3106,31 @@ class ImageQuality:
             self.set_environment_params(**environment_params)
     
     def get_params(self, *args):
-        r"""Returns the parameters of a Nyxus object. If no args are supplied, all parameters will be returned.
-        
-        Valid parameters are:
-        
-        * features: List[str],
-        * neighbor_distance
-        * pixels_per_micron
-        * coarse_gray_depth
-        * n_feature_calc_threads
-        * using_gpu
-        * ibsi: bool
-        * dynamic_range (float): Desired dynamic range of voxels of a floating point TIFF image.
-        * min_intensity (float): Minimum intensity of voxels of a floating point TIFF image.
-        * max_intensity (float): Maximum intensity of voxels of a floating point TIFF image.
-    
-        * gabor_kersize (int): size of filter kernel's side. Example: set_params(gabor_kersize=16)
-        * gabor_gamma (float): aspect ratio of the Gaussian factor. Example: set_params(gabor_gamma=0.1)
-        * gabor_sig2lam (float): spatial frequency bandwidth. Example: set_params(gabor_sig2lam=0.8)
-        * gabor_f0 (float): frequency of the baseline lowpass filter as denominator of `\pi`. Example: set_params(gabor_f0=0.1)
-        * gabor_thetas (str): comma-separated orientations of the Gaussian in degrees 0-180. Example: set_params(gabor_thetas="45,60,70")
-        * gabor_thold (float): lower threshold of the filtered image to baseline ratio. Example: set_params(gabor_thold=0.025)
-        * gabor_freqs (str): comma-separated denominators of `\pi` as frequencies of Gabor filter's harmonic factor. Example: set_params(gabor_freqs="1,2,4,8,16,32,64")
-        
+        r"""Return parameters of this instance.
+
         Parameters
         ----------
-            args: Strings containing parameter names to get the value of. (Optional)
+        *args : str
+            Names of the parameters to return. With no names, all are returned.
+            Unknown names are ignored. Available names: ``features``,
+            ``neighbor_distance``, ``pixels_per_micron``, ``coarse_gray_depth``,
+            ``n_feature_calc_threads``, ``ibsi``, ``dynamic_range``,
+            ``min_intensity``, ``max_intensity``, ``ram_limit`` (megabytes),
+            ``gabor_kersize``, ``gabor_gamma``, ``gabor_sig2lam``, ``gabor_f0``,
+            ``gabor_thold``, ``gabor_thetas`` and ``gabor_freqs``.
 
-        Returns:
-            dict: A dictionary mapping the parameter name to the value
+        Returns
+        -------
+        dict
+            Parameter name to value. ``ibsi`` is reported as 0 or 1. The GPU
+            settings and `verbose` are not reported.
+
+        Examples
+        --------
+        >>> from nyxus import ImageQuality
+        >>> nyx = ImageQuality(["*ALL_IMQ*"])
+        >>> nyx.get_params("coarse_gray_depth", "neighbor_distance", "ibsi")
+        {'coarse_gray_depth': 256, 'ibsi': 0, 'neighbor_distance': 5}
         """
         vars = list(args)
         
@@ -2262,38 +3138,40 @@ class ImageQuality:
 
 
 class Nested:
-    r"""Nyxus image feature extraction library / ROI hierarchy analyzer
-    
-    Valid aggregate functions are any functions available in pandas.DatFrame.aggregate,
-    e.g. min, max, count, std. Lambda functions can also be passed. To provide a name to
-    the aggregate function, pass in a list of tuples where the first element in the name
-    and the second is the function, e.g. aggregate=[('nanmean', lambda x: np.nanmean(x))]. 
-    
+    r"""Relate ROIs of two mask channels as parents and children.
+
+    :meth:`find_relations` relates each child ROI to every parent ROI whose
+    bounding box contains the child's bounding box; :meth:`featurize` joins
+    child features to those relations and optionally aggregates them.
+
     Parameters
     ----------
-        aggregate : list
-            List of aggregate functions. Any aggregate function from Pandas can be used
-            along with lambda functions.
-	
-	Example
-	-------
-	from nyxus import Nested, Nyxus
-    
-    int_path = '/home/data/6234838c6b123e21c8b736f5/tissuenet_tif/int'
-    seg_path = '/home/data/6234838c6b123e21c8b736f5/tissuenet_tif/seg'
-    
-    nyx = Nyxus(["*ALL*"])
-    
-    features = nyx.featurize(int_path, seg_path, file_pattern='p[0-9]_y[0-9]_r[0-9]_c0\.ome\.tif')
- 
-	nn = Nested()
-	
-	parent_filepattern = 'p{r}_y{c}_r{z}_c1.ome.tif'
-    child_filepattern = 'p{r}_y{c}_r{z}_c0.ome.tif'
-    
-	rels = nn.find_relations (seg_path, parent_filepattern, child_filepattern)
- 
-    df = nn.featurize(rels, features)
+    aggregate : list, optional
+        Aggregations applied by :meth:`featurize`, in any form accepted by
+        :meth:`pandas.DataFrame.aggregate`: names such as ``"mean"``,
+        ``"min"``, ``"max"``, ``"std"``, ``"count"``, functions, or
+        ``(name, function)`` tuples such as
+        ``("nanmean", lambda x: np.nanmean(x))``. Default [] (no aggregation).
+
+    Examples
+    --------
+    The file-based examples assume the working directory holds the ``int`` and
+    ``seg`` folders of the two-image sample under ``tests/python/data`` in the
+    Nyxus repository. In it, ``*_c1`` masks hold the parents and ``*_c0`` masks
+    the children.
+
+    >>> from nyxus import Nested, Nyxus
+    >>> nyx = Nyxus(["MEAN"])
+    >>> child_features = nyx.featurize_directory("int", "seg",
+    ...                                          file_pattern=r".*_c0\.ome\.tif")
+    >>> child_features = child_features.rename(columns={"ROI_label": "label"})
+    >>> nn = Nested(aggregate=["mean", "max"])
+    >>> rels = nn.find_relations("seg", r".*_c1\.ome\.tif", r".*_c0\.ome\.tif")
+    >>> list(rels.columns)
+    ['Image', 'Parent_Label', 'Child_Label']
+    >>> df = nn.featurize(rels, child_features)
+    >>> bool(df[("MEAN", "mean")].notna().all())
+    True
     """
 
     def __del__(self):
@@ -2318,23 +3196,46 @@ class Nested:
         parent_file_pattern: str, 
         child_file_pattern: str):
     
-        r"""Finds parent-child relationships.
+        r"""Find parent-child relations between two sets of mask images.
 
-        Find parent-child relationships of parent files matching the parent_file_pattern
-        and child files matching the child_file_pattern.
+        Parent and child masks are read from the same directory and paired in
+        file order; each child ROI is related to every parent ROI whose bounding
+        box contains the child's bounding box.
 
         Parameters
         ----------
-        label_dir : str 
-            Path to directory containing label images.
-        parent_file_pattern: str 
-            Regex filepattern to filter the parent files e.g. "p.*_c1\.ome\.tif".
+        label_dir : str
+            Directory holding both the parent and the child mask images.
+        parent_file_pattern : str
+            Regular expression selecting the parent masks, e.g.
+            ``r".*_c1\.ome\.tif"``.
         child_file_pattern : str
-            Regex filepattern to filter the child files e.g. "p.*_c0\.ome\.tif".
+            Regular expression selecting the child masks, e.g.
+            ``r".*_c0\.ome\.tif"``.
+
         Returns
         -------
-        rel : array
-            array of <parent label>,<child label> structure
+        pandas.DataFrame
+            One row per relation, with the columns ``Image`` (path of the parent
+            mask), ``Parent_Label`` and ``Child_Label``.
+
+        Raises
+        ------
+        OSError
+            If `label_dir` does not exist.
+        ValueError
+            If a pattern is not valid.
+        RuntimeError
+            If no parent or no child files match, their counts differ, or the
+            hierarchy cannot be computed.
+
+        Notes
+        -----
+        Progress information is printed to standard output.
+
+        Examples
+        --------
+        See :class:`Nested`.
         """
 
         if not os.path.exists(label_dir):
@@ -2357,26 +3258,45 @@ class Nested:
         return df
 	
     def featurize(self, parent_child_map: pd.DataFrame, child_features: pd.DataFrame):
-        """Join child ROI features to the parent-child map.
+        r"""Join child ROI features to parent-child relations.
 
-        Joins parent-child map from the find_relations method with the features from Nyxus. 
-        When aggregate functions are provided from the constructor this method will apply 
-        the aggregate functions to the joined DataFrame. When aggregate functions are not 
-        provided, this method will return a pivoted DataFrame where the columns are grouped by
-        the child labels and the rows are the ROI labels.
+        Merges `parent_child_map` with `child_features` on ``Child_Label`` ==
+        ``label``. With aggregations set in the constructor, the joined feature
+        columns are grouped by ``label`` and aggregated. Without them, the result
+        is pivoted with ``label`` as the index and ``Child_Label`` as the columns.
 
         Parameters
         ----------
-        parent_child_map : pd.DataFrame
-            Map of parent child relations from the find_relations method.
-        child_features: pd.DataFrame
-            Features of the child channel ROIs from Nyxus.find_relations method.
+        parent_child_map : pandas.DataFrame
+            Relations returned by :meth:`find_relations`.
+        child_features : pandas.DataFrame
+            Features of the child ROIs, e.g. from :meth:`Nyxus.featurize_directory`.
+            Must have a ``label`` column holding the child ROI label; Nyxus names
+            that column ``ROI_label``, so rename it first.
 
         Returns
         -------
-        pd.DataFrame
-            DataFrame containing aggregated features for each ROI when aggregate functions are provided.
-            Pivoted DataFrame containing features the child ROI for each label when no aggregate functions are provided.
+        pandas.DataFrame
+            Aggregated features, one row per ``label``, with a
+            ``(feature, aggregation)`` column for each pair when aggregations are
+            set; otherwise the pivoted table.
+
+        Raises
+        ------
+        KeyError
+            If `child_features` has no ``label`` column.
+
+        Notes
+        -----
+        The aggregated and pivoted columns are every joined column after the
+        sixth, which on Nyxus output includes ``label`` itself. Without
+        aggregations the pivot therefore raises ValueError on Nyxus output.
+        ``label`` holds the child label, so the grouping is by child, not by
+        parent.
+
+        Examples
+        --------
+        See :class:`Nested`.
         """
         
         joined_df = parent_child_map.merge(child_features, left_on=['Child_Label'], right_on=['label'])
