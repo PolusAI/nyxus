@@ -144,12 +144,12 @@ namespace Nyxus
 			r.aux_max = 0;
 
 			// Iterate ROI's tiles and scan pixels
-			size_t nth = env.theImLoader.get_num_tiles_hor(),
-				ntv = env.theImLoader.get_num_tiles_vert();
-			for (unsigned int row = 0; row < nth; row++)
-				for (unsigned int col = 0; col < ntv; col++)
+			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
+				ntVert = env.theImLoader.get_num_tiles_vert();	// tiles down a column
+			for (unsigned int row = 0; row < ntVert; row++)
+				for (unsigned int col = 0; col < ntHor; col++)
 				{
-					unsigned int tileIdx = row * ntv + col;
+					unsigned int tileIdx = row * ntHor + col;
 					env.theImLoader.load_tile(tileIdx);
 					auto& dataI = env.theImLoader.get_int_tile_buffer();
 					auto& dataL = env.theImLoader.get_seg_tile_buffer();
