@@ -476,10 +476,11 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `test_2d_glrlm_long_run_emphasis_analytic()`, the left half at intensity 1 and the right half at 2 —
   at `make_2d_glrlm_ibsi_settings()` (`IBSI=true`), which keeps the two levels as they are. Oracle:
   `analytic`. Used by `test_2d_glrlm_analytic.h`, for `GLRLM_SRE`, `GLRLM_LRE` and the four
-  run-length-and-grey-level emphases, at 0 degrees.
+  run-length-and-grey-level emphases in all four directions, and their `_AVE` twins.
 - **What it is for.** At 0 degrees the row is two runs of length `L`, one at each level. `L^2 =
   2,176,782,336` is past `INT_MAX` and `2^2 * L^2` past `UINT_MAX`, so the values are right only if
-  the run-length terms are taken in double.
+  the run-length terms are taken in double. At 45, 90 and 135 degrees every pixel is a run of length
+  1, so each `_AVE` has a closed form too, and carries the 0-degree value into the mean.
 - The band is `rel=1e-12`, because `LRE` is 2.2e9 and an absolute 1e-9 is below its last bit.
 
 ## glrlm.analytic_high_grey_pair
@@ -748,10 +749,12 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `test_3d_glrlm_long_run_emphasis_analytic()`, the first half at intensity 1 and the second at 2 —
   at `GREYDEPTH=64`, `IBSI=false` and `GLRLM_GREYDEPTH=0`, so the two levels are read as they are.
   Oracle: `analytic`. Used by `test_3d_glrlm_analytic.h`, for `3GLRLM_SRE`, `3GLRLM_LRE` and the four
-  run-length-and-grey-level emphases, in direction slot 12 (`{dz=0, dy=0, dx=1}`, along the line).
+  run-length-and-grey-level emphases in all 13 directions, and their `_AVE` twins. Direction slot 12
+  (`{dz=0, dy=0, dx=1}`) runs along the line.
 - **What it is for.** Along the line the volume is two runs of length `L`, one at each level. `L^2 =
   2,176,782,336` is past `INT_MAX` and `2^2 * L^2` past `UINT_MAX`, so the values are right only if
-  the run-length terms are taken in double.
+  the run-length terms are taken in double. The other 12 directions leave the line, so every voxel is
+  a run of length 1, and each `_AVE` has a closed form that carries the along-the-line value.
 - The band is `rel=1e-12`, because `LRE` is 2.2e9 and an absolute 1e-9 is below its last bit.
 
 ## glrlm3d.analytic_high_grey_pair

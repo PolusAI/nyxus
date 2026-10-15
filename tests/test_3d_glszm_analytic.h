@@ -30,6 +30,8 @@ void test_3d_glszm_large_zone_size_emphasis_analytic()
 
     const double L = 64.0 * 64.0 * 16.0,
         L2 = L * L;
+    // rel=1e-12 rather than SPEC 7's exact tier (abs 1e-9): these values run from below 1e-9 to past 1e9,
+    // so an absolute 1e-9 would accept a small emphasis of 0 and lies below a large one's last bit.
     ASSERT_NEAR (fvals[(int)Feature3D::GLSZM_SAE][0], 1.0 / L2, 1e-12 / L2);
     ASSERT_NEAR (fvals[(int)Feature3D::GLSZM_LAE][0], L2, 1e-12 * L2);
 }

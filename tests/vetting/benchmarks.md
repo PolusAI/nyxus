@@ -338,7 +338,7 @@ Tests reaching it today: `test_2d_glszm_analytic.h`.
 | Data | built inline in `test_2d_glrlm_long_run_emphasis_analytic()` (`tests/test_2d_glrlm_analytic.h`) |
 | ROI | one row of 93,312 pixels, the left half at intensity 1 and the right half at 2 |
 | Shape | at 0 degrees, two runs of `L = 46,656`, one per level |
-| Why it exists | the six run-length emphases at 0 degrees, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
+| Why it exists | the six run-length emphases in all 4 directions and their `_AVE`, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
 
 Recipes: `glrlm.analytic_two_long_runs`.
 
@@ -368,7 +368,7 @@ Tests reaching it today: `test_2d_glrlm_analytic.h`.
 | Data | built inline in `test_3d_glrlm_long_run_emphasis_analytic()` (`tests/test_3d_glrlm_analytic.h`) |
 | ROI | a 93,312×1×1 line, the first half at intensity 1 and the second at 2 |
 | Shape | along x, direction slot 12, two runs of `L = 46,656`, one per level |
-| Why it exists | the six run-length emphases along x, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
+| Why it exists | the six run-length emphases in all 13 directions and their `_AVE`, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
 
 Recipes: `glrlm3d.analytic_two_long_runs`.
 

@@ -20,6 +20,8 @@ static void run_3d_glrlm_on_volume (
     run_3d_feature_on_volume (fvals, voxels, w, h, d, make_glrlm3d_settings (64/*greydepth, inert for GLRLM*/, 0/*no binning*/), f);
 }
 
+// rel=1e-12 rather than SPEC 7's exact tier (abs 1e-9): these values run from below 1e-9 to past 1e9,
+// so an absolute 1e-9 would accept a small emphasis of 0 and lies below a large one's last bit.
 static void assert_3d_glrlm_closed_form (const std::vector<std::vector<double>>& fvals, Feature3D fcode, int angle, double expected)
 {
     const double actual = fvals[(int)fcode][angle];
@@ -35,6 +37,10 @@ static void assert_3d_glrlm_closed_form (const std::vector<std::vector<double>>&
 //   SRE    = 1/L^2                 LRE    = L^2
 //   SRLGLE = (1 + 1/4) / 2 / L^2   SRHGLE = (1 + 4) / 2 / L^2
 //   LRLGLE = (1 + 1/4) / 2 * L^2   LRHGLE = (1 + 4) / 2 * L^2
+//
+// The other 12 directions leave the line, so every voxel is a run of length 1: 2L runs, half at
+// each level, giving SRE = LRE = 1, SRLGLE = LRLGLE = (1 + 1/4) / 2 and SRHGLE = LRHGLE = (1 + 4) / 2.
+// Each _AVE is the mean of the 13 directions.
 void test_3d_glrlm_long_run_emphasis_analytic()
 {
     const int L = 46656;
@@ -53,6 +59,25 @@ void test_3d_glrlm_long_run_emphasis_analytic()
     ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRHGLE, along_x, 2.5 / L2));
     ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRLGLE, along_x, 0.625 * L2));
     ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRHGLE, along_x, 2.5 * L2));
+
+    // every other direction, and the mean over all 13
+    for (int angle = 0; angle < 13; angle++)
+    {
+        if (angle == along_x)
+            continue;
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRE, angle, 1.0));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRE, angle, 1.0));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRLGLE, angle, 0.625));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRHGLE, angle, 2.5));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRLGLE, angle, 0.625));
+        ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRHGLE, angle, 2.5));
+    }
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRE_AVE, 0, (1.0 / L2 + 12 * 1.0) / 13));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRE_AVE, 0, (L2 + 12 * 1.0) / 13));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRLGLE_AVE, 0, (0.625 / L2 + 12 * 0.625) / 13));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_SRHGLE_AVE, 0, (2.5 / L2 + 12 * 2.5) / 13));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRLGLE_AVE, 0, (0.625 * L2 + 12 * 0.625) / 13));
+    ASSERT_NO_FATAL_FAILURE (assert_3d_glrlm_closed_form (fvals, Feature3D::GLRLM_LRHGLE_AVE, 0, (2.5 * L2 + 12 * 2.5) / 13));
 }
 
 // bench_glrlm_3d_high_grey_pair -- two adjacent voxels at intensities 1 and G = 70,000. Every one of

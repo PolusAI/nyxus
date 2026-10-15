@@ -22,6 +22,8 @@ static void run_2d_glrlm_on_pixels (LR& roidata, const std::vector<NyxusPixel>& 
     f.save_value (roidata.fvals);
 }
 
+// rel=1e-12 rather than SPEC 7's exact tier (abs 1e-9): these values run from below 1e-9 to past 1e9,
+// so an absolute 1e-9 would accept a small emphasis of 0 and lies below a large one's last bit.
 static void assert_2d_glrlm_closed_form (const LR& roidata, Feature2D fcode, int angle, double expected)
 {
     const double actual = roidata.fvals[(int)fcode][angle];
@@ -36,6 +38,10 @@ static void assert_2d_glrlm_closed_form (const LR& roidata, Feature2D fcode, int
 //   SRE    = 1/L^2                 LRE    = L^2
 //   SRLGLE = (1 + 1/4) / 2 / L^2   SRHGLE = (1 + 4) / 2 / L^2
 //   LRLGLE = (1 + 1/4) / 2 * L^2   LRHGLE = (1 + 4) / 2 * L^2
+//
+// At 45, 90 and 135 degrees a one-pixel-high row has no neighbour, so every pixel is a run of
+// length 1: 2L runs, half at each level, giving SRE = LRE = 1, SRLGLE = LRLGLE = (1 + 1/4) / 2 and
+// SRHGLE = LRHGLE = (1 + 4) / 2. Each _AVE is the mean of the four directions.
 void test_2d_glrlm_long_run_emphasis_analytic()
 {
     const size_t L = 46656;
@@ -53,6 +59,23 @@ void test_2d_glrlm_long_run_emphasis_analytic()
     ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRHGLE, 0, 2.5 / L2));
     ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRLGLE, 0, 0.625 * L2));
     ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRHGLE, 0, 2.5 * L2));
+
+    // every other direction, and the mean over all 4
+    for (int angle = 1; angle < 4; angle++)
+    {
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRE, angle, 1.0));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRE, angle, 1.0));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRLGLE, angle, 0.625));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRHGLE, angle, 2.5));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRLGLE, angle, 0.625));
+        ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRHGLE, angle, 2.5));
+    }
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRE_AVE, 0, (1.0 / L2 + 3 * 1.0) / 4));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRE_AVE, 0, (L2 + 3 * 1.0) / 4));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRLGLE_AVE, 0, (0.625 / L2 + 3 * 0.625) / 4));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_SRHGLE_AVE, 0, (2.5 / L2 + 3 * 2.5) / 4));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRLGLE_AVE, 0, (0.625 * L2 + 3 * 0.625) / 4));
+    ASSERT_NO_FATAL_FAILURE (assert_2d_glrlm_closed_form (roidata, Feature2D::GLRLM_LRHGLE_AVE, 0, (2.5 * L2 + 3 * 2.5) / 4));
 }
 
 // bench_glrlm_2d_high_grey_pair -- two adjacent pixels at intensities 1 and G = 70,000. Every
