@@ -1,11 +1,12 @@
 # Hounsfield-Unit (HU) loader test fixtures
 
-Tiny tiled TIFFs used by the HU loader mechanics tests in `tests/test_2d_hu_mechanics.h`
-to verify the `--preserve-hu` offset mapping through the real TIFF decode path.
+Tiny tiled TIFFs and DICOM slices used by the HU loader mechanics tests in `tests/test_2d_hu_mechanics.h`
+to verify the load-time offset mapping through the real TIFF and DICOM decode paths. The two TIFFs are
+also read end to end by `tests/python/test_2d_hu_regression.py`.
 
 | File | Type | Notes |
 |---|---|---|
-| `ct_int16.tif` | signed int16 (SampleFormat=2) | exercises `loadTile<int16_t>` (signed CT wraparound fix) |
+| `ct_int16.tif` | signed int16 (SampleFormat=2) | exercises `loadTile<int16_t>`; negative values must not wrap |
 | `ct_float.tif` | float32 (SampleFormat=3) | exercises `loadTile_real_intens<float>` |
 | `ct_u16.dcm` | DICOM uint16, RescaleIntercept=−1024 | textbook CT: rescale then offset |
 | `ct_i16.dcm` | DICOM int16 signed, intercept 0 | signed stored values, no wraparound |
@@ -13,7 +14,13 @@ to verify the `--preserve-hu` offset mapping through the real TIFF decode path.
 
 All are 16×16, a single tile, encoding the SAME logical HU field
 `HU(r,c) = -1024 + idx*8`, `idx = r*16 + c` (0..255) — a CT/HU-like range
-−1024..1016 crossing 0 (water). In HU mode the loader maps HU → HU + 1024 = idx*8.
+−1024..1016 crossing 0 (water). On the offset map the loader maps HU → HU + 1024 = idx*8. The int16
+TIFF takes that map with or without `--preserve-hu`; the float32 TIFF takes it only under the flag and
+is otherwise min-max quantized; without the flag `ct_u16.dcm` and `ct_i16.dcm` take the stored map,
+which for a slope of 1 and an integer intercept lands on the same grey levels.
+
+`mask.tif` is the matching 16×16 uint16 all-ones mask (no SampleFormat tag), the whole-image ROI that
+`tests/python/test_2d_hu_regression.py` pairs with the two TIFFs.
 
 These fixtures are committed to the repository and consumed as-is. The construction
 of each file is documented in this README so the ground truth the tests assert
@@ -50,7 +57,8 @@ ds.save_as("ct_frac.dcm", enforce_file_format=True)   # explicit VR little endia
 ## 3D NIfTI fixtures
 
 Used by `tests/python/test_3d_hu_nifti_regression.py` to verify `preserve_hu` through the 3D NIfTI
-loader path (`RawNiftiLoader`/`NiftiLoader`).
+loader path (`RawNiftiLoader`/`NiftiLoader`). `ct3d_int16.nii` is also the oversized-volume input of
+`TEST_3D_WHOLEVOLUME_UNSTREAMABLE_FORMAT_FAILS_LOUDLY_MECHANICS` in `tests/test_all.cc`.
 
 | File | Type | Notes |
 |---|---|---|
@@ -108,9 +116,10 @@ write("ct3d_nan.nii", 16, 32, 1.0, 0.0, struct.pack("<512f", *v), 0.0, 511.0)
 `ct_small.dcm` is pydicom's `CT_small.dcm` test file (128x128 signed int16,
 RescaleSlope=1, RescaleIntercept=-1024, HU range -896..1167), vendored from the
 pydicom distribution (MIT-licensed test data). It gives the HU tests a genuine
-scanner slice alongside the synthetic ones. The `TEST_HU_LOADER_DICOM_CT_SMALL_*`
-gtests assert pixel values computed independently with pydicom
-(`RescaleSlope*stored + RescaleIntercept`, then offset by floor(HU min) = -896).
+scanner slice alongside the synthetic ones. The `TEST_2D_HU_LOADER_DICOM_CT_SMALL_*`
+gtests assert pixel values computed independently with pydicom: the preserve case
+`RescaleSlope*stored + RescaleIntercept`, then offset by floor(HU min) = -896; the baseline
+case, read with rescale off as a mask is, the raw stored values.
 Obtain the original via: `python -c "from pydicom.data import get_testdata_file; print(get_testdata_file('CT_small.dcm'))"`.
 
 ## pydicom oracle fixture (feature-level)
@@ -121,8 +130,9 @@ Obtain the original via: `python -c "from pydicom.data import get_testdata_file;
 | `ct_small_mask.tif` | 128×128 uint16, all ones | whole-image ROI |
 
 Used by `tests/python/test_2d_hu_ct_small_pydicom.py` — the oracle test that vets HU *feature*
-values (MIN/MAX/MEAN/INTEGRATED) against pydicom (docs/vetting SPEC.md §4 token `pydicom`). The
+values (MIN/MAX/MEAN/INTEGRATED) against pydicom (`tests/vetting/SPEC.md` §4 token `pydicom`). The
 pixels come from pydicom's decode of a real scanner slice and the goldens are pinned from
 pydicom+numpy, so it is an independent oracle, not a self-consistency snapshot (§5.2). CI
-consumes only the committed TIFFs.
+consumes only the committed TIFFs. `tests/python/test_2d_tagless_tiled_tiff_mechanics.py` reads the
+same pair: `ct_small_mask.tif` carries no SampleFormat tag, and must still read as unsigned.
 

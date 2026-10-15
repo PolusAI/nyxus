@@ -1,8 +1,10 @@
 # Nyxus Oracle-Vetting Test Framework — SPEC
 
-**Status.** Specification only. This document defines the framework; it changes nothing in the test
-tree. Registry seeding, config recipes, config matrices, oracle generators, and any test
-moves/renames are follow-up work that begins **only after this spec is approved and merged** (§9).
+**Status.** In force. The test tree follows this spec, and CI enforces it: `check_coverage.py`,
+`check_test_names.py`, the per-family scanners under `audit/` and `report_features.py` all run
+with `--check` (§9). The registry, config recipes, config matrices and oracle generators it
+describes are in this directory; [`MIGRATION.md`](MIGRATION.md) records how the tree was brought
+into line with it.
 
 **Goal.** Every number Nyxus produces should be *verified against an independent tool* (or a
 closed-form value) to close — ideally exact — agreement. Where a Nyxus feature depends on
@@ -57,36 +59,44 @@ snapshot.
 
 The registry is **one row per assertion** — a `(feature × config recipe × oracle)` triple — in
 `tests/vetting/oracle_coverage.csv`. A feature can (and for confidence should) have several rows: the
-same feature vetted by `pyradiomics`, `radiomicsj`, and `feature2djava` is three rows. It will be
-seeded from the audit already produced (`.planning/test-vetting-audit/`) and kept under version control.
+same feature vetted by `pyradiomics`, `radiomicsj`, and `feature2djava` is three rows. It was
+seeded from the audit in [`audit/`](audit/) and is kept under version control.
 
-Columns:
+Columns, in file order (`check_coverage.py` rejects a registry that lacks any of them):
 
 | column | meaning |
 |--------|---------|
-| `dim` | 2D / 3D / IMQ |
+| `dim` | `2D` / `3D` / `IMQ` |
 | `feature` | enum name (e.g. `GLCM_CONTRAST_AVE`, `3GLCM_CONTRAST`) |
-| `family` | GLCM / GLRLM / IntensityHistogram / FirstOrder / Morphology / Moments / … |
-| `oracle` | one of the §4 tokens, or `—` for regression/invariant rows |
-| `config_recipe` | id of the config recipe (see §5), e.g. `glcm.ibsi_identity` |
-| `outcome` | `vetted` (matches oracle) / `regression` (snapshot only) / `invariant` / `not_tested` / `not_implemented` / `dropped_invalid` |
-| `tolerance` | `exact` / `rel=1e-3` / `rel=1e-2` / … |
-| `test_file`, `test_name` | where the assertion lives (empty if not yet written) |
-| `benchmark` | benchmark-data id (see §6) |
+| `family` | lower-case family id, e.g. `glcm` / `glrlm` / `intensity_histogram` / `firstorder` / `morphology` / `moments` / … |
+| `status` | `vetted` (an oracle agrees) / `regression` (snapshot only) / `invariant` (a required relation between two Nyxus code paths; no external tool) / `untested` (no assertion) |
+| `oracle` | one of the §4 tokens on a `vetted` row; empty on every other row |
+| `agreement` | how the oracle comparison came out, e.g. `agreed` / `disagrees` / `benign` / `na`; informative, not validated |
+| `config_recipe` | id of the config recipe (see §5), e.g. `glcm.ibsi_identity`; when set it must be a `## <id>` heading in `config_recipes.md` |
+| `tolerance` | `exact` / `abs=1e-9` / `rel=1e-9` / `rel=1e-3` / `rel=1e-2` / … |
+| `current_test` | the file(s) that assert the row today, `;`-separated |
+| `target_test` | the file the assertion belongs in (§6.2.1) |
+| `candidate_oracle` | a tool that could vet the row, where none does yet |
+| `flag` | open-gap markers, `;`-separated (e.g. `convention-mismatch`, `scoped-oracle`, `impl-defect`) |
 | `source` | where the verdict comes from: `in-tree` (a test in this repo makes the assertion) / `tracker` (an offline harness run not migrated in — `target_test` names where it belongs) / `audit` |
 | `notes` | provenance, caveats |
+| `test_name` | the gtest case(s) that make the assertion, as `SUITE.CASE` from `test_all.cc`, `;`-separated |
+| `benchmark` | benchmark-data id (see §6); when set it must be a `` ## `id` `` heading in `benchmarks.md` |
 
 ### 3.1 The headline metric — "vetted by ≥1 oracle"
 
-The primary rollup, per feature: **is there at least one row with `outcome=vetted`?** A generated
-report (`tests/vetting/coverage_report.md`) shows, per family and overall:
+The primary rollup, per feature: **is there at least one row with `status=vetted`?** A generated
+report (`tests/vetting/coverage_report.md`) shows, per family and overall, the features vetted by
+≥1 oracle against the real features (the number we drive to 100%), and how many of the rest are
+covered only by `regression`, only by `invariant`, or are `untested`. A feature takes the
+strongest status among its rows; `regression` and `invariant` rank equal, below `vetted`.
 
-- `# features vetted by ≥1 oracle` / `# real features`  ← the number we drive to 100%
-- redundancy: `# features vetted by ≥2 oracles` (higher confidence)
-- gaps: features with only `regression` / `not_tested` rows, and which oracle *could* cover them
-
-`tests/vetting/check_coverage.py` (later) both generates this report and flags drift between the
-registry and the test tree (e.g. an `outcome=vetted, oracle=pyradiomics` row with no matching test).
+`tests/vetting/check_coverage.py` generates this report and validates the registry: the columns,
+the `status`, `oracle` and `source` values, `oracle` set exactly on `vetted` rows, and that every
+`benchmark`, `config_recipe` and `test_name` resolves. Whether the test tree actually asserts what
+a row claims is checked by the per-family scanners (`audit/scan_<family>_coverage.py`) and
+reported per row by `report_features.py` in `report_output.md`, which also lists every oracle a
+feature was matched against.
 
 The report is **generated, never hand-edited**, and `--check` enforces that: it re-renders the
 registry and fails when the committed text differs, or when it is not there at all. A stale report
@@ -133,8 +143,8 @@ Notes:
 - **`radiomicsj`, `mitk`, and `mirp`** give second/third/fourth IBSI-compliant opinions alongside
   `pyradiomics` — useful for the "≥1 oracle" goal and for cross-checking pyradiomics itself.
 - **Fractal dimension** (`FRACT_DIM_BOXCOUNT`) → `fraclac` (the ImageJ box-count plugin) is the
-  reference; already used on the fractal branch. `FRACT_DIM_PERIMETER` (divider/Richardson) has no
-  tool → `analytic` + cross-method convergence.
+  reference, used by `test_2d_morphology_fraclac.h`. `FRACT_DIM_PERIMETER` (divider/Richardson) has
+  no tool → `analytic` + cross-method convergence.
 - scikit-image (`skimage`) is an accepted mainstream oracle (added 2026-07; covers image
   moments, shape descriptors). `mahotas`, `DIPlib`, and `Centrosome` are NOT accepted — features
   only they cover remain regression/analytic.
@@ -183,7 +193,8 @@ Because some features are config-sensitive, each oracle assertion names a **conf
 exact Nyxus settings that make the feature directly comparable to the tool, paired with the tool's
 own settings. Recipes are defined once in `tests/vetting/config_recipes.md` and referenced by id.
 
-Example recipe `glcm.pyradiomics.ibsi_identity`:
+Example recipe (an illustration of the format; the recipes in force are the `## <id>` sections of
+`config_recipes.md`):
 
 ```
 Nyxus:       ibsi=True, coarse_gray_depth=<Ng>, GLCM_OFFSET=1, angles={0,45,90,135}
@@ -214,16 +225,17 @@ For each config point we classify it:
 - **VALID-BUT-PRODUCTION-ONLY (→ regression test):** a real default config that no external tool
   reproduces (a Nyxus convention) → keep as a `_regression` snapshot (drift guard), `regression` row.
 - **INVALID (→ drop):** degenerate or nonsensical combination, or one no one runs → dropped, with a
-  one-line reason and a `dropped_invalid` row so the decision is recorded, not silently omitted.
+  one-line reason in the family's matrix file so the decision is recorded, not silently omitted.
+  The registry has no row for it: `status` holds only `vetted` / `regression` / `invariant` /
+  `untested` (§3).
 
 Each family gets a `tests/vetting/matrix/<family>.md` enumerating the knobs, the points, and each
-point's verdict + oracle. Worked example (GLCM):
+point's verdict + oracle. Worked example (GLCM, as in `matrix/glcm.md`):
 
 | ibsi | symmetric | binning | verdict | oracle / reason |
 |------|-----------|---------|---------|-----------------|
-| True | True | identity (Ng=distinct levels) | VALID | pyradiomics, radiomicsj, matlab, ibsi — recipe `glcm.ibsi_identity` |
-| False | True | binWidth-style (radiomics compat) | VALID | pyradiomics (compat path) — recipe `glcm.radiomics_compat` |
-| False | False | matlab, Ng=100 | VALID-prod-only | difference-based subset coincides; rest = Nyxus convention → `test_glcm_regression` |
+| True | True | identity (Ng=distinct levels) | VALID | ibsi, mirp — recipe `glcm.ibsi_identity` |
+| False | True | fixed bin count | VALID | pyradiomics — recipe `glcm.pyradiomics_symmetric` |
 | any | any | offset/distance = 0 | INVALID | degenerate (dx=dy=0 self-cooc); covered by a `_mechanics` guard, not an oracle |
 
 The point: the number of tests is *derived* from the matrix, and every cell has an explicit
@@ -249,15 +261,16 @@ axes + values + oracle mapping (human judgment), verdicts measured empirically (
    auto-derived; it is authored once per (family, tool). A cell may map to several oracles, or none
    (a Nyxus-only convention).
 
-4. **Verdicts are measured, not asserted.** A generator `tests/vetting/oracles/gen_matrix_<family>.*`
-   does, per cell: run Nyxus at the cell's config + each mapped oracle at its config on a benchmark,
-   record per-feature relative error, then classify each `(cell, feature)`:
+4. **Verdicts are measured, not asserted.** Per cell, the family's oracle generator
+   (`tests/vetting/oracles/gen_<family>_<oracle>.*`) runs the oracle at its config on a benchmark,
+   Nyxus is run at the cell's config, and the per-feature relative error is recorded; each
+   `(cell, feature)` is then classified:
    - **VALID(oracle)** — a mapped oracle agrees within tolerance → oracle test + `vetted` row
    - **VALID-prod-only** — a real default no tool reproduces → `regression` row
-   - **INVALID** — degenerate (e.g. `offset=0`) or not a real config → `dropped_invalid` row + reason
+   - **INVALID** — degenerate (e.g. `offset=0`) or not a real config → reason in the matrix, no row
 
-   It emits `matrix/<family>.md` (the table *with the measured errors*) and candidate registry rows
-   for human review.
+   `matrix/<family>.md` records the table *with the measured errors*, and the registry rows follow
+   from it after review.
 
 **Why measured, not hand-labeled.** Hand-labeling is exactly what failed before: `ACOR` was
 hand-marked oracle-vetted on `ibsi=False` yet diverges ~43% there; `ENTROPY` sat as a "convention"
@@ -307,11 +320,11 @@ its assertions.
 `test_<dim>_<family>[_<subject>]_<oracle>` — the dim token says which implementation, the
 oracle suffix makes vetting status self-evident:
 
-- `test_2d_glcm_ave_pyradiomics` — 2D GLCM angle-averaged vs PyRadiomics
+- `test_2d_glcm_family_pyradiomics` — 2D GLCM vs PyRadiomics
 - `test_3d_glcm_contrast_pyradiomics` — the 3D implementation of the same family
-- `test_2d_intensity_histogram_dispersion_analytic` — IH dispersion vs closed form
-- `test_2d_morphology_basic_imea` — area/perimeter/diameters vs imea
-- `test_2d_glcm_regression` — snapshot drift guard (no oracle)
+- `test_2d_intensity_histogram_dispersion_robust_analytic` — IH dispersion vs closed form
+- `test_2d_morphology_caliper_feret_imea` — Feret diameters vs imea
+- `test_2d_glcm_acor_regression` — snapshot drift guard (no oracle)
 
 A function's dim token must match its file's: a `test_3d_*` function in a `test_2d_*` file is
 the same category of error as a `_regression` function in an `_ibsi` file.
@@ -360,9 +373,9 @@ Two checks before moving anything, both learned the hard way:
 Names must describe **shape + salient property + provenance**, not opaque indices.
 
 `bench_<shape><size>_<property>` for inline fixtures:
-- `bench_dense8_alllevels` — 8×8, contains every grey level 1..8 (for level-sensitive texture)
-- `bench_line5` — 5-pixel 1-D line (tiny hand-computable histogram)
-- `bench_ramp9` — 9×9 horizontal intensity ramp (directional contrast)
+- `bench_cube2_constant` — a 2×2×2 cube of one intensity (constant-ROI guards)
+- `bench_cube3_gapped_levels` — a 3×3×3 cube with grey levels 1, 3 and 5 (gaps between levels)
+- `bench_shape8_concave_holed` — one concave 26-pixel ROI with an interior hole
 
 Standard reference phantoms keep their canonical names (`ibsi_digital_phantom`).
 
@@ -458,8 +471,8 @@ piece of tracked work, not a permanent waiver.
 
 ### 6.4 Golden provenance (mandatory)
 Every pinned oracle golden must record, at its definition site: **tool + version + exact config +
-generator script path**. Generators live in `tests/vetting/oracles/gen_<family>_<oracle>.py` and are
-runnable to regenerate the numbers.
+generator script path**. Generators live in `tests/vetting/oracles/gen_<family>_<oracle>.*` (Python,
+or `.m` for the `matlab` token) and are runnable to regenerate the numbers.
 
 ---
 
@@ -489,24 +502,33 @@ value is a bug in the test.
 
 ---
 
-## 9. Decisions & rollout
+## 9. Decisions, rollout and enforcement
 
 **Settled:**
 - Home directory: `tests/vetting/` (spec + registry + recipes + matrices + generators).
 - Registry format: **CSV** (diff-friendly).
 - Naming scheme (§6) and renaming of existing tests (`test_ibsi_*`, `test_compat_3d_*`,
-  `test_glcm.h`, …): **approved**.
+  `test_glcm.h`, …): **done**. One file, `test_nyxus.py`, is grandfathered in
+  `check_test_names.py` until its API assertions are split by family.
+- *How* each tool is run to generate goldens (Docker / venv / Java / MATLAB / pipeline / macro) is
+  decided per tool; [`TOOLS.md`](TOOLS.md) records each one.
 
-**Deferred:**
-- *How* each tool is run to generate goldens (Docker / venv / Java / MATLAB / pipeline / macro):
-  TBD — decided per tool, before its first use.
+**Rollout — complete.** The scaffold (`oracle_coverage.csv` seeded from the audit,
+`config_recipes.md`, `matrix/<family>.md`, `oracles/gen_*`, `check_coverage.py`, the generated
+`coverage_report.md`), the GLCM reference migration and the family-by-family waves are recorded
+wave by wave in [`MIGRATION.md`](MIGRATION.md) §5.9–§5.39. Driving *features vetted by ≥1 oracle*
+toward 100% continues one family at a time; the current figure is the headline of
+`coverage_report.md`.
 
-**Rollout — begins only after this spec is approved and merged:**
-1. Scaffold `tests/vetting/`: seed `oracle_coverage.csv` from the audit (`.planning/test-vetting-
-   audit/`), add `config_recipes.md`, `matrix/<family>.md`, `oracles/gen_*`, `check_coverage.py`,
-   and the generated `coverage_report.md`.
-2. **GLCM** as the worked reference migration (oracle + regression + mechanics + matrix + registry
-   rows), applying the naming/renames.
-3. Roll the pattern out family by family, driving *features vetted by ≥1 oracle* toward 100%.
+**Enforcement.** CI (`.github/workflows/build_and_test_ubuntu.yml`) runs, after the pytest suite:
 
-Nothing in this list is done in this PR — it is the plan the merged spec authorizes.
+| step | fails when |
+|------|------------|
+| `check_coverage.py --check` | the registry breaks §3/§4, or `coverage_report.md` is stale or missing |
+| `check_test_names.py --check` | a test file, function, gtest case, `#include` or golden table breaks §6 |
+| `audit/scanlib_selftest.py` | the scanners' coverage rule misses one of its planted negative controls |
+| `audit/run_scanners.py` | any family's registry rows disagree with what its tests assert |
+| `report_features.py --check` | `report_output.csv` / `report_output.md` are stale, a row's verdict is neither `agree` nor `unscanned` and is not allowlisted, an `unscanned` family is not in `KNOWN_UNSCANNED` (empty), or two rows share the key dim, feature, oracle, recipe |
+
+`tests/python/test_vetting_mechanics.py` runs the first two checkers against planted defects as
+part of the pytest suite.
