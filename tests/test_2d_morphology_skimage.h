@@ -109,8 +109,9 @@ void test_2d_morphology_convex_hull_skimage()
 }
 
 // ORIENTATION and EROSIONS_2_VANISH vetted vs scikit-image (tests/vetting/oracles/gen_morphology_skimage.py).
-// EROSIONS_2_VANISH: Nyxus' 3x3 (8-connected) structuring element == skimage square(3); the count (1)
-// matches, and disk(1)/4-connected gives 2, so the test also pins the connectivity convention.
+// EROSIONS_2_VANISH: Nyxus erodes with the 4-connected 3x3 cross and reports one less than the number
+// of erosions it performs; skimage square(3) counts every erosion of an 8-connected square. Both give 1
+// on this fixture, so the test pins the value, not the structuring element or the counting convention.
 // Both read the table above rather than repeating the number inline -- a golden pinned in two places
 // drifts in one of them, and only the copy an assertion reads is under test.
 void test_2d_morphology_orientation_and_erosions_skimage()
