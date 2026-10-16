@@ -40,8 +40,8 @@ PyPI has no source distribution, so where no wheel fits, ``pip`` falls back to a
 without a warning, or stops with ``No matching distribution found for nyxus``:
 
 * Release 0.11.0 has no wheel for CPython 3.13 on Linux x86_64, so ``pip install nyxus`` installs
-  0.10.0 there. Use Python 3.10 to 3.12, conda-forge or a source build to get 0.11.0. A fix to the
-  release workflow is coming.
+  0.10.0 there. Use Python 3.10 to 3.12, conda-forge or a source build to get 0.11.0. This is a known
+  issue (`#525 <https://github.com/PolusAI/nyxus/issues/525>`__).
 * On Linux with a glibc older than 2.28 (for example CentOS 7 or Ubuntu 18.04), ``pip`` installs
   0.8.3, the last release built for ``manylinux2014``, on x86_64 with Python 3.8 to 3.12, and an
   even older release with Python 3.6 or 3.7. With Python 3.13 or on aarch64 it stops with ``No
@@ -82,7 +82,7 @@ output, in addition to TIFF, OME-TIFF and NIfTI. They also read OME-Zarr and com
 
 * The Windows wheels on PyPI (``nyxus`` 0.9.3 and 0.11.0, and ``nyxus-cuda12x`` 0.9.3) were built
   without OME-Zarr support, and so without ``.nii.gz``: they refuse OME-Zarr and fail on
-  ``.nii.gz`` files. A fix to the Windows wheel build is coming.
+  ``.nii.gz`` files. This is a known issue (`#527 <https://github.com/PolusAI/nyxus/issues/527>`__).
 * The first conda-forge Windows builds of 0.11.0 (build number 0, a build string ending in ``_0``
   in ``conda list nyxus``) read none of OME-Zarr, ``.nii.gz`` and DICOM; conda installs one of
   them into an environment that holds ``libarrow`` 19 or 20.
@@ -95,15 +95,16 @@ libraries it finds (see `Building from source`_).
    The conda-forge Windows packages of 0.11.0 were built in Debug mode: their extension module
    imports the Visual Studio debug runtime (``MSVCP140D.dll``, ``VCRUNTIME140D.dll``,
    ``ucrtbased.dll``), which only an installation of Visual Studio provides, not the Visual C++
-   redistributable. Without Visual Studio, ``import nyxus`` fails. A fix to the build is coming.
+   redistributable. Without Visual Studio, ``import nyxus`` fails. This is a known issue
+   (`#528 <https://github.com/PolusAI/nyxus/issues/528>`__).
 
 GPU packages
 ^^^^^^^^^^^^
 
 ``nyxus-cuda12x`` is the same package built with ``-DUSEGPU=ON`` against CUDA 12, and
 ``nyxus-cuda11x`` the same against CUDA 11. Both are published as Linux x86_64 wheels. The newest
-``nyxus-cuda12x`` release with Windows wheels is 0.9.3, for CPython 3.9 to 3.12, and a fix to the
-release workflow that publishes them again is coming. On Windows with Python 3.13 or newer,
+``nyxus-cuda12x`` release with Windows wheels is 0.9.3, for CPython 3.9 to 3.12, a known issue
+(`#526 <https://github.com/PolusAI/nyxus/issues/526>`__). On Windows with Python 3.13 or newer,
 ``pip install nyxus-cuda12x`` therefore stops with ``No matching distribution found for
 nyxus-cuda12x``; use Python 3.9 to 3.12 there, or conda-forge with Python 3.10 to 3.13, where conda
 picks the CUDA build (it needs Visual Studio, see the warning above).
@@ -338,7 +339,7 @@ Getting the dependencies
 
       The script's Boost download, in its OME-Zarr part, currently fails: the URL returns HTTP
       404. The Windows release wheels built with the script since 0.9.3 have no OME-Zarr support.
-      A fix is coming.
+      This is a known issue (`#527 <https://github.com/PolusAI/nyxus/issues/527>`__).
 
       The dependency DLLs in ``local_install\bin`` must be on ``PATH`` when you run the
       command-line program. Python does not search ``PATH`` for an extension module's DLLs, so in
@@ -431,7 +432,7 @@ CMake options
      - ``Release`` (``Debug`` with MSVC)
      - Single-configuration generators build ``Release`` unless told otherwise. With MSVC, CMake
        itself presets ``Debug``, so pass ``-DCMAKE_BUILD_TYPE=Release`` when you use Ninja or
-       NMake. A fix that makes ``Release`` the default there too is coming.
+       NMake. This is a known defect (`#524 <https://github.com/PolusAI/nyxus/issues/524>`__).
 
 The C++ standard is C++20 and is required (``CMAKE_CXX_STANDARD 20``). On MSVC the build adds
 ``/permissive- /EHsc /bigobj /Zc:__cplusplus``.

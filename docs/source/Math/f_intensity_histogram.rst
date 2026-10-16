@@ -50,7 +50,8 @@ the pixels' positions, not their neighbours, not the pixels of the bounding box 
   :math:`w = (X_{\max} - X_{\min}) / N`. A pixel of intensity :math:`x` falls in bin
   :math:`b(x) = \min\left(\lfloor (x - X_{\min}) / w \rfloor,\; N - 1\right) + 1`, so bins are
   numbered from 1 and :math:`X_{\max}` falls in bin :math:`N`. This is the IBSI fixed bin number
-  discretisation. IBSI mode does not turn the binning off, as it does for most texture families.
+  discretisation, except that a value on an inner bin edge can fall one bin low, a known defect
+  (`#492 <https://github.com/PolusAI/nyxus/issues/492>`__). IBSI mode does not turn the binning off, as it does for most texture families.
 - **Two kinds of value:** an ``_IDX`` feature is computed over the bin index :math:`i`, the
   discretised intensity of IBSI. A ``_VAL`` feature is the same statistic over the bin centre
   :math:`c_i = X_{\min} + (i - \tfrac{1}{2})\,w`, except the minimum and maximum, which are the
@@ -208,7 +209,8 @@ Output columns
 Each feature produces one column, named with its code: ``IH_MEAN_VAL``, ``IH_MEAN_IDX`` and so on.
 There are no per-bin columns and no ``_AVE`` columns. The bin counts themselves are not written;
 ``HISTOGRAM``, on the :doc:`pixel intensity page <f_pixel_intensity>`, writes the counts of a
-histogram with the same bins.
+histogram with the same bins; a value on an inner bin edge can fall one bin lower in the ``IH_*``
+features, a known defect (`#492 <https://github.com/PolusAI/nyxus/issues/492>`__).
 
 
 .. _intensity-histogram-index:
@@ -367,7 +369,7 @@ when no :math:`H'_i` exceeds :math:`\varepsilon`.
 
 **Possible issues.** When no bin's gradient is above 0, the search never replaces its starting
 value: ``IH_MAX_GRADIENT`` is :math:`2.2251 \times 10^{-308}` and ``IH_MAX_GRADIENT_IDX`` is 0,
-which is not a bin. IBSI gives the largest :math:`H'_i`, which is then 0 or negative, and its bin.
+which is not a bin. This is a known defect (`#491 <https://github.com/PolusAI/nyxus/issues/491>`__). IBSI gives the largest :math:`H'_i`, which is then 0 or negative, and its bin.
 A ROI of two pixels, 1 and 2, with 2 bins has :math:`H' = (0, 0)`: IBSI gives 0 at bin 1. The
 pixels 1, 1 and 2 give :math:`H' = (-1, -1)`: IBSI gives :math:`-1` at bin 1.
 
@@ -721,11 +723,11 @@ Differences from IBSI conventions
    The median takes the upper middle pixel for an even pixel count, mode ties go to the lowest
    bin, and the percentile codes are the bins of interpolated percentiles. Each entry above gives
    an example. When no bin's gradient is above 0, ``IH_MAX_GRADIENT`` is
-   :math:`2.2251 \times 10^{-308}` and ``IH_MAX_GRADIENT_IDX`` is 0.
+   :math:`2.2251 \times 10^{-308}` and ``IH_MAX_GRADIENT_IDX`` is 0, a known defect (`#491 <https://github.com/PolusAI/nyxus/issues/491>`__).
 
 Values on a bin edge
    The bin of a value is computed in floating point as :math:`\lfloor (x - X_{\min}) / w \rfloor`.
-   A value that lies exactly on an inner edge can fall one bin low. For the pixels 1, 10 and 19
+   A value that lies exactly on an inner edge can fall one bin low, a known defect (`#492 <https://github.com/PolusAI/nyxus/issues/492>`__). For the pixels 1, 10 and 19
    with 14 bins, 10 lies on the lower edge of bin 8, but ``IH_MEDIAN_IDX`` is 7.
 
 No histogram

@@ -77,10 +77,11 @@ The values are:
   ``3MESH_VOLUME`` and ``3VOLUME_CONVEXHULL`` enter no other feature.
 - **One ROI per volume:** in whole-volume mode, and with ``single_roi=True``, Nyxus does not trace
   the ROI's shape: it takes the ROI to be a solid box and uses closed forms; the axis features are
-  then 0 (see :ref:`shape-3d-possible-issues`). In whole-volume mode, on the command line
+  then 0. With ``single_roi=True`` this is a known defect (`#494 <https://github.com/PolusAI/nyxus/issues/494>`__); see
+  :ref:`shape-3d-possible-issues`. In whole-volume mode, on the command line
   (``--segDir`` equal to ``--intDir``) or through ``Nyxus3D.featurize_directory`` with the
   intensity directory as the label directory, the box is one voxel larger than the volume on
-  every axis, :math:`(w+1) \times (h+1) \times (d+1)`. ``featurize_files(volumes, volumes,
+  every axis, :math:`(w+1) \times (h+1) \times (d+1)`, a known defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__). ``featurize_files(volumes, volumes,
   single_roi=True)`` is not whole-volume mode: it merges the nonzero voxels of each mask, here
   the volume itself, into one ROI, and the box is the bounding box of the volume's nonzero
   voxels.
@@ -193,7 +194,7 @@ The 3D shape features have no settings of their own. These options change their 
 - Whole-volume mode, ``--segDir`` equal to ``--intDir`` (Python: ``featurize_directory`` with
   the intensity directory as the label directory), treats each volume as one ROI and measures a
   box in its place; ``featurize_files(..., single_roi=True)`` measures the box of the nonzero
-  voxels. See `How the features are computed`_.
+  voxels, a known defect (`#494 <https://github.com/PolusAI/nyxus/issues/494>`__). See `How the features are computed`_.
 - ``--ramLimit`` (Python: ``ram_limit``) decides which ROIs are processed out of core; the values
   stay the same, except as noted in the *Out-of-core* row above.
 
@@ -475,12 +476,20 @@ Whole-volume mode differs from a segmented ROI that fills the volume
    computed`_ for which box). ``3MAJOR_AXIS_LEN``, ``3MINOR_AXIS_LEN``, ``3LEAST_AXIS_LEN``,
    ``3ELONGATION`` and ``3FLATNESS`` are 0, and ``3VOXEL_VOLUME`` is the exact box volume, without
    the packing factor. A 6 × 4 × 5 volume with no zero voxels gives 0 and 120 through
-   ``featurize_files(..., single_roi=True)``, 0 and 210 (a 7 × 5 × 6 box) on the command line or
+   ``featurize_files(..., single_roi=True)``, 0 and 210 (a 7 × 5 × 6 box, a known defect, `#493 <https://github.com/PolusAI/nyxus/issues/493>`__) on the command line or
    through ``featurize_directory``, and 6.860 for the major axis and 119.99972 for the volume when
    a mask marks the same box as a ROI. ``3AREA``, ``3MESH_VOLUME`` and ``3VOLUME_CONVEXHULL`` of
    the ``featurize_files`` run agree with the masked run; on the command line they are those of
    the larger box (``3AREA`` 214 instead of 148). Through ``featurize_files`` zero voxels are left
    out: a 3 × 2 × 2 block of nonzero voxels in the same volume gives 12 and a ``3AREA`` of 32.
+
+``single_roi=True`` measures the bounding box, not the mask
+   With ``featurize_files(..., single_roi=True)`` every shape feature describes the solid
+   bounding box of the merged mask, and the axis features are 0, whatever the mask's shape. This
+   is a known defect (`#494 <https://github.com/PolusAI/nyxus/issues/494>`__). A ball of radius 5 (515 voxels) in a 15 × 15 × 15 volume
+   gives ``3VOXEL_VOLUME`` 514.999 and ``3AREA`` 486 as a segmented ROI, and 1331 and 726, the
+   values of its 11 × 11 × 11 box, with ``single_roi=True``; ``3MAJOR_AXIS_LEN`` is 8.909 and 0.
+   The values are right only for a mask that fills its box.
 
 Degenerate ROIs give 0, not NaN
    A single voxel reports 0 for the three axis lengths, ``3ELONGATION`` and ``3FLATNESS``. A ROI

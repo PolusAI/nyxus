@@ -67,6 +67,7 @@ check(ih([1, 1, 2, 2], 2), {"MEDIAN_IDX": 2, "MEDIAN_VAL": 1.75}, "even median")
 check(ih([1, 1, 3, 4, 4, 5, 5], 5), {"MODE_IDX": 1, "MODE_VAL": 1.4}, "mode tie")
 
 # No bin's gradient above 0: the maximum gradient keeps its seed
+# pins known defect https://github.com/PolusAI/nyxus/issues/491
 check(ih([1, 2], 2), {"MAX_GRADIENT": sys.float_info.min, "MAX_GRADIENT_IDX": 0, "MIN_GRADIENT": 0,
                       "MIN_GRADIENT_IDX": 1}, "flat histogram")
 check(ih([1, 1, 2], 2), {"MAX_GRADIENT": sys.float_info.min, "MAX_GRADIENT_IDX": 0}, "falling histogram")
@@ -75,6 +76,7 @@ check(ih([1, 1, 2], 2), {"MAX_GRADIENT": sys.float_info.min, "MAX_GRADIENT_IDX":
 check(ih([1, 3, 3, 3, 3, 3, 3, 3, 3, 5], 4), {"P10_VAL": 2, "P10_IDX": 2, "ROBUST_MEAN_IDX": 3.111}, "edge percentile")
 
 # A value on an inner bin edge can fall one bin low
+# pins known defect https://github.com/PolusAI/nyxus/issues/492
 check(ih([1, 10, 19], 14), {"MEDIAN_IDX": 7}, "bin edge")
 
 # Pixels of intensity 0 inside the mask take part

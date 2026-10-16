@@ -120,8 +120,8 @@ The response of filter :math:`k` is the magnitude of the full 2D convolution of 
 
 for :math:`0 \le y < H`, :math:`0 \le x < W`, with :math:`I = 0` outside the bounding box. For an
 even kernel size :math:`s = 0` and the response is centred on each pixel. For an odd size
-:math:`s = 1` and the response image is shifted by one pixel down and right (see
-:ref:`gabor-possible-issues`).
+:math:`s = 1` and the response image is shifted by one pixel down and right, a known defect
+(`#505 <https://github.com/PolusAI/nyxus/issues/505>`__; see :ref:`gabor-possible-issues`).
 
 With :math:`R_0` the baseline response, :math:`M = \max R_0` and :math:`m = \min R_0` over the
 bounding box,
@@ -267,7 +267,7 @@ Settings
      - ``Nyxus(..., gabor_kersize=16)``
      - :math:`n`; an integer of at least 2. An odd size shifts the response by one pixel. Size 1
        is accepted but reads past the end of the convolution buffer, so its values are arbitrary
-       (a known defect).
+       (a known defect, `#506 <https://github.com/PolusAI/nyxus/issues/506>`__).
    * - Baseline frequency
      - ``--gaborf0=0.1``
      - ``Nyxus(..., gabor_f0=0.1)``
@@ -350,7 +350,7 @@ Possible issues
 Different default pairs on the command line and in Python
    Without ``--gaborfreqs`` and ``--gabortheta``, the command line pairs frequencies
    :math:`0, \pi/4, \pi/2, 3\pi/4` with orientations of 4, 16, 32 and 64 radians: the built-in list
-   stores each frequency where an orientation belongs, and the reverse. Python uses frequencies 4,
+   stores each frequency where an orientation belongs, and the reverse, a known defect (`#504 <https://github.com/PolusAI/nyxus/issues/504>`__). Python uses frequencies 4,
    16, 32, 64 at 0°, 45°, 90°, 135°. The same image gives different ``GABOR`` columns from the two
    unless both lists are given.
 
@@ -385,7 +385,7 @@ Pixels outside the mask take part
 Odd kernel sizes shift the response
    The response is read from the full convolution at an offset of :math:`\lceil n/2 \rceil`, while
    the kernel's centre tap is at :math:`\lfloor n/2 \rfloor`. For odd :math:`n` the response image
-   is shifted by one pixel down and right. With
+   is shifted by one pixel down and right, a known defect (`#505 <https://github.com/PolusAI/nyxus/issues/505>`__). With
    ``--gaborkersize=15`` the worked example gives 1.0417, 0.9167, 0.8333, 0.9167; a centred
    response would give 1.0417, 1.0417, 1.0417, 0.9583.
 
@@ -400,7 +400,7 @@ GPU values
    convolution through an FFT. It differs from the CPU path in three ways: it stores the
    responses in single precision, which can move a response across the threshold; it reads the
    response at an offset of :math:`\lfloor n/2 \rfloor`, so odd kernel sizes are centred on the
-   GPU and shifted on the CPU; and it has no guard for a constant baseline: where the CPU stores
+   GPU and shifted on the CPU (`#505 <https://github.com/PolusAI/nyxus/issues/505>`__); and it has no guard for a constant baseline, a known defect (`#507 <https://github.com/PolusAI/nyxus/issues/507>`__): where the CPU stores
    the ``--noval`` value, it divides by a count of 0, and the infinite or NaN result is replaced
    at output time (by ``--noval`` in CSV and pandas, by ``-0.0`` in Arrow and Parquet). A ROI is
    refused when :math:`(H+n-1)(W+n-1)` times the number of filters, the frequency–angle pairs

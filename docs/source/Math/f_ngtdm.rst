@@ -19,7 +19,8 @@ neighbourhood averages. The features describe how coarse, busy or contrasted a t
    * - **Out-of-core**
      - Yes, with the same values as in memory on an image that Nyxus reads as one tile, except in
        IBSI mode: there only the first ROI that a ``Nyxus`` object or a command-line run computes
-       out of core matches, and the later ones are wrong (a fix is coming). On other
+       out of core matches, and the later ones are wrong, a known defect (`#512 <https://github.com/PolusAI/nyxus/issues/512>`__): the list
+       of grey levels is not cleared between out-of-core ROIs in IBSI mode. On other
        images out-of-core processing of this family raises an error or returns wrong
        values, depending on the ROI (see :ref:`large-images-tiles`).
    * - **IBSI**

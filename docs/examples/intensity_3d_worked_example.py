@@ -119,6 +119,7 @@ check(neg, {"3MIN": -8.0, "3MEAN": -5.77273, "3VARIANCE": 1.42208, "3UNIFORMITY_
 
 # Intensities above 65535: each voxel's square wraps modulo 2^32 before it is summed
 big = run(img.astype(np.uint32) * 20000, seg, "big").iloc[0]
+# pins known defect https://github.com/PolusAI/nyxus/issues/490
 check(big, {"3MEAN": 84545.45, "3ENERGY": 48940915712.0, "3ROOT_MEAN_SQUARED": 47165.53}, "x 20000")
 assert math.isclose(float((x * 20000) @ (x * 20000)), 1.692e11)
 

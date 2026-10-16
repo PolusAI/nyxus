@@ -708,7 +708,7 @@ Each function returns an error message for an unknown family, an unknown paramet
 cannot parse, and Python raises it. ``set_metaparam`` accepts a key without ``/`` and ignores it;
 ``get_metaparam`` of such a key raises nothing and returns an undefined value. The two functions
 are not symmetric: ``get_metaparam`` reads the ``3glcm/*`` keys from ``fsett_GLCM`` (the 2D vector),
-and knows the GLSZM key only as ``3glsz/greydepth``. ``glcm/greydepth`` set from Python is stored in
+a known defect (`#513 <https://github.com/PolusAI/nyxus/issues/513>`__), and knows the GLSZM key only as ``3glsz/greydepth``. ``glcm/greydepth`` set from Python is stored in
 the 2D GLCM settings and is read only by the constant-ROI test: the 2D matrix is binned with the
 common ``GREYDEPTH`` slot, so the metaparameter changes no value of a ROI whose binned minimum and
 maximum differ. The ``set_metaparam`` and ``get_metaparam`` docstrings in ``nyxus.py`` describe the

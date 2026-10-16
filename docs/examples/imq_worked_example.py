@@ -54,6 +54,7 @@ def whole_image(images):
 
 
 # Whole-image mode scores the image plus a row and a column of 0: 36 pixels, 11 of them 0
+# pins known defect https://github.com/PolusAI/nyxus/issues/493
 check(features, {"MAX_SATURATION": 3 / 36, "MIN_SATURATION": 11 / 36}, "whole image")
 
 # LOCAL_FOCUS_SCORE: the four 3x3 tiles of the 6x6 image matrix, each filtered with 0 outside it

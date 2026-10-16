@@ -39,7 +39,8 @@ image as one ROI with label 1 that covers every pixel, including zero-intensity 
       ``Nyxus3D.featurize_directory(volume_dir, volume_dir, ".*")``.
       ``Nyxus3D.featurize_files(volumes, volumes, single_roi=True)`` is not whole-volume mode: it
       uses each volume as its own mask, so the ROI is the volume's nonzero voxels (see
-      :doc:`Math/f_morphology_3d`).
+      :doc:`Math/f_morphology_3d`); its 3D shape features describe the box of those voxels, a
+      known defect (`#494 <https://github.com/PolusAI/nyxus/issues/494>`__).
 
    .. tab-item:: Command line
 
@@ -70,14 +71,16 @@ Whole-slide features differ from those of an ordinary ROI in these ways:
   the image, so ``PERIMETER`` is 2 x (width + height): 224 for a 64 x 48 image. Every feature
   built on the contour describes this rectangle: circularity, the perimeter-equivalent diameter,
   geodetic length and thickness, the ROI radii, fractal dimension, radial distribution and the
-  weighted moments.
+  weighted moments. The radial distribution's centre then lies on the image's top edge, a known
+  defect (`#516 <https://github.com/PolusAI/nyxus/issues/516>`__).
 * **Edge features are degenerate.** The edge is the four corners, and each corner carries the
   image's maximum grey level. ``EDGE_MIN_INTENSITY`` and ``EDGE_MAX_INTENSITY`` both equal
   ``MAX``, ``EDGE_STDDEV_INTENSITY`` is 0 and ``EDGE_INTEGRATED_INTENSITY`` is 4 x ``MAX``.
 * **Some features are not computed** and are reported as 0: the neighbor features,
   ``POLYGONALITY_AVE``, ``HEXAGONALITY_AVE``, ``HEXAGONALITY_STDDEV`` and the minimum enclosing,
   inscribing and circumscribing circle diameters.
-* **The bounding box is one pixel larger than the image.** On a 256 x 256 image, ``BBOX_WIDTH``
+* **The bounding box is one pixel larger than the image**, a known defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__). On a
+  256 x 256 image, ``BBOX_WIDTH``
   and ``BBOX_HEIGHT`` are 257 and ``EXTENT`` is 0.992.
 
 A whole-slide run is therefore not the same as a run with a label image of ones. On a 256 x 256
@@ -181,8 +184,8 @@ volume. This holds for inputs Nyxus can stream; see the end of
 In 2D, the intensity, basic morphology, convex hull, ellipse, caliper, chord, Euler, extrema,
 erosion, texture, Gabor and Zernike features and the unweighted moments match the in-memory values
 on an image that Nyxus reads as one tile (see :ref:`large-images-tiles` for other images), with two
-texture exceptions: in IBSI mode 2D NGTDM matches only on the first ROI computed out of core (see
-:doc:`Math/f_ngtdm`), and NGLDM differs on a constant ROI (see :doc:`Math/f_ngldm`). The
+texture exceptions: in IBSI mode 2D NGTDM matches only on the first ROI computed out of core, a known
+defect (`#512 <https://github.com/PolusAI/nyxus/issues/512>`__; see :doc:`Math/f_ngtdm`), and NGLDM differs on a constant ROI (see :doc:`Math/f_ngldm`). The
 contour-based features, the weighted moments and the fractal dimension do not. On a 256 x 256 test
 image with 66 ROIs, 116 of the 747 output columns of ``*ALL*`` differ when every ROI is computed
 out of core.
@@ -190,10 +193,11 @@ out of core.
 The rest of this section describes runs without anisotropy. With ``--anisox`` or ``--anisoy``
 (Python ``anisotropy_x``, ``anisotropy_y``), the radial distribution and the weighted intensity
 moments get their in-memory values out of core, while the out-of-core contour is wrong, so every
-contour-based feature can differ; a fix is coming. See :doc:`Math/f_morphology`,
+contour-based feature can differ, a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). See :doc:`Math/f_morphology`,
 :doc:`Math/f_radial_distribution` and :doc:`Math/f_2dmoments`.
 
-The out-of-core contour differs from the in-memory one in three ways. It is a single loop: Nyxus
+The out-of-core contour differs from the in-memory one in three ways, a known defect
+(`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). It is a single loop: Nyxus
 keeps the first loop it traces and drops holes and further fragments. Its coordinates are relative
 to the ROI's bounding box, while the pixels keep their image positions. And its pixels come in a
 different order. On a 340 x 340 image, a 300 x 300 square with a 100 x 100 hole has ``PERIMETER``

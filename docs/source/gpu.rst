@@ -33,7 +33,7 @@ and Gabor also need a label image: in whole-slide mode only GLSZM uses the GPU.
      - ``EROSIONS_2_VANISH``, ``EROSIONS_2_VANISH_COMPLEMENT``
      - Erodes each ROI on the GPU, but only when a moment feature is in the same run: without one,
        the buffer the erosion kernel needs is not allocated, every ROI gets 0 and the run prints
-       ``ErosionFeature: error calculating on GPU``. A fix is coming.
+       ``ErosionFeature: error calculating on GPU``. This is a known defect (`#520 <https://github.com/PolusAI/nyxus/issues/520>`__).
    * - Shape moments
      - ``*SGEOMOMS*``: spatial, central, normalized, Hu and weighted moments
      - Computes the moments and their weights on the GPU.
@@ -59,8 +59,9 @@ The ``nyxus`` package on PyPI is CPU-only. You need a GPU build:
 
 * The CUDA wheels are published as separate packages, named ``nyxus-cuda12x`` for CUDA 12 and
   ``nyxus-cuda11x`` for CUDA 11, for Linux x86_64 (the newest ``nyxus-cuda12x`` with Windows
-  wheels is 0.9.3; a fix is coming). They do not bundle cuFFT, and the Linux wheels do not bundle
-  the CUDA runtime either, so install them with the CUDA toolkit.
+  wheels is 0.9.3, a known issue, `#526 <https://github.com/PolusAI/nyxus/issues/526>`__). They
+  do not bundle cuFFT, and the Linux wheels do not bundle the CUDA runtime either, so install them
+  with the CUDA toolkit.
 * The conda-forge ``nyxus`` package has CUDA 12.9 builds for Linux x86_64 and Windows x86_64,
   which bring the runtime and cuFFT with them (see :doc:`installation`).
 * To build from source, pass ``-DUSEGPU=ON`` to CMake. The CUDA toolkit must be installed, or

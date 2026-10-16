@@ -93,6 +93,7 @@ assert math.isclose(ball["3ELONGATION"], 1.0, rel_tol=1e-12)
 # A 6 x 4 x 5 box filling its volume: segmented ROI vs whole-volume (single-ROI) mode
 box = np.ones((5, 4, 6), np.uint16)
 seg_box, whole = shape3d(box), shape3d(box, single_roi=True)
+# pins known defect https://github.com/PolusAI/nyxus/issues/494
 assert math.isclose(seg_box["3MESH_VOLUME"], 120 - 12 / 2 - 5 / 6, rel_tol=1e-14)
 assert whole["3MESH_VOLUME"] == seg_box["3MESH_VOLUME"] and whole["3AREA"] == seg_box["3AREA"] == 148
 assert whole["3VOXEL_VOLUME"] == 120 and math.isclose(seg_box["3VOXEL_VOLUME"], 120 * PACK, rel_tol=1e-14)
@@ -118,6 +119,7 @@ os.makedirs("whole_dir", exist_ok=True)
 tifffile.imwrite("whole_dir/v.ome.tif", np.full((5, 4, 6), 7, np.uint16), ome=True,
                  metadata={"axes": "ZYX"})
 r = Nyxus3D(["*3D_ALL_MORPHOLOGY*"]).featurize_directory("whole_dir", "whole_dir", ".*")
+# pins known defect https://github.com/PolusAI/nyxus/issues/493
 assert r["3VOXEL_VOLUME"][0] == 210 and r["3AREA"][0] == 214
 assert math.isclose(r["3MESH_VOLUME"][0], 210 - 15 / 2 - 5 / 6, rel_tol=1e-14)
 assert r["3MAJOR_AXIS_LEN"][0] == 0
@@ -127,6 +129,7 @@ part = np.zeros((5, 4, 6), np.uint16)
 part[1:3, 1:3, 1:4] = 7                                 # a 3 x 2 x 2 block
 tifffile.imwrite("part.ome.tif", part, ome=True, metadata={"axes": "ZYX"})
 r = Nyxus3D(["*3D_ALL_MORPHOLOGY*"]).featurize_files(["./part.ome.tif"], ["./part.ome.tif"], True)
+# pins known defect https://github.com/PolusAI/nyxus/issues/494
 assert r["3VOXEL_VOLUME"][0] == 12 and r["3AREA"][0] == 32
 
 # A cavity is subtracted from the mesh volume

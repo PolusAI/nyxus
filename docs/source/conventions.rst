@@ -88,7 +88,7 @@ apart from ROI pixels of intensity 0. The texture families are covered under `Ba
      - The ROI's mask; intensities are not used, except by the few intensity-weighted morphology
        features
      - Counted as part of the shape. The chords treat it as a gap, and an erosion count is 0 for a
-       ROI of one intensity
+       ROI of one intensity, a known defect (`#502 <https://github.com/PolusAI/nyxus/issues/502>`__)
    * - :doc:`2D moments <Math/f_2dmoments>`
      - The ROI's pixels
      - Adds 1 to a shape moment and nothing to an intensity moment
@@ -108,12 +108,12 @@ apart from ROI pixels of intensity 0. The texture families are covered under `Ba
      - See `Background`_
 
 In whole-slide mode (whole-volume mode in 3D) the whole image, background included, is one ROI,
-but without anisotropy its bounding box is one pixel or voxel larger than the image on every axis;
-see
-:ref:`large-images-whole`. In 3D, ``Nyxus3D.featurize_files(..., single_roi=True)`` is not
+but without anisotropy its bounding box is one pixel or voxel larger than the image on every axis,
+a known defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__); see :ref:`large-images-whole`. In 3D, ``Nyxus3D.featurize_files(..., single_roi=True)`` is not
 whole-volume mode: it merges every nonzero label of the mask into one ROI, leaves out voxels where
 the mask is 0, and uses the box of the remaining voxels; passing the volumes as their own masks
-gives the box of the nonzero voxels (see :doc:`Math/f_morphology_3d`).
+gives the box of the nonzero voxels (see :doc:`Math/f_morphology_3d`). The 3D shape features then
+describe that box rather than the mask, a known defect (`#494 <https://github.com/PolusAI/nyxus/issues/494>`__).
 
 
 .. _conventions-grey-levels:
@@ -257,7 +257,7 @@ they differ in these ways:
      - GLCM counts pairs with voxels outside the mask, at grey level 1, with the default binning.
        NGTDM uses the voxels outside the mask in every mode. See `Background`_.
    * - Constant ROI
-     - Every GLCM feature returns 0, whatever ``--noval`` is; a fix is coming.
+     - Every GLCM feature returns 0, whatever ``--noval`` is, a known defect (`#511 <https://github.com/PolusAI/nyxus/issues/511>`__).
      - Most 3D GLCM features return their limiting values when the ROI fills its bounding box. See
        `Constant ROIs and missing values`_.
    * - Neighbourhood size
@@ -418,7 +418,7 @@ Nyxus measures in pixels and voxels. It applies no physical pixel size to any fe
   voxels. ``3AREA`` counts exposed voxel faces. Angles are in degrees, except the chord angles,
   which are in radians. Run lengths, zone sizes and zone distances count pixels or voxels,
   whatever the spacing.
-- **Pixel size.** ``AREA_UM2`` is always 0. ``--pixelsPerCentimeter`` and the Python
+- **Pixel size.** ``AREA_UM2`` is always 0, a known defect (`#496 <https://github.com/PolusAI/nyxus/issues/496>`__). ``--pixelsPerCentimeter`` and the Python
   ``pixels_per_micron`` are accepted but change no feature. The ``phys_x``, ``phys_y`` and
   ``phys_z`` output columns report the file's pixel size (see :ref:`output`).
 - **Anisotropy.** A scale factor per axis gives the size of a pixel or voxel along that axis,
@@ -443,7 +443,7 @@ Nyxus measures in pixels and voxels. It applies no physical pixel size to any fe
        ``IMOM_*``, the radial distribution and ``ZERNIKE2D``) are computed on the pixels as
        acquired, each at its position scaled by the factors. The intensity, texture, Gabor and
        image quality features do not change, except ``POWER_SPECTRUM_SLOPE``, which is computed on
-       the resampled ROI; a fix is coming.
+       the resampled ROI, a known defect (`#519 <https://github.com/PolusAI/nyxus/issues/519>`__).
    * - 3D
      - ``--anisox``, ``--anisoy``, ``--anisoz``; Python ``anisotropy_x``, ``anisotropy_y``,
        ``anisotropy_z``; or ``--use-physical-spacing=true`` (Python ``use_physical_spacing``)
@@ -491,7 +491,7 @@ A ROI whose pixels all have one intensity is the most common case:
      - Every ``IH_*`` feature returns the substitute
      - No 3D family
    * - GLCM (:doc:`2D <Math/f_glcm>`, :doc:`3D <Math/f_glcm_3d>`)
-     - Every feature returns 0, whatever ``--noval`` is; a fix is coming
+     - Every feature returns 0, whatever ``--noval`` is, a known defect (`#511 <https://github.com/PolusAI/nyxus/issues/511>`__)
      - Limiting values (``3GLCM_ASM`` 1, ``3GLCM_CONTRAST`` 0); ``3GLCM_CORRELATION`` and
        ``3GLCM_INFOMEAS1`` return the substitute (``-0.0`` in Arrow and Parquet)
    * - GLRLM, GLSZM, GLDM, GLDZM
@@ -511,7 +511,8 @@ A ROI whose pixels all have one intensity is the most common case:
      - All 30 columns return the substitute
      - No 3D family
    * - :doc:`Erosion <Math/f_erosion>`
-     - 0, whatever the ROI's shape, on the CPU. The GPU path erodes the ROI as usual
+     - 0, whatever the ROI's shape, on the CPU, a known defect (`#502 <https://github.com/PolusAI/nyxus/issues/502>`__). The GPU path erodes the
+       ROI as usual
      - No 3D family
    * - :doc:`Image quality <Math/f_image_quality>`
      - ``MAX_SATURATION`` 1, ``MIN_SATURATION`` 0, ``POWER_SPECTRUM_SLOPE`` and ``SHARPNESS`` 0;

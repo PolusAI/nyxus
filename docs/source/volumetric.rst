@@ -64,7 +64,8 @@ array, write it to an OME-TIFF file as in the example, with ``metadata={"axes": 
 
 ``featurize_files`` needs a list of label files even with ``single_roi=True``. Passing the
 intensity list twice, ``featurize_files(volumes, volumes, single_roi=True)``, makes each volume
-one ROI of its nonzero voxels: zero voxels are left out. For whole-volume mode, where the ROI is
+one ROI of its nonzero voxels: zero voxels are left out. The 3D shape features of such a ROI
+describe its bounding box rather than its voxels, a known defect (`#494 <https://github.com/PolusAI/nyxus/issues/494>`__). For whole-volume mode, where the ROI is
 every voxel, background included, use ``featurize_directory(volume_dir, None, ".*")`` or
 ``featurize_directory(volume_dir, volume_dir, ".*")``; see :ref:`large-images-whole`.
 

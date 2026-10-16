@@ -66,6 +66,7 @@ assert stored["gabor_freqs"] == [float(np.float32(f)) for f in (4, 16, 32, 64)],
 check(columns(Nyxus(["GABOR"], ibsi=True).featurize(img, mask)), [25 / 24, 25 / 24, 25 / 24, 23 / 24], "ibsi")
 
 # An odd kernel size: the response image is shifted by one pixel
+# pins known defect https://github.com/PolusAI/nyxus/issues/505
 check(columns(Nyxus(["GABOR"], gabor_kersize=15).featurize(img, mask)),
       [1.0417, 0.9167, 0.8333, 0.9167], "kersize 15")
 

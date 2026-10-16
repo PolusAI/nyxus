@@ -25,8 +25,8 @@ computed on the ROI's bounding box as a rectangular image.
        as several tiles the call raises an error when a misplaced pixel falls outside the ROI's
        bounding box, and otherwise the focus scores and the saturations differ from the in-memory
        values.
-       ``POWER_SPECTRUM_SLOPE`` and ``SHARPNESS`` are not computed out of core (see
-       :ref:`imq-possible-issues`). In whole-image mode an image too large for memory is refused.
+       ``POWER_SPECTRUM_SLOPE`` and ``SHARPNESS`` are not computed out of core, a known defect
+       (`#508 <https://github.com/PolusAI/nyxus/issues/508>`__; see :ref:`imq-possible-issues`). In whole-image mode an image too large for memory is refused.
    * - **IBSI**
      - None. IBSI does not define image quality features.
 
@@ -167,7 +167,8 @@ Settings
      - ``--anisox``, ``--anisoy``
      - ``ImageQuality(..., anisotropy_x=..., anisotropy_y=...)``
      - With files, ``POWER_SPECTRUM_SLOPE`` is computed on the ROI resampled by the factors: with
-       ``anisotropy_x=2`` it has the value of the ROI made twice as wide. A fix is coming. The other
+       ``anisotropy_x=2`` it has the value of the ROI made twice as wide, a known defect
+       (`#519 <https://github.com/PolusAI/nyxus/issues/519>`__). The other
        five features are computed on the pixels as acquired and do not change. In-memory arrays are
        not affected.
    * - Memory limit
@@ -342,7 +343,7 @@ differently (see *Possible issues*). The steps are:
 
 The value is 0 when every :math:`M_b` is 0, or when fewer than two bins are occupied.
 
-This is a known defect: step 6 takes :math:`b + 2` from a table of :math:`\max(H, W)` entries
+This is a known defect (`#514 <https://github.com/PolusAI/nyxus/issues/514>`__): step 6 takes :math:`b + 2` from a table of :math:`\max(H, W)` entries
 but looks up every occupied bin in it, so a bin beyond that table reads memory outside it and
 the slope is undefined. That happens when the image is not normalized in step 2 and its
 coefficients are large, which is common for images of ordinary grey levels.
@@ -452,8 +453,8 @@ Blur series
    falls. Use the focus scores to rank images by blur.
 
 Whole-image mode adds a row and a column of 0
-   In whole-image mode the image matrix is one pixel larger than the image in each direction, and
-   the extra pixels are 0. ``MIN_SATURATION`` then counts them, ``MAX_SATURATION`` divides by the
+   In whole-image mode the image matrix is one pixel larger than the image in each direction, a
+   known defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__), and the extra pixels are 0. ``MIN_SATURATION`` then counts them, ``MAX_SATURATION`` divides by the
    larger count, the focus scores see an extra edge, and ``POWER_SPECTRUM_SLOPE`` changes too:
    1.178 in whole-image mode against 2.106 with a mask of ones on the unblurred disk of the blur
    series. On the worked example the six values are 27.86, 31.76, 0, 0.08333, 0.3056 and 1.903;
@@ -468,7 +469,8 @@ Out-of-core ROIs
    Out of core, ``POWER_SPECTRUM_SLOPE`` and ``SHARPNESS`` are not computed, and their columns
    hold whatever value happens to be in memory: 0, a tiny number such as :math:`10^{-311}`, or
    anything else; Nyxus does not set them to the ``--noval`` substitute. A constant ROI processed
-   out of core skips the saturations too, and both of their columns hold such a value. Discard
+   out of core skips the saturations too, and both of their columns hold such a value. This is
+   a known defect (`#508 <https://github.com/PolusAI/nyxus/issues/508>`__). Discard
    these values, or raise ``--ramLimit`` so that the ROIs fit in memory.
 
 Small images

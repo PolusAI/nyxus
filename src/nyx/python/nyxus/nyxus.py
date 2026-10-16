@@ -60,7 +60,8 @@ class Nyxus:
     pixels_per_micron : float, optional
         Default 1.0. Must be positive. Stored and reported by
         :meth:`get_params`; no feature currently depends on it
-        (``AREA_UM2`` is reported as 0).
+        (``AREA_UM2`` is reported as 0, a known defect,
+        `#496 <https://github.com/PolusAI/nyxus/issues/496>`__).
     coarse_gray_depth : int, optional
         Default 64. Must be positive. Number of grey levels intensities are
         binned to for the texture features, and the number of bins of the
@@ -453,7 +454,8 @@ class Nyxus:
         Notes
         -----
         The ``3glcm/*`` names read the 2D ``glcm`` values, not the ones set
-        through ``3glcm/*``. ``3glszm/greydepth`` is read under the name
+        through ``3glcm/*``, a known defect
+        (`#513 <https://github.com/PolusAI/nyxus/issues/513>`__). ``3glszm/greydepth`` is read under the name
         ``3glsz/greydepth``. A name without a ``/`` returns an undefined value.
 
         See Also
@@ -505,8 +507,8 @@ class Nyxus:
             in the current working directory. A path with a file name
             (``out/features.arrow``) writes that file; a directory path (``out``)
             writes the default file name inside it. A missing last directory is
-            created; if its parent is missing too, the call raises RuntimeError (a
-            fix is coming).
+            created; if its parent is missing too, the call raises RuntimeError, a
+            known defect (`#518 <https://github.com/PolusAI/nyxus/issues/518>`__).
 
         Returns
         -------
@@ -626,8 +628,8 @@ class Nyxus:
             in the current working directory. A path with a file name
             (``out/features.arrow``) writes that file; a directory path (``out``)
             writes the default file name inside it. A missing last directory is
-            created; if its parent is missing too, the call raises RuntimeError (a
-            fix is coming).
+            created; if its parent is missing too, the call raises RuntimeError, a
+            known defect (`#518 <https://github.com/PolusAI/nyxus/issues/518>`__).
 
         Returns
         -------
@@ -816,8 +818,8 @@ class Nyxus:
             in the current working directory. A path with a file name
             (``out/features.arrow``) writes that file; a directory path (``out``)
             writes the default file name inside it. A missing last directory is
-            created; if its parent is missing too, the call raises RuntimeError (a
-            fix is coming).
+            created; if its parent is missing too, the call raises RuntimeError, a
+            known defect (`#518 <https://github.com/PolusAI/nyxus/issues/518>`__).
 
         Returns
         -------
@@ -1709,7 +1711,8 @@ class Nyxus3D:
         Notes
         -----
         The ``3glcm/*`` names read the 2D ``glcm`` values, not the ones set
-        through ``3glcm/*``. ``3glszm/greydepth`` is read under the name
+        through ``3glcm/*``, a known defect
+        (`#513 <https://github.com/PolusAI/nyxus/issues/513>`__). ``3glszm/greydepth`` is read under the name
         ``3glsz/greydepth``. A name without a ``/`` returns an undefined value.
 
         See Also
@@ -1762,8 +1765,8 @@ class Nyxus3D:
             in the current working directory. A path with a file name
             (``out/features.arrow``) writes that file; a directory path (``out``)
             writes the default file name inside it. A missing last directory is
-            created; if its parent is missing too, the call raises RuntimeError (a
-            fix is coming).
+            created; if its parent is missing too, the call raises RuntimeError, a
+            known defect (`#518 <https://github.com/PolusAI/nyxus/issues/518>`__).
 
         Returns
         -------
@@ -1854,8 +1857,8 @@ class Nyxus3D:
             in the current working directory. A path with a file name
             (``out/features.arrow``) writes that file; a directory path (``out``)
             writes the default file name inside it. A missing last directory is
-            created; if its parent is missing too, the call raises RuntimeError (a
-            fix is coming).
+            created; if its parent is missing too, the call raises RuntimeError, a
+            known defect (`#518 <https://github.com/PolusAI/nyxus/issues/518>`__).
 
         Returns
         -------
@@ -2247,7 +2250,8 @@ class ImageQuality:
     anisotropy_x : float, optional
         Default 1.0. Size of a pixel along X relative to Y. Must be positive.
         With files, ``POWER_SPECTRUM_SLOPE`` is computed on the ROI resampled
-        by the factors; a fix is coming. The other five features are computed
+        by the factors, a known defect
+        (`#519 <https://github.com/PolusAI/nyxus/issues/519>`__). The other five features are computed
         on the pixels as acquired and do not change, and in-memory arrays are
         not affected.
     anisotropy_y : float, optional
@@ -2434,8 +2438,8 @@ class ImageQuality:
             in the current working directory. A path with a file name
             (``out/features.arrow``) writes that file; a directory path (``out``)
             writes the default file name inside it. A missing last directory is
-            created; if its parent is missing too, the call raises RuntimeError (a
-            fix is coming).
+            created; if its parent is missing too, the call raises RuntimeError, a
+            known defect (`#518 <https://github.com/PolusAI/nyxus/issues/518>`__).
 
         Returns
         -------
@@ -2539,8 +2543,8 @@ class ImageQuality:
             in the current working directory. A path with a file name
             (``out/features.arrow``) writes that file; a directory path (``out``)
             writes the default file name inside it. A missing last directory is
-            created; if its parent is missing too, the call raises RuntimeError (a
-            fix is coming).
+            created; if its parent is missing too, the call raises RuntimeError, a
+            known defect (`#518 <https://github.com/PolusAI/nyxus/issues/518>`__).
 
         Returns
         -------
@@ -2696,8 +2700,8 @@ class ImageQuality:
             in the current working directory. A path with a file name
             (``out/features.arrow``) writes that file; a directory path (``out``)
             writes the default file name inside it. A missing last directory is
-            created; if its parent is missing too, the call raises RuntimeError (a
-            fix is coming).
+            created; if its parent is missing too, the call raises RuntimeError, a
+            known defect (`#518 <https://github.com/PolusAI/nyxus/issues/518>`__).
 
         Returns
         -------

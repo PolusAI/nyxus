@@ -160,7 +160,7 @@ default_at = "cli_result_options.h:need_annotation_"
 values = "true | false | t | f (case-insensitive)"
 build = ""
 summary = "When true, adds annotation columns (anno0, anno1, ...) to CSV output. Their values come from the mask file name split at underscores."
-notes = "Only the part of the mask file name before the first dot is used, and empty pieces are dropped. Annotation columns appear in CSV output only. With Arrow IPC or Parquet output, --annot=true currently stops the run with a crash and leaves an unreadable file; a fix is coming."
+notes = "Only the part of the mask file name before the first dot is used, and empty pieces are dropped. Annotation columns appear in CSV output only. With Arrow IPC or Parquet output, --annot=true currently stops the run with a crash and leaves an unreadable file (known defect, https://github.com/PolusAI/nyxus/issues/517)."
 evidence = "cli_result_options.h:54-60, 78; slideprops.cpp:518-537; output_2_csv.cpp:71-79, 586-590"
 
 [[option]]
@@ -241,7 +241,7 @@ default = ""
 values = "real number > 0"
 build = ""
 summary = "Image resolution, for reporting area in square micrometres (AREA_UM2)."
-notes = "The value is accepted and validated but does not reach the results: AREA_UM2 is reported as 0 whatever the resolution."
+notes = "The value is accepted and validated but does not reach the results: AREA_UM2 is reported as 0 whatever the resolution (known defect, https://github.com/PolusAI/nyxus/issues/496)."
 evidence = "environment.cpp:904-914; env_features.cpp:719-748 (sets PIXELSIZEUM, never XYRES); features/basic_morphology.cpp:24-28, 101-105"
 
 [[option]]
@@ -357,7 +357,7 @@ default_at = "features/gabor.cpp:GaborFeature::n"
 values = "integer >= 2"
 build = ""
 summary = "Width and height, in pixels, of the square Gabor convolution kernel."
-notes = "1 is accepted but reads past the end of the convolution buffer, so its values are arbitrary (a known defect)."
+notes = "1 is accepted but reads past the end of the convolution buffer, so its values are arbitrary (known defect, https://github.com/PolusAI/nyxus/issues/506)."
 evidence = "features/gabor.cpp:16, 69, 493-505; cli_gabor_options.cpp:79-92"
 
 [[option]]
@@ -438,7 +438,7 @@ default = "1"
 default_at = "cli_anisotropy_options.h:aniso_x"
 values = "real number"
 build = ""
-summary = "Size of a pixel or voxel along x relative to the other axes. Geometric features use it: a volume (3D or 2.5D) is featurized on its voxels as acquired and the shape features scale their coordinates by the anisotropy, and a 2D slide's geometric features are computed on its pixels resampled by the anisotropy. Intensity and texture features are computed on the pixels or voxels as acquired, so they report the same values with or without anisotropy. On a 2D slide the intensity-weighted geometric features (EDGE_*, WEIGHTED_CENTROID_X/Y, MASS_DISPLACEMENT, IMOM_*, the radial distribution and ZERNIKE2D) are computed on the pixels as acquired, each at its position scaled by the anisotropy. Of the image quality features only POWER_SPECTRUM_SLOPE changes: it is computed on the resampled ROI; a fix is coming."
+summary = "Size of a pixel or voxel along x relative to the other axes. Geometric features use it: a volume (3D or 2.5D) is featurized on its voxels as acquired and the shape features scale their coordinates by the anisotropy, and a 2D slide's geometric features are computed on its pixels resampled by the anisotropy. Intensity and texture features are computed on the pixels or voxels as acquired, so they report the same values with or without anisotropy. On a 2D slide the intensity-weighted geometric features (EDGE_*, WEIGHTED_CENTROID_X/Y, MASS_DISPLACEMENT, IMOM_*, the radial distribution and ZERNIKE2D) are computed on the pixels as acquired, each at its position scaled by the anisotropy. Of the image quality features only POWER_SPECTRUM_SLOPE changes: it is computed on the resampled ROI (known defect, https://github.com/PolusAI/nyxus/issues/519)."
 notes = "A value of 1 counts as unset. No positivity check is made. A value other than 1 in any --aniso* option replaces the physical spacing of --use-physical-spacing on all three axes; the axes not given then use 1. A non-numeric value stops the run with an error."
 evidence = "cli_anisotropy_options.h:21-29; cli_anisotropy_options.cpp:4-30; phase2_3d.cpp:29-66; phase2_2d.cpp:716-727"
 

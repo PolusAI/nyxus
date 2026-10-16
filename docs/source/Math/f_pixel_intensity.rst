@@ -30,8 +30,8 @@ lies.
 .. tip::
 
    To get ``HISTOGRAM``, request it together with at least one other intensity feature, for
-   example ``["*ALL_INTENSITY*", "HISTOGRAM"]``. Requested on its own, every bin is 0 (see
-   :ref:`intensity-possible-issues`). The IBSI intensity-histogram features, ``IH_*``, are a
+   example ``["*ALL_INTENSITY*", "HISTOGRAM"]``. Requested on its own, every bin is 0, a known defect
+   (`#489 <https://github.com/PolusAI/nyxus/issues/489>`__; see :ref:`intensity-possible-issues`). The IBSI intensity-histogram features, ``IH_*``, are a
    separate family with its own page, :doc:`f_intensity_histogram`.
 
 
@@ -282,7 +282,7 @@ map :math:`x = o + s\,u` from stored grey levels :math:`u`, energy is
 :math:`N_v o^2 + 2 o s \sum u + s^2 \sum u^2`, so it depends on the offset of the map.
 
 **Possible issues.** Each pixel's square is formed as a 32-bit unsigned integer before it is
-summed, so a stored grey level above 65535 wraps modulo :math:`2^{32}`. Multiplying the worked
+summed, a known defect (`#490 <https://github.com/PolusAI/nyxus/issues/490>`__), so a stored grey level above 65535 wraps modulo :math:`2^{32}`. Multiplying the worked
 example by 20000 gives 5.415 × 10\ :sup:`10` where the sum of squares is 9.28 × 10\ :sup:`10`.
 Images of 8- and 16-bit integers are not affected.
 
@@ -344,7 +344,8 @@ in bin :math:`j`, for :math:`j = 0, \dots, N_b - 1`. The columns sum to :math:`N
    \mathrm{HISTOGRAM\_BIN\_}j = h_j
 
 **Possible issues.** ``HISTOGRAM`` is computed only when another intensity feature is computed
-too. Requested alone, as ``["HISTOGRAM"]``, all :math:`N_b` columns are 0.
+too. Requested alone, as ``["HISTOGRAM"]``, all :math:`N_b` columns are 0. This is a known
+defect (`#489 <https://github.com/PolusAI/nyxus/issues/489>`__).
 
 
 .. _feature-hyperflatness:
@@ -664,7 +665,8 @@ Root mean square
 
    \mathrm{ROOT\_MEAN\_SQUARED} = \sqrt{\frac{1}{N_v}\sum_k x_k^2}
 
-It inherits the wrap-around of ``ENERGY`` for grey levels above 65535: 46538 instead of 60926 for
+It inherits the wrap-around of ``ENERGY`` for grey levels above 65535, a known defect
+(`#490 <https://github.com/PolusAI/nyxus/issues/490>`__): 46538 instead of 60926 for
 the worked example times 20000.
 
 
@@ -839,7 +841,8 @@ Constant ROI
 
 ``HISTOGRAM`` requested alone
    ``HISTOGRAM`` is not part of ``*ALL_INTENSITY*``, and requesting it does not by itself start the
-   intensity computation. Requested alone, all its columns are 0. Request it with ``*ALL_INTENSITY*``
+   intensity computation. Requested alone, all its columns are 0, a known defect
+   (`#489 <https://github.com/PolusAI/nyxus/issues/489>`__). Request it with ``*ALL_INTENSITY*``
    or any other intensity feature, or use ``*ALL*``.
 
 Covered range of in-memory images
@@ -856,7 +859,8 @@ Out-of-core ROIs of large striped TIFF files
    in-memory values.
 
 Grey levels above 65535
-   ``ENERGY`` and ``ROOT_MEAN_SQUARED`` square each pixel as a 32-bit unsigned integer, which
+   ``ENERGY`` and ``ROOT_MEAN_SQUARED`` square each pixel as a 32-bit unsigned integer, a known
+   defect (`#490 <https://github.com/PolusAI/nyxus/issues/490>`__), which
    wraps for grey levels above 65535 (32-bit integer images, or floating-point images read with
    ``--fpimgdr`` above 65535). The other features are computed in floating point and are not
    affected.

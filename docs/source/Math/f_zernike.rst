@@ -407,7 +407,7 @@ Elongated ROIs lose their ends
 
 A pixel on the disk centre is dropped
    A pixel whose centre coincides with the intensity centroid is skipped, although it belongs to
-   every moment with :math:`m = 0`. For the symmetric 3 × 3 image with rows 1 2 1, 2 4 2, 1 2 1,
+   every moment with :math:`m = 0`. This is a known defect (`#503 <https://github.com/PolusAI/nyxus/issues/503>`__). For the symmetric 3 × 3 image with rows 1 2 1, 2 4 2, 1 2 1,
    the centre pixel holds a quarter of the intensity: ``Z0`` is :math:`0.75/\pi = 0.2387` instead
    of :math:`1/\pi`, and ``Z2`` is 0.5040 instead of 0.7427. Moments with :math:`m > 0` do not
    change, since :math:`R_{nm}(0) = 0` for them. Only ROIs whose centroid falls exactly on a pixel

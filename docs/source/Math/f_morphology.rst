@@ -30,7 +30,8 @@ intensity-weighted features, they use only the ROI's mask.
        contour-based circle and radius features use contour coordinates relative to the bounding
        box. The neighbour features are not computed: they are 0, and ``POLYGONALITY_AVE`` and
        ``HEXAGONALITY_*`` are −1. With anisotropy the out-of-core contour is wrong, so every
-       contour-based feature can differ; a fix is coming. See :ref:`morphology-possible-issues`,
+       contour-based feature can differ. These out-of-core differences are a known defect
+       (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). See :ref:`morphology-possible-issues`,
        :doc:`/large_images` and :ref:`large-images-tiles`.
    * - **IBSI**
      - None. IBSI defines morphological features in 3D only (DHQ4), so no 2D code on this page
@@ -71,7 +72,7 @@ The values are:
   level 0 as a gap.
 - **Binning:** none. ``--coarseGrayDepth`` and ``--ibsi`` do not change any morphology feature.
 - **Pixel size:** none is applied. ``AREA_UM2`` is meant to convert the area to square micrometres
-  and is always 0.
+  and is always 0, a known defect (`#496 <https://github.com/PolusAI/nyxus/issues/496>`__).
 
 
 Worked example
@@ -196,7 +197,7 @@ Settings
    * - Pixel size
      - ``--pixelsPerCentimeter``
      - ``Nyxus(..., pixels_per_micron=1.0)``
-     - No effect: ``AREA_UM2`` is 0 with any value.
+     - No effect: ``AREA_UM2`` is 0 with any value, a known defect (`#496 <https://github.com/PolusAI/nyxus/issues/496>`__).
    * - Anisotropy
      - ``--anisox``, ``--anisoy``
      - ``Nyxus(..., anisotropy_x=1.0, anisotropy_y=1.0)``
@@ -237,6 +238,9 @@ When a feature cannot be computed, its column holds a substitute value:
   but still count as touching.
 - ``WEIGHTED_CENTROID_X`` and ``WEIGHTED_CENTROID_Y`` are 0 when the ROI's grey levels sum to 0.
 - The contour features are 0 for a ROI too small to trace, such as one or two pixels.
+
+The ellipse, circle and hexagonality codes are right only when the codes they read from are in the
+same run, a known defect (`#495 <https://github.com/PolusAI/nyxus/issues/495>`__); see :ref:`morphology-possible-issues`.
 
 
 .. _morphology-index:
@@ -344,7 +348,8 @@ Area in square micrometres
 :Code: ``AREA_UM2``
 :Range: always 0
 
-Meant as :math:`N` times the squared pixel size. This is a known defect: the computation runs
+Meant as :math:`N` times the squared pixel size. This is a known defect (`#496 <https://github.com/PolusAI/nyxus/issues/496>`__): the
+computation runs
 only when the image resolution setting is positive, and nothing sets it, so the value is 0 for
 every ROI whatever pixel size is given on the command line or in Python.
 
@@ -803,7 +808,8 @@ diameter of an exact circle comes out :math:`2 \times 10^{-4}` larger: 4.4723 fo
 worked example, whose exact value is :math:`2\sqrt{5} = 4.4721`.
 
 **Possible issues.** When a circle through three contour pixels is needed, the midpoints of their
-chords are truncated to whole pixels, so the circle found can be larger than the smallest one. ROI 1
+chords are truncated to whole pixels, so the circle found can be larger than the smallest one;
+this and the collinear branch below are a known defect (`#498 <https://github.com/PolusAI/nyxus/issues/498>`__). ROI 1
 of the worked example gives 14.17; the smallest circle has a diameter of 13.62, centred at
 :math:`(6.71, 6.29)`. Three collinear support points take a separate branch whose radius is half
 the square root of the longest distance between them, not half that distance; it does not change
@@ -830,7 +836,8 @@ computes them, the contour pixels are two pixels further along both axes than th
    \mathrm{DIAMETER\_INSCRIBING\_CIRCLE} = 2\min_j d_j
 
 **Possible issues.** The traced contour is returned one pixel down and to the right of the ROI,
-and the centroid is moved one pixel up and to the left before the distances are taken. On the
+and the centroid is moved one pixel up and to the left before the distances are taken, a known
+defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__). On the
 worked example ROI 1 gives 17.41 and 1.290, where the distances to the contour as it lies give 14.72
 and 1.705; ROI 2 gives 10 where :math:`2\sqrt{5} = 4.472`.
 
@@ -850,7 +857,8 @@ Distance to the contour
 
 The mean, largest and median distance from a ROI pixel to the nearest contour pixel, over all ROI
 pixels. The maximum is the radius of the largest disk inside the ROI, measured from a pixel centre.
-As the code computes it, the contour lies one pixel down and to the right:
+As the code computes it, the contour lies one pixel down and to the right, a known defect
+(`#497 <https://github.com/PolusAI/nyxus/issues/497>`__):
 
 .. math::
 
@@ -861,8 +869,8 @@ The median of an even count is the mean of the two middle values.
 **Possible issues.** Because of the contour offset, contour pixels themselves are not at distance
 0. On the worked example ROI 1 gives a mean of 1.124 where the contour as it lies gives 0.9288; its
 maximum, 3, and median, 1, are unchanged. ROI 2 gives 0.6943, 1.414 and 1 where the contour as it
-lies gives 0.2, 1 and 0. Out of core the contour coordinates are relative to the bounding box, so
-the values depend on where the ROI lies; there ROI 1 gives 0.9288 and ROI 2 11.13.
+lies gives 0.2, 1 and 0. Out of core the contour coordinates are relative to the bounding box, a known
+defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__), so the values depend on where the ROI lies; there ROI 1 gives 0.9288 and ROI 2 11.13.
 
 
 Extrema
@@ -1020,7 +1028,8 @@ at which the smallest and the largest diameter occur. On the worked example ROI 
 from 11 at 0° to 13.57 at 40° and 50°, so ``MAX_FERET_ANGLE`` is 50 only because the values at 40°
 and 50° differ in the last digits of single precision.
 
-**Possible issues.** 0° and 180° measure the same direction, so it counts twice: on ROI 1 the mean
+**Possible issues.** 0° and 180° measure the same direction, so it counts twice, a known defect
+(`#500 <https://github.com/PolusAI/nyxus/issues/500>`__): on ROI 1 the mean
 is 12.42 and the standard deviation 0.8183, where the 18 directions 0° to 170° give 12.50 and
 0.7675. The 10° steps miss diameters between them: ``skimage.measure.regionprops``
 ``feret_diameter_max``, which does not sample angles, gives 14.42 for ROI 1. Two
@@ -1237,7 +1246,7 @@ takes the smallest on ties; a direction of 359.5° or more rounds to 360.
 **Possible issues.** The directions are averaged as plain numbers, not as angles: two neighbours at
 333.4° and 26.57°, one above and one below the :math:`x` axis, give a mean of 180°, pointing the
 other way, where the circular mean is 0°. With two neighbours the standard deviation is 0, whatever
-their directions; with one it is 0 too.
+their directions, a known defect (`#499 <https://github.com/PolusAI/nyxus/issues/499>`__); with one it is 0 too.
 
 
 .. _morphology-possible-issues:
@@ -1246,7 +1255,8 @@ Possible issues
 ---------------
 
 Contour offset
-   The traced contour is returned one pixel down and to the right of the ROI. ``PERIMETER``, the
+   The traced contour is returned one pixel down and to the right of the ROI, a known defect
+   (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__). ``PERIMETER``, the
    ``EDGE_*`` features, the minimum enclosing circle and the neighbour features do not depend on
    where the contour lies. The circumscribing and inscribing circles (17.41 and 1.290 for ROI 1,
    where the contour as it lies gives 14.72 and 1.705) and ``ROI_RADIUS_*`` (mean 1.124 against
@@ -1257,7 +1267,8 @@ Holes and fragments in the contour
    one loop to the next: 50.01 for a 9 × 9 square with a 3 × 3 hole, whose loops measure 32 and 13.66.
 
 Minimum enclosing circle
-   Truncated chord midpoints make the circle too large on some ROIs: 14.17 for ROI 1 where the
+   Truncated chord midpoints make the circle too large on some ROIs, a known defect
+   (`#498 <https://github.com/PolusAI/nyxus/issues/498>`__): 14.17 for ROI 1 where the
    smallest circle has a diameter of 13.62. Every diameter also carries :math:`2 \times 10^{-4}`.
 
 Chords
@@ -1267,15 +1278,16 @@ Chords
 
 Feret angles
    The Feret family samples both 0° and 180°, which are one direction, so that direction counts
-   twice in the statistics. Martin and Nassenstein sample 0° to 170°.
+   twice in the statistics, a known defect (`#500 <https://github.com/PolusAI/nyxus/issues/500>`__). Martin and Nassenstein sample 0° to 170°.
 
 Neighbour statistics
-   Directions are averaged linearly, and the standard deviation of two directions is 0. The
+   Directions are averaged linearly, and the standard deviation of two directions is 0, a known defect
+   (`#499 <https://github.com/PolusAI/nyxus/issues/499>`__). The
    neighbour gate is the gap between contours, not the distance between centroids, which the
    ``*_DIST`` codes report.
 
 ``AREA_UM2`` and ``COMPACTNESS``
-   ``AREA_UM2`` is always 0. ``COMPACTNESS`` is a sample standard deviation of distances divided by
+   ``AREA_UM2`` is always 0, a known defect (`#496 <https://github.com/PolusAI/nyxus/issues/496>`__). ``COMPACTNESS`` is a sample standard deviation of distances divided by
    the pixel count, which falls with the ROI's size.
 
 ``CIRCULARITY`` above 1
@@ -1319,11 +1331,28 @@ Out of core
    other 88 codes give the in-memory values; on images that Nyxus reads as several tiles see
    :ref:`large-images-tiles`, and for the families that differ see :doc:`/large_images`.
 
+Codes that need companions
+   Several codes read values that another family computes, and are wrong when no code of that
+   family is in the same run, a known defect (`#495 <https://github.com/PolusAI/nyxus/issues/495>`__). The ellipse codes
+   (``MAJOR_AXIS_LENGTH``, ``MINOR_AXIS_LENGTH``, ``ECCENTRICITY``, ``ORIENTATION``,
+   ``ROUNDNESS``, ``ELONGATION``) need a basic morphology code such as ``AREA_PIXELS_COUNT``:
+   without one the moments are taken about the image origin, and ROI 1 of the worked example
+   gives ``MAJOR_AXIS_LENGTH`` 39.36 instead of 13.91, ``ORIENTATION`` 45.93 instead of −18.77
+   and ``ROUNDNESS`` 0. ``ELONGATION`` is 0 unless another ellipse code is in the run too. The
+   three circle diameters need a contour code such as ``PERIMETER`` and a basic morphology code:
+   alone they are 0, and with ``PERIMETER`` only ``DIAMETER_MIN_ENCLOSING_CIRCLE`` is right (ROI
+   1's ``DIAMETER_CIRCUMSCRIBING_CIRCLE`` is 35.61 instead of 17.41). ``HEXAGONALITY_AVE`` and
+   ``HEXAGONALITY_STDDEV`` need a Feret code such as ``STAT_FERET_DIAM_MAX``: without one they
+   are 0, where the disk with four neighbours gives 9.223 and 0.08352. ``*ALL_MORPHOLOGY*``
+   computes every one of them correctly.
+
 Whole-slide mode
    Without a mask the ROI is the whole image: the contour is the four corners of its bounding
-   box, which is one pixel larger than the image. ``PERIMETER``, the ``EDGE_*``, radius,
-   circularity and geodetic features describe that rectangle (``PERIMETER`` 224 for a 64 × 48
-   image), and the circle diameters and the neighbour, polygonality and hexagonality features
+   box, which is one pixel larger than the image, a known defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__). ``PERIMETER``, the
+   ``EDGE_*``, radius, circularity and geodetic features describe that rectangle (``PERIMETER`` 224
+   for a 64 × 48 image). The box also moves the extrema: on a 64 × 48 image ``EXTREMA_P3_Y``,
+   ``EXTREMA_P4_Y``, ``EXTREMA_P5_X`` and ``EXTREMA_P6_X`` are −1, ``EXTREMA_P3_X`` and
+   ``EXTREMA_P4_X`` are 64, and ``EXTREMA_P5_Y`` and ``EXTREMA_P6_Y`` are 48, outside the image. The circle diameters and the neighbour, polygonality and hexagonality features
    are not computed and are 0. See :ref:`large-images-whole`.
 
 
@@ -1337,7 +1366,8 @@ The test suite checks the morphology features against five references:
   ``WEIGHTED_CENTROID_X``, ``WEIGHTED_CENTROID_Y``, the four ``BBOX_*`` codes, ``EXTENT``,
   ``ASPECT_RATIO``, ``MAJOR_AXIS_LENGTH``, ``MINOR_AXIS_LENGTH``, ``ELONGATION``, ``ECCENTRICITY``,
   ``EULER_NUMBER`` and the sixteen ``EXTREMA_*`` codes. The ``AREA_UM2`` check sets the pixel size
-  and resolution itself, so it covers the formula but not the program, where the value is 0.
+  and resolution itself, so it covers the formula but not the program, where the value is 0 (a known defect,
+  `#496 <https://github.com/PolusAI/nyxus/issues/496>`__).
 - **CellProfiler** 4.2.8: ``MASS_DISPLACEMENT`` and ``EDGE_MEAN_INTENSITY``, ``EDGE_MAX_INTENSITY``,
   ``EDGE_MIN_INTENSITY`` and ``EDGE_INTEGRATED_INTENSITY`` to a relative 10\ :sup:`-6`;
   ``NUM_NEIGHBORS`` and ``CLOSEST_NEIGHBOR1_DIST`` to an absolute 10\ :sup:`-9`.

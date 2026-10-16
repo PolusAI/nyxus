@@ -160,5 +160,6 @@ for row in from_files(labels, (labels > 0) * 100):
 check(from_files(labels, (labels > 0) * 100, mergerois=True)[0][:2], [1.4231, 1.107], "merged")
 check(from_files(np.ones((200, 200)), single_roi=True)[0][:2], [1.8703, 1.0], "whole slide")
 # The whole-slide box is one pixel larger than the image, so a 256 x 256 image sits on a 512 canvas
+# pins known defect https://github.com/PolusAI/nyxus/issues/493
 check(from_files(np.ones((256, 256)), single_roi=True)[0][:1], [1.8667], "whole slide 256")
 check(fd(square(256))[:1], [2.0], "square 256")

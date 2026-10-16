@@ -50,8 +50,10 @@ def disk(r):
 
 # Values the page quotes
 assert erosions(mask) == 2
+# pins known defect https://github.com/PolusAI/nyxus/issues/501
 assert erosions(np.fliplr(mask)) == 3, "mirrored worked example"
 assert erosions(np.rot90(mask, 2)) == 3, "worked example rotated by 180 degrees"
+# pins known defect https://github.com/PolusAI/nyxus/issues/501
 assert erosions(np.ones((7, 9))) == 1000, "rectangle filling its box"
 notched = np.ones((7, 9)); notched[0, 0] = 0
 assert erosions(notched) == 1000, "rectangle less one corner pixel"
@@ -60,6 +62,7 @@ assert erosions(disk(6)) == 6
 assert erosions(disk(10)) == 10
 assert erosions(disk(20)) == 21
 tee = np.zeros((5, 5)); tee[1:, 1:] = 1; tee[0, 2] = tee[2, 0] = 1   # 4x4 square, two pixels sticking out
+# pins known defect https://github.com/PolusAI/nyxus/issues/501
 assert erosions(tee) == 1000, "pixels sticking out at the top and left"
 assert erosions(np.rot90(tee, 2)) == 2, "pixels sticking out at the bottom and right"
 for h, w in ((1, 1), (2, 5), (3, 3), (3, 9)):
@@ -69,6 +72,7 @@ for h, w in ((4, 4), (4, 9), (5, 5)):
 
 # A ROI of one intensity reports 0, whatever its shape
 for m in (mask, disk(6), np.ones((7, 9))):
+    # pins known defect https://github.com/PolusAI/nyxus/issues/502
     assert erosions(m, values=np.full(np.pad(m, 3).shape, 5, dtype=np.uint32)) == 0, "constant ROI"
 
 # Whole-slide mode: the smaller side minus 3, constant images included (files in the working dir)
@@ -80,4 +84,5 @@ for (h, w), want in (((10, 10), 7), ((20, 20), 17), ((20, 40), 17), ((3, 9), 0))
         path = f"./ero_slide_{h}x{w}.tif"
         tifffile.imwrite(path, img)
         got = Nyxus(["EROSIONS_2_VANISH"]).featurize_files([path], [path], single_roi=True)
+        # pins known defect https://github.com/PolusAI/nyxus/issues/493
         assert got["EROSIONS_2_VANISH"][0] == want, f"whole-slide {h}x{w}, constant={const}"
