@@ -260,7 +260,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example.
 
 **Shape moments**
@@ -538,7 +538,8 @@ Weighted raw moments
 
 The raw moments with each pixel weighted by :math:`w_i = I_i \ln(d_i + 0.001)`, where :math:`d_i`
 is its distance to the traced contour (see `How the distance to the contour is found`_). Pixels
-on or next to the contour count negatively, pixels deeper inside positively.
+on the traced contour count negatively (:math:`-6.9\,I_i`), pixels one step from it about 0, and
+pixels deeper inside positively.
 
 .. math::
 

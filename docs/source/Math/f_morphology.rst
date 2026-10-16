@@ -78,7 +78,7 @@ Worked example
 ^^^^^^^^^^^^^^
 
 Take one 17 × 14 image with two ROIs. ROI 1 occupies :math:`x = 1 \dots 12`,
-:math:`y = 1 \dots 12`, with a notch three pixels wide cut into its top and three corners trimmed.
+:math:`y = 1 \dots 12`, with a notch three pixels wide cut into its top and its four corners trimmed.
 ROI 2 is a 3 × 5 rectangle at :math:`x = 13 \dots 15`, :math:`y = 4 \dots 8`, touching ROI 1's
 right side. The mask, with background ``.``:
 
@@ -245,7 +245,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on ROI 1 of the worked example.
 
 Basic morphology
@@ -344,8 +344,9 @@ Area in square micrometres
 :Code: ``AREA_UM2``
 :Range: always 0
 
-Meant as :math:`N` times the squared pixel size. The pixel size given on the command line or in
-Python does not reach the computation, so the value is 0 for every ROI.
+Meant as :math:`N` times the squared pixel size. This is a known defect: the computation runs
+only when the image resolution setting is positive, and nothing sets it, so the value is 0 for
+every ROI whatever pixel size is given on the command line or in Python.
 
 
 .. _feature-centroid-x:
@@ -517,7 +518,7 @@ The length of the closed path through the contour pixels' centres.
 **Possible issues.** The path runs through pixel centres, so it is shorter than the outline of the
 pixel squares: a 3 × 5 rectangle has a perimeter of 12, not 16. On ROIs with holes or several
 fragments the loops are joined into one list, and the steps between loops are counted: a 9 × 9
-square with a 3 × 3 hole gives 50.01 where its two loops measure 32 and 16, and a label made of
+square with a 3 × 3 hole gives 50.01 where its two loops measure 32 and 13.66, and a label made of
 two 5 × 4 rectangles gives 42.12 where each measures 14. Out of core the value is the number of
 pixels of the first traced loop, without holes or other fragments: 44 for ROI 1 of the worked
 example.
@@ -1253,7 +1254,7 @@ Contour offset
 
 Holes and fragments in the contour
    A hole or a second fragment adds a loop to the contour, and ``PERIMETER`` counts the step from
-   one loop to the next: 50.01 for a 9 × 9 square with a 3 × 3 hole, whose loops measure 32 and 16.
+   one loop to the next: 50.01 for a 9 × 9 square with a 3 × 3 hole, whose loops measure 32 and 13.66.
 
 Minimum enclosing circle
    Truncated chord midpoints make the circle too large on some ROIs: 14.17 for ROI 1 where the
@@ -1335,7 +1336,8 @@ The test suite checks the morphology features against five references:
   10\ :sup:`-3`: ``AREA_PIXELS_COUNT``, ``AREA_UM2``, ``CENTROID_X``, ``CENTROID_Y``,
   ``WEIGHTED_CENTROID_X``, ``WEIGHTED_CENTROID_Y``, the four ``BBOX_*`` codes, ``EXTENT``,
   ``ASPECT_RATIO``, ``MAJOR_AXIS_LENGTH``, ``MINOR_AXIS_LENGTH``, ``ELONGATION``, ``ECCENTRICITY``,
-  ``EULER_NUMBER`` and the sixteen ``EXTREMA_*`` codes.
+  ``EULER_NUMBER`` and the sixteen ``EXTREMA_*`` codes. The ``AREA_UM2`` check sets the pixel size
+  and resolution itself, so it covers the formula but not the program, where the value is 0.
 - **CellProfiler** 4.2.8: ``MASS_DISPLACEMENT`` and ``EDGE_MEAN_INTENSITY``, ``EDGE_MAX_INTENSITY``,
   ``EDGE_MIN_INTENSITY`` and ``EDGE_INTEGRATED_INTENSITY`` to a relative 10\ :sup:`-6`;
   ``NUM_NEIGHBORS`` and ``CLOSEST_NEIGHBOR1_DIST`` to an absolute 10\ :sup:`-9`.

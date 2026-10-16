@@ -245,9 +245,11 @@ Settings
    * - Whole-slide mode
      - ``--segDir`` equal to ``--intDir``
      - ``featurize_files(..., single_roi=True)``
-     - The ROI is the whole image. ``FRACT_DIM_BOXCOUNT`` is that of a filled rectangle of the
-       image's size (1.8703 for 200 × 200), and ``FRACT_DIM_PERIMETER`` is exactly 1, because the
-       contour is the image's four corners.
+     - The ROI is the whole image, but its bounding box is one pixel larger than the image in
+       each direction, and the canvas side :math:`S` is taken from that box. ``FRACT_DIM_BOXCOUNT``
+       is that of a filled rectangle of the image's size on that canvas: 1.8703 for 200 × 200,
+       and 1.8667 for 256 × 256, where a 256 × 256 mask of ones reads 2.
+       ``FRACT_DIM_PERIMETER`` is exactly 1, because the contour is the image's four corners.
    * - Memory limit
      - ``--ramLimit``
      - ``Nyxus(..., ram_limit=...)``, with ``featurize_files`` or ``featurize_directory``
@@ -285,7 +287,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example.
 
 .. include:: fractal_index.inc
@@ -319,8 +321,7 @@ its area; lower values mean a thin, sparse or ragged ROI.
    s = S, S/2, \ldots, 2 \right\}
 
 The value is 0 for a ROI of fewer than 2 pixels, and for a ROI whose bounding box has no side
-longer than 2 pixels, because only one box size remains. Any ROI with :math:`L = 2`, such as a
-2-pixel line or a 2 × 2 square, prints as ``-0``.
+longer than 2 pixels, because only one box size remains.
 
 **Relations.** A ROI that fills a square bounding box of side :math:`2^k` or :math:`2^k - 1`
 reads 2, and a one-pixel-wide straight line of length :math:`2^k` or :math:`2^k - 1` reads 1, both
@@ -414,13 +415,11 @@ Small ROIs
    contours of 3 to 7 pixels. A 3 × 3 square gives 2 and 1.
 
 Largest 32-bit intensity
-   In memory, on ROIs whose padded side :math:`S` exceeds 32, box counting marks each ROI pixel
-   with its intensity plus 1, computed in double precision and converted to a 32-bit unsigned
-   integer. For a pixel of intensity 4294967295 the sum is out of range and the result depends on
-   the platform: on x86-64 builds it is 0, and the pixel is not counted; on ARM builds it
-   saturates, and the pixel is counted. A 40 × 40 square with one separate pixel reads 1.4156;
-   with that pixel at intensity 4294967295 it reads 1.4951 on x86-64. Out of
-   core the pixel is counted, and the ROI reads 1.4156 at both intensities.
+   This is a known defect. In memory, on ROIs whose padded side :math:`S` exceeds 32, box
+   counting marks each ROI pixel with its intensity plus 1, converted to a 32-bit unsigned
+   integer. For a pixel of intensity 4294967295 that conversion is out of range, so whether the
+   pixel is counted depends on the compiler. Out of core the pixel is counted: a 40 × 40 square
+   with one separate pixel reads 1.4156 at any intensity.
 
 
 Validation

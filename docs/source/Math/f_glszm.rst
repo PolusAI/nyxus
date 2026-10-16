@@ -48,9 +48,9 @@ zone. :math:`\textbf{P}(i,j)` counts the zones of grey level :math:`i` and size 
   a step to the west, north-west, north or north-east is split into several zones (see
   :ref:`glszm-possible-issues`).
 - **Directions:** none. One matrix is built per ROI, and each feature has one value.
-- **Grey levels:** intensities are first binned into :math:`N_g` grey levels, as set by
+- **Grey levels:** intensities are first binned into :math:`N` grey levels, as set by
   ``--coarseGrayDepth`` (64 by default). A pixel of intensity :math:`x` gets level
-  :math:`\lfloor N_g\,x / x_{\max} \rfloor + 1`, capped at :math:`N_g`, where :math:`x_{\max}` is
+  :math:`\lfloor N x / x_{\max} \rfloor + 1`, capped at :math:`N`, where :math:`x_{\max}` is
   the ROI's largest intensity. In IBSI mode they are not binned: each integer intensity is a grey
   level.
 - **Background:** in IBSI mode, and with PyRadiomics-style binning (a negative
@@ -190,7 +190,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example.
 
 .. include:: glszm_index.inc
@@ -503,7 +503,7 @@ Zones are not fully 8-connected
 Background as grey level 1 with the default binning
    With a positive ``--coarseGrayDepth``, intensity 0 bins to level 1. The bounding-box pixels
    outside the mask then form zones of level 1, and :math:`N_p` is the size of the bounding box. ROI
-   pixels whose intensity is below :math:`x_{\max} / N_g` also get level 1 and can join those zones.
+   pixels whose intensity is below :math:`x_{\max} / N` also get level 1 and can join those zones.
    Take this 6 × 5 ROI, whose four corners lie outside the mask:
 
    .. math::
@@ -556,8 +556,9 @@ Validation
 The test suite checks every 2D GLSZM feature against MIRP on the four slices of the IBSI digital
 phantom in IBSI mode. Fifteen features agree to an absolute 10\ :sup:`-9`; zone entropy agrees to a
 relative 4 × 10\ :sup:`-3`, which allows for the approximate logarithm. The four-slice means are
-also checked against IBSI's published consensus values at a relative 10\ :sup:`-2`, the precision
-those values are published to. The phantom's zones are the same under Nyxus' scan and under
+also compared with IBSI's published consensus values at a relative 10\ :sup:`-2`, the precision
+those values are published to; that comparison is a consistency check, not one of the validations
+in the index. The phantom's zones are the same under Nyxus' scan and under
 8-connectivity, so these comparisons do not cover the split zones described above. The default
 mode is covered by regression tests only.
 

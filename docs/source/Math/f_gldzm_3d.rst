@@ -489,8 +489,8 @@ unchanged. The largest difference is 5.7 × 10\ :sup:`-15`, on zone distance ent
 values are bit-identical. The phantom is negative-controlled: 6- or 18-connected zones fail all 16
 checks, and a distance taken as the shortest of the six axis-aligned walks fails 9 of them. Grey
 level mean and zone distance mean have no independent implementation and are covered by
-regression tests. The default binning, and PyRadiomics-style binning at a bin count that merges
-levels, are covered by regression tests only.
+regression tests. The default binning is covered by regression tests only. PyRadiomics-style
+binning at a bin count that merges levels is not tested.
 
 
 References

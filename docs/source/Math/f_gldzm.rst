@@ -51,9 +51,9 @@ distance :math:`j`.
   box has distance 1, the next ring inwards distance 2, and so on. A pixel next to a pixel of grey
   level 0 has distance 2 (see :ref:`gldzm-possible-issues`).
 - **Directions:** none. One matrix is built per ROI, and each feature has one value.
-- **Grey levels:** intensities are first binned into :math:`N_g` grey levels, as set by
+- **Grey levels:** intensities are first binned into :math:`N` grey levels, as set by
   ``--coarseGrayDepth`` (64 by default). A pixel of intensity :math:`x` gets level
-  :math:`\lfloor N_g\,x / x_{\max} \rfloor + 1`, capped at :math:`N_g`, where :math:`x_{\max}` is
+  :math:`\lfloor N x / x_{\max} \rfloor + 1`, capped at :math:`N`, where :math:`x_{\max}` is
   the ROI's largest intensity. In IBSI mode they are not binned: each integer intensity is a grey
   level.
 - **Background:** in IBSI mode, pixels of intensity 0 belong to no zone, whether they lie outside
@@ -194,7 +194,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example.
 
 .. include:: gldzm_index.inc
@@ -551,7 +551,7 @@ Background as grey level 1 with the default binning
    With a positive ``--coarseGrayDepth``, intensity 0 bins to level 1. The bounding-box pixels
    outside the mask then form zones of level 1, and the bounding box contains no pixel of level 0,
    so the distance walks run to the edges of the bounding box and ignore the mask. ROI pixels whose
-   intensity is below :math:`x_{\max} / N_g` also get level 1 and can join those zones. On the
+   intensity is below :math:`x_{\max} / N` also get level 1 and can join those zones. On the
    worked example with three pixels of the bounding box left out of the mask, zone percentage is
    0.6818 instead of 0.5909 in IBSI mode, and low grey level zone emphasis 0.1351 instead of
    0.002038, the value with those pixels excluded. On the ROI with a hole above, the hole becomes a
@@ -582,10 +582,11 @@ Validation
 ----------
 
 The test suite checks the 16 IBSI features against MIRP on the four slices of the IBSI digital
-phantom in IBSI mode, to an absolute 10\ :sup:`-9`, and the four-slice means of 14 of them against
-IBSI's published consensus values at a relative 10\ :sup:`-2`, the precision those values are
-published to; ``GLDZM_SDLGLE`` and ``GLDZM_ZDV`` are checked against MIRP only. Grey level mean and zone distance mean have no independent implementation and are covered by
-regression tests.
+phantom in IBSI mode, to an absolute 10\ :sup:`-9`. The four-slice means of 14 of them are also
+compared with IBSI's published consensus values at a relative 10\ :sup:`-2`, the precision those
+values are published to; that comparison is a consistency check, not one of the validations in
+the index. Grey level mean and zone distance mean have no independent implementation and are
+covered by regression tests.
 Three of the phantom slices have pixels outside the mask inside the bounding box, and 6 of their
 pixels get a larger distance from Nyxus than from IBSI, but no zone's distance changes, so these
 comparisons do not cover the distance issue described above. In the default mode only the values

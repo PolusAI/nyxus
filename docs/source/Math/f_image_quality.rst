@@ -342,6 +342,11 @@ differently (see *Possible issues*). The steps are:
 
 The value is 0 when every :math:`M_b` is 0, or when fewer than two bins are occupied.
 
+This is a known defect: step 6 takes :math:`b + 2` from a table of :math:`\max(H, W)` entries
+but looks up every occupied bin in it, so a bin beyond that table reads memory outside it and
+the slope is undefined. That happens when the image is not normalized in step 2 and its
+coefficients are large, which is common for images of ordinary grey levels.
+
 **Possible issues.** The bin of a coefficient is set by its own magnitude, not by its frequency
 radius :math:`\sqrt{u^2 + v^2}`, so the fit does not describe how power falls with frequency. On
 the blur series under :ref:`imq-possible-issues` the slope is positive and rises with blur, where

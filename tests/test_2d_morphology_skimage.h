@@ -22,7 +22,6 @@ static const ref_vals_map<double> morphology_2d_skimage_shape2d_ref_vals{
 	// loose band.
 	{"CONVEX_HULL_AREA", 27.0},
 	{"SOLIDITY", 0.9629629629629629},
-	{"EROSIONS_2_VANISH", 1.0},
 	// regionprops.orientation is the major-axis angle from the ROW axis, CCW; Nyxus measures the
 	// same ellipse from the X axis, so NYXUS == 90 - degrees(skimage.orientation). The angle is
 	// invariant to the +1/12 pixel finite-size second-moment correction (it shifts mu20 and mu02
@@ -108,19 +107,15 @@ void test_2d_morphology_convex_hull_skimage()
 	assert_morphology_shape2d_skimage(fvals, Nyxus::Feature2D::SOLIDITY, "SOLIDITY", 100.0);
 }
 
-// ORIENTATION and EROSIONS_2_VANISH vetted vs scikit-image (tests/vetting/oracles/gen_morphology_skimage.py).
-// EROSIONS_2_VANISH: Nyxus erodes with the 4-connected 3x3 cross and reports one less than the number
-// of erosions it performs; skimage square(3) counts every erosion of an 8-connected square. Both give 1
-// on this fixture, so the test pins the value, not the structuring element or the counting convention.
-// Both read the table above rather than repeating the number inline -- a golden pinned in two places
-// drifts in one of them, and only the copy an assertion reads is under test.
-void test_2d_morphology_orientation_and_erosions_skimage()
+// ORIENTATION vetted vs scikit-image (tests/vetting/oracles/gen_morphology_skimage.py). It reads the
+// table above rather than repeating the number inline -- a golden pinned in two places drifts in one
+// of them, and only the copy an assertion reads is under test.
+void test_2d_morphology_orientation_skimage()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
 
 	assert_morphology_shape2d_skimage(fvals, Nyxus::Feature2D::ORIENTATION, "ORIENTATION");
-	assert_morphology_shape2d_skimage(fvals, Nyxus::Feature2D::EROSIONS_2_VANISH, "EROSIONS_2_VANISH");
 }
 
 // DIAMETER_EQUAL_AREA = sqrt(4*Area/pi), skimage's regionprops.equivalent_diameter_area. Same closed

@@ -73,8 +73,8 @@ version 3 arrays, with OME-NGFF metadata version 0.4 or 0.5. The metadata is rea
 * The physical pixel size comes from the level's ``scale`` transformation.
 * Arrays may be uncompressed or compressed with Blosc or zlib; Zstandard is read when the build
   includes it.
-* Big-endian arrays are refused. bioformats2raw before version 0.12 writes them; convert again with
-  a newer version.
+* Big-endian arrays are refused. bioformats2raw 0.9 writes them and 0.12 writes little-endian
+  arrays; convert again with 0.12 or newer.
 * The root of a bioformats2raw store is not an image group: open the numbered series inside it,
   for example ``store.zarr/0``, under a name that ends in ``.zarr``.
 

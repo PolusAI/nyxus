@@ -64,7 +64,7 @@ added after a cross-container run over real converter output.
 | Store | What is unusual about it | Expected |
 |-------|--------------------------|----------|
 | `dim3_nested.ome.zarr` | `dimension_separator: "/"` (chunk `(1,0,0)` is the file `0/1/0/0`) plus a blosc/lz4 codec. Nesting is the NGFF 0.4 default and what the converter emits; `--no-nested` downgrades the declared version to 0.1. | reads identically to `dim3_zyx.ome.zarr` |
-| `bigendian.ome.zarr` | `dtype: ">u2"`, payload genuinely byte-swapped. `bioformats2raw` through 0.9.x writes big-endian and has no switch to change it. z5 maps only the `<` and `|` spellings, so the array cannot be opened. | refused, and the message names big-endianness and the remedy |
+| `bigendian.ome.zarr` | `dtype: ">u2"`, payload genuinely byte-swapped. `bioformats2raw` 0.9 writes big-endian and has no switch to change it; 0.12 writes little-endian. z5 maps only the `<` and `|` spellings, so the array cannot be opened. | refused, and the message names big-endianness and the remedy |
 | `b2r_layout.ome.zarr` | `bioformats2raw` layout: the root carries only `{"bioformats2raw.layout": 3}` and the image is the child group `0`. The data is fine; the path is one level too high. | refused, and the message names the layout and the series group |
 | `b2r_layout_v3.ome.zarr` | the same, in zarr v3 / NGFF 0.5, where the key sits under `"ome"`. | as above |
 

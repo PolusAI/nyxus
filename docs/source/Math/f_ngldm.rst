@@ -186,7 +186,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example.
 
 .. include:: ngldm_index.inc
@@ -582,8 +582,9 @@ Validation
 The test suite checks 17 of the 19 2D NGLDM features against MIRP on the IBSI digital phantom, in
 IBSI mode, with neighbourhood distance 1 and :math:`\alpha = 0`. Nyxus matches MIRP to a relative
 3 × 10\ :sup:`-16`, asserted at 10\ :sup:`-9`. The four-slice means of the same 17 features are
-also checked against IBSI's published consensus values at a relative 10\ :sup:`-2`, the precision
-those values are published to. Grey level mean and dependence count mean have no
+also compared with IBSI's published consensus values at a relative 10\ :sup:`-2`, the precision
+those values are published to; that comparison is a consistency check, not one of the validations
+in the index. Grey level mean and dependence count mean have no
 IBSI or MIRP counterpart and are covered by regression tests only, as is the default grey-level
 conversion. The validation of each feature is named in the :ref:`index <ngldm-index>`.
 

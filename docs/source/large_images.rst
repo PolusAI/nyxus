@@ -220,7 +220,7 @@ different order. On a 340 x 340 image, a 300 x 300 square with a 100 x 100 hole 
        median ROI, and the weighted moments of one ROI change as it moves in the image. A
        bounding box that starts at pixel (0, 0) is necessary for the in-memory values but not
        sufficient: a ROI with holes or fragments still differs, and the radial distribution
-       can differ through the contour order (one or two of 15 random ellipses at the origin).
+       can differ through the contour order (2 of 15 random ellipses at the origin).
    * - ``EDGE_*``, ``DIAMETER_MIN_ENCLOSING_CIRCLE``
      - Differ where the out-of-core contour holds other pixels than the in-memory one: the
        single loop leaves out holes and fragments, and on some ROIs either tracer skips part of

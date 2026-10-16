@@ -89,7 +89,7 @@ with their intensities; a dot is a voxel outside the mask:
    \cdot & 4 & 5 & 3\\
    \cdot & \cdot & \cdot & \cdot \end{bmatrix}
 
-The voxels outside the mask hold intensities from 0 to 5 and are not used, so ``3MIN`` is 2. The
+The voxels outside the mask hold intensities from 0 to 4 and are not used, so ``3MIN`` is 2. The
 ROI holds one 2, six 3s, six 4s, five 5s and four 6s, so :math:`N_v = 22`, :math:`\sum x = 93`
 and :math:`\mu = 4.2273`. The squared deviations sum to 29.864, so ``3VARIANCE`` is
 :math:`29.864/21 = 1.4221`. :math:`N_v` is even, so the median is the mean of the 11th and 12th
@@ -220,7 +220,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example.
 
 .. include:: intensity_3d_index.inc

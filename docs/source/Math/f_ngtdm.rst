@@ -188,7 +188,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example.
 
 .. include:: ngtdm_index.inc
@@ -368,8 +368,9 @@ Validation
 The test suite checks every 2D NGTDM feature against MIRP on the four slices of the IBSI digital
 phantom in IBSI mode, on each slice and on their mean. All five agree to an absolute
 10\ :sup:`-9`; the largest difference measured is 3.6 × 10\ :sup:`-15`. The four-slice means are
-also checked against IBSI's published consensus values at a relative 10\ :sup:`-2`, the precision
-those values are published to. The default mode is
+also compared with IBSI's published consensus values at a relative 10\ :sup:`-2`, the precision
+those values are published to; that comparison is a consistency check, not one of the validations
+in the index. The default mode is
 covered by regression tests only. The values quoted under Possible issues are pinned by the
 worked-example script, except the run times, which are measured only. None is compared with a
 reference tool.

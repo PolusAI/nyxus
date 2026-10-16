@@ -58,7 +58,9 @@ assert [round(w, 2) for w in wavelengths] == [1.57, 0.39, 0.20, 0.10], wavelengt
 assert round(0.8 * wavelengths[0], 2) == 1.26 and round(0.8 * wavelengths[-1], 2) == 0.08
 # The baseline wavelength is 62.8 pixels; settings are read in single precision
 assert round(2 * math.pi / 0.1, 1) == 62.8
-assert f"{float(np.float32(0.1)):.9f}" == "0.100000001"
+stored = Nyxus(["GABOR"]).get_params("gabor_gamma", "gabor_freqs")
+assert stored["gabor_gamma"] == float(np.float32(0.1)), stored
+assert stored["gabor_freqs"] == [float(np.float32(f)) for f in (4, 16, 32, 64)], stored
 
 # IBSI mode has no effect
 check(columns(Nyxus(["GABOR"], ibsi=True).featurize(img, mask)), [25 / 24, 25 / 24, 25 / 24, 23 / 24], "ibsi")

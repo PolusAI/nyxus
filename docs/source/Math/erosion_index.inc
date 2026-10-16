@@ -13,7 +13,7 @@
    * - :ref:`EROSIONS_2_VANISH <feature-erosions-2-vanish>`
      - Erosions to vanish
      - —
-     - scikit-image
+     - regression
      - 2
    * - :ref:`EROSIONS_2_VANISH_COMPLEMENT <feature-erosions-2-vanish-complement>`
      - Erosions to vanish, complement (not computed)

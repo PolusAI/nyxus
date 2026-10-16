@@ -169,7 +169,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example.
 
 .. include:: erosion_index.inc
@@ -304,11 +304,11 @@ Constant ROIs on the GPU
 Validation
 ----------
 
-The test suite checks ``EROSIONS_2_VANISH`` against scikit-image on its 26-pixel test shape, in a
-7 × 6 box. The reference erodes with a 3 × 3 square until nothing is left and counts every
-erosion; Nyxus erodes with a cross and counts one fewer. Both give 1 on that shape, so the test
-pins the value, but it does not confirm the structuring element or the counting convention.
-``EROSIONS_2_VANISH_COMPLEMENT`` is regression-only, and its regression value is 0. Out-of-core
+``EROSIONS_2_VANISH`` is regression-only. On the test suite's 26-pixel shape, in a 7 × 6 box,
+scikit-image also gives 1 when it erodes with a 3 × 3 square and counts every erosion, but Nyxus
+erodes with a cross and counts one fewer, so that agreement confirms neither the structuring
+element nor the counting convention. ``EROSIONS_2_VANISH_COMPLEMENT`` is regression-only, and its
+regression value is 0. Out-of-core
 results are checked against in-memory results of the same build. The Nyxus values quoted on this
 page, including the whole-slide values, are pinned by the worked-example script; the textbook
 counts and the per-iteration pixel counts quoted beside them are not.
