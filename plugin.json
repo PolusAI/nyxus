@@ -15,14 +15,14 @@
       "description": "Labeled image collection",
       "type": "collection",
       "options": null,
-      "required": false
+      "required": true
     },
     {
       "name": "intDir",
       "description": "Intensity image collection",
       "type": "collection",
       "options": null,
-      "required": false
+      "required": true
     },
     {
       "name": "filePattern",
@@ -99,24 +99,6 @@
               "description": "ALL_NGTDM",
               "enum": [
                 "*ALL_NGTDM*"
-              ]
-            },
-            {
-              "description": "ALL_BUT_GABOR",
-              "enum": [
-                "*ALL_BUT_GABOR*"
-              ]
-            },
-            {
-              "description": "ALL_BUT_GLCM",
-              "enum": [
-                "*ALL_BUT_GLCM*"
-              ]
-            },
-            {
-              "description": "ALL_EASY = ALL except GABOR,GLCM, and 2D moments",
-              "enum": [
-                "*ALL_EASY*"
               ]
             },
             {
@@ -327,12 +309,6 @@
               ]
             },
             {
-              "description": "EQUIVALENT_DIAMETER",
-              "enum": [
-                "EQUIVALENT_DIAMETER"
-              ]
-            },
-            {
               "description": "CONVEX_HULL_AREA",
               "enum": [
                 "CONVEX_HULL_AREA"
@@ -354,36 +330,6 @@
               "description": "CIRCULARITY",
               "enum": [
                 "CIRCULARITY"
-              ]
-            },
-            {
-              "description": "EDGE_INTEGRATEDINTENSITY",
-              "enum": [
-                "EDGE_INTEGRATEDINTENSITY"
-              ]
-            },
-            {
-              "description": "EDGE_MAXINTENSITY",
-              "enum": [
-                "EDGE_MAXINTENSITY"
-              ]
-            },
-            {
-              "description": "EDGE_MEANINTENSITY",
-              "enum": [
-                "EDGE_MEANINTENSITY"
-              ]
-            },
-            {
-              "description": "EDGE_MININTENSITY",
-              "enum": [
-                "EDGE_MININTENSITY"
-              ]
-            },
-            {
-              "description": "EDGE_STDDEVINTENSITY",
-              "enum": [
-                "EDGE_STDDEVINTENSITY"
               ]
             },
             {
@@ -480,18 +426,6 @@
               "description": "EXTREMA_P8_Y",
               "enum": [
                 "EXTREMA_P8_Y"
-              ]
-            },
-            {
-              "description": "MIN_FERET_DIAMETER",
-              "enum": [
-                "MIN_FERET_DIAMETER"
-              ]
-            },
-            {
-              "description": "MAX_FERET_DIAMETER",
-              "enum": [
-                "MAX_FERET_DIAMETER"
               ]
             },
             {
@@ -666,84 +600,6 @@
               "description": "THICKNESS",
               "enum": [
                 "THICKNESS"
-              ]
-            },
-            {
-              "description": "TEXTURE_ANGULAR2NDMOMENT",
-              "enum": [
-                "TEXTURE_ANGULAR2NDMOMENT"
-              ]
-            },
-            {
-              "description": "TEXTURE_CONTRAST",
-              "enum": [
-                "TEXTURE_CONTRAST"
-              ]
-            },
-            {
-              "description": "TEXTURE_CORRELATION",
-              "enum": [
-                "TEXTURE_CORRELATION"
-              ]
-            },
-            {
-              "description": "TEXTURE_VARIANCE",
-              "enum": [
-                "TEXTURE_VARIANCE"
-              ]
-            },
-            {
-              "description": "TEXTURE_INVERSEDIFFERENCEMOMENT",
-              "enum": [
-                "TEXTURE_INVERSEDIFFERENCEMOMENT"
-              ]
-            },
-            {
-              "description": "TEXTURE_SUMAVERAGE",
-              "enum": [
-                "TEXTURE_SUMAVERAGE"
-              ]
-            },
-            {
-              "description": "TEXTURE_SUMVARIANCE",
-              "enum": [
-                "TEXTURE_SUMVARIANCE"
-              ]
-            },
-            {
-              "description": "TEXTURE_SUMENTROPY",
-              "enum": [
-                "\tTEXTURE_SUMENTROPY"
-              ]
-            },
-            {
-              "description": "TEXTURE_ENTROPY",
-              "enum": [
-                "TEXTURE_ENTROPY"
-              ]
-            },
-            {
-              "description": "TEXTURE_DIFFERENCEVARIANCE",
-              "enum": [
-                "TEXTURE_DIFFERENCEVARIANCE"
-              ]
-            },
-            {
-              "description": "TEXTURE_DIFFERENCEENTROPY",
-              "enum": [
-                "TEXTURE_DIFFERENCEENTROPY"
-              ]
-            },
-            {
-              "description": "TEXTURE_INFOMEAS1",
-              "enum": [
-                "TEXTURE_INFOMEAS1"
-              ]
-            },
-            {
-              "description": "TEXTURE_INFOMEAS2",
-              "enum": [
-                "TEXTURE_INFOMEAS2"
               ]
             },
             {
@@ -1105,12 +961,6 @@
               "enum": [
                 "GABOR"
               ]
-            },
-            {
-              "description": "EROSION_PIXELS",
-              "enum": [
-                "EROSION_PIXELS"
-              ]
             }
           ],
           "default": "ALL_INTENSITY",
@@ -1124,13 +974,13 @@
     },
     {
       "name": "outputType",
-      "description": "outputType : singlecsv for saving values in one csv file and separate csv to save values for each image in separate csv file, arrow and parquet for saving in Apache Arrow and Parquet file formats respectively",
+      "description": "outputType : singlecsv for saving values in one csv file, separatecsv to save values for each image in a separate csv file, arrowipc and parquet for saving in Apache Arrow IPC and Parquet file formats respectively",
       "type": "enum",
       "options": {
         "values": [
           "singlecsv",
           "separatecsv",
-          "arrow", 
+          "arrowipc",
           "parquet"
         ]
       },
@@ -1191,7 +1041,7 @@
     {
       "key": "inputs.outputType",
       "title": "Output file type",
-      "description": "Save csv file separately for each image or one csv file for all images. Alternatively, output can be written as arrow or parquet file"
+      "description": "Save csv file separately for each image or one csv file for all images. Alternatively, output can be written as an Arrow IPC or Parquet file"
     },
     {
       "key": "inputs.embeddedpixelsize",

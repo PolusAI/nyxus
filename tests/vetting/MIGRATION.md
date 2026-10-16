@@ -1,14 +1,17 @@
 # Test-Suite Reorganization — Migration Map & Gaps Register
 
-**Status:** Planning document (Phase 1 of 3). **No test code is changed by this document.**
-It maps the *current* test suite onto the taxonomy in [`SPEC.md`](SPEC.md) and flags every place
-we are missing information or a decision. Companion machine-readable file:
-[`oracle_coverage.csv`](oracle_coverage.csv) (one row per feature, 758 rows).
+**Status:** Historical record; all three phases are complete. The rollout finished with Wave 27
+(§5.36), and Waves 28-29 (§5.37-§5.38) followed it. Sections 1-5.7 are the map and gaps register
+as first drawn, when [`oracle_coverage.csv`](oracle_coverage.csv) held one row per feature (758
+rows); the registry is now one row per assertion (SPEC §3), and its current figures are in
+[`coverage_report.md`](coverage_report.md) and [`report_output.md`](report_output.md). File names
+throughout are the names of their time: this document is a wave-by-wave narrative and is not
+rewritten when a later wave renames a file (§5.37).
 
-**Three-phase plan (agreed):**
-1. **This doc + `oracle_coverage.csv`** — the "what → what" map + gaps register. *(you are here)*
-2. **Oracle-choice discussion** — resolve the flagged gaps (pick mainstream oracles; triage suspected bugs). Decisions recorded back into this doc and the CSV.
-3. **Code reorg** — moves/renames/splits + scaffold, delivered in phased waves (scaffold → GLCM template → family-by-family), each keeping the gtest + pytest suites green.
+**Three-phase plan (agreed, and executed):**
+1. **This doc + `oracle_coverage.csv`** — the "what → what" map + gaps register.
+2. **Oracle-choice discussion** — resolve the flagged gaps (pick mainstream oracles; triage suspected bugs). Decisions recorded back into this doc and the CSV (§5.8, §6).
+3. **Code reorg** — moves/renames/splits + scaffold, delivered in phased waves (scaffold → GLCM template → family-by-family), each keeping the gtest + pytest suites green (§5.9-§5.39).
 
 ---
 
@@ -1068,10 +1071,22 @@ byte-identically.
 
 ---
 
-## 7. Next steps
+## 7. What remains open
 
-- **Phase 2 (discussion):** walk §5 family-by-family, pick oracles for `research-*`, triage the 20
-  `suspected-bug` rows, and settle §6. Record decisions in `oracle_coverage.csv` (`oracle`, `status`,
-  `notes`) and here.
-- **Phase 3 (code):** scaffold (`config_recipes.md`, `check_coverage.py`, `matrix/`, `oracles/gen_*`),
-  then GLCM as the worked template, then family-by-family per §3, each wave green.
+Both phases this section once planned are done: §6 is settled, and the scaffold
+(`config_recipes.md`, `check_coverage.py`, `matrix/`, `oracles/gen_*`), the GLCM template and the
+family-by-family waves are §5.9-§5.39. What the reorganization deliberately left open:
+
+- `test_nyxus.py` keeps its name until its API assertions are split by family into `_mechanics`
+  files; it is the one entry in `check_test_names.py`'s `GRANDFATHERED` set (§5.35).
+- Tests the registry does not reference, or that never run, are tracked in
+  [`not_covered.md`](not_covered.md).
+
+The three items §5.38 left "deliberately still open" are closed in the tree:
+`test_3d_gldm_lgle_regression()` asserts `GLDM_LGLE` / `"3GLDM_LGLE"`, the 2D first-order
+PyRadiomics `ROBUST_MEAN_ABSOLUTE_DEVIATION` assertion reads its golden and tolerance from the
+file's tables, and `assert_morphology_feature_cellprofiler()` compares against
+`morphology_2d_cellprofiler_ref_vals` rather than a regression snapshot.
+
+New vetting work is recorded in `oracle_coverage.csv` and in the family's vetting report under
+`audit/`, not appended here.

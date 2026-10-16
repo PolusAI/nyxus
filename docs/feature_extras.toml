@@ -1,0 +1,755 @@
+# Per-feature facts for the family definition pages that are not in the code: a short name, the
+# IBSI identifier, and the value on the page's worked example. docs/tools/gen_feature_reference.py
+# renders them, with each feature's validation from tests/vetting/oracle_coverage.csv, into the
+# page's feature index; the page's example script asserts every `example` value.
+#
+# Codes are the family's base codes; the _AVE codes are described with the output columns.
+
+[glcm]
+GLCM_ACOR = { name = "Autocorrelation", ibsi = "QWB0", example = 6.85 }
+GLCM_ASM = { name = "Angular second moment", ibsi = "8ZQL", example = 0.08 }
+GLCM_CLUPROM = { name = "Cluster prominence", ibsi = "AE86", example = 58.1 }
+GLCM_CLUSHADE = { name = "Cluster shade", ibsi = "7NFM", example = 4.8 }
+GLCM_CLUTEND = { name = "Cluster tendency", ibsi = "DG8W", example = 5.3 }
+GLCM_CONTRAST = { name = "Contrast", ibsi = "ACUI", example = 2.9 }
+GLCM_CORRELATION = { name = "Correlation", ibsi = "NI2N", example = 0.2927 }
+GLCM_DIFAVE = { name = "Difference average", ibsi = "TF7R", example = 1.4 }
+GLCM_DIFENTRO = { name = "Difference entropy", ibsi = "NTRS", example = 1.923 }
+GLCM_DIFVAR = { name = "Difference variance", ibsi = "D3YU", example = 0.94 }
+GLCM_DIS = { name = "Dissimilarity", ibsi = "8S9J", example = 1.4 }
+GLCM_ENERGY = { name = "Energy (same as angular second moment)", ibsi = "", example = 0.08 }
+GLCM_ENTROPY = { name = "Entropy (same as joint entropy)", ibsi = "", example = 3.805 }
+GLCM_HOM1 = { name = "Homogeneity 1 (same as inverse difference)", ibsi = "", example = 0.5125 }
+GLCM_HOM2 = { name = "Homogeneity 2 (same as inverse difference moment)", ibsi = "", example = 0.45 }
+GLCM_ID = { name = "Inverse difference", ibsi = "IB1Z", example = 0.5125 }
+GLCM_IDM = { name = "Inverse difference moment", ibsi = "WF0Z", example = 0.45 }
+GLCM_IDMN = { name = "Inverse difference moment normalized", ibsi = "1QCO", example = 0.9055 }
+GLCM_IDN = { name = "Inverse difference normalized", ibsi = "NDRX", example = 0.7997 }
+GLCM_INFOMEAS1 = { name = "Information measure of correlation 1", ibsi = "R8DG", example = -0.2276 }
+GLCM_INFOMEAS2 = { name = "Information measure of correlation 2", ibsi = "JN9H", example = 0.7897 }
+GLCM_IV = { name = "Inverse variance", ibsi = "E8JP", example = 0.4417 }
+GLCM_JAVE = { name = "Joint average", ibsi = "60VM", example = 2.5 }
+GLCM_JE = { name = "Joint entropy", ibsi = "TU9B", example = 3.805 }
+GLCM_JMAX = { name = "Joint maximum", ibsi = "GYBY", example = 0.15 }
+GLCM_JVAR = { name = "Joint variance", ibsi = "UR99", example = 2.05 }
+GLCM_SUMAVERAGE = { name = "Sum average", ibsi = "ZGXS", example = 5.0 }
+GLCM_SUMENTROPY = { name = "Sum entropy", ibsi = "P6QZ", example = 2.843 }
+GLCM_SUMVARIANCE = { name = "Sum variance", ibsi = "OEEB", example = 5.3 }
+GLCM_VARIANCE = { name = "Variance", ibsi = "", example = 2.05 }
+
+[glrlm]
+GLRLM_GLN = { name = "Grey level non-uniformity", ibsi = "R5YN", example = 4.059 }
+GLRLM_GLNN = { name = "Grey level non-uniformity normalized", ibsi = "OVBL", example = 0.2388 }
+GLRLM_GLV = { name = "Grey level variance", ibsi = "8CE5", example = 1.529 }
+GLRLM_HGLRE = { name = "High grey level run emphasis", ibsi = "G3QZ", example = 10.53 }
+GLRLM_LGLRE = { name = "Low grey level run emphasis", ibsi = "V3SW", example = 0.2301 }
+GLRLM_LRE = { name = "Long run emphasis", ibsi = "W4KF", example = 2.765 }
+GLRLM_LRHGLE = { name = "Long run high grey level emphasis", ibsi = "3KUM", example = 21.53 }
+GLRLM_LRLGLE = { name = "Long run low grey level emphasis", ibsi = "IVPO", example = 0.9013 }
+GLRLM_RE = { name = "Run entropy", ibsi = "HJ9O", example = 3.058 }
+GLRLM_RLN = { name = "Run length non-uniformity", ibsi = "W92Y", example = 9.235 }
+GLRLM_RLNN = { name = "Run length non-uniformity normalized", ibsi = "IC23", example = 0.5433 }
+GLRLM_RP = { name = "Run percentage", ibsi = "9ZK5", example = 0.68 }
+GLRLM_RV = { name = "Run variance", ibsi = "SXLW", example = 0.6021 }
+GLRLM_SRE = { name = "Short run emphasis", ibsi = "22OV", example = 0.7549 }
+GLRLM_SRHGLE = { name = "Short run high grey level emphasis", ibsi = "GD3A", example = 8.694 }
+GLRLM_SRLGLE = { name = "Short run low grey level emphasis", ibsi = "HTZT", example = 0.1513 }
+
+[glszm]
+GLSZM_GLN = { name = "Grey level non-uniformity", ibsi = "JNSA", example = 3.4 }
+GLSZM_GLNN = { name = "Grey level non-uniformity normalized", ibsi = "Y1RO", example = 0.2267 }
+GLSZM_GLV = { name = "Grey level variance", ibsi = "BYLV", example = 2.089 }
+GLSZM_HGLZE = { name = "High grey level zone emphasis", ibsi = "5GN9", example = 9.2 }
+GLSZM_LAE = { name = "Large area emphasis", ibsi = "48P8", example = 4.333 }
+GLSZM_LAHGLE = { name = "Large area high grey level emphasis", ibsi = "J17V", example = 21.73 }
+GLSZM_LALGLE = { name = "Large area low grey level emphasis", ibsi = "YH51", example = 2.853 }
+GLSZM_LGLZE = { name = "Low grey level zone emphasis", ibsi = "XMSY", example = 0.3677 }
+GLSZM_SAE = { name = "Small area emphasis", ibsi = "5QRC", example = 0.6852 }
+GLSZM_SAHGLE = { name = "Small area high grey level emphasis", ibsi = "HW1V", example = 6.585 }
+GLSZM_SALGLE = { name = "Small area low grey level emphasis", ibsi = "5RAI", example = 0.2648 }
+GLSZM_SZN = { name = "Size zone non-uniformity", ibsi = "4JP3", example = 7.133 }
+GLSZM_SZNN = { name = "Size zone non-uniformity normalized", ibsi = "VB3A", example = 0.4756 }
+GLSZM_ZE = { name = "Zone entropy", ibsi = "GU8N", example = 3.054 }
+GLSZM_ZP = { name = "Zone percentage", ibsi = "P30P", example = 0.6 }
+GLSZM_ZV = { name = "Zone variance", ibsi = "3NSA", example = 1.556 }
+
+[gldm]
+GLDM_DE = { name = "Dependence entropy", ibsi = "", example = 3.380 }
+GLDM_DN = { name = "Dependence non-uniformity", ibsi = "", example = 7.96 }
+GLDM_DNN = { name = "Dependence non-uniformity normalized", ibsi = "", example = 0.3184 }
+GLDM_DV = { name = "Dependence variance", ibsi = "", example = 0.72 }
+GLDM_GLN = { name = "Grey level non-uniformity", ibsi = "", example = 6.04 }
+GLDM_GLV = { name = "Grey level variance", ibsi = "", example = 1.44 }
+GLDM_HGLE = { name = "High grey level emphasis", ibsi = "", example = 9.28 }
+GLDM_LDE = { name = "Large dependence emphasis", ibsi = "", example = 5.56 }
+GLDM_LDHGLE = { name = "Large dependence high grey level emphasis", ibsi = "", example = 35.12 }
+GLDM_LDLGLE = { name = "Large dependence low grey level emphasis", ibsi = "", example = 2.143 }
+GLDM_LGLE = { name = "Low grey level emphasis", ibsi = "", example = 0.2723 }
+GLDM_SDE = { name = "Small dependence emphasis", ibsi = "", example = 0.3725 }
+GLDM_SDHGLE = { name = "Small dependence high grey level emphasis", ibsi = "", example = 5.155 }
+GLDM_SDLGLE = { name = "Small dependence low grey level emphasis", ibsi = "", example = 0.05914 }
+
+[gldzm]
+GLDZM_GLM = { name = "Grey level mean", ibsi = "", example = 2.667 }
+GLDZM_GLNU = { name = "Grey level non-uniformity", ibsi = "VFT7", example = 3.4 }
+GLDZM_GLNUN = { name = "Grey level non-uniformity normalized", ibsi = "7HP3", example = 0.2267 }
+GLDZM_GLV = { name = "Grey level variance", ibsi = "QK93", example = 2.089 }
+GLDZM_HGLZE = { name = "High grey level zone emphasis", ibsi = "K26C", example = 9.2 }
+GLDZM_LDE = { name = "Large distance emphasis", ibsi = "MB4I", example = 1.4 }
+GLDZM_LDHGLE = { name = "Large distance high grey level emphasis", ibsi = "KLTH", example = 14.4 }
+GLDZM_LDLGLE = { name = "Large distance low grey level emphasis", ibsi = "A7WM", example = 0.5757 }
+GLDZM_LGLZE = { name = "Low grey level zone emphasis", ibsi = "S1RA", example = 0.3677 }
+GLDZM_SDE = { name = "Small distance emphasis", ibsi = "0GBI", example = 0.9 }
+GLDZM_SDHGLE = { name = "Small distance high grey level emphasis", ibsi = "DKNJ", example = 7.9 }
+GLDZM_SDLGLE = { name = "Small distance low grey level emphasis", ibsi = "RUVG", example = 0.3157 }
+GLDZM_ZDE = { name = "Zone distance entropy", ibsi = "GBDU", example = 2.606 }
+GLDZM_ZDM = { name = "Zone distance mean", ibsi = "", example = 1.133 }
+GLDZM_ZDNU = { name = "Zone distance non-uniformity", ibsi = "V294", example = 11.53 }
+GLDZM_ZDNUN = { name = "Zone distance non-uniformity normalized", ibsi = "IATH", example = 0.7689 }
+GLDZM_ZDV = { name = "Zone distance variance", ibsi = "7WT1", example = 0.1156 }
+GLDZM_ZP = { name = "Zone percentage", ibsi = "VIWW", example = 0.6 }
+
+
+[ngldm]
+NGLDM_DCENE = { name = "Dependence count energy", ibsi = "CAS9", example = 0.1072 }
+NGLDM_DCENT = { name = "Dependence count entropy", ibsi = "FCBV", example = 3.383 }
+NGLDM_DCM = { name = "Dependence count mean", ibsi = "", example = 2.2 }
+NGLDM_DCNU = { name = "Dependence count non-uniformity", ibsi = "Z87G", example = 7.96 }
+NGLDM_DCNUN = { name = "Dependence count non-uniformity normalized", ibsi = "OKJI", example = 0.3184 }
+NGLDM_DCP = { name = "Dependence count percentage", ibsi = "6XV8", example = 1.0 }
+NGLDM_DCV = { name = "Dependence count variance", ibsi = "DNX2", example = 0.72 }
+NGLDM_GLM = { name = "Grey level mean", ibsi = "", example = 2.8 }
+NGLDM_GLNU = { name = "Grey level non-uniformity", ibsi = "FP8K", example = 6.04 }
+NGLDM_GLNUN = { name = "Grey level non-uniformity normalized", ibsi = "5SPA", example = 0.2416 }
+NGLDM_GLV = { name = "Grey level variance", ibsi = "1PFV", example = 1.44 }
+NGLDM_HDE = { name = "High dependence emphasis", ibsi = "IMOQ", example = 5.56 }
+NGLDM_HDHGLE = { name = "High dependence high grey level emphasis", ibsi = "9QMG", example = 35.12 }
+NGLDM_HDLGLE = { name = "High dependence low grey level emphasis", ibsi = "NBZI", example = 2.143 }
+NGLDM_HGLCE = { name = "High grey level count emphasis", ibsi = "OAE7", example = 9.28 }
+NGLDM_LDE = { name = "Low dependence emphasis", ibsi = "SODN", example = 0.3725 }
+NGLDM_LDHGLE = { name = "Low dependence high grey level emphasis", ibsi = "JA6D", example = 5.155 }
+NGLDM_LDLGLE = { name = "Low dependence low grey level emphasis", ibsi = "EQ3F", example = 0.05914 }
+NGLDM_LGLCE = { name = "Low grey level count emphasis", ibsi = "TL9H", example = 0.2723 }
+
+[ngtdm]
+NGTDM_BUSYNESS = { name = "Busyness", ibsi = "NQ30", example = 0.636 }
+NGTDM_COARSENESS = { name = "Coarseness", ibsi = "QCDE", example = 0.2006 }
+NGTDM_COMPLEXITY = { name = "Complexity", ibsi = "HDEZ", example = 8.251 }
+NGTDM_CONTRAST = { name = "Contrast", ibsi = "65HE", example = 0.146 }
+NGTDM_STRENGTH = { name = "Strength", ibsi = "1X9X", example = 1.373 }
+
+[intensity]
+COV = { name = "Coefficient of variation", ibsi = "7TET", example = 0.4374 }
+COVERED_IMAGE_INTENSITY_RANGE = { name = "Covered image intensity range", ibsi = "", example = 0.0 }
+ENERGY = { name = "Energy", ibsi = "N8CA", example = 232.0 }
+ENTROPY = { name = "Entropy", ibsi = "", example = 2.182 }
+EXCESS_KURTOSIS = { name = "Excess kurtosis", ibsi = "IPH6", example = -0.6667 }
+HYPERFLATNESS = { name = "Hyperflatness", ibsi = "", example = 5.769 }
+HYPERSKEWNESS = { name = "Hyperskewness", ibsi = "", example = 1.227 }
+INTEGRATED_INTENSITY = { name = "Integrated intensity", ibsi = "", example = 70.0 }
+INTERQUARTILE_RANGE = { name = "Interquartile range", ibsi = "SALO", example = 1.024 }
+KURTOSIS = { name = "Kurtosis", ibsi = "", example = 2.333 }
+MAX = { name = "Maximum", ibsi = "84IY", example = 5.0 }
+MEAN = { name = "Mean", ibsi = "Q4LE", example = 2.8 }
+MEAN_ABSOLUTE_DEVIATION = { name = "Mean absolute deviation", ibsi = "4FUA", example = 0.96 }
+MEDIAN = { name = "Median", ibsi = "Y12H", example = 3.0 }
+MEDIAN_ABSOLUTE_DEVIATION = { name = "Median absolute deviation", ibsi = "N72L", example = 0.92 }
+MIN = { name = "Minimum", ibsi = "1GSF", example = 1.0 }
+MODE = { name = "Mode", ibsi = "", example = 3.0 }
+P01 = { name = "1st percentile", ibsi = "", example = 1.003 }
+P10 = { name = "10th percentile", ibsi = "QG58", example = 1.025 }
+P25 = { name = "25th percentile", ibsi = "", example = 2.015 }
+P75 = { name = "75th percentile", ibsi = "", example = 3.039 }
+P90 = { name = "90th percentile", ibsi = "8DWT", example = 4.967 }
+P99 = { name = "99th percentile", ibsi = "", example = 4.997 }
+QCOD = { name = "Quartile coefficient of dispersion", ibsi = "9S40", example = 0.2026 }
+RANGE = { name = "Range", ibsi = "2OJQ", example = 4.0 }
+ROBUST_MEAN = { name = "Robust mean", ibsi = "", example = 2.833 }
+ROBUST_MEAN_ABSOLUTE_DEVIATION = { name = "Robust mean absolute deviation", ibsi = "1128", example = 0.5556 }
+ROOT_MEAN_SQUARED = { name = "Root mean square", ibsi = "5ZWQ", example = 3.046 }
+SKEWNESS = { name = "Skewness", ibsi = "KE2A", example = 0.25 }
+STANDARD_DEVIATION = { name = "Standard deviation", ibsi = "", example = 1.225 }
+STANDARD_DEVIATION_BIASED = { name = "Biased standard deviation", ibsi = "", example = 1.2 }
+STANDARD_ERROR = { name = "Standard error", ibsi = "", example = 0.2449 }
+VARIANCE = { name = "Variance", ibsi = "", example = 1.5 }
+VARIANCE_BIASED = { name = "Biased variance", ibsi = "ECT3", example = 1.44 }
+UNIFORMITY = { name = "Uniformity", ibsi = "", example = 0.2416 }
+UNIFORMITY_PIU = { name = "Percent image uniformity", ibsi = "", example = 33.33 }
+HISTOGRAM = { name = "Histogram", ibsi = "", example = 4.0 }
+
+[shape_moments]
+CENTRAL_MOMENT_00 = { name = "Central moment (0, 0)", ibsi = "", example = 40.0 }
+CENTRAL_MOMENT_01 = { name = "Central moment (0, 1)", ibsi = "", example = 0.0 }
+CENTRAL_MOMENT_02 = { name = "Central moment (0, 2)", ibsi = "", example = 112.8 }
+CENTRAL_MOMENT_03 = { name = "Central moment (0, 3)", ibsi = "", example = 16.39 }
+CENTRAL_MOMENT_10 = { name = "Central moment (1, 0)", ibsi = "", example = 0.0 }
+CENTRAL_MOMENT_11 = { name = "Central moment (1, 1)", ibsi = "", example = -9.175 }
+CENTRAL_MOMENT_12 = { name = "Central moment (1, 2)", ibsi = "", example = -16.45 }
+CENTRAL_MOMENT_13 = { name = "Central moment (1, 3)", ibsi = "", example = -29.07 }
+CENTRAL_MOMENT_20 = { name = "Central moment (2, 0)", ibsi = "", example = 146.0 }
+CENTRAL_MOMENT_21 = { name = "Central moment (2, 1)", ibsi = "", example = -17.78 }
+CENTRAL_MOMENT_22 = { name = "Central moment (2, 2)", ibsi = "", example = 220.3 }
+CENTRAL_MOMENT_23 = { name = "Central moment (2, 3)", ibsi = "", example = -23.36 }
+CENTRAL_MOMENT_30 = { name = "Central moment (3, 0)", ibsi = "", example = 33.74 }
+CENTRAL_MOMENT_31 = { name = "Central moment (3, 1)", ibsi = "", example = -89.63 }
+CENTRAL_MOMENT_32 = { name = "Central moment (3, 2)", ibsi = "", example = -25.15 }
+CENTRAL_MOMENT_33 = { name = "Central moment (3, 3)", ibsi = "", example = -217.7 }
+HU_M1 = { name = "Hu invariant 1", ibsi = "", example = 0.1617 }
+HU_M2 = { name = "Hu invariant 2", ibsi = "", example = 0.0005621 }
+HU_M3 = { name = "Hu invariant 3", ibsi = "", example = 0.0001149 }
+HU_M4 = { name = "Hu invariant 4", ibsi = "", example = 2.937e-06 }
+HU_M5 = { name = "Hu invariant 5", ibsi = "", example = 4.84e-11 }
+HU_M6 = { name = "Hu invariant 6", ibsi = "", example = 6.554e-08 }
+HU_M7 = { name = "Hu invariant 7", ibsi = "", example = -2.386e-11 }
+NORM_CENTRAL_MOMENT_02 = { name = "Normalized central moment (0, 2)", ibsi = "", example = 0.07048 }
+NORM_CENTRAL_MOMENT_03 = { name = "Normalized central moment (0, 3)", ibsi = "", example = 0.00162 }
+NORM_CENTRAL_MOMENT_11 = { name = "Normalized central moment (1, 1)", ibsi = "", example = -0.005734 }
+NORM_CENTRAL_MOMENT_12 = { name = "Normalized central moment (1, 2)", ibsi = "", example = -0.001626 }
+NORM_CENTRAL_MOMENT_20 = { name = "Normalized central moment (2, 0)", ibsi = "", example = 0.09123 }
+NORM_CENTRAL_MOMENT_21 = { name = "Normalized central moment (2, 1)", ibsi = "", example = -0.001757 }
+NORM_CENTRAL_MOMENT_30 = { name = "Normalized central moment (3, 0)", ibsi = "", example = 0.003334 }
+NORM_SPAT_MOMENT_00 = { name = "Normalized raw moment (0, 0)", ibsi = "", example = 1.0 }
+NORM_SPAT_MOMENT_01 = { name = "Normalized raw moment (0, 1)", ibsi = "", example = 0.4625 }
+NORM_SPAT_MOMENT_02 = { name = "Normalized raw moment (0, 2)", ibsi = "", example = 0.2844 }
+NORM_SPAT_MOMENT_03 = { name = "Normalized raw moment (0, 3)", ibsi = "", example = 0.1983 }
+NORM_SPAT_MOMENT_10 = { name = "Normalized raw moment (1, 0)", ibsi = "", example = 0.5178 }
+NORM_SPAT_MOMENT_11 = { name = "Normalized raw moment (1, 1)", ibsi = "", example = 0.2338 }
+NORM_SPAT_MOMENT_12 = { name = "Normalized raw moment (1, 2)", ibsi = "", example = 0.1403 }
+NORM_SPAT_MOMENT_13 = { name = "Normalized raw moment (1, 3)", ibsi = "", example = 0.09631 }
+NORM_SPAT_MOMENT_20 = { name = "Normalized raw moment (2, 0)", ibsi = "", example = 0.3594 }
+NORM_SPAT_MOMENT_21 = { name = "Normalized raw moment (2, 1)", ibsi = "", example = 0.1585 }
+NORM_SPAT_MOMENT_22 = { name = "Normalized raw moment (2, 2)", ibsi = "", example = 0.09041 }
+NORM_SPAT_MOMENT_23 = { name = "Normalized raw moment (2, 3)", ibsi = "", example = 0.05918 }
+NORM_SPAT_MOMENT_30 = { name = "Normalized raw moment (3, 0)", ibsi = "", example = 0.2839 }
+NORM_SPAT_MOMENT_31 = { name = "Normalized raw moment (3, 1)", ibsi = "", example = 0.1226 }
+NORM_SPAT_MOMENT_32 = { name = "Normalized raw moment (3, 2)", ibsi = "", example = 0.0664 }
+NORM_SPAT_MOMENT_33 = { name = "Normalized raw moment (3, 3)", ibsi = "", example = 0.04126 }
+SPAT_MOMENT_00 = { name = "Raw moment (0, 0)", ibsi = "", example = 40.0 }
+SPAT_MOMENT_01 = { name = "Raw moment (0, 1)", ibsi = "", example = 117.0 }
+SPAT_MOMENT_02 = { name = "Raw moment (0, 2)", ibsi = "", example = 455.0 }
+SPAT_MOMENT_03 = { name = "Raw moment (0, 3)", ibsi = "", example = 2007.0 }
+SPAT_MOMENT_10 = { name = "Raw moment (1, 0)", ibsi = "", example = 131.0 }
+SPAT_MOMENT_11 = { name = "Raw moment (1, 1)", ibsi = "", example = 374.0 }
+SPAT_MOMENT_12 = { name = "Raw moment (1, 2)", ibsi = "", example = 1420.0 }
+SPAT_MOMENT_13 = { name = "Raw moment (1, 3)", ibsi = "", example = 6164.0 }
+SPAT_MOMENT_20 = { name = "Raw moment (2, 0)", ibsi = "", example = 575.0 }
+SPAT_MOMENT_21 = { name = "Raw moment (2, 1)", ibsi = "", example = 1604.0 }
+SPAT_MOMENT_22 = { name = "Raw moment (2, 2)", ibsi = "", example = 5786.0 }
+SPAT_MOMENT_23 = { name = "Raw moment (2, 3)", ibsi = "", example = 23950.0 }
+SPAT_MOMENT_30 = { name = "Raw moment (3, 0)", ibsi = "", example = 2873.0 }
+WEIGHTED_CENTRAL_MOMENT_02 = { name = "Weighted central moment (0, 2)", ibsi = "", example = -171.6 }
+WEIGHTED_CENTRAL_MOMENT_03 = { name = "Weighted central moment (0, 3)", ibsi = "", example = -251.6 }
+WEIGHTED_CENTRAL_MOMENT_11 = { name = "Weighted central moment (1, 1)", ibsi = "", example = 153.2 }
+WEIGHTED_CENTRAL_MOMENT_12 = { name = "Weighted central moment (1, 2)", ibsi = "", example = 274.1 }
+WEIGHTED_CENTRAL_MOMENT_20 = { name = "Weighted central moment (2, 0)", ibsi = "", example = -183.1 }
+WEIGHTED_CENTRAL_MOMENT_21 = { name = "Weighted central moment (2, 1)", ibsi = "", example = -248.6 }
+WEIGHTED_CENTRAL_MOMENT_30 = { name = "Weighted central moment (3, 0)", ibsi = "", example = -57.93 }
+WEIGHTED_HU_M1 = { name = "Weighted Hu invariant 1", ibsi = "", example = -0.194 }
+WEIGHTED_HU_M2 = { name = "Weighted Hu invariant 2", ibsi = "", example = 0.0281 }
+WEIGHTED_HU_M3 = { name = "Weighted Hu invariant 3", ibsi = "", example = 0.0 }
+WEIGHTED_HU_M4 = { name = "Weighted Hu invariant 4", ibsi = "", example = 0.0 }
+WEIGHTED_HU_M5 = { name = "Weighted Hu invariant 5", ibsi = "", example = 0.0 }
+WEIGHTED_HU_M6 = { name = "Weighted Hu invariant 6", ibsi = "", example = 0.0 }
+WEIGHTED_HU_M7 = { name = "Weighted Hu invariant 7", ibsi = "", example = 0.0 }
+WEIGHTED_SPAT_MOMENT_00 = { name = "Weighted raw moment (0, 0)", ibsi = "", example = -42.77 }
+WEIGHTED_SPAT_MOMENT_01 = { name = "Weighted raw moment (0, 1)", ibsi = "", example = -113.6 }
+WEIGHTED_SPAT_MOMENT_02 = { name = "Weighted raw moment (0, 2)", ibsi = "", example = -473.2 }
+WEIGHTED_SPAT_MOMENT_03 = { name = "Weighted raw moment (0, 3)", ibsi = "", example = -2419.0 }
+WEIGHTED_SPAT_MOMENT_10 = { name = "Weighted raw moment (1, 0)", ibsi = "", example = -170.2 }
+WEIGHTED_SPAT_MOMENT_11 = { name = "Weighted raw moment (1, 1)", ibsi = "", example = -298.8 }
+WEIGHTED_SPAT_MOMENT_12 = { name = "Weighted raw moment (1, 2)", ibsi = "", example = -795.9 }
+WEIGHTED_SPAT_MOMENT_20 = { name = "Weighted raw moment (2, 0)", ibsi = "", example = -860.8 }
+WEIGHTED_SPAT_MOMENT_21 = { name = "Weighted raw moment (2, 1)", ibsi = "", example = -1315.0 }
+WEIGHTED_SPAT_MOMENT_30 = { name = "Weighted raw moment (3, 0)", ibsi = "", example = -4942.0 }
+WT_NORM_CTR_MOM_02 = { name = "Weighted normalized central moment (0, 2)", ibsi = "", example = -0.09385 }
+WT_NORM_CTR_MOM_03 = { name = "Weighted normalized central moment (0, 3)", ibsi = "", example = 0.0 }
+WT_NORM_CTR_MOM_11 = { name = "Weighted normalized central moment (1, 1)", ibsi = "", example = 0.08376 }
+WT_NORM_CTR_MOM_12 = { name = "Weighted normalized central moment (1, 2)", ibsi = "", example = 0.0 }
+WT_NORM_CTR_MOM_20 = { name = "Weighted normalized central moment (2, 0)", ibsi = "", example = -0.1001 }
+WT_NORM_CTR_MOM_21 = { name = "Weighted normalized central moment (2, 1)", ibsi = "", example = 0.0 }
+WT_NORM_CTR_MOM_30 = { name = "Weighted normalized central moment (3, 0)", ibsi = "", example = 0.0 }
+
+[intensity_moments]
+IMOM_CM_00 = { name = "Intensity central moment (0, 0)", ibsi = "", example = 150.0 }
+IMOM_CM_01 = { name = "Intensity central moment (0, 1)", ibsi = "", example = 0.0 }
+IMOM_CM_02 = { name = "Intensity central moment (0, 2)", ibsi = "", example = 424.3 }
+IMOM_CM_03 = { name = "Intensity central moment (0, 3)", ibsi = "", example = 23.96 }
+IMOM_CM_10 = { name = "Intensity central moment (1, 0)", ibsi = "", example = 0.0 }
+IMOM_CM_11 = { name = "Intensity central moment (1, 1)", ibsi = "", example = -15.55 }
+IMOM_CM_12 = { name = "Intensity central moment (1, 2)", ibsi = "", example = -26.64 }
+IMOM_CM_13 = { name = "Intensity central moment (1, 3)", ibsi = "", example = 39.18 }
+IMOM_CM_20 = { name = "Intensity central moment (2, 0)", ibsi = "", example = 499.5 }
+IMOM_CM_21 = { name = "Intensity central moment (2, 1)", ibsi = "", example = -23.58 }
+IMOM_CM_22 = { name = "Intensity central moment (2, 2)", ibsi = "", example = 780.4 }
+IMOM_CM_23 = { name = "Intensity central moment (2, 3)", ibsi = "", example = 25.31 }
+IMOM_CM_30 = { name = "Intensity central moment (3, 0)", ibsi = "", example = 68.7 }
+IMOM_CM_31 = { name = "Intensity central moment (3, 1)", ibsi = "", example = -226.2 }
+IMOM_CM_32 = { name = "Intensity central moment (3, 2)", ibsi = "", example = -82.84 }
+IMOM_CM_33 = { name = "Intensity central moment (3, 3)", ibsi = "", example = -535.7 }
+IMOM_HU1 = { name = "Intensity Hu invariant 1", ibsi = "", example = 0.04106 }
+IMOM_HU2 = { name = "Intensity Hu invariant 2", ibsi = "", example = 1.307e-05 }
+IMOM_HU3 = { name = "Intensity Hu invariant 3", ibsi = "", example = 4.089e-07 }
+IMOM_HU4 = { name = "Intensity Hu invariant 4", ibsi = "", example = 2.33e-08 }
+IMOM_HU5 = { name = "Intensity Hu invariant 5", ibsi = "", example = 1.885e-15 }
+IMOM_HU6 = { name = "Intensity Hu invariant 6", ibsi = "", example = 7.727e-11 }
+IMOM_HU7 = { name = "Intensity Hu invariant 7", ibsi = "", example = -1.274e-15 }
+IMOM_NCM_02 = { name = "Intensity normalized central moment (0, 2)", ibsi = "", example = 0.01886 }
+IMOM_NCM_03 = { name = "Intensity normalized central moment (0, 3)", ibsi = "", example = 8.693e-05 }
+IMOM_NCM_11 = { name = "Intensity normalized central moment (1, 1)", ibsi = "", example = -0.000691 }
+IMOM_NCM_12 = { name = "Intensity normalized central moment (1, 2)", ibsi = "", example = -9.666e-05 }
+IMOM_NCM_20 = { name = "Intensity normalized central moment (2, 0)", ibsi = "", example = 0.0222 }
+IMOM_NCM_21 = { name = "Intensity normalized central moment (2, 1)", ibsi = "", example = -8.557e-05 }
+IMOM_NCM_30 = { name = "Intensity normalized central moment (3, 0)", ibsi = "", example = 0.0002493 }
+IMOM_NRM_00 = { name = "Intensity normalized raw moment (0, 0)", ibsi = "", example = 1.0 }
+IMOM_NRM_01 = { name = "Intensity normalized raw moment (0, 1)", ibsi = "", example = 0.2362 }
+IMOM_NRM_02 = { name = "Intensity normalized raw moment (0, 2)", ibsi = "", example = 0.07467 }
+IMOM_NRM_03 = { name = "Intensity normalized raw moment (0, 3)", ibsi = "", example = 0.02664 }
+IMOM_NRM_10 = { name = "Intensity normalized raw moment (1, 0)", ibsi = "", example = 0.2575 }
+IMOM_NRM_11 = { name = "Intensity normalized raw moment (1, 1)", ibsi = "", example = 0.06013 }
+IMOM_NRM_12 = { name = "Intensity normalized raw moment (1, 2)", ibsi = "", example = 0.0188 }
+IMOM_NRM_13 = { name = "Intensity normalized raw moment (1, 3)", ibsi = "", example = 0.006685 }
+IMOM_NRM_20 = { name = "Intensity normalized raw moment (2, 0)", ibsi = "", example = 0.08849 }
+IMOM_NRM_21 = { name = "Intensity normalized raw moment (2, 1)", ibsi = "", example = 0.02046 }
+IMOM_NRM_22 = { name = "Intensity normalized raw moment (2, 2)", ibsi = "", example = 0.006161 }
+IMOM_NRM_23 = { name = "Intensity normalized raw moment (2, 3)", ibsi = "", example = 0.00212 }
+IMOM_NRM_30 = { name = "Intensity normalized raw moment (3, 0)", ibsi = "", example = 0.03446 }
+IMOM_NRM_31 = { name = "Intensity normalized raw moment (3, 1)", ibsi = "", example = 0.007871 }
+IMOM_NRM_32 = { name = "Intensity normalized raw moment (3, 2)", ibsi = "", example = 0.002275 }
+IMOM_NRM_33 = { name = "Intensity normalized raw moment (3, 3)", ibsi = "", example = 0.0007519 }
+IMOM_RM_00 = { name = "Intensity raw moment (0, 0)", ibsi = "", example = 150.0 }
+IMOM_RM_01 = { name = "Intensity raw moment (0, 1)", ibsi = "", example = 434.0 }
+IMOM_RM_02 = { name = "Intensity raw moment (0, 2)", ibsi = "", example = 1680.0 }
+IMOM_RM_03 = { name = "Intensity raw moment (0, 3)", ibsi = "", example = 7340.0 }
+IMOM_RM_10 = { name = "Intensity raw moment (1, 0)", ibsi = "", example = 473.0 }
+IMOM_RM_11 = { name = "Intensity raw moment (1, 1)", ibsi = "", example = 1353.0 }
+IMOM_RM_12 = { name = "Intensity raw moment (1, 2)", ibsi = "", example = 5181.0 }
+IMOM_RM_13 = { name = "Intensity raw moment (1, 3)", ibsi = "", example = 22560.0 }
+IMOM_RM_20 = { name = "Intensity raw moment (2, 0)", ibsi = "", example = 1991.0 }
+IMOM_RM_21 = { name = "Intensity raw moment (2, 1)", ibsi = "", example = 5639.0 }
+IMOM_RM_22 = { name = "Intensity raw moment (2, 2)", ibsi = "", example = 20800.0 }
+IMOM_RM_23 = { name = "Intensity raw moment (2, 3)", ibsi = "", example = 87620.0 }
+IMOM_RM_30 = { name = "Intensity raw moment (3, 0)", ibsi = "", example = 9497.0 }
+IMOM_WCM_02 = { name = "Intensity weighted central moment (0, 2)", ibsi = "", example = -617.3 }
+IMOM_WCM_03 = { name = "Intensity weighted central moment (0, 3)", ibsi = "", example = -440.8 }
+IMOM_WCM_11 = { name = "Intensity weighted central moment (1, 1)", ibsi = "", example = 599.2 }
+IMOM_WCM_12 = { name = "Intensity weighted central moment (1, 2)", ibsi = "", example = 483.1 }
+IMOM_WCM_20 = { name = "Intensity weighted central moment (2, 0)", ibsi = "", example = -592.0 }
+IMOM_WCM_21 = { name = "Intensity weighted central moment (2, 1)", ibsi = "", example = -434.8 }
+IMOM_WCM_30 = { name = "Intensity weighted central moment (3, 0)", ibsi = "", example = -434.1 }
+IMOM_WHU1 = { name = "Intensity weighted Hu invariant 1", ibsi = "", example = -0.05777 }
+IMOM_WHU2 = { name = "Intensity weighted Hu invariant 2", ibsi = "", example = 0.003279 }
+IMOM_WHU3 = { name = "Intensity weighted Hu invariant 3", ibsi = "", example = 0.0 }
+IMOM_WHU4 = { name = "Intensity weighted Hu invariant 4", ibsi = "", example = 0.0 }
+IMOM_WHU5 = { name = "Intensity weighted Hu invariant 5", ibsi = "", example = 0.0 }
+IMOM_WHU6 = { name = "Intensity weighted Hu invariant 6", ibsi = "", example = 0.0 }
+IMOM_WHU7 = { name = "Intensity weighted Hu invariant 7", ibsi = "", example = 0.0 }
+IMOM_WNCM_02 = { name = "Intensity weighted normalized central moment (0, 2)", ibsi = "", example = -0.02949 }
+IMOM_WNCM_03 = { name = "Intensity weighted normalized central moment (0, 3)", ibsi = "", example = 0.0 }
+IMOM_WNCM_11 = { name = "Intensity weighted normalized central moment (1, 1)", ibsi = "", example = 0.02863 }
+IMOM_WNCM_12 = { name = "Intensity weighted normalized central moment (1, 2)", ibsi = "", example = 0.0 }
+IMOM_WNCM_20 = { name = "Intensity weighted normalized central moment (2, 0)", ibsi = "", example = -0.02828 }
+IMOM_WNCM_21 = { name = "Intensity weighted normalized central moment (2, 1)", ibsi = "", example = 0.0 }
+IMOM_WNCM_30 = { name = "Intensity weighted normalized central moment (3, 0)", ibsi = "", example = 0.0 }
+IMOM_WRM_00 = { name = "Intensity weighted raw moment (0, 0)", ibsi = "", example = -144.7 }
+IMOM_WRM_01 = { name = "Intensity weighted raw moment (0, 1)", ibsi = "", example = -426.2 }
+IMOM_WRM_02 = { name = "Intensity weighted raw moment (0, 2)", ibsi = "", example = -1873.0 }
+IMOM_WRM_03 = { name = "Intensity weighted raw moment (0, 3)", ibsi = "", example = -9595.0 }
+IMOM_WRM_10 = { name = "Intensity weighted raw moment (1, 0)", ibsi = "", example = -496.8 }
+IMOM_WRM_11 = { name = "Intensity weighted raw moment (1, 1)", ibsi = "", example = -864.2 }
+IMOM_WRM_12 = { name = "Intensity weighted raw moment (1, 2)", ibsi = "", example = -2417.0 }
+IMOM_WRM_20 = { name = "Intensity weighted raw moment (2, 0)", ibsi = "", example = -2298.0 }
+IMOM_WRM_21 = { name = "Intensity weighted raw moment (2, 1)", ibsi = "", example = -3089.0 }
+IMOM_WRM_30 = { name = "Intensity weighted raw moment (3, 0)", ibsi = "", example = -12390.0 }
+
+[zernike]
+ZERNIKE2D = { name = "Zernike moments", ibsi = "", example = 0.3183 }
+
+[gabor]
+GABOR = { name = "Gabor filter-bank score", ibsi = "", example = 1.042 }
+
+[image_quality]
+FOCUS_SCORE = { name = "Focus score", ibsi = "", example = 27.86 }
+LOCAL_FOCUS_SCORE = { name = "Local focus score", ibsi = "", example = 31.76 }
+POWER_SPECTRUM_SLOPE = { name = "Power spectrum slope", ibsi = "", example = 0.0 }
+MAX_SATURATION = { name = "Maximum saturation", ibsi = "", example = 0.08333 }
+MIN_SATURATION = { name = "Minimum saturation", ibsi = "", example = 0.3056 }
+SHARPNESS = { name = "Sharpness", ibsi = "", example = 1.903 }
+
+[fractal]
+FRACT_DIM_BOXCOUNT = { name = "Box-counting fractal dimension", ibsi = "", example = 1.373 }
+FRACT_DIM_PERIMETER = { name = "Perimeter (divider) fractal dimension", ibsi = "", example = 1.131 }
+
+[basic_morphology]
+AREA_PIXELS_COUNT = { name = "Area in pixels", ibsi = "", example = 116 }
+AREA_UM2 = { name = "Area in square micrometres", ibsi = "", example = 0 }
+CENTROID_X = { name = "Centroid x", ibsi = "", example = 6.405 }
+CENTROID_Y = { name = "Centroid y", ibsi = "", example = 6.75 }
+WEIGHTED_CENTROID_Y = { name = "Intensity-weighted centroid y", ibsi = "", example = 6.706 }
+WEIGHTED_CENTROID_X = { name = "Intensity-weighted centroid x", ibsi = "", example = 6.373 }
+MASS_DISPLACEMENT = { name = "Mass displacement", ibsi = "", example = 0.05448 }
+COMPACTNESS = { name = "Compactness", ibsi = "", example = 0.01369 }
+BBOX_YMIN = { name = "Bounding box top row", ibsi = "", example = 1 }
+BBOX_XMIN = { name = "Bounding box left column", ibsi = "", example = 1 }
+BBOX_HEIGHT = { name = "Bounding box height", ibsi = "", example = 12 }
+BBOX_WIDTH = { name = "Bounding box width", ibsi = "", example = 12 }
+DIAMETER_EQUAL_AREA = { name = "Equal-area diameter", ibsi = "", example = 12.15 }
+EXTENT = { name = "Extent", ibsi = "", example = 0.8056 }
+ASPECT_RATIO = { name = "Aspect ratio", ibsi = "", example = 1 }
+
+[contour]
+PERIMETER = { name = "Perimeter", ibsi = "", example = 48.14 }
+DIAMETER_EQUAL_PERIMETER = { name = "Equal-perimeter diameter", ibsi = "", example = 15.32 }
+EDGE_MEAN_INTENSITY = { name = "Edge mean intensity", ibsi = "", example = 5.182 }
+EDGE_STDDEV_INTENSITY = { name = "Edge intensity standard deviation", ibsi = "", example = 2.644 }
+EDGE_MAX_INTENSITY = { name = "Edge maximum intensity", ibsi = "", example = 9 }
+EDGE_MIN_INTENSITY = { name = "Edge minimum intensity", ibsi = "", example = 1 }
+EDGE_INTEGRATED_INTENSITY = { name = "Edge integrated intensity", ibsi = "", example = 228 }
+
+[convex_hull]
+CIRCULARITY = { name = "Circularity", ibsi = "", example = 0.7931 }
+CONVEX_HULL_AREA = { name = "Convex hull area", ibsi = "", example = 131 }
+SOLIDITY = { name = "Solidity", ibsi = "", example = 0.8855 }
+POLYGONALITY_AVE = { name = "Polygonality", ibsi = "", example = -1 }
+HEXAGONALITY_AVE = { name = "Hexagonality", ibsi = "", example = -1 }
+HEXAGONALITY_STDDEV = { name = "Hexagonality dispersion", ibsi = "", example = -1 }
+
+[ellipse]
+MAJOR_AXIS_LENGTH = { name = "Major axis length", ibsi = "", example = 13.91 }
+MINOR_AXIS_LENGTH = { name = "Minor axis length", ibsi = "", example = 12.55 }
+ELONGATION = { name = "Elongation", ibsi = "", example = 0.9025 }
+ECCENTRICITY = { name = "Eccentricity", ibsi = "", example = 0.4306 }
+ORIENTATION = { name = "Orientation", ibsi = "", example = -18.77 }
+ROUNDNESS = { name = "Roundness", ibsi = "", example = 0.7635 }
+
+[circles]
+DIAMETER_MIN_ENCLOSING_CIRCLE = { name = "Minimum enclosing circle diameter", ibsi = "", example = 14.17 }
+DIAMETER_CIRCUMSCRIBING_CIRCLE = { name = "Circumscribing circle diameter", ibsi = "", example = 17.41 }
+DIAMETER_INSCRIBING_CIRCLE = { name = "Inscribing circle diameter", ibsi = "", example = 1.29 }
+
+[roi_radius]
+ROI_RADIUS_MEAN = { name = "Mean distance to the contour", ibsi = "", example = 1.124 }
+ROI_RADIUS_MAX = { name = "Largest distance to the contour", ibsi = "", example = 3 }
+ROI_RADIUS_MEDIAN = { name = "Median distance to the contour", ibsi = "", example = 1 }
+
+[extrema]
+EXTREMA_P1_X = { name = "Extremum point 1, x", ibsi = "", example = 3 }
+EXTREMA_P1_Y = { name = "Extremum point 1, y", ibsi = "", example = 1 }
+EXTREMA_P2_X = { name = "Extremum point 2, x", ibsi = "", example = 11 }
+EXTREMA_P2_Y = { name = "Extremum point 2, y", ibsi = "", example = 1 }
+EXTREMA_P3_X = { name = "Extremum point 3, x", ibsi = "", example = 12 }
+EXTREMA_P3_Y = { name = "Extremum point 3, y", ibsi = "", example = 2 }
+EXTREMA_P4_X = { name = "Extremum point 4, x", ibsi = "", example = 12 }
+EXTREMA_P4_Y = { name = "Extremum point 4, y", ibsi = "", example = 9 }
+EXTREMA_P5_X = { name = "Extremum point 5, x", ibsi = "", example = 9 }
+EXTREMA_P5_Y = { name = "Extremum point 5, y", ibsi = "", example = 12 }
+EXTREMA_P6_X = { name = "Extremum point 6, x", ibsi = "", example = 3 }
+EXTREMA_P6_Y = { name = "Extremum point 6, y", ibsi = "", example = 12 }
+EXTREMA_P7_X = { name = "Extremum point 7, x", ibsi = "", example = 1 }
+EXTREMA_P7_Y = { name = "Extremum point 7, y", ibsi = "", example = 10 }
+EXTREMA_P8_X = { name = "Extremum point 8, x", ibsi = "", example = 1 }
+EXTREMA_P8_Y = { name = "Extremum point 8, y", ibsi = "", example = 3 }
+
+[euler]
+EULER_NUMBER = { name = "Euler number", ibsi = "", example = 1 }
+
+[geodetic]
+GEODETIC_LENGTH = { name = "Geodetic length", ibsi = "", example = 17.41 }
+THICKNESS = { name = "Thickness", ibsi = "", example = 6.664 }
+
+[feret]
+MIN_FERET_ANGLE = { name = "Angle of the smallest Feret diameter", ibsi = "", example = 0 }
+MAX_FERET_ANGLE = { name = "Angle of the largest Feret diameter", ibsi = "", example = 50 }
+STAT_FERET_DIAM_MIN = { name = "Feret diameter, minimum", ibsi = "", example = 11 }
+STAT_FERET_DIAM_MAX = { name = "Feret diameter, maximum", ibsi = "", example = 13.57 }
+STAT_FERET_DIAM_MEAN = { name = "Feret diameter, mean", ibsi = "", example = 12.42 }
+STAT_FERET_DIAM_MEDIAN = { name = "Feret diameter, median", ibsi = "", example = 12.39 }
+STAT_FERET_DIAM_STDDEV = { name = "Feret diameter, standard deviation", ibsi = "", example = 0.8183 }
+STAT_FERET_DIAM_MODE = { name = "Feret diameter, mode", ibsi = "", example = 12 }
+
+[martin]
+STAT_MARTIN_DIAM_MIN = { name = "Martin diameter, minimum", ibsi = "", example = 11 }
+STAT_MARTIN_DIAM_MAX = { name = "Martin diameter, maximum", ibsi = "", example = 13.49 }
+STAT_MARTIN_DIAM_MEAN = { name = "Martin diameter, mean", ibsi = "", example = 11.93 }
+STAT_MARTIN_DIAM_MEDIAN = { name = "Martin diameter, median", ibsi = "", example = 11.71 }
+STAT_MARTIN_DIAM_STDDEV = { name = "Martin diameter, standard deviation", ibsi = "", example = 0.7683 }
+STAT_MARTIN_DIAM_MODE = { name = "Martin diameter, mode", ibsi = "", example = 11 }
+
+[nassenstein]
+STAT_NASSENSTEIN_DIAM_MIN = { name = "Nassenstein diameter, minimum", ibsi = "", example = 11 }
+STAT_NASSENSTEIN_DIAM_MAX = { name = "Nassenstein diameter, maximum", ibsi = "", example = 13.49 }
+STAT_NASSENSTEIN_DIAM_MEAN = { name = "Nassenstein diameter, mean", ibsi = "", example = 11.93 }
+STAT_NASSENSTEIN_DIAM_MEDIAN = { name = "Nassenstein diameter, median", ibsi = "", example = 11.71 }
+STAT_NASSENSTEIN_DIAM_STDDEV = { name = "Nassenstein diameter, standard deviation", ibsi = "", example = 0.7805 }
+STAT_NASSENSTEIN_DIAM_MODE = { name = "Nassenstein diameter, mode", ibsi = "", example = 11 }
+
+[chords]
+MAXCHORDS_MAX = { name = "Maximum chords, maximum", ibsi = "", example = 12 }
+MAXCHORDS_MAX_ANG = { name = "Maximum chords, angle of the maximum", ibsi = "", example = 0.1571 }
+MAXCHORDS_MIN = { name = "Maximum chords, minimum", ibsi = "", example = 4 }
+MAXCHORDS_MIN_ANG = { name = "Maximum chords, angle of the minimum", ibsi = "", example = 0.6283 }
+MAXCHORDS_MEDIAN = { name = "Maximum chords, median", ibsi = "", example = 11 }
+MAXCHORDS_MEAN = { name = "Maximum chords, mean", ibsi = "", example = 9.5 }
+MAXCHORDS_MODE = { name = "Maximum chords, mode", ibsi = "", example = 12 }
+MAXCHORDS_STDDEV = { name = "Maximum chords, standard deviation", ibsi = "", example = 3.137 }
+ALLCHORDS_MAX = { name = "All chords, maximum", ibsi = "", example = 12 }
+ALLCHORDS_MAX_ANG = { name = "All chords, angle of the maximum", ibsi = "", example = 0.1571 }
+ALLCHORDS_MIN = { name = "All chords, minimum", ibsi = "", example = 1 }
+ALLCHORDS_MIN_ANG = { name = "All chords, angle of the minimum", ibsi = "", example = 0.1571 }
+ALLCHORDS_MEDIAN = { name = "All chords, median", ibsi = "", example = 4 }
+ALLCHORDS_MEAN = { name = "All chords, mean", ibsi = "", example = 5.441 }
+ALLCHORDS_MODE = { name = "All chords, mode", ibsi = "", example = 4 }
+ALLCHORDS_STDDEV = { name = "All chords, standard deviation", ibsi = "", example = 2.865 }
+
+[neighbors]
+NUM_NEIGHBORS = { name = "Number of neighbours", ibsi = "", example = 1 }
+PERCENT_TOUCHING = { name = "Percent of the contour touching", ibsi = "", example = 15.91 }
+CLOSEST_NEIGHBOR1_DIST = { name = "Distance to the closest neighbour", ibsi = "", example = 7.632 }
+CLOSEST_NEIGHBOR1_ANG = { name = "Direction of the closest neighbour", ibsi = "", example = 354.4 }
+CLOSEST_NEIGHBOR2_DIST = { name = "Distance to the second-closest neighbour", ibsi = "", example = 0 }
+CLOSEST_NEIGHBOR2_ANG = { name = "Direction of the second-closest neighbour", ibsi = "", example = 0 }
+ANG_BW_NEIGHBORS_MEAN = { name = "Mean neighbour direction", ibsi = "", example = 354.4 }
+ANG_BW_NEIGHBORS_STDDEV = { name = "Neighbour direction standard deviation", ibsi = "", example = 0 }
+ANG_BW_NEIGHBORS_MODE = { name = "Most frequent neighbour direction", ibsi = "", example = 354 }
+
+[erosion]
+EROSIONS_2_VANISH = { name = "Erosions to vanish", ibsi = "", example = 2.0 }
+EROSIONS_2_VANISH_COMPLEMENT = { name = "Erosions to vanish, complement (not computed)", ibsi = "", example = 0.0 }
+
+[ngldm_3d]
+3NGLDM_DCENE = { name = "Dependence count energy", ibsi = "CAS9", example = 0.09191 }
+3NGLDM_DCENT = { name = "Dependence count entropy", ibsi = "FCBV", example = 3.560 }
+3NGLDM_DCM = { name = "Dependence count mean", ibsi = "", example = 4.852 }
+3NGLDM_DCNU = { name = "Dependence count non-uniformity", ibsi = "Z87G", example = 5.370 }
+3NGLDM_DCNUN = { name = "Dependence count non-uniformity normalized", ibsi = "OKJI", example = 0.1989 }
+3NGLDM_DCP = { name = "Dependence count percentage", ibsi = "6XV8", example = 1.0 }
+3NGLDM_DCV = { name = "Dependence count variance", ibsi = "DNX2", example = 2.719 }
+3NGLDM_GLM = { name = "Grey level mean", ibsi = "", example = 2.407 }
+3NGLDM_GLNU = { name = "Grey level non-uniformity", ibsi = "FP8K", example = 6.852 }
+3NGLDM_GLNUN = { name = "Grey level non-uniformity normalized", ibsi = "5SPA", example = 0.2538 }
+3NGLDM_GLV = { name = "Grey level variance", ibsi = "1PFV", example = 1.204 }
+3NGLDM_HDE = { name = "High dependence emphasis", ibsi = "IMOQ", example = 26.26 }
+3NGLDM_HDHGLE = { name = "High dependence high grey level emphasis", ibsi = "9QMG", example = 156.1 }
+3NGLDM_HDLGLE = { name = "High dependence low grey level emphasis", ibsi = "NBZI", example = 9.671 }
+3NGLDM_HGLCE = { name = "High grey level count emphasis", ibsi = "OAE7", example = 7.0 }
+3NGLDM_LDE = { name = "Low dependence emphasis", ibsi = "SODN", example = 0.08747 }
+3NGLDM_LDHGLE = { name = "Low dependence high grey level emphasis", ibsi = "JA6D", example = 0.4688 }
+3NGLDM_LDLGLE = { name = "Low dependence low grey level emphasis", ibsi = "EQ3F", example = 0.05245 }
+3NGLDM_LGLCE = { name = "Low grey level count emphasis", ibsi = "TL9H", example = 0.3719 }
+
+[glrlm_3d]
+3GLRLM_GLN = { name = "Grey level non-uniformity", ibsi = "R5YN", example = 6.391 }
+3GLRLM_GLNN = { name = "Grey level non-uniformity normalized", ibsi = "OVBL", example = 0.2779 }
+3GLRLM_GLV = { name = "Grey level variance", ibsi = "8CE5", example = 0.9225 }
+3GLRLM_HGLRE = { name = "High grey level run emphasis", ibsi = "G3QZ", example = 6.435 }
+3GLRLM_LGLRE = { name = "Low grey level run emphasis", ibsi = "V3SW", example = 0.3463 }
+3GLRLM_LRE = { name = "Long run emphasis", ibsi = "W4KF", example = 1.609 }
+3GLRLM_LRHGLE = { name = "Long run high grey level emphasis", ibsi = "3KUM", example = 7.435 }
+3GLRLM_LRLGLE = { name = "Long run low grey level emphasis", ibsi = "IVPO", example = 0.8572 }
+3GLRLM_RE = { name = "Run entropy", ibsi = "HJ9O", example = 2.398 }
+3GLRLM_RLN = { name = "Run length non-uniformity", ibsi = "W92Y", example = 17.61 }
+3GLRLM_RLNN = { name = "Run length non-uniformity normalized", ibsi = "IC23", example = 0.7656 }
+3GLRLM_RP = { name = "Run percentage", ibsi = "9ZK5", example = 0.8519 }
+3GLRLM_RV = { name = "Run variance", ibsi = "SXLW", example = 0.2306 }
+3GLRLM_SRE = { name = "Short run emphasis", ibsi = "22OV", example = 0.8961 }
+3GLRLM_SRHGLE = { name = "Short run high grey level emphasis", ibsi = "GD3A", example = 6.233 }
+3GLRLM_SRLGLE = { name = "Short run low grey level emphasis", ibsi = "HTZT", example = 0.2669 }
+
+[glcm_3d]
+3GLCM_ACOR = { name = "Autocorrelation", ibsi = "QWB0", example = 6.611 }
+3GLCM_ASM = { name = "Angular second moment", ibsi = "8ZQL", example = 0.07562 }
+3GLCM_CLUPROM = { name = "Cluster prominence", ibsi = "AE86", example = 15.47 }
+3GLCM_CLUSHADE = { name = "Cluster shade", ibsi = "7NFM", example = -0.08299 }
+3GLCM_CLUTEND = { name = "Cluster tendency", ibsi = "DG8W", example = 2.83 }
+3GLCM_CONTRAST = { name = "Contrast", ibsi = "ACUI", example = 1.944 }
+3GLCM_CORRELATION = { name = "Correlation", ibsi = "NI2N", example = 0.1855 }
+3GLCM_DIFAVE = { name = "Difference average", ibsi = "TF7R", example = 1.167 }
+3GLCM_DIFENTRO = { name = "Difference entropy", ibsi = "NTRS", example = 1.614 }
+3GLCM_DIFVAR = { name = "Difference variance", ibsi = "D3YU", example = 0.5833 }
+3GLCM_DIS = { name = "Dissimilarity", ibsi = "8S9J", example = 1.167 }
+3GLCM_ENERGY = { name = "Energy (same as angular second moment)", ibsi = "", example = 0.07562 }
+3GLCM_ENTROPY = { name = "Entropy (same as joint entropy)", ibsi = "", example = 3.808 }
+3GLCM_HOM1 = { name = "Homogeneity 1 (same as inverse difference)", ibsi = "", example = 0.5324 }
+3GLCM_HOM2 = { name = "Homogeneity 2 (same as inverse difference moment)", ibsi = "", example = 0.4944 }
+3GLCM_ID = { name = "Inverse difference", ibsi = "IB1Z", example = 0.5324 }
+3GLCM_IDN = { name = "Inverse difference normalized", ibsi = "NDRX", example = 0.791 }
+3GLCM_IDM = { name = "Inverse difference moment", ibsi = "WF0Z", example = 0.4944 }
+3GLCM_IDMN = { name = "Inverse difference moment normalized", ibsi = "1QCO", example = 0.9029 }
+3GLCM_INFOMEAS1 = { name = "Information measure of correlation 1", ibsi = "R8DG", example = -0.0914 }
+3GLCM_INFOMEAS2 = { name = "Information measure of correlation 2", ibsi = "JN9H", example = 0.5527 }
+3GLCM_IV = { name = "Inverse variance", ibsi = "E8JP", example = 0.6173 }
+3GLCM_JAVE = { name = "Joint average", ibsi = "60VM", example = 2.528 }
+3GLCM_JE = { name = "Joint entropy", ibsi = "TU9B", example = 3.808 }
+3GLCM_JMAX = { name = "Joint maximum", ibsi = "GYBY", example = 0.1111 }
+3GLCM_JVAR = { name = "Joint variance", ibsi = "UR99", example = 1.194 }
+3GLCM_SUMAVERAGE = { name = "Sum average", ibsi = "ZGXS", example = 5.056 }
+3GLCM_SUMENTROPY = { name = "Sum entropy", ibsi = "P6QZ", example = 2.641 }
+3GLCM_SUMVARIANCE = { name = "Sum variance", ibsi = "OEEB", example = 2.83 }
+3GLCM_VARIANCE = { name = "Variance", ibsi = "", example = 1.194 }
+
+[intensity_3d]
+3COV = { name = "Coefficient of variation", ibsi = "7TET", example = 0.2821 }
+3COVERED_IMAGE_INTENSITY_RANGE = { name = "Covered image intensity range", ibsi = "", example = 1.0 }
+3ENERGY = { name = "Energy", ibsi = "N8CA", example = 423.0 }
+3ENTROPY = { name = "Entropy", ibsi = "", example = 2.158 }
+3EXCESS_KURTOSIS = { name = "Excess kurtosis", ibsi = "IPH6", example = -1.038 }
+3HYPERFLATNESS = { name = "Hyperflatness", ibsi = "", example = 4.232 }
+3HYPERSKEWNESS = { name = "Hyperskewness", ibsi = "", example = -0.002163 }
+3INTEGRATED_INTENSITY = { name = "Integrated intensity", ibsi = "", example = 93.0 }
+3INTERQUARTILE_RANGE = { name = "Interquartile range", ibsi = "SALO", example = 1.998 }
+3KURTOSIS = { name = "Kurtosis", ibsi = "", example = 1.962 }
+3MAX = { name = "Maximum", ibsi = "84IY", example = 6.0 }
+3MEAN = { name = "Mean", ibsi = "Q4LE", example = 4.227 }
+3MEAN_ABSOLUTE_DEVIATION = { name = "Mean absolute deviation", ibsi = "4FUA", example = 0.9959 }
+3MEDIAN = { name = "Median", ibsi = "Y12H", example = 4.0 }
+3MEDIAN_ABSOLUTE_DEVIATION = { name = "Median absolute deviation", ibsi = "N72L", example = 0.9545 }
+3MIN = { name = "Minimum", ibsi = "1GSF", example = 2.0 }
+3MODE = { name = "Mode", ibsi = "", example = 3.0 }
+3P01 = { name = "1st percentile", ibsi = "", example = 2.009 }
+3P10 = { name = "10th percentile", ibsi = "QG58", example = 3.008 }
+3P25 = { name = "25th percentile", ibsi = "", example = 3.03 }
+3P75 = { name = "75th percentile", ibsi = "", example = 5.028 }
+3P90 = { name = "90th percentile", ibsi = "8DWT", example = 5.978 }
+3P99 = { name = "99th percentile", ibsi = "", example = 5.998 }
+3QCOD = { name = "Quartile coefficient of dispersion", ibsi = "9S40", example = 0.248 }
+3RANGE = { name = "Range", ibsi = "2OJQ", example = 4.0 }
+3ROBUST_MEAN = { name = "Robust mean", ibsi = "", example = 4.455 }
+3ROBUST_MEAN_ABSOLUTE_DEVIATION = { name = "Robust mean absolute deviation", ibsi = "1128", example = 0.4959 }
+3ROOT_MEAN_SQUARED = { name = "Root mean square", ibsi = "5ZWQ", example = 4.385 }
+3SKEWNESS = { name = "Skewness", ibsi = "KE2A", example = 0.06841 }
+3STANDARD_DEVIATION = { name = "Standard deviation", ibsi = "", example = 1.193 }
+3STANDARD_DEVIATION_BIASED = { name = "Biased standard deviation", ibsi = "", example = 1.165 }
+3STANDARD_ERROR = { name = "Standard error", ibsi = "", example = 0.2542 }
+3VARIANCE = { name = "Variance", ibsi = "", example = 1.422 }
+3VARIANCE_BIASED = { name = "Biased variance", ibsi = "ECT3", example = 1.357 }
+3UNIFORMITY = { name = "Uniformity", ibsi = "", example = 0.2355 }
+3UNIFORMITY_PIU = { name = "Percent image uniformity", ibsi = "", example = 50.0 }
+
+[ngtdm_3d]
+3NGTDM_BUSYNESS = { name = "Busyness", ibsi = "NQ30", example = 1.477 }
+3NGTDM_COARSENESS = { name = "Coarseness", ibsi = "QCDE", example = 0.1549 }
+3NGTDM_COMPLEXITY = { name = "Complexity", ibsi = "HDEZ", example = 5.241 }
+3NGTDM_CONTRAST = { name = "Contrast", ibsi = "65HE", example = 0.1889 }
+3NGTDM_STRENGTH = { name = "Strength", ibsi = "1X9X", example = 0.7111 }
+
+[gldm_3d]
+3GLDM_DE = { name = "Dependence entropy", ibsi = "", example = 4.363 }
+3GLDM_DN = { name = "Dependence non-uniformity", ibsi = "", example = 7.75 }
+3GLDM_DNN = { name = "Dependence non-uniformity normalized", ibsi = "", example = 0.1615 }
+3GLDM_DV = { name = "Dependence variance", ibsi = "", example = 3.957 }
+3GLDM_GLN = { name = "Grey level non-uniformity", ibsi = "", example = 12.08 }
+3GLDM_GLV = { name = "Grey level variance", ibsi = "", example = 1.248 }
+3GLDM_HGLE = { name = "High grey level emphasis", ibsi = "", example = 7.292 }
+3GLDM_LDE = { name = "Large dependence emphasis", ibsi = "", example = 36.54 }
+3GLDM_LDHGLE = { name = "Large dependence high grey level emphasis", ibsi = "", example = 292.2 }
+3GLDM_LDLGLE = { name = "Large dependence low grey level emphasis", ibsi = "", example = 12.98 }
+3GLDM_LGLE = { name = "Low grey level emphasis", ibsi = "", example = 0.3725 }
+3GLDM_SDE = { name = "Small dependence emphasis", ibsi = "", example = 0.06470 }
+3GLDM_SDHGLE = { name = "Small dependence high grey level emphasis", ibsi = "", example = 0.5953 }
+3GLDM_SDLGLE = { name = "Small dependence low grey level emphasis", ibsi = "", example = 0.01907 }
+
+[glszm_3d]
+3GLSZM_GLN = { name = "Grey level non-uniformity", ibsi = "JNSA", example = 2.556 }
+3GLSZM_GLNN = { name = "Grey level non-uniformity normalized", ibsi = "Y1RO", example = 0.284 }
+3GLSZM_GLV = { name = "Grey level variance", ibsi = "BYLV", example = 1.58 }
+3GLSZM_HGLZE = { name = "High grey level zone emphasis", ibsi = "5GN9", example = 8.111 }
+3GLSZM_LAE = { name = "Large area emphasis", ibsi = "48P8", example = 13.89 }
+3GLSZM_LAHGLE = { name = "Large area high grey level emphasis", ibsi = "J17V", example = 127.1 }
+3GLSZM_LALGLE = { name = "Large area low grey level emphasis", ibsi = "YH51", example = 2.964 }
+3GLSZM_LGLZE = { name = "Low grey level zone emphasis", ibsi = "XMSY", example = 0.4066 }
+3GLSZM_SAE = { name = "Small area emphasis", ibsi = "5QRC", example = 0.4938 }
+3GLSZM_SAHGLE = { name = "Small area high grey level emphasis", ibsi = "HW1V", example = 3.546 }
+3GLSZM_SALGLE = { name = "Small area low grey level emphasis", ibsi = "5RAI", example = 0.2569 }
+3GLSZM_SZN = { name = "Size zone non-uniformity", ibsi = "4JP3", example = 3 }
+3GLSZM_SZNN = { name = "Size zone non-uniformity normalized", ibsi = "VB3A", example = 0.3333 }
+3GLSZM_ZE = { name = "Zone entropy", ibsi = "GU8N", example = 2.949 }
+3GLSZM_ZP = { name = "Zone percentage", ibsi = "P30P", example = 0.3333 }
+3GLSZM_ZV = { name = "Zone variance", ibsi = "3NSA", example = 4.889 }
+
+[gldzm_3d]
+3GLDZM_GLM = { name = "Grey level mean", ibsi = "", example = 3.286 }
+3GLDZM_GLNU = { name = "Grey level non-uniformity", ibsi = "VFT7", example = 1.571 }
+3GLDZM_GLNUN = { name = "Grey level non-uniformity normalized", ibsi = "7HP3", example = 0.2245 }
+3GLDZM_GLV = { name = "Grey level variance", ibsi = "QK93", example = 1.918 }
+3GLDZM_HGLZE = { name = "High grey level zone emphasis", ibsi = "K26C", example = 12.71 }
+3GLDZM_LDE = { name = "Large distance emphasis", ibsi = "MB4I", example = 1.429 }
+3GLDZM_LDHGLE = { name = "Large distance high grey level emphasis", ibsi = "KLTH", example = 16.57 }
+3GLDZM_LDLGLE = { name = "Large distance low grey level emphasis", ibsi = "A7WM", example = 0.2783 }
+3GLDZM_LGLZE = { name = "Low grey level zone emphasis", ibsi = "S1RA", example = 0.2307 }
+3GLDZM_SDE = { name = "Small distance emphasis", ibsi = "0GBI", example = 0.8929 }
+3GLDZM_SDHGLE = { name = "Small distance high grey level emphasis", ibsi = "DKNJ", example = 11.75 }
+3GLDZM_SDLGLE = { name = "Small distance low grey level emphasis", ibsi = "RUVG", example = 0.2188 }
+3GLDZM_ZDE = { name = "Zone distance entropy", ibsi = "GBDU", example = 2.522 }
+3GLDZM_ZDM = { name = "Zone distance mean", ibsi = "", example = 1.143 }
+3GLDZM_ZDNU = { name = "Zone distance non-uniformity", ibsi = "V294", example = 5.286 }
+3GLDZM_ZDNUN = { name = "Zone distance non-uniformity normalized", ibsi = "IATH", example = 0.7551 }
+3GLDZM_ZDV = { name = "Zone distance variance", ibsi = "7WT1", example = 0.1224 }
+3GLDZM_ZP = { name = "Zone percentage", ibsi = "VIWW", example = 0.1458 }
+
+[shape_3d]
+3AREA = { name = "Surface area (exposed voxel faces)", ibsi = "", example = 96.0 }
+3AREA_2_VOLUME = { name = "Surface to volume ratio", ibsi = "", example = 2.182 }
+3COMPACTNESS1 = { name = "Compactness 1", ibsi = "", example = 0.02639 }
+3COMPACTNESS2 = { name = "Compactness 2", ibsi = "", example = 0.2475 }
+3MESH_VOLUME = { name = "Volume (mesh)", ibsi = "RNU0", example = 39.58 }
+3SPHERICAL_DISPROPORTION = { name = "Spherical disproportion", ibsi = "", example = 1.593 }
+3SPHERICITY = { name = "Sphericity", ibsi = "", example = 0.6278 }
+3VOLUME_CONVEXHULL = { name = "Convex hull volume", ibsi = "", example = 40.67 }
+3VOXEL_VOLUME = { name = "Volume (voxel counting)", ibsi = "YEKZ", example = 44.0 }
+3MAJOR_AXIS_LEN = { name = "Major axis length", ibsi = "TDIC", example = 5.786 }
+3MINOR_AXIS_LEN = { name = "Minor axis length", ibsi = "P9VJ", example = 3.881 }
+3LEAST_AXIS_LEN = { name = "Least axis length", ibsi = "7J51", example = 2.892 }
+3ELONGATION = { name = "Elongation", ibsi = "Q3CK", example = 0.6708 }
+3FLATNESS = { name = "Flatness", ibsi = "N17B", example = 0.4998 }
+
+[intensity_histogram]
+IH_MEAN_VAL = { name = "Mean of the bin-centre intensities", ibsi = "", example = 2.84 }
+IH_VARIANCE_VAL = { name = "Variance of the bin-centre intensities", ibsi = "", example = 0.9216 }
+IH_SKEWNESS_VAL = { name = "Skewness of the bin-centre intensities", ibsi = "", example = 0.25 }
+IH_EXCESS_KURTOSIS_VAL = { name = "Excess kurtosis of the bin-centre intensities", ibsi = "", example = -0.6667 }
+IH_MEDIAN_VAL = { name = "Median bin-centre intensity", ibsi = "", example = 3.0 }
+IH_MINIMUM_VAL = { name = "Minimum intensity", ibsi = "", example = 1.0 }
+IH_P10_VAL = { name = "10th percentile intensity", ibsi = "", example = 1.5 }
+IH_P90_VAL = { name = "90th percentile intensity", ibsi = "", example = 4.333 }
+IH_MAXIMUM_VAL = { name = "Maximum intensity", ibsi = "", example = 5.0 }
+IH_MODE_VAL = { name = "Mode bin-centre intensity", ibsi = "", example = 3.0 }
+IH_INTERQUANTILE_RANGE_VAL = { name = "Interquartile range of the intensities", ibsi = "", example = 1.278 }
+IH_RANGE_VAL = { name = "Intensity range", ibsi = "", example = 4.0 }
+IH_MEAN_ABSOLUTE_DEVIATION_VAL = { name = "Mean absolute deviation of the bin-centre intensities", ibsi = "", example = 0.768 }
+IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_VAL = { name = "Robust mean absolute deviation of the bin-centre intensities", ibsi = "", example = 0.768 }
+IH_MEDIAN_ABSOLUTE_DEVIATION_VAL = { name = "Median absolute deviation of the bin-centre intensities", ibsi = "", example = 0.736 }
+IH_COEFFICIENT_OF_VARIATION_VAL = { name = "Coefficient of variation of the bin-centre intensities", ibsi = "", example = 0.338 }
+IH_QUANTILE_COEFFICIENT_OF_DISPERSION_VAL = { name = "Quartile coefficient of dispersion of the intensities", ibsi = "", example = 0.2333 }
+IH_ENTROPY_VAL = { name = "Histogram entropy (same as IH_ENTROPY_IDX)", ibsi = "", example = 2.182 }
+IH_UNIFORMITY_VAL = { name = "Histogram uniformity (same as IH_UNIFORMITY_IDX)", ibsi = "", example = 0.2416 }
+IH_ROBUST_MEAN_VAL = { name = "Robust mean of the bin-centre intensities", ibsi = "", example = 2.84 }
+IH_MEAN_IDX = { name = "Mean discretised intensity", ibsi = "X6K6", example = 2.8 }
+IH_VARIANCE_IDX = { name = "Discretised intensity variance", ibsi = "CH89", example = 1.44 }
+IH_SKEWNESS_IDX = { name = "Discretised intensity skewness", ibsi = "88K1", example = 0.25 }
+IH_EXCESS_KURTOSIS_IDX = { name = "(Excess) discretised intensity kurtosis", ibsi = "C3I7", example = -0.6667 }
+IH_MEDIAN_IDX = { name = "Median discretised intensity", ibsi = "WIFQ", example = 3.0 }
+IH_MINIMUM_IDX = { name = "Minimum discretised intensity", ibsi = "1PR8", example = 1.0 }
+IH_P10_IDX = { name = "10th discretised intensity percentile", ibsi = "1PR8", example = 1.0 }
+IH_P90_IDX = { name = "90th discretised intensity percentile", ibsi = "GPMT", example = 5.0 }
+IH_MAXIMUM_IDX = { name = "Maximum discretised intensity", ibsi = "3NCY", example = 5.0 }
+IH_MODE_IDX = { name = "Intensity histogram mode", ibsi = "AMMC", example = 3.0 }
+IH_INTERQUANTILE_RANGE_IDX = { name = "Discretised intensity interquartile range", ibsi = "WR0O", example = 1.0 }
+IH_RANGE_IDX = { name = "Discretised intensity range", ibsi = "5Z3W", example = 4.0 }
+IH_MEAN_ABSOLUTE_DEVIATION_IDX = { name = "Intensity histogram mean absolute deviation", ibsi = "D2ZX", example = 0.96 }
+IH_ROBUST_MEAN_ABSOLUTE_DEVIATION_IDX = { name = "Intensity histogram robust mean absolute deviation", ibsi = "WRZB", example = 0.96 }
+IH_MEDIAN_ABSOLUTE_DEVIATION_IDX = { name = "Intensity histogram median absolute deviation", ibsi = "4RNL", example = 0.92 }
+IH_COEFFICIENT_OF_VARIATION_IDX = { name = "Intensity histogram coefficient of variation", ibsi = "CWYJ", example = 0.4286 }
+IH_QUANTILE_COEFFICIENT_OF_DISPERSION_IDX = { name = "Intensity histogram quartile coefficient of dispersion", ibsi = "SLWD", example = 0.2 }
+IH_ENTROPY_IDX = { name = "Discretised intensity entropy", ibsi = "TLU2", example = 2.182 }
+IH_UNIFORMITY_IDX = { name = "Discretised intensity uniformity", ibsi = "BJ5W", example = 0.2416 }
+IH_MAX_GRADIENT = { name = "Maximum histogram gradient", ibsi = "12CE", example = 2.5 }
+IH_MAX_GRADIENT_IDX = { name = "Maximum histogram gradient intensity", ibsi = "8E6O", example = 2.0 }
+IH_MIN_GRADIENT = { name = "Minimum histogram gradient", ibsi = "VQB3", example = -3.0 }
+IH_MIN_GRADIENT_IDX = { name = "Minimum histogram gradient intensity", ibsi = "RHQZ", example = 4.0 }
+IH_ROBUST_MEAN_IDX = { name = "Robust mean discretised intensity", ibsi = "", example = 2.8 }
+IH_NUM_BINS = { name = "Number of bins", ibsi = "", example = 5.0 }
+IH_BIN_SIZE = { name = "Bin width", ibsi = "", example = 0.8 }
+
+[radial]
+FRAC_AT_D = { name = "Fraction of pixels in a ring", ibsi = "", example = 0.02128 }
+MEAN_FRAC = { name = "Mean intensity in a ring", ibsi = "", example = 7.0 }
+RADIAL_CV = { name = "Coefficient of variation across the wedges of a ring", ibsi = "", example = 2.646 }

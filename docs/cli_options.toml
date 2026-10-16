@@ -1,0 +1,605 @@
+# Command-line options, rendered into docs/source/cli_reference.rst by
+# docs/tools/gen_cli_reference.py. `evidence` lists the code (under src/nyx/) that
+# applies each default and requirement; re-check it when the option's code changes.
+
+[[option]]
+name = "-h, --help"
+group = "Diagnostics"
+required = false
+default = ""
+values = "no value"
+build = ""
+summary = "Prints the usage screen and exits."
+notes = "Running nyxus with no arguments also prints the usage screen."
+evidence = "environment.cpp:409-414, 422-426; main_nyxus.cpp:17-18"
+
+[[option]]
+name = "--intDir"
+group = "Input"
+required = true
+default = ""
+values = "path to an existing directory"
+build = ""
+summary = "Directory holding the intensity images."
+notes = "Required even when --intSegMapFile is used: mapped intensity file names are resolved relative to this directory. When it is the same directory as --segDir, Nyxus runs in whole-slide mode and treats each image as one ROI."
+evidence = "environment.cpp:563-567, 575-578; dirs_and_files.cpp:65-66, 135"
+
+[[option]]
+name = "--segDir"
+group = "Input"
+required = true
+default = ""
+values = "path to an existing directory"
+build = ""
+summary = "Directory holding the label (mask) images that define the ROIs."
+notes = "Set it to the same directory as --intDir for whole-slide mode, where each intensity image is a single ROI and no mask is read. Required even with --intSegMapFile: mapped mask file names are resolved relative to this directory."
+evidence = "environment.cpp:558-562, 575-578; main_nyxus.cpp:83-91, 147-168; dirs_and_files.cpp:74-91, 139"
+
+[[option]]
+name = "--filePattern"
+group = "Input"
+required = false
+default = ".*"
+default_at = "environment_basic.h:rawFilePattern"
+values = "regular expression (2D); regular expression or file pattern with `{d+}`, `{c+}`, `{set d+}` (3D)"
+build = ""
+summary = "Selects which files in the input directories are processed. In 2D the pattern must match the whole file name."
+notes = "A regular expression, so use `.*\\.tif` rather than `*.tif`. In 3D a pattern containing `{set d+}` is read as a z-slice file pattern, for example `BRATS_{d+}_z{set d+}_t{d+}.ome.tif`. Such a pattern currently matches no files and the run stops with 'No intensity and/or label file pairs to process'. Not applied to pairs listed in an --intSegMapFile."
+evidence = "environment_basic.h:27; environment.cpp:345-346, 519-523, 538-554; environment_basic.cpp:19-55; strpat.cpp:9-35; dirs_and_files.cpp:28-46"
+
+[[option]]
+name = "--intSegMapFile"
+group = "Input"
+required = false
+default = ""
+values = "file name inside --intSegMapDir"
+build = ""
+summary = "Names a text file that lists explicit intensity/mask pairs, one pair per line, instead of matching files by name."
+notes = "Each line holds an intensity file name and then a mask file name, separated by whitespace. Intensity names are relative to --intDir and mask names to --segDir. Requires --intSegMapDir. --filePattern is not applied to listed pairs. 2D only."
+evidence = "dirs_and_files.cpp:71, 117-153; environment.cpp:433; main_nyxus.cpp:62-71, 174-183"
+
+[[option]]
+name = "--intSegMapDir"
+group = "Input"
+required = false
+default = ""
+values = "path to an existing directory"
+build = ""
+summary = "Directory that contains the --intSegMapFile pairing file."
+notes = "Has no effect unless --intSegMapFile is also given."
+evidence = "dirs_and_files.cpp:71, 117-124; environment.cpp:432"
+
+[[option]]
+name = "--dim"
+group = "Input"
+required = false
+default = "2"
+default_at = "environment.cpp:dim_"
+values = "2 | 3"
+build = ""
+summary = "Sets whether the dataset is processed as 2D images or as 3D volumes."
+notes = "In 3D the default feature set is *3D_ALL*, the Gabor and nested-ROI options are rejected, and --intSegMapFile is ignored."
+evidence = "environment.cpp:124, 527-537, 589-592, 993-997, 1042-1046; main_nyxus.cpp:58, 145"
+
+[[option]]
+name = "--outDir"
+group = "Output"
+required = true
+default = ""
+values = "path to an existing directory"
+build = ""
+summary = "Directory where result files are written."
+notes = "The directory must already exist."
+evidence = "environment.cpp:568-572; dirs_and_files.cpp:62-63, 275-276"
+
+[[option]]
+name = "--outputType"
+group = "Output"
+required = true
+default = ""
+values = "separatecsv | singlecsv | arrowipc | parquet (case-insensitive)"
+build = ""
+summary = "Selects the result format: one CSV per image pair, one combined CSV, an Arrow IPC file, or a Parquet file."
+notes = "There is no default. arrowipc and parquet need a build with Arrow support."
+evidence = "environment.cpp:94-95, 581-585, 604-641"
+
+[[option]]
+name = "--resultFname"
+group = "Output"
+required = false
+default = "NyxusFeatures"
+default_at = "environment.cpp:nyxus_result_fname"
+values = "non-empty file name without extension"
+build = ""
+summary = "Base name of the result file for singlecsv, arrowipc and parquet output."
+notes = "Ignored with separatecsv, which names each file after its image pair."
+evidence = "environment.cpp:77, 345-346, 597-601; output_2_csv.cpp:212-219; workflow_2d_segmented.cpp:277"
+
+[[option]]
+name = "--noval"
+group = "Output"
+required = false
+default = "0.0"
+default_at = "cli_result_options.h:noval_"
+values = "real number"
+build = ""
+summary = "Value reported in place of a feature that cannot be computed (NaN or undefined)."
+notes = "In Arrow and Parquet output, values that are still NaN or infinite when they are written become -0.0 instead, whatever --noval is. A non-numeric value stops the run with an error."
+evidence = "cli_result_options.h:31-37, 75-76; env_features.cpp:723; output_writers.h:19"
+
+[[option]]
+name = "--tinyval"
+group = "Output"
+required = false
+default = "1e-10"
+default_at = "cli_result_options.h:tiny_"
+values = "real number"
+build = ""
+summary = "Accepted and validated, but no feature reads it."
+notes = "Intended as the small constant feature formulas use to avoid division by zero; the stored value is not used by any feature. A non-numeric value stops the run with an error."
+evidence = "cli_result_options.h:39-44, 75-76; env_features.cpp:724"
+
+[[option]]
+name = "--aggr"
+group = "Output"
+required = false
+default = "false"
+default_at = "cli_result_options.h:need_aggregation_"
+values = "true | false | t | f (case-insensitive)"
+build = ""
+summary = "When true, writes one row per image holding the mean of each feature over that image's ROIs, labelled ROI -1, instead of one row per ROI."
+notes = "Applies only to CSV output (separatecsv or singlecsv) for images with masks. Arrow, Parquet and whole-slide output ignore it. Values the features substituted with --noval enter the mean at that value. A value still NaN at output time contributes the full --noval rather than --noval divided by the number of ROIs, and an infinite value is not replaced, so the aggregated cell can be inf."
+evidence = "cli_result_options.h:46-52, 77; output_2_csv.cpp:505-557; workflow_2d_segmented.cpp:334-336; workflow_3d_segmented.cpp:261-263"
+
+[[option]]
+name = "--annot"
+group = "Output"
+required = false
+default = "false"
+default_at = "cli_result_options.h:need_annotation_"
+values = "true | false | t | f (case-insensitive)"
+build = ""
+summary = "When true, adds annotation columns (anno0, anno1, ...) to CSV output. Their values come from the mask file name split at underscores."
+notes = "Only the part of the mask file name before the first dot is used, and empty pieces are dropped. Annotation columns appear in CSV output only. With Arrow IPC or Parquet output, --annot=true currently stops the run with a crash and leaves an unreadable file (known defect, https://github.com/PolusAI/nyxus/issues/517)."
+evidence = "cli_result_options.h:54-60, 78; slideprops.cpp:518-537; output_2_csv.cpp:71-79, 586-590"
+
+[[option]]
+name = "--annotsep"
+group = "Output"
+required = false
+default = "_"
+default_at = "cli_result_options.h:anno_sep_"
+values = "string"
+build = ""
+summary = "Separator for splitting file names into annotations."
+notes = "The value is accepted but annotations are always split at '_'."
+evidence = "cli_result_options.h:62-65, 79; slideprops.cpp:531 (hard-coded \"_\"); no other reader of the stored separator"
+
+[[option]]
+name = "--features"
+group = "Features"
+required = false
+default = "*ALL* (2D) or *3D_ALL* (3D)"
+values = "comma-separated feature and group names (case-insensitive), or the path of a text file listing them"
+build = ""
+summary = "Selects the features or feature groups to compute."
+notes = "If omitted, *ALL* (2D) or *3D_ALL* (3D) is computed; in 2D the IH_* features are then left out unless --ibsi=true. If the value is the path of an existing file, the names are read from it: one or more per line, and `#` starts a comment. Names are case-insensitive. An unknown name stops the run and lists the valid names. Image-quality names cannot be mixed with other features. Intensity Histogram (IH_*) features need --ibsi=true."
+evidence = "environment.cpp:587-594, 839-901; env_features.cpp:71-182, 459-529; featureset.cpp:650, 940"
+
+[[option]]
+name = "--ibsi"
+group = "Features"
+required = false
+default = "false"
+default_at = "environment.cpp:ibsi_compliance"
+values = "true | 1 | on (case-insensitive); any other value means false"
+build = ""
+summary = "Turns on IBSI compliance mode: texture families skip grey-level binning and follow IBSI definitions, and the Intensity Histogram family becomes available."
+notes = "Invalid values are not reported; they silently mean false."
+evidence = "environment.cpp:120, 878-879; env_features.cpp:515-528; features/glcm.cpp:355; features/glrlm.cpp:85; features/ngtdm.cpp:48"
+
+[[option]]
+name = "--mergerois"
+group = "Features"
+required = false
+default = "false"
+default_at = "environment.h:mergeLabels"
+values = "true | 1 | on (case-insensitive); any other value means false"
+build = ""
+summary = "Merges all nonzero mask labels into one ROI covering the whole foreground, instead of one ROI per label."
+notes = "Background (label 0) is still excluded. Invalid values are not reported; they silently mean false."
+evidence = "environment.h:61-62; environment.cpp:882-883; phase1.cpp:76, 330; phase2_2d.cpp:165, 289"
+
+[[option]]
+name = "--skiproi"
+group = "Features"
+required = false
+default = "no ROIs skipped"
+values = "label[,label...]  or  maskfile:label[,label...][;maskfile:label...]"
+build = ""
+summary = "Leaves ROIs with the listed labels out of feature calculation and output, either in every image or only in named mask files."
+notes = "File names are mask file names without directories. A plain label list applies to every image and takes precedence over file-specific lists. Not used in whole-slide mode."
+evidence = "environment.cpp:723-731; roi_blacklist.cpp:7-75, 77-135, 147-169; workflow_2d_segmented.cpp:105-120; workflow_3d_segmented.cpp:94"
+
+[[option]]
+name = "--pixelDistance"
+group = "Features"
+required = false
+default = "5"
+default_at = "environment.cpp:n_pixel_distance"
+values = "integer >= 1"
+build = ""
+summary = "Distance in pixels within which two ROIs count as neighbors, for the neighbor features."
+notes = ""
+evidence = "environment.cpp:87, 655-663; env_features.cpp:728"
+
+[[option]]
+name = "--pixelsPerCentimeter"
+group = "Features"
+required = false
+default = ""
+values = "real number > 0"
+build = ""
+summary = "Image resolution, for reporting area in square micrometres (AREA_UM2)."
+notes = "The value is accepted and validated but does not reach the results: AREA_UM2 is reported as 0 whatever the resolution (known defect, https://github.com/PolusAI/nyxus/issues/496)."
+evidence = "environment.cpp:904-914; env_features.cpp:719-748 (sets PIXELSIZEUM, never XYRES); features/basic_morphology.cpp:24-28, 101-105"
+
+[[option]]
+name = "--embeddedpixelsize"
+group = "Features"
+required = false
+default = ""
+values = "any string"
+build = ""
+summary = "Accepted for compatibility."
+notes = "The value is accepted and shown in the run summary but does not affect any result."
+evidence = "environment.cpp:81, 274, 438 (only uses)"
+
+[[option]]
+name = "--onlineStatsThresh"
+group = "Features"
+required = false
+default = ""
+values = "not accepted"
+build = ""
+summary = "Reserved option name."
+notes = "The name is reserved but the option is not accepted: passing it stops the run as an unrecognized argument."
+evidence = "cli_option_constants.h:15; environment.cpp:428-489 (not in the parse list), 507-513"
+
+[[option]]
+name = "--coarseGrayDepth"
+group = "Texture settings"
+required = false
+default = "64"
+default_at = "environment.cpp:coarse_grayscale_depth"
+values = "integer: > 0 MATLAB-style bins from 0 to the ROI maximum, < 0 |n| PyRadiomics-style bins over the ROI range, 0 no binning for the texture families that use the shared rule"
+build = ""
+summary = "Grey depth used to bin intensities for the 2D texture families, 3D GLCM, 3D GLDZM and 3D NGLDM, and the bin count of the ENTROPY, UNIFORMITY and HISTOGRAM histograms and of the Intensity Histogram (IH_*) family."
+notes = "3D GLRLM, GLSZM, GLDM and NGTDM ignore it: they use their own greydepth metaparameter. NGLDM uses its own rule: 0 puts every pixel at level 0, and a negative value does not select PyRadiomics-style bins. ENTROPY and UNIFORMITY use |n| bins; HISTOGRAM writes n columns and none when n is negative (a fix is coming); none of the three has bins at 0; the IH_* features return the --noval substitute when n is below 2. --ibsi=true makes every texture family skip binning, except the 2D GLCM test for a constant ROI. The value is read as its leading integer: 8.5 runs as 8, and a value that does not start with an integer stops the run with an error."
+evidence = "environment.cpp:106, 666-674; env_features.cpp:726, 735; features/texture_feature.h:23-49, 101-103; features/intensity_histogram.cpp:311"
+
+[[option]]
+name = "--glcmAngles"
+group = "Texture settings"
+required = false
+default = "0,45,90,135"
+default_at = "cli_glcm_options.h:glcmAngles"
+values = "comma-separated integers from {0, 45, 90, 135}"
+build = ""
+summary = "Directions, in degrees, at which 2D GLCM co-occurrence matrices are computed. GLCM output has one column per angle."
+notes = "2D GLCM only: 3D GLCM always uses its own fixed directions. Other integers pass parsing, but the calculation reports 'unsupported angle' for them and their columns hold 0. A non-integer list stops the run with an error."
+evidence = "cli_glcm_options.h:20-21; cli_glcm_options.cpp:7-24; features/glcm.cpp:9, 229-256; features/3d_glcm.cpp:10; output_2_csv.cpp:116"
+
+[[option]]
+name = "--glcmOff"
+group = "Texture settings"
+required = false
+default = "1"
+default_at = "env_features.cpp:s[(int)NyxSetting::GLCM_OFFSET].ival"
+values = "integer >= 1"
+build = ""
+summary = "GLCM co-occurrence distance in pixels."
+notes = "The value is validated but does not reach the GLCM calculation, which always uses an offset of 1."
+evidence = "cli_glcm_options.cpp:26-38 (stores offset_, never read); env_features.cpp:735 (GLCM_OFFSET fixed to 1); features/glcm.cpp:24"
+
+[[option]]
+name = "--gaborfreqs"
+group = "Gabor"
+required = false
+default = "built-in pairs (see notes)"
+values = "comma-separated real numbers; same count as --gabortheta"
+build = ""
+summary = "Frequencies of the Gabor high-pass filters. A value f gives a wavelength of 2*pi/f pixels. GABOR output has one column per frequency/orientation pair."
+notes = "Give --gaborfreqs and --gabortheta together, with the same number of values: value i of one pairs with value i of the other. Without both, the command line uses its built-in pairs: frequencies 0, pi/4, pi/2 and 3*pi/4 at orientations 4, 16, 32 and 64 radians. The Python API's default set is frequencies 4, 16, 32, 64 at 0, 45, 90, 135 degrees; to compute that set from the command line, pass --gaborfreqs=4,16,32,64 --gabortheta=0,45,90,135. 2D only."
+evidence = "cli_gabor_options.cpp:7-47; features/gabor.cpp:19-25, 107-112, 395 (lambda = 2*pi/f0); features/gabor.h:62-63; python/nyxus/nyxus.py:299-300; environment.cpp:993-997"
+
+[[option]]
+name = "--gabortheta"
+group = "Gabor"
+required = false
+default = "built-in pairs (see --gaborfreqs)"
+values = "comma-separated real numbers in degrees; same count as --gaborfreqs"
+build = ""
+summary = "Orientations of the Gabor filters in degrees, one per frequency in --gaborfreqs."
+notes = "Converted to radians internally; no range check is made. Give it together with --gaborfreqs, with the same number of values. See --gaborfreqs for the built-in pairs. 2D only."
+evidence = "cli_gabor_options.cpp:10-41; features/gabor.cpp:19-25, 646-651"
+
+[[option]]
+name = "--gaborgamma"
+group = "Gabor"
+required = false
+default = "0.1"
+default_at = "features/gabor.cpp:GaborFeature::gamma"
+values = "real number > 0"
+build = ""
+summary = "Aspect ratio (ellipticity) of the Gaussian envelope of the Gabor filter."
+notes = ""
+evidence = "features/gabor.cpp:14; cli_gabor_options.cpp:49-62"
+
+[[option]]
+name = "--gaborsig2lam"
+group = "Gabor"
+required = false
+default = "0.8"
+default_at = "features/gabor.cpp:GaborFeature::sig2lam"
+values = "real number > 0"
+build = ""
+summary = "Ratio of the Gaussian width (sigma) to the wavelength, which sets the filter's spatial-frequency bandwidth."
+notes = ""
+evidence = "features/gabor.cpp:15, 398; cli_gabor_options.cpp:64-77"
+
+[[option]]
+name = "--gaborkersize"
+group = "Gabor"
+required = false
+default = "16"
+default_at = "features/gabor.cpp:GaborFeature::n"
+values = "integer >= 2"
+build = ""
+summary = "Width and height, in pixels, of the square Gabor convolution kernel."
+notes = "1 is accepted but reads past the end of the convolution buffer, so its values are arbitrary (known defect, https://github.com/PolusAI/nyxus/issues/506)."
+evidence = "features/gabor.cpp:16, 69, 493-505; cli_gabor_options.cpp:79-92"
+
+[[option]]
+name = "--gaborf0"
+group = "Gabor"
+required = false
+default = "0.1"
+default_at = "features/gabor.cpp:GaborFeature::f0LP"
+values = "real number > 0"
+build = ""
+summary = "Frequency of the low-pass Gabor filter that produces the baseline image the high-pass responses are compared against."
+notes = "Same units as --gaborfreqs: the wavelength is 2*pi/f pixels. 2D only."
+evidence = "features/gabor.cpp:17, 395; cli_gabor_options.cpp:94-107"
+
+[[option]]
+name = "--gaborthold"
+group = "Gabor"
+required = false
+default = "0.025"
+default_at = "features/gabor.cpp:GaborFeature::GRAYthr"
+values = "real number"
+build = ""
+summary = "Threshold on the ratio of filtered image to baseline; pixels above it are counted in the GABOR feature."
+notes = "Any real number is accepted, with no range check. A non-numeric value stops the run with an error. 2D only."
+evidence = "features/gabor.cpp:18; cli_gabor_options.cpp:109-122"
+
+[[option]]
+name = "--fpimgmin"
+group = "Image handling"
+required = false
+default = "0.0 (used only when an --fpimg* option is given; otherwise each image's own minimum)"
+values = "real number, less than --fpimgmax"
+build = ""
+summary = "Lower end of the intensity range that floating-point images are rescaled from before conversion to integer grey levels."
+notes = "Giving any of --fpimgmin, --fpimgmax or --fpimgdr switches every float image from its own scanned min/max to the fixed range [--fpimgmin, --fpimgmax]. Unset ends then default to 0 and 1. A min that is not below the max stops the run with an error. Integer images are not affected."
+evidence = "cli_fpimage_options.h:65-67; cli_fpimage_options.cpp:7-41, 73-78; slideprops.cpp:585-602; environment.cpp:760-768"
+
+[[option]]
+name = "--fpimgmax"
+group = "Image handling"
+required = false
+default = "1.0 (used only when an --fpimg* option is given; otherwise each image's own maximum)"
+values = "real number, greater than --fpimgmin"
+build = ""
+summary = "Upper end of the intensity range that floating-point images are rescaled from before conversion to integer grey levels."
+notes = "See --fpimgmin: giving any --fpimg* option replaces each image's own range with the fixed [min, max] range. A non-numeric value stops the run with an error."
+evidence = "cli_fpimage_options.h:65-67; cli_fpimage_options.cpp:22-41; slideprops.cpp:585-602"
+
+[[option]]
+name = "--fpimgdr"
+group = "Image handling"
+required = false
+default = "10000"
+default_at = "cli_fpimage_options.h:target_dyn_range_"
+values = "integer >= 1"
+build = ""
+summary = "Number of integer grey levels that floating-point intensities are rescaled into."
+notes = "Giving only --fpimgdr also switches float images to the fixed range 0 to 1 (the --fpimgmin/--fpimgmax defaults) instead of each image's own range. Pair it with --fpimgmin and --fpimgmax."
+evidence = "cli_fpimage_options.h:67; cli_fpimage_options.cpp:43-56, 73-78; slideprops.cpp:585-602"
+
+[[option]]
+name = "--preserve-hu"
+group = "Image handling"
+required = false
+default = "false"
+default_at = "cli_fpimage_options.h:preserve_hu_"
+values = "true | false | t | f (case-insensitive)"
+build = ""
+summary = "Loads floating-point and rescaled DICOM/NIfTI images with one grey level per intensity unit (offset by the image minimum) instead of min-max rescaling or the stored-integer map."
+notes = "Not needed to get Hounsfield units in the output: intensity features are reported in the image's own units either way. '1', 'on' and 'yes' are rejected with an error. Shape and texture features are unaffected."
+evidence = "cli_fpimage_options.h:68; cli_fpimage_options.cpp:58-68; environment.cpp:756-768; slideprops.cpp:585-636; helpers/helpers.h:120-129"
+
+[[option]]
+name = "--anisox"
+group = "Image handling"
+required = false
+default = "1"
+default_at = "cli_anisotropy_options.h:aniso_x"
+values = "real number"
+build = ""
+summary = "Size of a pixel or voxel along x relative to the other axes. Geometric features use it: a volume (3D or 2.5D) is featurized on its voxels as acquired and the shape features scale their coordinates by the anisotropy, and a 2D slide's geometric features are computed on its pixels resampled by the anisotropy. Intensity and texture features are computed on the pixels or voxels as acquired, so they report the same values with or without anisotropy. On a 2D slide the intensity-weighted geometric features (EDGE_*, WEIGHTED_CENTROID_X/Y, MASS_DISPLACEMENT, IMOM_*, the radial distribution and ZERNIKE2D) are computed on the pixels as acquired, each at its position scaled by the anisotropy. Of the image quality features only POWER_SPECTRUM_SLOPE changes: it is computed on the resampled ROI (known defect, https://github.com/PolusAI/nyxus/issues/519)."
+notes = "A value of 1 counts as unset. No positivity check is made. A value other than 1 in any --aniso* option replaces the physical spacing of --use-physical-spacing on all three axes; the axes not given then use 1. A non-numeric value stops the run with an error."
+evidence = "cli_anisotropy_options.h:21-29; cli_anisotropy_options.cpp:4-30; phase2_3d.cpp:29-66; phase2_2d.cpp:716-727"
+
+[[option]]
+name = "--anisoy"
+group = "Image handling"
+required = false
+default = "1"
+default_at = "cli_anisotropy_options.h:aniso_y"
+values = "real number"
+build = ""
+summary = "Pixel/voxel scale factor along y; same behavior as --anisox."
+notes = "A value of 1 counts as unset. No positivity check is made."
+evidence = "cli_anisotropy_options.h:21-29; cli_anisotropy_options.cpp:13-19"
+
+[[option]]
+name = "--anisoz"
+group = "Image handling"
+required = false
+default = "1"
+default_at = "cli_anisotropy_options.h:aniso_z"
+values = "real number"
+build = ""
+summary = "Voxel scale factor along z for 3D volumes; same behavior as --anisox."
+notes = "Only 3D processing uses it. A value of 1 counts as unset."
+evidence = "cli_anisotropy_options.cpp:20-26; phase2_3d.cpp:29-66; phase2_2d.cpp:726-727 (x and y only)"
+
+[[option]]
+name = "--use-physical-spacing"
+group = "Image handling"
+required = false
+default = "false"
+default_at = "environment.h:use_physical_spacing_"
+values = "true | t | 1 | on | yes (case-insensitive); any other value means false"
+build = ""
+summary = "In 3D, uses each volume's OME PhysicalSize values, scaled so the smallest axis is 1, as the voxel spacing by which the shape features scale their coordinates."
+notes = "3D only. Any --aniso* value other than 1 replaces the physical spacing on all three axes. Invalid values are not reported; they silently mean false. Physical spacing columns are written to the output whether or not this is on."
+evidence = "environment.h:104-110; environment.cpp:804-809; phase2_3d.cpp:29-66; slideprops.cpp:325-327, 506"
+
+[[option]]
+name = "--reduceThreads"
+group = "Performance and memory"
+required = false
+default = "4"
+default_at = "environment.cpp:n_reduce_threads"
+values = "integer >= 1"
+build = ""
+summary = "Number of CPU threads used to calculate features."
+notes = ""
+evidence = "environment.cpp:84, 645-653; main_nyxus.cpp:88, 98, 162, 194; reduce_trivial_rois.cpp:775-785"
+
+[[option]]
+name = "--ramLimit"
+group = "Performance and memory"
+required = false
+default = "50% of available physical RAM at startup"
+values = "integer megabytes >= 0, not above available RAM"
+build = ""
+summary = "Memory budget in megabytes. ROIs whose estimated footprint reaches it are processed out of core, and the rest are batched to fit within it."
+notes = "The value is read as its leading integer: 100.5 and 100MB both run as 100. A value above available RAM, a negative value, or a value that does not start with an integer stops the run with an error."
+evidence = "environment.cpp:137-138, 687-706, 938-954; workflow_2d_segmented.cpp:123-148; workflow_3d_segmented.cpp:103-133"
+
+[[option]]
+name = "--tempDir"
+group = "Performance and memory"
+required = false
+default = "system temporary directory"
+values = "path to an existing directory"
+build = ""
+summary = "Directory for the temporary files of out-of-core ROIs."
+notes = "The directory must exist and is shown in the run summary, but out-of-core temporary files are written to the system temporary directory regardless."
+evidence = "environment.cpp:709-720; helpers/fsystem.h:25-35; features/image_matrix_nontriv.cpp:36, 102; features/voxel_cloud_nontriv.cpp:67"
+
+[[option]]
+name = "--hsig"
+group = "Nested ROIs"
+required = false
+default = ""
+values = "string (channel marker in file names, e.g. _c)"
+build = ""
+summary = "Text that marks the channel number in mask file names (for example '_c' in p0_y1_r1_c1.ome.tiff). Nested-ROI analysis uses it to find the parent and child masks of the same image."
+notes = "Nested-ROI analysis runs only when all four of --hsig, --hpar, --hchi and --hag are given. If any is missing, the others are silently ignored. 2D only. The analysis reads back the per-image CSV files, so use --outputType=separatecsv: with singlecsv each parent's row is taken from the first row with its label in the combined file, which can belong to another image. It writes <stem>_nested_features.csv and a relations CSV to --outDir."
+evidence = "cli_nested_roi_options.cpp:15-21, 23-29, 156-183, 431, 682-798; output_2_csv.cpp:212-219; environment.cpp:793-801, 1040-1054; main_nyxus.cpp:125-135"
+
+[[option]]
+name = "--hpar"
+group = "Nested ROIs"
+required = false
+default = ""
+values = "integer"
+build = ""
+summary = "Channel number of the masks that provide parent ROIs."
+notes = "Needs --hsig, --hchi and --hag as well. A non-integer value stops the run with an error."
+evidence = "cli_nested_roi_options.cpp:31-44"
+
+[[option]]
+name = "--hchi"
+group = "Nested ROIs"
+required = false
+default = ""
+values = "integer"
+build = ""
+summary = "Channel number of the masks that provide child ROIs. A child is a ROI whose bounding box lies inside a parent's bounding box."
+notes = "Needs --hsig, --hpar and --hag as well. A non-integer value stops the run with an error."
+evidence = "cli_nested_roi_options.cpp:46-59, 786-794"
+
+[[option]]
+name = "--hag"
+group = "Nested ROIs"
+required = false
+default = ""
+values = "SUM | MEAN | MIN | MAX | WMA | NONE (uppercase only)"
+build = ""
+summary = "How the features of a parent's children are combined into the parent's row. NONE lists every child's features side by side."
+notes = "Uppercase only. WMA computes the same unweighted mean as MEAN. There is no default: nested-ROI analysis runs only when all four nested options are given."
+evidence = "cli_nested_roi_options.cpp:61-91, 634-660"
+
+[[option]]
+name = "--verbose"
+group = "Diagnostics"
+required = false
+default = "1"
+default_at = "environment_basic.h:verbosity_level"
+values = "integer >= 0"
+build = ""
+summary = "Amount of console output. The version banner, the list of recognized arguments, and errors and warnings are printed at every level; 1 adds the run summary, and higher levels add timing, per-ROI and diagnostic detail."
+notes = "At level 2 and above, ROI metric files are also written to the output directory."
+evidence = "environment_basic.h:28; environment.cpp:500-504, 676-684; main_nyxus.cpp:15, 20; workflow_2d_segmented.cpp:101; environment.h:302-306"
+
+[[option]]
+name = "--exclusivetiming"
+group = "Diagnostics"
+required = false
+default = "false"
+default_at = "-"
+values = "true | 1 | on (case-insensitive); any other value means false"
+build = "CHECKTIMING builds"
+summary = "In timing builds, true measures time per image pair (exclusive) and false measures the whole collection (inclusive)."
+notes = "Rejected as unrecognized in builds without CHECKTIMING."
+evidence = "cli_option_constants.h:27-29; environment.cpp:480-482, 812-821; helpers/timing.cpp:10"
+
+[[option]]
+name = "--useGpu"
+group = "GPU"
+required = false
+default = "false"
+default_at = "cli_gpu_options.h:using_gpu_"
+values = "true | false (case-insensitive)"
+build = "GPU builds"
+summary = "Runs supported feature calculations on a CUDA GPU."
+notes = "Other values stop the run with an error. If the chosen device cannot be initialized, the run stops and suggests --useGpu=false. Rejected as unrecognized in non-GPU builds."
+evidence = "cli_option_constants.h:31-34; cli_gpu_options.h:28; cli_gpu_options.cpp:76-94; environment.cpp:484-487, 825-833; main_nyxus.cpp:22-31"
+
+[[option]]
+name = "--gpuDeviceID"
+group = "GPU"
+required = false
+default = "0"
+default_at = "cli_gpu_options.cpp:devIds.push_back"
+values = "comma-separated integers >= 0"
+build = "GPU builds"
+summary = "GPU device IDs to choose from. Nyxus uses the listed device with the most free memory at startup."
+notes = "Ignored unless --useGpu=true. A value that does not start with a non-negative integer stops the run with an error. A listed device that cannot be used is skipped; if none of them can be used, the run stops with an error."
+evidence = "cli_gpu_options.cpp:68-106; gpu/gpu_helpers.cu:60-86; environment.cpp:486"

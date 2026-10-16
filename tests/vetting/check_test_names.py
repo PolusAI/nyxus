@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Enforce the SPEC.md 6.1/6.2 test-naming conventions over the test tree.
 
 Two rules, both mechanical:
@@ -91,12 +91,19 @@ DIM_AGNOSTIC = {
     "test_vetting_mechanics.py": "self-test of check_coverage.py / check_test_names.py",
     "test_environment_lifecycle_mechanics.py":
         "instance -> Environment binding in the bindings; no image dimensionality involved",
+    "test_api_arguments_mechanics.py":
+        "argument checks of the Python constructors, for Nyxus, Nyxus3D and ImageQuality at once",
     # the native-OME readers address one 5D container (X,Y,Z,C,T) and are exercised at every
     # extent it can take -- 2D planes through 5D stacks -- so a dim token would name only one
     # of the shapes each file already covers
     "test_omezarr_mechanics.h": "OME-Zarr reader over 2D..5D extents of one container",
     "test_ometiff_mechanics.h": "OME-TIFF reader over 2D..5D extents of one container",
     "test_ome_meta_mechanics.h": "OME metadata parsers and the axes descriptor; no image is read",
+    "test_docstring_examples_mechanics.py": "the docstring examples of the Python API, which use 2D and 3D calls alike",
+    "test_docs_examples_mechanics.py": "the documentation's example scripts and README quick starts, 2D, 3D and dimension-free alike",
+    "test_docs_cli_reference_mechanics.py": "the CLI reference generator's checks; no image is read",
+    "test_docs_conf_mechanics.py": "the Sphinx configuration's release and title; no image is read",
+    "test_docs_feature_reference_mechanics.py": "the feature reference generator's checks; no image is read",
     "test_ooc_mechanics.py": "out-of-core streaming machinery, asserted for both dims at once",
     "test_physical_calibration_regression.py": "physical voxel spacing read from OME metadata, not from an image of either dimension",
     # imq carries its own dimension: dim=IMQ in oracle_coverage.csv, not 2D/3D

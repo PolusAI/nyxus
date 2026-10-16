@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 300" width="1000" height="300" font-family="Helvetica, Arial, sans-serif" role="img" aria-labelledby="t">
+  <title id="t">The Nyxus pipeline: input, scan, compute and output</title>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#4a5568"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="1000" height="300" fill="#ffffff"/>
+
+  <g stroke="#4a5568" stroke-width="1.5">
+    <rect x="15" y="40" width="200" height="230" rx="10" fill="#edf2f7"/>
+    <rect x="265" y="40" width="210" height="230" rx="10" fill="#e6f0fa"/>
+    <rect x="525" y="40" width="210" height="230" rx="10" fill="#e6f0fa"/>
+    <rect x="785" y="40" width="200" height="230" rx="10" fill="#edf2f7"/>
+  </g>
+
+  <g stroke="#4a5568" stroke-width="2" marker-end="url(#a)">
+    <line x1="217" y1="155" x2="261" y2="155"/>
+    <line x1="477" y1="155" x2="521" y2="155"/>
+    <line x1="737" y1="155" x2="781" y2="155"/>
+  </g>
+
+  <g fill="#1a202c" font-size="17" font-weight="bold" text-anchor="middle">
+    <text x="115" y="70">Input</text>
+    <text x="370" y="70">Scan</text>
+    <text x="630" y="70">Compute</text>
+    <text x="885" y="70">Output</text>
+  </g>
+
+  <g fill="#2d3748" font-size="13" text-anchor="middle">
+    <text x="115" y="105">Intensity and label images</text>
+    <text x="115" y="125">TIFF, OME-TIFF, OME-Zarr,</text>
+    <text x="115" y="145">NIfTI, DICOM</text>
+    <text x="115" y="180">or NumPy arrays</text>
+    <text x="115" y="200">(Python, 2D)</text>
+    <text x="115" y="240">2D images, 3D volumes,</text>
+    <text x="115" y="258">channels and timepoints</text>
+
+    <text x="370" y="105">Pair intensity and label images</text>
+    <text x="370" y="135">Read each image tile by tile</text>
+    <text x="370" y="155">and assemble every ROI,</text>
+    <text x="370" y="175">including ROIs across tiles</text>
+    <text x="370" y="210">Estimate each ROI's</text>
+    <text x="370" y="230">memory footprint</text>
+
+    <text x="630" y="105">ROIs within the RAM limit:</text>
+    <text x="630" y="125">in memory, in batches,</text>
+    <text x="630" y="145">on several threads</text>
+    <text x="630" y="180">Larger ROIs:</text>
+    <text x="630" y="200">out of core</text>
+    <text x="630" y="235">Optional GPU for some</text>
+    <text x="630" y="253">feature families</text>
+
+    <text x="885" y="105">CSV, one file or</text>
+    <text x="885" y="125">one per image</text>
+    <text x="885" y="160">Arrow IPC or Parquet</text>
+    <text x="885" y="195">pandas DataFrame</text>
+    <text x="885" y="215">(Python)</text>
+  </g>
+</svg>

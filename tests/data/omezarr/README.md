@@ -1,9 +1,10 @@
 # OME-Zarr test datasets
 
-These datasets are consumed by `tests/test_omezarr_mechanics.h` (and the OME-Zarr cases in
-`tests/test_all.cc`), which exercise the two z5-based OME-Zarr readers:
+These datasets are consumed by `tests/test_2d_omezarr_mechanics.h` (the stores in the table
+below except `dim5.ome.zarr`) and `tests/test_omezarr_mechanics.h` (the 3D/5D stores), and by the
+OME-Zarr cases in `tests/test_all.cc`, which exercise the two z5-based OME-Zarr readers:
 
-- `NyxusOmeZarrLoader` (`src/nyx/omezarr.h`)  — the Hedgehog tile-loader
+- `NyxusOmeZarrLoader` (`src/nyx/omezarr.h`)  — the `AbstractTileLoader` tile loader
 - `RawOmezarrLoader`   (`src/nyx/raw_omezarr.h`) — the raw-format loader
 
 Both readers open an OME-NGFF image group (zarr v2 or v3) whose attributes carry
@@ -13,7 +14,7 @@ layout through `resolve_zarr_layout` (`src/nyx/ome/ome_zarr_layout.h`): each axi
 channel and timeframe extents -- and the tile width, height and depth -- are the `shape` and
 `chunks` entries at that role's storage index. The on-disk order is therefore whatever `axes`
 declares: `dim5_ztcyx.ome.zarr` is shape `[4, 2, 3, 6, 8]` and reports depth 4, not `shape[2]`.
-Only when `axes` is absent is the order taken positionally, as `(T, C, Z, Y, X)` right-aligned
+Only when `axes` is absent (or is not a list) is the order taken positionally, as `(T, C, Z, Y, X)` right-aligned
 to the array's rank (X last, Y before it, then Z, C, T).
 
 ## Datasets
@@ -43,28 +44,34 @@ and `3.75`; every other sample is `1.0`. A real-valued store is free to hold any
 `RawOmezarrLoader::get_uint32_pixel` is what a float32 *mask* is read through -- converting a
 non-finite or an out-of-range double to an unsigned integer is undefined, not merely lossy.
 
-The table above covers the stores written by hand or by bfio. Everything else in this
-directory is written by `gen_dim5.py`, whose module docstring and per-writer docstrings are the
-inventory for those; the four described under "Converter-shaped and diagnostic stores" below are
-called out here because what they cover is a property of the *container*, not of the pixels.
+The table above covers the stores written by hand or by bfio, plus `dim5.ome.zarr` (described
+below). Everything else in this directory comes from `gen_dim5.py`, whose module docstring,
+per-writer docstrings and `main()` are the inventory for those; the four described under
+"Converter-shaped and diagnostic stores" below are called out here because what they cover is a
+property of the *container*, not of the pixels. Two exceptions: `main()` does not call
+`write_label_mask`, `write_v3_sharded` or `write_v3_badcodec`, so `python gen_dim5.py` leaves
+`dim3_mask.ome.zarr`, `dim5_v3_sharded.ome.zarr` and `dim5_v3_badcodec.ome.zarr` as they are; and
+`dim5_v3_zstd.ome.zarr` (zarr v3, `bytes` + `zstd` codecs, one chunk per `(t, c, z)` plane, read
+only by a build with zstd) has no writer in the script.
 
 ### Converter-shaped and diagnostic stores
 
-These exist because the rest of the 3D/5D fixtures here are little-endian, flat-separator and
-uncompressed — i.e. none of them resembles what `bioformats2raw` actually writes. They were
+These exist because the other zarr v2 fixtures here are little-endian and flat-separator, and
+all but the two bfio stores are uncompressed — i.e. none of them resembles what `bioformats2raw`
+actually writes. They were
 added after a cross-container run over real converter output.
 
 | Store | What is unusual about it | Expected |
 |-------|--------------------------|----------|
 | `dim3_nested.ome.zarr` | `dimension_separator: "/"` (chunk `(1,0,0)` is the file `0/1/0/0`) plus a blosc/lz4 codec. Nesting is the NGFF 0.4 default and what the converter emits; `--no-nested` downgrades the declared version to 0.1. | reads identically to `dim3_zyx.ome.zarr` |
-| `bigendian.ome.zarr` | `dtype: ">u2"`, payload genuinely byte-swapped. `bioformats2raw` through 0.9.x writes big-endian and has no switch to change it. z5 maps only the `<` and `|` spellings, so the array cannot be opened. | refused, and the message names big-endianness and the remedy |
+| `bigendian.ome.zarr` | `dtype: ">u2"`, payload genuinely byte-swapped. `bioformats2raw` 0.9 writes big-endian and has no switch to change it; 0.12 writes little-endian. z5 maps only the `<` and `|` spellings, so the array cannot be opened. | refused, and the message names big-endianness and the remedy |
 | `b2r_layout.ome.zarr` | `bioformats2raw` layout: the root carries only `{"bioformats2raw.layout": 3}` and the image is the child group `0`. The data is fine; the path is one level too high. | refused, and the message names the layout and the series group |
 | `b2r_layout_v3.ome.zarr` | the same, in zarr v3 / NGFF 0.5, where the key sits under `"ome"`. | as above |
 
 `tests/test_omezarr_mechanics.h` asserts the first through
 `test_omezarr_nested_chunk_keys_mechanics()` and the other three through
-`test_omezarr_diagnosed_refusals_mechanics()`, which checks the message text rather than only
-that a throw happened — the throw alone was already there.
+`test_omezarr_diagnosed_refusals_mechanics()`, which checks the message text (and that it names
+the store) rather than only that the open throws.
 
 ### `dim5.ome.zarr` — 5D channel/timeframe addressability
 
@@ -82,13 +89,14 @@ coordinate:
 value(x,y,z,c,t) = 1 + ((((t*C + c)*Z + z)*Y + y)*X + x)    # C=3, Z=4, Y=6, X=8
 ```
 
-`test_omezarr_5d_channel_time_addressing` / `test_raw_omezarr_5d_channel_time_addressing`
+`TEST_OMEZARR_5D_CHANNEL_TIME_ADDRESSING_MECHANICS` / `TEST_RAW_OMEZARR_5D_CHANNEL_TIME_ADDRESSING_MECHANICS`
+(through `assert_omezarr_addressing` / `assert_raw_omezarr_addressing` in `tests/test_omezarr_mechanics.h`)
 read plane `(z,c,t)` via `loadTileFromFile(..., layer=z, channel=c, timeframe=t, ...)`
 and assert every value matches the encoding — so a loader that ignored C/T (offset
 pinned to `{0,0,...}`) returns the wrong plane and fails. Generated by `gen_dim5.py`
 (zarr 3.x). Regenerate: `python gen_dim5.py`.
 
-Deterministic checksums asserted by the tests:
+Deterministic checksums asserted by `tests/test_2d_omezarr_mechanics.h`:
 
 - `test.ome.zarr`   sum of all pixels = `133955584`
 - `multi.ome.zarr`  sum of all pixels = `12681000000`

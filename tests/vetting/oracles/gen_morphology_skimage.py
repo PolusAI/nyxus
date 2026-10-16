@@ -25,11 +25,11 @@ ORIENTATION -- regionprops(...).orientation is the major-axis angle from the ROW
   though the AXIS LENGTHS differ ~1.4%. Those are vetted against MATLAB instead, which applies the
   same +1/12 correction Nyxus does -- see gen_morphology_matlab.m.
 
-EROSIONS_2_VANISH -- number of binary erosions until the object disappears. Nyxus uses a 3x3
-  (8-connected) structuring element == skimage.morphology.footprint_rectangle((3, 3)). The
-  4-connected disk(1) gives a different count (2 vs 1), so the value also pins the connectivity
-  convention. (EROSIONS_2_VANISH_COMPLEMENT is a degenerate 0 on this fixture -- the complement is
-  the bbox background ring -- and is not vetted.)
+EROSIONS_2_VANISH is not vetted here. Nyxus erodes with the 4-connected 3x3 cross and reports one
+  less than the number of erosions it performs; skimage.morphology.footprint_rectangle((3, 3))
+  counts every erosion of an 8-connected square. Both give 1 on this fixture, which confirms
+  neither the structuring element nor the counting convention, so the count is printed for
+  information and the Nyxus value is a regression pin (test_2d_morphology_regression.h).
 
 DIAMETER_EQUAL_AREA -- regionprops(...).equivalent_diameter_area = sqrt(4*Area/pi), the same closed
   form Nyxus uses, over an exact pixel count.
@@ -99,7 +99,6 @@ def main():
     got = {
         "CONVEX_HULL_AREA": hull_area,
         "SOLIDITY": float(M.sum()) / hull_area,
-        "EROSIONS_2_VANISH": float(erosions),
         "ORIENTATION": float(90.0 - np.degrees(rp.orientation)),
         "DIAMETER_EQUAL_AREA": float(rp.equivalent_diameter_area),
         "PERIMETER": float(perimeter(C)),
@@ -110,6 +109,7 @@ def main():
     for name in sorted(got):
         print(f'\t{{"{name}", {got[name]!r}}},')
 
+    print(f"  (info) square-footprint erosions to vanish={erosions}; not a pin, the conventions differ")
     # informational: the moment-normalization gap that keeps the axis lengths out of the skimage set
     print(f"  (info) axis_major sk={rp.axis_major_length:.6f} nyx=6.968816 ; "
           f"eccentricity sk={rp.eccentricity:.6f} nyx=0.616174 -> ~1.4% gap, vetted vs MATLAB")

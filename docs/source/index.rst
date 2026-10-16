@@ -1,26 +1,75 @@
 Nyxus
-===============
+=====
 
-Nyxus is a feature-rich, highly optimized, Python/C++ application capable of analyzing images of arbitrary size 
-and assembling complex regions of interest (ROIs) split across multiple image tiles and files. This accomplished through 
-multi-threaded tile prefetching and a three phase analysis pipeline shown below.
+Nyxus computes intensity, texture, morphology and image quality features for every region of
+interest (ROI) in 2D images and 3D volumes: 758 features in all, 539 for 2D images, 213 for 3D
+volumes and 6 image quality features. It runs from the command line or from Python, reads
+TIFF, OME-TIFF, OME-Zarr, NIfTI and DICOM files (OME-TIFF and OME-Zarr with up to five
+dimensions), and assembles ROIs that span several image tiles.
 
-.. image :: nyxus_workflow.jpg
+ROIs larger than the memory budget are processed out of core when they come from files; which
+features then keep their in-memory values is listed under :ref:`large-images`.
 
-Nyxus can be used via Python or command line and is available in containerized form for reproducible execution. 
-Nyxus computes over 450 combined intensity, texture, and morphological features at the ROI or whole image level with 
-more in development. Key features that make Nyxus unique among other image feature extraction applications is its ability 
-to operate at any scale, its highly validated algorithms, and its modular nature that makes the addition of new features straightforward.
+.. image:: nyxus_workflow.svg
+   :alt: The Nyxus pipeline: input, scan, compute and output
+
+.. grid:: 1 2 2 2
+   :gutter: 3
+
+   .. grid-item-card:: User guide
+      :link: user_guide
+      :link-type: doc
+
+      How to install and run Nyxus, choose features, read and write each format, process 3D
+      volumes and large images, use the GPU, IBSI mode, image quality features and the WIPP
+      plugin, and fix common errors.
+
+   .. grid-item-card:: Feature reference
+      :link: feature_reference
+      :link-type: doc
+
+      Every feature code, feature group and definition, how features are validated, and the
+      conventions they share.
+
+   .. grid-item-card:: API reference
+      :link: api_reference
+      :link-type: doc
+
+      The Python classes and functions, and every command-line option.
+
+   .. grid-item-card:: Developer guide
+      :link: developer_guide
+      :link-type: doc
+
+      Add a feature and work on the Nyxus code.
+
+Citing Nyxus
+------------
+
+If you use Nyxus in your work, please cite the software. The citation metadata is kept in
+``CITATION.cff`` at the repository root, and GitHub's *Cite this repository* button on the
+`repository page <https://github.com/PolusAI/nyxus>`_ produces APA and BibTeX from it.
+
+.. parsed-literal::
+
+   Kharchenko, A. *Nyxus* (version |release|). https\://github.com/PolusAI/nyxus
+
+.. parsed-literal::
+
+   @software{nyxus,
+     author  = {Kharchenko, Andriy},
+     title   = {Nyxus},
+     version = {|release|},
+     url     = {https\://github.com/PolusAI/nyxus},
+     license = {MIT}
+   }
+
 
 .. toctree::
-   :maxdepth: 1
-   :caption: Contents:
+   :hidden:
 
-   featurelist
-   cmdline_and_examples
-   Reference
-   devguide
-   Math
-   supported_formats
-   imagequality
-   
+   user_guide
+   feature_reference
+   api_reference
+   developer_guide
+   release_notes
