@@ -125,7 +125,7 @@ The other directions give other matrices, with sums of 54 for :math:`(1,1,0)`, 7
 changes sign: ``3GLCM_CORRELATION`` is 0.1855 and ``3GLCM_CORRELATION_AVE`` is −0.0387.
 
 The *Example* value of each feature in the :ref:`index <glcm-3d-index>` is what Nyxus returns for
-this ROI in the plain column, that is for :math:`\textbf{P}_{(1,1,1)}` above. The test suite runs
+this ROI in IBSI mode in the plain column, that is for :math:`\textbf{P}_{(1,1,1)}` above. The test suite runs
 this example and checks every one of them.
 
 .. tab-set::
@@ -232,8 +232,9 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
-*Example* is the plain-column value, direction :math:`(1,1,1)`, on the worked example.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
+*Example* is the plain-column value, direction :math:`(1,1,1)`, on the worked example in IBSI
+mode.
 
 .. include:: glcm_3d_index.inc
 

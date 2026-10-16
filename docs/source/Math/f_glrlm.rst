@@ -188,7 +188,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the 0° value on the worked example.
 
 .. include:: glrlm_index.inc
@@ -544,10 +544,11 @@ Validation
 ----------
 
 The test suite checks every 2D GLRLM feature and its ``_AVE`` against an independent
-implementation, named in the :ref:`index <glrlm-index>`. In IBSI mode Nyxus reproduces the IBSI
-consensus values on the IBSI digital phantom, and matches PyRadiomics on the same phantom
-to a relative 10\ :sup:`-9`; run entropy agrees to 5 × 10\ :sup:`-3` because of the approximate
-logarithm. The default binning and the treatment of pixels outside the mask are covered by
+implementation, named in the :ref:`index <glrlm-index>`. In IBSI mode Nyxus matches PyRadiomics
+on the IBSI digital phantom to a relative 10\ :sup:`-9`; run entropy agrees to 5 × 10\ :sup:`-3`
+because of the approximate logarithm. The test suite also compares the results with IBSI's
+published consensus values at a relative 10\ :sup:`-2`, the precision those values are published
+to; that comparison is a consistency check, not one of the validations in the index. The default binning and the treatment of pixels outside the mask are covered by
 regression tests only.
 
 

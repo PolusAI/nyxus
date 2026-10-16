@@ -87,7 +87,7 @@ at :math:`\rho = 0.59`, so all 25 pixels are inside the disk and none sits on th
 
 Because every weight is inside the disk, :math:`A_{00} = \frac{1}{\pi}\sum w = 1/\pi = 0.3183`.
 Because the disk is centred on the intensity centroid, :math:`A_{11}` is the first moment about
-the centroid and vanishes; Nyxus returns a rounding residue below :math:`10^{-16}`.
+the centroid and vanishes; Nyxus returns a rounding residue of order :math:`10^{-17}`.
 
 .. list-table::
    :widths: 13 9 18 13 9 18 13 9 18
@@ -330,7 +330,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example, for ``ZERNIKE2D_Z0``.
 
 .. include:: zernike_index.inc

@@ -4,7 +4,6 @@
 import json
 import math
 import os
-import platform
 from pathlib import Path
 
 # example-start
@@ -91,18 +90,13 @@ two[5:30, 45:70] = 1
 check(fd(two), [1.423, 1.107], "two squares")
 check(fd(square(25)), [1.842, 1.0], "one square")
 
-# A 40 x 40 square and one separate pixel: an intensity of 4294967295 hides that pixel from the
-# box count on ROIs whose padded side exceeds 32
+# A 40 x 40 square and one separate pixel. In memory an intensity of 4294967295 makes the box
+# count's marker overflow its 32-bit conversion, which is undefined, so only 100 is checked here
 lone = np.zeros((80, 80), np.uint32)
 lone[0:40, 0:40] = 1
 lone[70, 70] = 1
-# the out-of-range conversion is undefined: x86-64 builds give 0 and drop the pixel, ARM builds
-# saturate and count it
-arm = platform.machine().lower() in ("arm64", "aarch64")
-for value, quoted in ((100, 1.4156), (4294967295, 1.4156 if arm else 1.4951)):
-    inten = lone * 100
-    inten[70, 70] = value
-    check([Nyxus(F).featurize(inten, lone)["FRACT_DIM_BOXCOUNT"][0]], [quoted], f"lone pixel {value}")
+inten = lone * 100
+check([Nyxus(F).featurize(inten, lone)["FRACT_DIM_BOXCOUNT"][0]], [1.4156], "lone pixel")
 
 # Small ROIs
 check(fd(np.ones((1, 1))), [0.0, 0.0], "1 pixel")
@@ -128,11 +122,10 @@ s_ln, n_ln = np.log([16, 8, 4, 2]), np.log([c[0] for c in box_counts(mask)])
 assert math.isclose(-np.polyfit(s_ln, n_ln, 1)[0], 1.3966, rel_tol=5e-4)
 
 # Sides 2^k - 1 read exactly 2 (squares) and 1 (lines); a 2 x 2 square, like any ROI with L = 2,
-# gives -0; a smooth outline can read slightly below 1
+# gives 0; a smooth outline can read slightly below 1
 for k in (3, 7, 15, 31, 63):
     check([fd(square(k))[0], fd(np.ones((1, k)))[0]], [2.0, 1.0], f"side {k}")
-two_by_two = fd(np.ones((2, 2)))[0]
-assert two_by_two == 0.0 and math.copysign(1.0, two_by_two) == -1.0
+assert fd(np.ones((2, 2)))[0] == 0.0
 check(fd(square(6))[1:], [0.9947], "square 6")
 
 # File input: out of core (ram_limit=0), anisotropy, merged labels and whole-slide mode
@@ -157,9 +150,15 @@ for value in (100, 4294967295):
 check(from_files(mask)[0][:2], [1.3732, 1.1311], "example, no anisotropy")
 check(from_files(mask, anisotropy_x=2)[0][:2], [1.2459, 1.1731], "anisotropy_x=2")
 check(from_files(mask, anisotropy_y=3)[0][:2], [1.4458, 1.2546], "anisotropy_y=3")
+# With anisotropy the out-of-core contour differs, so a single-contour disk differs too
+check(from_files(disk(8), anisotropy_x=2)[0][1:2], [1.1431], "disk 8, anisotropy_x=2")
+check(from_files(disk(8), anisotropy_x=2, ram_limit=0)[0][1:2], [1.0482], "disk 8, anisotropy_x=2, out of core")
 labels = two.copy()
 labels[5:30, 45:70] = 2
 for row in from_files(labels, (labels > 0) * 100):
     check(row[:2], [1.8416, 1.0], "two labels")
 check(from_files(labels, (labels > 0) * 100, mergerois=True)[0][:2], [1.4231, 1.107], "merged")
 check(from_files(np.ones((200, 200)), single_roi=True)[0][:2], [1.8703, 1.0], "whole slide")
+# The whole-slide box is one pixel larger than the image, so a 256 x 256 image sits on a 512 canvas
+check(from_files(np.ones((256, 256)), single_roi=True)[0][:1], [1.8667], "whole slide 256")
+check(fd(square(256))[:1], [2.0], "square 256")

@@ -65,6 +65,8 @@ class Nyxus:
         Default 64. Must be positive. Number of grey levels intensities are
         binned to for the texture features, and the number of bins of the
         ``ENTROPY``, ``UNIFORMITY``, ``HISTOGRAM`` and ``IH_*`` histograms.
+        With ``ibsi=True`` the texture features are not binned and read the
+        image's own grey levels; the histograms still follow this depth.
     n_feature_calc_threads : int, optional
         Default 4. Number of feature calculation threads. Must be at least 1.
     use_gpu_device : int, optional
@@ -78,12 +80,15 @@ class Nyxus:
         support.
     ibsi : bool, optional
         Default False. Compute the IBSI-compliant variant of the features that
-        have one, and enable the Intensity Histogram (``IH_*``) family.
+        have one, and enable the Intensity Histogram (``IH_*``) family. The
+        texture features then skip grey-level binning, whatever
+        ``coarse_gray_depth`` is.
     mergerois : bool, optional
         Default False. Merge all nonzero mask labels into one whole-foreground
         ROI (background excluded) instead of one ROI per label.
     gabor_kersize : int, optional
-        Default 16. Side of the Gabor filter kernel, in pixels.
+        Default 16. Side of the Gabor filter kernel, in pixels; at least 2
+        (1 is accepted, but its values are arbitrary).
     gabor_gamma : float, optional
         Default 0.1. Aspect ratio of the Gaussian factor.
     gabor_sig2lam : float, optional
@@ -489,8 +494,8 @@ class Nyxus:
             Directory of mask (label) images. Default None processes each
             intensity image as one ROI covering the whole image.
         file_pattern : str, optional
-            Default ".*". Regular expression selecting the files, matched against
-            file names in both directories.
+            Default ".*". Regular expression selecting the files. It must match
+            the whole file name, case-sensitively, in both directories.
         output_type : {"pandas", "arrowipc", "parquet"}, optional
             Output format. Default "pandas" returns a DataFrame; "arrowipc" and
             "parquet" write a file and return its path.
@@ -901,6 +906,8 @@ class Nyxus:
         blacklist : str
             Either a global list of labels, ``"27,28,30"``, or per-file lists
             separated by semicolons, ``"file1.ome.tif:5,6,7;file2.ome.tif:11,12"``.
+            A per-file list names the mask file without its directory; a name
+            with a directory part is accepted but matches no file.
 
         Raises
         ------
@@ -1399,7 +1406,8 @@ class Nyxus3D:
         of 3D GLCM and 3D GLDZM, of the 3D NGLDM conversion, and the bin count
         of ``3ENTROPY`` and ``3UNIFORMITY``. 3D GLRLM, GLSZM, GLDM and NGTDM
         ignore it: they bin to their own ``greydepth`` metaparameter (see
-        :meth:`set_metaparam`), 0 (no binning) by default.
+        :meth:`set_metaparam`), 0 (no binning) by default. With ``ibsi=True``
+        no 3D texture family bins.
     n_feature_calc_threads : int, optional
         Default 4. Number of feature calculation threads. Must be at least 1.
     use_gpu_device : int, optional
@@ -1410,7 +1418,8 @@ class Nyxus3D:
         GPU support.
     ibsi : bool, optional
         Default False. Compute the IBSI-compliant variant of the features that
-        have one.
+        have one. The texture features then skip grey-level binning, whatever
+        ``coarse_gray_depth`` and the ``greydepth`` metaparameters are.
     dynamic_range : float, optional
         Default 10000. Number of grey levels a floating-point image is
         rescaled to.
@@ -1741,8 +1750,9 @@ class Nyxus3D:
             Directory of mask (label) volumes. None processes each intensity
             volume as one ROI.
         file_pattern : str
-            Regular expression selecting the files, matched against file names in
-            both directories. Required; pass ".*" for all files.
+            Regular expression selecting the files. It must match the whole file
+            name, case-sensitively, in both directories. Required; pass ".*" for
+            all files.
         output_type : {"pandas", "arrowipc", "parquet"}, optional
             Output format. Default "pandas" returns a DataFrame; "arrowipc" and
             "parquet" write a file and return its path.
@@ -2413,8 +2423,8 @@ class ImageQuality:
             Directory of mask (label) images. Default None processes each
             intensity image as one ROI covering the whole image.
         file_pattern : str, optional
-            Default ".*". Regular expression selecting the files, matched against
-            file names in both directories.
+            Default ".*". Regular expression selecting the files. It must match
+            the whole file name, case-sensitively, in both directories.
         output_type : {"pandas", "arrowipc", "parquet"}, optional
             Output format. Default "pandas" returns a DataFrame; "arrowipc" and
             "parquet" write a file and return its path.
@@ -2768,6 +2778,8 @@ class ImageQuality:
         blacklist : str
             Either a global list of labels, ``"27,28,30"``, or per-file lists
             separated by semicolons, ``"file1.ome.tif:5,6,7;file2.ome.tif:11,12"``.
+            A per-file list names the mask file without its directory; a name
+            with a directory part is accepted but matches no file.
 
         Raises
         ------

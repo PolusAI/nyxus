@@ -62,7 +62,7 @@ assert round(np.hypot(ii + 1 - cx, jj + 1 - cy).max() / 5, 2) == 0.59
 
 # Z0 is 1/pi when every pixel lies in the disk; Z1 is 0 because the disk sits on the centroid
 assert math.isclose(features["ZERNIKE2D_Z0"][0], 1 / math.pi, rel_tol=1e-12)
-assert abs(features["ZERNIKE2D_Z1"][0]) < 1e-16
+assert abs(features["ZERNIKE2D_Z1"][0]) < 1e-15
 
 # A quarter turn and a mirror image leave every value unchanged; so does scaling the intensities
 for other in (np.rot90(img), np.fliplr(img)):

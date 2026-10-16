@@ -1,6 +1,7 @@
 # Example for docs/source/Math/f_ngldm.rst: NGLDM features of the page's 5x5 worked example.
 # The page shows the lines between the "example" markers. The assertions below pin every value the
 # page quotes, in IBSI mode and with the default settings, so the page cannot drift from the code.
+# The values for a negative or zero --coarseGrayDepth are not: they are command-line only.
 import json
 import math
 import os
@@ -30,7 +31,7 @@ for code, facts in extras.items():
 
 # Values the page quotes for the default settings (64 levels, grey level floor(64 x / 5))
 default = Nyxus(["*ALL_NGLDM*"]).featurize(img, mask)
-quoted = {"GLM": 35.4, "GLV": 243.36, "HGLCE": 1496.5, "LGLCE": 0.00182, "LDE": 0.3725}
+quoted = {"GLM": 35.4, "GLV": 243.36, "HGLCE": 1496.5, "LGLCE": 0.00182, "LDE": 0.3725, "HDHGLE": 5608.0}
 for name, expected in quoted.items():
     got = default[f"NGLDM_{name}"][0]
     assert math.isclose(got, expected, rel_tol=5e-4), f"default NGLDM_{name} = {got}, page says {expected}"
@@ -51,10 +52,17 @@ zero = img.copy()
 zero[2, 2] = 0
 got = Nyxus(["*ALL_NGLDM*"], ibsi=True).featurize(zero, mask)["NGLDM_LGLCE"][0]
 assert math.isclose(got, 0.2323, rel_tol=5e-4), f"in-mask zero NGLDM_LGLCE = {got}, page says 0.2323"
+# leaving the level-0 pixel out of N_s as well would scale it by 25 / 24
+assert math.isclose(got * 25 / 24, 0.2420, rel_tol=5e-4)
 low = img * 20
 low[0, 0] = 1
 got = Nyxus(["*ALL_NGLDM*"]).featurize(low, mask)["NGLDM_LGLCE"][0]
 assert math.isclose(got, 0.00181, rel_tol=5e-4), f"low-intensity NGLDM_LGLCE = {got}, page says 0.00181"
+assert math.isclose(got * 25 / 24, 0.00189, rel_tol=5e-3)
+
+# The two grey-level conversions of the worked example's intensities 1 to 5 at the default 64
+assert [64 * x // 5 for x in range(1, 6)] == [12, 25, 38, 51, 64]
+assert [min(64 * x // 5 + 1, 64) for x in range(1, 6)] == [13, 26, 39, 52, 64]
 
 # Relation to GLDM quoted on the page: same matrix in IBSI mode, entropy differs by the GLDM log2
 gldm = Nyxus(["*ALL_GLDM*"], ibsi=True).featurize(img, mask)

@@ -1,6 +1,7 @@
 # Example for docs/source/Math/f_glszm_3d.rst: 3D GLSZM features of the page's 3 x 3 x 3 worked
 # example. The page shows the lines between the "example" markers. The assertions below pin every
-# value the page quotes, so the page cannot drift from the code.
+# value the page quotes, except the results of the 32-bit overflow under "Very large zones", so the
+# page cannot drift from the code.
 import json
 import math
 import os
@@ -80,6 +81,28 @@ ref = glszm3d(vol, mask, ibsi=True)
 assert same(ref, {c: features[f"3GLSZM_{c}"][0] for c in CODES})
 assert vol[1, 1, 0] == vol[0, 2, 1] == 3 and P[2, 5] == 1, "the corner-joined zone of level 3 and size 6"
 
+
+def zone_count(v, max_axes):
+    """Zones of equal level, joining voxels whose offset changes at most `max_axes` axes by 1."""
+    offsets = [d for d in np.ndindex(3, 3, 3) if 0 < sum(abs(c - 1) for c in d) <= max_axes]
+    seen, zones = np.zeros(v.shape, bool), 0
+    for start in np.ndindex(v.shape):
+        if seen[start]:
+            continue
+        zones += 1
+        seen[start], stack = True, [start]
+        while stack:
+            z, y, x = stack.pop()
+            for dz, dy, dx in offsets:
+                q = (z + dz - 1, y + dy - 1, x + dx - 1)
+                if all(0 <= q[i] < v.shape[i] for i in range(3)) and not seen[q] and v[q] == v[z, y, x]:
+                    seen[q] = True
+                    stack.append(q)
+    return zones
+
+
+assert [zone_count(vol, k) for k in (3, 2, 1)] == [9, 10, 15], "26-, 18- and 6-connected zone counts"
+
 # Default settings: no binning, the same values as IBSI mode; --coarseGrayDepth has no effect
 assert same(glszm3d(vol, mask), ref), "default settings differ from IBSI mode"
 assert same(glszm3d(vol, mask, coarse_gray_depth=8), ref), "coarse_gray_depth changed 3GLSZM"
@@ -126,3 +149,11 @@ n = Nyxus3D(["*3D_GLSZM*"])
 n.set_metaparam("3glszm/greydepth=2")
 f = n.featurize_directory(str(wv.resolve()), None, ".*")
 assert math.isclose(f["3GLSZM_ZP"][0], 9 / 27), "whole-volume mode applied 3glszm/greydepth"
+
+# Reading the metaparameter back fails, although setting it works
+try:
+    n.get_metaparam("3glszm/greydepth")
+except Exception as e:
+    assert "unrecognized" in str(e).lower(), f"get_metaparam failed differently: {e}"
+else:
+    raise AssertionError("get_metaparam('3glszm/greydepth') no longer fails")

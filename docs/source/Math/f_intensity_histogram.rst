@@ -217,7 +217,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example with 5 bins.
 
 .. include:: intensity_histogram_index.inc
@@ -705,7 +705,8 @@ IBSI mode only
    column of substitutes.
 
 Values depend on the bin count
-   Every feature except ``IH_MINIMUM_VAL``, ``IH_MAXIMUM_VAL`` and ``IH_RANGE_VAL`` changes with
+   Every feature except ``IH_MINIMUM_VAL``, ``IH_MINIMUM_IDX``, ``IH_MAXIMUM_VAL`` and
+   ``IH_RANGE_VAL`` changes with
    :math:`N`. On the worked example ``IH_MEAN_IDX`` is 2.8 with 5 bins and 29.68 with the default
    64; ``IH_MEDIAN_VAL`` is 3 and 3.031, ``IH_P90_VAL`` 4.333 and 4.948. Compare values only
    between runs with the same ``--coarseGrayDepth``.

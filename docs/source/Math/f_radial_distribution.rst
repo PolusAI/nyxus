@@ -323,7 +323,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example, for the first column, ring 0.
 
 .. include:: radial_index.inc
@@ -446,8 +446,8 @@ Ring 7 collects everything at or beyond R
 Ties between centre candidates depend on the pixel order
    When several pixels share the smallest spread, the first one read wins, and an array given to
    ``Nyxus.featurize`` is read in a different order from the same image read from a file. For a
-   10-pixel ROI with two tied candidates, ``MEAN_FRAC_0`` is 9 in memory and 2 from
-   a file.
+   10-pixel ROI with two tied candidates, ``MEAN_FRAC_0`` is 9 for the array and 2 for the same
+   image read from a file.
 
 Out-of-core ROIs
    Without anisotropy, an out-of-core ROI keeps its contour relative to its bounding box but its

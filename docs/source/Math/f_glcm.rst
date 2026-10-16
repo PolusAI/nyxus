@@ -42,7 +42,11 @@ and looks at the pixel :math:`\delta` pixels away along :math:`\theta`. If both 
 the image and neither has intensity 0, the pair of their grey levels is counted.
 
 - **Directions:** :math:`\theta \in \{0^\circ, 45^\circ, 90^\circ, 135^\circ\}`. Each direction
-  gets its own matrix and its own feature values.
+  gets its own matrix and its own feature values. With rows numbered from the top, 45° pairs a
+  pixel with the one below and to the right, and 135° with the one below and to the left. MATLAB
+  ``graycomatrix``, PyRadiomics and IBSI measure angles with the row axis pointing up, so they call
+  these diagonals 135° and 45°, and with the default one-order counting each Nyxus diagonal matrix
+  is the transpose of theirs.
 - **Distance:** :math:`\delta = 1` pixel.
 - **Grey levels:** intensities are first binned into :math:`N_g` grey levels, as set by
   ``--coarseGrayDepth`` (64 by default). In IBSI mode they are not binned: each integer intensity
@@ -145,7 +149,7 @@ Notation
 Sums over :math:`i` and :math:`j` run from 1 to :math:`N_g`. On a symmetric matrix
 :math:`p_x = p_y`, :math:`\mu_x = \mu_y` and :math:`HX = HY`.
 
-Logarithms are computed with a fast base-2 approximation. On the worked example below, over the
+Logarithms are computed with a fast base-2 approximation. On the worked example above, over the
 four directions in IBSI mode, ``GLCM_JE``, ``GLCM_SUMENTROPY``, ``GLCM_DIFENTRO`` and
 ``GLCM_INFOMEAS2`` differ from an exact logarithm by a relative 3.1 × 10\ :sup:`-3` at most, and
 ``GLCM_INFOMEAS1``, a difference of two entropies divided by a third, by 3.8 × 10\ :sup:`-3` to
@@ -208,7 +212,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the 0° value on the worked example.
 
 .. include:: glcm_index.inc
@@ -795,8 +799,13 @@ Constant ROI
 Grey-level values and indices
    With PyRadiomics-style binning (negative ``--coarseGrayDepth``) the grey levels are the distinct
    binned values present in the ROI. Most features use those values, but ``DIS``, ``JVAR``,
-   ``HOM1``, ``HOM2``, ``DIFVAR`` and the inverse-difference features use positions 1 to
-   :math:`N_g` in that list. The two coincide with the default binning and in IBSI mode.
+   ``HOM1``, ``HOM2``, ``DIFVAR``, ``DIFENTRO``, ``SUMENTROPY`` and the inverse-difference
+   features use positions 1 to :math:`N_g` in that list, and ``IDN`` and ``IDMN`` divide by
+   :math:`N_g`, the number of levels present. ``DIFAVE``, ``SUMAVERAGE`` and ``IV`` are a known
+   defect: they group pairs by the difference or sum of their positions, but weight each group by
+   the value difference or sum of one pair in it, so when the levels present are not consecutive
+   they match neither convention. Values and positions coincide with the default binning and in
+   IBSI mode.
 
 
 Validation

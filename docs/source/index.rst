@@ -7,14 +7,8 @@ volumes and 6 image quality features. It runs from the command line or from Pyth
 TIFF, OME-TIFF, OME-Zarr, NIfTI and DICOM files (OME-TIFF and OME-Zarr with up to five
 dimensions), and assembles ROIs that span several image tiles.
 
-ROIs larger than the memory budget are processed out of core when they come from files; from
-arrays, and as 2D whole-slide images, they stop the run with an error. Out of core, 3D ROIs keep
-their in-memory values, but the run stops with an error when one read of the file returns the
-whole volume (NIfTI, or OME-Zarr chunked over all of Z). Out of core on an image read as one tile,
-most 2D features keep their in-memory values: the contour-based and weighted-moment features
-differ, the fractal features can differ, the neighbor, polygonality and hexagonality features are
-not computed, and the family pages list the other exceptions. On an image read as several tiles, most 2D feature families
-raise an error out of core or give wrong values (see :ref:`large-images`).
+ROIs larger than the memory budget are processed out of core when they come from files; which
+features then keep their in-memory values is listed under :ref:`large-images`.
 
 .. image:: nyxus_workflow.svg
    :alt: The Nyxus pipeline: input, scan, compute and output

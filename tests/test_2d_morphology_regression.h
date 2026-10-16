@@ -70,6 +70,9 @@ void test_2d_morphology_caliper_shape2d_regression()
 }
 
 static const ref_vals_map<double> morphology_2d_regression_caliper_chords_ref_vals{
+	// A Nyxus snapshot. scikit-image's square-footprint erosion count also gives 1 on this shape, but
+	// with another structuring element and counting convention, so the agreement vets neither.
+	{"EROSIONS_2_VANISH", 1.0},
 	{"EROSIONS_2_VANISH_COMPLEMENT", 0.0},
 	{"MIN_FERET_ANGLE", 40.0},
 	// The Feret angles are a Nyxus-frame convention with no comparable imea output, so they are
@@ -328,7 +331,7 @@ void test_2d_morphology_fractal_circle_regression()
 
 // GEODETIC_LENGTH + THICKNESS are now vetted against imea's geodeticlength_and_thickness (the same
 // DIN ISO 9276-6 rectangle model) in test_2d_morphology_imea.h, after the geo_len_thickness.cpp
-// perimeter-truncation fix. EROSIONS_2_VANISH is vetted vs scikit-image in test_2d_morphology_skimage.h.
+// perimeter-truncation fix.
 
 // ---------------------------------------------------------------------------------------------------
 // Migrated from test_2d_remaining_features.h (Wave 6): erosion-complement, caliper (feret/martin/
@@ -337,11 +340,12 @@ void test_2d_morphology_fractal_circle_regression()
 // test_2d_morphology_common.h.
 // ---------------------------------------------------------------------------------------------------
 
-void test_2d_morphology_erosion_complement_regression()
+void test_2d_morphology_erosions_regression()
 {
 	std::vector<std::vector<double>> fvals;
 	calculate_shape2d_feature_values(fvals);
 
+	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::EROSIONS_2_VANISH, "EROSIONS_2_VANISH");
 	assert_morphology_caliper_chords_regression(fvals, Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT, "EROSIONS_2_VANISH_COMPLEMENT");
 }
 

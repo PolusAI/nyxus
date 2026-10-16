@@ -610,7 +610,7 @@ Definitions, formulas and settings: :doc:`/Math/f_erosion`.
      - Validation
    * - ``EROSIONS_2_VANISH``
      - Number of binary erosions with a 3x3 cross-shaped structuring element, applied to the ROI mask inside its bounding box, before the one that leaves no pixel set in the eroded area; the first two and the last row and column of the box are never eroded, so a ROI that fills its box, such as a solid rectangle of at least 4x4 pixels, never vanishes and reports the cap of 1000. 0 for ROIs of a single intensity.
-     - vetted: scikit-image
+     - regression
    * - ``EROSIONS_2_VANISH_COMPLEMENT``
      - Not computed: the column is never assigned and keeps its initial value of 0.
      - regression
@@ -1111,22 +1111,22 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm`.
      - vetted: PyRadiomics
    * - ``GLRLM_LGLRE``
      - Low grey level run emphasis: the mean over all runs of one over the squared grey level, which is high when dark runs dominate.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_HGLRE``
      - High grey level run emphasis: the mean over all runs of the squared grey level, which is high when bright runs dominate.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_SRLGLE``
      - Short run low grey level emphasis: the mean over all runs of one over the squared run length times the squared grey level, which is high for short dark runs.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_SRHGLE``
      - Short run high grey level emphasis: the mean over all runs of the squared grey level over the squared run length, which is high for short bright runs.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_LRLGLE``
      - Long run low grey level emphasis: the mean over all runs of the squared run length over the squared grey level, which is high for long dark runs.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_LRHGLE``
      - Long run high grey level emphasis: the mean over all runs of the squared run length times the squared grey level, which is high for long bright runs.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_SRE_AVE``
      - Short run emphasis, averaged over the angles.
      - vetted: PyRadiomics

@@ -8,8 +8,8 @@ what [`oracle_coverage.csv`](oracle_coverage.csv) CLAIMS to what the test tree A
 
 ## Coverage
 
-Features vetted by >=1 oracle: 637/758 (84%)
-regression: 121  invariant: 0  untested: 0
+Features vetted by >=1 oracle: 636/758 (84%)
+regression: 122  invariant: 0  untested: 0
 
 | family | total | vetted | regression | invariant | untested |
 |---|---|---|---|---|---|
@@ -23,7 +23,7 @@ regression: 121  invariant: 0  untested: 0
 | imq | 6 | 4 | 2 | 0 | 0 |
 | intensity_histogram | 47 | 43 | 4 | 0 | 0 |
 | moments | 180 | 118 | 62 | 0 | 0 |
-| morphology | 113 | 78 | 35 | 0 | 0 |
+| morphology | 113 | 77 | 36 | 0 | 0 |
 | neighbor | 9 | 8 | 1 | 0 | 0 |
 | ngldm | 38 | 33 | 5 | 0 | 0 |
 | ngtdm | 10 | 10 | 0 | 0 | 0 |
@@ -66,7 +66,7 @@ that alone understates every family that corroborates.
 | 2D | glszm | . | . | . | 16 | . | . | 16 | . | . | . | . |
 | 2D | intensity_histogram | 26 | . | . | 16 | . | . | 23 | . | . | . | 4 |
 | 2D | moments | . | . | . | . | . | . | . | . | . | 118 | 62 |
-| 2D | morphology | 5 | 5 | 2 | . | 20 | 33 | . | . | . | 8 | 29 |
+| 2D | morphology | 5 | 5 | 2 | . | 20 | 33 | . | . | . | 7 | 30 |
 | 2D | neighbor | 6 | 2 | . | . | . | . | . | . | . | . | 1 |
 | 2D | ngldm | . | . | . | 17 | . | . | 17 | . | . | . | 2 |
 | 2D | ngtdm | . | . | . | 5 | . | . | 5 | . | . | . | . |
@@ -82,13 +82,13 @@ that alone understates every family that corroborates.
 | 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | . | . | 5 | . | . |
 | IMQ | imq | 1 | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **41** | **9** | **2** | **181** | **20** | **95** | **208** | **2** | **272** | **127** | **121** |
+| | **all** | **41** | **9** | **2** | **181** | **20** | **95** | **208** | **2** | **272** | **126** | **122** |
 
 ## By dimensionality
 
 | dim | features | vetted | scanned | no oracle assertion | unscanned |
 |---|---:|---:|---:|---:|---:|
-| 2D | 539 | 434 | 539 | 105 | 0 |
+| 2D | 539 | 433 | 539 | 106 | 0 |
 | 3D | 213 | 199 | 213 | 14 | 0 |
 | IMQ | 6 | 4 | 6 | 2 | 0 |
 

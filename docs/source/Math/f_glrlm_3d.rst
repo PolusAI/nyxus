@@ -140,8 +140,7 @@ lengths 1 to 3 as columns. Voxels are written :math:`(z, y, x)`. The main diagon
    3 & 0 & 0 \end{bmatrix},
    \qquad N_s = \sum_{i,j} \textbf{P}(i,j) = 23, \qquad N_v = 27
 
-The other directions give between 21 and 26 runs. The *Example* value of each feature in the
-:ref:`index <glrlm-3d-index>` is what Nyxus returns for this ROI in the plain code, which is
+The *Example* value of each feature in the :ref:`index <glrlm-3d-index>` is what Nyxus returns for this ROI in the plain code, which is
 direction 1. The test suite runs this example and checks every one of them, in IBSI mode and with
 the default settings, which give the same values.
 
@@ -251,7 +250,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the direction-1 value on the worked example.
 
 .. include:: glrlm_3d_index.inc

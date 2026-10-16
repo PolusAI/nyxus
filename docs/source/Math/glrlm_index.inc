@@ -63,30 +63,30 @@
    * - :ref:`GLRLM_LGLRE <feature-glrlm-lglre>`
      - Low grey level run emphasis
      - V3SW
-     - IBSI (rel. 1e-9)
+     - PyRadiomics (rel. 1e-9)
      - 0.2301
    * - :ref:`GLRLM_HGLRE <feature-glrlm-hglre>`
      - High grey level run emphasis
      - G3QZ
-     - IBSI (rel. 1e-9)
+     - PyRadiomics (rel. 1e-9)
      - 10.53
    * - :ref:`GLRLM_SRLGLE <feature-glrlm-srlgle>`
      - Short run low grey level emphasis
      - HTZT
-     - IBSI (rel. 1e-9)
+     - PyRadiomics (rel. 1e-9)
      - 0.1513
    * - :ref:`GLRLM_SRHGLE <feature-glrlm-srhgle>`
      - Short run high grey level emphasis
      - GD3A
-     - IBSI (rel. 1e-9)
+     - PyRadiomics (rel. 1e-9)
      - 8.694
    * - :ref:`GLRLM_LRLGLE <feature-glrlm-lrlgle>`
      - Long run low grey level emphasis
      - IVPO
-     - IBSI (rel. 1e-9)
+     - PyRadiomics (rel. 1e-9)
      - 0.9013
    * - :ref:`GLRLM_LRHGLE <feature-glrlm-lrhgle>`
      - Long run high grey level emphasis
      - 3KUM
-     - IBSI (rel. 1e-9)
+     - PyRadiomics (rel. 1e-9)
      - 21.53

@@ -265,7 +265,9 @@ Settings
    * - Kernel size
      - ``--gaborkersize=16``
      - ``Nyxus(..., gabor_kersize=16)``
-     - :math:`n`; a positive integer. An odd size shifts the response by one pixel.
+     - :math:`n`; an integer of at least 2. An odd size shifts the response by one pixel. Size 1
+       is accepted but reads past the end of the convolution buffer, so its values are arbitrary
+       (a known defect).
    * - Baseline frequency
      - ``--gaborf0=0.1``
      - ``Nyxus(..., gabor_f0=0.1)``
@@ -305,7 +307,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value of ``GABOR_0`` on the worked example.
 
 .. include:: gabor_index.inc
@@ -400,9 +402,11 @@ GPU values
    response at an offset of :math:`\lfloor n/2 \rfloor`, so odd kernel sizes are centred on the
    GPU and shifted on the CPU; and it has no guard for a constant baseline: where the CPU stores
    the ``--noval`` value, it divides by a count of 0, and the infinite or NaN result is replaced
-   at output time (by ``--noval`` in CSV and pandas, by ``-0.0`` in Arrow and Parquet). ROIs
-   whose padded image times the number of filters exceeds cuFFT's limit of :math:`2^{27}` values
-   are refused. The GPU values are not checked in continuous integration.
+   at output time (by ``--noval`` in CSV and pandas, by ``-0.0`` in Arrow and Parquet). A ROI is
+   refused when :math:`(H+n-1)(W+n-1)` times the number of filters, the frequency–angle pairs
+   plus the baseline, reaches :math:`2^{26}` complex values, half of cuFFT's limit of
+   :math:`2^{27}` doubles. A refused ROI gets all-zero responses, so each of its columns is
+   written as that 0/0 result. The GPU values are not checked in continuous integration.
 
 Constant ROI
    When every ROI pixel has one intensity, every column is 0, even when the mask leaves zeros in the

@@ -29,8 +29,8 @@ the :doc:`2D NGTDM page <f_ngtdm>`; this page covers what is specific to volumes
 
    The grey levels of this family are set by the ``3ngtdm/greydepth`` metaparameter, not by
    ``--coarseGrayDepth``. Its default, 0, uses the raw intensities. With that default, a ROI that
-   fills its bounding box and whose lowest intensity is 1 reproduces PyRadiomics with
-   ``binWidth=1``; with any other lowest intensity, all features but busyness do. Voxels of the
+   fills its bounding box and whose lowest intensity is 0 or 1 reproduces PyRadiomics with
+   ``binWidth=1``; with a higher lowest intensity, all features but busyness do. Voxels of the
    bounding box that lie outside the mask still take part in the matrix (see
    :ref:`ngtdm-3d-possible-issues`).
 
@@ -201,7 +201,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example with the default settings.
 
 .. include:: ngtdm_3d_index.inc
@@ -254,8 +254,8 @@ Complexity
 :Code: ``3NGTDM_COMPLEXITY``
 :Range: :math:`[0, \infty)`, squared grey levels
 
-Defined as :ref:`NGTDM_COMPLEXITY <feature-ngtdm-complexity>`, divided by the number of visited
-voxels.
+Defined as :ref:`NGTDM_COMPLEXITY <feature-ngtdm-complexity>`, with :math:`N_{v,p}` the number of
+visited voxels.
 
 
 .. _feature-3ngtdm-contrast:
@@ -326,7 +326,7 @@ Constant ROI
    ``--noval`` substitute (``-0.0`` in Arrow and Parquet files) and the other three return 0. IBSI
    gives :math:`10^6` for coarseness. A constant ROI that does not fill its bounding box gains the
    voxels outside the mask as a second level, and its features are computed: a constant
-   3 × 3 × 3 block without its eight corners gives coarseness 0.02793, contrast 31.52, busyness
+   3 × 3 × 3 block of intensity 7 without its eight corners gives coarseness 0.02793, contrast 31.52, busyness
    3.357, complexity 18.57 and strength 1.176.
 
 A single-voxel ROI

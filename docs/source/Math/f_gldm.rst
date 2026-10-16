@@ -183,7 +183,7 @@ Feature index
 -------------
 
 *Validation* names the independent implementation each feature is checked against in the test
-suite, with the relative tolerance; see the :doc:`/featurelist` for what the categories mean.
+suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
 *Example* is the value on the worked example.
 
 .. include:: gldm_index.inc
@@ -467,9 +467,9 @@ The test suite checks every 2D GLDM feature against PyRadiomics, named in the
 :ref:`index <gldm-index>`. In IBSI mode Nyxus matches PyRadiomics (identity binning,
 ``gldm_a = 0``, distance 1) on each slice of the IBSI digital phantom and on their mean to a
 relative 10\ :sup:`-9`; dependence entropy agrees to 2.5 × 10\ :sup:`-3` because of the approximate
-logarithm. The four-slice means are also checked against IBSI's published consensus values for the
+logarithm. The four-slice means are also compared with IBSI's published consensus values for the
 neighbouring grey level dependence matrix, at a relative 10\ :sup:`-2`, the precision those values
-are published to. The default binning is covered by regression tests only.
+are published to; that comparison is a consistency check, not one of the validations in the index. The default binning is covered by regression tests only.
 
 
 References
