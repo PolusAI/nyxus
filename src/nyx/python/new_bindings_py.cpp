@@ -78,7 +78,7 @@ void initialize_environment(
     const std::vector<std::string> &features,
     int neighbor_distance,
     float pixels_per_micron,
-    uint32_t coarse_gray_depth, 
+    int32_t coarse_gray_depth,		// the sign selects the binning: > 0 MATLAB levels, 0 none, < 0 PyRadiomics bins
     uint32_t n_reduce_threads,
     int using_gpu,
     bool ibsi,
@@ -166,7 +166,6 @@ void set_environment_params_imp (
     const std::vector<std::string> &features = {},
     int neighbor_distance = -1,
     float pixels_per_micron = -1,
-    uint32_t coarse_gray_depth = 0, 
     uint32_t n_reduce_threads = 0,
     int using_gpu = -2,
     float dynamic_range = -1,
@@ -187,10 +186,6 @@ void set_environment_params_imp (
 
     if (pixels_per_micron > -1) {
         theEnvironment.xyRes = theEnvironment.pixelSizeUm = pixels_per_micron;
-    }
-
-    if (coarse_gray_depth != 0) {
-        theEnvironment.set_coarse_gray_depth(coarse_gray_depth);
     }
 
     if (n_reduce_threads != 0) {

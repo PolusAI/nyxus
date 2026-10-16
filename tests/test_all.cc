@@ -75,6 +75,7 @@
 #include "test_2d_ngldm_ibsi.h"
 #include "test_2d_ngldm_mirp.h"
 #include "test_2d_ngldm_regression.h"
+#include "test_2d_ngldm_mechanics.h"
 #include "test_2d_ngtdm_ibsi.h"
 #include "test_2d_ngtdm_mirp.h"
 #include "test_2d_ngtdm_mechanics.h"
@@ -119,6 +120,7 @@
 #include "test_3d_morphology_pyradiomics.h"
 #include "test_3d_ngldm_mirp.h"
 #include "test_3d_ngldm_regression.h"
+#include "test_3d_ngldm_mechanics.h"
 #include "test_3d_firstorder_pyradiomics.h"
 #include "test_3d_firstorder_regression.h"
 #include "test_3d_firstorder_matlab.h"
@@ -131,6 +133,8 @@
 #include "test_3d_ngtdm_mechanics.h"
 #include "test_3d_glrlm_pyradiomics.h"
 #include "test_3d_glrlm_regression.h"
+#include "test_3d_glrlm_invariant.h"
+#include "test_texture_binning_mechanics.h"
 #include "test_3d_glszm_pyradiomics.h"
 #include "test_3d_glszm_regression.h"
 #include "test_3d_glszm_mechanics.h"
@@ -559,8 +563,8 @@ TEST(TEST_NYXUS, TEST_3D_GLSZM_DUMP_REGRESSION) {
 	ASSERT_NO_THROW(test_3d_glszm_dump_regression());
 }
 
-TEST(TEST_NYXUS, TEST_3D_GLSZM_DEFAULT_GREYDEPTH_REGRESSION) {
-	ASSERT_NO_THROW(test_3d_glszm_default_greydepth_regression());
+TEST(TEST_NYXUS, TEST_3D_GLSZM_NO_BINNING_REGRESSION) {
+	ASSERT_NO_THROW(test_3d_glszm_no_binning_regression());
 }
 
 TEST(TEST_NYXUS, TEST_3D_GLSZM_CONSTANT_ROI_REGRESSION) {
@@ -1255,6 +1259,10 @@ TEST(TEST_NYXUS, TEST_3D_GLDZM_ZDE_RADIOMICS_MIRP) {
 	ASSERT_NO_THROW(test_3d_gldzm_zde_radiomics_mirp());
 }
 
+TEST(TEST_NYXUS, TEST_3D_GLDZM_NEGATIVE_GREYDEPTH_MIRP) {
+	ASSERT_NO_THROW(test_3d_gldzm_negative_greydepth_mirp());
+}
+
 //***** 3D GLDZM regression *****
 
 TEST(TEST_NYXUS, TEST_3D_GLDZM_GLM_REGRESSION) {
@@ -1413,6 +1421,14 @@ TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENT_MIRP) {
 
 TEST(TEST_NYXUS, TEST_3D_NGLDM_DCENE_MIRP) {
 	ASSERT_NO_THROW(test_3d_ngldm_dcene_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_NEGATIVE_GREYDEPTH_MIRP) {
+	ASSERT_NO_THROW(test_3d_ngldm_negative_greydepth_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NGLDM_ZERO_GREYDEPTH_EQUALS_IBSI_MECHANICS) {
+	ASSERT_NO_THROW(test_3d_ngldm_zero_greydepth_equals_ibsi_mechanics());
 }
 
 //***** 3D NGLDM vetted vs MIRP at IBSI=true, where the raw intensity is the grey level *****
@@ -1656,6 +1672,30 @@ TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_RESOLVE_TO_OWN_FAMILY_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_UNREGISTERED_TYPE_REFUSED_MECHANICS) {
 	ASSERT_NO_FATAL_FAILURE(test_feature_settings_unregistered_type_refused_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_COARSE_GRAY_DEPTH_REACHES_EVERY_TEXTURE_FAMILY_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_coarse_gray_depth_reaches_every_texture_family_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_FAMILY_GREYDEPTH_OVERRIDES_COARSE_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_family_greydepth_overrides_coarse_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_COARSE_GRAY_DEPTH_CLI_ACCEPTED_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_coarse_gray_depth_cli_accepted_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_COARSE_GRAY_DEPTH_CLI_REFUSED_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_coarse_gray_depth_cli_refused_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_GREY_DEPTH_PARSE_RANGE_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_grey_depth_parse_range_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_GREYDEPTH_METAPARAM_REFUSED_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_greydepth_metaparam_refused_mechanics());
 }
 
 //***** Pixel intensity features ***** 
@@ -2979,6 +3019,11 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_BUG_OFFSET_DEFAULT_IS_ONE_MECHANICS)
 	ASSERT_NO_THROW(test_2d_glcm_bug_offset_default_is_one_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_2D_GLCM_OWN_GREYDEPTH_BINS_THE_MATRIX_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_glcm_own_greydepth_bins_the_matrix_mechanics());
+}
+
 //***** PyRadiomics tests of 2D GLDM *****
 
 TEST(TEST_NYXUS, TEST_2D_GLDM_SDE_PYRADIOMICS)
@@ -3551,6 +3596,8 @@ TEST(TEST_NYXUS, TEST_2D_NGLDM_DCP_MIRP)    { ASSERT_NO_THROW(test_2d_ngldm_dcp_
 TEST(TEST_NYXUS, TEST_2D_NGLDM_DCV_MIRP)    { ASSERT_NO_THROW(test_2d_ngldm_dcv_mirp()); }
 TEST(TEST_NYXUS, TEST_2D_NGLDM_DCENT_MIRP)  { ASSERT_NO_THROW(test_2d_ngldm_dcent_mirp()); }
 TEST(TEST_NYXUS, TEST_2D_NGLDM_DCENE_MIRP)  { ASSERT_NO_THROW(test_2d_ngldm_dcene_mirp()); }
+TEST(TEST_NYXUS, TEST_2D_NGLDM_NEGATIVE_GREYDEPTH_MIRP)  { ASSERT_NO_THROW(test_2d_ngldm_negative_greydepth_mirp()); }
+TEST(TEST_NYXUS, TEST_2D_NGLDM_ZERO_GREYDEPTH_EQUALS_IBSI_MECHANICS)  { ASSERT_NO_THROW(test_2d_ngldm_zero_greydepth_equals_ibsi_mechanics()); }
 
 //***** 2D intensity ***** 
 
@@ -3941,6 +3988,10 @@ TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDV_MIRP)
 TEST(TEST_NYXUS, TEST_2D_GLDZM_ZDE_MIRP)
 {
 	ASSERT_NO_THROW(test_2d_gldzm_zde_mirp());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLDZM_NEGATIVE_GREYDEPTH_MIRP) {
+	ASSERT_NO_THROW(test_2d_gldzm_negative_greydepth_mirp());
 }
 
 //***** 2D GLDZM drift guards *****
@@ -6211,6 +6262,13 @@ TEST(TEST_NYXUS, TEST_3D_GLRLM_SRHGLE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(t
 TEST(TEST_NYXUS, TEST_3D_GLRLM_SRLGLE_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_srlgle_ave_grey64_regression()); }
 
 TEST(TEST_NYXUS, TEST_3D_GLRLM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_glrlm_dump_regression()); }
+
+TEST(TEST_NYXUS, TEST_3D_GLRLM_BOUNDED_FEATURES_INVARIANT) { ASSERT_NO_THROW(test_3d_glrlm_bounded_features_invariant()); }
+
+TEST(TEST_NYXUS, TEST_TEXTURE_BINNING_ZERO_WIDTH_RANGE_MECHANICS) { ASSERT_NO_THROW(test_texture_binning_zero_width_range_mechanics()); }
+TEST(TEST_NYXUS, TEST_TEXTURE_BINNING_NONZERO_RANGE_UNCHANGED_MECHANICS) { ASSERT_NO_THROW(test_texture_binning_nonzero_range_unchanged_mechanics()); }
+TEST(TEST_NYXUS, TEST_TEXTURE_BINNING_ROI_CUBE_PLACES_VOXELS_MECHANICS) { ASSERT_NO_THROW(test_texture_binning_roi_cube_places_voxels_mechanics()); }
+TEST(TEST_NYXUS, TEST_TEXTURE_BINNING_ROI_CUBE_REFUSES_VOXEL_OUTSIDE_BOX_MECHANICS) { ASSERT_NO_THROW(test_texture_binning_roi_cube_refuses_voxel_outside_box_mechanics()); }
 
 TEST(TEST_NYXUS, TEST_3D_NGLDM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_ngldm_dump_regression()); }
 TEST(TEST_NYXUS, TEST_3D_NGLDM_DUMP_IBSI_MIRP) { ASSERT_NO_THROW(test_3d_ngldm_dump_ibsi_mirp()); }

@@ -263,7 +263,7 @@ Nyxus can also be [built from source](#building-from-source) and used from the c
 
 All parameters to configure Nyxus are available to set within the constructor. These parameters can also be updated after the object is created using the `set_params`
 method. This method takes in keyword arguments where the key is a valid parameter in Nyxus and the value is the updated value for the parameter. For example, 
-to update the `coarse_gray_depth` to 256 and the `gabor_f0` parameter to 0.1, the following can be done:
+to update the `gabor_f0` parameter to 0.1, the following can be done:
 
 ```python 
 from nyxus import Nyxus
@@ -271,10 +271,10 @@ nyx = Nyxus(["*ALL*"])
 intensityDir = "/path/to/images/intensities/"
 maskDir = "/path/to/images/labels/"
 features = nyx.featurize_directory (intensityDir, maskDir)
-nyx.set_params(coarse_gray_depth=256, gabor_f0=0.1)
+nyx.set_params(gabor_f0=0.1)
 ```
 
-A list of valid parameters is included in the documentation for this method.
+A list of valid parameters is included in the documentation for this method. `coarse_gray_depth` is the exception: the grey binning is fixed when the object is constructed, so `set_params` accepts only the current value and a different depth goes to the constructor.
 
 To get the values of the parameters in Nyxus, the `get_params` method is used. If no arguments are passed to this function, then a dictionary mapping all of the variable names to the respective value is returned. For example,
 

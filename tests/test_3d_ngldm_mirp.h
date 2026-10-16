@@ -325,3 +325,45 @@ void test_3d_ngldm_dump_ibsi_mirp()
 	{ double v = 0.0; calculate_3d_ngldm_feature_value ("3NGLDM_DCENE", Feature3D::NGLDM_DCENE, v, true);
 	  std::cout << "[3DNGLDM-IBSI-REGEN]\t\t{ \"3NGLDM_DCENE\",\t" << std::setprecision(17) << v << " },\n"; }
 }
+
+// ---------------------------------------------------------------------------------------------------
+// The negative coarse grey depth, recipe ngldm3d.mirp_fbn20_negdepth: GREYDEPTH = -20 bins the ROI
+// into 20 PyRadiomics-style bins over its own [min, max], which is IBSI's fixed bin number, and MIRP
+// runs base_discretisation_method="fixed_bin_number", n_bins=20 -- each tool discretising for itself,
+// so unlike mirp_samelevels this recipe covers the binning as well as the matrix. MIRP is handed the
+// integer levels Nyxus loads the float phantom as (the loader's shift, not a binning step).
+//
+// Provenance (SPEC 6.4): tool=mirp 2.6.0, by_slice=False, distance 1, difference level 0, the same
+// segmented phantom and label 57; generator=tests/vetting/oracles/gen_ngldm3d_mirp.py
+// (re-verifies every pin with --check). Measured residual 5.1e-16 worst case; asserted at rel=1e-9,
+// and at rel=1e-6 for 3NGLDM_DCENT, the family's one logarithm.
+static const ref_vals_map<double> ngldm_3d_mirp_negdepth_ref_vals{
+		{ "3NGLDM_LDE",	0.043474348242984726 },		// ngl_lde_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_HDE",	107.1934468283582 },		// ngl_hde_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_LGLCE",	0.09507277967840505 },		// ngl_lgce_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_HGLCE",	136.15380130597015 },		// ngl_hgce_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_LDLGLE",	0.0007735897913493037 },		// ngl_ldlge_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_LDHGLE",	8.941485494088381 },		// ngl_ldhge_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_HDLGLE",	36.22286208307041 },		// ngl_hdlge_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_HDHGLE",	6211.256996268657 },		// ngl_hdhge_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_GLNU",	13820.251399253732 },		// ngl_glnu_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_GLNUN",	0.05035947483986464 },		// ngl_glnu_norm_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_DCNU",	20026.524253731342 },		// ngl_dcnu_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_DCNUN",	0.07297444996841237 },		// ngl_dcnu_norm_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_GLV",	34.10752476050396 },		// ngl_gl_var_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_DCV",	31.151427009159327 },		// ngl_dc_var_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_DCENT",	7.863915779016927 },		// ngl_dc_entr_d1_a0.0_3d_fbn_n20
+		{ "3NGLDM_DCENE",	0.00509771362766972 }		// ngl_dc_energy_d1_a0.0_3d_fbn_n20
+};
+
+void test_3d_ngldm_negative_greydepth_mirp()
+{
+	for (const auto& [name, golden] : ngldm_3d_mirp_negdepth_ref_vals)
+	{
+		SCOPED_TRACE ("MIRP_ORACLE__" + name);
+		double actual = 0.0;
+		ASSERT_NO_FATAL_FAILURE (calculate_3d_ngldm_feature_value (name, Nyxus::UserFacing_3D_featureNames.at(name), actual, false, -20));
+		const double frac = name == "3NGLDM_DCENT" ? 1e6 : 1e9;
+		ASSERT_TRUE (agrees_gt (actual, golden, frac)) << name << " actual=" << std::setprecision(17) << actual;
+	}
+}

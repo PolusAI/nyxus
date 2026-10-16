@@ -5,6 +5,7 @@
 #include <sstream>
 #include <unordered_set>
 #include "3d_glrlm.h"
+#include "3d_ooc_volume.h"
 #include "../environment.h"
 
 using namespace Nyxus;
@@ -135,20 +136,14 @@ void D3_GLRLM_feature::calculate (LR& r, const Fsettings& s)
 		return;
 	}
 
-	// grey-bin
-
-	int w = r.aux_image_cube.width(),
-		h = r.aux_image_cube.height(),
-		d = r.aux_image_cube.depth();
-
-	SimpleCube <PixIntens> G;
-	G.allocate (w,h,d);
-
 	auto greyInfo = STNGS_GLRLM_GREYDEPTH(s);
 	if (STNGS_IBSI(s))
 		greyInfo = 0;
 
-	bin_intensities_3d (G, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
+	// grey-bin the ROI's voxels; the background outside the ROI takes level 0, the level no run is
+	// counted at
+	SimpleCube <PixIntens> G;
+	Nyxus::bin_roi_3d (G, r, greyInfo);
 
 	// sorted intensities
 

@@ -1,8 +1,10 @@
 """OFFLINE MIRP oracle for the 3D GLDZM features.
 
-    python tests/vetting/oracles/gen_gldzm3d_mirp.py     (from the repository root)
+    python tests/vetting/oracles/gen_gldzm3d_mirp.py                   (from the repository root)
+    python tests/vetting/oracles/gen_gldzm3d_mirp.py --check           (verify only, no tables)
+    python tests/vetting/oracles/gen_gldzm3d_mirp.py --write-phantom   (rewrite both fixtures)
 
-Runs MIRP three times and re-verifies everything the tree quotes from it, exiting non-zero on any
+Runs MIRP four times and re-verifies everything the tree quotes from it, exiting non-zero on any
 mismatch, on any quoted feature it cannot produce, and on any feature it produces that nothing
 quotes.
 
@@ -21,6 +23,19 @@ ratio fails the run.
      levels (below), so this table measures the discretisation gap and NOT the GLDZM.
   3. `gldzm3d.mirp_samelevels` -- the same fixture with MIRP handed the grey levels Nyxus bins to,
      so the GLDZM itself is what is compared there too.
+
+  4. `gldzm3d.mirp_fbn20_negdepth` -- the negative coarse grey depth on the segmented phantom.
+     GREYDEPTH=-20 bins the ROI into 20 PyRadiomics-style bins over its own [min, max], which is
+     IBSI's fixed bin number, floor(20 (x - min) / (max - min)) + 1, and exactly what MIRP's
+     `base_discretisation_method="fixed_bin_number"`, n_bins=20, computes. So MIRP discretises here
+     itself, nothing of Nyxus' binning is reproduced on the MIRP side, and the table covers the
+     binning as well as the GLDZM. MIRP is handed the integer levels Nyxus loads the float phantom
+     as (the volume shifted by its minimum), which is the loader's step and not the binning. Over the
+     ROI those span 1024-3024, so the bin width is exactly 100: 2736 ROI voxels sit on an interior
+     bin edge, and a division by that width bins every one of them as IBSI does. The 2D square of
+     gen_gldzm_mirp.py is the fixture that separates the two formulas. Verified against
+     gldzm_3d_mirp_negdepth_ref_vals in tests/test_3d_gldzm_mirp.h, held at rel 1e-12 -- the pins are
+     printed at full precision, so this is a staleness check, not a vetting band.
 
 Runs 2 and 3 pin nothing. The artifact they feed is ../audit/gldzm_3d_mirp_vetting_report.md, and
 that is what this generator checks them against.
@@ -76,6 +91,8 @@ REPORT = os.path.join(TESTS, "vetting", "audit", "gldzm_3d_mirp_vetting_report.m
 
 LABEL = 57
 NBINS = 64
+NEGDEPTH_NBINS = 20
+NEGDEPTH_TABLE = "gldzm_3d_mirp_negdepth_ref_vals"
 
 # The header pins MIRP's values in full, so they are held to the exact tier the assertions use.
 PIN_RELTOL = 1e-12
@@ -108,6 +125,7 @@ MIRP = {
 
 SUFFIX_NONE = "_3d"                     # MIRP drops the discretisation stem when there is none
 SUFFIX_FBN = "_3d_fbn_n%d" % NBINS
+SUFFIX_NEGDEPTH = "_3d_fbn_n%d" % NEGDEPTH_NBINS
 
 NIFTI_DTYPE = {2: np.uint8, 4: np.int16, 8: np.int32, 16: np.float32, 64: np.float64,
                768: np.uint32}
@@ -420,6 +438,7 @@ def verify(got, quoted, what, tol):
 
 def main():
     write = "--write-phantom" in sys.argv[1:]
+    check = "--check" in sys.argv[1:]
     for p in (INTEN, MASK):
         if not os.path.exists(p):
             print("missing phantom: " + p)
@@ -470,6 +489,12 @@ def main():
                    base_discretisation_n_bins=NBINS)
     same = features(levels, m32, spacing, SUFFIX_NONE, base_discretisation_method="none")
 
+    # The negative grey depth: MIRP bins the loader-shifted levels itself, at 20 bins.
+    raw_levels = (inten.astype(np.int64) - int(inten.min())).astype(np.float64)
+    neg = features(raw_levels, m32, spacing, SUFFIX_NEGDEPTH,
+                   base_discretisation_method="fixed_bin_number",
+                   base_discretisation_n_bins=NEGDEPTH_NBINS)
+
     try:
         version = metadata.version("mirp")       # mirp exposes no __version__
     except metadata.PackageNotFoundError:
@@ -478,14 +503,23 @@ def main():
     # the installed mirp, read from the distribution rather than written in: this line is the
     # provenance of the values printed below it, so a run under another version has to say so.
     print("# mirp %s, numpy %s, label=%d, by_slice=False" % (version, np.__version__, LABEL))
-    for title, got, suffix in (("gldzm3d.mirp_compat_phantom", compat, SUFFIX_NONE),
-                               ("gldzm3d.mirp_fbn64", fbn, SUFFIX_FBN),
-                               ("gldzm3d.mirp_samelevels", same, SUFFIX_NONE)):
-        print("\n# " + title)
-        for name in sorted(got):
-            print(('\t{"%s", %r},' % (name, got[name])).ljust(56)
-                  + "// " + MIRP[name] + suffix)
-    print("\n# no MIRP counterpart at any recipe: 3GLDZM_GLM, 3GLDZM_ZDM")
+    if not check:
+        for title, got, suffix in (("gldzm3d.mirp_compat_phantom", compat, SUFFIX_NONE),
+                                   ("gldzm3d.mirp_fbn64", fbn, SUFFIX_FBN),
+                                   ("gldzm3d.mirp_samelevels", same, SUFFIX_NONE)):
+            print("\n# " + title)
+            for name in sorted(got):
+                print(('\t{"%s", %r},' % (name, got[name])).ljust(56)
+                      + "// " + MIRP[name] + suffix)
+        print("\n# gldzm3d.mirp_fbn20_negdepth, paste-ready")
+        print("static const ref_vals_map<double> %s{" % NEGDEPTH_TABLE)
+        names = list(MIRP)
+        for i, name in enumerate(names):
+            sep = "," if i < len(names) - 1 else ""
+            print('\t\t{ "%s",\t%r }%s\t\t// %s%s' % (name, neg[name], sep, MIRP[name],
+                                                      SUFFIX_NEGDEPTH))
+        print("};")
+        print("\n# no MIRP counterpart at any recipe: 3GLDZM_GLM, 3GLDZM_ZDM")
 
     nok = nmiss = 0
     nfail = bad_phantom
@@ -495,6 +529,14 @@ def main():
     regression_pins = parse_pins(REGRESSION_HEADER, "gldzm_3d_regression_ref_vals")
 
     a, b, c, d = verify(compat, oracle_pins, "test_3d_gldzm_mirp.h", PIN_RELTOL)
+    nok += a
+    nfail += b
+    nmiss += c
+    unquoted += d
+
+    # the negdepth table pins all sixteen, so the reverse direction (a feature MIRP computes that the
+    # table does not pin) fails the run as well
+    a, b, c, d = verify(neg, parse_pins(HEADER, NEGDEPTH_TABLE), NEGDEPTH_TABLE, PIN_RELTOL)
     nok += a
     nfail += b
     nmiss += c

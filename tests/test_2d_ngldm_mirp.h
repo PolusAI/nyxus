@@ -74,3 +74,58 @@ void test_2d_ngldm_dcp_mirp()      { assert_ngldm_feature_mirp(Nyxus::Feature2D:
 void test_2d_ngldm_dcv_mirp()      { assert_ngldm_feature_mirp(Nyxus::Feature2D::NGLDM_DCV, "NGLDM_DCV"); }
 void test_2d_ngldm_dcent_mirp()    { assert_ngldm_feature_mirp(Nyxus::Feature2D::NGLDM_DCENT, "NGLDM_DCENT"); }
 void test_2d_ngldm_dcene_mirp()    { assert_ngldm_feature_mirp(Nyxus::Feature2D::NGLDM_DCENE, "NGLDM_DCENE"); }
+
+// ---------------------------------------------------------------------------------------------------
+// The negative coarse grey depth, recipe ngldm.mirp_fbn20_negdepth: GREYDEPTH = -20 bins the ROI into
+// 20 PyRadiomics-style bins over its own [min, max], which is IBSI's fixed bin number, and MIRP is run
+// with base_discretisation_method="fixed_bin_number", n_bins=20 -- each tool discretising for itself,
+// so the binning is part of what is compared. Fixture bench_square12_graded (test_main_nyxus.h): 14 of
+// its 144 pixels sit exactly on a bin edge at 20 bins, and the 5 at 181 are the ones a division by the
+// bin width sends one bin low. NGLDM_DCP is left out: both tools return 1 whenever every pixel has a
+// same-level neighbour.
+//
+// Provenance (SPEC 6.4): tool=mirp 2.6.0, by_slice=True, distance 1, difference level 0;
+// generator=tests/vetting/oracles/gen_ngldm_mirp.py (re-verifies every pin with --check).
+// Measured residual 2.1e-16 worst case; asserted at rel=1e-9, and at rel=1e-6 for NGLDM_DCENT, the
+// family's one logarithm, whose last bits move between platforms.
+static const ref_vals_map<double> ngldm_2d_mirp_negdepth_ref_vals{
+		{ "NGLDM_LDE",	0.8128858024691358 },		// ngl_lde_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_HDE",	1.9027777777777777 },		// ngl_hde_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_LGLCE",	0.08136848819766401 },		// ngl_lgce_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_HGLCE",	142.54861111111111 },		// ngl_hgce_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_LDLGLE",	0.059117449770570624 },		// ngl_ldlge_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_LDHGLE",	120.47762345679013 },		// ngl_ldhge_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_HDLGLE",	0.20685947399060212 },		// ngl_hdlge_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_HDHGLE",	246.60416666666666 },		// ngl_hdhge_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_GLNU",	7.819444444444445 },		// ngl_glnu_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_GLNUN",	0.054301697530864196 },		// ngl_glnu_norm_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_DCNU",	88.93055555555556 },		// ngl_dcnu_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_DCNUN",	0.6175733024691358 },		// ngl_dcnu_norm_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_GLV",	34.475260416666664 },		// ngl_gl_var_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_DCV",	0.27006172839506165 },		// ngl_dc_var_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_DCENT",	4.9476106370788075 },		// ngl_dc_entr_d1_a0.0_2d_fbn_n20
+		{ "NGLDM_DCENE",	0.03607253086419753 }		// ngl_dc_energy_d1_a0.0_2d_fbn_n20
+};
+
+void test_2d_ngldm_negative_greydepth_mirp()
+{
+	std::vector<NyxusPixel> intensity, mask;
+	Nyxus::make_2d_square12_graded_phantom (intensity, mask);
+
+	Fsettings s = make_ngldm2d_settings (false);
+	s[(int)NyxSetting::GREYDEPTH].ival = -20;
+
+	LR roidata;
+	Nyxus::load_masked_test_roi_data (roidata, intensity.data(), mask.data(), intensity.size());
+	NGLDMfeature f;
+	f.calculate (roidata, s);
+	roidata.initialize_fvals();
+	f.save_value (roidata.fvals);
+
+	for (const auto& [name, golden] : ngldm_2d_mirp_negdepth_ref_vals)
+	{
+		SCOPED_TRACE ("MIRP_ORACLE__" + name);
+		const double frac = name == "NGLDM_DCENT" ? 1e6 : 1e9;
+		ASSERT_TRUE (agrees_gt (roidata.fvals[(int)Nyxus::UserFacingFeatureNames.at(name)][0], golden, frac)) << name;
+	}
+}

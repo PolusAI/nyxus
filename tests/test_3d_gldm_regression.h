@@ -7,12 +7,11 @@
 // MATLAB-style level-count binning -- a different configuration from the PyRadiomics recipe next
 // door, not a second opinion on it.
 //
-// Recipe gldm3d.regression_ut_phantom_nobinning: the same phantom and label with GLDM_GREYDEPTH=0.
-// Zero is not one config among several -- it is the value a settings vector carries when nothing
-// names the family's binning, i.e. what env_features.cpp's zero-fill leaves behind and what every
-// run that omits --3gldm/greydepth computes. The one above cannot stand in for it: the two differ by
-// three orders of magnitude on the same ROI (3GLDM_HGLE 1957.19 against 4275550.79), so a pin taken
-// at 64 says nothing about what the default emits.
+// Recipe gldm3d.regression_ut_phantom_nobinning: the same phantom and label with GLDM_GREYDEPTH=0 --
+// no binning, the raw levels, which --coarseGrayDepth=0 or 3gldm/greydepth=0 selects. A run that
+// names neither bins at the coarse grey depth, 64, which is the recipe above. The one above cannot
+// stand in for this one: the two differ by three orders of magnitude on the same ROI (3GLDM_HGLE
+// 1957.19 against 4275550.79), so a pin taken at 64 says nothing about the raw-level configuration.
 //
 // Recipe gldm3d.regression_constant_roi: a synthetic nonempty ROI of one intensity at the same
 // GLDM_GREYDEPTH=0, reachable wherever a segmentation lands on a flat region. All fourteen come back
@@ -51,9 +50,9 @@ static const ref_vals_map<double> gldm_3d_regression_ref_vals
 	{"3GLDM_SDLGLE", 7.4259950258209084e-05}
 };
 
-// The same fourteen at the compiled default GLDM_GREYDEPTH=0, on the same ROI. Nothing in the tree
-// asserted the default configuration before this table: the family's binning is the only setting it
-// reads, and every pin stood at a value only an explicit --3gldm/greydepth reaches.
+// The same fourteen at GLDM_GREYDEPTH=0, no binning, on the same ROI. The family's binning is the only
+// setting it reads, so this table and the one above pin its two production points: the raw levels
+// and the default MATLAB-style 64.
 static const ref_vals_map<double> gldm_3d_regression_nobinning_ref_vals
 {
 	{"3GLDM_DE", 11.489092381392878},
@@ -127,7 +126,7 @@ static void assert_3d_gldm_feature_nobinning_regression (const Nyxus::Feature3D&
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();
 	// GREYDEPTH stays at the neighbouring recipe's 64 because this family never reads it, so the two
 	// tables differ in the one setting under test and nothing else.
-	Fsettings s = make_gldm3d_settings (64/*greydepth, inert here*/, 0/*the compiled default: no binning*/);
+	Fsettings s = make_gldm3d_settings (64/*greydepth, inert here*/, 0/*no binning*/);
 
 	std::vector<std::vector<double>> fvals;
 	SimpleCube<PixIntens> cube;
@@ -185,7 +184,7 @@ void test_3d_gldm_sdlgle_regression() { assert_3d_gldm_feature_regression(Nyxus:
 void test_3d_gldm_dump_nobinning_regression()
 {
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();
-	Fsettings s = make_gldm3d_settings (64/*greydepth, inert here*/, 0/*the compiled default: no binning*/);
+	Fsettings s = make_gldm3d_settings (64/*greydepth, inert here*/, 0/*no binning*/);
 
 	std::vector<std::vector<double>> fvals;
 	SimpleCube<PixIntens> cube;
@@ -225,12 +224,12 @@ void test_3d_gldm_sdlgle_nobinning_regression() { assert_3d_gldm_feature_nobinni
 // divergence rather than a convention. Run at GLDM_GREYDEPTH=0 because that is where the intercept
 // stands alone: a negative control restricting it to empty cubes has the arithmetic underneath
 // reproduce PyRadiomics to the last bit on all seven dependence-axis features, so nothing below the
-// guard is wrong. At radiomics binning the same control stays green instead -- to_grayscale_radiomix()
-// divides by max - min, which is zero here, so every voxel bins to background and the Nz == 0 branch
-// emits the same sentinel by a second route. Cell and values: tests/vetting/matrix/gldm3d.md.
+// guard is wrong. At radiomics binning to_grayscale_radiomix() puts this range of zero width into one
+// bin, so below the guard every voxel is level 1 there too. Cell and values:
+// tests/vetting/matrix/gldm3d.md.
 void test_3d_gldm_constant_roi_regression()
 {
-	Fsettings s = make_gldm3d_settings (64/*greydepth, inert here*/, 0/*the compiled default: no binning*/);
+	Fsettings s = make_gldm3d_settings (64/*greydepth, inert here*/, 0/*no binning*/);
 	s[(int)NyxSetting::SOFTNAN].rval = gldm_3d_regression_softnan;
 
 	LR r;
