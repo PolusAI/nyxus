@@ -93,6 +93,7 @@ assert math.isclose(vec(features, "FRAC_AT_D").sum(), 1.0, rel_tol=1e-9)
 assert math.isclose((vec(features, "FRAC_AT_D") * vec(features, "MEAN_FRAC")).sum() * 47, 224, rel_tol=1e-9)
 assert math.isclose(vec(features, "RADIAL_CV")[3], math.sqrt(26) / 7, rel_tol=1e-9)
 
+# pins known defect https://github.com/PolusAI/nyxus/issues/497
 # The contour points (boundary pixels moved by +1, +1), the centre's spread and the runner-up's
 inner = np.pad(mask > 0, 1)
 edge = (mask > 0) & ~(inner[:-2, 1:-1] & inner[2:, 1:-1] & inner[1:-1, :-2] & inner[1:-1, 2:])
@@ -190,5 +191,6 @@ moved = np.roll(np.roll(at_origin, 3, axis=0), 2, axis=1)
 moved_mask = np.roll(np.roll(at_origin_mask, 3, axis=0), 2, axis=1)
 assert np.allclose(vec(from_files(moved, moved_mask), "FRAC_AT_D"), vec(features, "FRAC_AT_D"))
 out = from_files(moved, moved_mask, ram_limit=0)
+# pins known defect https://github.com/PolusAI/nyxus/issues/509
 assert math.isclose(out["FRAC_AT_D_7"][0], 0.3404, rel_tol=5e-4), out["FRAC_AT_D_7"][0]
 assert math.isclose(out["MEAN_FRAC_0"][0], 6.0, rel_tol=1e-6), out["MEAN_FRAC_0"][0]

@@ -145,7 +145,7 @@ Definitions, formulas and settings: :doc:`/Math/f_pixel_intensity`.
      - Percent image uniformity: (1 minus (MAX minus MIN) divided by (MAX plus MIN)) times 100; 0 when MAX plus MIN is 0.
      - vetted: MATLAB
    * - ``HISTOGRAM``
-     - Multi-column feature HISTOGRAM_BIN_0 to HISTOGRAM_BIN_N-1: the number of ROI pixels in each of N equal-width bins spanning the ROI's minimum to maximum intensity, where N is ``--coarseGrayDepth`` (default 64); a negative value writes no columns (a fix is coming). It is not part of ``*ALL_INTENSITY*``; it is computed only together with another intensity feature or with ``*ALL*``, and requested on its own every column is 0.
+     - Multi-column feature HISTOGRAM_BIN_0 to HISTOGRAM_BIN_N-1: the number of ROI pixels in each of N equal-width bins spanning the ROI's minimum to maximum intensity, where N is ``--coarseGrayDepth`` (default 64); a negative value writes no columns (a fix is coming). It is not part of ``*ALL_INTENSITY*``; it is computed only together with another intensity feature or with ``*ALL*``, and requested on its own every column is 0 (known defect, https://github.com/PolusAI/nyxus/issues/489).
      - vetted: analytic
 
 .. _features-intensity-histogram:
@@ -321,7 +321,7 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - ROI area as the number of pixels in the ROI.
      - vetted: MATLAB
    * - ``AREA_UM2``
-     - ROI area in square micrometers, meant as the pixel count times the squared pixel size; currently reported as 0, because the image resolution does not reach this feature.
+     - ROI area in square micrometers, meant as the pixel count times the squared pixel size; currently reported as 0, because the image resolution does not reach this feature (known defect, https://github.com/PolusAI/nyxus/issues/496).
      - vetted: MATLAB
    * - ``CENTROID_X``
      - X coordinate of the ROI's centroid: the mean x coordinate of its pixels, in pixels.
@@ -480,13 +480,13 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - Description
      - Validation
    * - ``DIAMETER_MIN_ENCLOSING_CIRCLE``
-     - Diameter in pixels of the circle that Welzl's algorithm fits to the ROI's contour pixels, with chord midpoints truncated to whole pixels; it approximates the smallest enclosing circle and can come out about a pixel larger or smaller than it.
+     - Diameter in pixels of the circle that Welzl's algorithm fits to the ROI's contour pixels, with chord midpoints truncated to whole pixels (known defect, https://github.com/PolusAI/nyxus/issues/498); it approximates the smallest enclosing circle and can come out about a pixel larger or smaller than it.
      - vetted: IMEA
    * - ``DIAMETER_CIRCUMSCRIBING_CIRCLE``
-     - Twice the largest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left.
+     - Twice the largest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left (known defect, https://github.com/PolusAI/nyxus/issues/497).
      - regression
    * - ``DIAMETER_INSCRIBING_CIRCLE``
-     - Twice the smallest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left.
+     - Twice the smallest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left (known defect, https://github.com/PolusAI/nyxus/issues/497).
      - regression
 
 .. _features-roi-radius:
@@ -504,13 +504,13 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - Description
      - Validation
    * - ``ROI_RADIUS_MEAN``
-     - Mean over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI
+     - Mean over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)
      - regression
    * - ``ROI_RADIUS_MAX``
-     - Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI
+     - Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)
      - vetted: analytic, scikit-image
    * - ``ROI_RADIUS_MEDIAN``
-     - Median over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI
+     - Median over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)
      - vetted: scikit-image
 
 .. _features-extrema:
@@ -863,7 +863,7 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - Arithmetic mean of the directions in degrees (0 to 360) from the ROI's centroid to the centroids of all its neighbors.
      - vetted: analytic
    * - ``ANG_BW_NEIGHBORS_STDDEV``
-     - Unbiased (n-1) standard deviation of the directions in degrees from the ROI's centroid to the centroids of its neighbors; 0 with fewer than 3 neighbors.
+     - Unbiased (n-1) standard deviation of the directions in degrees from the ROI's centroid to the centroids of its neighbors; 0 with fewer than 3 neighbors (with 2, a known defect, https://github.com/PolusAI/nyxus/issues/499).
      - vetted: analytic
    * - ``ANG_BW_NEIGHBORS_MODE``
      - Most frequent direction, rounded to whole degrees, from the ROI's centroid to the centroids of its neighbors; the smallest such angle on ties.
@@ -2280,7 +2280,7 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology_3d`.
      - Volume of the convex hull of the vertices of the ROI's marching-cubes surface mesh, in cubic voxels.
      - vetted: analytic, MATLAB, MIRP
    * - ``3VOXEL_VOLUME``
-     - Volume of the ROI from its voxel count: the count times the volume of a ball of diameter 1 voxel (pi/6), divided by the packing density 0.5236, which leaves the voxel count scaled by 0.9999976, times the product of the three anisotropy factors; with a single whole-volume ROI it is the exact volume of the box Nyxus substitutes for the ROI, times the same product but without the 0.9999976 factor (on the command line and through featurize_directory a box one voxel larger than the volume on every axis; see the 3D shape page).
+     - Volume of the ROI from its voxel count: the count times the volume of a ball of diameter 1 voxel (pi/6), divided by the packing density 0.5236, which leaves the voxel count scaled by 0.9999976, times the product of the three anisotropy factors; with a single whole-volume ROI it is the exact volume of the box Nyxus substitutes for the ROI, times the same product but without the 0.9999976 factor (on the command line and through featurize_directory a box one voxel larger than the volume on every axis, known defect, https://github.com/PolusAI/nyxus/issues/493; see the 3D shape page).
      - vetted: MATLAB, MIRP
    * - ``3MAJOR_AXIS_LEN``
      - 4 times the square root of the largest eigenvalue of the covariance matrix of the ROI's voxel coordinates, in voxels.

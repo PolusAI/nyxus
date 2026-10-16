@@ -29,7 +29,7 @@ set again with every pixel also weighted by its distance to the ROI contour.
        CPU, and ``featurize`` on arrays must not be combined with the GPU (see :doc:`/gpu`). The
        GPU values differ from the CPU values: the GPU takes the central moments about the centroid
        rounded down to whole pixels, so the central, normalized central and Hu moments differ, and
-       with anisotropy the run can crash. A fix is coming. The GPU's distance search computes
+       with anisotropy the run can crash, a known defect (`#521 <https://github.com/PolusAI/nyxus/issues/521>`__). The GPU's distance search computes
        the step with a single-precision logarithm, and it has no guard for a ROI without a traced
        contour, such as a single pixel.
    * - **Out-of-core**
@@ -37,7 +37,8 @@ set again with every pixel also weighted by its distance to the ROI contour.
        moments have the same values as in memory. On an image read as several tiles, out-of-core
        processing of this family raises an error or returns wrong values, depending on the ROI (see
        :ref:`large-images-tiles`). The 62 weighted moments
-       differ unless the ROI's bounding box starts at pixel (0, 0), and can differ even then (see
+       differ unless the ROI's bounding box starts at pixel (0, 0), and can differ even then, a
+       known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__; see
        :ref:`moments-possible-issues` and :doc:`/large_images`). With anisotropy, on an image
        that Nyxus reads as one tile, the weighted intensity moments get their in-memory values and
        only weighted shape moments differ.
@@ -82,7 +83,7 @@ How the distance to the contour is found
 
 1. **Contour.** Nyxus traces the border of the ROI in a copy of its bounding box padded by one
    pixel on every side, and concatenates every traced contour into one list. The traced
-   coordinates keep the padding offset: each contour pixel lies one pixel to the right of and one
+   coordinates keep the padding offset, a known defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__): each contour pixel lies one pixel to the right of and one
    pixel below the ROI border pixel it stands for. The same contour gives ``PERIMETER``, which the
    offset does not change.
 2. **Search.** :math:`d_i^2` is the smallest squared distance from pixel :math:`i` to the contour
@@ -677,7 +678,8 @@ The sum of the weights is often negative
 
 Weighted moments differ out of core
    Without anisotropy, an ROI computed out of core gets its contour from a different routine, which places it
-   relative to the ROI's bounding box while the pixels keep their image positions. The distances
+   relative to the ROI's bounding box while the pixels keep their image positions, a known defect
+   (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). The distances
    :math:`d_i` are then off by the box's offset, and all 62 weighted moments depend on where the
    ROI lies. On an ellipse of 245 pixels ``WEIGHTED_SPAT_MOMENT_00`` is 49.81 in memory wherever
    it lies, and 7.484, 58.50 or 338.2 out of core depending on where its bounding box starts:
@@ -687,7 +689,8 @@ Weighted moments differ out of core
    ellipse gives 43.75. The 118 unweighted moments are the same on both paths.
 
 Whole-slide mode
-   The image corners used as the contour lie one pixel past the last column and row. Row 0 and
+   The image corners used as the contour lie one pixel past the last column and row, a known
+   defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__). Row 0 and
    column 0 get the weight 0.001 whatever their intensity, while the last row and column get
    :math:`I_i \ln 1.001`, so the weighting is not symmetric.
 

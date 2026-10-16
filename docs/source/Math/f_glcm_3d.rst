@@ -202,8 +202,8 @@ Settings
      - Accepted but has no effect: the distance is always 1.
 
 ``set_metaparam`` also accepts ``3glcm/numang`` and ``3glcm/sparseintensities``; neither changes
-the result. ``get_metaparam("3glcm/greydepth")`` and ``get_metaparam("3glcm/offset")`` return the
-2D GLCM settings, not the values set with ``3glcm/...``. ``--glcmAngles`` and ``--glcmOff`` apply to
+the result. ``get_metaparam`` does not read the ``3glcm/...`` values back (see
+:ref:`glcm-3d-possible-issues`). ``--glcmAngles`` and ``--glcmOff`` apply to
 the 2D family only. All options are listed in the :ref:`cli-reference`.
 
 
@@ -626,12 +626,19 @@ Constant ROI
    their limiting values (``3GLCM_ASM`` 1, ``3GLCM_CONTRAST`` 0, ``3GLCM_JAVE`` the level).
    ``3GLCM_CORRELATION`` and ``3GLCM_INFOMEAS1`` divide by zero; the result is the ``--noval``
    substitute in CSV files and pandas, and ``-0.0`` in Arrow and Parquet files. This differs from
-   the 2D family, which returns 0 for every feature in every format, whatever ``--noval`` is (see
-   :ref:`glcm-possible-issues`).
+   the 2D family, which returns 0 for every feature in every format, whatever ``--noval`` is, a
+   known defect (`#511 <https://github.com/PolusAI/nyxus/issues/511>`__; see :ref:`glcm-possible-issues`).
+
+``get_metaparam("3glcm/...")`` returns the 2D settings
+   ``get_metaparam("3glcm/greydepth")`` and ``get_metaparam("3glcm/offset")`` return the 2D GLCM
+   settings, not the values set with ``3glcm/...``, a known defect (`#513 <https://github.com/PolusAI/nyxus/issues/513>`__). After
+   ``set_metaparam("3glcm/greydepth=8")``, ``get_metaparam("3glcm/greydepth")`` returns 64, the
+   2D default. The features use the value that was set.
 
 Grey-level values and indices
    As in 2D, with PyRadiomics-style binning some features use positions 1 to :math:`N_g` in the
-   list of grey levels present, and others the levels themselves.
+   list of grey levels present, and others the levels themselves. ``DIFAVE``, ``SUMAVERAGE`` and
+   ``IV`` mix the two as on the 2D page, a known defect (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__).
 
 
 Validation

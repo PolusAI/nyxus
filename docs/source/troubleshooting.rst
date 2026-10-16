@@ -134,8 +134,8 @@ Restrict ``file_pattern`` to the image files to avoid it.
    error, not through Python's ``sys.stdout``, and the exception carries only ``Error: 1``. In a
    Jupyter notebook on Windows (tested with ipykernel 7.3), the messages go to the terminal that
    runs the kernel, and the cell shows only the exception. Look there, or run the same call in a
-   plain ``python`` session in a terminal. A fix that puts the cause into the exception is
-   coming.
+   plain ``python`` session in a terminal. That the exception does not carry the cause is a known
+   defect (`#523 <https://github.com/PolusAI/nyxus/issues/523>`__).
 
 A build without an optional part refuses its files or outputs:
 

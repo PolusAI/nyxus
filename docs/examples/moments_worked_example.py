@@ -128,6 +128,7 @@ def ellipse(n, cx, cy):
 
 weighted = [c for c in codes if c.startswith(("WEIGHTED_", "WT_NORM_", "IMOM_W"))]
 assert len(weighted) == 62
+# pins known defect https://github.com/PolusAI/nyxus/issues/509
 for n, cx, cy, corner, ooc in ((30, 12, 10, (2, 2), 7.484), (26, 13, 13, (3, 5), 58.50),
                                (40, 20, 20, (10, 12), 338.2)):
     e = ellipse(n, cx, cy)
@@ -141,6 +142,7 @@ for n, cx, cy, corner, ooc in ((30, 12, 10, (2, 2), 7.484), (26, 13, 13, (3, 5),
             assert math.isclose(out[code][0], mem[code][0], rel_tol=1e-9, abs_tol=1e-9), code
 # At the image origin: the same ellipse still differs, the rectangle does not
 e = ellipse(30, 12, 10)[2:, 2:]
+# pins known defect https://github.com/PolusAI/nyxus/issues/509
 assert same(from_files(e, ram_limit=0)["WEIGHTED_SPAT_MOMENT_00"][0], 43.75)
 corner_rect = np.zeros((50, 60), dtype=np.uint16)
 corner_rect[:40, :48] = 1

@@ -20,7 +20,8 @@ unevenly the intensity is spread over the wedges.
      - No; computed on the CPU in every build.
    * - **Out-of-core**
      - Yes. Without anisotropy the values differ from the in-memory ones for a ROI whose bounding
-       box does not start at the image's first row and column, and can differ even when it does;
+       box does not start at the image's first row and column, and can differ even when it does, a
+       known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__);
        with anisotropy an out-of-core ROI gets its in-memory values. On an image that Nyxus reads
        as several tiles out-of-core processing raises an error or returns wrong values in both
        cases, depending on the ROI (see
@@ -55,11 +56,12 @@ sorts every ROI pixel into a ring by its distance from the centre and into a wed
   with a 4-neighbour in the background; on irregular ROIs the tracer skips some of them (350 of 400
   noisy random ROIs in a test). All contours of the ROI are joined into one list, outer contour
   first. Every contour point comes back one pixel to the right and one pixel down of the boundary
-  pixel it stands for, :math:`(x+1, y+1)`; the features use these shifted points (see
+  pixel it stands for, :math:`(x+1, y+1)`; the features use these shifted points, a known defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__; see
   :ref:`radial-possible-issues`).
 - **Whole-slide mode:** the contour is not traced. It is the four points :math:`(0, 0)`,
   :math:`(W, 0)`, :math:`(W, H)` and :math:`(0, H)` of a :math:`W \times H` image, without the
-  :math:`(+1, +1)` shift.
+  :math:`(+1, +1)` shift. The centre found from them lies on the image's top edge, a known defect
+  (`#516 <https://github.com/PolusAI/nyxus/issues/516>`__; see :ref:`radial-possible-issues`).
 - **Centre:** the ROI pixel :math:`O` with the smallest spread of squared distances to the contour,
   the largest squared distance minus the smallest. The largest and smallest distances are found by
   a coarse-to-fine search along the contour list, not by checking every contour point; on many ROIs
@@ -416,8 +418,8 @@ Possible issues
 ---------------
 
 The contour is one pixel off
-   The contour points stand one pixel to the right of and one pixel below the ROI's boundary, so
-   the centre is pulled down and to the right, and :math:`R` is measured to points outside the
+   The contour points stand one pixel to the right of and one pixel below the ROI's boundary, a
+   known defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__), so the centre is pulled down and to the right, and :math:`R` is measured to points outside the
    ROI. On the worked example 9 of the 20 contour points are not ROI pixels. With the contour on
    the boundary pixels themselves, the formulas of this page give the centre :math:`(4, 3)`, of
    intensity 9, instead of :math:`(5, 4)`: ``MEAN_FRAC_0`` would be 9 instead of 7, ring 7 would
@@ -451,7 +453,7 @@ Ties between centre candidates depend on the pixel order
 
 Out-of-core ROIs
    Without anisotropy, an out-of-core ROI keeps its contour relative to its bounding box but its
-   pixels in image coordinates. A ROI whose bounding box does not start at the image's first row
+   pixels in image coordinates, a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). A ROI whose bounding box does not start at the image's first row
    and column gets different values: the worked example moved 2 pixels right and 3 down reports
    ``FRAC_AT_D_7`` 0.3404 out-of-core instead of 0.2340, and ``MEAN_FRAC_0`` 6 instead of 7. A ROI
    whose bounding box starts there is placed correctly, but the out-of-core contour can list its
@@ -461,6 +463,15 @@ Out-of-core ROIs
 
 Small ROIs
    A ROI of 1 or 2 pixels has no contour, and all 24 columns are 0.
+
+Whole-slide centre on the top edge
+   In whole-slide mode the centre is not the middle of the image but a pixel of the top rows near
+   the right edge, a known defect (`#516 <https://github.com/PolusAI/nyxus/issues/516>`__). On the four corners of the contour the
+   coarse-to-fine search compares only :math:`(0, 0)` and :math:`(W, H)`, so every pixel as far
+   from one as from the other has a spread of 0, and the first one read wins. The centre is
+   :math:`(19, 1)` on a 20 × 20 image, with :math:`R = 19.03` and 11 pixels in ring 0, and
+   :math:`(50, 0)` on a 64 × 48 image, with :math:`R = 50` and 88 pixels in ring 0; the outer
+   rings then cover only part of the image.
 
 Intensity domain
    ``MEAN_FRAC`` is reported in grey levels, not in the image's units. An array with negative

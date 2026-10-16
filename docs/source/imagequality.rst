@@ -4,7 +4,7 @@ Image quality features
 Image quality features measure focus, sharpness and saturation, for example to find blurred or
 overexposed fields of view before analysis. They are 2D features, computed per ROI on the ROI's
 bounding box with pixels outside the ROI set to 0. In whole-image mode (the intensity directory
-given as the label directory) the ROI is the whole image plus one row and one column of 0 (see
+given as the label directory) the ROI is the whole image plus one row and one column of 0, a known defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__; see
 :ref:`imq-possible-issues`).
 
 The group is ``*ALL_IMQ*``. It is not part of ``*ALL*``, and image quality features cannot be

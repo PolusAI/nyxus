@@ -91,6 +91,7 @@ assert (long_mask.sum(), out.sum(), w.sum(), w[out].sum()) == (19, 5, 93, 23)
 # A centroid exactly on a pixel centre: that pixel is left out
 sym = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]], dtype=np.uint32)
 z = zern(sym, np.ones_like(sym))
+# pins known defect https://github.com/PolusAI/nyxus/issues/503
 assert math.isclose(z[0] * math.pi, 0.75, rel_tol=1e-12), z[0]
 assert math.isclose(z[2], 0.5040, rel_tol=5e-4), z[2]
 # With the centre pixel kept, A20 = (3/pi) sum w (2 rho^2 - 1) would be 0.7427 (centroid (2, 2),

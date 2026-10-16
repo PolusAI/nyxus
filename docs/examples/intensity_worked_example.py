@@ -51,6 +51,7 @@ assert {k: v for k, v in enumerate(hist) if v} == {0: 4, 16: 6, 32: 9, 48: 3, 63
 
 # HISTOGRAM requested on its own: 64 columns, all 0
 alone = bins(Nyxus(["HISTOGRAM"]).featurize(img, mask))
+# pins known defect https://github.com/PolusAI/nyxus/issues/489
 assert len(alone) == 64 and not any(alone), alone
 
 # Four bins instead of 64: entropy, uniformity and the histogram change; nothing else does
@@ -106,6 +107,7 @@ assert gaps == [-2, 10, 12], gaps
 
 # Grey levels above 65535: each pixel's square wraps modulo 2^32 before it is summed
 big = Nyxus(["*ALL_INTENSITY*"]).featurize(img * 20000, mask)
+# pins known defect https://github.com/PolusAI/nyxus/issues/490
 check(big, {"MEAN": 56000.0, "ENERGY": 5.4145e10, "ROOT_MEAN_SQUARED": 46538.28}, "x 20000")
 x = img.astype(float).ravel() * 20000
 assert math.isclose(x @ x, 9.28e10) and math.isclose(math.sqrt(x @ x / 25), 60926.18, rel_tol=1e-6)

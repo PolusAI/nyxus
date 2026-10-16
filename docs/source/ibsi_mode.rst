@@ -63,7 +63,7 @@ are. The 2D families affected are:
 
 One binning step remains in IBSI mode: before building the 2D GLCM, Nyxus bins the ROI's minimum
 and maximum to ``--coarseGrayDepth`` levels and when they fall into one level every GLCM feature returns 0, whatever
-``--noval`` is (a fix is coming), so a ROI whose minimum is at least 63/64 of its maximum gets 0
+``--noval`` is (a known defect, `#511 <https://github.com/PolusAI/nyxus/issues/511>`__), so a ROI whose minimum is at least 63/64 of its maximum gets 0
 in every GLCM column (see :ref:`glcm-possible-issues`).
 
 The 3D twins of these families skip binning in the same way. In 3D the default binning differs

@@ -789,8 +789,9 @@ Asymmetric matrix by default
 Constant ROI
    Before building any matrix, Nyxus bins the ROI's minimum and maximum intensities to
    ``--coarseGrayDepth`` levels counted from 0 (``glcm/greydepth`` from Python), in IBSI mode too.
-   When the two fall into the same level, every GLCM feature returns 0, whatever ``--noval`` is;
-   a fix is coming.
+   When the two fall into the same level, every GLCM feature returns 0, whatever ``--noval`` is,
+   a known defect (`#511 <https://github.com/PolusAI/nyxus/issues/511>`__): the substitute is written and then overwritten by the empty
+   per-angle results, which the output pads with 0.
    This covers a constant ROI and, with a positive grey depth :math:`N` (64 by default), any ROI
    whose minimum is at least :math:`(N-1)/N` of its maximum: in IBSI mode with the default
    :math:`N`, a ROI of intensities 1000 and 1001 returns 0 in every column, while one of 10 and
@@ -802,7 +803,7 @@ Grey-level values and indices
    ``HOM1``, ``HOM2``, ``DIFVAR``, ``DIFENTRO``, ``SUMENTROPY`` and the inverse-difference
    features use positions 1 to :math:`N_g` in that list, and ``IDN`` and ``IDMN`` divide by
    :math:`N_g`, the number of levels present. ``DIFAVE``, ``SUMAVERAGE`` and ``IV`` are a known
-   defect: they group pairs by the difference or sum of their positions, but weight each group by
+   defect (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__): they group pairs by the difference or sum of their positions, but weight each group by
    the value difference or sum of one pair in it, so when the levels present are not consecutive
    they match neither convention. Values and positions coincide with the default binning and in
    IBSI mode.

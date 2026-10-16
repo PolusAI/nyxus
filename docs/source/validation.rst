@@ -122,7 +122,7 @@ Where Nyxus deliberately or knowingly computes something other than a reference 
 family page says so in its *Possible issues* section, with the size of the difference. The main
 ones are:
 
-* Morphology: traced contours are offset by one pixel, which affects the contour-based radii and
+* Morphology: traced contours are offset by one pixel, a known defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__), which affects the contour-based radii and
   circle diameters. See :ref:`morphology-possible-issues`.
 * Moments: the weighted moments use an approximate distance search and the offset contour. See
   :ref:`moments-possible-issues`.

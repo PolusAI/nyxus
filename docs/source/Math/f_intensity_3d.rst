@@ -284,7 +284,7 @@ grey levels: on random float volumes, ROIs that held the volume's extremes gave 
 :math:`\sum_k x_k^2`; see :ref:`ENERGY <feature-energy>`. 423 on the worked example.
 
 **Possible issues.** Each voxel's square is formed as a 32-bit unsigned integer before it is
-summed, so a stored grey level above 65535 wraps modulo :math:`2^{32}`. Multiplying the worked
+summed, a known defect (`#490 <https://github.com/PolusAI/nyxus/issues/490>`__), so a stored grey level above 65535 wraps modulo :math:`2^{32}`. Multiplying the worked
 example by 20000 gives 4.894 × 10\ :sup:`10` where the sum of squares is 1.692 × 10\ :sup:`11`.
 Volumes of 8- and 16-bit integers are not affected.
 
@@ -538,7 +538,7 @@ from their own mean; see :ref:`ROBUST_MEAN_ABSOLUTE_DEVIATION <feature-robust-me
 
 :math:`\sqrt{\mathrm{3ENERGY}/N_v}`; see :ref:`ROOT_MEAN_SQUARED <feature-root-mean-squared>`.
 4.385 on the worked example. It inherits the wrap-around of ``3ENERGY`` for grey levels above
-65535: 47166 instead of 87698 for the worked example times 20000.
+65535, a known defect (`#490 <https://github.com/PolusAI/nyxus/issues/490>`__): 47166 instead of 87698 for the worked example times 20000.
 
 
 .. _feature-3skewness:
@@ -657,7 +657,8 @@ Covered range with one ROI
    Compare ROIs only within one volume.
 
 Grey levels above 65535
-   ``3ENERGY`` and ``3ROOT_MEAN_SQUARED`` square each voxel as a 32-bit unsigned integer, which
+   ``3ENERGY`` and ``3ROOT_MEAN_SQUARED`` square each voxel as a 32-bit unsigned integer, a known
+   defect (`#490 <https://github.com/PolusAI/nyxus/issues/490>`__), which
    wraps for grey levels above 65535 (32-bit integer volumes, or floating-point volumes read with
    ``--fpimgdr`` above 65535). The other features are computed in floating point and are not
    affected.

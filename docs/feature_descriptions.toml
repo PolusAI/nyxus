@@ -64,7 +64,7 @@ VARIANCE = "Unbiased variance of the ROI's pixel intensities, with n-1 in the de
 VARIANCE_BIASED = "Biased (population) variance of the ROI's pixel intensities, with n in the denominator."
 UNIFORMITY = "Sum of the squared bin probabilities of the ROI's intensity histogram, binned into |--coarseGrayDepth| equal-width bins (default 64) spanning the ROI's minimum to maximum intensity."
 UNIFORMITY_PIU = "Percent image uniformity: (1 minus (MAX minus MIN) divided by (MAX plus MIN)) times 100; 0 when MAX plus MIN is 0."
-HISTOGRAM = "Multi-column feature HISTOGRAM_BIN_0 to HISTOGRAM_BIN_N-1: the number of ROI pixels in each of N equal-width bins spanning the ROI's minimum to maximum intensity, where N is --coarseGrayDepth (default 64); a negative value writes no columns (a fix is coming). It is not part of *ALL_INTENSITY*; it is computed only together with another intensity feature or with *ALL*, and requested on its own every column is 0."
+HISTOGRAM = "Multi-column feature HISTOGRAM_BIN_0 to HISTOGRAM_BIN_N-1: the number of ROI pixels in each of N equal-width bins spanning the ROI's minimum to maximum intensity, where N is --coarseGrayDepth (default 64); a negative value writes no columns (a fix is coming). It is not part of *ALL_INTENSITY*; it is computed only together with another intensity feature or with *ALL*, and requested on its own every column is 0 (known defect, https://github.com/PolusAI/nyxus/issues/489)."
 
 [intensity_histogram]
 IH_MEAN_VAL = "Mean intensity read from the ROI's N-bin intensity histogram: the frequency-weighted mean of the bin centres. All IH_ features use N equal-width bins over the ROI's intensity range, N = --coarseGrayDepth (default 64), and are computed only in IBSI mode (--ibsi)."
@@ -116,7 +116,7 @@ IH_BIN_SIZE = "Width of one histogram bin in intensity units: the ROI's intensit
 
 [basic_morphology]
 AREA_PIXELS_COUNT = "ROI area as the number of pixels in the ROI."
-AREA_UM2 = "ROI area in square micrometers, meant as the pixel count times the squared pixel size; currently reported as 0, because the image resolution does not reach this feature."
+AREA_UM2 = "ROI area in square micrometers, meant as the pixel count times the squared pixel size; currently reported as 0, because the image resolution does not reach this feature (known defect, https://github.com/PolusAI/nyxus/issues/496)."
 CENTROID_X = "X coordinate of the ROI's centroid: the mean x coordinate of its pixels, in pixels."
 CENTROID_Y = "Y coordinate of the ROI's centroid: the mean y coordinate of its pixels, in pixels."
 WEIGHTED_CENTROID_Y = "Y coordinate of the ROI's intensity-weighted centroid: the mean of the pixel y coordinates weighted by pixel intensity; 0 when the ROI's total intensity is 0."
@@ -157,14 +157,14 @@ ORIENTATION = "Angle in degrees, from -90 to 90, between the x axis and the majo
 ROUNDNESS = "4 times the ROI's area divided by pi times the square of MAJOR_AXIS_LENGTH; 1 for a circle."
 
 [circles]
-DIAMETER_MIN_ENCLOSING_CIRCLE = "Diameter in pixels of the circle that Welzl's algorithm fits to the ROI's contour pixels, with chord midpoints truncated to whole pixels; it approximates the smallest enclosing circle and can come out about a pixel larger or smaller than it."
-DIAMETER_CIRCUMSCRIBING_CIRCLE = "Twice the largest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left."
-DIAMETER_INSCRIBING_CIRCLE = "Twice the smallest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left."
+DIAMETER_MIN_ENCLOSING_CIRCLE = "Diameter in pixels of the circle that Welzl's algorithm fits to the ROI's contour pixels, with chord midpoints truncated to whole pixels (known defect, https://github.com/PolusAI/nyxus/issues/498); it approximates the smallest enclosing circle and can come out about a pixel larger or smaller than it."
+DIAMETER_CIRCUMSCRIBING_CIRCLE = "Twice the largest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left (known defect, https://github.com/PolusAI/nyxus/issues/497)."
+DIAMETER_INSCRIBING_CIRCLE = "Twice the smallest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left (known defect, https://github.com/PolusAI/nyxus/issues/497)."
 
 [roi_radius]
-ROI_RADIUS_MEAN = "Mean over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI"
-ROI_RADIUS_MAX = "Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI"
-ROI_RADIUS_MEDIAN = "Median over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI"
+ROI_RADIUS_MEAN = "Mean over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)"
+ROI_RADIUS_MAX = "Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)"
+ROI_RADIUS_MEDIAN = "Median over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)"
 
 [extrema]
 EXTREMA_P1_X = "X coordinate of extremum point 1: the leftmost ROI pixel in the ROI's top row."
@@ -251,7 +251,7 @@ CLOSEST_NEIGHBOR1_ANG = "Direction in degrees (0 to 360, from the x axis with y 
 CLOSEST_NEIGHBOR2_DIST = "Distance in pixels from the ROI's centroid to the centroid of its second-nearest neighbor among the ROIs counted in NUM_NEIGHBORS."
 CLOSEST_NEIGHBOR2_ANG = "Direction in degrees (0 to 360, from the x axis with y increasing downward) from the ROI's centroid to the centroid of its second-nearest neighbor."
 ANG_BW_NEIGHBORS_MEAN = "Arithmetic mean of the directions in degrees (0 to 360) from the ROI's centroid to the centroids of all its neighbors."
-ANG_BW_NEIGHBORS_STDDEV = "Unbiased (n-1) standard deviation of the directions in degrees from the ROI's centroid to the centroids of its neighbors; 0 with fewer than 3 neighbors."
+ANG_BW_NEIGHBORS_STDDEV = "Unbiased (n-1) standard deviation of the directions in degrees from the ROI's centroid to the centroids of its neighbors; 0 with fewer than 3 neighbors (with 2, a known defect, https://github.com/PolusAI/nyxus/issues/499)."
 ANG_BW_NEIGHBORS_MODE = "Most frequent direction, rounded to whole degrees, from the ROI's centroid to the centroids of its neighbors; the smallest such angle on ties."
 
 [glcm]
@@ -673,7 +673,7 @@ RADIAL_CV = "Multi-column feature RADIAL_CV_0 to RADIAL_CV_7: for each of the 8 
 3SPHERICAL_DISPROPORTION = "3AREA divided by the surface area of a sphere whose volume is 3VOXEL_VOLUME (differs from IBSI, which uses the mesh area and mesh volume)."
 3SPHERICITY = "Surface area of a sphere whose volume is 3VOXEL_VOLUME, divided by 3AREA; the reciprocal of 3SPHERICAL_DISPROPORTION (differs from IBSI, which uses the mesh area and mesh volume)."
 3VOLUME_CONVEXHULL = "Volume of the convex hull of the vertices of the ROI's marching-cubes surface mesh, in cubic voxels."
-3VOXEL_VOLUME = "Volume of the ROI from its voxel count: the count times the volume of a ball of diameter 1 voxel (pi/6), divided by the packing density 0.5236, which leaves the voxel count scaled by 0.9999976, times the product of the three anisotropy factors; with a single whole-volume ROI it is the exact volume of the box Nyxus substitutes for the ROI, times the same product but without the 0.9999976 factor (on the command line and through featurize_directory a box one voxel larger than the volume on every axis; see the 3D shape page)."
+3VOXEL_VOLUME = "Volume of the ROI from its voxel count: the count times the volume of a ball of diameter 1 voxel (pi/6), divided by the packing density 0.5236, which leaves the voxel count scaled by 0.9999976, times the product of the three anisotropy factors; with a single whole-volume ROI it is the exact volume of the box Nyxus substitutes for the ROI, times the same product but without the 0.9999976 factor (on the command line and through featurize_directory a box one voxel larger than the volume on every axis, known defect, https://github.com/PolusAI/nyxus/issues/493; see the 3D shape page)."
 3MAJOR_AXIS_LEN = "4 times the square root of the largest eigenvalue of the covariance matrix of the ROI's voxel coordinates, in voxels."
 3MINOR_AXIS_LEN = "4 times the square root of the second-largest eigenvalue of the covariance matrix of the ROI's voxel coordinates, in voxels."
 3LEAST_AXIS_LEN = "4 times the square root of the smallest eigenvalue of the covariance matrix of the ROI's voxel coordinates, in voxels."

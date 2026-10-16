@@ -83,7 +83,7 @@ Output
    * - ``--annot``
      - no
      - ``false``
-     - When true, adds annotation columns (anno0, anno1, ...) to CSV output. Their values come from the mask file name split at underscores. Values: true \| false \| t \| f (case-insensitive). Only the part of the mask file name before the first dot is used, and empty pieces are dropped. Annotation columns appear in CSV output only. With Arrow IPC or Parquet output, ``--annot=true`` currently stops the run with a crash and leaves an unreadable file; a fix is coming.
+     - When true, adds annotation columns (anno0, anno1, ...) to CSV output. Their values come from the mask file name split at underscores. Values: true \| false \| t \| f (case-insensitive). Only the part of the mask file name before the first dot is used, and empty pieces are dropped. Annotation columns appear in CSV output only. With Arrow IPC or Parquet output, ``--annot=true`` currently stops the run with a crash and leaves an unreadable file (known defect, https://github.com/PolusAI/nyxus/issues/517).
    * - ``--annotsep``
      - no
      - ``_``
@@ -123,7 +123,7 @@ Features
    * - ``--pixelsPerCentimeter``
      - no
      - —
-     - Image resolution, for reporting area in square micrometres (AREA_UM2). Values: real number > 0. The value is accepted and validated but does not reach the results: AREA_UM2 is reported as 0 whatever the resolution.
+     - Image resolution, for reporting area in square micrometres (AREA_UM2). Values: real number > 0. The value is accepted and validated but does not reach the results: AREA_UM2 is reported as 0 whatever the resolution (known defect, https://github.com/PolusAI/nyxus/issues/496).
    * - ``--embeddedpixelsize``
      - no
      - —
@@ -187,7 +187,7 @@ Gabor
    * - ``--gaborkersize``
      - no
      - ``16``
-     - Width and height, in pixels, of the square Gabor convolution kernel. Values: integer >= 2. 1 is accepted but reads past the end of the convolution buffer, so its values are arbitrary (a known defect).
+     - Width and height, in pixels, of the square Gabor convolution kernel. Values: integer >= 2. 1 is accepted but reads past the end of the convolution buffer, so its values are arbitrary (known defect, https://github.com/PolusAI/nyxus/issues/506).
    * - ``--gaborf0``
      - no
      - ``0.1``
@@ -227,7 +227,7 @@ Image handling
    * - ``--anisox``
      - no
      - ``1``
-     - Size of a pixel or voxel along x relative to the other axes. Geometric features use it: a volume (3D or 2.5D) is featurized on its voxels as acquired and the shape features scale their coordinates by the anisotropy, and a 2D slide's geometric features are computed on its pixels resampled by the anisotropy. Intensity and texture features are computed on the pixels or voxels as acquired, so they report the same values with or without anisotropy. On a 2D slide the intensity-weighted geometric features (``EDGE_*``, WEIGHTED_CENTROID_X/Y, MASS_DISPLACEMENT, ``IMOM_*``, the radial distribution and ZERNIKE2D) are computed on the pixels as acquired, each at its position scaled by the anisotropy. Of the image quality features only POWER_SPECTRUM_SLOPE changes: it is computed on the resampled ROI; a fix is coming. Values: real number. A value of 1 counts as unset. No positivity check is made. A value other than 1 in any ``--aniso``\* option replaces the physical spacing of ``--use-physical-spacing`` on all three axes; the axes not given then use 1. A non-numeric value stops the run with an error.
+     - Size of a pixel or voxel along x relative to the other axes. Geometric features use it: a volume (3D or 2.5D) is featurized on its voxels as acquired and the shape features scale their coordinates by the anisotropy, and a 2D slide's geometric features are computed on its pixels resampled by the anisotropy. Intensity and texture features are computed on the pixels or voxels as acquired, so they report the same values with or without anisotropy. On a 2D slide the intensity-weighted geometric features (``EDGE_*``, WEIGHTED_CENTROID_X/Y, MASS_DISPLACEMENT, ``IMOM_*``, the radial distribution and ZERNIKE2D) are computed on the pixels as acquired, each at its position scaled by the anisotropy. Of the image quality features only POWER_SPECTRUM_SLOPE changes: it is computed on the resampled ROI (known defect, https://github.com/PolusAI/nyxus/issues/519). Values: real number. A value of 1 counts as unset. No positivity check is made. A value other than 1 in any ``--aniso``\* option replaces the physical spacing of ``--use-physical-spacing`` on all three axes; the axes not given then use 1. A non-numeric value stops the run with an error.
    * - ``--anisoy``
      - no
      - ``1``

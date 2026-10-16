@@ -67,6 +67,7 @@ def run(image, labels, **kwargs):
 # The worked example as the page walks through it
 check(one, {"POLYGONALITY_AVE": -1, "HEXAGONALITY_AVE": -1, "EDGE_INTEGRATED_INTENSITY": 228}, "ROI 1")
 assert round(one["EDGE_INTEGRATED_INTENSITY"][0] / one["EDGE_MEAN_INTENSITY"][0]) == 44   # contour pixels
+# pins known defect https://github.com/PolusAI/nyxus/issues/497
 check(two, {"AREA_PIXELS_COUNT": 15, "PERIMETER": 12, "CIRCULARITY": 1.144, "ASPECT_RATIO": 0.6,
             "ORIENTATION": 90, "CONVEX_HULL_AREA": 15, "PERCENT_TOUCHING": 41.67,
             "CLOSEST_NEIGHBOR1_ANG": 174.4, "DIAMETER_MIN_ENCLOSING_CIRCLE": 4.4723,
@@ -83,6 +84,7 @@ for kwargs in ({"ibsi": True}, {"coarse_gray_depth": 8}, {"anisotropy_x": 2.0}):
         assert np.allclose(other[code], features.sort_values("ROI_label")[code]), (kwargs, code)
 
 # AREA_UM2 is 0 whatever the resolution
+# pins known defect https://github.com/PolusAI/nyxus/issues/496
 assert run(img, mask, pixels_per_micron=2.0)["AREA_UM2"].tolist() == [0, 0]
 
 # ORIENTATION: a bar running down and to the right in the image is at about +45 degrees
@@ -139,6 +141,7 @@ scene = np.zeros((30, 30), dtype=np.uint32)
 scene[12:17, 10:15] = 1
 scene[9:12, 18:23] = 2
 scene[17:20, 18:23] = 3
+# pins known defect https://github.com/PolusAI/nyxus/issues/499
 check(run(scene * 2, scene), {"NUM_NEIGHBORS": 2, "CLOSEST_NEIGHBOR1_ANG": 333.4, "CLOSEST_NEIGHBOR2_ANG": 26.57,
                               "ANG_BW_NEIGHBORS_MEAN": 180, "ANG_BW_NEIGHBORS_STDDEV": 0,
                               "ANG_BW_NEIGHBORS_MODE": 27}, "two neighbours")

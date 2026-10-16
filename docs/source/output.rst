@@ -155,7 +155,7 @@ file ``p0_y1_r1_c0.ome.tif`` gives ``p0``, ``y1``, ``r1`` and ``c0``.
 
 Annotations appear only in CSV output for images with label images. With Arrow IPC or Parquet
 output, ``--annot=true`` currently stops the run with a crash and leaves an unreadable file, so
-leave it off there; a fix is coming. Annotations always split at ``_``: ``--annotsep`` is
+leave it off there. This is a known defect (`#517 <https://github.com/PolusAI/nyxus/issues/517>`__). Annotations always split at ``_``: ``--annotsep`` is
 accepted but not used. The Python interface has no annotation option.
 
 

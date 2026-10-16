@@ -23,7 +23,8 @@ rough or ragged shapes give larger values.
        side :math:`S` is 32 or less can read differently (the worked example gives 1.3966 instead
        of 1.3732). The divider walks only the first loop of the contour, so ROIs with holes or
        several parts differ (two separate 25 × 25 squares give 1.000 instead of 1.107); with
-       anisotropy every ROI's divider value can differ (a fix is coming). On an image
+       anisotropy every ROI's divider value can differ. These contour differences are a known
+       defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). On an image
        that Nyxus reads as several tiles out-of-core processing raises an error or returns wrong
        values, depending on the ROI (see :ref:`large-images-tiles`
        and :doc:`/large_images`). See :ref:`fractal-possible-issues`.
@@ -75,8 +76,8 @@ least-squares slope of :math:`\ln P` against :math:`\ln r`. At stride 1 the walk
 
 A ROI with holes or separate parts has several contours. Nyxus joins them, in the order it found
 them, into one chain and walks that chain as a single closed contour (see
-:ref:`fractal-possible-issues`). The contour coordinates are offset by one pixel in both axes; a
-translation changes no distance, so neither feature depends on it.
+:ref:`fractal-possible-issues`). The contour coordinates are offset by one pixel in both axes, a known defect
+(`#497 <https://github.com/PolusAI/nyxus/issues/497>`__); a translation changes no distance, so neither feature depends on it.
 
 
 Worked example
@@ -246,7 +247,7 @@ Settings
      - ``--segDir`` equal to ``--intDir``
      - ``featurize_files(..., single_roi=True)``
      - The ROI is the whole image, but its bounding box is one pixel larger than the image in
-       each direction, and the canvas side :math:`S` is taken from that box. ``FRACT_DIM_BOXCOUNT``
+       each direction, a known defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__), and the canvas side :math:`S` is taken from that box. ``FRACT_DIM_BOXCOUNT``
        is that of a filled rectangle of the image's size on that canvas: 1.8703 for 200 × 200,
        and 1.8667 for 256 × 256, where a 256 × 256 mask of ones reads 2.
        ``FRACT_DIM_PERIMETER`` is exactly 1, because the contour is the image's four corners.
@@ -400,7 +401,7 @@ Out-of-core ROIs
    1.000 out of core and 1.107 in memory. Without anisotropy, a ROI with a single contour gives the
    same ``FRACT_DIM_PERIMETER`` on both paths. With anisotropy the out-of-core contour is wrong,
    so single-contour ROIs differ too: a disk of radius 8 with ``anisotropy_x=2`` gives 1.1431 in
-   memory and 1.0482 out of core. A fix is coming. Images that Nyxus reads as several tiles have further
+   memory and 1.0482 out of core. The out-of-core contour is a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). Images that Nyxus reads as several tiles have further
    out-of-core differences (see :ref:`large-images-tiles`).
 
 Several contours are walked as one
@@ -415,7 +416,7 @@ Small ROIs
    contours of 3 to 7 pixels. A 3 × 3 square gives 2 and 1.
 
 Largest 32-bit intensity
-   This is a known defect. In memory, on ROIs whose padded side :math:`S` exceeds 32, box
+   This is a known defect (`#515 <https://github.com/PolusAI/nyxus/issues/515>`__). In memory, on ROIs whose padded side :math:`S` exceeds 32, box
    counting marks each ROI pixel with its intensity plus 1, converted to a 32-bit unsigned
    integer. For a pixel of intensity 4294967295 that conversion is out of range, so whether the
    pixel is counted depends on the compiler. Out of core the pixel is counted: a 40 × 40 square
