@@ -187,7 +187,7 @@ Gabor
    * - ``--gaborkersize``
      - no
      - ``16``
-     - Width and height, in pixels, of the square Gabor convolution kernel. Values: integer >= 1.
+     - Width and height, in pixels, of the square Gabor convolution kernel. Values: integer >= 2. 1 is accepted but reads past the end of the convolution buffer, so its values are arbitrary (a known defect).
    * - ``--gaborf0``
      - no
      - ``0.1``

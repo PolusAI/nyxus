@@ -100,6 +100,7 @@ DIM_AGNOSTIC = {
     "test_ometiff_mechanics.h": "OME-TIFF reader over 2D..5D extents of one container",
     "test_ome_meta_mechanics.h": "OME metadata parsers and the axes descriptor; no image is read",
     "test_docstring_examples_mechanics.py": "the docstring examples of the Python API, which use 2D and 3D calls alike",
+    "test_docs_examples_mechanics.py": "the documentation's example scripts and README quick starts, 2D, 3D and dimension-free alike",
     "test_docs_cli_reference_mechanics.py": "the CLI reference generator's checks; no image is read",
     "test_docs_conf_mechanics.py": "the Sphinx configuration's release and title; no image is read",
     "test_docs_feature_reference_mechanics.py": "the feature reference generator's checks; no image is read",

@@ -70,3 +70,10 @@ html_theme_options = {
     'navigation_with_keys': False,
     'secondary_sidebar_items': ['page-toc'],
 }
+
+# -- Options for the link check ----------------------------------------------
+
+# External sites time out or rate-limit now and then; retry before reporting a link as broken.
+linkcheck_retries = 3
+linkcheck_timeout = 30
+linkcheck_rate_limit_timeout = 120

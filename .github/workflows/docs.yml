@@ -6,12 +6,7 @@ on:
     paths:
       - 'docs/**'
       - 'README.md'
-      - 'src/nyx/python/nyxus/**'
-      - 'src/nyx/cli_option_constants.h'
-      - 'src/nyx/featureset.h'
-      - 'src/nyx/featureset.cpp'
-      - 'src/nyx/env_features.cpp'
-      - 'src/nyx/features/*.h'
+      - 'src/nyx/**'
       - 'tests/vetting/oracle_coverage.csv'
       - '.readthedocs.yml'
       - '.github/workflows/docs.yml'
@@ -19,16 +14,14 @@ on:
     paths:
       - 'docs/**'
       - 'README.md'
-      - 'src/nyx/python/nyxus/**'
-      - 'src/nyx/cli_option_constants.h'
-      - 'src/nyx/featureset.h'
-      - 'src/nyx/featureset.cpp'
-      - 'src/nyx/env_features.cpp'
-      - 'src/nyx/features/*.h'
+      - 'src/nyx/**'
       - 'tests/vetting/oracle_coverage.csv'
       - '.readthedocs.yml'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -45,6 +38,8 @@ jobs:
     - uses: actions/setup-python@v5
       with:
         python-version: "3.12"
+        cache: pip
+        cache-dependency-path: docs/requirements.txt
 
     - name: Install documentation dependencies
       run: python -m pip install -r docs/requirements.txt
@@ -57,6 +52,25 @@ jobs:
 
     - name: Build HTML
       run: python -m sphinx -b html -W --keep-going docs/source docs/build/html
+
+  # External sites rate-limit and time out from CI runners now and then, so a broken link is
+  # reported here without failing the workflow.
+  Check_Links:
+    name: Check external links (does not block)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: docs/requirements.txt
+
+    - name: Install documentation dependencies
+      run: python -m pip install -r docs/requirements.txt
 
     - name: Check links
       run: python -m sphinx -b linkcheck -W --keep-going docs/source docs/build/linkcheck

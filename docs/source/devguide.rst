@@ -897,8 +897,9 @@ To add an option:
 #. Validate and convert it after the loop, or in the option class's ``parse_input``.
 #. Add it to ``show_cmdline_help``.
 #. Add an ``[[option]]`` entry to ``docs/cli_options.toml`` with the keys ``name``, ``group``,
-   ``required``, ``default``, ``default_at`` (the source line that assigns a non-empty default;
-   ``"-"`` opts out), ``values``, ``build``, ``summary``, ``notes`` and ``evidence``.
+   ``required``, ``default``, ``default_at`` (``"file:target"``, the variable or call that is
+   assigned a non-empty default, for example ``"environment.cpp:n_pixel_distance"``; ``"-"`` opts
+   out), ``values``, ``build``, ``summary``, ``notes`` and ``evidence``.
    ``evidence`` names the source lines that apply the default.
 #. Run ``python docs/tools/gen_cli_reference.py``. It rewrites ``docs/source/cli_reference.rst``,
    and its ``--check`` mode fails in CI if an option defined in the header has no TOML entry, or the
@@ -1321,7 +1322,7 @@ page cannot drift from the code. It reads those values from a JSON copy of the f
 in the ``NYXUS_DOCS_EXTRAS`` environment variable. A script that needs files from
 ``tests/python/data`` finds them through ``NYXUS_DOCS_DATA``.
 
-``tests/python/test_2d_docs_examples_mechanics.py`` picks up every script in ``docs/examples``
+``tests/python/test_docs_examples_mechanics.py`` picks up every script in ``docs/examples``
 automatically. It checks that each has both markers and does not import ``tomllib``, which Python
 3.10, the oldest supported version, lacks. It runs each script in a clean directory
 with ``NYXUS_DOCS_DATA`` set to ``tests/python/data`` and ``NYXUS_DOCS_EXTRAS`` pointing at the
