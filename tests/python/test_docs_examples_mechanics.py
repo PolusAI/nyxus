@@ -48,7 +48,7 @@ def _params():
             for s in EXAMPLES]
 
 
-def test_2d_docs_examples_present_mechanics():
+def test_docs_examples_present_mechanics():
     assert EXAMPLES, "docs/examples/ holds no example scripts"
     for script in EXAMPLES:
         text = script.read_text(encoding="utf-8")
@@ -56,7 +56,7 @@ def test_2d_docs_examples_present_mechanics():
             f"{script.name}: the page includes the lines between '# example-start' and '# example-end'"
 
 
-def test_2d_docs_examples_python310_mechanics():
+def test_docs_examples_python310_mechanics():
     for script in EXAMPLES:
         imported = set(re.findall(r"^\s*(?:import|from)\s+(\w+)", script.read_text(encoding="utf-8"), re.M))
         assert not imported & NOT_IN_PY310, \
@@ -64,7 +64,7 @@ def test_2d_docs_examples_python310_mechanics():
 
 
 @pytest.mark.parametrize("script", _params())
-def test_2d_docs_examples_run_mechanics(script, tmp_path, extras_json):
+def test_docs_examples_run_mechanics(script, tmp_path, extras_json):
     env = dict(os.environ)
     env["NYXUS_DOCS_DATA"] = str(REPO / "tests" / "python" / "data")
     env["NYXUS_DOCS_EXTRAS"] = str(extras_json)
@@ -75,12 +75,12 @@ def test_2d_docs_examples_run_mechanics(script, tmp_path, extras_json):
 README_BLOCKS = re.findall(r"```python\n(.*?)```", (REPO / "README.md").read_text(encoding="utf-8"), re.S)
 
 
-def test_2d_readme_has_quick_starts_mechanics():
+def test_readme_has_quick_starts_mechanics():
     assert README_BLOCKS, "README.md shows no ```python block"
 
 
 @pytest.mark.parametrize("code", README_BLOCKS, ids=[f"readme_block_{i}" for i in range(len(README_BLOCKS))])
-def test_2d_readme_quick_starts_run_mechanics(code, tmp_path):
+def test_readme_quick_starts_run_mechanics(code, tmp_path):
     """README.md is also the PyPI page, so its Python quick starts must run as written."""
     script = tmp_path / "quick_start.py"
     script.write_text(code, encoding="utf-8")

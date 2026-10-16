@@ -1,6 +1,6 @@
 # Example for docs/source/troubleshooting.rst: timing feature groups and thread counts.
 # The page shows the lines between the "example" markers. Everything else creates input data
-# and checks the result, so tests/python/test_2d_docs_examples_mechanics.py can run the
+# and checks the result, so tests/python/test_docs_examples_mechanics.py can run the
 # script as written. The timings depend on the machine and are not checked.
 import os
 

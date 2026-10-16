@@ -1,6 +1,6 @@
 # Example for docs/source/installation.rst: checking an installation.
 # The page shows the lines between the "example" markers. Everything after them checks the
-# result, so tests/python/test_2d_docs_examples_mechanics.py can run the script as written.
+# result, so tests/python/test_docs_examples_mechanics.py can run the script as written.
 
 # example-start
 import numpy as np

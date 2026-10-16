@@ -1,5 +1,6 @@
 channels:
   - conda-forge
+  - https://repo.continuum.io/pkgs/free
   - defaults
 dependencies:
   - python>=3.8
@@ -18,6 +19,7 @@ dependencies:
   - pyarrow
   - fmjpeg2koj
   - arrow-cpp[version='>=10.0.0']
+  - parquet-cpp
   - pip:
     - setuptools-scm>=8
     - ghapi==0.1.20

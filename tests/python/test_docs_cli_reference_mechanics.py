@@ -1,9 +1,10 @@
 """The command-line reference generator catches a default or a citation that does not match the code.
 
 docs/tools/gen_cli_reference.py --check compares every entry of docs/cli_options.toml with the
-source: each single-token default must be the value assigned on the line its `default_at` key
-names, and every cited file and line range must exist. These tests change one entry at a time in
-memory and expect the check to report it.
+source: each single-token default must be the one literal value assigned to the target its
+`default_at` key names, and every cited file and line range must exist. These tests change one
+entry, or one source file in a copy of the tree, at a time and expect the check to report it, and
+move code within a file and expect the check to still pass.
 """
 import copy
 import importlib.util
@@ -61,3 +62,34 @@ def test_docs_cli_reference_default_without_default_at_is_refused_mechanics():
     del next(o for o in options if o["name"] == "--dim")["default_at"]
     problems = gen.check_defaults(options)
     assert any(p.startswith("--dim:") and "no default_at" in p for p in problems), problems
+
+
+def _source_copy(tmp_path, edit):
+    """A copy of src/nyx with environment.cpp changed by `edit`."""
+    import shutil
+    dst = tmp_path / "nyx"
+    shutil.copytree(gen.SRC, dst)
+    env = dst / "environment.cpp"
+    env.write_text(edit(env.read_text(encoding="utf-8")), encoding="utf-8")
+    return dst
+
+
+def test_docs_cli_reference_default_survives_moved_code_mechanics(tmp_path, monkeypatch):
+    # Lines added above every default in environment.cpp move them; the check finds each by its target.
+    monkeypatch.setattr(gen, "SRC", _source_copy(tmp_path, lambda t: "#include <cstdlib>\n" * 3 + t))
+    assert gen.check_defaults(gen.load_table()) == []
+
+
+def test_docs_cli_reference_changed_default_in_code_is_caught_mechanics(tmp_path, monkeypatch):
+    monkeypatch.setattr(gen, "SRC", _source_copy(
+        tmp_path, lambda t: t.replace("n_pixel_distance = 5;", "n_pixel_distance = 3;")))
+    problems = gen.check_defaults(gen.load_table())
+    assert any(p.startswith("--pixelDistance:") and "not the value assigned" in p for p in problems), problems
+
+
+def test_docs_cli_reference_ambiguous_default_target_is_refused_mechanics(tmp_path, monkeypatch):
+    # A second literal assignment of the same target leaves the default undecided.
+    monkeypatch.setattr(gen, "SRC", _source_copy(
+        tmp_path, lambda t: t + "\nvoid f() { n_pixel_distance = 7; }\n"))
+    problems = gen.check_defaults(gen.load_table())
+    assert any(p.startswith("--pixelDistance:") and "exactly one literal" in p for p in problems), problems

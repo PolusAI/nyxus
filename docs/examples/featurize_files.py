@@ -1,6 +1,6 @@
 # Example for docs/source/cmdline_and_examples.rst: explicit intensity/mask pairs.
 # The page shows the lines between the "example" markers. Everything else creates input
-# data and checks the result, so tests/python/test_2d_docs_examples_mechanics.py can run
+# data and checks the result, so tests/python/test_docs_examples_mechanics.py can run
 # the script as written.
 import os
 

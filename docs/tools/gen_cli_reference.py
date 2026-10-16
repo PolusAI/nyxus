@@ -8,10 +8,10 @@ The option table is hand-written: each entry's default, requirement and effect i
 code that applies it, with the evidence recorded next to it. --check keeps the table honest about
 which options exist: every option defined in src/nyx/cli_option_constants.h must have an entry,
 and every entry must name an option the CLI defines. Every entry's evidence must cite files and
-line ranges that exist. Every single-token default must be the value assigned on the one line its
-`default_at` key names (`default_at = "-"` opts an entry out). A default that changes in the code
-fails the check; a citation that drifts to a different line fails it unless the new line assigns
-the same value.
+line ranges that exist. Every single-token default must be the one literal value that the target
+its `default_at` key names (`"file:target"`, e.g. `"environment.cpp:n_pixel_distance"`) is assigned
+in that file (`default_at = "-"` opts an entry out). A default that changes in the code fails the
+check; code that moves within the file does not.
 """
 
 import argparse
@@ -194,16 +194,34 @@ def default_forms(default):
     return forms
 
 
-def assigned(form, text):
-    """True when `form` is the value assigned or passed on this line: `x = 4;`, `x = "_";`, `push_back (0)`."""
-    f = re.escape(form)
-    return re.search(r'(?:(?<![!<>=])=|[{(])\s*"?' + f + r'"?\s*[;,})]', text) is not None
+# A literal right-hand side: a string, a number, true/false, or a brace list.
+LITERAL_RHS = r'"[^"]*"|[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?|true|false|\{[^}]*\}'
+
+
+def literal_assignments(text, target):
+    """The literal values the code assigns or passes to `target` (`target = 4;`, `target (0)`),
+    comments removed. `target` is source text, e.g. `n_pixel_distance` or `devIds.push_back`."""
+    values = []
+    pattern = (r"(?<![\w.:])" + re.escape(target) + r"\s*(?:(?<![!<>=])=(?!=)|\()\s*("
+               + LITERAL_RHS + r")\s*[;,})]")
+    for line in text.splitlines():
+        code = re.sub(r"//.*$", "", line)
+        values += [m.group(1) for m in re.finditer(pattern, code)]
+    return values
+
+
+def matches_default(value, default):
+    """True when a literal from the code spells the documented default."""
+    v = value.strip('"')
+    if v.startswith("{"):
+        return re.sub(r"[\s{}]", "", v) == re.sub(r"\s", "", default)
+    return v in default_forms(default)
 
 
 def check_defaults(options):
     """Every entry's evidence must cite existing files and line ranges. Every single-token default
-    must be the value assigned on its `default_at` line (comments removed; a list default may also
-    match with the spaces and braces removed). `default_at = "-"` opts an entry out."""
+    must be the one literal value its `default_at` target ("file:target") is assigned in that file
+    (comments removed). `default_at = "-"` opts an entry out."""
     problems = []
     for o in options:
         _, bad = cited_lines(o.get("evidence", ""))
@@ -213,19 +231,20 @@ def check_defaults(options):
             continue
         if not at:
             if default and " " not in default:
-                problems.append(f"{o['name']}: default {default!r} has no default_at line")
+                problems.append(f"{o['name']}: default {default!r} has no default_at target")
             continue
-        lines, bad = cited_lines(at)
-        problems += [f"{o['name']}: default_at {b}" for b in bad]
-        if len(lines) != 1:
-            problems.append(f"{o['name']}: default_at must name exactly one line")
+        m = re.match(r"([\w./-]+):(.+)$", at)
+        if not m or not (SRC / m.group(1)).exists():
+            problems.append(f"{o['name']}: default_at {at!r} does not name an existing file and a target")
             continue
-        code = re.sub(r"//.*$", "", lines[0])
-        squeezed = re.sub(r"\s", "", code)
-        if not any(assigned(f, code)
-                   or ("," in f and re.search(r'[{=]"?' + re.escape(f) + r'"?[;}]', squeezed))
-                   for f in default_forms(default)):
-            problems.append(f"{o['name']}: default {default!r} is not the value assigned at {at}")
+        text = (SRC / m.group(1)).read_text(encoding="utf-8", errors="replace")
+        values = literal_assignments(text, m.group(2).strip())
+        if len(values) != 1:
+            problems.append(f"{o['name']}: default_at {at!r} must be assigned exactly one literal "
+                            f"value in that file, found {values}")
+            continue
+        if not matches_default(values[0], default):
+            problems.append(f"{o['name']}: default {default!r} is not the value assigned at {at} ({values[0]})")
     return problems
 
 def main(argv=None):

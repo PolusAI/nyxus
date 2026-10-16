@@ -1,6 +1,6 @@
 # Example for docs/source/volumetric.rst: a 5D OME-TIFF with channels and timepoints.
 # The page shows the lines between the "example" markers. Everything else creates input
-# data and checks the result, so tests/python/test_2d_docs_examples_mechanics.py can run
+# data and checks the result, so tests/python/test_docs_examples_mechanics.py can run
 # the script as written.
 import os
 
