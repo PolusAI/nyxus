@@ -835,7 +835,7 @@ double D3_GLSZM_feature::calc_LAE()
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
 	for (int j = 1; j <= Ns; j++)
-		f += sj[j] * (double(j) * double(j));
+		f += sj[j] * (double(j) * double(j));	// j^2 in double: an int overflows at j >= 46,341
 	double retval = f / Nz;
 	return retval;
 }

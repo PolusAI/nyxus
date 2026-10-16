@@ -30,10 +30,12 @@ static void assert_2d_glrlm_closed_form (const LR& roidata, Feature2D fcode, int
     ASSERT_NEAR (actual, expected, 1e-12 * expected) << "feature " << (int)fcode << " angle " << angle;
 }
 
-// bench_glrlm_2d_two_long_runs -- one row of 2L pixels, L = 46,656, the left half at intensity 1 and
+// bench_glrlm_2d_two_long_runs -- one row of 2L pixels, L = 65,536, the left half at intensity 1 and
 // the right half at intensity 2. At 0 degrees that is two runs, one of length L at each level, and
-// L^2 = 2,176,782,336 is past INT_MAX while 2^2 * L^2 is past UINT_MAX, so every run-length term is
-// right here only if it is taken in double. Over the Nr = 2 runs:
+// L^2 = 2^32 wraps to exactly 0 in 32 bits whether the product is read signed or unsigned, so every
+// run-length term is right here only if it is taken in double. A run between 46,341 and 65,535 also
+// overflows an int, but a compiler that reads the overflowed product as unsigned still gets its
+// square exactly. Over the Nr = 2 runs:
 //
 //   SRE    = 1/L^2                 LRE    = L^2
 //   SRLGLE = (1 + 1/4) / 2 / L^2   SRHGLE = (1 + 4) / 2 / L^2
@@ -44,7 +46,7 @@ static void assert_2d_glrlm_closed_form (const LR& roidata, Feature2D fcode, int
 // SRHGLE = LRHGLE = (1 + 4) / 2. Each _AVE is the mean of the four directions.
 void test_2d_glrlm_long_run_emphasis_analytic()
 {
-    const size_t L = 46656;
+    const size_t L = 65536;
     std::vector<NyxusPixel> intensity;
     for (size_t x = 0; x < 2 * L; x++)
         intensity.push_back ({ x, 0, x < L ? 1u : 2u });

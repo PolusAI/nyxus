@@ -411,7 +411,7 @@ void GLRLMFeature::calc_LRE(AngledFtrs& af)
 		{
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * (double(j) * double(j));
+				f += P.matlab(i, j) * (double(j) * double(j));	// j^2 in double: an int overflows at j >= 46,341
 			}
 		}
 
@@ -746,7 +746,7 @@ void GLRLMFeature::calc_HGLRE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
-			double inten = (double) I[i - 1];
+			double inten = (double) I[i - 1];	// level in double: its square passes UINT_MAX at 65,536
 			for (int j = 1; j <= Nr; j++)
 			{
 				f += P.matlab(i, j) * (inten * inten);
@@ -778,10 +778,10 @@ void GLRLMFeature::calc_SRLGLE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
-			double inten = (double) I[i-1];
+			double inten = (double) I[i-1];	// level in double: its square passes UINT_MAX at 65,536
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) / (inten * inten * (double(j) * double(j)));
+				f += P.matlab(i, j) / (inten * inten * (double(j) * double(j)));	// j^2 in double: an int overflows at j >= 46,341
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -810,10 +810,10 @@ void GLRLMFeature::calc_SRHGLE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
-			double inten = (double) I[i-1];
+			double inten = (double) I[i-1];	// level in double: its square passes UINT_MAX at 65,536
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * (inten * inten) / (double(j) * double(j));
+				f += P.matlab(i, j) * (inten * inten) / (double(j) * double(j));	// j^2 in double: an int overflows at j >= 46,341
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -841,10 +841,10 @@ void GLRLMFeature::calc_LRLGLE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
-			double inten = (double) I[i-1];
+			double inten = (double) I[i-1];	// level in double: its square passes UINT_MAX at 65,536
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * (double(j) * double(j)) / (inten * inten);
+				f += P.matlab(i, j) * (double(j) * double(j)) / (inten * inten);	// j^2 in double: an int overflows at j >= 46,341
 			}
 		}
 		double retval = f / double(sum_p[ai]);
@@ -873,10 +873,10 @@ void GLRLMFeature::calc_LRHGLE(AngledFtrs& af)
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
-			double inten = (double) I[i - 1];
+			double inten = (double) I[i - 1];	// level in double: its square passes UINT_MAX at 65,536
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) * (inten * inten * (double(j) * double(j)));
+				f += P.matlab(i, j) * (inten * inten * (double(j) * double(j)));	// j^2 in double: an int overflows at j >= 46,341
 			}
 		}
 		double retval = f / double(sum_p[ai]);
