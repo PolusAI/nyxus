@@ -28,11 +28,12 @@ static void assert_3d_glrlm_closed_form (const std::vector<std::vector<double>>&
     ASSERT_NEAR (actual, expected, 1e-12 * expected) << "feature " << (int)fcode << " angle " << angle;
 }
 
-// bench_glrlm_3d_two_long_runs -- a 2L x 1 x 1 line of voxels, L = 46,656, the first half at
+// bench_glrlm_3d_two_long_runs -- a 2L x 1 x 1 line of voxels, L = 65,536, the first half at
 // intensity 1 and the second at intensity 2. Direction slot 12 is {dz=0, dy=0, dx=1}, along the
-// line, and sees two runs, one of length L at each level; L^2 = 2,176,782,336 is past INT_MAX and
-// 2^2 * L^2 is past UINT_MAX, so every run-length term is right here only if it is taken in double.
-// Over its Nr = 2 runs:
+// line, and sees two runs, one of length L at each level; L^2 = 2^32 wraps to exactly 0 in 32 bits
+// whether the product is read signed or unsigned, so every run-length term is right here only if it
+// is taken in double. A run between 46,341 and 65,535 also overflows an int, but a compiler that
+// reads the overflowed product as unsigned still gets its square exactly. Over its Nr = 2 runs:
 //
 //   SRE    = 1/L^2                 LRE    = L^2
 //   SRLGLE = (1 + 1/4) / 2 / L^2   SRHGLE = (1 + 4) / 2 / L^2
@@ -43,7 +44,7 @@ static void assert_3d_glrlm_closed_form (const std::vector<std::vector<double>>&
 // Each _AVE is the mean of the 13 directions.
 void test_3d_glrlm_long_run_emphasis_analytic()
 {
-    const int L = 46656;
+    const int L = 65536;
     std::vector<PixIntens> voxels (2 * size_t(L));
     for (size_t x = 0; x < voxels.size(); x++)
         voxels[x] = x < size_t(L) ? 1 : 2;

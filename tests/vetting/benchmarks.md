@@ -277,7 +277,7 @@ was never written pass.
 | Data | built inline in `test_3d_glszm_large_zone_size_emphasis_analytic()` (`tests/test_3d_glszm_analytic.h`) |
 | ROI | all 131,072 voxels of a 64×64×32 volume, slices 0-15 at intensity 1 and slices 16-31 at 2 |
 | Shape | two 26-connected zones of `L = 65,536` voxels, so the size-zone matrix has two cells, both in column `L` |
-| Why it exists | `L^2 = 2^32` is past `INT_MAX`, so `3GLSZM_SAE = 1/L^2` and `3GLSZM_LAE = L^2` are right only if the square of the zone size is taken in double |
+| Why it exists | `L^2 = 2^32` wraps to exactly 0 in 32 bits, read signed or unsigned, so `3GLSZM_SAE = 1/L^2` and `3GLSZM_LAE = L^2` are right only if the square of the zone size is taken in double |
 
 Recipes: `glszm3d.analytic_two_large_zones`.
 
@@ -285,22 +285,24 @@ Tests reaching it today: `test_3d_glszm_analytic.h`.
 
 **One of six 32-bit range fixtures.** Each of the six below is built so that a squared term of a
 size-zone or run-length emphasis lies past the 32-bit range while every feature it feeds keeps a
-closed form: a zone or run of `L >= 46,341` puts `L^2` past `INT_MAX`, and a grey level
-`G >= 65,536` puts `G^2` past `UINT_MAX`. All are read with no binning (2D at `IBSI=true`, 3D at a
+closed form. A zone or run of `L >= 46,341` puts `L^2` past `INT_MAX`, but up to `L = 65,535` a
+compiler that reads the overflowed product as unsigned still gets `L^2` exactly, so the zone and
+run fixtures use `L = 65,536`, whose square `2^32` wraps to 0 in 32 bits however the product is
+read. A grey level `G >= 65,536` puts `G^2` past `UINT_MAX`. All are read with no binning (2D at `IBSI=true`, 3D at a
 family grey depth of 0), so the levels written are the levels used. Each carries two levels, because
 a ROI of one intensity is intercepted before any matrix is built. Each has its own recipe, named on
 its `Recipes:` line, and its own `analytic` rows in the registry.
 
 ---
 
-## `bench_glszm_2d_two_large_zones` — two 2D zones of 46,656 pixels
+## `bench_glszm_2d_two_large_zones` — two 2D zones whose squared size is 2^32
 
 | | |
 |---|---|
 | Data | `make_glszm_2d_two_large_zones()` in `tests/test_2d_glszm_analytic.h` |
-| ROI | a 216×432 rectangle, the top half at intensity 1 and the bottom half at 2 |
-| Shape | two zones of `L = 46,656` pixels |
-| Why it exists | `GLSZM_SAE = 1/L^2` and `GLSZM_LAE = L^2`, with `L^2` past `INT_MAX` |
+| ROI | a 256×512 rectangle, the top half at intensity 1 and the bottom half at 2 |
+| Shape | two zones of `L = 65,536` pixels |
+| Why it exists | `GLSZM_SAE = 1/L^2` and `GLSZM_LAE = L^2`, with `L^2 = 2^32`, which wraps to 0 in 32 bits |
 
 Recipes: `glszm.analytic_two_large_zones`.
 
@@ -308,14 +310,14 @@ Tests reaching it today: `test_2d_glszm_analytic.h`.
 
 ---
 
-## `bench_glrlm_2d_two_long_runs` — two 2D runs of 46,656 pixels
+## `bench_glrlm_2d_two_long_runs` — two 2D runs of 65,536 pixels
 
 | | |
 |---|---|
 | Data | built inline in `test_2d_glrlm_long_run_emphasis_analytic()` (`tests/test_2d_glrlm_analytic.h`) |
-| ROI | one row of 93,312 pixels, the left half at intensity 1 and the right half at 2 |
-| Shape | at 0 degrees, two runs of `L = 46,656`, one per level |
-| Why it exists | the six run-length emphases in all 4 directions and their `_AVE`, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
+| ROI | one row of 131,072 pixels, the left half at intensity 1 and the right half at 2 |
+| Shape | at 0 degrees, two runs of `L = 65,536`, one per level |
+| Why it exists | the six run-length emphases in all 4 directions and their `_AVE`, with `L^2 = 2^32`, which wraps to 0 in 32 bits |
 
 Recipes: `glrlm.analytic_two_long_runs`.
 
@@ -338,14 +340,14 @@ Tests reaching it today: `test_2d_glrlm_analytic.h`.
 
 ---
 
-## `bench_glrlm_3d_two_long_runs` — two 3D runs of 46,656 voxels
+## `bench_glrlm_3d_two_long_runs` — two 3D runs of 65,536 voxels
 
 | | |
 |---|---|
 | Data | built inline in `test_3d_glrlm_long_run_emphasis_analytic()` (`tests/test_3d_glrlm_analytic.h`) |
-| ROI | a 93,312×1×1 line, the first half at intensity 1 and the second at 2 |
-| Shape | along x, direction slot 12, two runs of `L = 46,656`, one per level |
-| Why it exists | the six run-length emphases in all 13 directions and their `_AVE`, with `L^2` past `INT_MAX` and `4 L^2` past `UINT_MAX` |
+| ROI | a 131,072×1×1 line, the first half at intensity 1 and the second at 2 |
+| Shape | along x, direction slot 12, two runs of `L = 65,536`, one per level |
+| Why it exists | the six run-length emphases in all 13 directions and their `_AVE`, with `L^2 = 2^32`, which wraps to 0 in 32 bits |
 
 Recipes: `glrlm3d.analytic_two_long_runs`.
 

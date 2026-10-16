@@ -9,8 +9,8 @@
 
 // bench_glszm_3d_two_large_zones -- a 64 x 64 x 32 volume, slices 0-15 at intensity 1 and slices
 // 16-31 at intensity 2. Each half is one 26-connected zone of L = 64 * 64 * 16 = 65,536 voxels, and
-// L^2 = 2^32 is past INT_MAX, so a size emphasis is right
-// here only if j^2 is taken in double. With two zones, both of size L:
+// L^2 = 2^32 wraps to exactly 0 in 32 bits whether the product is read signed or unsigned, so a size
+// emphasis is right here only if j^2 is taken in double. With two zones, both of size L:
 //
 //   SAE = (1/L^2 + 1/L^2) / 2 = 1 / L^2        LAE = (L^2 + L^2) / 2 = L^2
 //
