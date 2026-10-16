@@ -1,14 +1,13 @@
 #pragma once
 
-#include <gtest/gtest.h>
+// gtest, fs and the roi_cache graph arrive with test_3d_glrlm_common.h.
 #include <tuple>
 #include <unordered_set>
 #include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
-#include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glrlm.h"
-#include "../src/nyx/helpers/fsystem.h"
 #include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
+#include "test_3d_glrlm_common.h"   // make_glrlm3d_settings
 
 // PyRadiomics 3.0.1 on the compat phantom (compat_int/compat_int_mri.nii +
 // compat_seg/compat_seg_liver.nii, label 1) at binCount 20, recipe glrlm3d.pyradiomics_bincount20.
@@ -439,25 +438,11 @@ void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode
     // buffers
     ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
-    // (3) common feature extraction settings
+    // (3) feature settings mocking the pyRadiomics recipe above: GLRLM_GREYDEPTH = -20 is radiomics
+    // binCount-based grey binning
+    Fsettings s = make_glrlm3d_settings (100, -20);
 
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 100;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = false;
-
-    // (4) GLRLM-specific feature settings mocking the pyRadiomics recipe above
-
-    s[(int)NyxSetting::GLRLM_GREYDEPTH].ival = -20;  // intentionally negative to activate radiomics binCount-based grey-binning
-
-    // (5) feature extraction
+    // (4) feature extraction
 
     // make it find the feature code by name
     int fcode = -1;
@@ -471,11 +456,11 @@ void assert_3d_glrlm_feature_pyradiomics(const Nyxus::Feature3D& expecting_fcode
     D3_GLRLM_feature f;
     ASSERT_NO_THROW(f.calculate(r, s));
 
-    // (6) get values
+    // (5) get values
 
     f.save_value(r.fvals);
 
-    // (7) verdict, one direction at a time
+    // (6) verdict, one direction at a time
     //
     // The base feature holds one value per 3D angle, so each angle is compared against its own
     // PyRadiomics value. Averaging here instead -- which is what this assertion used to do -- lets
@@ -521,18 +506,7 @@ void test_3d_glrlm_ave_pyradiomics()
     ASSERT_TRUE(scanTrivialRois_3D(e, batch, ipath, mpath, 0/*t_index*/, 0/*channel*/));
     ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
-    Fsettings s;
-    s.resize((int)NyxSetting::__COUNT__);
-    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
-    s[(int)NyxSetting::TINY].rval = 0.0;
-    s[(int)NyxSetting::SINGLEROI].bval = false;
-    s[(int)NyxSetting::GREYDEPTH].ival = 100;
-    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
-    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
-    s[(int)NyxSetting::USEGPU].bval = false;
-    s[(int)NyxSetting::VERBOSLVL].ival = 0;
-    s[(int)NyxSetting::IBSI].bval = false;
-    s[(int)NyxSetting::GLRLM_GREYDEPTH].ival = -20;  // radiomics binCount-based grey binning
+    Fsettings s = make_glrlm3d_settings (100, -20 /*radiomics binCount-based grey binning*/);
 
     LR& r = e.roiData[label];
     ASSERT_NO_THROW(r.initialize_fvals());

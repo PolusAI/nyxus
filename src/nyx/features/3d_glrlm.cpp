@@ -342,9 +342,10 @@ double D3_GLRLM_feature::calc_SRE (const SimpleMatrix<int> &P, const double sum_
 		}
 	}
 
+	// Run lengths are squared in double: j^2 passes INT_MAX at a run of 46,341.
 	for (int j = 1; j <= Nr; ++j) 
 	{
-		f += rj[j] / double(j * j);
+		f += rj[j] / (double(j) * double(j));
 	}
 
 	double retval = f / sum_p;
@@ -366,7 +367,7 @@ double D3_GLRLM_feature::calc_LRE (const SimpleMatrix<int> &P, const double sum_
 	{
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) * double(j * j);
+			f += P.matlab(i, j) * (double(j) * double(j));	// j^2 in double: an int overflows at j >= 46,341
 		}
 	}
 
@@ -578,10 +579,12 @@ double D3_GLRLM_feature::calc_LGLRE (const SimpleMatrix<int> &P, const std::vect
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		auto inten = I[i - 1];
+		// Grey levels are taken in double: a level squared passes UINT_MAX at 65,536, and so does a
+		// level times a run once their product reaches 65,536.
+		double inten = (double) I[i - 1];
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) / double(inten * inten);
+			f += P.matlab(i, j) / (inten * inten);
 		}
 	}
 	double retval = f / double(sum_p);
@@ -601,10 +604,10 @@ double D3_GLRLM_feature::calc_HGLRE (const SimpleMatrix<int> &P, const std::vect
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		auto inten = I[i - 1];
+		double inten = (double) I[i - 1];	// level in double: its square passes UINT_MAX at 65,536
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) * double(inten) * double(inten);
+			f += P.matlab(i, j) * (inten * inten);
 		}
 	}
 	double retval = f / double(sum_p);
@@ -624,10 +627,10 @@ double D3_GLRLM_feature::calc_SRLGLE (const SimpleMatrix<int> &P, const std::vec
 		double f = 0.0;
 		for (int i = 1; i <= Ng; i++)
 		{
-			auto inten = I [i-1];
+			double inten = (double) I[i - 1];	// level in double: its square passes UINT_MAX at 65,536
 			for (int j = 1; j <= Nr; j++)
 			{
-				f += P.matlab(i, j) / double(inten * inten * j * j);
+				f += P.matlab(i, j) / (inten * inten * (double(j) * double(j)));	// j^2 in double: an int overflows at j >= 46,341
 			}
 		}
 		double retval = f / sum_p;
@@ -647,10 +650,10 @@ double D3_GLRLM_feature::calc_SRHGLE (const SimpleMatrix<int> &P, const std::vec
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		auto inten = I[i - 1];
+		double inten = (double) I[i - 1];	// level in double: its square passes UINT_MAX at 65,536
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) * double(inten * inten) / double(j * j);
+			f += P.matlab(i, j) * (inten * inten) / (double(j) * double(j));	// j^2 in double: an int overflows at j >= 46,341
 		}
 	}
 	double retval = f / sum_p;
@@ -670,10 +673,10 @@ double D3_GLRLM_feature::calc_LRLGLE (const SimpleMatrix<int> &P, const std::vec
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		auto inten = I[i - 1];
+		double inten = (double) I[i - 1];	// level in double: its square passes UINT_MAX at 65,536
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) * double(j * j) / double(inten * inten);
+			f += P.matlab(i, j) * (double(j) * double(j)) / (inten * inten);	// j^2 in double: an int overflows at j >= 46,341
 		}
 	}
 	double retval = f / sum_p;
@@ -693,10 +696,10 @@ double D3_GLRLM_feature::calc_LRHGLE (const SimpleMatrix<int> &P, const std::vec
 	double f = 0.0;
 	for (int i = 1; i <= Ng; i++)
 	{
-		auto inten = I[i - 1];
+		double inten = (double) I[i - 1];	// level in double: its square passes UINT_MAX at 65,536
 		for (int j = 1; j <= Nr; j++)
 		{
-			f += P.matlab(i, j) * double(inten * inten * j * j);
+			f += P.matlab(i, j) * (inten * inten * (double(j) * double(j)));	// j^2 in double: an int overflows at j >= 46,341
 		}
 	}
 	double retval = f / sum_p;

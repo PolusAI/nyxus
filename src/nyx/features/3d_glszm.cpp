@@ -820,48 +820,23 @@ void D3_GLSZM_feature::save_value(std::vector<std::vector<double>>& fvals)
 // 1. Small Area Emphasis
 double D3_GLSZM_feature::calc_SAE()
 {
-#if 0
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
+	// Zone sizes are squared in double: j^2 passes INT_MAX at a zone of 46,341.
 	double f = 0.0;
-	for (int j = 1; j <= /*Ns*/P.width(); j++)
-	{
-		f += sj[j] / (j * j);
-	}
-	double retval = f / sum_p;
-	return retval;
-#endif
-
-	double tot = 0;
-	for (int i=1; i<=Ng; i++)
-	{
-		for (int j=1; j<=P.width(); j++)
-			tot += double(P.matlab(i,j)) / double(j*j);
-	}
-	double retval = tot / Nz;
+	for (int j = 1; j <= Ns; j++)
+		f += sj[j] / (double(j) * double(j));
+	double retval = f / Nz;
 	return retval;
 }
 
 // 2. Large Area Emphasis
 double D3_GLSZM_feature::calc_LAE()
 {
-#if 0
 	// Calculate feature. 'sj' is expected to have been initialized in calc_sums_of_P()
 	double f = 0.0;
-	for (int j = 1; j <= /*Ns*/P.width(); j++)
-	{
-		f += sj[j] * (j * j);
-	}
-	double retval = f / sum_p;
-	return retval;
-#endif
-
-	double tot = 0;
-	for (int i = 1; i <= Ng; i++)
-	{
-		for (int j = 1; j <= P.width(); j++)
-			tot += double(P.matlab(i,j)) * double(j*j);
-	}
-	double retval = tot / Nz;
+	for (int j = 1; j <= Ns; j++)
+		f += sj[j] * (double(j) * double(j));	// j^2 in double: an int overflows at j >= 46,341
+	double retval = f / Nz;
 	return retval;
 }
 

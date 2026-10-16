@@ -117,8 +117,9 @@ namespace NyxusGpu
 			return;
 
 		float s = SJ[j];
-		atomicAdd(&state[f_SAE], s / (j * j));
-		atomicAdd(&state[f_LAE], s * (j * j));
+		// Zone sizes are squared in floating point: j^2 passes INT_MAX at a zone of 46,341.
+		atomicAdd(&state[f_SAE], s / (float(j) * float(j)));
+		atomicAdd(&state[f_LAE], s * (float(j) * float(j)));
 		atomicAdd(&state[f_SZN], s * s);
 		atomicAdd(&state[f_SZNN], s * s);
 	}

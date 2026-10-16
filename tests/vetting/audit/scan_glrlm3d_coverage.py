@@ -13,6 +13,7 @@ import sys
 import scanlib
 
 SOURCES = [
+    "test_3d_glrlm_analytic.h",
     "test_3d_glrlm_pyradiomics.h",
     "test_3d_glrlm_regression.h",
     os.path.join("python", "test_nyxus.py"),
@@ -31,7 +32,7 @@ NOTE = {
 FAMILY = scanlib.Family(
     dim="3D", family="glrlm",
     sources=SOURCES,
-    oracle_suffix={"pyradiomics": "pyradiomics"},
+    oracle_suffix={"pyradiomics": "pyradiomics", "analytic": "analytic"},
     notes=NOTE,
     enum_dim_prefix=True,
     # the _AVE test aliases the enum (`using F = Nyxus::Feature3D;`), so cover `F::` too

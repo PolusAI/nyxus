@@ -20,7 +20,7 @@ therefore has no distance, angle or alpha axis at all, unlike 3D GLCM, 3D GLRLM 
 |---|---|---|---|---|
 | False | radiomics (`GLSZM_GREYDEPTH < 0`) | 20 bins | VALID | `glszm3d.pyradiomics_bincount20` — pyradiomics, 16/16 |
 | False | MATLAB (`GLSZM_GREYDEPTH > 0`) | 64 | VALID-prod-only | drift guard, `glszm3d.regression_ut_phantom` — no oracle |
-| False | none (`GLSZM_GREYDEPTH == 0`) | the raw levels | VALID | `glszm3d.pyradiomics_ibsi_gapped` — pyradiomics, 16/16 + the matrix, on `bench_cube3_gapped_levels`; pinned on the phantom too, `glszm3d.regression_ut_phantom_nobinning` |
+| False | none (`GLSZM_GREYDEPTH == 0`) | the raw levels | VALID | `glszm3d.pyradiomics_ibsi_gapped` — pyradiomics, 16/16 + the matrix, on `bench_cube3_gapped_levels`; pinned on the phantom too, `glszm3d.regression_ut_phantom_nobinning`; `3GLSZM_SAE` and `3GLSZM_LAE` on zones past the 32-bit range, `glszm3d.analytic_two_large_zones` — analytic |
 | True | none (forced) | the raw levels | VALID — the same cell | measured identical to the row above, values and matrix, by `test_3d_glszm_ibsi_equals_no_binning_mechanics`; see below |
 | any | any | ROI with `aux_min == aux_max` | VALID-prod-only | drift guard, `glszm3d.regression_constant_roi` — no oracle, and **the pinned behaviour is a known defect**: a constant-intensity ROI has a valid one-zone GLSZM, and `calculate()` returns the soft-NaN sentinel for all sixteen instead. Pinned by `test_3d_glszm_constant_roi_regression`, not endorsed; see below |
 
