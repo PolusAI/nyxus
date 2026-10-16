@@ -431,15 +431,16 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   only, in `test_2d_glszm_regression.h`, and no oracle row claims them.
 
 ## glszm.analytic_two_large_zones
-- `bench_glszm_2d_two_large_zones` — a 216x432 rectangle built in
+- `bench_glszm_2d_two_large_zones` — a 256x512 rectangle built in
   `test_2d_glszm_large_zone_size_emphasis_analytic()`, the top half at intensity 1 and the bottom
   half at 2 — at `IBSI=true` and `GREYDEPTH=0`, so the two levels are read as they are. Oracle:
   `analytic`. Used by `test_2d_glszm_analytic.h`, for `GLSZM_SAE` and `GLSZM_LAE` only. Config
   matrix: `matrix/glszm.md`.
-- **What it is for.** Each half is one zone of `L = 46,656` pixels, so the matrix has two cells, both
-  in column `L`, and `SAE = 1/L^2`, `LAE = L^2` exactly. `L^2 = 2,176,782,336` is past `INT_MAX`, so
-  the values are right only if the square of the zone size is taken in double.
-- The band is `rel=1e-12` rather than SPEC 7's absolute exact tier, because `LAE` is 2.2e9 and an
+- **What it is for.** Each half is one zone of `L = 65,536` pixels, so the matrix has two cells, both
+  in column `L`, and `SAE = 1/L^2`, `LAE = L^2` exactly. `L^2 = 2^32` wraps to 0 in 32 bits, read
+  signed or unsigned, so the values are right only if the square of the zone size is taken in
+  double.
+- The band is `rel=1e-12` rather than SPEC 7's absolute exact tier, because `LAE` is 4.3e9 and an
   absolute 1e-9 is below its last bit.
 
 ## glrlm.ibsi_ng128
@@ -472,16 +473,16 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `test_2d_glrlm_regression.h`; no oracle row claims it.
 
 ## glrlm.analytic_two_long_runs
-- `bench_glrlm_2d_two_long_runs` — one row of `2L` pixels, `L = 46,656`, built in
+- `bench_glrlm_2d_two_long_runs` — one row of `2L` pixels, `L = 65,536`, built in
   `test_2d_glrlm_long_run_emphasis_analytic()`, the left half at intensity 1 and the right half at 2 —
   at `make_2d_glrlm_ibsi_settings()` (`IBSI=true`), which keeps the two levels as they are. Oracle:
   `analytic`. Used by `test_2d_glrlm_analytic.h`, for `GLRLM_SRE`, `GLRLM_LRE` and the four
   run-length-and-grey-level emphases in all four directions, and their `_AVE` twins.
 - **What it is for.** At 0 degrees the row is two runs of length `L`, one at each level. `L^2 =
-  2,176,782,336` is past `INT_MAX` and `2^2 * L^2` past `UINT_MAX`, so the values are right only if
-  the run-length terms are taken in double. At 45, 90 and 135 degrees every pixel is a run of length
+  2^32` wraps to 0 in 32 bits, read signed or unsigned, so the values are right only if the
+  run-length terms are taken in double. At 45, 90 and 135 degrees every pixel is a run of length
   1, so each `_AVE` has a closed form too, and carries the 0-degree value into the mean.
-- The band is `rel=1e-12`, because `LRE` is 2.2e9 and an absolute 1e-9 is below its last bit.
+- The band is `rel=1e-12`, because `LRE` is 4.3e9 and an absolute 1e-9 is below its last bit.
 
 ## glrlm.analytic_high_grey_pair
 - `bench_glrlm_2d_high_grey_pair` — two adjacent pixels at intensities 1 and `G = 70,000`, built in
@@ -745,17 +746,17 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `glrlm3d.regression_ut_phantom` — the two bin the same voxels differently by construction.
 
 ## glrlm3d.analytic_two_long_runs
-- `bench_glrlm_3d_two_long_runs` — a `2L x 1 x 1` line of voxels, `L = 46,656`, built in
+- `bench_glrlm_3d_two_long_runs` — a `2L x 1 x 1` line of voxels, `L = 65,536`, built in
   `test_3d_glrlm_long_run_emphasis_analytic()`, the first half at intensity 1 and the second at 2 —
   at `GREYDEPTH=64`, `IBSI=false` and `GLRLM_GREYDEPTH=0`, so the two levels are read as they are.
   Oracle: `analytic`. Used by `test_3d_glrlm_analytic.h`, for `3GLRLM_SRE`, `3GLRLM_LRE` and the four
   run-length-and-grey-level emphases in all 13 directions, and their `_AVE` twins. Direction slot 12
   (`{dz=0, dy=0, dx=1}`) runs along the line.
 - **What it is for.** Along the line the volume is two runs of length `L`, one at each level. `L^2 =
-  2,176,782,336` is past `INT_MAX` and `2^2 * L^2` past `UINT_MAX`, so the values are right only if
-  the run-length terms are taken in double. The other 12 directions leave the line, so every voxel is
+  2^32` wraps to 0 in 32 bits, read signed or unsigned, so the values are right only if the
+  run-length terms are taken in double. The other 12 directions leave the line, so every voxel is
   a run of length 1, and each `_AVE` has a closed form that carries the along-the-line value.
-- The band is `rel=1e-12`, because `LRE` is 2.2e9 and an absolute 1e-9 is below its last bit.
+- The band is `rel=1e-12`, because `LRE` is 4.3e9 and an absolute 1e-9 is below its last bit.
 
 ## glrlm3d.analytic_high_grey_pair
 - `bench_glrlm_3d_high_grey_pair` — two adjacent voxels at intensities 1 and `G = 70,000`, built in
@@ -1110,9 +1111,9 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `GREYDEPTH=64`, `IBSI=false` and `GLSZM_GREYDEPTH=0`, so the two levels are read as they are.
   Oracle: `analytic`. Used by `test_3d_glszm_analytic.h`, for `3GLSZM_SAE` and `3GLSZM_LAE` only.
 - **What it is for.** Each half is one 26-connected zone of `L = 65,536` voxels, so the matrix has
-  two cells, both in column `L`, and `SAE = 1/L^2`, `LAE = L^2` exactly. `L^2 = 2^32` is past
-  `INT_MAX`, so the values are right only if the square of the zone size is taken in double. A zone
-  of 46,341 voxels already needs that, and a whole-organ ROI reaches it routinely; the family's
+  two cells, both in column `L`, and `SAE = 1/L^2`, `LAE = L^2` exactly. `L^2 = 2^32` wraps to 0 in
+  32 bits, read signed or unsigned, so the values are right only if the square of the zone size is
+  taken in double. A zone of 46,341 voxels already needs that, and a whole-organ ROI reaches it routinely; the family's
   PyRadiomics fixtures stop at a largest zone of 634 voxels.
 - The band is `rel=1e-12` rather than SPEC 7's absolute exact tier, because `LAE` is 4.3e9 and an
   absolute 1e-9 is below its last bit.

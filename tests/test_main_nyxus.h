@@ -248,6 +248,12 @@ static void run_3d_feature_on_volume (
 					r.aux_max = v;
 			}
 
+	// the cube is the ROI's bounding box, its corner at the origin, as the real prescan records it
+	// for a feature method that places the voxel cloud in the cube through the box
+	r.aabb.init_x (0);	r.aabb.update_x (w - 1);
+	r.aabb.init_y (0);	r.aabb.update_y (h - 1);
+	r.aabb.init_z (0);	r.aabb.update_z (d - 1);
+
 	ASSERT_NO_THROW(r.initialize_fvals());
 	ASSERT_NO_THROW(f.calculate(r, s));
 	f.save_value(r.fvals);
