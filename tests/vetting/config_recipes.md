@@ -395,12 +395,14 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `floor(20 (x - min) / (max - min)) + 1`. Oracle: `mirp` 2.6.0 with
   `base_discretisation_method="fixed_bin_number"`, `base_discretisation_n_bins=20` -- each tool
   discretises for itself, so the binning is part of what is compared, not an input to it. Generator:
-  `oracles/gen_negative_greydepth_mirp.py` (`--check` re-verifies every pin).
+  `oracles/gen_gldzm_mirp.py`, with the square from `oracles/square12_graded.py` (`--check`
+  re-verifies every pin).
 - mirp runs `by_slice=True`. Used by `test_2d_gldzm_negative_greydepth_mirp` in `test_2d_gldzm_mirp.h`,
   at `rel=1e-9` (measured worst residual 6.2e-16).
-- **The fixture is what makes the edge visible.** Five of the square's 144 pixels sit exactly on a bin
-  edge at 20 bins (`20 (x - min)` a multiple of the range). Dividing by a rounded bin width instead
-  puts them one bin low; PyRadiomics' `histogram`/`digitize` and MIRP both put them in the bin above.
+- **The fixture is what makes the edge visible.** 14 of the square's 144 pixels sit exactly on a bin
+  edge at 20 bins (`20 (x - min)` a multiple of the range): 5 at 127, 4 at 154, 5 at 181. The 5 at
+  181 are the ones a division by the bin width sends one bin low; PyRadiomics' `histogram`/`digitize`
+  and MIRP put all 14 in the bin above their edge.
 - **Six features, not sixteen.** The square fills its bounding box, so a zone's border distance cannot
   tell the 2D distance map from IBSI's -- they part on a ROI with background inside it. Only the six
   features that read no border distance are pinned: `GLNU`, `GLNUN`, `ZP`, `GLV`, `LGLZE`, `HGLZE`.
@@ -427,12 +429,13 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `floor(20 (x - min) / (max - min)) + 1`. Oracle: `mirp` 2.6.0 with
   `base_discretisation_method="fixed_bin_number"`, `base_discretisation_n_bins=20` -- each tool
   discretises for itself, so the binning is part of what is compared, not an input to it. Generator:
-  `oracles/gen_negative_greydepth_mirp.py` (`--check` re-verifies every pin).
+  `oracles/gen_ngldm_mirp.py`, with the square from `oracles/square12_graded.py` (`--check`
+  re-verifies every pin).
 - mirp runs `by_slice=True`, distance 1, difference level 0. Used by
   `test_2d_ngldm_negative_greydepth_mirp` in `test_2d_ngldm_mirp.h`, at `rel=1e-9` and `rel=1e-6` for
   `NGLDM_DCENT` (measured worst residual 2.1e-16). `NGLDM_DCP` is left out as at the phantom recipe.
-- Five of the square's 144 pixels sit exactly on a bin edge at 20 bins, the case that separates IBSI's
-  formula from one that divides by a rounded bin width. `test_2d_ngldm_zero_greydepth_equals_ibsi_mechanics`
+- 14 of the square's 144 pixels sit exactly on a bin edge at 20 bins, and the 5 at 181 are the ones a
+  division by the bin width sends one bin low. `test_2d_ngldm_zero_greydepth_equals_ibsi_mechanics`
   holds the same fixture to its other sign: at `GREYDEPTH=0` the family reads the raw levels, as IBSI does.
 
 ## glszm.ibsi_phantom_2d
@@ -796,7 +799,7 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `floor(20 (x - min) / (max - min)) + 1`. Oracle: `mirp` 2.6.0 with
   `base_discretisation_method="fixed_bin_number"`, `base_discretisation_n_bins=20` -- each tool
   discretises for itself, so the binning is part of what is compared, not an input to it. Generator:
-  `oracles/gen_negative_greydepth_mirp.py` (`--check` re-verifies every pin).
+  `oracles/gen_ngldm3d_mirp.py` (`--check` re-verifies every pin).
 - MIRP runs `by_slice=False`, distance 1, alpha 0, on the integer levels Nyxus loads the float phantom
   as (`nyxus_raw_levels()`: the loader's shift, not a binning step). Used by
   `test_3d_ngldm_negative_greydepth_mirp` in `test_3d_ngldm_mirp.h`, at `rel=1e-9` and `rel=1e-6` for
@@ -876,7 +879,7 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `floor(20 (x - min) / (max - min)) + 1`. Oracle: `mirp` 2.6.0 with
   `base_discretisation_method="fixed_bin_number"`, `base_discretisation_n_bins=20` -- each tool
   discretises for itself, so the binning is part of what is compared, not an input to it. Generator:
-  `oracles/gen_negative_greydepth_mirp.py` (`--check` re-verifies every pin).
+  `oracles/gen_gldzm3d_mirp.py` (`--check` re-verifies every pin).
 - MIRP runs `by_slice=False` on the integer levels Nyxus loads the float phantom as. Used by
   `test_3d_gldzm_negative_greydepth_mirp` in `test_3d_gldzm_mirp.h`, at `rel=1e-9` and `rel=1e-6` for
   `3GLDZM_ZDE` (measured worst residual 2.4e-16, 4.1e-15 on `ZDE`).
@@ -1010,14 +1013,15 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   in a different last bits there. Measured on this same phantom, `3GLRLM_RE` moves by **1.06e-9**
   between macOS-arm64 and Windows while every non-logarithm feature moves by ~1e-16 — which is why
   `test_3d_glrlm_regression.h` carries the identical carve-out, at the same `1e6`.
-- `GLSZM_GREYDEPTH=64` makes bin 1 the background level, so a voxel binned there starts no zone of
-  its own. That is a different quantity from `glszm3d.pyradiomics_bincount20`, where nothing is
-  background, which is why this fixture carries no oracle claim.
-- Every recipe here states `GLSZM_GREYDEPTH` explicitly rather than leaning on the zero a settings
-  vector starts at. Zero is this family's documented "no binning" default and it does produce
-  numbers, but it is a third configuration again: the unwired version of
-  `test_3d_glszm_regression.h` left it there, and at that setting every one of its sixteen pins is
-  wrong by between 1.6x and 1.5e6x. It has a recipe of its own below.
+- Under `GLSZM_GREYDEPTH=64` the background is level 0 and starts no zone, and every ROI voxel, level 1
+  included, starts zones of its own level. 64 MATLAB-style levels over `[0, max]` are a different quantity from the 20 PyRadiomics-style bins over
+  the ROI's range of `glszm3d.pyradiomics_bincount20`, which is why this fixture carries no oracle
+  claim.
+- Every recipe here states `GLSZM_GREYDEPTH` explicitly rather than leaning on the value a settings
+  vector starts at. Zero is the no-binning setting, which `--coarseGrayDepth=0` or
+  `3glszm/greydepth=0` selects, and it does produce numbers, but it is a third configuration again:
+  at that setting every one of the sixteen pins above is off by between 1.6x and 1.5e6x. It has a
+  recipe of its own below.
 
 ## glszm3d.regression_ut_phantom_nobinning
 - The same segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at

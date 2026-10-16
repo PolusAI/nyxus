@@ -23,12 +23,16 @@ tifffile = pytest.importorskip("tifffile")
 # the in-RAM side's ram_limit; see test_ooc_mechanics.py for why it is not larger
 RAM_LIMIT_LARGE_MB = 1000
 
+# the out-of-core side's ram_limit: every ROI footprint is >= 0, so every ROI streams out of core
+# whatever its size and whatever sizeof(Pixel2) is on the platform
+RAM_LIMIT_OOC_MB = 0
+
 # the default coarse grey depth, which the binned runs leave unset so that the default is what runs
 DEFAULT_DEPTH = 64
 
 FAMILIES = {"3GLSZM_": "*3D_GLSZM*", "3GLDM_": "*3D_GLDM*", "3GLRLM_": "*3D_GLRLM*"}
 
-# 8 x 90 x 90 voxels: a footprint well over 1 MB, so ram_limit=1 streams the ROI out of core
+# 8 x 90 x 90 voxels: enough for every level 1..64 to be populated on both ROIs
 Z, Y, X = 8, 90, 90
 
 
@@ -88,7 +92,7 @@ def _assert_binned_equals_prebinned(tmp_path, mask):
     groups = list(FAMILIES.values())
 
     want = _row(groups, reference, RAM_LIMIT_LARGE_MB, coarse_gray_depth=0)
-    for side, limit in (("in RAM", RAM_LIMIT_LARGE_MB), ("out of core", 1)):
+    for side, limit in (("in RAM", RAM_LIMIT_LARGE_MB), ("out of core", RAM_LIMIT_OOC_MB)):
         got = _row(groups, binned, limit)
         for prefix in FAMILIES:
             cols = [c for c in want.index if c.startswith(prefix)]

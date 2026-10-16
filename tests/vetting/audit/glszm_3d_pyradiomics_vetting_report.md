@@ -327,11 +327,12 @@ the code rather than of a recipe that got lost. They are replaced with a fresh `
 `glszm3d.regression_ut_phantom` — `GREYDEPTH=64`, `IBSI=false`, `GLSZM_GREYDEPTH=64`, the
 configuration the retired 3D coverage sweep ran every 3D family at on this same phantom.
 
-`GLSZM_GREYDEPTH=0` is not degenerate, and that is the difference from `NGTDM_RADIUS=0`: it is this
-family's documented "no binning" default, `--3glszm/greydepth` is what overrides it, and a run that
-passes no such flag produces finite values for all sixteen features.
-`test_3d_glszm_default_greydepth_mechanics` asserts exactly that, so **no `src/` change is proposed
-by this branch**.
+`GLSZM_GREYDEPTH=0` is not degenerate, and that is the difference from `NGTDM_RADIUS=0`: it is the
+no-binning setting, which `--coarseGrayDepth=0` or `3glszm/greydepth=0` selects, and it produces
+finite values for all sixteen features; `glszm3d.regression_ut_phantom_nobinning` pins them. A run
+that passes neither flag bins at the coarse grey depth, 64, and
+`test_3d_glszm_default_greydepth_mechanics` asserts that it reaches the feature at that depth with
+settings that produce numbers.
 
 ---
 

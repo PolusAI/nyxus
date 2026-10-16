@@ -334,7 +334,7 @@ void test_3d_ngldm_dump_ibsi_mirp()
 // integer levels Nyxus loads the float phantom as (the loader's shift, not a binning step).
 //
 // Provenance (SPEC 6.4): tool=mirp 2.6.0, by_slice=False, distance 1, difference level 0, the same
-// segmented phantom and label 57; generator=tests/vetting/oracles/gen_negative_greydepth_mirp.py
+// segmented phantom and label 57; generator=tests/vetting/oracles/gen_ngldm3d_mirp.py
 // (re-verifies every pin with --check). Measured residual 5.1e-16 worst case; asserted at rel=1e-9,
 // and at rel=1e-6 for 3NGLDM_DCENT, the family's one logarithm.
 static const ref_vals_map<double> ngldm_3d_mirp_negdepth_ref_vals{

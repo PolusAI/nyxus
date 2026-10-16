@@ -322,16 +322,17 @@ goldens' meaning — see `audit/gabor_2d_skimage_vetting_report.md` §4.1.
 |---|---|
 | Data | `Nyxus::make_2d_square12_graded_phantom()` in `tests/test_main_nyxus.h` |
 | ROI | the 12x12 interior of a 14x14 frame, at levels `100 + 3 ((7x + 11y + xy) mod 37)` |
-| Shape | 36 distinct levels over 100-208; at 20 PyRadiomics-style bins (range 108, bin width 5.4) five of the 144 pixels sit exactly on a bin edge |
-| Why it exists | the smallest fixture that separates IBSI's fixed bin number, `floor(n (x - min) / (max - min)) + 1`, from a formula that divides by a rounded bin width and puts an edge level one bin low. The IBSI phantom has six levels, which 20 bins leave where they are, so it cannot show this |
+| Shape | 36 distinct levels over 100-208; at 20 PyRadiomics-style bins (range 108, bin width 5.4) the interior bin edges fall at 127, 154 and 181, and 14 of the 144 pixels sit exactly on one: 5 at 127, 4 at 154, 5 at 181 |
+| Why it exists | the smallest fixture that separates IBSI's fixed bin number, `floor(n (x - min) / (max - min)) + 1`, from a formula that divides by the bin width, `floor((x - min) / ((max - min) / n)) + 1`: the 5 pixels at 181 are the ones that division sends one bin low, while it gets 127 and 154 right. The IBSI phantom has six levels, which 20 bins leave where they are, and the segmented 3D phantom (`bench_ut57_3d`) has 2736 ROI voxels on a bin edge at 20 bins but an exact bin width of 100, so neither can show this |
 
 Recipes: `ngldm.mirp_fbn20_negdepth`, `gldzm.mirp_fbn20_negdepth`.
 
 Tests reaching it today: `test_2d_ngldm_mirp.h`, `test_2d_ngldm_mechanics.h`, `test_2d_gldzm_mirp.h`.
 
 It lives in `test_main_nyxus.h` because two families read it (SPEC 6.3.1).
-`oracles/gen_negative_greydepth_mirp.py` builds the same array for MIRP and `--check` compares the
-formula in the header with its own. It fills its bounding box, so a GLDZM zone's border distance on
+`oracles/square12_graded.py` builds the same array for MIRP, and `oracles/gen_ngldm_mirp.py` and
+`oracles/gen_gldzm_mirp.py` both load it from there; each of them compares the formula in the header
+with its own on every run, `--check` included. It fills its bounding box, so a GLDZM zone's border distance on
 it is the distance to the frame -- which is why 2D GLDZM pins only its six features that read none.
 
 ---

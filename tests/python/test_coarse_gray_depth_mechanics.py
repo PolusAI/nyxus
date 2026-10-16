@@ -154,7 +154,7 @@ def test_coarse_gray_depth_zero_first_order_3d_mechanics():
 # A negative depth gives the HISTOGRAM feature abs(depth) bins, and the output has one column per bin
 # holding them in order: the same columns and values as the positive depth, summing to the ROI's
 # pixel count. MEAN is requested beside it because HISTOGRAM on its own comes back as zeros: it belongs to
-# no featureset that triggers the intensity family's calculation.
+# no featureset that triggers the intensity family's calculation (PN-165; drop MEAN once that is fixed).
 def test_coarse_gray_depth_negative_histogram_columns_mechanics():
     img, mask = _gradient_disk()
     neg = nyxus.Nyxus(["MEAN", "HISTOGRAM"], coarse_gray_depth=-20).featurize(img, mask)

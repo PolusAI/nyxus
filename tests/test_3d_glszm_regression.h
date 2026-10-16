@@ -4,14 +4,15 @@
 // values below are Nyxus' own output, so movement is the only thing they can catch.
 //
 // Recipe glszm3d.regression_ut_phantom: bench_ut57_3d (label 57) with GREYDEPTH=64, IBSI=false and
-// GLSZM_GREYDEPTH=64, whose positive sign selects MATLAB-style binning into that many levels, so bin 1
-// is the background level and a voxel binned there starts no zone of its own.
+// GLSZM_GREYDEPTH=64, whose positive sign selects MATLAB-style binning into that many levels. The
+// background is level 0 and starts no zone; every ROI voxel, level 1 included, starts zones of its own
+// level.
 //
 // Recipe glszm3d.regression_ut_phantom_nobinning: the same phantom at GLSZM_GREYDEPTH=0, no binning,
 // which --coarseGrayDepth=0 or 3glszm/greydepth=0 selects. A run that names neither bins at the coarse
 // grey depth, 64, which is the recipe above. It is a third binning scheme rather than a coarser version
-// of the second -- the background is intensity 0 there and bin 1 under MATLAB binning -- so it gets
-// its own table. Nothing vets it here: PyRadiomics has no counterpart for reading raw levels off an
+// of the second -- its levels are the raw intensities, not 64 levels over [0, max] -- so it gets its
+// own table. Nothing vets it here: PyRadiomics has no counterpart for reading raw levels off an
 // unbinned volume, so these are Nyxus' own numbers and catch movement only. The same setting does
 // have an oracle on a fixture small enough for one: test_3d_glszm_ibsi_gapped_pyradiomics.
 //

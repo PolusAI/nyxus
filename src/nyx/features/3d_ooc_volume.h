@@ -169,14 +169,15 @@ namespace Nyxus
 		return lut;
 	}
 
-	/// @brief The in-core counterpart of OocBinnedVolume: the ROI's bounding-box cube (the shape of
-	/// r.aux_image_cube) with every ROI voxel at its grey level under 'greybin_info' and every other
-	/// cell at level 0, the level the texture families read as background. It is written from the
-	/// voxel cloud because a binned value cannot mark the background: MATLAB binning sends intensity 0
-	/// to level 1, where the ROI's darkest voxels land too.
+	/// @brief The in-core counterpart of OocBinnedVolume: the ROI's bounding-box cube with every ROI
+	/// voxel at its grey level under 'greybin_info' and every other cell at level 0, the level the
+	/// texture families read as background. It is written from the voxel cloud because a binned value
+	/// cannot mark the background: MATLAB binning sends intensity 0 to level 1, where the ROI's darkest
+	/// voxels land too. The cube is sized from r.aabb, the box every voxel is checked against, so a
+	/// voxel that passes the check has a cell.
 	inline void bin_roi_3d (SimpleCube<PixIntens>& D, const LR& r, int greybin_info)
 	{
-		D.allocate (r.aux_image_cube.width(), r.aux_image_cube.height(), r.aux_image_cube.depth());
+		D.allocate ((int) r.aabb.get_width(), (int) r.aabb.get_height(), (int) r.aabb.get_z_depth());
 		D.fill (0);
 		const auto xmin = r.aabb.get_xmin(),
 			ymin = r.aabb.get_ymin(),

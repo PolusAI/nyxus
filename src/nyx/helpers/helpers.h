@@ -1,6 +1,9 @@
 #pragma once
+#include <cerrno>
 #include <cfloat>	// FLT_EPSILON
+#include <climits>
 #include <cmath>
+#include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <limits>
@@ -115,6 +118,26 @@ namespace Nyxus
 		// Successful conversion, return its result
 		result = (int)res;
 		return true;
+	}
+
+	enum class GreyDepthParse { ok, not_an_integer, out_of_range };
+
+	// A grey depth as --coarseGrayDepth and every <family>/greydepth metaparameter take it: strtol's
+	// syntax (optional leading whitespace and sign, then digits that must end the text), and an int
+	// whose magnitude is an int too, because the binning takes std::abs() of it as a level or bin
+	// count. INT_MIN and anything past the int range are out of range, never wrapped.
+	inline GreyDepthParse parse_grey_depth (const std::string& raw, int& result)
+	{
+		const char* psz = raw.c_str();
+		char* endptr = nullptr;
+		errno = 0;
+		long long res = std::strtoll (psz, &endptr, 10);
+		if (endptr == psz || *endptr != '\0')
+			return GreyDepthParse::not_an_integer;
+		if (errno == ERANGE || res <= INT_MIN || res > INT_MAX)
+			return GreyDepthParse::out_of_range;
+		result = (int) res;
+		return GreyDepthParse::ok;
 	}
 
 	inline bool parse_as_bool (const std::string& raw, bool& result)

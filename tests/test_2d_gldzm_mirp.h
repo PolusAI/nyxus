@@ -211,14 +211,15 @@ void test_2d_gldzm_zde_mirp()
 // The negative coarse grey depth, recipe gldzm.mirp_fbn20_negdepth: GREYDEPTH = -20 bins the ROI into
 // 20 PyRadiomics-style bins over its own [min, max], which is IBSI's fixed bin number, and MIRP is run
 // with base_discretisation_method="fixed_bin_number", n_bins=20 -- each tool discretising for itself.
-// Fixture bench_square12_graded (test_main_nyxus.h), with five of its 144 pixels exactly on a bin edge.
+// Fixture bench_square12_graded (test_main_nyxus.h): 14 of its 144 pixels sit exactly on a bin edge at
+// 20 bins, and the 5 at 181 are the ones a division by the bin width sends one bin low.
 //
 // SCOPE: the six features that read no zone's border distance. The square fills its bounding box, so
 // its border distance cannot tell the 2D distance map from IBSI's (they part on ROIs with interior
 // background inside the ROI), and the ten distance features are left unpinned here rather than claimed.
 //
 // Provenance (SPEC 6.4): tool=mirp 2.6.0, by_slice=True;
-// generator=tests/vetting/oracles/gen_negative_greydepth_mirp.py (re-verifies every pin with --check).
+// generator=tests/vetting/oracles/gen_gldzm_mirp.py (re-verifies every pin with --check).
 // Measured residual 6.2e-16 worst case; asserted at SPEC 7's exact tier, rel=1e-9.
 static const ref_vals_map<double> gldzm_2d_mirp_negdepth_ref_vals{
 		{ "GLDZM_GLNU",	6.645161290322581 },		// dzm_glnu_2d_fbn_n20

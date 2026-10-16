@@ -244,7 +244,7 @@ void test_3d_gldzm_zde_radiomics_mirp() {
 // as (the loader's shift, not a binning step).
 //
 // Provenance (SPEC 6.4): tool=mirp 2.6.0, by_slice=False;
-// generator=tests/vetting/oracles/gen_negative_greydepth_mirp.py (re-verifies every pin with --check).
+// generator=tests/vetting/oracles/gen_gldzm3d_mirp.py (re-verifies every pin with --check).
 // Measured residual 2.4e-16 worst case, 4.1e-15 on 3GLDZM_ZDE; asserted at rel=1e-9, and at
 // rel=1e-6 for 3GLDZM_ZDE, the family's one logarithm.
 static const ref_vals_map<double> gldzm_3d_mirp_negdepth_ref_vals{

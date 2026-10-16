@@ -1690,6 +1690,14 @@ TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_COARSE_GRAY_DEPTH_CLI_REFUSED_MECHANICS) 
 	ASSERT_NO_FATAL_FAILURE(test_feature_settings_coarse_gray_depth_cli_refused_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_GREY_DEPTH_PARSE_RANGE_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_grey_depth_parse_range_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_GREYDEPTH_METAPARAM_REFUSED_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_feature_settings_greydepth_metaparam_refused_mechanics());
+}
+
 //***** Pixel intensity features ***** 
 
 TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_PYRADIOMICS)

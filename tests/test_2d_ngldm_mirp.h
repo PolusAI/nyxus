@@ -79,12 +79,13 @@ void test_2d_ngldm_dcene_mirp()    { assert_ngldm_feature_mirp(Nyxus::Feature2D:
 // The negative coarse grey depth, recipe ngldm.mirp_fbn20_negdepth: GREYDEPTH = -20 bins the ROI into
 // 20 PyRadiomics-style bins over its own [min, max], which is IBSI's fixed bin number, and MIRP is run
 // with base_discretisation_method="fixed_bin_number", n_bins=20 -- each tool discretising for itself,
-// so the binning is part of what is compared. Fixture bench_square12_graded (test_main_nyxus.h), with
-// five of its 144 pixels exactly on a bin edge. NGLDM_DCP is left out: both tools return 1 whenever
-// every pixel has a same-level neighbour.
+// so the binning is part of what is compared. Fixture bench_square12_graded (test_main_nyxus.h): 14 of
+// its 144 pixels sit exactly on a bin edge at 20 bins, and the 5 at 181 are the ones a division by the
+// bin width sends one bin low. NGLDM_DCP is left out: both tools return 1 whenever every pixel has a
+// same-level neighbour.
 //
 // Provenance (SPEC 6.4): tool=mirp 2.6.0, by_slice=True, distance 1, difference level 0;
-// generator=tests/vetting/oracles/gen_negative_greydepth_mirp.py (re-verifies every pin with --check).
+// generator=tests/vetting/oracles/gen_ngldm_mirp.py (re-verifies every pin with --check).
 // Measured residual 2.1e-16 worst case; asserted at rel=1e-9, and at rel=1e-6 for NGLDM_DCENT, the
 // family's one logarithm, whose last bits move between platforms.
 static const ref_vals_map<double> ngldm_2d_mirp_negdepth_ref_vals{

@@ -32,11 +32,13 @@ void test_texture_binning_zero_width_range_mechanics()
 
 // The 3D families' in-RAM binning writes each ROI voxel's level at its offset from the box corner and
 // leaves every other cell at 0. The box corner is not the origin here, so an offset taken from the
-// wrong corner lands a voxel in the wrong cell.
+// wrong corner lands a voxel in the wrong cell. The cube takes its shape from the box the voxels are
+// checked against, whatever r.aux_image_cube holds: here that is a larger cube, so a binning sized
+// from it has 36 cells and a row stride of 4.
 void test_texture_binning_roi_cube_places_voxels_mechanics()
 {
 	LR r;
-	r.aux_image_cube.allocate (3, 2, 2);
+	r.aux_image_cube.allocate (4, 3, 3);
 	r.aabb.init_x (10);	r.aabb.update_x (12);
 	r.aabb.init_y (20);	r.aabb.update_y (21);
 	r.aabb.init_z (5);	r.aabb.update_z (6);
@@ -47,6 +49,9 @@ void test_texture_binning_roi_cube_places_voxels_mechanics()
 	SimpleCube<PixIntens> D;
 	Nyxus::bin_roi_3d (D, r, 4);	// MATLAB, 4 levels over [0, 64]: floor(4 x / 64 + 1), clipped to 4
 	ASSERT_EQ (D.size(), 12u);
+	ASSERT_EQ (D.width(), 3);
+	ASSERT_EQ (D.height(), 2);
+	ASSERT_EQ (D.depth(), 2);
 	EXPECT_EQ (D.zyx (0, 0, 0), 1u);
 	EXPECT_EQ (D.zyx (1, 1, 2), 4u);
 	EXPECT_EQ (D.zyx (1, 0, 1), 3u);

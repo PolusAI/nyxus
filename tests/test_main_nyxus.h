@@ -75,10 +75,11 @@ namespace Nyxus
     }
 
     /// @brief bench_square12_graded: a 12x12 ROI in a 14x14 frame at levels 100 + 3 ((7x + 11y + xy)
-    /// mod 37), 36 distinct over 100-208. At 20 PyRadiomics-style bins five of its pixels sit exactly
-    /// on a bin edge, so it separates IBSI's fixed bin number from a formula that rounds the edge
-    /// down. 2D NGLDM and 2D GLDZM both read it, which is why it lives here rather than in either
-    /// family's header; tests/vetting/oracles/gen_negative_greydepth_mirp.py builds the same array.
+    /// mod 37), 36 distinct over 100-208. At 20 PyRadiomics-style bins 14 of its 144 pixels sit
+    /// exactly on a bin edge (5 at 127, 4 at 154, 5 at 181), and the 5 at 181 are the ones a division
+    /// by the bin width sends one bin low, so it separates IBSI's fixed bin number from that formula.
+    /// 2D NGLDM and 2D GLDZM both read it, which is why it lives here rather than in either family's
+    /// header; tests/vetting/oracles/square12_graded.py builds the same array for MIRP.
     static void make_2d_square12_graded_phantom (std::vector<NyxusPixel>& intensity, std::vector<NyxusPixel>& mask)
     {
         const size_t side = 14, lo = 1, hi = 12;

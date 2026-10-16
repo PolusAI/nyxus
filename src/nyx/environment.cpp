@@ -1,6 +1,3 @@
-#include <cerrno>
-#include <climits>
-#include <cstdlib>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -668,24 +665,18 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	// parse COARSEGRAYDEPTH
 	if (!raw_coarse_grayscale_depth.empty())
 	{
-		// string -> integer, as strtol reads one: optional leading whitespace and sign, then digits that
-		// must end the text. Every sign is meaningful, and the magnitude is a level or bin count, so it
-		// has to be an int: INT_MIN and anything strtol reports out of range are refused rather than wrapped
-		const char* raw = raw_coarse_grayscale_depth.c_str();
-		char* end = nullptr;
-		errno = 0;
-		long v = std::strtol (raw, &end, 10);
-		if (end == raw || *end != '\0')
+		// string -> integer; every sign is meaningful, and the magnitude has to be an int (see parse_grey_depth)
+		switch (Nyxus::parse_grey_depth (raw_coarse_grayscale_depth, coarse_grayscale_depth))
 		{
+		case Nyxus::GreyDepthParse::not_an_integer:
 			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting an integer constant\n";
 			return false;
-		}
-		if (errno == ERANGE || v <= INT_MIN || v > INT_MAX)
-		{
+		case Nyxus::GreyDepthParse::out_of_range:
 			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": out of range, the magnitude must be at most " << INT_MAX << "\n";
 			return false;
+		case Nyxus::GreyDepthParse::ok:
+			break;
 		}
-		coarse_grayscale_depth = (int) v;
 	}
 
 	if (!rawVerbosity.empty())
