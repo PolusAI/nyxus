@@ -142,6 +142,7 @@ def from_files(m, intensity=None, single_roi=False, codes=F + ["PERIMETER"], **k
 
 
 check(from_files(mask, ram_limit=0)[0], [1.3966, 1.1311, 26.0], "example out of core")
+# pins known defect https://github.com/PolusAI/nyxus/issues/509
 check(from_files(two, ram_limit=0)[0][1:2], [1.0], "two squares out of core")
 for value in (100, 4294967295):
     inten = lone * 100
@@ -152,12 +153,15 @@ check(from_files(mask, anisotropy_x=2)[0][:2], [1.2459, 1.1731], "anisotropy_x=2
 check(from_files(mask, anisotropy_y=3)[0][:2], [1.4458, 1.2546], "anisotropy_y=3")
 # With anisotropy the out-of-core contour differs, so a single-contour disk differs too
 check(from_files(disk(8), anisotropy_x=2)[0][1:2], [1.1431], "disk 8, anisotropy_x=2")
+# pins known defect https://github.com/PolusAI/nyxus/issues/509
 check(from_files(disk(8), anisotropy_x=2, ram_limit=0)[0][1:2], [1.0482], "disk 8, anisotropy_x=2, out of core")
 labels = two.copy()
 labels[5:30, 45:70] = 2
 for row in from_files(labels, (labels > 0) * 100):
     check(row[:2], [1.8416, 1.0], "two labels")
 check(from_files(labels, (labels > 0) * 100, mergerois=True)[0][:2], [1.4231, 1.107], "merged")
+# pins known defect https://github.com/PolusAI/nyxus/issues/493: the box is 201 x 201, which rounds
+# up to the same 256 canvas as 200 x 200
 check(from_files(np.ones((200, 200)), single_roi=True)[0][:2], [1.8703, 1.0], "whole slide")
 # The whole-slide box is one pixel larger than the image, so a 256 x 256 image sits on a 512 canvas
 # pins known defect https://github.com/PolusAI/nyxus/issues/493

@@ -1159,22 +1159,22 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm`.
      - vetted: PyRadiomics
    * - ``GLRLM_LGLRE_AVE``
      - Low grey level run emphasis, averaged over the angles.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_HGLRE_AVE``
      - High grey level run emphasis, averaged over the angles.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_SRLGLE_AVE``
      - Short run low grey level emphasis, averaged over the angles.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_SRHGLE_AVE``
      - Short run high grey level emphasis, averaged over the angles.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_LRLGLE_AVE``
      - Long run low grey level emphasis, averaged over the angles.
-     - vetted: IBSI
+     - vetted: PyRadiomics
    * - ``GLRLM_LRHGLE_AVE``
      - Long run high grey level emphasis, averaged over the angles.
-     - vetted: IBSI
+     - vetted: PyRadiomics
 
 .. _features-glszm:
 

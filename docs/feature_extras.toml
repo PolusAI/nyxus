@@ -422,11 +422,15 @@ ORIENTATION = { name = "Orientation", ibsi = "", example = -18.77 }
 ROUNDNESS = { name = "Roundness", ibsi = "", example = 0.7635 }
 
 [circles]
+# example pins known defect https://github.com/PolusAI/nyxus/issues/498
 DIAMETER_MIN_ENCLOSING_CIRCLE = { name = "Minimum enclosing circle diameter", ibsi = "", example = 14.17 }
+# example pins known defect https://github.com/PolusAI/nyxus/issues/497
 DIAMETER_CIRCUMSCRIBING_CIRCLE = { name = "Circumscribing circle diameter", ibsi = "", example = 17.41 }
+# example pins known defect https://github.com/PolusAI/nyxus/issues/497
 DIAMETER_INSCRIBING_CIRCLE = { name = "Inscribing circle diameter", ibsi = "", example = 1.29 }
 
 [roi_radius]
+# example pins known defect https://github.com/PolusAI/nyxus/issues/497
 ROI_RADIUS_MEAN = { name = "Mean distance to the contour", ibsi = "", example = 1.124 }
 ROI_RADIUS_MAX = { name = "Largest distance to the contour", ibsi = "", example = 3 }
 ROI_RADIUS_MEDIAN = { name = "Median distance to the contour", ibsi = "", example = 1 }
@@ -461,8 +465,10 @@ MIN_FERET_ANGLE = { name = "Angle of the smallest Feret diameter", ibsi = "", ex
 MAX_FERET_ANGLE = { name = "Angle of the largest Feret diameter", ibsi = "", example = 50 }
 STAT_FERET_DIAM_MIN = { name = "Feret diameter, minimum", ibsi = "", example = 11 }
 STAT_FERET_DIAM_MAX = { name = "Feret diameter, maximum", ibsi = "", example = 13.57 }
+# example pins known defect https://github.com/PolusAI/nyxus/issues/500
 STAT_FERET_DIAM_MEAN = { name = "Feret diameter, mean", ibsi = "", example = 12.42 }
 STAT_FERET_DIAM_MEDIAN = { name = "Feret diameter, median", ibsi = "", example = 12.39 }
+# example pins known defect https://github.com/PolusAI/nyxus/issues/500
 STAT_FERET_DIAM_STDDEV = { name = "Feret diameter, standard deviation", ibsi = "", example = 0.8183 }
 STAT_FERET_DIAM_MODE = { name = "Feret diameter, mode", ibsi = "", example = 12 }
 

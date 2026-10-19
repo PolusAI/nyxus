@@ -39,6 +39,7 @@ print(features[["ROI_label", "AREA_PIXELS_COUNT", "PERIMETER", "CONVEX_HULL_AREA
 # example-end
 
 # Every value in the page's feature indexes, as recorded in docs/feature_extras.toml (ROI 1)
+# Some of these values pin known defects; feature_extras.toml names the issue above each of them.
 FAMILIES = ["basic_morphology", "contour", "convex_hull", "ellipse", "circles", "roi_radius", "extrema",
             "euler", "geodetic", "feret", "martin", "nassenstein", "chords", "neighbors"]
 extras = json.loads(Path(os.environ["NYXUS_DOCS_EXTRAS"]).read_text(encoding="utf-8"))
@@ -157,3 +158,33 @@ disk[28:32, 16:24] = 5
 dimg = (1 + (2 * xx + 7 * yy) % 11).astype(np.uint32)
 check(run(dimg, disk), {"NUM_NEIGHBORS": 4, "POLYGONALITY_AVE": 8.484, "HEXAGONALITY_AVE": 9.223,
                         "HEXAGONALITY_STDDEV": 0.08352, "ANG_BW_NEIGHBORS_MEAN": 135.8}, "disk")
+
+# Codes that need companions: requested without the family that computes their inputs
+# pins known defect https://github.com/PolusAI/nyxus/issues/495
+
+
+def alone(codes, image=img, labels=mask):
+    t = Nyxus(codes).featurize(image, labels)
+    return t[t["ROI_label"] == 1].reset_index(drop=True)
+
+
+check(alone(["MAJOR_AXIS_LENGTH", "ORIENTATION", "ROUNDNESS"]),
+      {"MAJOR_AXIS_LENGTH": 39.36, "ORIENTATION": 45.93, "ROUNDNESS": 0}, "ellipse codes alone")
+assert alone(["ELONGATION"])["ELONGATION"][0] == 0
+circle_codes = ["DIAMETER_MIN_ENCLOSING_CIRCLE", "DIAMETER_CIRCUMSCRIBING_CIRCLE", "DIAMETER_INSCRIBING_CIRCLE"]
+assert (alone(circle_codes)[circle_codes].to_numpy() == 0).all()
+check(alone(circle_codes + ["PERIMETER"]),
+      {"DIAMETER_MIN_ENCLOSING_CIRCLE": 14.17, "DIAMETER_CIRCUMSCRIBING_CIRCLE": 35.61}, "circles with PERIMETER")
+hex_codes = ["HEXAGONALITY_AVE", "HEXAGONALITY_STDDEV"]
+assert (alone(hex_codes, dimg, disk)[hex_codes].to_numpy() == 0).all()
+
+# Whole-slide mode on a 64 x 48 image: the box is one pixel larger than the image
+# pins known defect https://github.com/PolusAI/nyxus/issues/493
+import tifffile
+
+tifffile.imwrite("whole.tif", np.full((48, 64), 7, np.uint32))
+whole = Nyxus(["*ALL_MORPHOLOGY*"]).featurize_files([os.path.abspath("whole.tif")],
+                                                    [os.path.abspath("whole.tif")], True)
+check(whole, {"PERIMETER": 224, "EXTREMA_P3_X": 64, "EXTREMA_P3_Y": -1, "EXTREMA_P4_X": 64,
+              "EXTREMA_P4_Y": -1, "EXTREMA_P5_X": -1, "EXTREMA_P5_Y": 48, "EXTREMA_P6_X": -1,
+              "EXTREMA_P6_Y": 48}, "whole slide 64 x 48")

@@ -637,8 +637,9 @@ Constant ROI
 
 Grey-level values and indices
    As in 2D, with PyRadiomics-style binning some features use positions 1 to :math:`N_g` in the
-   list of grey levels present, and others the levels themselves. ``DIFAVE``, ``SUMAVERAGE`` and
-   ``IV`` mix the two as on the 2D page, a known defect (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__).
+   list of grey levels present, and others the levels themselves. ``DIFAVE``, ``SUMAVERAGE``,
+   ``IV``, ``JVAR`` and ``DIFVAR`` mix the two as on the 2D page, a known defect
+   (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__).
 
 
 Validation

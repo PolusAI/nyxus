@@ -194,3 +194,17 @@ out = from_files(moved, moved_mask, ram_limit=0)
 # pins known defect https://github.com/PolusAI/nyxus/issues/509
 assert math.isclose(out["FRAC_AT_D_7"][0], 0.3404, rel_tol=5e-4), out["FRAC_AT_D_7"][0]
 assert math.isclose(out["MEAN_FRAC_0"][0], 6.0, rel_tol=1e-6), out["MEAN_FRAC_0"][0]
+
+# Whole-slide mode: the centre lies on the top edge, (19, 1) with R = 19.03 on a 20 x 20 image and
+# (50, 0) with R = 50 on a 64 x 48 image. The ring counts Nyxus reports are those of that centre.
+# pins known defect https://github.com/PolusAI/nyxus/issues/516
+for (h, w), (ox, oy), ring0 in (((20, 20), (19, 1), 11), ((48, 64), (50, 0), 88)):
+    tifffile.imwrite("rd_whole.tif", np.full((h, w), 7, np.uint32))
+    t = Nyxus(["FRAC_AT_D"]).featurize_files([os.path.abspath("rd_whole.tif")],
+                                             [os.path.abspath("rd_whole.tif")], True)
+    counts = vec(t, "FRAC_AT_D") * h * w
+    wy, wx = np.mgrid[0:h, 0:w]
+    rings = np.minimum((np.hypot(wx - ox, wy - oy) / math.hypot(ox, oy) * 7).astype(int), 7)
+    assert np.allclose(counts, np.bincount(rings.ravel(), minlength=8), atol=1e-6), (h, w, counts)
+    assert round(counts[0]) == ring0, (h, w, counts[0])
+assert math.isclose(math.hypot(19, 1), 19.03, rel_tol=5e-4)

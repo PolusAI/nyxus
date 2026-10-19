@@ -1,7 +1,9 @@
 # Example for docs/source/Math/f_glszm_3d.rst: 3D GLSZM features of the page's 3 x 3 x 3 worked
 # example. The page shows the lines between the "example" markers. The assertions below pin every
-# value the page quotes, except the results of the 32-bit overflow under "Very large zones", so the
-# page cannot drift from the code.
+# value the page quotes, so the page cannot drift from the code, except two groups: the results of
+# the 32-bit overflow under "Very large zones", and the values under "MATLAB-style binning drops the
+# lowest level" for counting the level-1 voxels as zones (4 zones, zone percentage 0.1481, small
+# area emphasis 0.5283, low grey level zone emphasis 0.8125), which no setting produces.
 import json
 import math
 import os
