@@ -1,7 +1,9 @@
 # Example for docs/source/Math/f_ngldm.rst: NGLDM features of the page's 5x5 worked example.
 # The page shows the lines between the "example" markers. The assertions below pin every value the
 # page quotes, in IBSI mode and with the default settings, so the page cannot drift from the code.
-# The values for a negative or zero --coarseGrayDepth are not: they are command-line only.
+# The values for a negative or zero --coarseGrayDepth are not: they are command-line only. The
+# grey-level ladders under "NGLDM converts grey levels differently" are the formulas evaluated on
+# the page, not Nyxus output.
 import json
 import math
 import os
@@ -60,9 +62,6 @@ got = Nyxus(["*ALL_NGLDM*"]).featurize(low, mask)["NGLDM_LGLCE"][0]
 assert math.isclose(got, 0.00181, rel_tol=5e-4), f"low-intensity NGLDM_LGLCE = {got}, page says 0.00181"
 assert math.isclose(got * 25 / 24, 0.00189, rel_tol=5e-3)
 
-# The two grey-level conversions of the worked example's intensities 1 to 5 at the default 64
-assert [64 * x // 5 for x in range(1, 6)] == [12, 25, 38, 51, 64]
-assert [min(64 * x // 5 + 1, 64) for x in range(1, 6)] == [13, 26, 39, 52, 64]
 
 # Relation to GLDM quoted on the page: same matrix in IBSI mode, entropy differs by the GLDM log2
 gldm = Nyxus(["*ALL_GLDM*"], ibsi=True).featurize(img, mask)

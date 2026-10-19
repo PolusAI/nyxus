@@ -546,8 +546,9 @@ Grey level 0 is counted but not weighted
 NGLDM converts grey levels differently from the other texture families
    NGLDM's :math:`\lfloor N x / x_{\max} \rfloor` gives :math:`N + 1` possible levels, 0 to
    :math:`N`. GLCM, GLRLM and GLSZM use :math:`\lfloor N x / x_{\max} \rfloor + 1`, capped at
-   :math:`N`. On the worked example NGLDM's levels are 12, 25, 38, 51 and 64; GLRLM's are 13, 26,
-   39, 52 and 64. Both count from intensity 0, not from the ROI minimum. The eight features that use
+   :math:`N`. With :math:`N = 64`, the two formulas give the worked example's intensities 1 to 5
+   the levels 12, 25, 38, 51 and 64 for NGLDM and 13, 26, 39, 52 and 64 for GLRLM. Both count from
+   intensity 0, not from the ROI minimum. The eight features that use
    :math:`g_i` (``GLM``, ``GLV``, ``LGLCE``, ``HGLCE`` and the four combined emphases) therefore
    depend on ``--coarseGrayDepth``; compare them only between runs with the same setting. The
    features that use only counts (``LDE``, ``HDE``, ``GLNU``, ``GLNUN``, ``DCNU``, ``DCNUN``,

@@ -42,11 +42,13 @@ and looks at the pixel :math:`\delta` pixels away along :math:`\theta`. If both 
 the image and neither has intensity 0, the pair of their grey levels is counted.
 
 - **Directions:** :math:`\theta \in \{0^\circ, 45^\circ, 90^\circ, 135^\circ\}`. Each direction
-  gets its own matrix and its own feature values. With rows numbered from the top, 45° pairs a
-  pixel with the one below and to the right, and 135° with the one below and to the left. MATLAB
-  ``graycomatrix``, PyRadiomics and IBSI measure angles with the row axis pointing up, so they call
-  these diagonals 135° and 45°, and with the default one-order counting each Nyxus diagonal matrix
-  is the transpose of theirs.
+  gets its own matrix and its own feature values. With rows numbered from the top, 0° pairs a
+  pixel with the one to its right, 45° with the one below and to the right, 90° with the one below,
+  and 135° with the one below and to the left. MATLAB ``graycomatrix``, PyRadiomics and IBSI
+  measure angles with the row axis pointing up: their 0° is the same pixel to the right, their 90°
+  is the pixel above, and they call the two diagonals 135° and 45°. With the default one-order
+  counting the Nyxus 90°, 45° and 135° matrices are therefore the transposes of their 90°, 135°
+  and 45° matrices, and only 0° matches as it is.
 - **Distance:** :math:`\delta = 1` pixel.
 - **Grey levels:** intensities are first binned into :math:`N_g` grey levels, as set by
   ``--coarseGrayDepth`` (64 by default). In IBSI mode they are not binned: each integer intensity
@@ -799,14 +801,16 @@ Constant ROI
 
 Grey-level values and indices
    With PyRadiomics-style binning (negative ``--coarseGrayDepth``) the grey levels are the distinct
-   binned values present in the ROI. Most features use those values, but ``DIS``, ``JVAR``,
-   ``HOM1``, ``HOM2``, ``DIFVAR``, ``DIFENTRO``, ``SUMENTROPY`` and the inverse-difference
-   features use positions 1 to :math:`N_g` in that list, and ``IDN`` and ``IDMN`` divide by
-   :math:`N_g`, the number of levels present. ``DIFAVE``, ``SUMAVERAGE`` and ``IV`` are a known
-   defect (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__): they group pairs by the difference or sum of their positions, but weight each group by
-   the value difference or sum of one pair in it, so when the levels present are not consecutive
-   they match neither convention. Values and positions coincide with the default binning and in
-   IBSI mode.
+   binned values present in the ROI. Most features use those values, but ``DIS``, ``HOM1``,
+   ``HOM2``, ``DIFENTRO``, ``SUMENTROPY`` and the inverse-difference features use positions 1 to
+   :math:`N_g` in that list, and ``IDN`` and ``IDMN`` divide by :math:`N_g`, the number of levels
+   present. ``DIFAVE``, ``SUMAVERAGE``, ``IV``, ``JVAR`` and ``DIFVAR`` are a known defect
+   (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__) and, when the levels present are not
+   consecutive, match neither convention. ``DIFAVE``, ``SUMAVERAGE`` and ``IV`` group pairs by the
+   difference or sum of their positions, but weight each group by the value difference or sum of
+   one pair in it. ``JVAR`` takes positions minus ``JAVE``, a mean of values, and ``DIFVAR`` takes
+   position differences minus ``DIFAVE``. Values and positions coincide with the default binning
+   and in IBSI mode.
 
 
 Validation

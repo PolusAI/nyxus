@@ -129,8 +129,22 @@ part = np.zeros((5, 4, 6), np.uint16)
 part[1:3, 1:3, 1:4] = 7                                 # a 3 x 2 x 2 block
 tifffile.imwrite("part.ome.tif", part, ome=True, metadata={"axes": "ZYX"})
 r = Nyxus3D(["*3D_ALL_MORPHOLOGY*"]).featurize_files(["./part.ome.tif"], ["./part.ome.tif"], True)
-# pins known defect https://github.com/PolusAI/nyxus/issues/494
 assert r["3VOXEL_VOLUME"][0] == 12 and r["3AREA"][0] == 32
+
+# single_roi=True measures that box whatever the mask's shape: a radius-5 ball (515 voxels) in a
+# 15 x 15 x 15 volume, as a segmented ROI and as one ROI, which gives its 11 x 11 x 11 box
+g5 = np.indices((15, 15, 15)) - 7
+ball5 = (np.sum(g5 ** 2, axis=0) <= 25).astype(np.uint16)
+tifffile.imwrite("ball5.ome.tif", 7 * ball5, ome=True, metadata={"axes": "ZYX"})
+tifffile.imwrite("ball5_mask.ome.tif", ball5, ome=True, metadata={"axes": "ZYX"})
+codes = ("3VOXEL_VOLUME", "3AREA", "3MAJOR_AXIS_LEN")
+for single, expected in ((False, (514.999, 486, 8.909)),
+                         # pins known defect https://github.com/PolusAI/nyxus/issues/494
+                         (True, (1331, 726, 0))):
+    r = Nyxus3D(["*3D_ALL_MORPHOLOGY*"]).featurize_files(["./ball5.ome.tif"], ["./ball5_mask.ome.tif"],
+                                                         single)
+    for code, value in zip(codes, expected):
+        assert math.isclose(r[code][0], value, rel_tol=5e-4, abs_tol=1e-12),             f"single_roi={single} {code} = {r[code][0]}, page says {value}"
 
 # A cavity is subtracted from the mesh volume
 cube = np.pad(np.ones((5, 5, 5), np.uint16), 1)
