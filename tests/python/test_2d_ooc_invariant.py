@@ -400,3 +400,76 @@ def test_2d_ooc_2d_two_rois_no_state_leak_invariant(tmp_path):
             if np.isnan(p) != np.isnan(q) or abs(p - q) > 1e-6 * max(abs(p), abs(q), 1.0) + 1e-9:
                 bad.append((lab, c, p, q))
     assert not bad, "Zernike/erosion/ellipse out-of-core values diverge from in-RAM across ROIs: %r" % (bad[:8],)
+
+
+# A 160 x 96 image at 32 x 32 tiles: 5 tiles across, 3 down. The grid is not square, so a scan that
+# swaps the horizontal and vertical tile counts, or derives a tile's column from the wrong one, puts
+# pixels at different coordinates than the untiled copy does.
+TILED_W, TILED_H, TILE = 160, 96, 32
+
+
+def _make_tiled_untiled_pairs(tmp_path):
+    """The same intensity and mask arrays written twice: as tiled TIFFs and as strip TIFFs.
+
+    Label 1 is an ellipse inside the single tile at grid row 0, column 3, off the grid's diagonal.
+    Label 2 spans tiles: a column at x 36..50 reaching down to y 60, and an arm to its right at
+    y 40..50 that runs to x 120. Tile by tile, the arm's last pixel is the last one streamed, and the
+    column's rows below the arm come before it, which is the reverse of their raster order."""
+    yy, xx = np.mgrid[0:TILED_H, 0:TILED_W]
+    inten = (1 + xx + 7 * yy).astype(np.uint32)
+    mask = np.zeros((TILED_H, TILED_W), np.uint32)
+    mask[((xx - 112) / 12.0) ** 2 + ((yy - 15) / 9.0) ** 2 <= 1.0] = 1
+    mask[4:61, 36:51] = 2
+    mask[40:51, 51:121] = 2
+    assert set(np.unique(mask[0:TILE, 3 * TILE:4 * TILE])) == {0, 1}
+    assert not (mask == 1)[:, :3 * TILE].any() and not (mask == 1)[TILE:, :].any()
+
+    dirs = {}
+    for kind, kw in (("tiled", {"tile": (TILE, TILE)}), ("untiled", {})):
+        intdir = tmp_path / kind / "int"
+        segdir = tmp_path / kind / "seg"
+        intdir.mkdir(parents=True)
+        segdir.mkdir(parents=True)
+        tifffile.imwrite(str(intdir / "img.tif"), inten, **kw)
+        tifffile.imwrite(str(segdir / "img.tif"), mask, **kw)
+        with tifffile.TiffFile(str(intdir / "img.tif")) as tf:
+            assert tf.pages[0].is_tiled == (kind == "tiled")
+        dirs[kind] = (str(intdir) + os.sep, str(segdir) + os.sep)
+    return dirs
+
+
+def test_2d_ooc_2d_tiled_matches_untiled_invariant(tmp_path):
+    """Out-of-core featurization of a tiled TIFF must equal that of a strip TIFF holding the same
+    arrays, every column of both ROIs.
+
+    Both sides run out-of-core, so the pixels and the code path are the same and only the order in
+    which the pixel cloud is filled differs: tile by tile against row by row. That isolates the
+    out-of-core tile scan from any out-of-core vs in-RAM difference. What it discriminates: a scan
+    that places a tile's pixels at the wrong column fails on label 1, and a contour that depends on
+    the order the cloud was filled in fails on label 2."""
+    dirs = _make_tiled_untiled_pairs(tmp_path)
+
+    frames = {}
+    for kind, (intdir, segdir) in dirs.items():
+        nyx = nyxus.Nyxus(ALL_2D_FEATURE_GROUPS)
+        _set_ram_limit_mb(nyx, 0)  # 0 -> every ROI oversized -> out-of-core
+        frames[kind] = nyx.featurize_directory(intdir, segdir).sort_values("ROI_label").reset_index(drop=True)
+
+    df_t, df_u = frames["tiled"], frames["untiled"]
+    assert list(df_t["ROI_label"]) == [1, 2] and list(df_u["ROI_label"]) == [1, 2]
+    cols, _ = _feature_cols(df_u)
+    assert cols and _feature_cols(df_t)[0] == cols
+
+    # Tolerance: same build, same pixels, same formulas; only the summation order differs. The
+    # absolute floor covers moments that are zero analytically and come out as float noise.
+    bad = []
+    for row in range(df_u.shape[0]):
+        lab = int(df_u["ROI_label"].iloc[row])
+        for c in cols:
+            p = float(df_t[c].iloc[row])
+            q = float(df_u[c].iloc[row])
+            if np.isnan(p) and np.isnan(q):
+                continue
+            if np.isnan(p) != np.isnan(q) or abs(p - q) > 1e-6 * max(abs(p), abs(q), 1.0) + 1e-9:
+                bad.append((lab, c, p, q))
+    assert not bad, "out-of-core features of a tiled TIFF diverge from its untiled copy: %r" % (bad[:8],)
