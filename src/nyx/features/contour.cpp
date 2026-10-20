@@ -707,7 +707,9 @@ void ContourFeature::buildRegularContour_nontriv (LR& r, const Fsettings& s)
 
 	//==== Prepare the contour image
 	WriteImageMatrix_nontriv borderImage("borderImage", r.label);
-	paddedImage.allocate(width + 2, height + 2, 0);
+	// allocate() writes from the file's current position, so it is called on the fresh border image
+	// only; on paddedImage it would zero every slot after the last pixel written above
+	borderImage.allocate(width + 2, height + 2, 0);
 
 	// Set entire image to WHITE
 	for (int y = 0; y < (height + 2); y++)
