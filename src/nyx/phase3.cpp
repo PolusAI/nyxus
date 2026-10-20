@@ -150,7 +150,17 @@ namespace Nyxus
 				for (unsigned int col = 0; col < ntHor; col++)
 				{
 					unsigned int tileIdx = row * ntHor + col;
-					env.theImLoader.load_tile(tileIdx);
+					if (! env.theImLoader.load_tile(tileIdx))
+					{
+						std::string erm = "Error fetching tile row=" + std::to_string(row) + " col=" + std::to_string(col);
+						r.raw_pixels_NT.clear();
+						env.theImLoader.close();
+#ifdef WITH_PYTHON_H
+						throw std::runtime_error (erm);
+#endif
+						std::cerr << erm << "\n";
+						return false;
+					}
 					auto& dataI = env.theImLoader.get_int_tile_buffer();
 					auto& dataL = env.theImLoader.get_seg_tile_buffer();
 					for (unsigned long i = 0; i < env.theImLoader.get_tile_size(); i++)
