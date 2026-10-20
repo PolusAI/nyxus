@@ -144,7 +144,8 @@ for single, expected in ((False, (514.999, 486, 8.909)),
     r = Nyxus3D(["*3D_ALL_MORPHOLOGY*"]).featurize_files(["./ball5.ome.tif"], ["./ball5_mask.ome.tif"],
                                                          single)
     for code, value in zip(codes, expected):
-        assert math.isclose(r[code][0], value, rel_tol=5e-4, abs_tol=1e-12),             f"single_roi={single} {code} = {r[code][0]}, page says {value}"
+        assert math.isclose(r[code][0], value, rel_tol=5e-4, abs_tol=1e-12), \
+            f"single_roi={single} {code} = {r[code][0]}, page says {value}"
 
 # A cavity is subtracted from the mesh volume
 cube = np.pad(np.ones((5, 5, 5), np.uint16), 1)
