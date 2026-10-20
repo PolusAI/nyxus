@@ -145,11 +145,16 @@ namespace Nyxus
 
 			// Iterate ROI's tiles and scan pixels
 			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
-				ntVert = env.theImLoader.get_num_tiles_vert();	// tiles down a column
-			for (unsigned int row = 0; row < ntVert; row++)
-				for (unsigned int col = 0; col < ntHor; col++)
+				ntVert = env.theImLoader.get_num_tiles_vert(),	// tiles down a column
+				th = env.theImLoader.get_tile_height(),
+				tw = env.theImLoader.get_tile_width();
+			for (size_t row = 0; row < ntVert; row++)
+				for (size_t col = 0; col < ntHor; col++)
 				{
-					unsigned int tileIdx = row * ntHor + col;
+					// row-major, as the loader splits an index into tile_idx / ntHor and tile_idx % ntHor
+					size_t tileIdx = row * ntHor + col;
+					// load_tile() refuses only an index outside the grid; a tile the reader fails on
+					// arrives zero-filled and is not reported here
 					if (! env.theImLoader.load_tile(tileIdx))
 					{
 						std::string erm = "Error fetching tile row=" + std::to_string(row) + " col=" + std::to_string(col);
@@ -173,12 +178,8 @@ namespace Nyxus
 
 						// Pixel intensity and global position
 						auto intens = dataI[i];
-						size_t tileRow = tileIdx / ntHor,
-							tileCol = tileIdx % ntHor,
-							th = env.theImLoader.get_tile_height(),
-							tw = env.theImLoader.get_tile_width();
-						int y = tileRow * th + i / tw,
-							x = tileCol * tw + i % tw;
+						StatsInt y = (StatsInt) (row * th + i / tw),
+							x = (StatsInt) (col * tw + i % tw);
 
 						// Track the streamed extrema (see the aux_min/aux_max reset above)
 						r.aux_min = (std::min)(r.aux_min, (PixIntens)intens);
