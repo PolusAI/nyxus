@@ -37,6 +37,7 @@ RECIPE_READER = {
     "gldzm3d.mirp_compat_phantom_radiomics": re.compile(
         r"^test_3d_gldzm_[a-z0-9]+_radiomics_(mirp|regression)$"),
     "gldzm3d.regression_ut_phantom": re.compile(r"^test_3d_gldzm_[a-z0-9]+_regression$"),
+    "gldzm3d.mirp_fbn20_negdepth": re.compile(r"^test_3d_gldzm_negative_greydepth_mirp$"),
 }
 
 FAMILY = scanlib.Family(
@@ -47,6 +48,7 @@ FAMILY = scanlib.Family(
     # comparison measures is the GLDZM rather than the binning the two disagree about on a CT-like
     # fixture (audit/gldzm_3d_mirp_vetting_report.md).
     oracle_suffix={"mirp": "mirp"},
+    table_owner={"gldzm_3d_mirp_negdepth_ref_vals": "test_3d_gldzm_negative_greydepth_mirp"},
     notes=NOTE,
     enum_dim_prefix=True,
     other_note="asserted",

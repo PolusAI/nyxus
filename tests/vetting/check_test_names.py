@@ -86,9 +86,12 @@ DIM_AGNOSTIC = {
         "readers and accumulators shared by both dims - a TIFF sample type and a value histogram",
     "test_cli_mechanics.py":
         "the CLI's exit-status contract, asserted on a 2D whole-slide run and a 3D one",
+    "test_coarse_gray_depth_mechanics.py":
+        "the coarse grey depth every 2D and 3D texture family starts from, asserted in both dims",
     "test_feature_calculation_common.h": "the assert_feature template, used from both dims",
     "test_buffer_from_cloud_mechanics.h":
         "the 2D and 3D cloud-to-buffer writers and the AABB they check against, asserted side by side",
+    "test_texture_binning_mechanics.h": "the grey-binning helpers every 2D and 3D texture family shares",
     "test_vetting_mechanics.py": "self-test of check_coverage.py / check_test_names.py",
     "test_environment_lifecycle_mechanics.py":
         "instance -> Environment binding in the bindings; no image dimensionality involved",

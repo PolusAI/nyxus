@@ -20,8 +20,6 @@ SOURCES = [
 ]
 
 NOTE = {
-    "3GLRLM_RP": "exceeds its mathematical bound of 1 at positive GLRLM_GREYDEPTH values; in range "
-                 "at the binCount binning both tests use",
     "3GLRLM_RP_AVE": "registry read oracle=mirp while the base row read oracle=pyradiomics for the "
                      "same quantity; no mirp run for 3D GLRLM has ever existed in the tree",
     "3GLRLM_RE": "the family's only sum over logarithms; fast_log10 puts it 3.9e-4 from "

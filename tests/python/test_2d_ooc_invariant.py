@@ -180,12 +180,11 @@ def test_2d_ooc_2d_texture_matches_in_ram_invariant(tmp_path):
     )
 
 
-# A non-default GLCM setting: co-occurrence offset 2 against the default 1. glcm/greydepth is not
-# among them because the co-occurrence matrix is binned at the common grey depth
-# (calculateCoocMatAtAngle reads NyxSetting::GREYDEPTH), so it leaves every GLCM value unchanged and
-# cannot show which settings vector a path was given. Metaparameters live on the instance's own
-# Environment, so nothing set here reaches another instance or a later test.
-GLCM_METAPARAMS = ("glcm/offset=2",)
+# Non-default GLCM settings: co-occurrence offset 2 against the default 1, and 16 grey levels against
+# the default 64. Both are written only to the GLCM family's own settings vector, so each shows which
+# vector a path was given. Metaparameters live on the instance's own Environment, so nothing set here
+# reaches another instance or a later test.
+GLCM_METAPARAMS = ("glcm/offset=2", "glcm/greydepth=16")
 
 
 def _glcm_in_ram(tmp_path, metaparams):
@@ -197,15 +196,15 @@ def _glcm_in_ram(tmp_path, metaparams):
 
 
 def test_2d_ooc_2d_glcm_metaparam_matches_in_ram_invariant(tmp_path):
-    """GLCM out-of-core must match in-RAM under a non-default glcm/offset, i.e. the oversized-ROI
-    path must be handed the GLCM family's own settings vector, which is where set_metaparam writes
-    it. At the defaults every family's vector holds the same offset, so the texture test above
-    cannot tell which vector the out-of-core path was given.
+    """GLCM out-of-core must match in-RAM under a non-default glcm/offset and glcm/greydepth, i.e.
+    the oversized-ROI path must be handed the GLCM family's own settings vector, which is where
+    set_metaparam writes them. At the defaults every family's vector holds the same values, so the
+    texture test above cannot tell which vector the out-of-core path was given.
 
     The fixture is a 128 px gradient spanning every one of the 64 default grey levels, so doubling
-    the offset moves the GLCM values. The control half asserts exactly that, per setting, so that an
-    out-of-core path running at the default offset cannot agree with the in-RAM one by the fixture
-    being insensitive to the setting."""
+    the offset or binning into 16 levels moves the GLCM values. The control half asserts exactly
+    that, per setting, so that an out-of-core path running at the defaults cannot agree with the
+    in-RAM one by the fixture being insensitive to the setting."""
     base = tmp_path / "default"
     base.mkdir()
     default_vals = _glcm_in_ram(base, ())

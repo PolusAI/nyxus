@@ -13,6 +13,7 @@ import sys
 import scanlib
 
 SOURCES = [
+    "test_3d_ngldm_mechanics.h",
     "test_3d_ngldm_mirp.h",
     "test_3d_ngldm_regression.h",
     os.path.join("python", "test_nyxus.py"),
@@ -33,6 +34,7 @@ FAMILY = scanlib.Family(
     # features carry a vetted row there; 3NGLDM_DCP is a non-discriminating agreement and
     # 3NGLDM_GLM / 3NGLDM_DCM have no MIRP counterpart, so those three stay regression-only.
     oracle_suffix={"mirp": "mirp"},
+    table_owner={"ngldm_3d_mirp_negdepth_ref_vals": "test_3d_ngldm_negative_greydepth_mirp"},
     notes=NOTE,
     enum_dim_prefix=True,
     enum_alias="NGLDM",

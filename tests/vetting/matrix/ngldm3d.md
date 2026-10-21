@@ -8,9 +8,11 @@ settings struct at large:
 prepare_NGLDM_matrix_kit (NGLDM, greyLevelsLUT, Ng, Nr, r, STNGS_NGREYS(s), STNGS_IBSI(s));
 ```
 
-Two, therefore: **grey binning** (`GREYDEPTH`, reaching the feature as `n_greys`) and **IBSI mode**
-(`IBSI`, which `to_grayscale` reads as `disable_binning` — so it does not select a different ladder,
-it turns binning off and makes the raw intensity the grey level).
+Two, therefore: **grey binning** (`GREYDEPTH`, reaching the feature as `n_greys`, whose sign selects
+the scheme as in every texture family -- positive is that many levels over `[0, ROI max]`, 0 is the raw
+levels, negative is `abs()` PyRadiomics-style bins over the ROI's own range) and **IBSI mode** (`IBSI`,
+which keeps the raw intensity as the grey level -- so it does not select a different ladder, it turns
+binning off).
 
 Two things that would be axes in the IBSI definition are **not settable** here, and that is part of
 the dispositions below:
@@ -29,8 +31,10 @@ One row per Nyxus config point, verdict per SPEC §5.1.
 | GREYDEPTH | IBSI | verdict | oracle / reason |
 |---|---|---|---|
 | 64 | false | **VALID** | `mirp` at recipe `ngldm3d.mirp_samelevels` — 16 features `vetted` in `test_3d_ngldm_mirp.h` at `rel=1e-3`. The same point carries the family's three remaining drift guards, `3NGLDM_DCP` / `3NGLDM_GLM` / `3NGLDM_DCM`, on `bench_ut57_3d` at `rel=1e-9` (`ngldm3d.regression_ut_phantom`) — the only three no tool can judge |
-| any other | false | **VALID** — same cell | `GREYDEPTH` sets the ladder's height, not its kind. Every depth reaches MIRP the way `ngldm3d.mirp_samelevels` does, so it is one cell exercised at the depth the tests pin (64), not a family of cells |
-| any | true | **VALID** | `mirp` at recipe `ngldm3d.mirp_ibsi_rawlevels` — 16 features `vetted` in `test_3d_ngldm_mirp.h` at `rel=1e-3`, worst measured residual 7.54e-15. `IBSI` reaches `to_grayscale` as `disable_binning`, so this point does not bin: the raw intensity is the grey level (2001 distinct here) and MIRP at `base_discretisation_method="none"` matches by construction. `GREYDEPTH` is not read when `IBSI=true`, which is why the cell spans every depth |
+| any other > 0 | false | **VALID** — same cell | a positive `GREYDEPTH` sets the ladder's height, not its kind. Every positive depth reaches MIRP the way `ngldm3d.mirp_samelevels` does, so it is one cell exercised at the depth the tests pin (64), not a family of cells |
+| 0 | false | **VALID** — the `IBSI=true` cell | no binning: the raw intensity is the grey level, exactly as at `IBSI=true`. `test_3d_ngldm_zero_greydepth_equals_ibsi_mechanics` holds all nineteen features equal to that run bit for bit, so the cell below covers it |
+| < 0 | false | **VALID** | `mirp` at recipe `ngldm3d.mirp_fbn20_negdepth` — 16 features `vetted` in `test_3d_ngldm_mirp.h` at `rel=1e-9` (`3NGLDM_DCENT` at `rel=1e-6`), `GREYDEPTH=-20`, worst measured residual 5.1e-16. IBSI's fixed bin number over the ROI's range, which MIRP's `fixed_bin_number` computes for itself, so the binning is compared too |
+| any | true | **VALID** | `mirp` at recipe `ngldm3d.mirp_ibsi_rawlevels` — 16 features `vetted` in `test_3d_ngldm_mirp.h` at `rel=1e-3`, worst measured residual 7.54e-15. `IBSI` keeps the raw level, so this point does not bin: the raw intensity is the grey level (2001 distinct here) and MIRP at `base_discretisation_method="none"` matches by construction. `GREYDEPTH` is not read when `IBSI=true`, which is why the cell spans every depth |
 
 `d` and `alpha` add no rows: neither can be varied from settings, so there is no further cross-product
 and no `INVALID` cell to record.
@@ -59,10 +63,14 @@ feature formulas over it. It does **not** cover the discretisation: the levels a
 comparison rather than a result of it, since the generator reproduces Nyxus' binning in numpy.
 
 `ngldm3d.mirp_ibsi_rawlevels` (the `IBSI=true` cell) is **not** narrowed, because there is no binning
-step to reproduce — `disable_binning` makes the raw intensity the grey level on both sides. It is the
+step to reproduce — the raw intensity is the grey level on both sides. It is the
 weaker discriminator of the two (83.46% of ROI voxels have no matching neighbour, maximum dependence
-17 of 26) and the wider in scope. Between them the family's whole config axis is asserted, and
-Nyxus' `GREYDEPTH` binning itself remains judged nowhere.
+17 of 26) and the wider in scope.
+
+`ngldm3d.mirp_fbn20_negdepth` (the negative-`GREYDEPTH` cell) is not narrowed either: MIRP bins the
+ROI itself at `fixed_bin_number` n=20 and Nyxus at `GREYDEPTH=-20`, and the two agree to 5.1e-16, so
+there the binning is judged as well. The positive scheme is the one binning still judged nowhere --
+its lower bin edge of 0 has no tool counterpart, as the mappings above record.
 
 ## The three features with no oracle row
 

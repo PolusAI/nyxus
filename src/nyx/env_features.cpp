@@ -735,6 +735,13 @@ void Environment::compile_feature_settings()
 			s[(int)NyxSetting::GLCM_OFFSET].ival = 1;
 			s[(int)NyxSetting::GLCM_GREYDEPTH].ival = get_coarse_gray_depth();
 			s[(int)NyxSetting::GLCM_NUMANG].ival = (int)GLCMFeature::angles.size();
+			// The other per-family grey depths start at the common one too, so the coarse grey depth
+			// bins every texture family; a family's own metaparameter ("3glrlm/greydepth=...") then
+			// overrides it for that family alone.
+			s[(int)NyxSetting::GLDM_GREYDEPTH].ival = get_coarse_gray_depth();
+			s[(int)NyxSetting::GLRLM_GREYDEPTH].ival = get_coarse_gray_depth();
+			s[(int)NyxSetting::GLSZM_GREYDEPTH].ival = get_coarse_gray_depth();
+			s[(int)NyxSetting::NGTDM_GREYDEPTH].ival = get_coarse_gray_depth();
 			// NGTDM-specific default (otherwise zero-initialised). NGTDM_RADIUS=0 empties the
 			// neighbourhood - the scan visits only the voxel of consideration and skips it - so no
 			// voxel is recorded as having a neighbour, the matrix stays empty and every 3D NGTDM

@@ -17,13 +17,13 @@
 // get_3d_segmented_phantom is bench_ut57_3d (phantoms/ut_inten.nii + ut_mask57.nii, label 57).
 static std::tuple<std::string, std::string, int> get_3d_segmented_phantom();
 
-// Fixture (SPEC 6.3.1): loads the segmented phantom, runs D3_NGLDM_feature at GREYDEPTH=64 /
-// IBSI=false and hands one feature's value back. Both judging files in this family -- the MIRP
-// oracle and the regression drift guards -- read the SAME Nyxus run through this helper, which is
-// what makes the two comparisons in
+// Fixture (SPEC 6.3.1): loads the segmented phantom, runs D3_NGLDM_feature at the caller's GREYDEPTH
+// and IBSI (64 / false unless stated) and hands one feature's value back. Both judging files in this
+// family -- the MIRP oracle and the regression drift guards -- read the SAME Nyxus run through this
+// helper, which is what makes the two comparisons in
 // tests/vetting/audit/ngldm_3d_mirp_vetting_report.md comparisons of one number rather than of two
 // runs that could drift apart. Goldens stay in their respective oracle/regression files.
-void calculate_3d_ngldm_feature_value (const std::string& fname, const Nyxus::Feature3D& expecting_fcode, double& out, bool ibsi = false)
+void calculate_3d_ngldm_feature_value (const std::string& fname, const Nyxus::Feature3D& expecting_fcode, double& out, bool ibsi = false, int greydepth = 64)
 {
 	// get segment info
 	auto [ipath, mpath, label] = get_3d_segmented_phantom();
@@ -46,16 +46,16 @@ void calculate_3d_ngldm_feature_value (const std::string& fname, const Nyxus::Fe
 	// (4) buffers
 	ASSERT_NO_THROW(allocateTrivialRoisBuffers_3D(batch, e.roiData, e.hostCache));
 
-	// (5) feature settings. IBSI is the family's second axis and reaches to_grayscale as
-	// disable_binning, so ibsi=false is the GREYDEPTH=64 ladder both mirp_samelevels and the
-	// regression pins use, and ibsi=true turns binning off and makes the raw intensity the grey
-	// level -- the Nyxus half of ngldm3d.mirp_ibsi_rawlevels.
+	// (5) feature settings. IBSI is the family's second axis and keeps the raw intensity as the grey
+	// level, so ibsi=false at the default GREYDEPTH=64 is the ladder both mirp_samelevels and the
+	// regression pins use, ibsi=true is the Nyxus half of ngldm3d.mirp_ibsi_rawlevels, and a negative
+	// 'greydepth' is the PyRadiomics-style binning of ngldm3d.mirp_fbn20_negdepth.
 	Fsettings s;
 	s.resize((int)NyxSetting::__COUNT__);
 	s[(int)NyxSetting::SOFTNAN].rval = 0.0;
 	s[(int)NyxSetting::TINY].rval = 0.0;
 	s[(int)NyxSetting::SINGLEROI].bval = false;
-	s[(int)NyxSetting::GREYDEPTH].ival = 64;
+	s[(int)NyxSetting::GREYDEPTH].ival = greydepth;
 	s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
 	s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
 	s[(int)NyxSetting::USEGPU].bval = false;

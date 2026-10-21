@@ -17,6 +17,7 @@
 
 #include <string>
 #include "pixel.h"
+#include "texture_feature.h"
 #include "../roi_cache.h"
 
 namespace Nyxus
@@ -169,6 +170,26 @@ namespace Nyxus
 		for (PixIntens v = 0; v <= max_level; v++)
 			lut[v] = (int) (std::lower_bound (I.begin(), I.end(), v) - I.begin());
 		return lut;
+	}
+
+	/// @brief The in-core counterpart of OocBinnedVolume: the ROI's bounding-box cube with every ROI
+	/// voxel at its grey level under 'greybin_info' and every other cell at level 0, the level the
+	/// texture families read as background. It is written from the voxel cloud because a binned value
+	/// cannot mark the background: MATLAB binning sends intensity 0 to level 1, where the ROI's darkest
+	/// voxels land too. The cube is sized from r.aabb, the box every voxel is checked against, so a
+	/// voxel that passes the check has a cell.
+	inline void bin_roi_3d (SimpleCube<PixIntens>& D, const LR& r, int greybin_info)
+	{
+		D.allocate ((int) r.aabb.get_width(), (int) r.aabb.get_height(), (int) r.aabb.get_z_depth());
+		D.fill (0);
+		const auto xmin = r.aabb.get_xmin(),
+			ymin = r.aabb.get_ymin(),
+			zmin = r.aabb.get_zmin();
+		for (const auto& p : r.raw_pixels_3D)
+		{
+			r.aabb.require_contains (p.x, p.y, p.z);
+			D.zyx (p.z - zmin, p.y - ymin, p.x - xmin) = TextureFeature::bin_pixel (p.inten, r.aux_min, r.aux_max, greybin_info);
+		}
 	}
 
 	/// @brief The in-core counterpart of OocBinnedVolume::mask(): which cells of the ROI's

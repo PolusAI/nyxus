@@ -114,7 +114,8 @@ Gotchas hit while doing it:
 - **PyRadiomics' `binCount` maps to the Nyxus setting of the family being matched, not the generic
   one.** The 3D texture calculators bin on `GLCM_GREYDEPTH` / `GLRLM_GREYDEPTH` / ... and ignore
   `GREYDEPTH` entirely; a negative value activates radiomics binCount-based binning, so
-  `binCount: 20` is `<FAMILY>_GREYDEPTH = -20`. Left unset the per-family setting defaults to 0,
+  `binCount: 20` is `<FAMILY>_GREYDEPTH = -20`. Left unset in a settings vector a test builds by hand,
+  the per-family setting is 0,
   which means **no binning at all** rather than a default depth - the features then run on raw
   intensities and are silently off by orders of magnitude, not by a few percent. A grey-level
   emphasis feature far above what the bin count allows (3D GLRLM `HGLRE` at 4.3e6 against a ~4e3

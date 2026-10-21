@@ -74,6 +74,28 @@ namespace Nyxus
         }
     }
 
+    /// @brief bench_square12_graded: a 12x12 ROI in a 14x14 frame at levels 100 + 3 ((7x + 11y + xy)
+    /// mod 37), 36 distinct over 100-208. At 20 PyRadiomics-style bins 14 of its 144 pixels sit
+    /// exactly on a bin edge (5 at 127, 4 at 154, 5 at 181), and the 5 at 181 are the ones a division
+    /// by the bin width sends one bin low, so it separates IBSI's fixed bin number from that formula.
+    /// 2D NGLDM and 2D GLDZM both read it, which is why it lives here rather than in either family's
+    /// header; tests/vetting/oracles/square12_graded.py builds the same array for MIRP.
+    static void make_2d_square12_graded_phantom (std::vector<NyxusPixel>& intensity, std::vector<NyxusPixel>& mask)
+    {
+        const size_t side = 14, lo = 1, hi = 12;
+        intensity.clear();
+        mask.clear();
+        for (size_t y = 0; y < side; y++)
+            for (size_t x = 0; x < side; x++)
+            {
+                const bool in_roi = x >= lo && x <= hi && y >= lo && y <= hi;
+                const size_t xx = in_roi ? x - lo : 0, yy = in_roi ? y - lo : 0;
+                const unsigned int level = in_roi ? (unsigned int) (100 + 3 * ((7 * xx + 11 * yy + xx * yy) % 37)) : 0;
+                intensity.push_back (NyxusPixel {x, y, level});
+                mask.push_back (NyxusPixel {x, y, in_roi ? 1u : 0u});
+            }
+    }
+
     static void load_masked_test_roi_data (LR& roidata, const NyxusPixel* intensityData, const NyxusPixel* maskData, size_t count)
     {
         // -- mocking phase 1, gatherRoisMetrics():
