@@ -17,7 +17,7 @@
 
 #include "../src/nyx/features/3d_glszm.h"     // D3_GLSZM_feature, and SimpleCube / PixIntens with it
 #include "../src/nyx/helpers/fsystem.h"       // fs::path, fs::exists
-#include "test_main_nyxus.h"                  // agrees_gt, <cmath>, <iostream>, and the Environment / globals / roi_cache graph
+#include "test_main_nyxus.h"                  // agrees_gt, run_3d_feature_on_volume, <cmath>, <iostream>, and the Environment / globals / roi_cache graph
 
 // Both 3D phantoms are defined once, in test_3d_glcm_pyradiomics.h, and every 3D family reaches them
 // by declaration -- test_all.cc compiles the headers into one translation unit. get_3d_compat_phantom
@@ -199,11 +199,8 @@ static const std::vector<PixIntens> glszm_3d_gapped_volume
 // rather than 1 so that a zone landing on the wrong row is a visibly wrong level.
 static const std::vector<PixIntens> glszm_3d_constant_volume (8, 7);
 
-// Runs the family on a literal volume rather than on a phantom read from disk: an LR carrying that
-// volume as its voxel cube, its extrema, and one Pixel3 per non-background voxel, which is the Np
-// ZonePercentage divides by. It is the same calculate() the phantom assertions run -- the fixture is
-// the only thing that changes -- so a matrix pinned here is pinned on the production path, not on a
-// re-implementation of it.
+// Runs the family on a literal volume rather than on a phantom read from disk. The voxel cloud it
+// builds is the Np ZonePercentage divides by, so a matrix pinned here is pinned on the production path.
 static void run_3d_glszm_on_volume (
 	std::vector<std::vector<double>>& fvals,
 	const std::vector<PixIntens>& voxels,
@@ -211,30 +208,7 @@ static void run_3d_glszm_on_volume (
 	const Fsettings& s,
 	D3_GLSZM_feature& f)
 {
-	ASSERT_EQ (voxels.size(), size_t(w) * size_t(h) * size_t(d));
-
-	// An LR starts at the empty running-extrema state (aux_min = +inf, aux_max = 0), which is what
-	// the loop below accumulates into -- the same state the real prescan hands calculate().
-	LR r;
-	r.aux_image_cube = SimpleCube<PixIntens> (voxels, w, h, d);
-	for (int z = 0; z < d; z++)
-		for (int y = 0; y < h; y++)
-			for (int x = 0; x < w; x++)
-			{
-				PixIntens v = r.aux_image_cube.zyx (z, y, x);
-				if (!v)
-					continue;   // background, outside the ROI
-				r.raw_pixels_3D.push_back (Pixel3 (x, y, z, v));
-				if (v < r.aux_min)
-					r.aux_min = v;
-				if (v > r.aux_max)
-					r.aux_max = v;
-			}
-
-	ASSERT_NO_THROW(r.initialize_fvals());
-	ASSERT_NO_THROW(f.calculate(r, s));
-	f.save_value(r.fvals);
-	fvals = r.fvals;
+	run_3d_feature_on_volume (fvals, voxels, w, h, d, s, f);
 }
 
 // Resolves a 3D feature name to its code and checks it is the one the caller expects, so a renamed

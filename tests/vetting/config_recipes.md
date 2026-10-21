@@ -430,6 +430,19 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `GLSZM_HGLZE` is 16.44 here and 1497.57 there on the same fixture. Those values are drift-pinned
   only, in `test_2d_glszm_regression.h`, and no oracle row claims them.
 
+## glszm.analytic_two_large_zones
+- `bench_glszm_2d_two_large_zones` — a 256x512 rectangle built in
+  `test_2d_glszm_large_zone_size_emphasis_analytic()`, the top half at intensity 1 and the bottom
+  half at 2 — at `IBSI=true` and `GREYDEPTH=0`, so the two levels are read as they are. Oracle:
+  `analytic`. Used by `test_2d_glszm_analytic.h`, for `GLSZM_SAE` and `GLSZM_LAE` only. Config
+  matrix: `matrix/glszm.md`.
+- **What it is for.** Each half is one zone of `L = 65,536` pixels, so the matrix has two cells, both
+  in column `L`, and `SAE = 1/L^2`, `LAE = L^2` exactly. `L^2 = 2^32` wraps to 0 in 32 bits, read
+  signed or unsigned, so the values are right only if the square of the zone size is taken in
+  double.
+- The band is `rel=1e-12` rather than SPEC 7's absolute exact tier, because `LAE` is 4.3e9 and an
+  absolute 1e-9 is below its last bit.
+
 ## glrlm.ibsi_ng128
 - The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
   its own with `IBSI=true` and `GREYDEPTH=128`, the four in-slice directions averaged, then the four
@@ -458,6 +471,27 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - **Outside this recipe:** the production default (`IBSI=false`, MATLAB grey binning at
   `coarse_gray_depth`), which no reference tool reproduces. Drift-pinned only, in
   `test_2d_glrlm_regression.h`; no oracle row claims it.
+
+## glrlm.analytic_two_long_runs
+- `bench_glrlm_2d_two_long_runs` — one row of `2L` pixels, `L = 65,536`, built in
+  `test_2d_glrlm_long_run_emphasis_analytic()`, the left half at intensity 1 and the right half at 2 —
+  at `make_2d_glrlm_ibsi_settings()` (`IBSI=true`), which keeps the two levels as they are. Oracle:
+  `analytic`. Used by `test_2d_glrlm_analytic.h`, for `GLRLM_SRE`, `GLRLM_LRE` and the four
+  run-length-and-grey-level emphases in all four directions, and their `_AVE` twins.
+- **What it is for.** At 0 degrees the row is two runs of length `L`, one at each level. `L^2 =
+  2^32` wraps to 0 in 32 bits, read signed or unsigned, so the values are right only if the
+  run-length terms are taken in double. At 45, 90 and 135 degrees every pixel is a run of length
+  1, so each `_AVE` has a closed form too, and carries the 0-degree value into the mean.
+- The band is `rel=1e-12`, because `LRE` is 4.3e9 and an absolute 1e-9 is below its last bit.
+
+## glrlm.analytic_high_grey_pair
+- `bench_glrlm_2d_high_grey_pair` — two adjacent pixels at intensities 1 and `G = 70,000`, built in
+  `test_2d_glrlm_high_grey_level_emphasis_analytic()` — at `make_2d_glrlm_ibsi_settings()`
+  (`IBSI=true`), which keeps the two levels as they are. Oracle: `analytic`. Used by
+  `test_2d_glrlm_analytic.h`, for the six grey-level emphases, in all four directions.
+- **What it is for.** Every direction sees two runs of length 1. `G^2 = 4.9e9` is past `UINT_MAX`, so
+  the values are right only if the grey level is squared in double.
+- The band is `rel=1e-12`, because `HGLRE` is 2.45e9 and an absolute 1e-9 is below its last bit.
 
 ## neighbor.scene2d_radius1
 - Benchmark `bench_scene7_5roi_enclosed`; config matrix `matrix/neighbor.md`. Assertions at SPEC 7's
@@ -710,6 +744,30 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - Carries the aggregates the family's retired coverage sweep held (to `rel<=3.9e-16`, and `4.1e-10`
   for `RE`, the family's only `fast_log10` path), so it is not comparable to
   `glrlm3d.regression_ut_phantom` — the two bin the same voxels differently by construction.
+
+## glrlm3d.analytic_two_long_runs
+- `bench_glrlm_3d_two_long_runs` — a `2L x 1 x 1` line of voxels, `L = 65,536`, built in
+  `test_3d_glrlm_long_run_emphasis_analytic()`, the first half at intensity 1 and the second at 2 —
+  at `GREYDEPTH=64`, `IBSI=false` and `GLRLM_GREYDEPTH=0`, so the two levels are read as they are.
+  Oracle: `analytic`. Used by `test_3d_glrlm_analytic.h`, for `3GLRLM_SRE`, `3GLRLM_LRE` and the four
+  run-length-and-grey-level emphases in all 13 directions, and their `_AVE` twins. Direction slot 12
+  (`{dz=0, dy=0, dx=1}`) runs along the line.
+- **What it is for.** Along the line the volume is two runs of length `L`, one at each level. `L^2 =
+  2^32` wraps to 0 in 32 bits, read signed or unsigned, so the values are right only if the
+  run-length terms are taken in double. The other 12 directions leave the line, so every voxel is
+  a run of length 1, and each `_AVE` has a closed form that carries the along-the-line value.
+- The band is `rel=1e-12`, because `LRE` is 4.3e9 and an absolute 1e-9 is below its last bit.
+
+## glrlm3d.analytic_high_grey_pair
+- `bench_glrlm_3d_high_grey_pair` — two adjacent voxels at intensities 1 and `G = 70,000`, built in
+  `test_3d_glrlm_high_grey_level_emphasis_analytic()` — at the same settings as
+  `glrlm3d.analytic_two_long_runs`. Oracle: `analytic`. Used by `test_3d_glrlm_analytic.h`, for the
+  six grey-level emphases, in all 13 directions.
+- **What it is for.** Every direction sees two runs of length 1. `G^2 = 4.9e9` is past `UINT_MAX`, so
+  the values are right only if the grey level is squared in double. `3GLRLM_HGLRE` converts the level to double
+  before squaring it in every version of the code, so for it the fixture pins the value without telling
+  a 32-bit square from a double one.
+- The band is `rel=1e-12`, because `HGLRE` is 2.45e9 and an absolute 1e-9 is below its last bit.
 
 ## ngldm3d.regression_ut_phantom
 - The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at
@@ -994,6 +1052,19 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `VALID-prod-only` rather than `INVALID` and records that the pinned behaviour is a defect;
   narrowing the intercept is `src/` work on its own branch — these rows are what will fail when it
   happens.
+
+## glszm3d.analytic_two_large_zones
+- `bench_glszm_3d_two_large_zones` — a 64x64x32 volume built in
+  `test_3d_glszm_large_zone_size_emphasis_analytic()`, slices 0-15 at intensity 1 and 16-31 at 2 — at
+  `GREYDEPTH=64`, `IBSI=false` and `GLSZM_GREYDEPTH=0`, so the two levels are read as they are.
+  Oracle: `analytic`. Used by `test_3d_glszm_analytic.h`, for `3GLSZM_SAE` and `3GLSZM_LAE` only.
+- **What it is for.** Each half is one 26-connected zone of `L = 65,536` voxels, so the matrix has
+  two cells, both in column `L`, and `SAE = 1/L^2`, `LAE = L^2` exactly. `L^2 = 2^32` wraps to 0 in
+  32 bits, read signed or unsigned, so the values are right only if the square of the zone size is
+  taken in double. A zone of 46,341 voxels already needs that, and a whole-organ ROI reaches it routinely; the family's
+  PyRadiomics fixtures stop at a largest zone of 634 voxels.
+- The band is `rel=1e-12` rather than SPEC 7's absolute exact tier, because `LAE` is 4.3e9 and an
+  absolute 1e-9 is below its last bit.
 
 ## gldm3d.pyradiomics_bincount20
 - The compat phantom (`compat_int/compat_int_mri.nii` + `compat_seg/compat_seg_liver.nii`, label 1) at

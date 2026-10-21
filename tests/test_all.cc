@@ -65,11 +65,13 @@
 #include "test_2d_glrlm_ibsi.h"
 #include "test_2d_glrlm_pyradiomics.h"
 #include "test_2d_glrlm_mirp.h"
+#include "test_2d_glrlm_analytic.h"
 #include "test_2d_gldzm_ibsi.h"
 #include "test_2d_gldzm_mirp.h"
 #include "test_2d_gldzm_regression.h"
 #include "test_2d_glszm_ibsi.h"
 #include "test_2d_glszm_mirp.h"
+#include "test_2d_glszm_analytic.h"
 #include "test_2d_firstorder_ibsi.h"
 #include "test_2d_firstorder_pyradiomics.h"
 #include "test_2d_ngldm_ibsi.h"
@@ -131,9 +133,11 @@
 #include "test_3d_ngtdm_mechanics.h"
 #include "test_3d_glrlm_pyradiomics.h"
 #include "test_3d_glrlm_regression.h"
+#include "test_3d_glrlm_analytic.h"
 #include "test_3d_glszm_pyradiomics.h"
 #include "test_3d_glszm_regression.h"
 #include "test_3d_glszm_mechanics.h"
+#include "test_3d_glszm_analytic.h"
 #include "test_3d_coverage_common.h"
 #include "test_2d_glcm_mechanics.h"
 #ifdef USE_ARROW
@@ -409,6 +413,14 @@ TEST(TEST_NYXUS, TEST_3D_GLRLM_AVE_PYRADIOMICS) {
 	ASSERT_NO_THROW(test_3d_glrlm_ave_pyradiomics());
 }
 
+TEST(TEST_NYXUS, TEST_3D_GLRLM_LONG_RUN_EMPHASIS_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_glrlm_long_run_emphasis_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLRLM_HIGH_GREY_LEVEL_EMPHASIS_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_glrlm_high_grey_level_emphasis_analytic());
+}
+
 //***** 3D GLSZM compatibility *****
 
 TEST(TEST_NYXUS, TEST_3D_GLSZM_MATRIX_PYRADIOMICS) {
@@ -573,6 +585,10 @@ TEST(TEST_NYXUS, TEST_3D_GLSZM_DEFAULT_GREYDEPTH_MECHANICS) {
 
 TEST(TEST_NYXUS, TEST_3D_GLSZM_IBSI_EQUALS_NO_BINNING_MECHANICS) {
 	ASSERT_NO_THROW(test_3d_glszm_ibsi_equals_no_binning_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLSZM_LARGE_ZONE_SIZE_EMPHASIS_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_glszm_large_zone_size_emphasis_analytic());
 }
 
 //***** 3D GLDM compatibility *****
@@ -3123,7 +3139,19 @@ TEST(TEST_NYXUS, TEST_2D_GLDM_DE_IBSI)
 	ASSERT_NO_THROW(test_2d_gldm_de_ibsi());
 }
 
-//***** IBSI tests of GLRLM ***** 
+//***** closed-form tests of GLRLM *****
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_LONG_RUN_EMPHASIS_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_long_run_emphasis_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLRLM_HIGH_GREY_LEVEL_EMPHASIS_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_glrlm_high_grey_level_emphasis_analytic());
+}
+
+//***** IBSI tests of GLRLM *****
 
 TEST(TEST_NYXUS, TEST_2D_GLRLM_SRE_IBSI)
 {
@@ -3293,6 +3321,12 @@ TEST(TEST_NYXUS, TEST_2D_GLRLM_RV_IBSI)
 TEST(TEST_NYXUS, TEST_2D_GLRLM_RE_IBSI)
 {
 	ASSERT_NO_THROW(test_2d_glrlm_re_ibsi());
+}
+
+//***** closed-form tests of GLSZM *****
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_LARGE_ZONE_SIZE_EMPHASIS_ANALYTIC) {
+	ASSERT_NO_THROW(test_2d_glszm_large_zone_size_emphasis_analytic());
 }
 
 //***** IBSI tests of GLSZM ***** 
