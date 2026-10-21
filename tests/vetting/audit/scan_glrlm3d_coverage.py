@@ -16,6 +16,7 @@ SOURCES = [
     "test_3d_glrlm_pyradiomics.h",
     "test_3d_glrlm_regression.h",
     os.path.join("python", "test_nyxus.py"),
+    os.path.join("python", "test_3d_glrlm_pyradiomics.py"),
 ]
 
 NOTE = {
@@ -30,6 +31,10 @@ FAMILY = scanlib.Family(
     dim="3D", family="glrlm",
     sources=SOURCES,
     oracle_suffix={"pyradiomics": "pyradiomics"},
+    # the volmin case asserts the keys of its dict through a shared helper, so the table is credited
+    # to the case that loops it; the family's C++ tables need no owner
+    table_owner={"GLRLM_3D_VOLMIN_PYRADIOMICS": "test_3d_glrlm_volmin_pyradiomics"},
+    table_dialect="python",
     notes=NOTE,
     enum_dim_prefix=True,
     # the _AVE test aliases the enum (`using F = Nyxus::Feature3D;`), so cover `F::` too

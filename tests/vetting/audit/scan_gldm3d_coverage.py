@@ -20,6 +20,10 @@ WHAT THIS FAMILY DOES DIFFERENTLY, and why each one is here rather than in scanl
                       recipes -- one file, one kind, the same fourteen features at GLDM_GREYDEPTH
                       64 and 0 -- so without RECIPE_READER the two sets of rows could be swapped and
                       every other check would stay green.
+  pytest rows         test_name holds a gtest case, and a pytest case has none to give. A row of a
+                      recipe in PYTEST_RECIPES leaves it empty and is identified by its recipe
+                      instead: the reader has to resolve to exactly one function, defined in a file
+                      current_test names, that asserts the row's feature at the row's kind.
   keys vs readers     every key of a golden table is resolved to the function its OWN NAME implies,
                       so a missing reader is as loud as a mismatched one. That is how this family
                       shipped 3GLDM_LGLE pinned to 3GLDM_SDE's value, off by a factor of 353, under
@@ -36,6 +40,7 @@ SOURCES = [
     "test_3d_gldm_regression.h",
     "test_3d_gldm_common.h",
     os.path.join("python", "test_nyxus.py"),
+    os.path.join("python", "test_3d_gldm_pyradiomics.py"),
 ]
 
 ORACLE_SUFFIX = {"pyradiomics": "pyradiomics"}
@@ -44,18 +49,26 @@ EXCLUDE_FROM_KIND = re.compile(r"^test_3d_gldm_dump_")
 PYTEST_ORACLE = {"test_3d_gldm_compatibility": "pyradiomics"}
 
 # which file answers which kind of registry row
-ORACLE_FILES = {"test_3d_gldm_pyradiomics.h", "test_nyxus.py"}
+ORACLE_FILES = {"test_3d_gldm_pyradiomics.h", "test_nyxus.py", "test_3d_gldm_pyradiomics.py"}
 REGRESSION_FILES = {"test_3d_gldm_regression.h"}
+
+# the volmin case asserts the keys of its dict through a shared helper, so the table is credited to
+# the case that loops it
+TABLE_OWNER = {"GLDM_3D_VOLMIN_PYRADIOMICS": "test_3d_gldm_volmin_pyradiomics"}
 
 # recipe -> the function that asserts AT that recipe. A row's config_recipe is the configuration its
 # numbers were taken at, and the function name is where that configuration lives in the tree, so the
 # two have to agree.
 RECIPE_READER = {
-    "gldm3d.pyradiomics_bincount20": re.compile(r"^test_3d_gldm_[a-z0-9]+_pyradiomics$"),
+    "gldm3d.pyradiomics_bincount20": re.compile(r"^test_3d_gldm_(?!volmin_)[a-z0-9]+_pyradiomics$"),
+    "gldm3d.pyradiomics_volmin_bincount8": re.compile(r"^test_3d_gldm_volmin_pyradiomics$"),
     "gldm3d.regression_ut_phantom": re.compile(r"^test_3d_gldm_[a-z0-9]+_regression$"),
     "gldm3d.regression_ut_phantom_nobinning": re.compile(r"^test_3d_gldm_[a-z0-9]+_nobinning_regression$"),
     "gldm3d.regression_constant_roi": re.compile(r"^test_3d_gldm_constant_roi_regression$"),
 }
+
+# the recipes whose assertion is a pytest case, identified by RECIPE_READER rather than by test_name
+PYTEST_RECIPES = {"gldm3d.pyradiomics_volmin_bincount8"}
 
 # the scalar tables: the file each lives in, and the suffix its per-feature reader wears. The suffix
 # is what attributes readers PER TABLE rather than per file -- two tables now share the regression
@@ -193,6 +206,15 @@ def test_name_problems(r, f, st, covering, claimed, cases, where):
     """
     out = []
     names = [t.strip() for t in (r.get("test_name") or "").split(";") if t.strip()]
+    recipe = r["config_recipe"].strip()
+    if not names and recipe in PYTEST_RECIPES:
+        # see the module docstring: the recipe identifies a pytest row's assertion
+        fns = sorted(fn for fn in covering
+                     if RECIPE_READER[recipe].match(fn) and where[fn] in claimed)
+        if len(fns) != 1:
+            out.append(f"{f} ({st}): config_recipe {recipe} resolves to {fns or 'no function'} "
+                       f"asserting it at this kind in {sorted(claimed)}; a pytest row needs one")
+        return out
     if not names:
         out.append(f"{f} ({st}): no test_name, so the row identifies no assertion")
     for name in names:
@@ -255,6 +277,8 @@ FAMILY = scanlib.Family(
     dim="3D", family="gldm",
     sources=SOURCES,
     oracle_suffix=ORACLE_SUFFIX,
+    table_owner=TABLE_OWNER,
+    table_dialect="python",
     notes=NOTE,
     scan_helpers=True,
     # a name must not match at the tail of a longer one; see scanlib.feature_re

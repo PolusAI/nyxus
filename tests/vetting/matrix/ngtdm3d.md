@@ -46,9 +46,10 @@ the reason rather than only the settings.
 
 ## Why the MATLAB-binning cell carries no oracle
 
-At `NGTDM_GREYDEPTH > 0` the binning is MATLAB-style, and `zeroI` becomes 1: a voxel binned into
-level 1 is treated as background — it gets no matrix row of its own, but still counts towards its
-neighbours' neighbourhood means. That is a different quantity from anything PyRadiomics or MIRP
+At `NGTDM_GREYDEPTH > 0` the binning is MATLAB-style: the ROI's voxels take levels 1..n and the rest
+of the bounding box level 0, and since 0 is then among the levels the family lifts every level by
+one, the background to 1, and `zeroI` is 1. A background voxel is no centre, but it is a grey level
+of the matrix and still counts towards its neighbours' neighbourhood means. That is a different quantity from anything PyRadiomics or MIRP
 computes (both treat every in-mask voxel as a matrix row), so the cell is production-only and its
 pins are drift guards.
 

@@ -1,11 +1,22 @@
-"""OFFLINE PyRadiomics oracle for the 3D GLDM features, on the compat phantom.
+"""OFFLINE PyRadiomics oracle for the 3D GLDM features, on the compat phantom and on bench_volmin_3d.
 
     python tests/vetting/oracles/gen_gldm3d_pyradiomics.py     (from the repository root)
 
 Prints the paste-ready goldens AND re-verifies every golden pinned in test_3d_gldm_pyradiomics.h --
 the fourteen scalars, the dependence matrix of the phantom, and the dependence matrix of the small
-hand-worked volume -- exiting non-zero on any mismatch, on any pin it cannot produce, on a bound
-violation, or on a cross-table disagreement.
+hand-worked volume -- and in tests/python/test_3d_gldm_pyradiomics.py, exiting non-zero on any
+mismatch, on any pin it cannot produce, on a bound violation, or on a cross-table disagreement.
+
+Recipe `gldm3d.pyradiomics_volmin_bincount8`: bench_volmin_3d (volmin_phantom.py in this directory
+builds it and describes it; tests/data/nifti/phantoms/volmin_inten.nii + volmin_mask.nii, label 1),
+whose ROI holds the volume's lowest intensity, with binCount=8, no resampling, weightingNorm=None,
+force2D=False. On the Nyxus side that is coarse_gray_depth=-8. The run also reads the control,
+bench_volmin_ctrl_3d (volmin_ctrl_inten.nii, same mask), and fails unless PyRadiomics gives it the
+same values bit for bit, which is the fixture's premise: the two volumes differ only outside the ROI's
+bounding box. It checks that the three NIfTI files hold what volmin_phantom.build() produces, prints
+GLDM_3D_VOLMIN_PYRADIOMICS paste-ready, and verifies that table in both directions at rel 1e-12:
+every pin reproduces, and every feature in scope is pinned. The scope is every mapped feature except
+3GLDM_DE, which carries Nyxus' fast_log10 approximation and so is left out of a rel 1e-9 table.
 
 Recipe `gldm3d.pyradiomics_bincount20`: the compat phantom
 (tests/data/nifti/compat_int/compat_int_mri.nii + compat_seg/compat_seg_liver.nii, label 1) with
@@ -53,6 +64,7 @@ were produced under, not a claim about the installed version -- the run prints w
 actually finds. generator=tests/vetting/oracles/gen_gldm3d_pyradiomics.py. Run offline; CI never
 invokes it.
 """
+import importlib.util
 import math
 import os
 import re
@@ -68,6 +80,10 @@ DATA = os.path.join(TESTS, "data", "nifti")
 INTEN = os.path.join(DATA, "compat_int", "compat_int_mri.nii")
 MASK = os.path.join(DATA, "compat_seg", "compat_seg_liver.nii")
 TEST_H = os.path.join(TESTS, "test_3d_gldm_pyradiomics.h")
+VOLMIN_TEST = os.path.join(TESTS, "python", "test_3d_gldm_pyradiomics.py")
+VOLMIN_TABLE = "GLDM_3D_VOLMIN_PYRADIOMICS"
+# the logarithmic feature carries Nyxus' fast_log10 approximation and stays out of the volmin table
+VOLMIN_LOG = ("3GLDM_DE",)
 
 # The band this script checks a PINNED DIGIT against a fresh run at, which is not the band the C++
 # assertions compare Nyxus against PyRadiomics at. The pins here are PyRadiomics' own output printed
@@ -390,6 +406,84 @@ def check_independent(label, pyrad_cells, indep_cells):
     return bad
 
 
+def _helper(name):
+    """A shared fixture module from this directory, loaded by path."""
+    spec = importlib.util.spec_from_file_location(name, os.path.join(HERE, name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def volmin_run(vp, inten):
+    """-> {nyxus feature: PyRadiomics value} on `inten` + bench_volmin_3d's mask, in the table's scope."""
+    ex = featureextractor.RadiomicsFeatureExtractor(
+        binCount=vp.NBINS, label=vp.LABEL, resampledPixelSpacing=None, weightingNorm=None,
+        force2D=False)
+    ex.disableAllFeatures()
+    ex.enableFeatureClassByName("gldm")
+    res = ex.execute(inten, vp.MASK)
+    out = {}
+    for nyx, pyr in PYRAD.items():
+        if nyx in VOLMIN_LOG:
+            continue
+        key = f"original_gldm_{pyr}"
+        if key not in res:
+            raise RuntimeError(f"PyRadiomics produced no {key} on {os.path.basename(inten)}")
+        out[nyx] = float(res[key])
+    return out
+
+
+def parse_py_pins(path, table):
+    """-> {feature: value} out of a `TABLE = {...}` dict literal in a Python test, braces counted."""
+    txt = open(path, encoding="utf-8", errors="replace").read()
+    m = re.search(r"^" + re.escape(table) + r"\s*=\s*\{", txt, re.M)
+    if not m:
+        raise RuntimeError(f"table {table} not found in {os.path.basename(path)}")
+    depth, i = 1, m.end()
+    while depth:
+        depth += {"{": 1, "}": -1}.get(txt[i], 0)
+        i += 1
+    body = re.sub(r"#[^\n]*", "", txt[m.end():i - 1])     # a commented-out golden is not a pin
+    return {n: float(v) for n, v in
+            re.findall(r'"(3GLDM_[A-Z0-9_]+)"\s*:\s*([-0-9.eE+]+)', body)}
+
+
+def check_volmin():
+    """-> the number of failed checks on recipe gldm3d.pyradiomics_volmin_bincount8."""
+    vp = _helper("volmin_phantom")
+    print("\n# bench_volmin_3d: the checked-in NIfTI files against volmin_phantom.build()")
+    nbad = vp.check_files()
+
+    got = volmin_run(vp, vp.INTEN)
+    ctrl = volmin_run(vp, vp.CTRL_INTEN)
+    print(f"\n# bench_volmin_ctrl_3d gives the same {len(got)} values (the fixture's premise)")
+    for name in sorted(got):
+        if ctrl[name] != got[name]:
+            print(f"  FAIL {name}: volmin={got[name]!r} ctrl={ctrl[name]!r}")
+            nbad += 1
+
+    print(f"\n# paste-ready {VOLMIN_TABLE}, binCount={vp.NBINS}, label={vp.LABEL} "
+          f"(left out, logarithmic: {', '.join(VOLMIN_LOG)})")
+    print(f"{VOLMIN_TABLE} = {{")
+    for name in sorted(got):
+        print(f'    "{name}": {got[name]!r},')
+    print("}")
+
+    pins = parse_py_pins(VOLMIN_TEST, VOLMIN_TABLE)
+    print(f"\n# verifying the {len(pins)} pins of {VOLMIN_TABLE} against this run, "
+          f"rel<={PIN_ROUNDTRIP_RELTOL:g}, both directions")
+    for name in sorted(set(pins) - set(got)):
+        print(f"  MISSING {name}: pinned {pins[name]!r} but outside the table's scope")
+        nbad += 1
+    for name in sorted(set(got) - set(pins)):
+        print(f"  UNPINNED {name}: PyRadiomics reports {got[name]!r} and nothing pins it")
+        nbad += 1
+    for name in sorted(set(got) & set(pins)):
+        nbad += compare(f"{VOLMIN_TABLE} {name}", got[name], pins[name], PIN_ROUNDTRIP_RELTOL)
+    print("  all volmin checks pass" if not nbad else f"  {nbad} volmin check(s) failed")
+    return nbad
+
+
 def main():
     for p in (INTEN, MASK):
         if not os.path.exists(p):
@@ -485,10 +579,13 @@ def main():
             else:
                 print(f"  OK   {cname} = {cval}")
 
+    nvol = check_volmin()
+
     print(f"\n{nok} verified, {nfail} failed, {nmiss} unproducible, {len(missing_pin)} unpinned, "
           f"{nbad} out of range or identity-violating, {ncross} cross-table mismatch(es), "
-          f"{nindep} definition mismatch(es), {nmat} matrix mismatch(es)")
-    if nfail or nmiss or nbad or ncross or nindep or nmat or missing_pin:
+          f"{nindep} definition mismatch(es), {nmat} matrix mismatch(es), "
+          f"{nvol} volmin failure(s)")
+    if nfail or nmiss or nbad or ncross or nindep or nmat or missing_pin or nvol:
         print("SOME CHECKS FAILED -- do not promote")
         return 1
     print("ALL CHECKS PASSED")

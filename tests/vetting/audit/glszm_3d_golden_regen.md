@@ -80,7 +80,7 @@ collide the way two 3D GLCM names do.
   `nonzero_cells()` does it correctly and the docstring says why.
 - **`Ns` in the header is the largest zone size (634), not the number of distinct sizes (46).** That
   is the width Nyxus allocates.
-- Nyxus' `to_grayscale_radiomix` and PyRadiomics' `binCount` produce the same partition of the ROI's
+- Nyxus' `TextureFeature::fixed_bin_number` and PyRadiomics' `binCount` produce the same partition of the ROI's
   min..max, so no grey-level correction is needed in either direction. Nothing like 3D NGTDM's
   zero-min shift applies here.
 

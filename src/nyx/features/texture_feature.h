@@ -99,6 +99,21 @@ public:
 		}
 	}
 
+	// The grey level of a ROI voxel of intensity 'x', the ROI spanning [min_I_inten, max_I_inten], under
+	// 'greybin_info'. Unlike bin_pixel(), it is never handed a background cell, so it has no use for
+	// intensity 0 as a background marker: PyRadiomics-style binning puts every ROI voxel, one at
+	// intensity 0 included, in bin 1..n, and MATLAB-style binning in level 1..n. Level 0 is therefore
+	// free to mark the cells of a bounding box that are not the ROI's. With no binning the level is
+	// the raw intensity, so a ROI voxel of intensity 0 keeps level 0 there.
+	static PixIntens bin_roi_voxel (PixIntens x, PixIntens min_I_inten, PixIntens max_I_inten, int greybin_info)
+	{
+		if (radiomics_grey_binning(greybin_info))
+			return fixed_bin_number (x, min_I_inten, max_I_inten, std::abs(greybin_info));
+		if (matlab_grey_binning(greybin_info))
+			return bin_pixel_matlab (x, max_I_inten, greybin_info);
+		return x;
+	}
+
 	// NGLDM's grey level of intensity 'x' of a ROI spanning [min_I_inten, max_I_inten]. The sign of
 	// 'greybin_info' selects the kind of scheme as it does for bin_pixel(), 0 keeping the raw level and
 	// a negative value taking abs() PyRadiomics bins over [min, max]; IBSI keeps the raw level. A
@@ -113,27 +128,40 @@ public:
 		return Nyxus::to_grayscale (x, 0, max_I_inten, greybin_info);
 	}
 
+	// ngldm_grey_level() of a voxel known to be the ROI's, which 3D NGLDM reads off the voxel cloud:
+	// PyRadiomics-style binning puts it in bin 1..n as bin_roi_voxel() does, intensity 0 included.
+	// NGLDM's own positive scheme and the raw levels are ngldm_grey_level()'s.
+	static PixIntens ngldm_roi_grey_level (PixIntens x, PixIntens min_I_inten, PixIntens max_I_inten, int greybin_info, bool ibsi)
+	{
+		if (! ibsi && radiomics_grey_binning(greybin_info))
+			return fixed_bin_number (x, min_I_inten, max_I_inten, std::abs(greybin_info));
+		return ngldm_grey_level (x, min_I_inten, max_I_inten, greybin_info, ibsi);
+	}
+
 	static inline bool matlab_grey_binning (int greybinning_info) { return greybinning_info > 0; }
 	static inline bool radiomics_grey_binning (int greybinning_info) { return greybinning_info < 0; }
 	static inline bool ibsi_grey_binning (int greybinning_info) { return greybinning_info == 0; }
 
-	// returns 1-based bin indices: IBSI's fixed bin number, floor(n (x - min) / (max - min)) + 1. The
-	// product is taken before the division so that a level on a bin edge -- n (x - min) a multiple of
-	// (max - min), exact in double for integer levels -- lands in the bin above it, as it does in
-	// PyRadiomics and MIRP. A ROI of one intensity has a range of zero width, which is one bin.
+	// IBSI's fixed bin number of a level 'x' in [min__, max__]: floor(n (x - min) / (max - min)) + 1,
+	// 1-based. The product is taken before the division so that a level on a bin edge -- n (x - min) a
+	// multiple of (max - min), exact in double for integer levels -- lands in the bin above it, as it
+	// does in PyRadiomics and MIRP. A ROI of one intensity has a range of zero width, which is one bin.
+	static inline PixIntens fixed_bin_number (PixIntens x, PixIntens min__, PixIntens max__, int binCount)
+	{
+		if (max__ <= min__)
+			return 1;
+		PixIntens y = (PixIntens) (std::floor (double(binCount) * double(x - min__) / double(max__ - min__)) + 1);
+		if (y > binCount)
+			y = binCount;	// the last bin is +1 unit wider
+		return y;
+	}
+
+	// fixed_bin_number() of a cell of a matrix whose background is intensity 0, which stays 0. A ROI
+	// pixel of intensity 0 is indistinguishable from that background here and stays 0 too; the 3D
+	// families bin their ROI voxels through bin_roi_voxel() instead.
 	static inline PixIntens to_grayscale_radiomix (PixIntens x, PixIntens min__, PixIntens max__, int binCount)
 	{
-		if (x)
-		{
-			if (max__ <= min__)
-				return 1;
-			PixIntens y = (PixIntens) (std::floor (double(binCount) * double(x - min__) / double(max__ - min__)) + 1);
-			if (y > binCount)
-				y = binCount;	// the last bin is +1 unit wider
-			return y;
-		}
-		else
-			return 0;
+		return x ? fixed_bin_number (x, min__, max__, binCount) : 0;
 	}
 
 	// 'afv' is angled feature values

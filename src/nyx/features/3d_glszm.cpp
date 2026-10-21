@@ -55,12 +55,11 @@ void D3_GLSZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	int greyInfo = STNGS_GLSZM_GREYDEPTH(s);
 	if (STNGS_IBSI(s)) greyInfo = 0;
-	PixIntens mn = r.aux_min, mx = r.aux_max;
 
 	// the ROI's binned cube, streamed: the connected-component pass below reaches one plane back,
 	// so the window keeps 2 planes. As in calculate(), the background outside the ROI takes level 0,
 	// which grows no zone and is no grey level.
-	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); }, 0, 2);
+	Nyxus::OocBinnedVolume vol (r, Nyxus::roi_voxel_binning (r, greyInfo), 0, 2);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 
 	// --- grey levels I. The construction follows the binning mode, ibsi_grey_binning(); the row

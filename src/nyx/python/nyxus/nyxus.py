@@ -1023,12 +1023,12 @@ class Nyxus3D:
     coarse_gray_depth: int (optional, default 64)
         Grey binning of the texture features, selected by the sign: a positive value bins into
         that many MATLAB-style levels, 0 bins nothing (the raw levels, as IBSI reads them), and a
-        negative value bins into abs(value) PyRadiomics-style bins over each ROI's range. Every 2D
-        and 3D texture family uses it unless a family's own metaparameter overrides it. The
-        first-order histogram statistics use abs(value) bins, or 24 at 0. Any 32-bit integer but
-        -2**31 is accepted, but the magnitude sizes per-ROI buffers and output columns (HISTOGRAM
-        writes one column per bin, 2D GLCM allocates abs(value)**2 cells), so a depth beyond the
-        image's dynamic range adds no information and a very large one exhausts memory.
+        negative value bins into abs(value) PyRadiomics-style bins over each ROI's range. Every 3D
+        texture family uses it unless a family's own metaparameter overrides it. The first-order
+        histogram statistics use abs(value) bins, or 24 at 0. Any 32-bit integer but -2**31 is
+        accepted, but the magnitude sizes per-ROI buffers (3D GLCM allocates abs(value)**2 cells
+        per direction), so a depth beyond the volume's dynamic range adds no information and a
+        very large one exhausts memory.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
     use_gpu_device: int (optional, default -1)

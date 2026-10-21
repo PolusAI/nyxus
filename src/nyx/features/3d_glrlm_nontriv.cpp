@@ -46,7 +46,7 @@ void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	// the ROI's binned cube, streamed: a cross-plane run reaches one plane back, so the window
 	// keeps 2 planes. As in calculate(), the background outside the ROI takes level 0, at which no
 	// run is counted.
-	Nyxus::OocBinnedVolume vol (r, [minI, maxI, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, minI, maxI, greyInfo); }, 0, 2);
+	Nyxus::OocBinnedVolume vol (r, Nyxus::roi_voxel_binning (r, greyInfo), 0, 2);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 	const size_t nvox = vol.n_voxels();
 

@@ -12,6 +12,10 @@ It is the strictest in the tree, and deliberately so: a row here must say WHICH 
 row claims. It also looks the other way, at cases that assert feature values and have no row at all.
 scanlib's shared checks validate rows that exist; the point of `unregistered_assertions` is the
 assertion nothing points at.
+
+A pytest case has no gtest case to name in `test_name`. A row of a recipe in PYTEST_RECIPES leaves it
+empty and is identified by its recipe instead: RECIPE_READER has to resolve it to exactly one
+function, defined in the one file `current_test` names, asserting the row's feature at the row's kind.
 """
 import os
 import re
@@ -38,19 +42,34 @@ TABLE_OWNER = {
 
 ORACLE_SUFFIX = {"pyradiomics": "pyradiomics"}
 
-# recipe -> the function that asserts AT that recipe. Five recipes read the same sixteen features,
+# The volmin table is a Python dict in a pytest file. One declaration reads one table dialect and the
+# family's own tables are C++ initialisers, so the pytest file has a declaration of its own and its
+# scan joins the family's in collect() below.
+VOLMIN = scanlib.Family(
+    dim="3D", family="glszm",
+    sources=[os.path.join("python", "test_3d_glszm_pyradiomics.py")],
+    oracle_suffix=ORACLE_SUFFIX,
+    table_owner={"GLSZM_3D_VOLMIN_PYRADIOMICS": "test_3d_glszm_volmin_pyradiomics"},
+    table_dialect="python",
+)
+
+# recipe -> the function that asserts AT that recipe. Six recipes read the same sixteen features,
 # three of them out of one file at one kind, so feature, kind and file together still do not say
 # which configuration a row records -- only the function name does. The feature token is
 # `[a-z0-9]+` with no underscore, which is what keeps the per-feature sweeps apart from the
 # whole-family cases: `_regression` is a suffix of `_constant_roi_regression` too.
 RECIPE_READER = {
-    "glszm3d.pyradiomics_bincount20": re.compile(r"^test_3d_glszm_[a-z0-9]+_pyradiomics$"),
+    "glszm3d.pyradiomics_bincount20": re.compile(r"^test_3d_glszm_(?!volmin_)[a-z0-9]+_pyradiomics$"),
     "glszm3d.pyradiomics_ibsi_gapped": re.compile(r"^test_3d_glszm_ibsi_gapped_pyradiomics$"),
+    "glszm3d.pyradiomics_volmin_bincount8": re.compile(r"^test_3d_glszm_volmin_pyradiomics$"),
     "glszm3d.regression_ut_phantom": re.compile(r"^test_3d_glszm_[a-z0-9]+_regression$"),
     "glszm3d.regression_ut_phantom_nobinning":
         re.compile(r"^test_3d_glszm_no_binning_regression$"),
     "glszm3d.regression_constant_roi": re.compile(r"^test_3d_glszm_constant_roi_regression$"),
 }
+
+# the recipes whose assertion is a pytest case, identified by RECIPE_READER rather than by test_name
+PYTEST_RECIPES = {"glszm3d.pyradiomics_volmin_bincount8"}
 
 # `for (auto fc : D3_GLSZM_feature::featureset)` -- a function that range-loops the calculator's own
 # featureset asserts every feature of the family while naming none of them, so no other pattern sees
@@ -65,6 +84,19 @@ FAMILY_NOTE = ("the size-zone matrix all sixteen features contract is pinned cel
 
 def note(feature, cov):
     return FAMILY_NOTE
+
+
+def collect(fam, feat_re):
+    """-> the five coverage maps of the family's sources and of VOLMIN's, joined."""
+    names = {r["feature"] for r in scanlib.registry_rows(fam)}
+    maps = scanlib.collect(fam, feat_re, names)
+    for into, more in zip(maps, scanlib.collect(VOLMIN, feat_re)):
+        for key, val in more.items():
+            if isinstance(val, set):
+                into.setdefault(key, set()).update(val)
+            else:
+                into[key] = val
+    return maps
 
 
 def case_to_fn(cov):
@@ -146,7 +178,16 @@ def disagreements(fam, cov):
 
         # ...and its two identifiers must agree. current_test is the file the case in test_name is
         # defined in, and ONLY that file: a superset passes a one-way check while still conflating
-        # this row's assertion with somebody else's.
+        # this row's assertion with somebody else's. A pytest row's recipe stands in for test_name.
+        if not name and recipe in PYTEST_RECIPES:
+            kind_fns = (cov.asserted if r["status"] == "vetted" else cov.regression).get(f, set())
+            fns = sorted(fn for fn in kind_fns
+                         if RECIPE_READER[recipe].match(fn) and {cov.where[fn]} == claimed)
+            if len(fns) != 1:
+                out.append(f"{f}: config_recipe {recipe} resolves to {fns or 'no function'} "
+                           f"asserting it at this kind in {r['current_test'] or 'empty'}; a pytest "
+                           f"row needs one, in the one file current_test names")
+            continue
         if not name:
             out.append(f"{f}: no test_name, so current_test names an assertion nothing identifies")
             continue
@@ -198,6 +239,7 @@ FAMILY = scanlib.Family(
     checks={"unregistered"},
     extra_problems=disagreements,
     recipe_reader=RECIPE_READER,
+    collect_override=collect,
 )
 
 if __name__ == "__main__":

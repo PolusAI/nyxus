@@ -473,8 +473,10 @@ static void assert_3d_gldm_feature_pyradiomics (const Nyxus::Feature3D& expectin
 // The matrix under the fourteen features, read off the feature object the fourteen oracle assertions
 // run through: this assertion and those describe one run of one phantom rather than two, and a
 // hand-written copy of the phantom would keep passing after the loader started producing something
-// else. The definition arm beside it re-bins the cube that run read, with the same
-// bin_intensities_3d() calculate() calls, and walks the neighbourhood from the definition.
+// else. The definition arm beside it re-bins the cube that run read with the cube-wide
+// bin_intensities_3d(), which on this phantom gives every ROI voxel the level calculate()'s
+// bin_roi_3d() gives it, no ROI voxel being stored as 0, and walks the neighbourhood from the
+// definition.
 void test_3d_gldm_matrix_pyradiomics()
 {
 	auto [ipath, mpath, label] = get_3d_compat_phantom();

@@ -296,6 +296,73 @@ check the dependence axis rather than one number.
 
 ---
 
+## `bench_volmin_3d` — a 3D ROI holding the volume's lowest intensity
+
+| | |
+|---|---|
+| Files | `tests/data/nifti/phantoms/volmin_inten.nii` + `tests/data/nifti/phantoms/volmin_mask.nii` |
+| ROI | label **1**, an ellipsoid of 560 voxels in an 8x12x12 bounding box of 1152 cells, so the box has background in its corners |
+| Shape | 8x14x14 int16 voxels at 1x1x1 spacing. ROI voxels at `-1024 + 25 ((3x + 5y + 7z + xyz) mod 17)`, 17 levels over [-1024, -624], 31 of them at -1024; every other voxel at `-600 + ((x + 2y + 3z) mod 50)` |
+| Why it exists | its ROI carries the volume's lowest intensity, -1024, and nothing else does. Nyxus stores a volume offset by its lowest intensity, so those ROI voxels are stored as 0, the value the background cells of the bounding box hold. A 3D texture family has to bin them like any other ROI voxel and leave the background out |
+
+Recipes: `glcm3d.pyradiomics_volmin_bincount8`, `glrlm3d.pyradiomics_volmin_bincount8`,
+`gldm3d.pyradiomics_volmin_bincount8`, `glszm3d.pyradiomics_volmin_bincount8`,
+`gldzm3d.mirp_volmin_fbn8`, `ngldm3d.mirp_volmin_fbn8`.
+
+Tests reaching it today: `tests/python/test_3d_{glcm,glrlm,gldm,glszm}_pyradiomics.py` and
+`tests/python/test_3d_{gldzm,ngldm}_mirp.py`, each in RAM and out of core (the out-of-core side writes
+the same stored intensities as an OME-TIFF Z-stack and streams it at `ram_limit=0`, because the NIfTI
+loader delivers a volume in one read).
+
+**Built by `oracles/volmin_phantom.py`, not by hand.** `--write` writes the three files; a plain run,
+and every one of the six generators above, fails if the checked-in files differ from what
+`volmin_phantom.build()` produces. The generators load the module from there and read the ROI's own
+intensities, so PyRadiomics and MIRP judge the binning rather than inherit it.
+
+**At 8 bins the bin width is 50**, so every other ROI level sits exactly on a bin edge, and the ROI
+populates all eight bins: -1024 and -999 are bin 1, and the top bin holds -674, -649 and the ROI
+maximum -624, which the last bin's closed upper edge takes in.
+
+**Read beside its control.** The pins hold on both; a family that bins a stored 0 to level 0, or
+shifts every level by one, misses them here and still meets them on `bench_volmin_ctrl_3d`.
+
+---
+
+## `bench_volmin_ctrl_3d` — the same ROI, its volume's minimum moved outside the box
+
+| | |
+|---|---|
+| Files | `tests/data/nifti/phantoms/volmin_ctrl_inten.nii` + `tests/data/nifti/phantoms/volmin_mask.nii` |
+| ROI | label **1**, the same 560 voxels at the same intensities as `bench_volmin_3d` |
+| Shape | `bench_volmin_3d` with one voxel outside the ROI's bounding box, (z, y, x) = (0, 0, 0), at -2000 |
+| Why it exists | the volume's lowest intensity is then not the ROI's, so no ROI voxel is stored as 0 while the ROI's intensities, and with them every oracle value, stay as they are |
+
+Recipes: the six `bench_volmin_3d` lists. Tests reaching it today: the same six files, each
+parametrized over both phantoms.
+
+**The oracle values are the same on both phantoms, bit for bit**, and each generator checks that on
+every run, so one table pins both. That is what makes the pair a control: a difference between the
+two Nyxus runs is a difference in how a stored 0 is binned, and nothing else.
+
+---
+
+## `bench_ellipsoid6x40x40_boxbg_3d` — an ellipsoid ROI with background in its box
+
+| | |
+|---|---|
+| Data | built inline in `tests/python/test_3d_glcm_analytic.py` (`_ellipsoid()`, `_volume()`), written as an OME-TIFF pair |
+| ROI | 2256 voxels of an ellipsoid in a 6x40x40 volume, inside a 6x26x26 bounding box of 4056 cells |
+| Shape | intensities `1 + (7x + 13y + 29z) mod 200` on the ROI, 0 elsewhere; none of the ROI's is 0 |
+| Why it exists | MATLAB-style binning sends intensity 0 to level 1, the level the ROI's darkest voxels take too, so on a ROI that leaves background in its bounding box only the voxel cloud says which cells are the ROI's. 3D GLCM at the default coarse grey depth is asserted against the co-occurrence definition on it |
+
+Recipes: `glcm3d.analytic_matlab_background`.
+
+Tests reaching it today: `tests/python/test_3d_glcm_analytic.py::test_3d_glcm_matlab_background_analytic`.
+Its negative case, `test_3d_glcm_matlab_box_analytic`, runs a 4x38x38 box ROI that fills its
+bounding box and so holds whether or not the background is counted.
+
+---
+
 ## `bench_dsb2018_2d` — four DSB2018 nuclei ROIs
 
 | | |
