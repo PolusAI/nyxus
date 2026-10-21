@@ -27,6 +27,43 @@ import numpy as np
 import pandas as pd
 from typing import Optional, List
 
+
+def _check_coarse_gray_depth(coarse_gray_depth):
+    """Refuses a coarse_gray_depth that is not a 32-bit integer whose magnitude is one too.
+
+    The sign selects the texture binning: a positive value bins into that many MATLAB-style grey
+    levels, 0 bins nothing (the raw levels, as IBSI reads them), and a negative value bins into
+    abs(value) PyRadiomics-style bins over the ROI's range. This is a type and range check, the
+    same one the CLI and every <family>/greydepth metaparameter apply; it does not judge whether
+    the buffers a large depth sizes fit in memory.
+    """
+    if (isinstance(coarse_gray_depth, bool)
+            or not isinstance(coarse_gray_depth, (int, np.integer))
+            or not -2**31 < coarse_gray_depth < 2**31):
+        raise ValueError(
+            "coarse_gray_depth must be a 32-bit integer: a positive number of MATLAB-style grey "
+            "levels, 0 for no binning, or a negative PyRadiomics-style bin count; got "
+            f"{coarse_gray_depth!r}")
+
+
+def _without_coarse_gray_depth(nyx, params):
+    """Returns 'params' without coarse_gray_depth, refusing a value that differs from the object's.
+
+    The grey depth is copied into every feature family's settings when the object is constructed,
+    and set_params()/set_environment_params() do not rebuild those settings, so a new value would
+    reach the HISTOGRAM column count but not the binning. The value the object already has changes
+    nothing, so it is let through, which keeps set_params(**get_params()) working.
+    """
+    if 'coarse_gray_depth' not in params:
+        return params
+    current = nyx.get_params('coarse_gray_depth')['coarse_gray_depth']
+    if params['coarse_gray_depth'] != current:
+        raise ValueError(
+            "coarse_gray_depth cannot be changed on a constructed object: pass it to the "
+            "constructor instead")
+    return {k: v for k, v in params.items() if k != 'coarse_gray_depth'}
+
+
 class Nyxus:
     r"""Nyxus image feature extraction library
 
@@ -75,7 +112,14 @@ class Nyxus:
         Specify the image resolution in terms of pixels per micron for unit conversion
         of non-unitless features.
     coarse_gray_depth: int (optional, default 64)
-        Custom number of levels in grayscale denoising used in texture features.
+        Grey binning of the texture features, selected by the sign: a positive value bins into
+        that many MATLAB-style levels, 0 bins nothing (the raw levels, as IBSI reads them), and a
+        negative value bins into abs(value) PyRadiomics-style bins over each ROI's range. Every 2D
+        and 3D texture family uses it unless a family's own metaparameter overrides it. The
+        first-order histogram statistics use abs(value) bins, or 24 at 0. Any 32-bit integer but
+        -2**31 is accepted, but the magnitude sizes per-ROI buffers and output columns (HISTOGRAM
+        writes one column per bin, 2D GLCM allocates abs(value)**2 cells), so a depth beyond the
+        image's dynamic range adds no information and a very large one exhausts memory.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
     use_gpu_device: int (optional, default -1)
@@ -220,8 +264,7 @@ class Nyxus:
         if pixels_per_micron <= 0:
             raise ValueError("Pixels per micron must be greater than zero.")
 
-        if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be non-negative.")
+        _check_coarse_gray_depth(coarse_gray_depth)
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -728,8 +771,9 @@ class Nyxus:
         * pixels_per_micron: float
             Specify the image resolution in terms of pixels per micron for unit conversion
             of non-unitless features.
-        * coarse_gray_depth: int 
-            Custom number of levels in grayscale denoising used in texture features.
+        * coarse_gray_depth: int
+            Only the object's current value is accepted: the grey binning is fixed when the
+            object is constructed, so a different depth goes to the constructor.
         * n_feature_calc_threads: int (optional, default 4)
             Number of threads to use for feature calculation parallelization purposes.
         * use_gpu_device: int (optional, default -1)
@@ -740,11 +784,12 @@ class Nyxus:
             Maximum amount of ram to be used by Nyxus in megabytes
         """
         
+        params = _without_coarse_gray_depth(self, params)
+
         valid_params = [
             'features',
             'neighbor_distance',
             'pixels_per_micron',
-            'coarse_gray_depth',
             'n_feature_calc_threads',
             'use_gpu_device',
             'verbose',
@@ -761,7 +806,6 @@ class Nyxus:
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
-        coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
         use_gpu_device = params.get ('use_gpu_device', -1)
         verb_lvl = params.get ('verbose', 0)
@@ -774,7 +818,6 @@ class Nyxus:
                                    features, 
                                    neighbor_distance, 
                                    pixels_per_micron,
-                                   coarse_gray_depth,
                                    n_reduce_threads,
                                    use_gpu_device,
                                    dynamic_range,
@@ -791,7 +834,7 @@ class Nyxus:
         * features: List[str],
         * neighbor_distance
         * pixels_per_micron
-        * coarse_gray_depth
+        * coarse_gray_depth: only the current value; a different one goes to the constructor
         * n_feature_calc_threads
         * use_gpu_device
         * ibsi: bool
@@ -812,7 +855,6 @@ class Nyxus:
             "features",
             "neighbor_distance",
             "pixels_per_micron",
-            "coarse_gray_depth",
             "n_feature_calc_threads",
             "use_gpu_device",
             "ibsi",
@@ -823,8 +865,11 @@ class Nyxus:
             "verbose"
         ]
         
+        # before anything is applied, so a refused call changes nothing
+        params = _without_coarse_gray_depth(self, params)
+
         environment_params = {}
-        
+
         gabor_params = {}
         
         for key, value in params.items():
@@ -976,7 +1021,14 @@ class Nyxus3D:
         Specify the image resolution in terms of pixels per micron for unit conversion
         of non-unitless features.
     coarse_gray_depth: int (optional, default 64)
-        Custom number of levels in grayscale denoising used in texture features.
+        Grey binning of the texture features, selected by the sign: a positive value bins into
+        that many MATLAB-style levels, 0 bins nothing (the raw levels, as IBSI reads them), and a
+        negative value bins into abs(value) PyRadiomics-style bins over each ROI's range. Every 2D
+        and 3D texture family uses it unless a family's own metaparameter overrides it. The
+        first-order histogram statistics use abs(value) bins, or 24 at 0. Any 32-bit integer but
+        -2**31 is accepted, but the magnitude sizes per-ROI buffers and output columns (HISTOGRAM
+        writes one column per bin, 2D GLCM allocates abs(value)**2 cells), so a depth beyond the
+        image's dynamic range adds no information and a very large one exhausts memory.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
     use_gpu_device: int (optional, default -1)
@@ -1083,8 +1135,7 @@ class Nyxus3D:
         if pixels_per_micron <= 0:
             raise ValueError("Pixels per micron must be greater than zero.")
 
-        if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be non-negative.")
+        _check_coarse_gray_depth(coarse_gray_depth)
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -1332,8 +1383,9 @@ class Nyxus3D:
         * pixels_per_micron: float
             Specify the image resolution in terms of pixels per micron for unit conversion
             of non-unitless features.
-        * coarse_gray_depth: int 
-            Custom number of levels in grayscale denoising used in texture features.
+        * coarse_gray_depth: int
+            Only the object's current value is accepted: the grey binning is fixed when the
+            object is constructed, so a different depth goes to the constructor.
         * n_feature_calc_threads: int (optional, default 4)
             Number of threads to use for feature calculation parallelization purposes.
         * use_gpu_device: int 
@@ -1344,11 +1396,12 @@ class Nyxus3D:
             Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
         """
         
+        params = _without_coarse_gray_depth(self, params)
+
         valid_params = [
             'features',
             'neighbor_distance',
             'pixels_per_micron',
-            'coarse_gray_depth',
             'n_feature_calc_threads',
             'use_gpu_device',
             'verbose',
@@ -1364,7 +1417,6 @@ class Nyxus3D:
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
-        coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
         use_gpu_device = params.get ('use_gpu_device', -1)
         verb_lvl = params.get ('verbose', 0)
@@ -1377,7 +1429,6 @@ class Nyxus3D:
                                    features, 
                                    neighbor_distance, 
                                    pixels_per_micron,
-                                   coarse_gray_depth,
                                    n_reduce_threads,
                                    use_gpu_device,
                                    dynamic_range,
@@ -1394,7 +1445,7 @@ class Nyxus3D:
         * features: List[str],
         * neighbor_distance
         * pixels_per_micron
-        * coarse_gray_depth
+        * coarse_gray_depth: only the current value; a different one goes to the constructor
         * n_feature_calc_threads
         * using_gpu
         * ibsi: bool
@@ -1408,7 +1459,6 @@ class Nyxus3D:
             "features",
             "neighbor_distance",
             "pixels_per_micron",
-            "coarse_gray_depth",
             "n_feature_calc_threads",
             "using_gpu",
             "ibsi",
@@ -1417,8 +1467,11 @@ class Nyxus3D:
             "max_intensity"
         ]
         
+        # before anything is applied, so a refused call changes nothing
+        params = _without_coarse_gray_depth(self, params)
+
         environment_params = {}
-        
+
         gabor_params = {}
         
         
@@ -1548,7 +1601,9 @@ class ImageQuality:
         Specify the image resolution in terms of pixels per micron for unit conversion
         of non-unitless features.
     coarse_gray_depth: int (optional, default 256)
-        Custom number of levels in grayscale denoising used in texture features.
+        Accepted and validated as for Nyxus and Nyxus3D, so one set of parameters fits all three
+        classes, but no image-quality feature reads it: focus score, power spectrum, saturation
+        and sharpness are the same at every value.
     n_feature_calc_threads: int (optional, default 4)
         Number of threads to use for feature calculation parallelization purposes.
     ibsi: bool (optional, default false)
@@ -1654,8 +1709,7 @@ class ImageQuality:
         if pixels_per_micron <= 0:
             raise ValueError("Pixels per micron must be greater than zero.")
 
-        if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=256) must be non-negative.")
+        _check_coarse_gray_depth(coarse_gray_depth)
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -2107,8 +2161,9 @@ class ImageQuality:
         * pixels_per_micron: float
             Specify the image resolution in terms of pixels per micron for unit conversion
             of non-unitless features.
-        * coarse_gray_depth: int 
-            Custom number of levels in grayscale denoising used in texture features.
+        * coarse_gray_depth: int
+            Only the object's current value is accepted: the grey binning is fixed when the
+            object is constructed, so a different depth goes to the constructor.
         * n_feature_calc_threads: int (optional, default 4)
             Number of threads to use for feature calculation parallelization purposes.
         * use_gpu_device: int 
@@ -2119,11 +2174,12 @@ class ImageQuality:
             Level of diagnostic output shown in the console. Set '0' to disable any diagnostic output.
         """
         
+        params = _without_coarse_gray_depth(self, params)
+
         valid_params = [
             'features',
             'neighbor_distance',
             'pixels_per_micron',
-            'coarse_gray_depth',
             'n_feature_calc_threads',
             'use_gpu_device',
             'verbose',
@@ -2139,7 +2195,6 @@ class ImageQuality:
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
-        coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
         use_gpu_device = params.get ('use_gpu_device', -1)
         verb_lvl = params.get ('verbose', 0)
@@ -2152,7 +2207,6 @@ class ImageQuality:
                                    features,
                                    neighbor_distance, 
                                    pixels_per_micron,
-                                   coarse_gray_depth,
                                    n_reduce_threads,
                                    use_gpu_device,
                                    dynamic_range,
@@ -2169,7 +2223,7 @@ class ImageQuality:
         * features: List[str],
         * neighbor_distance
         * pixels_per_micron
-        * coarse_gray_depth
+        * coarse_gray_depth: only the current value; a different one goes to the constructor
         * n_feature_calc_threads
         * using_gpu
         * ibsi: bool
@@ -2190,7 +2244,6 @@ class ImageQuality:
             "features",
             "neighbor_distance",
             "pixels_per_micron",
-            "coarse_gray_depth",
             "n_feature_calc_threads",
             "using_gpu",
             "ibsi",
@@ -2200,8 +2253,11 @@ class ImageQuality:
             "verbose"
         ]
         
+        # before anything is applied, so a refused call changes nothing
+        params = _without_coarse_gray_depth(self, params)
+
         environment_params = {}
-        
+
         gabor_params = {}
         
         

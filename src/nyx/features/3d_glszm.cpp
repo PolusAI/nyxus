@@ -56,13 +56,11 @@ void D3_GLSZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	int greyInfo = STNGS_GLSZM_GREYDEPTH(s);
 	if (STNGS_IBSI(s)) greyInfo = 0;
 	PixIntens mn = r.aux_min, mx = r.aux_max;
-	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
-	// calculate()'s zeroI: matlab binning puts background at level 1
-	const PixIntens zeroI = matlab_grey_binning (greyInfo) ? 1 : 0;
 
 	// the ROI's binned cube, streamed: the connected-component pass below reaches one plane back,
-	// so the window keeps 2 planes
-	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); }, bg, 2);
+	// so the window keeps 2 planes. As in calculate(), the background outside the ROI takes level 0,
+	// which grows no zone and is no grey level.
+	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); }, 0, 2);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 
 	// --- grey levels I. The construction follows the binning mode, ibsi_grey_binning(); the row
@@ -101,7 +99,7 @@ void D3_GLSZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 			for (int x = 0; x < W; x++)
 			{
 				PixIntens pi = curPlane[(size_t) y * W + x];
-				if (pi == zeroI)
+				if (pi == 0)
 					continue;
 
 				int found = -1;
@@ -632,19 +630,13 @@ void D3_GLSZM_feature::calculate (LR& r, const Fsettings& s)
 		return;
 	}
 
-	// bin intensities
-	int w = r.aux_image_cube.width(),
-		h = r.aux_image_cube.height(),
-		d = r.aux_image_cube.depth();
-
-	SimpleCube <PixIntens> D;
-	D.allocate(w, h, d);
-
 	auto greyInfo = STNGS_GLSZM_GREYDEPTH(s); // former Nyxus::theEnvironment.get_coarse_gray_depth()
 	if (STNGS_IBSI(s)) // former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
-	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
+	// bin the ROI's voxels; the background outside the ROI takes level 0, the level no zone is grown from
+	SimpleCube <PixIntens> D;
+	Nyxus::bin_roi_3d (D, r, greyInfo);
 
 	// gather unique intensities
 	std::unordered_set <PixIntens> U;
@@ -666,12 +658,9 @@ void D3_GLSZM_feature::calculate (LR& r, const Fsettings& s)
 		std::sort(I.begin(), I.end());
 	}
 
-	// zero (backround) intensity at given grey binning approach
-	PixIntens zeroI = matlab_grey_binning (greyInfo) ? 1 : 0;
-		
-	// gather intensity zones
+	// gather intensity zones; level 0 is the background
 	std::vector <std::pair<PixIntens, int>> Zones;
-	D3_GLSZM_feature::gather_size_zones (Zones, D, zeroI);
+	D3_GLSZM_feature::gather_size_zones (Zones, D, 0);
 
 	// width of GLSZM matrix 
 	int maxZoneArea = 0;

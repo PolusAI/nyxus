@@ -282,8 +282,8 @@ class TestNyxus():
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
 
-            new_values ={'coarse_gray_depth': 512, 
-                        'features': ['*ALL*'], 
+            # coarse_gray_depth is constructor-only; set_params refuses it
+            new_values ={'features': ['*ALL*'],
                         'gabor_f0': 0.1, 
                         'gabor_freqs': [1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0], 
                         'gabor_thetas': [0, 30, 60, 90, 120, 150, 180],
@@ -316,10 +316,10 @@ class TestNyxus():
         def test_set_single_param(self):
             nyx = nyxus.Nyxus (["*ALL*"])
             assert nyx is not None
-            nyx.set_params (coarse_gray_depth = 125)
+            nyx.set_params (neighbor_distance = 7)
             actual = nyx.get_params()
-            expected = {'coarse_gray_depth': 125}
-            assert actual['coarse_gray_depth'] == expected['coarse_gray_depth']
+            expected = {'neighbor_distance': 7}
+            assert actual['neighbor_distance'] == expected['neighbor_distance']
             
         
         def test_set_environment_all(self):
@@ -331,7 +331,6 @@ class TestNyxus():
                 features = ["GABOR"],
                 neighbor_distance = 2,
                 pixels_per_micron = 2,
-                coarse_gray_depth = 2,
                 n_feature_calc_threads = 2,
                 dynamic_range = 1000,
                 min_intensity = 0.1,
@@ -346,7 +345,6 @@ class TestNyxus():
                 'features': ["GABOR"],
                 'neighbor_distance': 2,
                 'pixels_per_micron': 2,
-                'coarse_gray_depth': 2,
                 'n_feature_calc_threads': 2
             }
                 

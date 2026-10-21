@@ -77,21 +77,25 @@ gapped assertion and the connectivity one.
 
 ## `GLSZM_GREYDEPTH == 0` is a third configuration, not a variant of the other two
 
-At MATLAB binning the background level is bin 1 (`zeroI = 1`), so a voxel binned there starts no zone
-of its own; at radiomics binning and at no binning the background is intensity 0. That is a
-different quantity, not a different resolution of the same one, which is why the recipes state the
-value explicitly instead of leaning on the zero a settings vector starts at.
+The three schemes bin different quantities, not one quantity at different resolutions: MATLAB binning
+scales `[0, max]` onto levels `1..n`, radiomics binning scales the ROI's own `[min, max]`, and no
+binning keeps the raw levels. That is why the recipes state the value explicitly instead of leaning
+on the zero a settings vector starts at. Under all three the background outside the ROI is level 0,
+set from the ROI's voxel cloud rather than read off the binned value (MATLAB binning sends intensity 0
+to level 1, which the ROI's darkest voxels carry too);
+`test_3d_texture_background_level1_voxels_kept_mechanics` and
+`test_3d_texture_background_by_roi_mask_mechanics` assert it in RAM and out of core.
 
 The unwired version of `test_3d_glszm_regression.h` did lean on it: it set `GREYDEPTH=64` and left
 `GLSZM_GREYDEPTH` at 0, and at that setting every one of its sixteen pins is wrong by between 1.6×
 and 1.5e6× (`tests/vetting/audit/glszm_3d_pyradiomics_vetting_report.md`, §"What the orphan would
 have done").
 
-**It is the default a real run gets, so it carries numbers and not only a finiteness check.**
+**The default a real run gets is the coarse grey depth, 64 MATLAB levels.**
 `test_3d_glszm_default_greydepth_mechanics` asserts that `compile_feature_settings()` really does
-deliver `GLSZM_GREYDEPTH = 0` and that the sixteen features are finite there — that is mechanics, and
-mechanics is all it is. The values themselves are pinned by `glszm3d.regression_ut_phantom_nobinning`,
-sixteen `%.17g` goldens on `bench_ut57_3d` under `TEST_3D_GLSZM_DEFAULT_GREYDEPTH_REGRESSION`. They
+deliver `GLSZM_GREYDEPTH = 64` and that the sixteen features are finite there — that is mechanics, and
+mechanics is all it is. The no-binning values are pinned by `glszm3d.regression_ut_phantom_nobinning`,
+sixteen `%.17g` goldens on `bench_ut57_3d` under `TEST_3D_GLSZM_NO_BINNING_REGRESSION`. They
 claim no oracle: PyRadiomics discretises before it counts zones and has no counterpart for reading
 2001 raw levels off this phantom. The *setting* is vetted, on the fixture small enough to carry an
 oracle — `glszm3d.pyradiomics_ibsi_gapped`, the row above.
@@ -108,9 +112,9 @@ Nyxus returns the soft-NaN sentinel for all sixteen instead, which is `--noval` 
 **Dispositioned `VALID-prod-only`, not `INVALID`.** It is a configuration a real run reaches and no
 external tool reproduces, which is what SPEC §5.1 gives that disposition to, so it earns a regression
 row rather than a dropped one — and the cell says in full that the behaviour it pins is a defect.
-Calling it neither vetted nor invalid is the whole point. The guard is doing real work at radiomics
-binning, where `to_grayscale_radiomix` divides by `(max - min)` and would divide by zero; it is
-unconditional, so it also discards the two schemes that would have answered. Whether to narrow it is
+Calling it neither vetted nor invalid is the whole point. The guard is unconditional, so it
+discards every scheme's answer: at radiomics binning `to_grayscale_radiomix` puts a range of zero width
+into one bin, so there too a matrix of one level is what lies beneath it. Whether to narrow it is
 `src/` work on its own branch — it changes a public feature's output on a reachable input — so this
 pass pins the current behaviour rather than changing it: `test_3d_glszm_constant_roi_regression` runs
 a constant 2×2×2 volume with the sentinel set to a distinctive `-98765` and asserts all sixteen come

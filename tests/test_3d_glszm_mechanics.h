@@ -7,17 +7,17 @@
 // mock workflow and the Environment graph all arrive with the common header.
 #include "test_3d_glszm_common.h"  // gtest, <cmath>, <string>, the phantoms, extract_3d_glszm
 
-// compile_feature_settings() zero-fills every family's settings vector and writes back only the
-// entries someone remembered, so a family's zero is either its documented default or a degenerate
-// value nothing runs at. For GLSZM_GREYDEPTH zero is the documented default -- it selects no binning
-// at all, which is the IBSI reading of the raw levels, and --3glszm/greydepth is what overrides it.
-// This asserts that a run which passes no such flag still reaches the feature with settings that
-// produce numbers, which is the check that would have caught NGTDM_RADIUS coming through at 0.
+// compile_feature_settings() starts GLSZM_GREYDEPTH at the coarse grey depth, 64 unless
+// --coarseGrayDepth says otherwise -- MATLAB binning into 64 levels -- and 3glszm/greydepth is what
+// overrides it for this family alone. This asserts that a run which passes neither reaches the
+// feature at that depth and with settings that produce numbers, which is the check that would have
+// caught NGTDM_RADIUS coming through at 0.
 void test_3d_glszm_default_greydepth_mechanics()
 {
 	Environment e;
 	e.compile_feature_settings();
-	ASSERT_EQ (STNGS_GLSZM_GREYDEPTH (e.fsett_D3_GLSZM), 0);
+	ASSERT_EQ (e.get_coarse_gray_depth(), 64);
+	ASSERT_EQ (STNGS_GLSZM_GREYDEPTH (e.fsett_D3_GLSZM), 64);
 
 	auto [ipath, mpath, label] = get_3d_compat_phantom();
 	std::vector<std::vector<double>> fvals;

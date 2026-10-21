@@ -1,9 +1,10 @@
-"""OFFLINE mirp oracle for the 2D NGLDM features, on the IBSI digital phantom.
+"""OFFLINE mirp oracle for the 2D NGLDM features, on the IBSI digital phantom and bench_square12_graded.
 
-    python tests/vetting/oracles/gen_ngldm_mirp.py        (from the repository root)
+    python tests/vetting/oracles/gen_ngldm_mirp.py           (from the repository root)
+    python tests/vetting/oracles/gen_ngldm_mirp.py --check   (verify only, no paste-ready tables)
 
-Prints the paste-ready goldens AND re-verifies every golden pinned in test_2d_ngldm_mirp.h, exiting
-non-zero on any mismatch or on any pin this generator cannot produce.
+Prints the paste-ready goldens of both recipes AND re-verifies every golden pinned in
+test_2d_ngldm_mirp.h, exiting non-zero on any mismatch or on any pin this generator cannot produce.
 
 Recipe `ngldm.ibsi_phantom_2d`: the four IBSI digital-phantom slices, each featurised on its own and
 the per-feature values averaged over the four, which is what test_2d_ngldm_common.h's fixture does.
@@ -16,13 +17,28 @@ neighbourhood, so this is pinned at the SPEC 7 "exact" tier rather than a cross-
 consensus values in test_2d_ngldm_ibsi.h are the same quantities quoted to three significant
 figures, which is why that file asserts at rel=1e-2 while this one asserts at 1e-9.
 
+Recipe `ngldm.mirp_fbn20_negdepth`, table ngldm_2d_mirp_negdepth_ref_vals: the negative coarse grey
+depth. GREYDEPTH=-20 bins the ROI into 20 PyRadiomics-style bins over its own [min, max], which is
+IBSI's fixed bin number, floor(20 (x - min) / (max - min)) + 1, and exactly what mirp's
+`base_discretisation_method="fixed_bin_number"`, n_bins=20, computes. So mirp discretises here
+itself: nothing of Nyxus' binning is reproduced on the mirp side, and the comparison covers the
+binning as well as the matrix and the feature formulas. The fixture is bench_square12_graded, built
+by square12_graded.py (shared with gen_gldzm_mirp.py), `by_slice=True`, distance 1, difference
+level 0. 14 of its 144 pixels sit exactly on a bin edge at 20 bins, and the 5 at 181 are the ones a
+division by the bin width sends one bin low; square12_graded.py has the arithmetic. Every run also
+checks that test_main_nyxus.h still builds the square from the same formula. NGLDM_DCP is left out
+of this table: both tools return 1 whenever every pixel has a same-level neighbour. The pins are
+printed at full precision, so they are held at rel 1e-12 -- a staleness check, not a vetting band.
+
 NOT covered here: NGLDM_GLM and NGLDM_DCM. mirp exposes no grey-level-mean or
 dependence-count-mean column -- they are not IBSI NGLDM features -- so those two stay regression
 rows in test_2d_ngldm_regression.h.
 
 Provenance: tool=mirp (version printed by this script); numpy; env=nyxus_mirp (conda);
-generator=tests/vetting/oracles/gen_ngldm_mirp.py. Run offline; CI never invokes it.
+generator=tests/vetting/oracles/gen_ngldm_mirp.py, with tests/vetting/oracles/square12_graded.py.
+Run offline; CI never invokes it.
 """
+import argparse
 import importlib.util
 import logging
 import os
@@ -41,6 +57,8 @@ TESTS = os.path.dirname(os.path.dirname(HERE))
 TEST_H = os.path.join(TESTS, "test_2d_ngldm_mirp.h")
 
 RELTOL = 1e-9          # SPEC 7 exact tier; measured worst residual is 2.9e-16
+NEGDEPTH_RELTOL = 1e-12   # the negdepth pins are printed at %.17g; a staleness check, not a band
+NEGDEPTH_TABLE = "ngldm_2d_mirp_negdepth_ref_vals"
 
 # Nyxus feature -> mirp column stem (mirp suffixes the discretisation/config, e.g. _d1_a0.0_2d)
 MIRP_COLUMN = {
@@ -56,13 +74,21 @@ MIRP_COLUMN = {
 }
 
 
-def phantom_slices():
-    """The IBSI phantom, read out of tests/test_data.h by the shared helper."""
-    spec = importlib.util.spec_from_file_location(
-        "ibsi_phantom", os.path.join(HERE, "ibsi_phantom.py"))
+def _helper(name):
+    """A shared fixture module from this directory, loaded by path."""
+    spec = importlib.util.spec_from_file_location(name, os.path.join(HERE, name + ".py"))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod.phantom_slices()
+    return mod
+
+
+def phantom_slices():
+    """The IBSI phantom, read out of tests/test_data.h by the shared helper."""
+    return _helper("ibsi_phantom").phantom_slices()
+
+
+SQUARE = _helper("square12_graded")
+NEGDEPTH_SCOPE = {k: v for k, v in MIRP_COLUMN.items() if k != "NGLDM_DCP"}
 
 
 def parse_pins(txt, table):
@@ -94,27 +120,69 @@ def run():
     return {k: float(np.mean(v)) for k, v in per_slice.items()}
 
 
+def verify_negdepth(pins, got):
+    """-> (verified, failed, unproducible) for the negdepth table: scope and values both."""
+    print(f"\n# verifying {len(pins)} goldens pinned in {NEGDEPTH_TABLE} against this run, "
+          f"at rel<={NEGDEPTH_RELTOL:g}")
+    nok = nfail = nmiss = 0
+    for name in sorted(set(pins) - set(got)):
+        print(f"  MISSING {name}: pinned {pins[name]!r} but is outside this table's scope")
+        nmiss += 1
+    for name in sorted(set(got) - set(pins)):
+        print(f"  FAIL {name}: mirp computes it in this table's scope and the header does not pin it")
+        nfail += 1
+    for name in sorted(set(pins) & set(got)):
+        have, want = got[name][0], pins[name]
+        rel = abs(want - have) / max(abs(have), 1e-300)
+        if rel <= NEGDEPTH_RELTOL:
+            print(f"  OK   {name}: mirp={have!r} pinned={want!r} rel={rel:.3g}")
+            nok += 1
+        else:
+            print(f"  FAIL {name}: mirp={have!r} pinned={want!r} rel={rel:.3g}")
+            nfail += 1
+    return nok, nfail, nmiss
+
+
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--check", action="store_true",
+                    help="verify the pins without printing the paste-ready tables")
+    args = ap.parse_args()
+
     try:
         version = metadata.version("mirp")       # mirp exposes no __version__
     except metadata.PackageNotFoundError:
         version = "unknown"
 
     got = run()
+    negdepth = SQUARE.mirp_fbn("ngldm", NEGDEPTH_SCOPE)
 
-    print(f"# mirp {version}, numpy {np.__version__}, recipe ngldm.ibsi_phantom_2d")
-    print("# paste-ready goldens (mean over the four IBSI phantom slices)")
-    for name in sorted(got):
-        print(f'\t{{"{name}", {got[name]!r}}},')
+    print(f"# mirp {version}, numpy {np.__version__}, "
+          f"recipes ngldm.ibsi_phantom_2d and ngldm.mirp_fbn20_negdepth")
+    if not args.check:
+        print("# paste-ready goldens (mean over the four IBSI phantom slices)")
+        for name in sorted(got):
+            print(f'\t{{"{name}", {got[name]!r}}},')
+        print(f"\n# paste-ready {NEGDEPTH_TABLE} (bench_square12_graded, fixed_bin_number n=20)")
+        print(f"static const ref_vals_map<double> {NEGDEPTH_TABLE}{{")
+        items = list(negdepth.items())
+        for i, (name, (v, col)) in enumerate(items):
+            sep = "," if i < len(items) - 1 else ""
+            print(f'\t\t{{ "{name}",\t{v!r} }}{sep}\t\t// {col}')
+        print("};")
 
     if not os.path.exists(TEST_H):
         print(f"\n{os.path.basename(TEST_H)} does not exist yet - nothing to verify")
         return 0
 
-    pins = parse_pins(open(TEST_H, encoding="utf-8", errors="replace").read(),
-                      "ngldm_2d_mirp_ref_vals")
+    text = open(TEST_H, encoding="utf-8", errors="replace").read()
+    SQUARE.check_square_in_header()
+    print("\n# test_main_nyxus.h builds bench_square12_graded from the same formula")
+    neg_ok, neg_fail, neg_miss = verify_negdepth(parse_pins(text, NEGDEPTH_TABLE), negdepth)
+
+    pins = parse_pins(text, "ngldm_2d_mirp_ref_vals")
     print(f"\n# verifying {len(pins)} pinned goldens against this run")
-    nok = nfail = nmiss = 0
+    nok, nfail, nmiss = neg_ok, neg_fail, neg_miss
     for name in sorted(pins):
         want = pins[name]
         if name not in got:

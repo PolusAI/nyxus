@@ -550,9 +550,8 @@ void test_3d_glrlm_ave_pyradiomics()
         {F::GLRLM_RLN_AVE, "3GLRLM_RLN"},     {F::GLRLM_RLNN_AVE, "3GLRLM_RLNN"},
         {F::GLRLM_RV_AVE, "3GLRLM_RV"},       {F::GLRLM_SRE_AVE, "3GLRLM_SRE"},
         {F::GLRLM_SRHGLE_AVE, "3GLRLM_SRHGLE"}, {F::GLRLM_SRLGLE_AVE, "3GLRLM_SRLGLE"},
-        // RP is only in its mathematical bound [0,1] at this recipe's binCount binning; it exceeds 1
-        // at positive GLRLM_GREYDEPTH values (see the audit report), so this row vets it here and
-        // says nothing about other configs.
+        // vetted at this recipe's binCount binning; its [0,1] bound at every binning is
+        // test_3d_glrlm_bounded_features_invariant's
         {F::GLRLM_RP_AVE, "3GLRLM_RP"},       {F::GLRLM_RE_AVE, "3GLRLM_RE"},
     };
 
