@@ -548,7 +548,7 @@ namespace Nyxus
 		//==== GLDZM
 		if (GLDZMFeature::required(env.theFeatureSet))
 		{
-			Fsettings& s = env.fsett_D3_GLDZM;
+			Fsettings& s = env.fsett_GLDZM;	// the 2D family's own settings, as the segmented path hands it
 			GLDZMFeature::extract (r, s);
 		}
 
@@ -696,7 +696,7 @@ namespace Nyxus
 		}
 		if (D3_GLSZM_feature::required(env.theFeatureSet))
 		{
-			Fsettings& s = env.fsett_D3_GLDZM;
+			Fsettings& s = env.fsett_D3_GLSZM;	// 3D GLSZM's own settings, so 3glszm/greydepth reaches the whole volume
 			D3_GLSZM_feature::extract (r, s);
 		}
 		if (D3_GLRLM_feature::required(env.theFeatureSet))
@@ -852,7 +852,7 @@ namespace Nyxus
 		if (EnclosingInscribingCircumscribingCircleFeature::required(env.theFeatureSet))
 		{
 			STOPWATCH("Morphology/HexPolygEncloInsCircleGeodetLenThickness/HP/#4aaaea", "\t=");
-			const Fsettings & fst = env.fsett_HexagonalityPolygonality;
+			const Fsettings & fst = env.fsett_EnclosingInscribingCircumscribingCircle;	// the circle family's own settings
 			runParallel (EnclosingInscribingCircumscribingCircleFeature::parallel_process_1_batch, n_reduce_threads, workPerThread, jobSize, &L, &env.roiData, fst, env.dataset);
 		}
 	}

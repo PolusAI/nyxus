@@ -140,7 +140,7 @@ public:
 	int get_floating_point_precision();
 
 	int get_coarse_gray_depth();
-	void set_coarse_gray_depth(unsigned int new_depth);
+	void set_coarse_gray_depth(int new_depth);
 
 	// implementation of SKIPROI
 	bool roi_is_blacklisted (const std::string& fname, int roi_label);

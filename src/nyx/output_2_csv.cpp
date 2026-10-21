@@ -194,7 +194,7 @@ namespace Nyxus
 			// Bin edges are reconstructable from MIN/MAX and the bin count.
 			if (fc == (int) Feature2D::HISTOGRAM)
 			{
-				int nbins = env.get_coarse_gray_depth();
+				int nbins = histogram_bin_count (env.get_coarse_gray_depth());
 				for (int i = 0; i < nbins; i++)
 					head.emplace_back(fn + "_BIN_" + std::to_string(i));
 
@@ -690,7 +690,7 @@ namespace Nyxus
 					// --Intensity histogram values (one per bin)
 					if (fc == (int) Feature2D::HISTOGRAM)
 					{
-						int nbins = env.get_coarse_gray_depth();
+						int nbins = histogram_bin_count (env.get_coarse_gray_depth());
 						// Pad with zeros if the ROI produced no histogram (e.g. blank ROI)
 						if ((int)vv.size() < nbins)
 							vv.resize(nbins, 0.0);
@@ -891,7 +891,7 @@ namespace Nyxus
 			// --Intensity histogram (one value per bin); pad blank ROIs to bin count
 			if (fc == (int)Feature2D::HISTOGRAM)
 			{
-				int nbins = env.get_coarse_gray_depth();
+				int nbins = histogram_bin_count (env.get_coarse_gray_depth());
 				if ((int)vv.size() < nbins)
 					vv.resize(nbins, 0.0);
 				for (int i = 0; i < nbins; i++)
@@ -1055,7 +1055,7 @@ namespace Nyxus
 				// --Intensity histogram (one value per bin); pad blank ROIs to bin count
 				if (fc == (int) Feature2D::HISTOGRAM)
 				{
-					int nbins = env.get_coarse_gray_depth();
+					int nbins = histogram_bin_count (env.get_coarse_gray_depth());
 					if ((int)vv.size() < nbins)
 						vv.resize(nbins, 0.0);
 					for (int i = 0; i < nbins; i++)

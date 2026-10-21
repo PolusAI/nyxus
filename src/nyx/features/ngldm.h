@@ -59,17 +59,8 @@ public:
 private:
 
 	void clear_buffers();
-	template <class Pixelcloud> void gather_unique_intensities (std::vector<PixIntens> & V, Pixelcloud& C, PixIntens max_i, int n_greys, bool ibsi);
+	template <class Pixelcloud> void gather_unique_intensities (std::vector<PixIntens> & V, Pixelcloud& C, PixIntens min_i, PixIntens max_i, int n_greys, bool ibsi);
 	
-	void gather_unique_intensities2 (
-		// out
-		std::vector<PixIntens>& V, 
-		// in
-		const pixData& I, 
-		PixIntens max_inten, 
-		int n_greys,
-		bool ibsi);
-
 	template <class Imgmatrix, class Maskmatrix> void calc_ngld_matrix (
 		//out
 		SimpleMatrix<unsigned int> & NGLDM,
@@ -78,6 +69,7 @@ private:
 		Imgmatrix & I,
 		Maskmatrix& roi_mask,
 		const std::vector<PixIntens> & V,
+		PixIntens min_inten,
 		PixIntens max_inten,
 		int n_greys,
 		bool ibsi);

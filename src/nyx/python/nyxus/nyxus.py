@@ -27,6 +27,43 @@ import numpy as np
 import pandas as pd
 from typing import Optional, List
 
+
+def _check_coarse_gray_depth(coarse_gray_depth):
+    """Refuses a coarse_gray_depth that is not a 32-bit integer whose magnitude is one too.
+
+    The sign selects the texture binning: a positive value bins into that many MATLAB-style grey
+    levels, 0 bins nothing (the raw levels, as IBSI reads them), and a negative value bins into
+    abs(value) PyRadiomics-style bins over the ROI's range. This is a type and range check, the
+    same one the CLI and every <family>/greydepth metaparameter apply; it does not judge whether
+    the buffers a large depth sizes fit in memory.
+    """
+    if (isinstance(coarse_gray_depth, bool)
+            or not isinstance(coarse_gray_depth, (int, np.integer))
+            or not -2**31 < coarse_gray_depth < 2**31):
+        raise ValueError(
+            "coarse_gray_depth must be a 32-bit integer: a positive number of MATLAB-style grey "
+            "levels, 0 for no binning, or a negative PyRadiomics-style bin count; got "
+            f"{coarse_gray_depth!r}")
+
+
+def _without_coarse_gray_depth(nyx, params):
+    """Returns 'params' without coarse_gray_depth, refusing a value that differs from the object's.
+
+    The grey depth is copied into every feature family's settings when the object is constructed,
+    and set_params()/set_environment_params() do not rebuild those settings, so a new value would
+    reach the HISTOGRAM column count but not the binning. The value the object already has changes
+    nothing, so it is let through, which keeps set_params(**get_params()) working.
+    """
+    if 'coarse_gray_depth' not in params:
+        return params
+    current = nyx.get_params('coarse_gray_depth')['coarse_gray_depth']
+    if params['coarse_gray_depth'] != current:
+        raise ValueError(
+            "coarse_gray_depth cannot be changed on a constructed object: pass it to the "
+            "constructor instead")
+    return {k: v for k, v in params.items() if k != 'coarse_gray_depth'}
+
+
 class Nyxus:
     r"""Extract 2D features from images and their ROI masks.
 
@@ -63,11 +100,20 @@ class Nyxus:
         (``AREA_UM2`` is reported as 0, a known defect,
         `#496 <https://github.com/PolusAI/nyxus/issues/496>`__).
     coarse_gray_depth : int, optional
-        Default 64. Must be positive. Number of grey levels intensities are
-        binned to for the texture features, and the number of bins of the
-        ``ENTROPY``, ``UNIFORMITY``, ``HISTOGRAM`` and ``IH_*`` histograms.
-        With ``ibsi=True`` the texture features are not binned and read the
-        image's own grey levels; the histograms still follow this depth.
+        Default 64. Grey binning of the texture features, selected by the
+        sign: a positive value bins into that many MATLAB-style grey levels,
+        0 bins nothing (the image's own grey levels), and a negative value
+        bins into abs(value) PyRadiomics-style bins over each ROI's range.
+        Every texture family uses it unless the family's own ``greydepth``
+        metaparameter overrides it (see :meth:`set_metaparam`); NGLDM bins a
+        positive value its own way, to the levels 0 to n. ``ENTROPY``,
+        ``UNIFORMITY``, ``HISTOGRAM`` and the ``IH_*`` histograms use
+        abs(value) bins, or 24 at 0. With ``ibsi=True`` the texture features
+        are not binned and read the image's own grey levels; the histograms
+        still follow this depth. Any 32-bit integer except -2**31 is
+        accepted, but the magnitude sizes per-ROI buffers and output columns
+        (``HISTOGRAM`` writes one column per bin, 2D GLCM allocates
+        abs(value)**2 cells), so a very large depth exhausts memory.
     n_feature_calc_threads : int, optional
         Default 4. Number of feature calculation threads. Must be at least 1.
     use_gpu_device : int, optional
@@ -200,9 +246,9 @@ class Nyxus:
 
     The enabled feature set and the per-feature settings derived from
     `coarse_gray_depth` are fixed when the instance is constructed. Changing
-    `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
-    :meth:`get_params` reports but not the features computed by this
-    instance; construct a new instance to change them.
+    `features` or `ibsi` afterwards updates what :meth:`get_params` reports
+    but not the features computed by this instance, and `coarse_gray_depth`
+    accepts only its current value; construct a new instance to change them.
 
     Gabor parameters are process-wide, not per instance: every constructor
     call that accepts ``gabor_*`` arguments sets them (to the defaults when
@@ -324,8 +370,7 @@ class Nyxus:
         if pixels_per_micron <= 0:
             raise ValueError("Pixels per micron must be greater than zero.")
 
-        if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be positive.")
+        _check_coarse_gray_depth(coarse_gray_depth)
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -408,9 +453,8 @@ class Nyxus:
         Notes
         -----
         A name without a ``/`` (e.g. ``"greydepth=8"``) is accepted and has no
-        effect. ``glcm/greydepth`` does not change the 2D co-occurrence
-        matrix, which is binned with `coarse_gray_depth`; it sets only the grey
-        depth of the constant-ROI test, so it decides whether a ROI whose
+        effect. ``glcm/greydepth`` sets the grey depth of the 2D co-occurrence
+        matrix and of its constant-ROI test, which decides whether a ROI whose
         minimum and maximum fall into one bin returns the missing-value
         substitute.
 
@@ -1087,7 +1131,8 @@ class Nyxus:
             Stored and reported by :meth:`get_params`; no feature currently
             depends on it.
         coarse_gray_depth : int, optional
-            Number of grey levels for texture features (see Notes).
+            Only the current value is accepted, and changes nothing (see
+            Notes); a different depth goes to the constructor.
         n_feature_calc_threads : int, optional
             Number of feature calculation threads.
         use_gpu_device : int, optional
@@ -1110,7 +1155,8 @@ class Nyxus:
         Raises
         ------
         ValueError
-            If a keyword is not one of the above.
+            If a keyword is not one of the above, or `coarse_gray_depth`
+            differs from the current value.
 
         Notes
         -----
@@ -1118,9 +1164,9 @@ class Nyxus:
 
         The enabled feature set and the per-feature settings derived from
         `coarse_gray_depth` are fixed when the instance is constructed. Changing
-        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
-        :meth:`get_params` reports but not the features computed by this
-        instance; construct a new instance to change them.
+        `features` or `ibsi` afterwards updates what :meth:`get_params` reports
+        but not the features computed by this instance, and `coarse_gray_depth`
+        accepts only its current value; construct a new instance to change them.
 
         Examples
         --------
@@ -1131,11 +1177,12 @@ class Nyxus:
         {'neighbor_distance': 3, 'pixels_per_micron': 2.0}
         """
         
+        params = _without_coarse_gray_depth(self, params)
+
         valid_params = [
             'features',
             'neighbor_distance',
             'pixels_per_micron',
-            'coarse_gray_depth',
             'n_feature_calc_threads',
             'use_gpu_device',
             'verbose',
@@ -1152,7 +1199,6 @@ class Nyxus:
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
-        coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
         use_gpu_device = params.get ('use_gpu_device', -1)
         verb_lvl = params.get ('verbose', 0)
@@ -1165,7 +1211,6 @@ class Nyxus:
                                    features, 
                                    neighbor_distance, 
                                    pixels_per_micron,
-                                   coarse_gray_depth,
                                    n_reduce_threads,
                                    use_gpu_device,
                                    dynamic_range,
@@ -1194,15 +1239,16 @@ class Nyxus:
         Raises
         ------
         ValueError
-            If a keyword is not recognized or a Gabor value is invalid.
+            If a keyword is not recognized, a Gabor value is invalid, or
+            `coarse_gray_depth` differs from the current value.
 
         Notes
         -----
         The enabled feature set and the per-feature settings derived from
         `coarse_gray_depth` are fixed when the instance is constructed. Changing
-        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
-        :meth:`get_params` reports but not the features computed by this
-        instance; construct a new instance to change them. Changing `ibsi` afterwards does not enable the
+        `features` or `ibsi` afterwards updates what :meth:`get_params` reports
+        but not the features computed by this instance, and `coarse_gray_depth`
+        accepts only its current value; construct a new instance to change them. Changing `ibsi` afterwards does not enable the
         Intensity Histogram (``IH_*``) family.
 
         Gabor parameters are process-wide, not per instance: every constructor
@@ -1227,7 +1273,6 @@ class Nyxus:
             "features",
             "neighbor_distance",
             "pixels_per_micron",
-            "coarse_gray_depth",
             "n_feature_calc_threads",
             "use_gpu_device",
             "ibsi",
@@ -1238,6 +1283,9 @@ class Nyxus:
             "verbose"
         ]
         
+        # before anything is applied, so a refused call changes nothing
+        params = _without_coarse_gray_depth(self, params)
+
         environment_params = {}
         
         gabor_params = {}
@@ -1404,12 +1452,18 @@ class Nyxus3D:
         Default 1.0. Must be positive. Stored and reported by
         :meth:`get_params`; no 3D feature depends on it.
     coarse_gray_depth : int, optional
-        Default 64. Must be positive. Grey depth of the MATLAB-style binning
-        of 3D GLCM and 3D GLDZM, of the 3D NGLDM conversion, and the bin count
-        of ``3ENTROPY`` and ``3UNIFORMITY``. 3D GLRLM, GLSZM, GLDM and NGTDM
-        ignore it: they bin to their own ``greydepth`` metaparameter (see
-        :meth:`set_metaparam`), 0 (no binning) by default. With ``ibsi=True``
-        no 3D texture family bins.
+        Default 64. Grey binning of the 3D texture features, selected by the
+        sign: a positive value bins into that many MATLAB-style grey levels,
+        0 bins nothing (the volume's own grey levels), and a negative value
+        bins into abs(value) PyRadiomics-style bins over each ROI's range.
+        Every 3D texture family uses it unless the family's own ``greydepth``
+        metaparameter overrides it (see :meth:`set_metaparam`); 3D NGLDM bins
+        a positive value its own way, to the levels 0 to n. ``3ENTROPY`` and
+        ``3UNIFORMITY`` use abs(value) bins, or 24 at 0. With ``ibsi=True`` no
+        3D texture family bins. Any 32-bit integer except -2**31 is accepted,
+        but the magnitude sizes per-ROI buffers (3D GLCM allocates
+        abs(value)**2 cells per direction), so a very large depth exhausts
+        memory.
     n_feature_calc_threads : int, optional
         Default 4. Number of feature calculation threads. Must be at least 1.
     use_gpu_device : int, optional
@@ -1512,9 +1566,9 @@ class Nyxus3D:
 
     The enabled feature set and the per-feature settings derived from
     `coarse_gray_depth` are fixed when the instance is constructed. Changing
-    `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
-    :meth:`get_params` reports but not the features computed by this
-    instance; construct a new instance to change them.
+    `features` or `ibsi` afterwards updates what :meth:`get_params` reports
+    but not the features computed by this instance, and `coarse_gray_depth`
+    accepts only its current value; construct a new instance to change them.
 
     Examples
     --------
@@ -1589,8 +1643,7 @@ class Nyxus3D:
         if pixels_per_micron <= 0:
             raise ValueError("Pixels per micron must be greater than zero.")
 
-        if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=64) must be positive.")
+        _check_coarse_gray_depth(coarse_gray_depth)
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -1945,7 +1998,8 @@ class Nyxus3D:
             Stored and reported by :meth:`get_params`; no feature currently
             depends on it.
         coarse_gray_depth : int, optional
-            Number of grey levels for texture features (see Notes).
+            Only the current value is accepted, and changes nothing (see
+            Notes); a different depth goes to the constructor.
         n_feature_calc_threads : int, optional
             Number of feature calculation threads.
         use_gpu_device : int, optional
@@ -1963,7 +2017,8 @@ class Nyxus3D:
         Raises
         ------
         ValueError
-            If a keyword is not one of the above.
+            If a keyword is not one of the above, or `coarse_gray_depth`
+            differs from the current value.
 
         Notes
         -----
@@ -1971,9 +2026,9 @@ class Nyxus3D:
 
         The enabled feature set and the per-feature settings derived from
         `coarse_gray_depth` are fixed when the instance is constructed. Changing
-        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
-        :meth:`get_params` reports but not the features computed by this
-        instance; construct a new instance to change them.
+        `features` or `ibsi` afterwards updates what :meth:`get_params` reports
+        but not the features computed by this instance, and `coarse_gray_depth`
+        accepts only its current value; construct a new instance to change them.
 
         Examples
         --------
@@ -1984,11 +2039,12 @@ class Nyxus3D:
         {'neighbor_distance': 3, 'pixels_per_micron': 2.0}
         """
         
+        params = _without_coarse_gray_depth(self, params)
+
         valid_params = [
             'features',
             'neighbor_distance',
             'pixels_per_micron',
-            'coarse_gray_depth',
             'n_feature_calc_threads',
             'use_gpu_device',
             'verbose',
@@ -2004,7 +2060,6 @@ class Nyxus3D:
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
-        coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
         use_gpu_device = params.get ('use_gpu_device', -1)
         verb_lvl = params.get ('verbose', 0)
@@ -2017,7 +2072,6 @@ class Nyxus3D:
                                    features, 
                                    neighbor_distance, 
                                    pixels_per_micron,
-                                   coarse_gray_depth,
                                    n_reduce_threads,
                                    use_gpu_device,
                                    dynamic_range,
@@ -2042,16 +2096,17 @@ class Nyxus3D:
         Raises
         ------
         ValueError
-            If a keyword is not recognized. ``using_gpu`` passes the first check
-            but is rejected by :meth:`set_environment_params`.
+            If a keyword is not recognized or `coarse_gray_depth` differs from
+            the current value. ``using_gpu`` passes the first check but is
+            rejected by :meth:`set_environment_params`.
 
         Notes
         -----
         The enabled feature set and the per-feature settings derived from
         `coarse_gray_depth` are fixed when the instance is constructed. Changing
-        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
-        :meth:`get_params` reports but not the features computed by this
-        instance; construct a new instance to change them.
+        `features` or `ibsi` afterwards updates what :meth:`get_params` reports
+        but not the features computed by this instance, and `coarse_gray_depth`
+        accepts only its current value; construct a new instance to change them.
 
         Examples
         --------
@@ -2066,7 +2121,6 @@ class Nyxus3D:
             "features",
             "neighbor_distance",
             "pixels_per_micron",
-            "coarse_gray_depth",
             "n_feature_calc_threads",
             "using_gpu",
             "ibsi",
@@ -2075,6 +2129,9 @@ class Nyxus3D:
             "max_intensity"
         ]
         
+        # before anything is applied, so a refused call changes nothing
+        params = _without_coarse_gray_depth(self, params)
+
         environment_params = {}
         
         gabor_params = {}
@@ -2283,9 +2340,9 @@ class ImageQuality:
 
     The enabled feature set and the per-feature settings derived from
     `coarse_gray_depth` are fixed when the instance is constructed. Changing
-    `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
-    :meth:`get_params` reports but not the features computed by this
-    instance; construct a new instance to change them.
+    `features` or `ibsi` afterwards updates what :meth:`get_params` reports
+    but not the features computed by this instance, and `coarse_gray_depth`
+    accepts only its current value; construct a new instance to change them.
 
     Examples
     --------
@@ -2355,8 +2412,7 @@ class ImageQuality:
         if pixels_per_micron <= 0:
             raise ValueError("Pixels per micron must be greater than zero.")
 
-        if coarse_gray_depth <= 0:
-            raise ValueError("Custom number of grayscale levels (parameter coarse_gray_depth, default=256) must be positive.")
+        _check_coarse_gray_depth(coarse_gray_depth)
 
         if n_feature_calc_threads < 1:
             raise ValueError("There must be at least one feature calculation thread.")
@@ -2962,7 +3018,8 @@ class ImageQuality:
             Stored and reported by :meth:`get_params`; no feature currently
             depends on it.
         coarse_gray_depth : int, optional
-            Number of grey levels for texture features (see Notes).
+            Only the current value is accepted, and changes nothing (see
+            Notes); a different depth goes to the constructor.
         n_feature_calc_threads : int, optional
             Number of feature calculation threads.
         use_gpu_device : int, optional
@@ -2980,7 +3037,8 @@ class ImageQuality:
         Raises
         ------
         ValueError
-            If a keyword is not one of the above.
+            If a keyword is not one of the above, or `coarse_gray_depth`
+            differs from the current value.
 
         Notes
         -----
@@ -2988,9 +3046,9 @@ class ImageQuality:
 
         The enabled feature set and the per-feature settings derived from
         `coarse_gray_depth` are fixed when the instance is constructed. Changing
-        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
-        :meth:`get_params` reports but not the features computed by this
-        instance; construct a new instance to change them.
+        `features` or `ibsi` afterwards updates what :meth:`get_params` reports
+        but not the features computed by this instance, and `coarse_gray_depth`
+        accepts only its current value; construct a new instance to change them.
 
         Examples
         --------
@@ -3001,11 +3059,12 @@ class ImageQuality:
         {'neighbor_distance': 3, 'pixels_per_micron': 2.0}
         """
         
+        params = _without_coarse_gray_depth(self, params)
+
         valid_params = [
             'features',
             'neighbor_distance',
             'pixels_per_micron',
-            'coarse_gray_depth',
             'n_feature_calc_threads',
             'use_gpu_device',
             'verbose',
@@ -3021,7 +3080,6 @@ class ImageQuality:
         features = params.get('features', [])
         neighbor_distance = params.get ('neighbor_distance', -1)
         pixels_per_micron = params.get ('pixels_per_micron', -1)
-        coarse_gray_depth = params.get ('coarse_gray_depth', 0)
         n_reduce_threads = params.get ('n_feature_calc_threads', 0)
         use_gpu_device = params.get ('use_gpu_device', -1)
         verb_lvl = params.get ('verbose', 0)
@@ -3034,7 +3092,6 @@ class ImageQuality:
                                    features,
                                    neighbor_distance, 
                                    pixels_per_micron,
-                                   coarse_gray_depth,
                                    n_reduce_threads,
                                    use_gpu_device,
                                    dynamic_range,
@@ -3062,16 +3119,17 @@ class ImageQuality:
         Raises
         ------
         ValueError
-            If a keyword is not recognized. ``using_gpu`` passes the first check
-            but is rejected by :meth:`set_environment_params`.
+            If a keyword is not recognized or `coarse_gray_depth` differs from
+            the current value. ``using_gpu`` passes the first check but is
+            rejected by :meth:`set_environment_params`.
 
         Notes
         -----
         The enabled feature set and the per-feature settings derived from
         `coarse_gray_depth` are fixed when the instance is constructed. Changing
-        `features`, `coarse_gray_depth` or `ibsi` afterwards updates what
-        :meth:`get_params` reports but not the features computed by this
-        instance; construct a new instance to change them.
+        `features` or `ibsi` afterwards updates what :meth:`get_params` reports
+        but not the features computed by this instance, and `coarse_gray_depth`
+        accepts only its current value; construct a new instance to change them.
 
         Examples
         --------
@@ -3086,7 +3144,6 @@ class ImageQuality:
             "features",
             "neighbor_distance",
             "pixels_per_micron",
-            "coarse_gray_depth",
             "n_feature_calc_threads",
             "using_gpu",
             "ibsi",
@@ -3096,6 +3153,9 @@ class ImageQuality:
             "verbose"
         ]
         
+        # before anything is applied, so a refused call changes nothing
+        params = _without_coarse_gray_depth(self, params)
+
         environment_params = {}
         
         gabor_params = {}

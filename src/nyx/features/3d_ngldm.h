@@ -55,7 +55,7 @@ public:
 private:
 
 	void clear_buffers();
-	void calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& max_dep, const std::vector<Pixel3>& C, const AABB& aabb, SimpleCube<PixIntens>& I, const SimpleCube<unsigned char>& roi_mask, const std::vector<PixIntens>& V, PixIntens max_inten, int n_greys, bool ibsi);
+	void calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& max_dep, const std::vector<Pixel3>& C, const AABB& aabb, SimpleCube<PixIntens>& I, const SimpleCube<unsigned char>& roi_mask, const std::vector<PixIntens>& V, PixIntens min_inten, PixIntens max_inten, int n_greys, bool ibsi);
 	void calc_rowwise_and_columnwise_totals(std::vector<double>& Mg, std::vector<double>& Mr, const SimpleMatrix<unsigned int>& NGLDM, const int Ng, const int Nr);
 	void calc_features(const std::vector<double>& Mx, const std::vector<double>& Md, SimpleMatrix<unsigned int>& NGLDM, int Nr, const std::vector<PixIntens>& U, unsigned int roi_area);
 

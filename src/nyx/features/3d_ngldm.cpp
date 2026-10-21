@@ -4,6 +4,7 @@
 #include <vector>
 #include "3d_ngldm.h"
 #include "3d_ooc_volume.h"
+#include "texture_feature.h"
 #include "../environment.h"
 #include "../helpers/helpers.h"
 
@@ -90,10 +91,9 @@ void D3_NGLDM_feature::clear_buffers()
  * @param max_inten	Maximum intensity
  */
 
-void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& Nr, const std::vector<Pixel3>& C, const AABB& aabb, /*not const*/ SimpleCube<PixIntens>& I, const SimpleCube<unsigned char>& roi_mask, const std::vector<PixIntens>& U, PixIntens max_inten, int nGrays, bool ibsi)
+void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int& Nr, const std::vector<Pixel3>& C, const AABB& aabb, /*not const*/ SimpleCube<PixIntens>& I, const SimpleCube<unsigned char>& roi_mask, const std::vector<PixIntens>& U, PixIntens min_inten, PixIntens max_inten, int nGrays, bool ibsi)
 {
 	// Temps
-	PixIntens range = max_inten - 0;
 	auto xmin = aabb.get_xmin(),
 		ymin = aabb.get_ymin(),
 		zmin = aabb.get_zmin();
@@ -114,7 +114,7 @@ void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int&
 		PixIntens cpi = I.zyx (z, y, x);
 
 		// Binned intensity
-		PixIntens cpi_ = Nyxus::to_grayscale (cpi, 0, range, nGrays, ibsi);	// binned 'cpi'
+		PixIntens cpi_ = TextureFeature::ngldm_grey_level (cpi, min_inten, max_inten, nGrays, ibsi);	// binned 'cpi'
 
 		// Get a dense index value for sparse binned intensity cpi_
 		auto iter = std::find(U.begin(), U.end(), cpi_);
@@ -133,7 +133,7 @@ void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int&
 				continue;
 
 			PixIntens npi = I.zyx (nz, ny, nx);	// neighboring voxel intensity
-			PixIntens npi_ = Nyxus::to_grayscale (npi, 0, range, nGrays, ibsi);	// binned 'npi'
+			PixIntens npi_ = TextureFeature::ngldm_grey_level (npi, min_inten, max_inten, nGrays, ibsi);	// binned 'npi'
 			if (cpi_ == npi_)
 				n_matches++;
 		}
@@ -203,10 +203,9 @@ void D3_NGLDM_feature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGL
 	// the bounding box contributes no grey level
 	SimpleCube<unsigned char> roi_mask;
 	Nyxus::roi_mask_3d (roi_mask, r, I.width(), I.height(), I.depth());
-	PixIntens range = r.aux_max - 0;
 	std::unordered_set<PixIntens> U;
 	for (const auto& p : r.raw_pixels_3D)
-		U.insert (Nyxus::to_grayscale (p.inten, 0, range, n_greys, ibsi));
+		U.insert (TextureFeature::ngldm_grey_level (p.inten, r.aux_min, r.aux_max, n_greys, ibsi));
 
 	// Cast the set to vector to be able to access intensities by indices
 	grey_levels_LUT.insert (grey_levels_LUT.end(), U.begin(), U.end());
@@ -218,7 +217,7 @@ void D3_NGLDM_feature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGL
 	//==== NGLD-matrix
 	NGLDM.allocate(maxNr, Ng);	// Ng rows, maxNr columns, but we may end up having fewer informative columns after the NGLD-matrix calculation
 	NGLDM.fill(0);
-	calc_ngld_matrix (NGLDM, Nr, r.raw_pixels_3D, r.aabb, I, roi_mask, grey_levels_LUT, r.aux_max, n_greys, ibsi);	// sets the actual max dependency 'Nr'
+	calc_ngld_matrix (NGLDM, Nr, r.raw_pixels_3D, r.aabb, I, roi_mask, grey_levels_LUT, r.aux_min, r.aux_max, n_greys, ibsi);	// sets the actual max dependency 'Nr'
 }
 
 void D3_NGLDM_feature::calc_rowwise_and_columnwise_totals(
@@ -406,11 +405,11 @@ void D3_NGLDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	const int nGrays = STNGS_NGREYS(s);
 	const bool ibsi = STNGS_IBSI(s);
-	const PixIntens range = r.aux_max;			// binning basis is [0, aux_max], as in calc_ngld_matrix
+	const PixIntens mn = r.aux_min, mx = r.aux_max;	// the same binning as calc_ngld_matrix
 
 	// a cell holding the fill level is otherwise indistinguishable from a ROI voxel that binned to it
-	const PixIntens bg = Nyxus::to_grayscale (0, 0, range, nGrays, ibsi);
-	Nyxus::OocBinnedVolume vol (r, [range, nGrays, ibsi](PixIntens v) { return Nyxus::to_grayscale (v, 0, range, nGrays, ibsi); },
+	const PixIntens bg = TextureFeature::ngldm_grey_level (0, mn, mx, nGrays, ibsi);
+	Nyxus::OocBinnedVolume vol (r, [mn, mx, nGrays, ibsi](PixIntens v) { return TextureFeature::ngldm_grey_level (v, mn, mx, nGrays, ibsi); },
 		bg, 3, /*with_mask=*/ true);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 

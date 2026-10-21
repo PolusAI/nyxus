@@ -17,31 +17,6 @@ D3_VoxelIntensityFeatures::D3_VoxelIntensityFeatures() : FeatureMethod("PixelInt
 	provide_features ({D3_VoxelIntensityFeatures::featureset});
 }
 
-bool matlab_grey_binning (int greybinning_info) { return greybinning_info > 0; }
-bool radiomics_grey_binning (int greybinning_info) { return greybinning_info < 0; }
-// returns 1-based bin indices
-PixIntens to_grayscale_radiomix(PixIntens x, PixIntens min__, PixIntens max__, int binCount)
-{
-	if (x)
-	{
-		double binW = double(max__ - min__) / double(binCount);
-		PixIntens y = (PixIntens)(double(x - min__) / binW + 1);
-		if (y > binCount)
-			y = binCount;	// the last bin is +1 unit wider
-		return y;
-	}
-	else
-		return 0;
-}
-
-void bin_intensities_3d (std::vector <Pixel3> &S, const std::vector <Pixel3> &I, PixIntens min_I_inten, PixIntens max_I_inten, int greybin_info)
-{
-	// radiomics binning
-	auto n = I.size();
-	for (size_t i = 0; i < n; i++)
-		S[i].inten = to_grayscale_radiomix (I[i].inten, min_I_inten, max_I_inten, std::abs(greybin_info));
-}
-
 void D3_VoxelIntensityFeatures::calculate (LR &r, const Fsettings& s, const Dataset &ds)
 {
 	calculate_grey_levels (r, s, ds);
@@ -198,7 +173,7 @@ void D3_VoxelIntensityFeatures::calculate_grey_levels (LR &r, const Fsettings& s
 		return;
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
-	int n_radiomicGreyBins = STNGS_MISSING(s) ? DEFAULT_NUM_HISTO_BINS : STNGS_NGREYS(s);
+	int n_radiomicGreyBins = STNGS_MISSING(s) ? DEFAULT_NUM_HISTO_BINS : histogram_bin_count (STNGS_NGREYS(s));
 	TrivialHistogram H;
 	H.initialize (n_radiomicGreyBins, binned_min, binned_max, B);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
@@ -368,7 +343,7 @@ void D3_VoxelIntensityFeatures::osized_calculate_grey_levels (LR & r, const Fset
 	val_EXCESS_KURTOSIS = mom.excess_kurtosis();
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
-	int n_greybins = STNGS_NGREYS(s);
+	int n_greybins = histogram_bin_count (STNGS_NGREYS(s));
 	TrivialHistogram H;
 	H.initialize (n_greybins, r.aux_min, r.aux_max, r.raw_voxels_NT);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
