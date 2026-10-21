@@ -32,11 +32,11 @@ regression: 122  invariant: 0  untested: 0
 
 ## Verdicts
 
-1124 of 1124 assertion rows agree with the tree.
+1219 of 1219 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 1124 | the claim and the tree say the same thing |
+| `agree` | 1219 | the claim and the tree say the same thing |
 
 ### How far each verdict reaches
 
@@ -45,7 +45,7 @@ regression: 122  invariant: 0  untested: 0
 
 | scope | rows | what was compared |
 |---|---:|---|
-| `feature` | 533 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
+| `feature` | 628 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
 | `row` | 356 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 | `row+config` | 235 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
@@ -73,7 +73,7 @@ that alone understates every family that corroborates.
 | 2D | radial | . | . | . | . | . | . | . | . | . | . | 3 |
 | 2D | zernike | 1 | . | . | . | . | . | . | . | . | . | . |
 | 3D | firstorder | . | . | . | . | . | 29 | . | . | 17 | . | 3 |
-| 3D | glcm | . | . | . | . | . | . | . | . | 59 | . | . |
+| 3D | glcm | 2 | . | . | . | . | . | . | . | 59 | . | . |
 | 3D | gldm | . | . | . | . | . | . | . | . | 14 | . | . |
 | 3D | gldzm | . | . | . | . | . | . | 16 | . | . | . | 2 |
 | 3D | glrlm | 14 | . | . | . | . | . | . | . | 32 | . | . |
@@ -82,7 +82,7 @@ that alone understates every family that corroborates.
 | 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | 5 | . | 5 | . | . |
 | IMQ | imq | 1 | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **73** | **9** | **2** | **181** | **20** | **95** | **213** | **2** | **272** | **126** | **122** |
+| | **all** | **75** | **9** | **2** | **181** | **20** | **95** | **213** | **2** | **272** | **126** | **122** |
 
 ## By dimensionality
 

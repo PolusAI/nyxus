@@ -172,12 +172,25 @@ namespace Nyxus
 		return lut;
 	}
 
+	/// @brief The grey level of each of the ROI's voxels under 'greybin_info', as every 3D texture
+	/// family that bins the ROI over [aux_min, aux_max] takes it, in RAM (bin_roi_3d) and out of core
+	/// (the functor an OocBinnedVolume is built with): TextureFeature::bin_roi_voxel(), which gives
+	/// every ROI voxel a level of 1 or more under both binning schemes.
+	inline auto roi_voxel_binning (const LR& r, int greybin_info)
+	{
+		const PixIntens mn = r.aux_min, mx = r.aux_max;
+		return [mn, mx, greybin_info](PixIntens v) { return TextureFeature::bin_roi_voxel (v, mn, mx, greybin_info); };
+	}
+
 	/// @brief The in-core counterpart of OocBinnedVolume: the ROI's bounding-box cube with every ROI
 	/// voxel at its grey level under 'greybin_info' and every other cell at level 0, the level the
-	/// texture families read as background. It is written from the voxel cloud because a binned value
-	/// cannot mark the background: MATLAB binning sends intensity 0 to level 1, where the ROI's darkest
-	/// voxels land too. The cube is sized from r.aabb, the box every voxel is checked against, so a
-	/// voxel that passes the check has a cell.
+	/// texture families read as background. It is written from the voxel cloud because neither the raw
+	/// nor the binned value of a cell can mark the background: a ROI voxel at the image's lowest
+	/// intensity is stored as 0, and MATLAB binning sends intensity 0 to level 1, where the ROI's
+	/// darkest voxels land too. roi_voxel_binning() gives every ROI voxel a level of 1 or more under
+	/// both binning schemes, so level 0 means background there; with no binning a ROI voxel of
+	/// intensity 0 keeps level 0. The cube is sized from r.aabb, the box every voxel is checked
+	/// against, so a voxel that passes the check has a cell.
 	inline void bin_roi_3d (SimpleCube<PixIntens>& D, const LR& r, int greybin_info)
 	{
 		D.allocate ((int) r.aabb.get_width(), (int) r.aabb.get_height(), (int) r.aabb.get_z_depth());
@@ -185,10 +198,11 @@ namespace Nyxus
 		const auto xmin = r.aabb.get_xmin(),
 			ymin = r.aabb.get_ymin(),
 			zmin = r.aabb.get_zmin();
+		const auto bin = roi_voxel_binning (r, greybin_info);
 		for (const auto& p : r.raw_pixels_3D)
 		{
 			r.aabb.require_contains (p.x, p.y, p.z);
-			D.zyx (p.z - zmin, p.y - ymin, p.x - xmin) = TextureFeature::bin_pixel (p.inten, r.aux_min, r.aux_max, greybin_info);
+			D.zyx (p.z - zmin, p.y - ymin, p.x - xmin) = bin (p.inten);
 		}
 	}
 

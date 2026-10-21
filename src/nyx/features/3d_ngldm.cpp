@@ -114,7 +114,7 @@ void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int&
 		PixIntens cpi = I.zyx (z, y, x);
 
 		// Binned intensity
-		PixIntens cpi_ = TextureFeature::ngldm_grey_level (cpi, min_inten, max_inten, nGrays, ibsi);	// binned 'cpi'
+		PixIntens cpi_ = TextureFeature::ngldm_roi_grey_level (cpi, min_inten, max_inten, nGrays, ibsi);	// binned 'cpi'
 
 		// Get a dense index value for sparse binned intensity cpi_
 		auto iter = std::find(U.begin(), U.end(), cpi_);
@@ -133,7 +133,7 @@ void D3_NGLDM_feature::calc_ngld_matrix (SimpleMatrix<unsigned int>& NGLDM, int&
 				continue;
 
 			PixIntens npi = I.zyx (nz, ny, nx);	// neighboring voxel intensity
-			PixIntens npi_ = TextureFeature::ngldm_grey_level (npi, min_inten, max_inten, nGrays, ibsi);	// binned 'npi'
+			PixIntens npi_ = TextureFeature::ngldm_roi_grey_level (npi, min_inten, max_inten, nGrays, ibsi);	// binned 'npi'
 			if (cpi_ == npi_)
 				n_matches++;
 		}
@@ -205,7 +205,7 @@ void D3_NGLDM_feature::prepare_NGLDM_matrix_kit (SimpleMatrix<unsigned int>& NGL
 	Nyxus::roi_mask_3d (roi_mask, r, I.width(), I.height(), I.depth());
 	std::unordered_set<PixIntens> U;
 	for (const auto& p : r.raw_pixels_3D)
-		U.insert (TextureFeature::ngldm_grey_level (p.inten, r.aux_min, r.aux_max, n_greys, ibsi));
+		U.insert (TextureFeature::ngldm_roi_grey_level (p.inten, r.aux_min, r.aux_max, n_greys, ibsi));
 
 	// Cast the set to vector to be able to access intensities by indices
 	grey_levels_LUT.insert (grey_levels_LUT.end(), U.begin(), U.end());
@@ -409,7 +409,7 @@ void D3_NGLDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	// a cell holding the fill level is otherwise indistinguishable from a ROI voxel that binned to it
 	const PixIntens bg = TextureFeature::ngldm_grey_level (0, mn, mx, nGrays, ibsi);
-	Nyxus::OocBinnedVolume vol (r, [mn, mx, nGrays, ibsi](PixIntens v) { return TextureFeature::ngldm_grey_level (v, mn, mx, nGrays, ibsi); },
+	Nyxus::OocBinnedVolume vol (r, [mn, mx, nGrays, ibsi](PixIntens v) { return TextureFeature::ngldm_roi_grey_level (v, mn, mx, nGrays, ibsi); },
 		bg, 3, /*with_mask=*/ true);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 

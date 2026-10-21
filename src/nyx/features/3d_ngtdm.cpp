@@ -200,14 +200,13 @@ void D3_NGTDM_feature::calculate (LR& r, const Fsettings& s)
 		h = r.aux_image_cube.height(),
 		d = r.aux_image_cube.depth();
 
-	SimpleCube<PixIntens> D;
-	D.allocate(w, h, d);
-
 	auto greyInfo = STNGS_NGTDM_GREYDEPTH(s);
 	if (STNGS_IBSI(s))
 		greyInfo = 0;
 
-	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
+	// the ROI's voxels at their grey levels, the rest of the bounding box at 0
+	SimpleCube<PixIntens> D;
+	Nyxus::bin_roi_3d (D, r, greyInfo);
 
 	// Which cells of the bounding box are the ROI's. The cube fills the rest with 0, which is also
 	// the level a ROI voxel of intensity 0 carries, so only the voxel cloud can tell the two apart.
@@ -310,10 +309,9 @@ void D3_NGTDM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	int greyInfo = STNGS_IBSI(s) ? 0 : STNGS_NGTDM_GREYDEPTH(s);
 	bool ibsi = STNGS_IBSI(s);
-	PixIntens mn = r.aux_min, mx = r.aux_max;
-	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
+	const PixIntens bg = 0;	// as in calculate(), the rest of the bounding box is at level 0
 
-	auto bin_of = [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); };
+	auto bin_of = Nyxus::roi_voxel_binning (r, greyInfo);
 
 	// --- unique binned levels of the ROI's voxels
 	Nyxus::OocBinnedVolume scan (r, bin_of, bg, 1);

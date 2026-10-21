@@ -254,10 +254,9 @@ void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 	}
 
 	int greyInfo = STNGS_IBSI(s) ? 0 : STNGS_GLDM_GREYDEPTH(s);
-	PixIntens mn = r.aux_min, mx = r.aux_max;
 
-	// as in calculate(), the background outside the ROI takes level 0
-	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); }, 0, 3);
+	// as in calculate(), the background outside the ROI takes level 0 and every ROI voxel 1 or more
+	Nyxus::OocBinnedVolume vol (r, Nyxus::roi_voxel_binning (r, greyInfo), 0, 3);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 
 	// --- grey levels I: the unique nonzero levels of the binned cube, which are the ROI's own

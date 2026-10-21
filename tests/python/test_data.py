@@ -1,3 +1,5 @@
+import pathlib
+
 import numpy as np
 
 intens = np.array([
@@ -123,3 +125,62 @@ def write_disk64_pair(tmp_path, tifffile, as_dirs=True):
     tifffile.imwrite(str(ip), inten)
     tifffile.imwrite(str(sp), mask)
     return str(ip), str(sp)
+
+
+# bench_volmin_3d and its control bench_volmin_ctrl_3d: an ellipsoid ROI whose bounding box has
+# background in it, holding the volume's lowest intensity (the control moves that minimum to a voxel
+# outside the box, leaving the ROI unchanged). Built and described by
+# tests/vetting/oracles/volmin_phantom.py, which writes the NIfTI files and pins the oracles on them.
+# Every 3D texture family reads it, so it lives here rather than in one family's module.
+VOLMIN_DIR = pathlib.Path(__file__).resolve().parent.parent / "data" / "nifti" / "phantoms"
+VOLMIN_INTEN = str(VOLMIN_DIR / "volmin_inten.nii")
+VOLMIN_CTRL_INTEN = str(VOLMIN_DIR / "volmin_ctrl_inten.nii")
+VOLMIN_MASK = str(VOLMIN_DIR / "volmin_mask.nii")
+VOLMIN_LABEL = 1
+VOLMIN_NBINS = 8                  # the bin count the oracles are pinned at; Nyxus' depth is its negative
+VOLMIN_RAM_LIMIT_LARGE_MB = 1000  # the in-RAM side's ram_limit, as in test_ooc_mechanics.py
+VOLMIN_PHANTOMS = {"volmin": VOLMIN_INTEN, "ctrl": VOLMIN_CTRL_INTEN}
+
+
+def _read_nifti_volume(path):
+    """-> the (z, y, x) array of an uncompressed single-file NIfTI-1 of datatype uint8 or int16."""
+    raw = open(path, "rb").read()
+    dim = np.frombuffer(raw, np.int16, 8, 40)
+    dtype = {2: np.uint8, 4: np.int16}[int(np.frombuffer(raw, np.int16, 1, 70)[0])]
+    off = int(np.frombuffer(raw, np.float32, 1, 108)[0])
+    nx, ny, nz = int(dim[1]), int(dim[2]), int(dim[3])
+    return np.frombuffer(raw, dtype, nx * ny * nz, off).reshape((nz, ny, nx))
+
+
+def featurize_volmin(groups, phantom, side, tmp_path, metaparams=()):
+    """-> the one row Nyxus3D gives `phantom` ("volmin" or "ctrl") at coarse depth -VOLMIN_NBINS.
+
+    side "in_ram" reads the NIfTI pair. side "out_of_core" cannot -- NIfTI delivers the whole volume in
+    one read -- so it writes the intensities as a uint16 OME-TIFF Z-stack stored the way the NIfTI
+    loader stores them, offset by the volume's lowest intensity, and streams it at ram_limit=0, which
+    every ROI footprint reaches.
+    """
+    import nyxus
+    if side == "in_ram":
+        pair, ram_limit = (VOLMIN_PHANTOMS[phantom], VOLMIN_MASK), VOLMIN_RAM_LIMIT_LARGE_MB
+    else:
+        import tifffile
+        inten = _read_nifti_volume(VOLMIN_PHANTOMS[phantom]).astype(np.int32)
+        ip, mp = tmp_path / (phantom + "_i.ome.tif"), tmp_path / (phantom + "_m.ome.tif")
+        tifffile.imwrite(str(ip), (inten - inten.min()).astype(np.uint16), metadata={"axes": "ZYX"})
+        tifffile.imwrite(str(mp), _read_nifti_volume(VOLMIN_MASK).astype(np.uint16), metadata={"axes": "ZYX"})
+        pair, ram_limit = (str(ip), str(mp)), 0
+    nyx = nyxus.Nyxus3D(groups, ram_limit=ram_limit, coarse_gray_depth=-VOLMIN_NBINS)
+    for m in metaparams:
+        nyx.set_metaparam(m)
+    df = nyx.featurize_files([pair[0]], [pair[1]], False)
+    assert len(df) == 1, len(df)
+    return df.iloc[0]
+
+
+def assert_volmin_matches(row, want, reltol, what):
+    """Every pinned feature of `want` in `row` within `reltol`, naming each that is not."""
+    missing = [f for f in want if f not in row.index]
+    assert not missing, "%s: no column for %r" % (what, missing)
+    bad = [(f, float(row[f]), w) for f, w in want.items() if abs(float(row[f]) - w) > reltol * max(abs(w), 1e-300)]
+    assert not bad, "%s parts from its oracle: %r" % (what, bad)

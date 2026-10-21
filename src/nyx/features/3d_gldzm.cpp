@@ -151,10 +151,6 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	// -- Zones (intensity clusters)
 	std::vector<IDZ_cluster_indo> Z;
 
-	// -- binned intensities
-	SimpleCube<PixIntens> D;
-	D.allocate (r.aux_image_cube.width(), r.aux_image_cube.height(), r.aux_image_cube.depth());
-
 	auto greyInfo = STNGS_NGREYS(s); // former Nyxus::theEnvironment.get_coarse_gray_depth()
 	auto greyInfo_localFeature = D3_GLDZM_feature::n_levels;
 	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
@@ -162,14 +158,14 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
-	auto& imR = r.aux_image_cube;
-	bin_intensities_3d (D, imR, r.aux_min, r.aux_max, greyInfo);
+	// -- binned intensities of the ROI's voxels, background at 0
+	SimpleCube<PixIntens> D;
+	Nyxus::bin_roi_3d (D, r, greyInfo);
 
 	// -- which voxels are the ROI's, marked in the cube that will go on to hold their distance to its
-	// border. The binned cube cannot answer this: matlab binning sends intensity 0 to level 1, so
-	// after binning the background filling the rest of the bounding box is indistinguishable from a
-	// genuine level-1 ROI voxel. The voxel cloud is what knows, and the 2D twin ngldm.cpp masks from
-	// it for the same reason.
+	// border. The binned cube cannot answer this: with no binning a ROI voxel of raw intensity 0 holds
+	// level 0, the background's level. The voxel cloud is what knows, and the 2D twin ngldm.cpp masks
+	// from it for the same reason.
 	// allocate() value-initialises a fresh cube, so every voxel starts at 0, "not the ROI's".
 	SimpleCube<int> dist;
 	dist.allocate (D.width(), D.height(), D.depth());
@@ -177,10 +173,10 @@ void D3_GLDZM_feature::prepare_GLDZM_matrix_kit (SimpleMatrix<unsigned int>& GLD
 		ymin = r.aabb.get_ymin(),
 		zmin = r.aabb.get_zmin();
 
-	// -- a GLDZM grey level is 1-based, and two of the three binning schemes can hand back a 0 for a
+	// -- a GLDZM grey level is 1-based, and one of the three binning schemes can hand back a 0 for a
 	// voxel that is genuinely the ROI's: the IBSI setting bins nothing at all, so a raw intensity of 0
-	// stays 0, and the radiomics scheme maps 0 to 0 by construction. Only the MATLAB scheme, which
-	// sends 0 to level 1, cannot. Lifting the ROI's levels by one where that happens is what keeps
+	// stays 0. The radiomics and MATLAB schemes give every ROI voxel a level of 1 or more
+	// (Nyxus::roi_voxel_binning), so they never lift. Lifting the ROI's levels by one where it happens is what keeps
 	// those voxels in a zone; dropping them instead would take them out of Ns, out of the zone map and
 	// out of the ZP denominator's numerator while they still counted in the ROI's voxel total.
 	// The lift is by one, not a re-map onto a dense ladder: it makes the levels valid and changes
@@ -576,10 +572,9 @@ void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	if (STNGS_IBSI(s))
 		greyInfo = 0;
 
-	const PixIntens mn = r.aux_min, mx = r.aux_max;
 	const bool ibsi_levels = ibsi_grey_binning (greyInfo);
 
-	auto bin_of = [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); };
+	auto bin_of = Nyxus::roi_voxel_binning (r, greyInfo);
 
 	// the ROI's binned cube, streamed, with its mask: a cell holding the fill level is otherwise
 	// indistinguishable from a ROI voxel that binned to it
@@ -597,7 +592,7 @@ void D3_GLDZM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 	};
 
 	// --- one streaming pass marks the ROI and gathers its grey levels. A GLDZM grey level is
-	// 1-based, and the IBSI and radiomics schemes can bin a ROI voxel to 0, so the levels are lifted
+	// 1-based, and with no binning a ROI voxel of raw intensity 0 has level 0, so the levels are lifted
 	// by one when any ROI voxel has level 0. Whether to lift is only known once the pass is over.
 	std::vector<OocBorderDist> dist ((size_t) W * H * Dz, 0);
 	bool roi_has_zero_level = false;

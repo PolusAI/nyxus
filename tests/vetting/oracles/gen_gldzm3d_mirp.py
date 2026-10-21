@@ -4,7 +4,7 @@
     python tests/vetting/oracles/gen_gldzm3d_mirp.py --check           (verify only, no tables)
     python tests/vetting/oracles/gen_gldzm3d_mirp.py --write-phantom   (rewrite both fixtures)
 
-Runs MIRP four times and re-verifies everything the tree quotes from it, exiting non-zero on any
+Runs MIRP six times and re-verifies everything the tree quotes from it, exiting non-zero on any
 mismatch, on any quoted feature it cannot produce, and on any feature it produces that nothing
 quotes.
 
@@ -37,6 +37,17 @@ ratio fails the run.
      gldzm_3d_mirp_negdepth_ref_vals in tests/test_3d_gldzm_mirp.h, held at rel 1e-12 -- the pins are
      printed at full precision, so this is a staleness check, not a vetting band.
 
+  5. `gldzm3d.mirp_volmin_fbn8` -- bench_volmin_3d, whose ROI holds the volume's lowest intensity
+     (volmin_phantom.py in this directory builds it and describes it;
+     tests/data/nifti/phantoms/volmin_inten.nii + volmin_mask.nii, label 1). MIRP reads the ROI's own
+     intensities from volmin_phantom.build() as float64, `fixed_bin_number` n=8; on the Nyxus side
+     that is coarse_gray_depth=-8. The run also reads the control, bench_volmin_ctrl_3d, and fails
+     unless MIRP gives it the same values bit for bit, which is the fixture's premise: the two
+     volumes differ only outside the ROI's bounding box. It checks that the three NIfTI files hold
+     what build() produces, prints GLDZM_3D_VOLMIN_MIRP paste-ready (not under --check), and verifies
+     that table in tests/python/test_3d_gldzm_mirp.py in both directions at rel 1e-12: every pin
+     reproduces, and every one of the sixteen features MIRP computes is pinned.
+
 Runs 2 and 3 pin nothing. The artifact they feed is ../audit/gldzm_3d_mirp_vetting_report.md, and
 that is what this generator checks them against.
 
@@ -67,6 +78,7 @@ tool=mirp 2.6.0 (numpy 2.4.6, Python 3.11); env=nyxus_mirp (conda-forge:
 `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy scipy`);
 generator=tests/vetting/oracles/gen_gldzm3d_mirp.py. Run offline; CI never invokes it.
 """
+import importlib.util
 import logging
 import os
 import re
@@ -127,6 +139,9 @@ SUFFIX_NONE = "_3d"                     # MIRP drops the discretisation stem whe
 SUFFIX_FBN = "_3d_fbn_n%d" % NBINS
 SUFFIX_NEGDEPTH = "_3d_fbn_n%d" % NEGDEPTH_NBINS
 
+VOLMIN_TEST = os.path.join(TESTS, "python", "test_3d_gldzm_mirp.py")
+VOLMIN_TABLE = "GLDZM_3D_VOLMIN_MIRP"
+
 NIFTI_DTYPE = {2: np.uint8, 4: np.int16, 8: np.int32, 16: np.float32, 64: np.float64,
                768: np.uint32}
 
@@ -175,15 +190,16 @@ def build_zero_level_phantom():
     """-> (intensities, mask), both shaped (z,y,x).
 
     A 4x4x4 ROI inside a two-voxel background margin, whose raw intensities are 0 on the voxels with
-    an even x+y+z and 5 on the rest. Its whole point is the zeros: they are ROI voxels, and the two
-    binning schemes that do not remap a zero -- IBSI (which bins nothing) and radiomics -- hand them
-    to the GLDZM as grey level 0, which is not a valid level. It is what separates a family that
-    lifts them onto a valid level from one that drops them, and MIRP cannot be the judge because it
-    has the same problem with a level 0 in its input.
+    an even x+y+z and 5 on the rest. Its whole point is the zeros: they are ROI voxels, and the
+    binning scheme that does not remap a zero -- IBSI, which bins nothing -- hands them to the GLDZM
+    as grey level 0, which is not a valid level. It is what separates a family that lifts them onto a
+    valid level from one that drops them, and MIRP cannot be the judge because it has the same
+    problem with a level 0 in its input. The radiomics scheme puts them in bin 1 like any other ROI
+    voxel, so at a bin count of 5 the same fixture has levels 1 and 5 and nothing to lift.
 
     Every number it produces is derivable by hand: each parity class is one 26-connected zone (two
     voxels of one class always touch at least at a corner), every zone reaches the ROI surface so
-    both sit at distance 1, and the levels after the lift are 1 and 6.
+    both sit at distance 1, and with no binning the levels after the lift are 1 and 6.
     """
     inten = np.zeros((ZERO_VOL, ZERO_VOL, ZERO_VOL), np.float32)
     mask = np.zeros((ZERO_VOL, ZERO_VOL, ZERO_VOL), np.uint32)
@@ -436,6 +452,61 @@ def verify(got, quoted, what, tol):
     return nok, nfail, nmiss, unquoted
 
 
+def _helper(name):
+    """A shared fixture module from this directory, loaded by path."""
+    spec = importlib.util.spec_from_file_location(name, os.path.join(HERE, name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def parse_py_pins(path, table):
+    """-> {feature: value} out of a `TABLE = {...}` dict literal in a Python test, braces counted."""
+    txt = open(path, encoding="utf-8", errors="replace").read()
+    m = re.search(r"^" + re.escape(table) + r"\s*=\s*\{", txt, re.M)
+    if not m:
+        raise RuntimeError("table %s not found in %s" % (table, os.path.basename(path)))
+    depth, i = 1, m.end()
+    while depth:
+        depth += {"{": 1, "}": -1}.get(txt[i], 0)
+        i += 1
+    body = re.sub(r"#[^\n]*", "", txt[m.end():i - 1])     # a commented-out golden is not a pin
+    return dict((n, float(v)) for n, v in
+                re.findall(r'"(3GLDZM_[A-Z0-9_]+)"\s*:\s*([-0-9.eE+]+)', body))
+
+
+def check_volmin(features, check):
+    """-> (n verified, n failed, n unproducible, [unquoted]) for recipe gldzm3d.mirp_volmin_fbn8."""
+    vp = _helper("volmin_phantom")
+    print("\n# bench_volmin_3d: the checked-in NIfTI files against volmin_phantom.build()")
+    nbad = vp.check_files()
+
+    inten, ctrl_inten, vmask = vp.build()
+    m32 = (vmask == vp.LABEL).astype(np.int32)
+    suffix = "_3d_fbn_n%d" % vp.NBINS
+    got, ctrl = (features(v.astype(np.float64), m32, (1.0, 1.0, 1.0), suffix,
+                          base_discretisation_method="fixed_bin_number",
+                          base_discretisation_n_bins=vp.NBINS)
+                 for v in (inten, ctrl_inten))
+    print("\n# bench_volmin_ctrl_3d gives the same %d values (the fixture's premise)" % len(got))
+    for name in sorted(got):
+        if ctrl[name] != got[name]:
+            print("  FAIL %s: volmin=%r ctrl=%r" % (name, got[name], ctrl[name]))
+            nbad += 1
+
+    if not check:
+        print("\n# gldzm3d.mirp_volmin_fbn8, paste-ready (fixed_bin_number n=%d, label=%d)"
+              % (vp.NBINS, vp.LABEL))
+        print("%s = {" % VOLMIN_TABLE)
+        for name in sorted(got):
+            print('    "%s": %r,' % (name, got[name]))
+        print("}")
+
+    # the table pins all sixteen, so the reverse direction fails the run as well
+    a, b, c, d = verify(got, parse_py_pins(VOLMIN_TEST, VOLMIN_TABLE), VOLMIN_TABLE, PIN_RELTOL)
+    return a, b + nbad, c, d
+
+
 def main():
     write = "--write-phantom" in sys.argv[1:]
     check = "--check" in sys.argv[1:]
@@ -537,6 +608,12 @@ def main():
     # the negdepth table pins all sixteen, so the reverse direction (a feature MIRP computes that the
     # table does not pin) fails the run as well
     a, b, c, d = verify(neg, parse_pins(HEADER, NEGDEPTH_TABLE), NEGDEPTH_TABLE, PIN_RELTOL)
+    nok += a
+    nfail += b
+    nmiss += c
+    unquoted += d
+
+    a, b, c, d = check_volmin(features, check)
     nok += a
     nfail += b
     nmiss += c

@@ -272,7 +272,7 @@ that is `SAE = 1/64`, `LAE = 64`, `ZE = 0`, `GLV = 0`, `ZP = 1/8`. Nyxus returns
 sentinel — `--noval`, default `0.0` — for all sixteen.
 
 The guard is unconditional, so it discards every scheme's answer, radiomics binning's included:
-`to_grayscale_radiomix` puts a range of zero width into one bin.
+`TextureFeature::fixed_bin_number` puts a range of zero width into one bin.
 Negative control O makes one voxel of the constant block different, so the intercept does not fire,
 and the family computes `SAE = 0.51020408163265307` on the result — the arithmetic is there, it is
 the guard that is too wide.

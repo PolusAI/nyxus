@@ -19,6 +19,7 @@ therefore has no distance, angle or alpha axis at all, unlike 3D GLCM, 3D GLRLM 
 | ibsi | binning | levels | verdict | recipe / oracle |
 |---|---|---|---|---|
 | False | radiomics (`GLSZM_GREYDEPTH < 0`) | 20 bins | VALID | `glszm3d.pyradiomics_bincount20` — pyradiomics, 16/16 |
+| False | radiomics (`GLSZM_GREYDEPTH < 0`) | 8 bins, on a ROI holding the volume's lowest intensity | VALID | `glszm3d.pyradiomics_volmin_bincount8` — pyradiomics, 15/16 (`3GLSZM_ZE` left out for `fast_log10`), on `bench_volmin_3d` and its control `bench_volmin_ctrl_3d`, in RAM and out of core |
 | False | MATLAB (`GLSZM_GREYDEPTH > 0`) | 64 | VALID-prod-only | drift guard, `glszm3d.regression_ut_phantom` — no oracle |
 | False | none (`GLSZM_GREYDEPTH == 0`) | the raw levels | VALID | `glszm3d.pyradiomics_ibsi_gapped` — pyradiomics, 16/16 + the matrix, on `bench_cube3_gapped_levels`; pinned on the phantom too, `glszm3d.regression_ut_phantom_nobinning`; `3GLSZM_SAE` and `3GLSZM_LAE` on zones past the 32-bit range, `glszm3d.analytic_two_large_zones` — analytic |
 | True | none (forced) | the raw levels | VALID — the same cell | measured identical to the row above, values and matrix, by `test_3d_glszm_ibsi_equals_no_binning_mechanics`; see below |
@@ -113,7 +114,7 @@ Nyxus returns the soft-NaN sentinel for all sixteen instead, which is `--noval` 
 external tool reproduces, which is what SPEC §5.1 gives that disposition to, so it earns a regression
 row rather than a dropped one — and the cell says in full that the behaviour it pins is a defect.
 Calling it neither vetted nor invalid is the whole point. The guard is unconditional, so it
-discards every scheme's answer: at radiomics binning `to_grayscale_radiomix` puts a range of zero width
+discards every scheme's answer: at radiomics binning `TextureFeature::fixed_bin_number` puts a range of zero width
 into one bin, so there too a matrix of one level is what lies beneath it. Whether to narrow it is
 `src/` work on its own branch — it changes a public feature's output on a reachable input — so this
 pass pins the current behaviour rather than changing it: `test_3d_glszm_constant_roi_regression` runs

@@ -126,9 +126,10 @@ apart in their configuration.
 
 Recipe `ngtdm3d.regression_ut_phantom`: `bench_ut57_3d`, `GREYDEPTH=64`, `NGTDM_GREYDEPTH=64`,
 `NGTDM_RADIUS=1`, `IBSI=false`. **Not comparable to the PyRadiomics recipe** — at
-`NGTDM_GREYDEPTH=64` the binning is MATLAB-style, which makes bin 1 the background level: a voxel
-binned there is not a matrix row of its own but still counts towards its neighbours' neighbourhood
-means. These pins claim no oracle.
+`NGTDM_GREYDEPTH=64` the binning is MATLAB-style: the ROI's voxels take levels 1..64 and the rest of
+the bounding box level 0, and since 0 is then among the levels the family lifts every level by one,
+the background to 1. A background voxel is no centre, but it is a grey level of the matrix and counts
+towards its neighbours' neighbourhood means. These pins claim no oracle.
 
 `runAllTests --gtest_filter=*3D_NGTDM_DUMP_PYRADIOMICS*` prints the same for the oracle fixture,
 alongside each pinned PyRadiomics value — that is the one to run when a residual needs reading

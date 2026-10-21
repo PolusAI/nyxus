@@ -29,18 +29,14 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	int greyInfo = STNGS_IBSI(s) ? 0 : STNGS_GLCM_GREYDEPTH(s);
 	bool ibsi = STNGS_IBSI(s);
 	double soft_nan = STNGS_NAN(s);
-	PixIntens mn = r.aux_min, mx = r.aux_max;
-
-	// background cells carry the binned level of intensity 0, as they do in the in-core cube
-	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
-	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); },
-		bg, D3_GLCM_feature::offset + 1);
+	// as in calculate(), background cells carry level 0 and every ROI voxel 1 or more
+	Nyxus::OocBinnedVolume vol (r, Nyxus::roi_voxel_binning (r, greyInfo), 0, D3_GLCM_feature::offset + 1);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 
-	// --- the grey levels I. Under radiomics binning they are the unique levels of the whole binned
-	// cube, so the background level counts when the bounding box has background.
+	// --- the grey levels I. Under radiomics binning they are the unique nonzero levels of the ROI's
+	// voxels.
 	PixIntens maxbin = 0;
-	std::set<PixIntens> uniq = vol.levels (/*with_background=*/ true, /*drop_zero=*/ true, maxbin);
+	std::set<PixIntens> uniq = vol.levels (/*with_background=*/ false, /*drop_zero=*/ true, maxbin);
 
 	I.clear();
 	if (radiomics_grey_binning(greyInfo))
@@ -93,14 +89,12 @@ void D3_GLCM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&)
 	// symmetric: radiomics, no binning, or symmetric_glcm
 	auto add_pair = [&](SimpleMatrix<double>& M, PixIntens lvl_base, PixIntens lvl_nbr)
 	{
-		if (ibsi_grey_binning(greyInfo))
-			if (lvl_nbr == 0 || lvl_base == 0)
-				return;
+		// a background cell holds level 0 under every binning scheme
+		if (lvl_nbr == 0 || lvl_base == 0)
+			return;
 		int a = (int) lvl_nbr, b = (int) lvl_base;
 		if (radiomics)
 		{
-			if (a == 0 || b == 0)
-				return;
 			a = rowLUT[a];
 			b = rowLUT[b];
 		}

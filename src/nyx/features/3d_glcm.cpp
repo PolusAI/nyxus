@@ -1,5 +1,6 @@
 #include <numeric>
 #include "3d_glcm.h"
+#include "3d_ooc_volume.h"
 #include "../helpers/helpers.h"
 #include "../environment.h"
 
@@ -40,19 +41,13 @@ void D3_GLCM_feature::calculate (LR& r, const Fsettings& s)
 	// clear the feature values buffers
 	clear_result_buffers();
 
-	// grey-bin intensities
-	int w = r.aux_image_cube.width(),
-		h = r.aux_image_cube.height(),
-		d = r.aux_image_cube.depth();
-
-	SimpleCube<PixIntens> D;
-	D.allocate (w,h,d);
-
 	auto greyBinningInfo = STNGS_GLCM_GREYDEPTH(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
 	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 		greyBinningInfo = 0;
 
-	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyBinningInfo);
+	// grey-bin the ROI's voxels; the background outside the ROI takes level 0, which pairs with nothing
+	SimpleCube<PixIntens> D;
+	Nyxus::bin_roi_3d (D, r, greyBinningInfo);
 
 	// calculate features for all the 13 directions
 	for (const ShiftToNeighbor & sh : shifts)
@@ -340,10 +335,9 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 					PixIntens lvl_b = D.zyx(zslice, row, col),
 						lvl_a = D.zyx(zslice + dz, row + dy, col + dx);
 
-					// Skip 0-intensity pixels (usually out of mask pixels)
-					if (ibsi_grey_binning(greyInfo))
-						if (lvl_a == 0 || lvl_b == 0)
-							continue;
+					// skip pairs with a background cell, which holds level 0 under every binning scheme
+					if (lvl_a == 0 || lvl_b == 0)
+						continue;
 
 					// 0-based grey tone indices, hence '-1'
 					int a = lvl_a,
@@ -352,10 +346,6 @@ void D3_GLCM_feature::calculateCoocMatAtAngle(
 					// raw intensities need to be modified for different grey binning paradigms (Matlab, PyRadiomics, IBSI)
 					if (radiomics_grey_binning(greyInfo))
 					{
-						// skip zeroes
-						if (a == 0 || b == 0)
-							continue;
-
 						// index of 'a'
 						auto lower = std::lower_bound(I.begin(), I.end(), a);	// enjoy sorted vector 'I'
 						a = int(lower - I.begin());	// intensity index in array of unique intensities 'I'

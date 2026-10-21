@@ -216,7 +216,7 @@ values reproduce PyRadiomics **to the last bit** on all seven dependence-axis fe
 0.31944444444444442, `DV` 26.743055555555554, `GLN` 48, `GLV` 0), with `3GLDM_DE` at the family's
 documented `fast_log10` residual and the grey-level features apart only by the level convention.
 So nothing under the intercept is wrong; the intercept is the whole defect. At *radiomics* binning
-`to_grayscale_radiomix()` puts a range of zero width into one bin, so beneath the intercept every voxel
+`TextureFeature::fixed_bin_number()` puts a range of zero width into one bin, so beneath the intercept every voxel
 is level 1 there too; the cell is asserted at no binning, the configuration the bypass was measured
 at.
 
