@@ -95,7 +95,7 @@ Sanity checks worth running on any regenerated set, both of which the pre-2026-0
 ## grey64 table and the retired sweep — `glrlm_3d_regression_grey64_ref_vals`
 
 Recipe `glrlm3d.regression_ut_phantom_grey64`: the same segmented phantom at `GLRLM_GREYDEPTH=+64`,
-which `bin_intensities_3d()` routes through `matlab_grey_binning` — a fixed 64-level count — instead
+which `bin_roi_3d()` (`3d_ooc_volume.h`) routes through `matlab_grey_binning` — a fixed 64-level count — instead
 of the binCount binning derived from the ROI's own min/max.
 
 The ROI does not fill its bounding box, and MATLAB binning sends intensity 0 to level 1, so at this

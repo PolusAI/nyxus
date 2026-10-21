@@ -317,11 +317,11 @@ At that recipe the old pins turn out to have been roughly right and uselessly im
 
 | feature | old pin | Nyxus, `%.17g` | rel. diff | at ±10% |
 |---|---|---|---|---|
-| `3NGTDM_COARSENESS` | 0.00004 | 4.1746559837294642e-05 | 4.2e-2 | passes |
-| `3NGTDM_CONTRAST` | 0.66 | 0.63226607482802633 | 4.4e-2 | passes |
-| `3NGTDM_BUSYNESS` | 46.0 | 44.389552850401223 | 3.6e-2 | passes |
-| `3NGTDM_COMPLEXITY` | 2936.0 | 2819.3512285176689 | 4.1e-2 | passes |
-| `3NGTDM_STRENGTH` | 0.024 | 0.024654440905359544 | 2.7e-2 | passes |
+| `3NGTDM_COARSENESS` | 0.00004 | 4.1204162221171236e-05 | 2.9e-2 | passes |
+| `3NGTDM_CONTRAST` | 0.66 | 0.64067304737766795 | 3.0e-2 | passes |
+| `3NGTDM_BUSYNESS` | 46.0 | 45.088896286519478 | 2.0e-2 | passes |
+| `3NGTDM_COMPLEXITY` | 2936.0 | 2857.3201047656198 | 2.8e-2 | passes |
+| `3NGTDM_STRENGTH` | 0.024 | 0.024330922991243304 | 1.4e-2 | passes |
 
 Every one would have passed its own ±10% band, so wiring the file in at the band it carried would
 have found nothing. They are re-pinned at `%.17g` and the band tightened to `rel=1e-9`; the file

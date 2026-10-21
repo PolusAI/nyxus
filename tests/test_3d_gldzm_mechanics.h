@@ -3,11 +3,11 @@
 // 3D GLDZM mechanics: what the family does with a ROI voxel whose grey level is 0, and the bound on
 // the out-of-core border distance (at the end of the file).
 //
-// A GLDZM grey level is 1-based, and two of the three binning schemes hand back a 0 for a voxel that
-// is genuinely the ROI's: `IBSI=true` bins nothing, so a raw intensity of 0 stays 0, and the
-// radiomics scheme maps 0 to 0 by construction. Only the MATLAB scheme cannot, because it sends 0 to
-// level 1. `prepare_GLDZM_matrix_kit` lifts the ROI's levels by one where that happens, which keeps
-// those voxels in a zone.
+// A GLDZM grey level is 1-based, and one of the three binning schemes hands back a 0 for a voxel that
+// is genuinely the ROI's: `IBSI=true` bins nothing, so a raw intensity of 0 stays 0.
+// `prepare_GLDZM_matrix_kit` lifts the ROI's levels by one where that happens, which keeps those
+// voxels in a zone. The radiomics and MATLAB schemes put every ROI voxel at level 1 or more, a raw 0
+// included, so they never lift; the radiomics case below pins that.
 //
 // bench_gldzm_zerolevel_3d is the fixture that separates lifting them from dropping them, and it is
 // the only one in the family that can: the compatibility phantom's levels are 1..8 and the segmented
@@ -71,11 +71,36 @@ static const double gldzm_3d_mechanics_tolerance = 1.e-9;
 static const double gldzm_3d_mechanics_zones = 2.0;
 static const double gldzm_3d_mechanics_roi_voxels = 64.0;
 
+// The radiomics scheme at a bin count of 5 puts the raw levels 0 and 5 in bins 1 and 5 (IBSI's fixed
+// bin number, floor(5 x / 5) + 1, the top level clipped into the last bin), so the same two zones sit
+// in rows 1 and 5. Only the grey-level-weighted entries differ from the table above.
+static const ref_vals_map<double> gldzm_3d_mechanics_radiomics_ref_vals{
+	{"3GLDZM_SDE",                       1.0},
+	{"3GLDZM_LDE",                       1.0},
+	{"3GLDZM_LGLZE",                    0.52},   // (1/1^2 + 1/5^2) / 2
+	{"3GLDZM_HGLZE",                    13.0},   // (1^2 + 5^2) / 2
+	{"3GLDZM_SDLGLE",                   0.52},
+	{"3GLDZM_SDHGLE",                   13.0},
+	{"3GLDZM_LDLGLE",                   0.52},
+	{"3GLDZM_LDHGLE",                   13.0},
+	{"3GLDZM_GLNU",                      1.0},
+	{"3GLDZM_GLNUN",                     0.5},
+	{"3GLDZM_ZDNU",                      2.0},
+	{"3GLDZM_ZDNUN",                     1.0},
+	{"3GLDZM_ZP",                    0.03125},
+	{"3GLDZM_GLM",                       3.0},   // (1 + 5) / 2
+	{"3GLDZM_GLV",                       4.0},   // ((1-3)^2 + (5-3)^2) / 2
+	{"3GLDZM_ZDM",                       1.0},
+	{"3GLDZM_ZDV",                       0.0},
+	{"3GLDZM_ZDE",                       1.0},
+};
+
 // The derived table and the zone count, asserted against one extraction.
-static void assert_3d_gldzm_zero_level_voxels_are_zoned (const std::vector<std::vector<double>>& fvals)
+static void assert_3d_gldzm_zero_level_voxels_are_zoned (const std::vector<std::vector<double>>& fvals,
+	const ref_vals_map<double>& want = gldzm_3d_mechanics_ref_vals)
 {
 	Environment e;
-	for (const auto& nv : gldzm_3d_mechanics_ref_vals)
+	for (const auto& nv : want)
 	{
 		int fcode = -1;
 		ASSERT_TRUE(e.theFeatureSet.find_3D_FeatureByString(nv.first, fcode)) << nv.first;
@@ -103,20 +128,18 @@ void test_3d_gldzm_zero_level_voxels_are_zoned_mechanics()
 }
 
 // The same fixture through the radiomics scheme, which gathers the ROI's grey levels as a set rather
-// than as a 1..max ladder, so its lift is a separate code path from the no-binning point's.
-//
-// At a bin count of 5 the scheme maps the fixture's raw levels onto themselves: `to_grayscale_radiomix`
-// sends 0 to 0 by construction, and 5 over a bin width of (5-0)/5 = 1 to bin 6, which clips into the
-// last bin, 5. The lift then makes them 1 and 6 -- the levels of the no-binning point -- so the
-// derived table above applies unchanged. A set gathered without the lift would hold 0 and 5, and a
-// level-1 zone would have no row to go in.
+// than as a 1..max ladder. A ROI voxel at raw intensity 0 is the ROI's lowest level and goes to bin 1
+// like any other (Nyxus::roi_voxel_binning), so nothing is lifted and the levels are 1 and 5. What
+// this discriminates: a scheme that sends the raw 0 to level 0 and then lifts every level by one puts
+// the zones in rows 1 and 6 and fails LGLZE, HGLZE, GLM and GLV; one that drops the level-0 voxels
+// leaves one zone and fails ZP.
 void test_3d_gldzm_zero_level_voxels_are_zoned_radiomics_mechanics()
 {
 	auto [ipath, mpath, label] = get_3d_gldzm_zerolevel_phantom();
 
 	std::vector<std::vector<double>> fvals;
 	ASSERT_NO_FATAL_FAILURE(extract_3d_gldzm(fvals, ipath, mpath, label, make_gldzm3d_settings(-5, false)));
-	assert_3d_gldzm_zero_level_voxels_are_zoned (fvals);
+	assert_3d_gldzm_zero_level_voxels_are_zoned (fvals, gldzm_3d_mechanics_radiomics_ref_vals);
 }
 
 // GREYDEPTH=0 and IBSI=true are two ways of asking for the same thing -- calculate() overwrites the

@@ -1763,6 +1763,10 @@ TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_COARSE_GRAY_DEPTH_CLI_REFUSED_MECHANICS) 
 	ASSERT_NO_FATAL_FAILURE(test_feature_settings_coarse_gray_depth_cli_refused_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_TEXTURE_BINNING_ROI_CUBE_VOXEL_AT_ZERO_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_texture_binning_roi_cube_voxel_at_zero_mechanics());
+}
+
 TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_GREY_DEPTH_PARSE_RANGE_MECHANICS) {
 	ASSERT_NO_FATAL_FAILURE(test_feature_settings_grey_depth_parse_range_mechanics());
 }
@@ -6229,6 +6233,7 @@ TEST(TEST_NYXUS, TEST_3D_GLCM_SUM_ENTROPY_REGRESSION) { ASSERT_NO_THROW(test_3d_
 TEST(TEST_NYXUS, TEST_3D_GLCM_SUM_VARIANCE_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_sum_variance_regression()); }
 
 TEST(TEST_NYXUS, TEST_3D_GLCM_DUMP_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_dump_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_GREY64_DUMP_REGRESSION) { ASSERT_NO_FATAL_FAILURE(test_3d_glcm_grey64_dump_regression()); }
 
 // 3D GLCM "grey64" drift guards: named individually per feature rather than swept via TEST_P.
 // History: tests/vetting/audit/glcm_3d_golden_regen.md, "grey64 table and the retired Wave-9 sweep".

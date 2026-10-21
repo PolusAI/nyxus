@@ -4,7 +4,9 @@ are not the ROI's.
 Under MATLAB-style binning -- a positive grey depth, 64 by default -- intensity 0 bins to level 1,
 the level the ROI's darkest voxels bin to as well, so the binned value cannot tell the background
 from the ROI. 3D GLSZM, GLDM and GLRLM tell them apart by the ROI's voxel cloud, in RAM and out of
-core, and these tests assert it.
+core, and these tests assert it. 3D GLCM does too, but its matrix is asymmetric under MATLAB-style
+binning and symmetric with no binning, so the reference below cannot judge it; test_3d_glcm_analytic.py
+holds it to the definition instead.
 
 The reference is the same ROI with its MATLAB levels written into the image and no binning. There
 the background is intensity 0 and every ROI voxel is level 1 or above, so nothing is ambiguous. A

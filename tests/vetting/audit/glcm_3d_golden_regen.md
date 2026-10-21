@@ -89,8 +89,13 @@ Sanity checks worth running on any regenerated set, both of which the pre-2026-0
 
 ## grey64 table and the retired Wave-9 sweep
 
-`glcm_3d_regression_grey64_ref_vals` (recipe as above but `GLCM_GREYDEPTH=+64`, `matlab_grey_binning`)
-was ported verbatim from `glcm_3d_regression_coverage_ref_vals`, formerly in the now-deleted
+`glcm_3d_regression_grey64_ref_vals` (recipe `glcm3d.regression_ut_phantom_grey64`: as above but
+`GLCM_GREYDEPTH=+64`, `matlab_grey_binning`) holds Nyxus' values at the positive grey depth. The ROI
+does not fill its bounding box: its voxels take levels 1..64 and the rest of the box level 0, which
+pairs with nothing. `test_3d_glcm_grey64_dump_regression()` prints the table for regeneration, and
+`tests/python/test_3d_glcm_analytic.py` holds the rule to the co-occurrence definition.
+
+The table's 36 features come from `glcm_3d_regression_coverage_ref_vals`, formerly in the now-deleted
 `test_3d_glcm_coverage.h`. That file ran a generic `TEST_P`-parameterized completeness sweep (internally
 called "Wave-9") over every 3D family's featureset; it served two purposes that are now split out:
 

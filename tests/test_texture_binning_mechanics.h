@@ -17,7 +17,7 @@ void test_texture_binning_zero_width_range_mechanics()
 	EXPECT_EQ (TextureFeature::to_grayscale_radiomix (7, 7, 7, 1), 1u);
 	EXPECT_EQ (TextureFeature::to_grayscale_radiomix (0, 7, 7, 8), 0u);
 
-	// through the cube binning the 3D families call, at a negative grey depth
+	// through the cube-wide binning, at a negative grey depth
 	SimpleCube<PixIntens> I, D;
 	I.allocate (3, 2, 2);
 	I.fill (7);
@@ -59,6 +59,38 @@ void test_texture_binning_roi_cube_places_voxels_mechanics()
 	for (auto v : D)
 		background += (v == 0);
 	EXPECT_EQ (background, 9u);
+}
+
+// A ROI voxel stored as 0 -- the volume's lowest intensity, which the loader offsets every intensity
+// by -- is a ROI voxel like any other: PyRadiomics-style binning puts it in bin 1 and MATLAB-style
+// binning at level 1, and only the cells that are not the ROI's keep level 0. With no binning its
+// level is its raw value, 0. What this discriminates: a binning that treats a stored 0 as background
+// leaves the voxel at 0 under PyRadiomics-style binning, where the families read 0 as background.
+void test_texture_binning_roi_cube_voxel_at_zero_mechanics()
+{
+	LR r;
+	r.aabb.init_x (0);	r.aabb.update_x (2);
+	r.aabb.init_y (0);	r.aabb.update_y (0);
+	r.aabb.init_z (0);	r.aabb.update_z (0);
+	r.raw_pixels_3D = { Pixel3 (0, 0, 0, 0), Pixel3 (2, 0, 0, 64) };	// x = 1 is background
+	r.aux_min = 0;
+	r.aux_max = 64;
+
+	struct { int greydepth; PixIntens at_zero, at_max; } cases[] = {
+		{ -4, 1, 4 },	// PyRadiomics-style: floor(4 (x - 0) / 64) + 1, the top clipped into bin 4
+		{  4, 1, 4 },	// MATLAB-style: floor(4 x / 64 + 1), clipped to 1..4
+		{  0, 0, 64 },	// no binning: the raw values
+	};
+	for (const auto& c : cases)
+	{
+		SCOPED_TRACE ("greydepth " + std::to_string (c.greydepth));
+		SimpleCube<PixIntens> D;
+		Nyxus::bin_roi_3d (D, r, c.greydepth);
+		ASSERT_EQ (D.size(), 3u);
+		EXPECT_EQ (D.zyx (0, 0, 0), c.at_zero);
+		EXPECT_EQ (D.zyx (0, 0, 1), 0u) << "the background cell";
+		EXPECT_EQ (D.zyx (0, 0, 2), c.at_max);
+	}
 }
 
 // The refusal path: a voxel outside the box has no cell in the cube, and is refused rather than
