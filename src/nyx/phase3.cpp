@@ -144,13 +144,28 @@ namespace Nyxus
 			r.aux_max = 0;
 
 			// Iterate ROI's tiles and scan pixels
-			size_t nth = env.theImLoader.get_num_tiles_hor(),
-				ntv = env.theImLoader.get_num_tiles_vert();
-			for (unsigned int row = 0; row < nth; row++)
-				for (unsigned int col = 0; col < ntv; col++)
+			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
+				ntVert = env.theImLoader.get_num_tiles_vert(),	// tiles down a column
+				th = env.theImLoader.get_tile_height(),
+				tw = env.theImLoader.get_tile_width();
+			for (size_t row = 0; row < ntVert; row++)
+				for (size_t col = 0; col < ntHor; col++)
 				{
-					unsigned int tileIdx = row * ntv + col;
-					env.theImLoader.load_tile(tileIdx);
+					// row-major, as the loader splits an index into tile_idx / ntHor and tile_idx % ntHor
+					size_t tileIdx = row * ntHor + col;
+					// load_tile() refuses only an index outside the grid; a tile the reader fails on
+					// arrives zero-filled and is not reported here
+					if (! env.theImLoader.load_tile(tileIdx))
+					{
+						std::string erm = "Error fetching tile row=" + std::to_string(row) + " col=" + std::to_string(col);
+						r.raw_pixels_NT.clear();
+						env.theImLoader.close();
+#ifdef WITH_PYTHON_H
+						throw std::runtime_error (erm);
+#endif
+						std::cerr << erm << "\n";
+						return false;
+					}
 					auto& dataI = env.theImLoader.get_int_tile_buffer();
 					auto& dataL = env.theImLoader.get_seg_tile_buffer();
 					for (unsigned long i = 0; i < env.theImLoader.get_tile_size(); i++)
@@ -163,12 +178,8 @@ namespace Nyxus
 
 						// Pixel intensity and global position
 						auto intens = dataI[i];
-						size_t row = tileIdx / env.theImLoader.get_num_tiles_hor(),
-							col = tileIdx / env.theImLoader.get_num_tiles_hor(),
-							th = env.theImLoader.get_tile_height(),
-							tw = env.theImLoader.get_tile_width();
-						int y = row * th + i / tw,
-							x = col * tw + i % tw;
+						StatsInt y = (StatsInt) (row * th + i / tw),
+							x = (StatsInt) (col * tw + i % tw);
 
 						// Track the streamed extrema (see the aux_min/aux_max reset above)
 						r.aux_min = (std::min)(r.aux_min, (PixIntens)intens);
