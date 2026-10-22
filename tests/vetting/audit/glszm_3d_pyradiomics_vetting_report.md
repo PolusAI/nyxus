@@ -241,14 +241,14 @@ That is why `matrix/glszm3d.md` now carries one cell for the two rows rather tha
 
 ## The `GLSZM_GREYDEPTH == 0` cell
 
-This is the value a run passing no `--3glszm/greydepth` reaches the feature with:
-`compile_feature_settings()` zero-fills the family's settings vector and nothing writes the entry.
-The first pass added `test_3d_glszm_default_greydepth_mechanics`, which asserts that the 0 really
-arrives and that the sixteen features are finite there. Finiteness is mechanics; it says nothing
+This is the no-binning configuration, which `--coarseGrayDepth=0` or `3glszm/greydepth=0`
+selects; a run that names neither bins at the coarse grey depth, 64.
+`test_3d_glszm_default_greydepth_mechanics` asserts that the default depth really arrives and
+that the sixteen features are finite there. Finiteness is mechanics; it says nothing
 about the numbers.
 
 `glszm3d.regression_ut_phantom_nobinning` pins them: sixteen `%.17g` goldens on `bench_ut57_3d` under
-one case, `TEST_3D_GLSZM_DEFAULT_GREYDEPTH_REGRESSION`. One case for the sixteen because one phantom
+one case, `TEST_3D_GLSZM_NO_BINNING_REGRESSION`. One case for the sixteen because one phantom
 read answers all of them, and the matrix at this setting is 3024 grey levels wide against `binCount`'s
 20. They claim no oracle: PyRadiomics discretises before it counts zones and has no counterpart for
 reading 2001 raw levels off this phantom. The *setting* is vetted on the fixture that is small enough
@@ -271,8 +271,8 @@ with a single populated cell and sixteen finite features over it. On a 2×2×2 b
 that is `SAE = 1/64`, `LAE = 64`, `ZE = 0`, `GLV = 0`, `ZP = 1/8`. Nyxus returns the soft-NaN
 sentinel — `--noval`, default `0.0` — for all sixteen.
 
-The guard is doing real work at radiomics binning, where `to_grayscale_radiomix` divides by
-`(max - min)`; it is unconditional, so it discards the two schemes that would have answered as well.
+The guard is unconditional, so it discards every scheme's answer, radiomics binning's included:
+`TextureFeature::fixed_bin_number` puts a range of zero width into one bin.
 Negative control O makes one voxel of the constant block different, so the intercept does not fire,
 and the family computes `SAE = 0.51020408163265307` on the result — the arithmetic is there, it is
 the guard that is too wide.
@@ -327,11 +327,12 @@ the code rather than of a recipe that got lost. They are replaced with a fresh `
 `glszm3d.regression_ut_phantom` — `GREYDEPTH=64`, `IBSI=false`, `GLSZM_GREYDEPTH=64`, the
 configuration the retired 3D coverage sweep ran every 3D family at on this same phantom.
 
-`GLSZM_GREYDEPTH=0` is not degenerate, and that is the difference from `NGTDM_RADIUS=0`: it is this
-family's documented "no binning" default, `--3glszm/greydepth` is what overrides it, and a run that
-passes no such flag produces finite values for all sixteen features.
-`test_3d_glszm_default_greydepth_mechanics` asserts exactly that, so **no `src/` change is proposed
-by this branch**.
+`GLSZM_GREYDEPTH=0` is not degenerate, and that is the difference from `NGTDM_RADIUS=0`: it is the
+no-binning setting, which `--coarseGrayDepth=0` or `3glszm/greydepth=0` selects, and it produces
+finite values for all sixteen features; `glszm3d.regression_ut_phantom_nobinning` pins them. A run
+that passes neither flag bins at the coarse grey depth, 64, and
+`test_3d_glszm_default_greydepth_mechanics` asserts that it reaches the feature at that depth with
+settings that produce numbers.
 
 ---
 

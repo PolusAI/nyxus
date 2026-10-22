@@ -4,14 +4,17 @@
 // is handed, rather than the values any family computes. Claims no oracle (SPEC 2).
 
 #include <gtest/gtest.h>
+#include <functional>
 #include <map>
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <typeindex>
 #include <typeinfo>
+#include <vector>
 
 #include "../src/nyx/environment.h"
+#include "../src/nyx/helpers/fsystem.h"
 #include "../src/nyx/feature_method.h"
 #include "../src/nyx/feature_settings.h"
 
@@ -186,4 +189,183 @@ void test_feature_settings_unregistered_type_refused_mechanics()
 
 	ASSERT_THROW (e.get_feature_settings (typeid(FeatureMethod*)), std::runtime_error);
 	ASSERT_THROW (e.get_feature_settings (typeid(Environment)), std::runtime_error);
+}
+
+// The coarse grey depth is the binning every texture family starts from: the 2D families and 3D
+// GLDZM/NGLDM read the common GREYDEPTH, and the other five 3D families read a grey depth of their
+// own, which compile_feature_settings() starts at the same value. Asserted at each sign, because the
+// sign is the scheme (positive MATLAB levels, 0 none, negative PyRadiomics bins) and a vector left at
+// its zero fill would read as a deliberate "no binning".
+void test_feature_settings_coarse_gray_depth_reaches_every_texture_family_mechanics()
+{
+	for (int depth : { -20, 0, 20 })
+	{
+		SCOPED_TRACE ("coarse grey depth " + std::to_string (depth));
+		Environment e;
+		e.set_coarse_gray_depth (depth);
+		e.compile_feature_settings();
+
+		// 2D
+		ASSERT_EQ (STNGS_GLCM_GREYDEPTH (e.fsett_GLCM), depth);
+		ASSERT_EQ (STNGS_NGREYS (e.fsett_GLRLM), depth);
+		ASSERT_EQ (STNGS_NGREYS (e.fsett_GLSZM), depth);
+		ASSERT_EQ (STNGS_NGREYS (e.fsett_GLDM), depth);
+		ASSERT_EQ (STNGS_NGREYS (e.fsett_GLDZM), depth);
+		ASSERT_EQ (STNGS_NGREYS (e.fsett_NGLDM), depth);
+		ASSERT_EQ (STNGS_NGREYS (e.fsett_NGTDM), depth);
+
+		// 3D
+		ASSERT_EQ (STNGS_GLCM_GREYDEPTH (e.fsett_D3_GLCM), depth);
+		ASSERT_EQ (STNGS_GLRLM_GREYDEPTH (e.fsett_D3_GLRLM), depth);
+		ASSERT_EQ (STNGS_GLSZM_GREYDEPTH (e.fsett_D3_GLSZM), depth);
+		ASSERT_EQ (STNGS_GLDM_GREYDEPTH (e.fsett_D3_GLDM), depth);
+		ASSERT_EQ (STNGS_NGTDM_GREYDEPTH (e.fsett_D3_NGTDM), depth);
+		ASSERT_EQ (STNGS_NGREYS (e.fsett_D3_GLDZM), depth);
+		ASSERT_EQ (STNGS_NGREYS (e.fsett_D3_NGLDM), depth);
+	}
+}
+
+// The other direction: a family's own grey-depth metaparameter overrides the coarse grey depth for
+// that family alone, so starting every family at the common value takes no per-family control away.
+void test_feature_settings_family_greydepth_overrides_coarse_mechanics()
+{
+	Environment e;
+	e.set_coarse_gray_depth (64);
+	e.compile_feature_settings();
+
+	ASSERT_FALSE (e.set_metaparam ("3glszm/greydepth=-20").has_value());
+	ASSERT_FALSE (e.set_metaparam ("glcm/greydepth=16").has_value());
+
+	ASSERT_EQ (STNGS_GLSZM_GREYDEPTH (e.fsett_D3_GLSZM), -20);
+	ASSERT_EQ (STNGS_GLCM_GREYDEPTH (e.fsett_GLCM), 16);
+
+	ASSERT_EQ (STNGS_GLRLM_GREYDEPTH (e.fsett_D3_GLRLM), 64);
+	ASSERT_EQ (STNGS_GLDM_GREYDEPTH (e.fsett_D3_GLDM), 64);
+	ASSERT_EQ (STNGS_NGTDM_GREYDEPTH (e.fsett_D3_NGTDM), 64);
+	ASSERT_EQ (STNGS_GLCM_GREYDEPTH (e.fsett_D3_GLCM), 64);
+	ASSERT_EQ (STNGS_NGREYS (e.fsett_GLCM), 64);
+}
+
+// Parses a command line whose only optional argument is --coarseGrayDepth=<raw>; the directories are
+// the temp directory, which exists, so the depth is the one thing that can refuse the line
+static bool parse_coarse_gray_depth_cmdline (Environment& e, const std::string& raw, std::string* err = nullptr)
+{
+	const std::string tmp = fs::temp_directory_path().generic_string() + "/";
+	std::vector<std::string> args = { "nyxus", "--intDir=" + tmp, "--segDir=" + tmp, "--outDir=" + tmp,
+		"--features=MEAN", "--filePattern=.*\\.tif", "--outputType=singlecsv", "--coarseGrayDepth=" + raw };
+	std::vector<char*> argv;
+	for (auto& a : args)
+		argv.push_back (a.data());
+	testing::internal::CaptureStderr();
+	bool ok = e.parse_cmdline ((int) argv.size(), argv.data());
+	std::string captured = testing::internal::GetCapturedStderr();
+	if (err)
+		*err = captured;
+	return ok;
+}
+
+// --coarseGrayDepth takes a depth at every sign
+void test_feature_settings_coarse_gray_depth_cli_accepted_mechanics()
+{
+	for (int depth : { -256, -20, 0, 64, 4096 })
+	{
+		SCOPED_TRACE ("--coarseGrayDepth=" + std::to_string (depth));
+		Environment e;
+		ASSERT_TRUE (parse_coarse_gray_depth_cmdline (e, std::to_string (depth)));
+		ASSERT_EQ (e.get_coarse_gray_depth(), depth);
+	}
+}
+
+// The refusal path, and the reason each refusal gives: text that is not one whole integer is no
+// integer, while INT_MIN (whose magnitude is no int) and values past the int range are integers out
+// of range, refused rather than wrapped into a range they are not in
+void test_feature_settings_coarse_gray_depth_cli_refused_mechanics()
+{
+	for (const char* raw : { "64abc", "abc", "1.5" })
+	{
+		SCOPED_TRACE (std::string ("--coarseGrayDepth=") + raw);
+		Environment e;
+		std::string err;
+		ASSERT_FALSE (parse_coarse_gray_depth_cmdline (e, raw, &err));
+		EXPECT_NE (err.find ("expecting an integer constant"), std::string::npos) << err;
+	}
+	for (const char* raw : { "-2147483648", "2147483648", "-99999999999", "99999999999" })
+	{
+		SCOPED_TRACE (std::string ("--coarseGrayDepth=") + raw);
+		Environment e;
+		std::string err;
+		ASSERT_FALSE (parse_coarse_gray_depth_cmdline (e, raw, &err));
+		EXPECT_NE (err.find ("out of range"), std::string::npos) << err;
+	}
+}
+
+// The edges of the range parse_grey_depth() checks: an int whose magnitude is an int too. This is a
+// type check only; a depth near the edge parses, and whether the buffers it sizes fit is not asked here.
+void test_feature_settings_grey_depth_parse_range_mechanics()
+{
+	for (const char* raw : { "-2147483647", "2147483647", " -20", "+64", "0" })
+	{
+		SCOPED_TRACE (raw);
+		int v = 12345;
+		ASSERT_EQ (Nyxus::parse_grey_depth (raw, v), Nyxus::GreyDepthParse::ok);
+		ASSERT_EQ (v, std::stoi (raw));
+	}
+	for (const char* raw : { "-2147483648", "2147483648", "4294967276", "-99999999999999999999" })
+	{
+		SCOPED_TRACE (raw);
+		int v = 12345;
+		ASSERT_EQ (Nyxus::parse_grey_depth (raw, v), Nyxus::GreyDepthParse::out_of_range);
+		ASSERT_EQ (v, 12345) << "a refused depth must leave the target alone";
+	}
+	for (const char* raw : { "", "abc", "64abc", "1.5", "-" })
+	{
+		SCOPED_TRACE (raw);
+		int v = 12345;
+		ASSERT_EQ (Nyxus::parse_grey_depth (raw, v), Nyxus::GreyDepthParse::not_an_integer);
+		ASSERT_EQ (v, 12345);
+	}
+}
+
+// Every <family>/greydepth metaparameter applies the CLI's rule. INT_MIN would reach std::abs() as UB,
+// and 4294967276 is -20 once wrapped into an int, i.e. 20 PyRadiomics-style bins nobody asked for; both
+// are refused and leave the family's depth as it was, and so is text that is no integer.
+void test_feature_settings_greydepth_metaparam_refused_mechanics()
+{
+	Environment e;
+	e.set_coarse_gray_depth (64);
+	e.compile_feature_settings();
+
+	const std::vector<std::pair<std::string, std::function<int()>>> families = {
+		{ "glcm",   [&] { return (int) STNGS_GLCM_GREYDEPTH (e.fsett_GLCM); } },
+		{ "3glcm",  [&] { return (int) STNGS_GLCM_GREYDEPTH (e.fsett_D3_GLCM); } },
+		{ "3gldm",  [&] { return (int) STNGS_GLDM_GREYDEPTH (e.fsett_D3_GLDM); } },
+		{ "3ngtdm", [&] { return (int) STNGS_NGTDM_GREYDEPTH (e.fsett_D3_NGTDM); } },
+		{ "3glrlm", [&] { return (int) STNGS_GLRLM_GREYDEPTH (e.fsett_D3_GLRLM); } },
+		{ "3glszm", [&] { return (int) STNGS_GLSZM_GREYDEPTH (e.fsett_D3_GLSZM); } } };
+
+	for (const auto& [fam, depth] : families)
+	{
+		const int before = depth();
+		for (const char* raw : { "-2147483648", "4294967276", "2147483648" })
+		{
+			SCOPED_TRACE (fam + "/greydepth=" + raw);
+			auto err = e.set_metaparam (fam + "/greydepth=" + raw);
+			ASSERT_TRUE (err.has_value());
+			EXPECT_NE (err->find ("out of range"), std::string::npos) << *err;
+			ASSERT_EQ (depth(), before);
+		}
+		{
+			SCOPED_TRACE (fam + "/greydepth=abc");
+			auto err = e.set_metaparam (fam + "/greydepth=abc");
+			ASSERT_TRUE (err.has_value());
+			EXPECT_NE (err->find ("expecting an integer"), std::string::npos) << *err;
+			ASSERT_EQ (depth(), before);
+		}
+		// and a depth in range is still taken, at either sign
+		for (int d : { -20, 32 })
+		{
+			ASSERT_FALSE (e.set_metaparam (fam + "/greydepth=" + std::to_string (d)).has_value()) << fam;
+			ASSERT_EQ (depth(), d) << fam;
+		}
+	}
 }

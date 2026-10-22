@@ -351,7 +351,8 @@ void GLCMFeature::calculateCoocMatAtAngle(
 	PixIntens grays_min_val,
 	PixIntens grays_max_val)
 {
-	int nGreys = s[(int)NyxSetting::GREYDEPTH].ival;
+	// the family's own grey depth, the same one calculate() decides a blank ROI by
+	int nGreys = STNGS_GLCM_GREYDEPTH(s);
 	bool ibsi = s[(int)NyxSetting::IBSI].bval;
 
 	//--- grey bining ---
@@ -377,9 +378,6 @@ void GLCMFeature::calculateCoocMatAtAngle(
 
 	// bin intensities
 	auto greyInfo = nGreys;
-	auto greyInfo_localFeature = nGreys;
-	if (greyInfo_localFeature != 0 && greyInfo != greyInfo_localFeature)
-		greyInfo = greyInfo_localFeature;
 	if (ibsi)
 		greyInfo = 0;
 	bin_intensities (D, imR, grays_min_val, grays_max_val, greyInfo);

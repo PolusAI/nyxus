@@ -85,19 +85,15 @@ void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 	using ACluster = std::pair<PixIntens, int>;	// Pairs of (intensity,number_of_neighbors)
 	std::vector<ACluster> Z;
 
-	// grey-bin intensities
-	int w = r.aux_image_cube.width(),
-		h = r.aux_image_cube.height(),
-		d = r.aux_image_cube.depth();
-
-	SimpleCube<PixIntens> D;
-	D.allocate(w, h, d);
-
 	auto greyInfo = STNGS_GLDM_GREYDEPTH(s);	// former Nyxus::theEnvironment.get_coarse_gray_depth()
 	if (STNGS_IBSI(s))	// former Nyxus::theEnvironment.ibsi_compliance
 		greyInfo = 0;
 
-	bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
+	// grey-bin the ROI's voxels; the background outside the ROI takes level 0, the level no
+	// dependence is counted for or against
+	SimpleCube<PixIntens> D;
+	Nyxus::bin_roi_3d (D, r, greyInfo);
+	const int w = D.width(), h = D.height(), d = D.depth();
 
 	// allocate intensities matrix
 	if (ibsi_grey_binning(greyInfo))
@@ -116,9 +112,6 @@ void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 		std::sort(I.begin(), I.end());
 	}
 
-	// zero (backround) intensity at given grey binning method
-	PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
-
 	// Gather zones
 	for (int zslice = 0; zslice < d; zslice++)
 	{
@@ -129,7 +122,7 @@ void D3_GLDM_feature::calculate (LR& r, const Fsettings& s)
 				PixIntens pi = D.zyx (zslice, row, col);
 
 				// skip background
-				if (pi == zeroI)
+				if (pi == 0)
 					continue;
 
 				// count dependencies
@@ -261,15 +254,12 @@ void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 	}
 
 	int greyInfo = STNGS_IBSI(s) ? 0 : STNGS_GLDM_GREYDEPTH(s);
-	PixIntens mn = r.aux_min, mx = r.aux_max;
-	const PixIntens bg = TextureFeature::bin_pixel (0, mn, mx, greyInfo);
-	const PixIntens zeroI = matlab_grey_binning(greyInfo) ? 1 : 0;
 
-	Nyxus::OocBinnedVolume vol (r, [mn, mx, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, mn, mx, greyInfo); }, bg, 3);
+	// as in calculate(), the background outside the ROI takes level 0 and every ROI voxel 1 or more
+	Nyxus::OocBinnedVolume vol (r, Nyxus::roi_voxel_binning (r, greyInfo), 0, 3);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 
-	// --- grey levels I: the unique levels of the whole binned cube, so the background level counts
-	// when the bounding box has background
+	// --- grey levels I: the unique nonzero levels of the binned cube, which are the ROI's own
 	PixIntens maxbin = 0;
 	std::set<PixIntens> uniq = vol.levels (/*with_background=*/ true, /*drop_zero=*/ true, maxbin);
 	I.clear();
@@ -299,7 +289,7 @@ void D3_GLDM_feature::osized_calculate(LR& r, const Fsettings& s, ImageLoader&)
 			for (int x = 0; x < W; x++)
 			{
 				PixIntens pi = cur[(size_t) y * W + x];
-				if (pi == zeroI)
+				if (pi == 0)
 					continue;
 
 				int nd = 1;

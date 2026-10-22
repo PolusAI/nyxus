@@ -42,16 +42,16 @@ void D3_GLRLM_feature::osized_calculate (LR& r, const Fsettings& s, ImageLoader&
 
 	int greyInfo = STNGS_IBSI(s) ? 0 : STNGS_GLRLM_GREYDEPTH(s);
 	const bool ibsi = STNGS_IBSI(s);
-	const PixIntens bg = TextureFeature::bin_pixel (0, minI, maxI, greyInfo);
 
 	// the ROI's binned cube, streamed: a cross-plane run reaches one plane back, so the window
-	// keeps 2 planes
-	Nyxus::OocBinnedVolume vol (r, [minI, maxI, greyInfo](PixIntens v) { return TextureFeature::bin_pixel (v, minI, maxI, greyInfo); }, bg, 2);
+	// keeps 2 planes. As in calculate(), the background outside the ROI takes level 0, at which no
+	// run is counted.
+	Nyxus::OocBinnedVolume vol (r, Nyxus::roi_voxel_binning (r, greyInfo), 0, 2);
 	const int W = vol.width(), H = vol.height(), Dz = vol.depth();
 	const size_t nvox = vol.n_voxels();
 
-	// --- grey levels I: 1..max under no binning, else the unique levels of the whole binned cube,
-	// background included, minus 0. The construction follows the binning mode, ibsi_grey_binning();
+	// --- grey levels I: 1..max under no binning, else the unique nonzero levels of the binned cube,
+	// which are the ROI's own. The construction follows the binning mode, ibsi_grey_binning();
 	// the row lookup below follows the IBSI flag, and the two differ at GREYDEPTH=0 without IBSI.
 	std::vector<PixIntens> I;
 	if (ibsi_grey_binning (greyInfo))

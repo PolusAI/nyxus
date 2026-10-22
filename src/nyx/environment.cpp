@@ -189,7 +189,7 @@ void Environment::show_cmdline_help()
 		<< "\t\t\tDefault: 1 \n"
 		<< "\t\t" << OPT << clo_PXLDIST << "=<number of pixels as neighbor features radius> \n"
 		<< "\t\t\tDefault: 5 \n"
-		<< "\t\t" << OPT << clo_COARSEGRAYDEPTH << "=<custom number of grayscale levels> \n"
+		<< "\t\t" << OPT << clo_COARSEGRAYDEPTH << "=<texture grey binning: N > 0 is N MATLAB-style levels, 0 is no binning, N < 0 is |N| PyRadiomics-style bins> \n"
 		<< "\t\t\tDefault: 64 \n"
 		<< "\t\t" << OPT << clo_GLCMANGLES << "=<one or more comma separated rotation angles from set {0, 45, 90, and 135}> \n"
 		<< "\t\t\tDefault: 0,45,90,135 \n"
@@ -665,11 +665,17 @@ bool Environment::parse_cmdline(int argc, char** argv)
 	// parse COARSEGRAYDEPTH
 	if (!raw_coarse_grayscale_depth.empty())
 	{
-		// string -> integer
-		if (sscanf(raw_coarse_grayscale_depth.c_str(), "%d", &coarse_grayscale_depth) != 1)
+		// string -> integer; every sign is meaningful, and the magnitude has to be an int (see parse_grey_depth)
+		switch (Nyxus::parse_grey_depth (raw_coarse_grayscale_depth, coarse_grayscale_depth))
 		{
+		case Nyxus::GreyDepthParse::not_an_integer:
 			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": expecting an integer constant\n";
 			return false;
+		case Nyxus::GreyDepthParse::out_of_range:
+			std::cerr << "Error: " << clo_COARSEGRAYDEPTH << "=" << raw_coarse_grayscale_depth << ": out of range, the magnitude must be at most " << INT_MAX << "\n";
+			return false;
+		case Nyxus::GreyDepthParse::ok:
+			break;
 		}
 	}
 
@@ -930,7 +936,7 @@ int Environment::get_coarse_gray_depth()
 	return coarse_grayscale_depth;
 }
 
-void Environment::set_coarse_gray_depth(unsigned int new_depth)
+void Environment::set_coarse_gray_depth(int new_depth)
 {
 	coarse_grayscale_depth = new_depth;
 }

@@ -208,7 +208,7 @@ void PixelIntensityFeatures::calculate_grey_levels (LR& r, const Fsettings & fse
 		return;
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
-	int n_radiomicsGreyBins = STNGS_MISSING(fsett) ? DEFAULT_NUM_HISTO_BINS : STNGS_NGREYS(fsett);
+	int n_radiomicsGreyBins = STNGS_MISSING(fsett) ? DEFAULT_NUM_HISTO_BINS : histogram_bin_count (STNGS_NGREYS(fsett));
 	TrivialHistogram H;
 	H.initialize (n_radiomicsGreyBins, r.aux_min, r.aux_max, r.raw_pixels);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();
@@ -362,7 +362,7 @@ void PixelIntensityFeatures::osized_calculate_grey_levels (LR& r, const Fsetting
 		return;
 
 	// P10, 25, 75, 90, IQR, QCOD, RMAD, entropy, uniformity
-	int n_greybins = STNGS_NGREYS(stng);
+	int n_greybins = histogram_bin_count (STNGS_NGREYS(stng));
 	TrivialHistogram H;
 	H.initialize (n_greybins, r.aux_min, r.aux_max, r.raw_pixels_NT);
 	auto [median_, mode_, p01_, p10_, p25_, p75_, p90_, p99_, iqr_, rmad_, entropy_, uniformity_] = H.get_stats();

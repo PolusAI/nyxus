@@ -128,10 +128,10 @@ def test_ooc_3d_matches_in_ram_mechanics(tmp_path):
 
 def _make_volume_pair_partial(tmp_path):
     # Same intensity field as _make_volume_pair, but a non-cuboid (ellipsoid) mask that leaves
-    # background voxels INSIDE the ROI's bounding box. Out-of-core paths that build a grey-level
-    # LUT from the whole binned cube (mask + background) -- e.g. matlab binning maps the raw-0
-    # background to a nonzero bin that must still appear in the LUT -- are only exercised when the
-    # bbox actually contains background; a whole-volume mask (hasBackground == false) never does.
+    # background voxels INSIDE the ROI's bounding box. How an out-of-core path tells that background
+    # from the ROI -- matlab binning maps the raw-0 background to level 1, a level ROI voxels carry
+    # too -- is only exercised when the bbox actually contains background; a whole-volume mask
+    # (hasBackground == false) never does.
     Z, Y, X = 8, 90, 90
     z = np.arange(Z)[:, None, None]
     y = np.arange(Y)[None, :, None]

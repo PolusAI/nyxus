@@ -7,8 +7,13 @@ Axes are the settings `D3_GLDM_feature` actually reads, per SPEC §5.2 step 1 �
 auto greyInfo = STNGS_GLDM_GREYDEPTH(s);
 if (STNGS_IBSI(s))
     greyInfo = 0;
-bin_intensities_3d (D, r.aux_image_cube, r.aux_min, r.aux_max, greyInfo);
+SimpleCube<PixIntens> D;
+Nyxus::bin_roi_3d (D, r, greyInfo);
 ```
+
+`bin_roi_3d` (`3d_ooc_volume.h`) writes each ROI voxel at its grey level and every other cell of the
+bounding box at 0. Under both binning schemes every ROI voxel, one stored as 0 included, takes a
+level of 1 or more (`TextureFeature::bin_roi_voxel`), so level 0 is the background.
 
 **One and a half axes, not two.** `GLDM_GREYDEPTH` is the family's own binning, and its *sign*
 selects the scheme rather than its magnitude alone:
@@ -39,8 +44,9 @@ There is no GPU axis either: `D3_GLDM_feature::calculate()` has no `STNGS_USEGPU
 | `GLDM_GREYDEPTH` | `IBSI` | benchmark | verdict | recipe / oracle |
 |---|---|---|---|---|
 | `-20` (binCount 20) | false | `bench_compat_liver_3d` | **VALID(pyradiomics)** | `gldm3d.pyradiomics_bincount20`; all 14 features asserted in `test_3d_gldm_pyradiomics.h` at `abs=1e-9`, `3GLDM_DE` at `abs=4e-3` |
-| `64` (MATLAB levels) | false | `bench_ut57_3d` | **VALID-prod-only** → regression | `gldm3d.regression_ut_phantom`; all 14 pinned in `test_3d_gldm_regression.h` at `rel=1e-9`; no oracle claim |
-| `0` — **the compiled default** | false | `bench_ut57_3d` | **VALID-prod-only** → regression | `gldm3d.regression_ut_phantom_nobinning`; all 14 pinned in `test_3d_gldm_regression.h` at `rel=1e-9`; no oracle claim — see below |
+| `-8` (binCount 8) | false | `bench_volmin_3d`, `bench_volmin_ctrl_3d` | **VALID(pyradiomics)** | `gldm3d.pyradiomics_volmin_bincount8`; 13 features asserted in `tests/python/test_3d_gldm_pyradiomics.py` at `rel=1e-9`, in RAM and out of core, on a ROI holding the volume's lowest intensity and on its control; `3GLDM_DE` left out for `fast_log10` |
+| `64` (MATLAB levels) — **the default**, the coarse grey depth | false | `bench_ut57_3d` | **VALID-prod-only** → regression | `gldm3d.regression_ut_phantom`; all 14 pinned in `test_3d_gldm_regression.h` at `rel=1e-9`; no oracle claim |
+| `0` — no binning | false | `bench_ut57_3d` | **VALID-prod-only** → regression | `gldm3d.regression_ut_phantom_nobinning`; all 14 pinned in `test_3d_gldm_regression.h` at `rel=1e-9`; no oracle claim — see below |
 | any | true | — | **same cell as the row above** | forced to `greyInfo = 0`, i.e. the same code path, reached a different way; the pins above are what guard it |
 | any | any | `bench_constant_roi_3d` | **DEFECT** → regression guard | nonempty constant-intensity ROI. The intercept below fires at every binning, so the cell spans the column; asserted at `0`, where it is the only cause — `gldm3d.regression_constant_roi`, see below |
 
@@ -70,16 +76,14 @@ and so are the allocation, the row mapping and the fill loop on top of it.
 `gen_gldm3d_pyradiomics.py` rebuilds the whole matrix from the definition and requires all 163 cells
 to match PyRadiomics' C extension.
 
-## The default cell
+## The no-binning cell
 
-`GLDM_GREYDEPTH = 0` is not one configuration among several — it is **the compiled default**.
-`Environment::compile_feature_settings()` (`src/nyx/env_features.cpp`) zero-fills every settings
-vector and then names a default for `GLCM_OFFSET`, `GLCM_GREYDEPTH`, `GLCM_NUMANG` and the `FPIMG_*`
-group, and for nothing else; `GLDM_GREYDEPTH` is left at the zero-fill, and only
-`--3gldm/greydepth=N` moves it. So every run that does not pass that option computes this family
-here, and `IBSI=true` reaches the same path deliberately. Under SPEC §5.1 that makes it a real
-default config no external tool is known to reproduce — **VALID-BUT-PRODUCTION-ONLY**, i.e. a
-regression row, not an unmeasured cell.
+`GLDM_GREYDEPTH = 0` is the family's no-binning production point: `--coarseGrayDepth=0` or
+`3gldm/greydepth=0` selects it, and `IBSI=true` reaches the same path deliberately. A run that names
+neither starts at the coarse grey depth, 64 — `Environment::compile_feature_settings()` gives
+`GLDM_GREYDEPTH` that value — which is the row above it. Under SPEC §5.1 the raw-level point is a
+real production config no external tool is known to reproduce — **VALID-BUT-PRODUCTION-ONLY**,
+i.e. a regression row, not an unmeasured cell.
 
 The `64` snapshot cannot stand in for it. It is a genuinely different quantity, not a rounding — on
 `bench_ut57_3d` the same ROI gives:
@@ -140,13 +144,11 @@ the raw intensity 7 as the grey level where PyRadiomics' `binWidth=1` maps it to
 under the intercept is wrong. **The intercept is the whole defect**, and what production emits today
 is the no-value sentinel — `--noval`, default `0.0` — for all fourteen.
 
-**A fix is still not one line, because the other binning schemes fail differently.** At radiomics
-binning `TextureFeature::to_grayscale_radiomix()` computes `binW = (max - min) / binCount`, which is
-zero here: every voxel bins to `0`, no dependence zone is gathered, and the `Nz == 0` branch returns
-the same sentinel by a second route. That path also divides by zero and converts the resulting NaN to
-`PixIntens`, which the intercept is currently what keeps unreachable — so narrowing the intercept
-without touching the binning would trade a wrong answer for undefined behaviour. That is why this
-cell is asserted at `GLDM_GREYDEPTH=0`, where the intercept stands alone.
+**Under every binning scheme the intercept is what answers.** At radiomics binning
+`TextureFeature::fixed_bin_number()` puts a range of zero width into one bin, so beneath the
+intercept every voxel would be level 1 — the same one-level matrix as at no binning, on a level of
+its own number. The cell is asserted at `GLDM_GREYDEPTH=0` because that is where the bypass was
+measured against PyRadiomics.
 
 It is guarded rather than fixed here: `test_3d_gldm_constant_roi_regression()` pins the emitted value
 for all fourteen, under a `--noval` sentinel no GLDM feature can take, so a zero-filled buffer cannot
@@ -165,5 +167,5 @@ on a non-integer intensity volume.
 For `bench_constant_roi_3d`: nothing measured is missing, and nothing needs porting — the seven
 dependence-axis features already reproduce PyRadiomics to the last bit once the intercept is out of
 the way. What stands between the cell and VALID is a production change: the `aux_min == aux_max`
-intercept has to stop firing for nonempty ROIs, and the zero-range radiomics binning underneath has
-to put a constant ROI on one foreground level instead of on background.
+intercept has to stop firing for nonempty ROIs. Under both binning schemes the binning underneath
+already puts a constant ROI on a single level of 1 or more.

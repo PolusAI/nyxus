@@ -80,7 +80,7 @@ collide the way two 3D GLCM names do.
   `nonzero_cells()` does it correctly and the docstring says why.
 - **`Ns` in the header is the largest zone size (634), not the number of distinct sizes (46).** That
   is the width Nyxus allocates.
-- Nyxus' `to_grayscale_radiomix` and PyRadiomics' `binCount` produce the same partition of the ROI's
+- Nyxus' `TextureFeature::fixed_bin_number` and PyRadiomics' `binCount` produce the same partition of the ROI's
   min..max, so no grey-level correction is needed in either direction. Nothing like 3D NGTDM's
   zero-min shift applies here.
 
@@ -129,8 +129,8 @@ at.** Zero is a third configuration — no binning rather than 64 MATLAB levels 
 by up to five orders of magnitude between the two.
 
 The second recipe is the same phantom at `GLSZM_GREYDEPTH=0` — `make_glszm3d_settings(64, 0)` — which
-is what a run passing no `--3glszm/greydepth` reaches the feature with. Its sixteen pins share one
-gtest case, `TEST_3D_GLSZM_DEFAULT_GREYDEPTH_REGRESSION`, because one phantom read answers all
+is what `--coarseGrayDepth=0` or `3glszm/greydepth=0` selects: no binning. Its sixteen pins share one
+gtest case, `TEST_3D_GLSZM_NO_BINNING_REGRESSION`, because one phantom read answers all
 sixteen and the matrix at this setting is 3024 grey levels wide.
 `TEST_3D_GLSZM_CONSTANT_ROI_REGRESSION` sits beside them and needs no phantom at all: it pins the
 soft-NaN sentinel a constant-intensity ROI comes back as, which is a divergence rather than a value

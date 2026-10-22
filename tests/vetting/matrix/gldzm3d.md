@@ -38,15 +38,15 @@ at every cell even though no tool computes them.
 |---|---|---|---|---|---|
 | 1 | **none** — grey level = the voxel's own value | `IBSI=true` (any `GREYDEPTH`), or `GREYDEPTH=0, IBSI=false` | **VALID(mirp)** | 16 `vetted` + 2 `regression` at `gldzm3d.mirp_compat_phantom` | the 16 pinned in `test_3d_gldzm_mirp.h` at an absolute 1e-9, measured residual 5.7e-15; `GLM`/`ZDM` pinned in `test_3d_gldzm_regression.h`. `test_3d_gldzm_no_binning_spellings_agree_mechanics` holds the two spellings to one set of values; `test_3d_gldzm_zero_level_voxels_are_zoned_mechanics` holds the level-0 lift this point needs |
 | 2 | **MATLAB** — `floor(n·i / ROI max) + 1`, clipped into `[1, n]` | `GREYDEPTH > 0, IBSI=false` | **VALID-BUT-PRODUCTION-ONLY** | 18 `regression` at `gldzm3d.regression_ut_phantom` | all 18 pinned in `test_3d_gldzm_regression.h` at `rel=1e-9` on `bench_ut57_3d`. No tool reproduces this scheme — see "Why point 2 has no oracle" |
-| 3 | **radiomics** — `(i − ROI min) / binW + 1`, `binW = (max − min) / n` | `GREYDEPTH < 0, IBSI=false` | **VALID(mirp)** at a bin count the scheme maps identically | 16 `vetted` + 2 `regression` at `gldzm3d.mirp_compat_phantom_radiomics` | the 16 asserted against MIRP **at this cell's own settings** in `test_3d_gldzm_mirp.h`, `GREYDEPTH=-8` on `bench_compat_gldzm_3d`; `GLM`/`ZDM` pinned beside them. `test_3d_gldzm_radiomics_binning_is_identity_here_mechanics` holds the identity that is the *reason* MIRP's goldens transfer — the coverage is the 16 rows, not the equivalence; `test_3d_gldzm_zero_level_voxels_are_zoned_radiomics_mechanics` holds the level-0 lift this point needs, which gathers its levels as a set rather than a ladder and so is its own code path |
+| 3 | **radiomics** — IBSI's fixed bin number, `floor(n (i − ROI min) / (max − min)) + 1` | `GREYDEPTH < 0, IBSI=false` | **VALID(mirp)**, at a bin count the scheme maps identically and at one that re-bins | 16 `vetted` + 2 `regression` at `gldzm3d.mirp_compat_phantom_radiomics`; 16 `vetted` at `gldzm3d.mirp_fbn20_negdepth`; 16 `vetted` at `gldzm3d.mirp_volmin_fbn8` | the 16 asserted against MIRP **at this cell's own settings** in `test_3d_gldzm_mirp.h`, `GREYDEPTH=-8` on `bench_compat_gldzm_3d`; `GLM`/`ZDM` pinned beside them. `test_3d_gldzm_negative_greydepth_mirp` asserts the 16 again at `GREYDEPTH=-20` on `bench_ut57_3d`, where 2001 levels fold into 20 and MIRP's `fixed_bin_number` bins for itself, worst residual 2.4e-16. `tests/python/test_3d_gldzm_mirp.py` asserts them at 8 bins on `bench_volmin_3d`, whose ROI holds the volume's lowest intensity and so has voxels stored as 0, and on its control, in RAM and out of core. `test_3d_gldzm_radiomics_binning_is_identity_here_mechanics` holds the identity that is the *reason* MIRP's goldens transfer — the coverage is the 16 rows, not the equivalence; `test_3d_gldzm_zero_level_voxels_are_zoned_radiomics_mechanics` holds that this point lifts no level: a raw 0 in the ROI is bin 1, so the levels it gathers as a set are 1 and 5 |
 
 **What point 3 does and does not establish.** At `GREYDEPTH=-8` the scheme is the identity on this
-fixture's levels 1..8: `to_grayscale_radiomix` maps them over a bin width of 7/8 back onto
-themselves, the top level clipping into the last bin. So the cell is vetted **at that bin count on
-that fixture**. A bin count that actually re-bins is a different matter — there the scheme is a
-Nyxus convention with the same lower-bin-edge question point 2 has, it bins from the ROI minimum
-rather than 0, which is closer to what the tools do, and the fixture to measure it on does not exist
-yet. That configuration is the one thing about this family still unexercised.
+fixture's levels 1..8: IBSI's fixed bin number maps them over a bin width of 7/8 back onto
+themselves, the top level clipping into the last bin. So that recipe vets the cell **at that bin
+count on that fixture**. A bin count that actually re-bins is `gldzm3d.mirp_fbn20_negdepth`: the
+scheme bins from the ROI minimum, as the tools do, so MIRP's `fixed_bin_number` is config-matched to
+it with no level reproduction on the MIRP side, and the 16 features agree at 20 bins on the segmented
+phantom. `gldzm3d.mirp_volmin_fbn8` re-bins too, at 8 bins on a ROI with voxels stored as 0.
 
 ## Reference mappings, and the evidence behind the verdicts
 
@@ -76,10 +76,9 @@ would then sit beside point 1's rather than replacing them.
 
 ## What is not covered
 
-**One thing: the radiomics scheme at a bin count that actually re-bins.** Point 3 is vetted at a bin
-count the scheme maps identically, which is what makes MIRP's goldens applicable to it; a bin count
-that changes the levels puts the cell back into the same lower-bin-edge question point 2 has, and
-covering it needs a fixture that does not exist yet, not new plumbing.
+**Nothing at the three points.** Point 3 is vetted both at a bin count it maps identically and at one
+that re-bins, so the radiomics scheme is covered where it changes the levels as well as where it does
+not. Point 2 has no oracle, for the reason given above, and is drift-pinned.
 
 `3GLDZM_GLM` and `3GLDZM_ZDM` are **not** in this list. They cannot be *vetted* anywhere — MIRP's
 GLDZM emits no `dzm_gl_mean` / `dzm_zd_mean` column and IBSI defines neither — but they are Nyxus

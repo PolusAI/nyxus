@@ -36,6 +36,7 @@ FAMILY = scanlib.Family(
     dim="2D", family="gldzm",
     sources=SOURCES,
     oracle_suffix={"mirp": "mirp", "ibsi": "ibsi"},
+    table_owner={"gldzm_2d_mirp_negdepth_ref_vals": "test_2d_gldzm_negative_greydepth_mirp"},
     notes=scanlib.dual_oracle_notes(NOTE, DUAL_ORACLE),
 )
 

@@ -1,10 +1,12 @@
 """OFFLINE MIRP oracle for the 3D NGLDM features, on the segmented phantom.
 
-    python tests/vetting/oracles/gen_ngldm3d_mirp.py     (from the repository root)
+    python tests/vetting/oracles/gen_ngldm3d_mirp.py             (from the repository root)
+    python tests/vetting/oracles/gen_ngldm3d_mirp.py --check     (verify only, no paste-ready tables)
 
-Runs MIRP twice and re-verifies both comparison tables in the vetting report, exiting non-zero on
-any mismatch, on any quoted feature it cannot produce, and on any feature it produces that the report
-does not quote.
+Runs MIRP six times and re-verifies the three comparison tables in the vetting report, every MIRP
+golden pinned in test_3d_ngldm_mirp.h and the volmin table of tests/python/test_3d_ngldm_mirp.py,
+exiting non-zero on any mismatch, on any quoted feature it cannot produce, and on any feature it
+produces that the report does not quote.
 
 - `ngldm3d.mirp_fbn64` -- MIRP discretises the ROI itself, `fixed_bin_number` n=64. The two sides
   land on different grey levels (below), so this table measures the discretisation gap.
@@ -32,11 +34,34 @@ reproduces that mapping; the agreement of the samelevels run is what confirms th
 READ THIS BEFORE PINNING ANYTHING FROM THE fbn64 RUN: it is not a config-matched comparison. The
 matched one is samelevels.
 
+`ngldm3d.mirp_fbn20_negdepth`, table ngldm_3d_mirp_negdepth_ref_vals: the negative coarse grey
+depth. GREYDEPTH=-20 bins the ROI into 20 PyRadiomics-style bins over its own [min, max], which is
+IBSI's fixed bin number, floor(20 (x - min) / (max - min)) + 1, and exactly what MIRP's
+`base_discretisation_method="fixed_bin_number"`, n_bins=20, computes. So MIRP discretises here
+itself and, unlike samelevels, nothing of Nyxus' binning is reproduced on the MIRP side: the table
+covers the binning as well as the matrix. MIRP is handed `nyxus_raw_levels()`, the integer levels
+Nyxus loads the float phantom as, which is the loader's step and not the binning. Over the ROI those
+span 1024-3024, so the bin width is exactly 100: 2736 ROI voxels sit on an interior bin edge, and a
+division by that width bins every one of them as IBSI does. The 2D square of gen_ngldm_mirp.py is
+the fixture that separates the two formulas. The pins are printed at full precision, so they are
+held at rel 1e-12 -- a staleness check, not a vetting band.
+
+`ngldm3d.mirp_volmin_fbn8`, table NGLDM_3D_VOLMIN_MIRP in tests/python/test_3d_ngldm_mirp.py:
+bench_volmin_3d, whose ROI holds the volume's lowest intensity (volmin_phantom.py in this directory
+builds it and describes it; tests/data/nifti/phantoms/volmin_inten.nii + volmin_mask.nii, label 1).
+MIRP reads the ROI's own intensities from volmin_phantom.build() as float64 at 1x1x1 spacing,
+`fixed_bin_number` n=8; on the Nyxus side that is coarse_gray_depth=-8. The run also reads the
+control, bench_volmin_ctrl_3d, and fails unless MIRP gives it the same values bit for bit, which is
+the fixture's premise: the two volumes differ only outside the ROI's bounding box. It checks that the
+three NIfTI files hold what build() produces, prints the table paste-ready (not under --check), and
+verifies it in both directions at rel 1e-12: every pin reproduces, and every feature MIRP computes
+except 3NGLDM_DCP is pinned.
+
 3NGLDM_GLM (grey level mean) and 3NGLDM_DCM (dependence count mean) have no MIRP counterpart -- its
 NGLDM emits no gl_mean / dc_mean column -- so they cannot be vetted here at all. 3NGLDM_DCP is
 computed by both and deliberately not pinned: Nyxus hard-codes it to 1 and MIRP returns 1 on any
 input where every voxel has a same-level neighbour, so the check below allows exactly that one
-omission and fails on any other.
+omission and fails on any other; the negdepth and volmin tables leave it out for the same reason.
 
 NIFTI READING WITHOUT A NIFTI LIBRARY: the mirp env has neither SimpleITK nor nibabel. The phantoms
 are uncompressed single-file NIfTI-1 (magic "n+1"), so the header is parsed directly below and the
@@ -48,6 +73,8 @@ tool=mirp 2.6.0 (numpy 2.4.6, pandas 3.0.3, Python 3.11); env=nyxus_mirp (conda-
 `conda create -n nyxus_mirp -c conda-forge python=3.11 mirp numpy`);
 generator=tests/vetting/oracles/gen_ngldm3d_mirp.py. Run offline; CI never invokes it.
 """
+import argparse
+import importlib.util
 import logging
 import os
 import re
@@ -70,6 +97,9 @@ MIRP_H = os.path.join(TESTS, "test_3d_ngldm_mirp.h")
 RELTOL = 1e-5
 LABEL = 57
 NBINS = 64
+NEGDEPTH_NBINS = 20
+NEGDEPTH_RELTOL = 1e-12   # the negdepth pins are printed at %.17g; a staleness check, not a band
+NEGDEPTH_TABLE = "ngldm_3d_mirp_negdepth_ref_vals"
 
 # Nyxus feature -> MIRP NGLDM column stem. MIRP suffixes every column with the neighbourhood and
 # discretisation it was computed at (`_d1_a0.0_3d_fbn_n64` when it discretises, `_d1_a0.0_3d` when it
@@ -97,6 +127,12 @@ MIRP = {
 
 SUFFIX_FBN = f"_d1_a0.0_3d_fbn_n{NBINS}"
 SUFFIX_SAMELEVELS = "_d1_a0.0_3d"   # MIRP drops the discretisation stem when there is none
+SUFFIX_NEGDEPTH = f"_d1_a0.0_3d_fbn_n{NEGDEPTH_NBINS}"
+NEGDEPTH_SCOPE = [k for k in MIRP if k != "3NGLDM_DCP"]
+
+VOLMIN_TEST = os.path.join(TESTS, "python", "test_3d_ngldm_mirp.py")
+VOLMIN_TABLE = "NGLDM_3D_VOLMIN_MIRP"
+VOLMIN_RELTOL = 1e-12     # the pins are MIRP's own output at repr() precision
 
 NIFTI_DTYPE = {2: np.uint8, 4: np.int16, 8: np.int32, 16: np.float32, 64: np.float64}
 
@@ -229,7 +265,98 @@ def run():
     raw = np.where(m, nyxus_raw_levels(inten), 0).astype(np.float64)
     ibsi = features(raw, SUFFIX_SAMELEVELS, base_discretisation_method="none")
     print(f"# ibsi=true grey levels over the roi: {int(np.unique(raw[m]).size)} distinct raw values")
-    return (fbn, same, ibsi), span
+
+    # The negative grey depth: MIRP bins the loader-shifted levels itself, at 20 bins.
+    neg = features(nyxus_raw_levels(inten).astype(np.float64), SUFFIX_NEGDEPTH,
+                   base_discretisation_method="fixed_bin_number",
+                   base_discretisation_n_bins=NEGDEPTH_NBINS)
+    neg = {k: neg[k] for k in NEGDEPTH_SCOPE}
+    return (fbn, same, ibsi, neg), span
+
+
+def _helper(name):
+    """A shared fixture module from this directory, loaded by path."""
+    spec = importlib.util.spec_from_file_location(name, os.path.join(HERE, name + ".py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def parse_py_pins(path, table):
+    """-> {feature: value} out of a `TABLE = {...}` dict literal in a Python test, braces counted."""
+    txt = open(path, encoding="utf-8", errors="replace").read()
+    m = re.search(r"^" + re.escape(table) + r"\s*=\s*\{", txt, re.M)
+    if not m:
+        raise RuntimeError(f"table {table} not found in {os.path.basename(path)}")
+    depth, i = 1, m.end()
+    while depth:
+        depth += {"{": 1, "}": -1}.get(txt[i], 0)
+        i += 1
+    body = re.sub(r"#[^\n]*", "", txt[m.end():i - 1])     # a commented-out golden is not a pin
+    return {n: float(v) for n, v in
+            re.findall(r'"(3NGLDM_[A-Z0-9_]+)"\s*:\s*([-0-9.eE+]+)', body)}
+
+
+def check_volmin(check):
+    """-> (n verified, n failed) for recipe ngldm3d.mirp_volmin_fbn8."""
+    import mirp
+    vp = _helper("volmin_phantom")
+    print("\n# bench_volmin_3d: the checked-in NIfTI files against volmin_phantom.build()")
+    nfail = vp.check_files()
+
+    inten, ctrl_inten, vmask = vp.build()
+    m32 = (vmask == vp.LABEL).astype(np.int32)
+    suffix = f"_d1_a0.0_3d_fbn_n{vp.NBINS}"
+
+    def features(image):
+        res = mirp.extract_features(
+            image=image.astype(np.float64), mask=m32, image_spacing=(1.0, 1.0, 1.0),
+            by_slice=False, base_feature_families="ngldm",
+            base_discretisation_method="fixed_bin_number", base_discretisation_n_bins=vp.NBINS)
+        df = res[0] if isinstance(res, list) else res
+        out = {}
+        for nyx in NEGDEPTH_SCOPE:                   # every mapped feature except 3NGLDM_DCP
+            col = MIRP[nyx] + suffix
+            if col not in df.columns:
+                raise RuntimeError(f"MIRP produced no {col} (for {nyx}) on bench_volmin_3d")
+            out[nyx] = float(df.iloc[0][col])
+        return out
+
+    got, ctrl = features(inten), features(ctrl_inten)
+    print(f"\n# bench_volmin_ctrl_3d gives the same {len(got)} values (the fixture's premise)")
+    for name in sorted(got):
+        if ctrl[name] != got[name]:
+            print(f"  FAIL {name}: volmin={got[name]!r} ctrl={ctrl[name]!r}")
+            nfail += 1
+
+    if not check:
+        print(f"\n# ngldm3d.mirp_volmin_fbn8, paste-ready (fixed_bin_number n={vp.NBINS}, "
+              f"label={vp.LABEL}; 3NGLDM_DCP left out)")
+        print(f"{VOLMIN_TABLE} = {{")
+        for name in sorted(got):
+            print(f'    "{name}": {got[name]!r},')
+        print("}")
+
+    pins = parse_py_pins(VOLMIN_TEST, VOLMIN_TABLE)
+    print(f"\n# verifying the {len(pins)} goldens pinned in {VOLMIN_TABLE} against this run, "
+          f"at rel<={VOLMIN_RELTOL:g}, both directions")
+    nok = 0
+    for name in sorted(set(pins) - set(got)):
+        print(f"  MISSING {name}: pinned {pins[name]!r} but is outside this table's scope")
+        nfail += 1
+    for name in sorted(set(got) - set(pins)):
+        print(f"  FAIL {name}: MIRP computes it in this table's scope and {VOLMIN_TABLE} does "
+              f"not pin it")
+        nfail += 1
+    for name in sorted(set(pins) & set(got)):
+        rel = abs(pins[name] - got[name]) / max(abs(got[name]), 1e-300)
+        if rel <= VOLMIN_RELTOL:
+            print(f"  OK   {name}: pin={pins[name]!r} mirp={got[name]!r} rel={rel:.3g}")
+            nok += 1
+        else:
+            print(f"  FAIL {name}: pin={pins[name]!r} mirp={got[name]!r} rel={rel:.3g}")
+            nfail += 1
+    return nok, nfail
 
 
 def verify(got, heading, txt, pins, derived, bound):
@@ -288,12 +415,17 @@ def verify(got, heading, txt, pins, derived, bound):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--check", action="store_true",
+                    help="verify the report and the pins without printing the paste-ready tables")
+    args = ap.parse_args()
+
     for p in (INTEN, MASK):
         if not os.path.exists(p):
             print(f"missing phantom: {p}")
             return 1
 
-    (fbn, same, ibsi), span = run()
+    (fbn, same, ibsi, neg), span = run()
 
     try:
         version = metadata.version("mirp")       # mirp exposes no __version__
@@ -304,13 +436,20 @@ def main():
     # provenance of the values printed below it, so a run under another version has to say so.
     print(f"# mirp {version}, numpy {np.__version__}, label={LABEL}, by_slice=False, "
           f"distance=1, alpha=0")
-    for title, got, suffix in (("ngldm3d.mirp_fbn64", fbn, SUFFIX_FBN),
-                               ("ngldm3d.mirp_samelevels", same, SUFFIX_SAMELEVELS),
-                               ("ngldm3d.mirp_ibsi_rawlevels", ibsi, SUFFIX_SAMELEVELS)):
-        print(f"\n# {title}")
-        for name in sorted(got):
-            print(f'\t{{"{name}", {got[name]!r}}},'.ljust(56) + f"// {MIRP[name]}{suffix}")
-    print("\n# no MIRP counterpart at either recipe: 3NGLDM_GLM, 3NGLDM_DCM")
+    if not args.check:
+        for title, got, suffix in (("ngldm3d.mirp_fbn64", fbn, SUFFIX_FBN),
+                                   ("ngldm3d.mirp_samelevels", same, SUFFIX_SAMELEVELS),
+                                   ("ngldm3d.mirp_ibsi_rawlevels", ibsi, SUFFIX_SAMELEVELS)):
+            print(f"\n# {title}")
+            for name in sorted(got):
+                print(f'\t{{"{name}", {got[name]!r}}},'.ljust(56) + f"// {MIRP[name]}{suffix}")
+        print("\n# ngldm3d.mirp_fbn20_negdepth, paste-ready")
+        print(f"static const ref_vals_map<double> {NEGDEPTH_TABLE}{{")
+        for i, name in enumerate(NEGDEPTH_SCOPE):
+            sep = "," if i < len(NEGDEPTH_SCOPE) - 1 else ""
+            print(f'\t\t{{ "{name}",\t{neg[name]!r} }}{sep}\t\t// {MIRP[name]}{SUFFIX_NEGDEPTH}')
+        print("};")
+        print("\n# no MIRP counterpart at any recipe: 3NGLDM_GLM, 3NGLDM_DCM")
 
     if not os.path.exists(REPORT):
         print(f"\n# {os.path.basename(REPORT)} is missing -- there is nothing this run can be "
@@ -372,6 +511,31 @@ def main():
             if name != "3NGLDM_DCP":
                 print(f"  FAIL {name}: MIRP computes it and {table} does not pin it")
                 nfail += 1
+
+    # The negdepth goldens are MIRP's own binning at 20 bins, printed at full precision, so they are
+    # held to a staleness tolerance and their scope is checked in both directions.
+    neg_pins = parse_pins(MIRP_H, NEGDEPTH_TABLE)
+    print(f"\n# verifying the {len(neg_pins)} goldens pinned in {NEGDEPTH_TABLE} against this run, "
+          f"at rel<={NEGDEPTH_RELTOL:g}")
+    for name in sorted(set(neg_pins) - set(neg)):
+        print(f"  MISSING {name}: pinned {neg_pins[name]!r} but is outside this table's scope")
+        nmiss += 1
+    for name in sorted(set(neg) - set(neg_pins)):
+        print(f"  FAIL {name}: MIRP computes it in this table's scope and {NEGDEPTH_TABLE} does "
+              f"not pin it")
+        nfail += 1
+    for name in sorted(set(neg_pins) & set(neg)):
+        rel = abs(neg_pins[name] - neg[name]) / max(abs(neg[name]), 1e-300)
+        if rel <= NEGDEPTH_RELTOL:
+            print(f"  OK   {name}: pin={neg_pins[name]!r} mirp={neg[name]!r} rel={rel:.3g}")
+            nok += 1
+        else:
+            print(f"  FAIL {name}: pin={neg_pins[name]!r} mirp={neg[name]!r} rel={rel:.3g}")
+            nfail += 1
+
+    a, b = check_volmin(args.check)
+    nok += a
+    nfail += b
 
     # the grey-level span is the report's explanation of the fbn64 gap, so it is checked too
     span_txt = f"{span[0]}-{span[1]}, {span[2]} distinct"

@@ -215,11 +215,10 @@ values reproduce PyRadiomics **to the last bit** on all seven dependence-axis fe
 (`SDE` 0.0066408036122542298, `LDE` 239.41666666666666, `DN` 15.333333333333334, `DNN`
 0.31944444444444442, `DV` 26.743055555555554, `GLN` 48, `GLV` 0), with `3GLDM_DE` at the family's
 documented `fast_log10` residual and the grey-level features apart only by the level convention.
-So nothing under the intercept is wrong; the intercept is the whole defect. Run at *radiomics*
-binning instead, the same bypass leaves the case green: `to_grayscale_radiomix()`'s
-`binW = (max - min) / binCount` is zero at zero range, every voxel bins to background and the
-`Nz == 0` branch emits the same sentinel by a second route — which is why the cell is asserted at the
-configuration where the intercept stands alone.
+So nothing under the intercept is wrong; the intercept is the whole defect. At *radiomics* binning
+`TextureFeature::fixed_bin_number()` puts a range of zero width into one bin, so beneath the intercept every voxel
+is level 1 there too; the cell is asserted at no binning, the configuration the bypass was measured
+at.
 
 K–N are the registry-side controls. K is the defect the review found: before this round the
 per-feature rows named `TEST_3D_GLDM_SMALLMATRIX_PYRADIOMICS`, a case that asserts dependence cells
@@ -262,8 +261,8 @@ this report for why and for what fixture would.
   NGLDM as *separate* families with different conventions, so a `mirp` run would need its own
   reconciliation before it could corroborate anything here.
 - **`GLDM_GREYDEPTH = 0` / `IBSI=true` are pinned but unvetted.** They are the same code path reached
-  two ways, and it is the **compiled default** — `compile_feature_settings()` names no default for
-  `GLDM_GREYDEPTH`, so the zero-fill stands and only `--3gldm/greydepth=N` moves it. All fourteen are
+  two ways, and it is the **no-binning production point** — `--coarseGrayDepth=0` or
+  `3gldm/greydepth=0` selects it; a run that names neither bins at the coarse grey depth, 64. All fourteen are
   now snapshotted at that configuration (`gldm3d.regression_ut_phantom_nobinning`), which claims no
   vetting: the oracle question, whether PyRadiomics can be made to skip discretisation on a
   non-integer intensity volume, is still open. See `matrix/gldm3d.md`.

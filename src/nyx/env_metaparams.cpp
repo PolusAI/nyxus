@@ -60,6 +60,22 @@
 #include "helpers/timing.h"
 #include "version.h"
 
+// Parses the value of a <family>/greydepth metaparameter with the same rule as --coarseGrayDepth:
+// returns the error message, or nothing once 'n_greys' holds the depth
+static std::optional<std::string> parse_greydepth_metaparam (const std::string& raw, const std::string& name, int& n_greys)
+{
+	switch (Nyxus::parse_grey_depth (raw, n_greys))
+	{
+	case Nyxus::GreyDepthParse::not_an_integer:
+		return "error: cannot parse value \"" + raw + "\" of " + name + ": expecting an integer";
+	case Nyxus::GreyDepthParse::out_of_range:
+		return "error: value \"" + raw + "\" of " + name + " is out of range: the magnitude must be at most " + std::to_string (INT_MAX);
+	case Nyxus::GreyDepthParse::ok:
+		break;
+	}
+	return std::nullopt;
+}
+
 std::optional<std::string> Environment::set_metaparam (const std::string & p_val)
 {
 	// parse LHS=RHS
@@ -82,12 +98,10 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 			// check feature-specific parameter name
 			if (ppath[1] == "greydepth")
 			{
-				// interpret eq_sides[1] as int
+				// interpret eq_sides[1] as a grey depth
 				int n_greys;
-				if (Nyxus::parse_as_int(eq_sides[1], n_greys) == false)
-				{
-					return "error: cannot parse value \"" + eq_sides[1] + "\" of glcm/greydepth: expecting an integer";
-				}
+				if (auto err = parse_greydepth_metaparam (eq_sides[1], "glcm/greydepth", n_greys))
+					return err;
 				STNGS_GLCM_GREYDEPTH(fsett_GLCM) = n_greys;
 			}
 			else if (ppath[1] == "offset")
@@ -111,12 +125,10 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 			// check feature-specific parameter name
 			if (ppath[1] == "greydepth")
 			{
-				// interpret eq_sides[1] as int
+				// interpret eq_sides[1] as a grey depth
 				int n_greys;
-				if (Nyxus::parse_as_int(eq_sides[1], n_greys) == false)
-				{
-					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3glcm/greydepth: expecting an integer";
-				}
+				if (auto err = parse_greydepth_metaparam (eq_sides[1], "3glcm/greydepth", n_greys))
+					return err;
 				STNGS_GLCM_GREYDEPTH (fsett_D3_GLCM) = n_greys;
 			}
 			else if (ppath[1] == "offset")
@@ -159,12 +171,10 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 			// check feature-specific parameter name
 			if (ppath[1] == "greydepth")
 			{
-				// interpret eq_sides[1] as int
+				// interpret eq_sides[1] as a grey depth
 				int n_greys;
-				if (Nyxus::parse_as_int(eq_sides[1], n_greys) == false)
-				{
-					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3gldm/greydepth: expecting an integer";
-				}
+				if (auto err = parse_greydepth_metaparam (eq_sides[1], "3gldm/greydepth", n_greys))
+					return err;
 				STNGS_GLDM_GREYDEPTH (fsett_D3_GLDM) = n_greys;
 			}
 			else
@@ -177,12 +187,10 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 			// check feature-specific parameter name
 			if (ppath[1] == "greydepth")
 			{
-				// interpret eq_sides[1] as int
+				// interpret eq_sides[1] as a grey depth
 				int n_greys;
-				if (Nyxus::parse_as_int(eq_sides[1], n_greys) == false)
-				{
-					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3ngtdm/greydepth: expecting an integer";
-				}
+				if (auto err = parse_greydepth_metaparam (eq_sides[1], "3ngtdm/greydepth", n_greys))
+					return err;
 				STNGS_NGTDM_GREYDEPTH(fsett_D3_NGTDM) = n_greys;
 			}
 			else
@@ -206,12 +214,10 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 			// check feature-specific parameter name
 			if (ppath[1] == "greydepth")
 			{
-				// interpret eq_sides[1] as int
+				// interpret eq_sides[1] as a grey depth
 				int n_greys;
-				if (Nyxus::parse_as_int(eq_sides[1], n_greys) == false)
-				{
-					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3glrlm/greydepth: expecting an integer";
-				}
+				if (auto err = parse_greydepth_metaparam (eq_sides[1], "3glrlm/greydepth", n_greys))
+					return err;
 				STNGS_GLRLM_GREYDEPTH (fsett_D3_GLRLM) = n_greys;
 			}
 			else
@@ -224,12 +230,10 @@ std::optional<std::string> Environment::set_metaparam (const std::string & p_val
 			// check feature-specific parameter name
 			if (ppath[1] == "greydepth")
 			{
-				// interpret eq_sides[1] as int
+				// interpret eq_sides[1] as a grey depth
 				int n_greys;
-				if (Nyxus::parse_as_int(eq_sides[1], n_greys) == false)
-				{
-					return "error: cannot parse value \"" + eq_sides[1] + "\" of 3glszm/greydepth: expecting an integer";
-				}
+				if (auto err = parse_greydepth_metaparam (eq_sides[1], "3glszm/greydepth", n_greys))
+					return err;
 				STNGS_GLSZM_GREYDEPTH(fsett_D3_GLSZM) = n_greys;
 			}
 			else
