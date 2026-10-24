@@ -1,5 +1,10 @@
 # 2D morphology vs imea — vetting report
 
+> **Current state.** The Nyxus shape2d `PERIMETER` the ISO transforms are fed is 22.970562748477146
+> (vetted against OpenCV in `test_2d_contour_opencv.h`), and the three transform pins are
+> regenerated from it: 7.311757214045382, 8.384216364883956, 3.101065009354617. The 26.935 below is
+> the earlier value.
+
 This family's imea rows were not part of the planned gap, but running the oracle showed the tree
 disagreed with the registry in a way no naming check could catch. This report records what was
 measured and what changed.

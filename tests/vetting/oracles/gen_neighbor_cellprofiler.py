@@ -6,7 +6,7 @@ run, exiting non-zero on any mismatch or on any pin this generator cannot produc
 parsed out of the header: a validation list kept here would only ever compare this script against
 itself, so a hand-edited header would go unnoticed.
 
-CellProfiler reproduces Nyxus BIT-IDENTICALLY on both vetted features across all five ROIs --
+CellProfiler reproduces Nyxus BIT-IDENTICALLY on all three vetted features across all five ROIs --
 residual exactly 0 -- which is what lets the header assert at the SPEC 7 exact tier.
 
 Result of this comparison (see the printed table):
@@ -16,11 +16,10 @@ Result of this comparison (see the printed table):
       of ANY object (global); Nyxus reports the 2nd-closest *neighbor within the
       search radius*, i.e. 0 when an ROI has <2 in-radius neighbors. Not CP-vettable;
       vetted analytically instead (gen_neighbor_analytic.py).
-  PERCENT_TOUCHING        -- CP != Nyxus (convention gap, 3/5 ROIs). Nyxus counts
-      contour pixels 8-adjacent to a neighbor / contour length; CP counts object
-      outline pixels overlapping a disk(distance+0.5)-dilated neighbor / perimeter.
-      No CP distance method (Adjacent/Expand/Within) reproduces Nyxus. Stays
-      regression with a documented convention divergence.
+  PERCENT_TOUCHING        -- CP == Nyxus  (VETS it). Nyxus counts contour pixels
+      8-adjacent to a neighbor / contour length; CP counts object outline pixels a
+      neighbor dilated by disk(distance+0.5) overlaps / perimeter. At distance 1 that
+      disk is the 3x3 neighbourhood, so the two are the same count.
 
 Environment: a dedicated CellProfiler env is required to RUN this generator
 (cellprofiler-core + centrosome + the cellprofiler module package, headless).
@@ -54,11 +53,8 @@ DATA_H = os.path.join(TESTS, "test_data.h")
 SCENE_FIXTURE = "neighborhood2d_scene_labels"
 TEST_H = os.path.join(TESTS, "test_2d_neighbor_cellprofiler.h")
 TABLE = "neighbor_2d_cellprofiler_ref_vals_by_label"
-REGRESSION_H = os.path.join(TESTS, "test_2d_neighbor_regression.h")
-REGRESSION_TABLE = "neighbor_2d_regression_ref_vals_by_label"
-
-# the two features CP and Nyxus compute the same way; the header pins CP's own digits for them
-CP_VETTED = ("NUM_NEIGHBORS", "CLOSEST_NEIGHBOR1_DIST")
+# the features CP and Nyxus compute the same way; the header pins CP's own digits for them
+CP_VETTED = ("NUM_NEIGHBORS", "CLOSEST_NEIGHBOR1_DIST", "PERCENT_TOUCHING")
 
 ABSTOL = 1e-9  # SPEC 7 exact tier, an ABSOLUTE band; the measured residual is exactly 0
 
@@ -196,18 +192,10 @@ def main():
         print("  UNPINNED %s: CP vets it but the header pins nothing" % gap)
 
     print("")
-    print("# documented divergences -- NOT vetted against CP, recorded so the gap stays measured")
-    reg = parse_pins(REGRESSION_H, REGRESSION_TABLE)
-    print("  %2s %9s %9s %8s" % ("L", "PT_cp", "PT_nyxus", "D2_cp"))
-    pt_div = 0
+    print("# documented divergence -- NOT vetted against CP, recorded so the gap stays measured")
+    print("  %2s %8s" % ("L", "D2_cp"))
     for l in LABELS:
-        pt_cp = float(cp["PERCENT_TOUCHING"][l - 1])
-        pt_ny = reg.get(l, {}).get("PERCENT_TOUCHING", float("nan"))
-        if abs(pt_cp - pt_ny) > 1e-9 * max(abs(pt_ny), 1.0):
-            pt_div += 1
-        print("  %2d %9.4f %9.4f %8.4f"
-              % (l, pt_cp, pt_ny, float(cp["CLOSEST_NEIGHBOR2_DIST"][l - 1])))
-    print("  PERCENT_TOUCHING diverges on %d/5 ROIs -> stays regression (convention gap)" % pt_div)
+        print("  %2d %8.4f" % (l, float(cp["CLOSEST_NEIGHBOR2_DIST"][l - 1])))
 
     print("")
     print("%d verified, %d failed, %d unproducible, %d unpinned" % (nok, nfail, nmiss, len(missing)))

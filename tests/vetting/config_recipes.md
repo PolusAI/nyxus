@@ -128,6 +128,14 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   Nyxus m_{j,i}); weighted moments center on the intensity-weighted centroid; Hu returned raw (not log),
   2D only; normalized moments NaN for order < 2. Used by: `test_2d_moments_skimage.h`.
 
+## moments.disk_copies
+- One r=12 disk, and two copies of it 50 pixels apart under one label, intensity a function of the
+  offset from each disk's own centre (`calculate_2d_moments_disk_copies_values()`,
+  `test_2d_moments_invariant.h`), at `make_2d_geomoment_settings()`. No oracle: the weighted moments
+  weigh a pixel by its distance to the contour, searched on each border separately, so every pixel of
+  the pair carries the weight it carries in one disk, and the zeroth weighted moments of the pair are
+  exactly twice those of one disk.
+
 ## gabor.cpp_static_defaults
 - The `(frequency, angle)` set compiled into `GaborFeature::f0_theta_pairs` (`gabor.cpp`):
   f0 = {0, pi/4, pi/2, 3pi/4}, theta = {4, 16, 32, 64} **radians**. Every consumer of that vector
@@ -318,17 +326,16 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `oracles/gen_morphology_radius_skimage.py`.
 - `find_boundaries(connectivity=1, mode='inner')` is the whole of the convention -- the foreground
   pixels 4-adjacent to background, and it is CellProfiler's own edge definition, which is why
-  `gen_morphology_{,wholeslide_}cellprofiler.py` already reproduce the `EDGE_*` statistics through it.
-  On the 8x8 mask the Nyxus contour **is** this boundary shifted by (+1,+1) -- all 18 coordinates,
-  measured pixel by pixel, not merely the same count. On the r=20 disk it returns 112 boundary
+  `gen_morphology_{,wholeslide_}cellprofiler.py` already reproduce the `EDGE_*` statistics through it,
+  and it is the set of pixels the Nyxus contour walks. On the r=20 disk it returns 112 boundary
   pixels, the count `bench_disk64_diagonal_boundary` records for the same 1257-pixel shape. The distance step carries no
   convention; the generator computes it twice, as an exhaustive minimum and as
   `scipy.ndimage.distance_transform_edt` over the complement of the boundary, and requires the two
   to agree, so no single implementation is taken on trust.
-- Disks and not `morphology.shape2d_native` for the reason `morphology.perimeter_circles` exists: on
-  a 26-pixel object with a hole the two boundary conventions have nothing to converge to. Three radii
-  and not one because a single disk cannot distinguish a distance from its square -- either is just a
-  number on one fixture, while across a doubling of R a distance grows 2.1x and a square 4.2x.
+- Disks and not `morphology.shape2d_native` because on 26 pixels, whose distances to the edge are all
+  0 or 1, a distance and its square are the same number. Three radii and not one because a single
+  disk cannot distinguish a distance from its square either -- it is just a number on one fixture,
+  while across a doubling of R a distance grows 2.1x and a square 4.2x.
 - The same recipe also carries an `analytic` row for `ROI_RADIUS_MAX`, asserted in
   `test_2d_morphology_analytic.h`, and it is an **exact** closed form rather than a band:
   `MAX == sqrt((R-1)^2 + 1)`, the centre's distance to the boundary pixel at offset `(1, R-1)` -- that
@@ -337,11 +344,34 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   redundancy, and they check different things -- the skimage row that Nyxus agrees with a reference
   implementation of the definition, the analytic row that the value obeys the geometry with no tool
   involved and so could not be fooled by a reference sharing a mistake.
-- `ROI_RADIUS_MAX` and `ROI_RADIUS_MEDIAN` agree to double precision. `ROI_RADIUS_MEAN` does **not**,
-  and stays a `regression` row: `ContourFeature::buildRegularContour` never subtracts the one-pixel
-  pad it traces in, so Nyxus measures against a boundary shifted (+1,+1). Shifting the reference the
-  same way reproduces all three values exactly; on a disk MAX and MEDIAN are unmoved by that shift
-  because the pixel attaining them moves with it, and MEAN is not.
+- `ROI_RADIUS_MEAN`, `ROI_RADIUS_MAX` and `ROI_RADIUS_MEDIAN` agree to double precision. MEAN is the
+  one that needs every contour pixel to be where it is: a contour shifted by a pixel leaves MAX and
+  MEDIAN of a disk where they are, because the pixel attaining them moves with it, and moves MEAN.
+
+## morphology.circle_r15
+- The filled circle r=15 built by `calculate_circle_shape_values()` (`test_2d_morphology_common.h`):
+  `((x-21)/15)^2 + ((y-21)/15)^2 <= 1` on a 43x43 frame, at `make_shape2d_settings()`. Oracle:
+  `analytic`. Used by: `test_2d_morphology_analytic.h` for `DIAMETER_INSCRIBING_CIRCLE` and
+  `DIAMETER_CIRCUMSCRIBING_CIRCLE`, and `test_2d_morphology_imea.h` for
+  `DIAMETER_MIN_ENCLOSING_CIRCLE`.
+- The two diameters are twice the smallest and the largest distance from the centroid to a pixel
+  of the ROI's outer borders, the external contour imea reads (circle.cpp, after imea's macro); a
+  hole's border is not measured, and a ROI of several fragments is measured to every fragment's
+  outer border. The same disk with a centred 3x3 hole, and two r=10 disks 40 apart
+  (`calculate_disks_circle_values()`), are asserted beside it. The centroid is the centre by symmetry; the farthest edge
+  pixel is the axial `(R, 0)` and the nearest the one at offset `(1, R-1)` derived under
+  `morphology.radius_disks`, so the diameters are `2R = 30` and `2 sqrt((R-1)^2 + 1) = 28.0713`,
+  exactly. Both depend on the contour and the centroid being in one frame.
+- imea is not an oracle for these two: its own `shape_measurements_2d` reports 46.86 and 12.65 on
+  this circle, values no circle of radius 15 can have.
+
+## morphology.fractal_perimeter_borders
+- ROIs of several borders built in `test_2d_morphology_invariant.h`, at `make_shape2d_settings()`.
+  No oracle: `FRACT_DIM_PERIMETER` walks each border separately and sums the borders per stride, and
+  the assertions are relations that summing has to keep. Two separate copies of an r=12 disk have
+  exactly the dimension of one copy. A 17x17 square, whose walk every stride cuts at its corners,
+  with a separate 3-pixel line no longer than the larger strides, which takes its closed length
+  there, has dimension exactly 1.
 
 ## morphology.caliper_ellipse
 - The filled ellipse a=20, b=10 built by `calculate_ellipse_caliper_values()`
@@ -514,10 +544,11 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   direction angle; CP's `SecondClosestDistance` ranges over ANY object, whereas Nyxus reports the
   second-closest neighbour *within the search radius*. Different quantities, so they go to the
   analytic oracle.
-- **Outside this recipe:** `PERCENT_TOUCHING`. Nyxus counts distinct contour pixels 8-adjacent to a
-  neighbour over contour length; CP counts outline pixels overlapping a `disk(distance+0.5)`-dilated
-  neighbour over perimeter. No CP distance method reproduces it -- measured divergence on 3 of the 5
-  ROIs, up to 33.3 percentage points. Drift-pinned in `test_2d_neighbor_regression.h`, with its
+- **`PERCENT_TOUCHING` is CP-vetted at this recipe's distance of 1.** Nyxus counts distinct contour
+  pixels 8-adjacent to a neighbour's contour over the number of contour pixels; CP counts outline
+  pixels a `disk(distance+0.5)`-dilated neighbour overlaps over the perimeter. At distance 1 that disk
+  is the 3x3 neighbourhood, the same count, and CP reproduces all five ROIs exactly. At a larger
+  distance the two definitions part. Also drift-pinned in `test_2d_neighbor_regression.h`, with its
   construction bounds in `test_2d_neighbor_invariant.h`.
 
 ## ngtdm.ibsi_phantom_2d

@@ -1,5 +1,8 @@
 # Regenerating the 2D neighbour goldens
 
+> **Current state.** `PERCENT_TOUCHING` is vetted against CellProfiler; the generator no longer
+> prints a divergence table for it, only for `CLOSEST_NEIGHBOR2_DIST`.
+
 Concrete steps for each of the family's three tables. Everything runs offline; CI never invokes a
 reference tool.
 

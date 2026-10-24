@@ -1,5 +1,10 @@
 # 2D neighbour vs CellProfiler — vetting report
 
+> **Current state.** `PERCENT_TOUCHING` agrees with CellProfiler on all five ROIs and is vetted
+> (`test_2d_neighbor_percent_touching_cellprofiler`). The divergence recorded below came from the
+> contour, which kept only 3 of a 2x2 square's 4 edge pixels; with all four, Nyxus gives 50 where
+> CellProfiler does.
+
 `NUM_NEIGHBORS` and `CLOSEST_NEIGHBOR1_DIST` have been marked `vetted` against CellProfiler since PR
 #390. This re-vet re-ran the tool rather than trusting that label, and the values hold — **exactly**,
 not approximately. What did not hold up was everything around them: the assertion band, the

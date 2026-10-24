@@ -1204,8 +1204,11 @@ another ROI: those within :math:`\sqrt{2}` of one.
 
 A pixel touching several ROIs counts once. The value does not depend on :math:`D`.
 
-**Possible issues.** CellProfiler's ``MeasureObjectNeighbors`` defines its percent touching
-differently, so the two values differ; Nyxus counts direct contact between contour pixels only.
+**Possible issues.** CellProfiler's ``MeasureObjectNeighbors`` counts the outline pixels that a
+neighbour dilated by a disk of radius :math:`D + 0.5` overlaps. At :math:`D = 1` that disk is the
+3 × 3 neighbourhood and the two counts are the same; at larger distances CellProfiler also counts
+outline pixels farther from the neighbour, while Nyxus counts direct contact between contour
+pixels whatever :math:`D` is.
 
 
 .. _feature-closest-neighbor1-dist:
@@ -1363,10 +1366,11 @@ The test suite checks the morphology features against six references:
   `#496 <https://github.com/PolusAI/nyxus/issues/496>`__).
 - **CellProfiler** 4.2.8: ``MASS_DISPLACEMENT`` and ``EDGE_MEAN_INTENSITY``, ``EDGE_MAX_INTENSITY``,
   ``EDGE_MIN_INTENSITY`` and ``EDGE_INTEGRATED_INTENSITY`` to a relative 10\ :sup:`-6`;
-  ``NUM_NEIGHBORS`` and ``CLOSEST_NEIGHBOR1_DIST`` to an absolute 10\ :sup:`-9`.
-- **scikit-image**: ``DIAMETER_EQUAL_AREA``, ``PERIMETER`` (on digital circles), ``ROI_RADIUS_MAX``
-  and ``ROI_RADIUS_MEDIAN`` to a relative 10\ :sup:`-3`; ``CONVEX_HULL_AREA``, ``SOLIDITY`` and
-  ``ORIENTATION``.
+  ``NUM_NEIGHBORS`` and ``CLOSEST_NEIGHBOR1_DIST`` to an absolute 10\ :sup:`-9`;
+  ``PERCENT_TOUCHING`` exactly, on a scene of five ROIs with ``--pixelDistance=1``.
+- **scikit-image**: ``DIAMETER_EQUAL_AREA``, ``PERIMETER`` (on digital circles), ``ROI_RADIUS_MAX``,
+  ``ROI_RADIUS_MEAN`` and ``ROI_RADIUS_MEDIAN`` to a relative 10\ :sup:`-3`; ``CONVEX_HULL_AREA``,
+  ``SOLIDITY`` and ``ORIENTATION``.
 - **OpenCV** 4.13.0 (``cv2.findContours`` with ``RETR_LIST`` and ``CHAIN_APPROX_NONE``):
   ``PERIMETER`` exactly, the summed closed length of every border, on an irregular blob and on a
   ROI with a hole.
@@ -1377,14 +1381,15 @@ The test suite checks the morphology features against six references:
 - **Analytic** values: ``PERIMETER`` exactly on squares, a square with a hole, two separate
   squares under one label, one-pixel-wide lines and a single pixel; ``EDGE_INTEGRATED_INTENSITY``
   exactly on a one-pixel-wide line, whose walk passes its inner pixels twice, each counted once;
-  ``ROI_RADIUS_MAX`` exactly on digital disks; ``CLOSEST_NEIGHBOR1_ANG``,
+  ``ROI_RADIUS_MAX`` exactly on digital disks; ``DIAMETER_CIRCUMSCRIBING_CIRCLE`` and
+  ``DIAMETER_INSCRIBING_CIRCLE`` exactly on a digital circle, the same circle with a hole and two
+  separate disks under one label; ``CLOSEST_NEIGHBOR1_ANG``,
   ``CLOSEST_NEIGHBOR2_DIST``, ``CLOSEST_NEIGHBOR2_ANG`` and the three ``ANG_BW_NEIGHBORS_*`` codes
   to an absolute 10\ :sup:`-9`; ``CIRCULARITY`` and ``ROUNDNESS`` against their formulas.
 
 ``COMPACTNESS``, ``EDGE_STDDEV_INTENSITY``, ``POLYGONALITY_AVE``, ``HEXAGONALITY_AVE``,
-``HEXAGONALITY_STDDEV``, ``DIAMETER_CIRCUMSCRIBING_CIRCLE``, ``DIAMETER_INSCRIBING_CIRCLE``,
-``ROI_RADIUS_MEAN``, ``MIN_FERET_ANGLE``, ``MAX_FERET_ANGLE``, the three ``*_DIAM_MODE`` codes,
-``PERCENT_TOUCHING`` and every chord code except ``ALLCHORDS_MIN`` are regression-only. The
+``HEXAGONALITY_STDDEV``, ``MIN_FERET_ANGLE``, ``MAX_FERET_ANGLE``, the three ``*_DIAM_MODE``
+codes and every chord code except ``ALLCHORDS_MIN`` are regression-only. The
 out-of-core values of the ellipse family, the ``EDGE_*`` features and ``MASS_DISPLACEMENT`` are
 checked against the in-memory values of the same build. The *Example* values and the values the
 worked-example script checks beside them are pinned by that script. The comparisons with

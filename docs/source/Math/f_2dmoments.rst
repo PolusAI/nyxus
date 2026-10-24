@@ -717,7 +717,10 @@ The test suite checks the 118 unweighted moments of both families (raw, central,
 normalized central and Hu) against scikit-image to a relative :math:`10^{-6}`. scikit-image has no
 function for the normalized raw moment, so ``NORM_SPAT_MOMENT_pq`` and ``IMOM_NRM_pq`` are
 checked against its raw moments divided by the same power of :math:`m_{00}`. The 62 weighted
-moments are covered by regression tests only: no reference tool computes the distance weight.
+moments have no reference tool, since none computes the distance weight; they are covered by
+regression tests, and ``WEIGHTED_SPAT_MOMENT_00`` and ``IMOM_WRM_00`` also by an invariant: two
+separate copies of a disk under one label weigh exactly twice one copy, to a relative
+:math:`10^{-12}`.
 The worked-example script asserts every feature value of the worked example and the feature values
 quoted under Possible issues, including the out-of-core ones. It does not assert the distance
 matrix of the worked example, the counts of pixels given too large a distance, the
