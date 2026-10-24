@@ -2118,6 +2118,16 @@ TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_PATHS_AGREE_INVARIANT)
 	ASSERT_NO_THROW(test_2d_morphology_roi_radius_paths_agree_invariant());
 }
 
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_FRACTAL_PERIMETER_TWO_COPIES_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_morphology_fractal_perimeter_two_copies_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_FRACTAL_PERIMETER_SHORT_BORDER_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_morphology_fractal_perimeter_short_border_invariant());
+}
+
 TEST(TEST_NYXUS, TEST_2D_EDT_NO_SITES_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_edt_no_sites_mechanics());
