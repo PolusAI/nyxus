@@ -57,6 +57,15 @@ namespace Nyxus
 		const SaveOption saveOption,
 		const std::string& outputPath);
 
+	// What the segmented 2D workflow sizes the GPU cache by, for its ROIs as the trivial pipeline
+	// holds them: the largest ROI's pixel count, the most pixels a batch holds (cloud and contour),
+	// and the most contour borders a batch has
+	struct GpuCacheSizes
+	{
+		size_t roi_area, roicloud_len, kontur_len, kontur_borders;
+	};
+	GpuCacheSizes gpu_cache_sizes (const Environment& env);
+
 	// single-segment 2D workflow
 	int processDataset_2D_wholeslide(
 		Environment & env,

@@ -32,11 +32,11 @@ regression: 122  invariant: 0  untested: 0
 
 ## Verdicts
 
-1020 of 1020 assertion rows agree with the tree.
+1024 of 1024 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 1020 | the claim and the tree say the same thing |
+| `agree` | 1024 | the claim and the tree say the same thing |
 
 ### How far each verdict reaches
 
@@ -46,7 +46,7 @@ regression: 122  invariant: 0  untested: 0
 | scope | rows | what was compared |
 |---|---:|---|
 | `feature` | 533 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
-| `row` | 280 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
+| `row` | 284 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 | `row+config` | 207 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
 ## Every oracle a feature was matched against
@@ -66,7 +66,7 @@ that alone understates every family that corroborates.
 | 2D | glszm | . | . | . | 16 | . | . | 16 | . | . | . | . |
 | 2D | intensity_histogram | 26 | . | . | 16 | . | . | 23 | . | . | . | 4 |
 | 2D | moments | . | . | . | . | . | . | . | . | . | 118 | 62 |
-| 2D | morphology | 5 | 5 | 2 | . | 20 | 33 | . | . | . | 7 | 30 |
+| 2D | morphology | 7 | 5 | 2 | . | 20 | 33 | . | 1 | . | 7 | 30 |
 | 2D | neighbor | 6 | 2 | . | . | . | . | . | . | . | . | 1 |
 | 2D | ngldm | . | . | . | 17 | . | . | 17 | . | . | . | 2 |
 | 2D | ngtdm | . | . | . | 5 | . | . | 5 | . | . | . | . |
@@ -82,7 +82,7 @@ that alone understates every family that corroborates.
 | 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | . | . | 5 | . | . |
 | IMQ | imq | 1 | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **41** | **9** | **2** | **181** | **20** | **95** | **208** | **2** | **272** | **126** | **122** |
+| | **all** | **43** | **9** | **2** | **181** | **20** | **95** | **208** | **3** | **272** | **126** | **122** |
 
 ## By dimensionality
 

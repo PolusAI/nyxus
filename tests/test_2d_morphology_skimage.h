@@ -59,12 +59,7 @@ static const ref_vals_map<double> morphology_2d_skimage_circles_ref_vals{
 // offset (1, R-1) -- which test_2d_morphology_analytic.h asserts as a second oracle on this same
 // fixture.
 //
-// ROI_RADIUS_MEAN is deliberately absent, because of a defect outside this family:
-// `buildRegularContour` reports every contour pixel one pixel right and one pixel down of where it
-// is, so Nyxus measures its pixels against a shifted boundary. Shifting the reference boundary the
-// same way reproduces all three Nyxus values exactly. On a disk MAX and MEDIAN are unmoved by that
-// shift -- the pixel attaining them moves with it -- while MEAN is not, so MEAN is a regression row
-// until the contour offset is corrected.
+// ROI_RADIUS_MEAN is a regression row.
 static const ref_vals_map<double> morphology_2d_skimage_radius_disks_ref_vals{
 	// R=10: 317 pixels, 56 boundary pixels; MAX/(R-1) = 1.006154
 	{"ROI_RADIUS_MAX_R10", 9.055385138137417},

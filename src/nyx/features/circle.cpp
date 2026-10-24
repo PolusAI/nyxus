@@ -11,11 +11,21 @@ EnclosingInscribingCircumscribingCircleFeature::EnclosingInscribingCircumscribin
 
 void EnclosingInscribingCircumscribingCircleFeature::calculate (LR& r, const Fsettings& s)
 {
-    std::vector<Pixel2> K;
-    r.merge_multicontour(K);
+    d_minEnclo = calculate_min_enclosing_circle_diam (r.contour_pixels_);
 
-    d_minEnclo = calculate_min_enclosing_circle_diam (K);
-    std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (K, r.fvals[(int)Feature2D::CENTROID_X][0], r.fvals[(int)Feature2D::CENTROID_Y][0]);
+    // The inscribing and circumscribing circles are measured from the centroid to the ROI's outer
+    // borders: the external contour imea reads (cv2.findContours with RETR_EXTERNAL). The border of
+    // a hole is not part of that outline. A ROI of several fragments has one outer border per
+    // fragment, and the circles are measured to all of them.
+    std::vector<Pixel2> outer;
+    for (size_t k = 0; k < r.multicontour_.size(); k++)
+        if (k >= r.multicontour_hole_.size() || !r.multicontour_hole_[k])
+            outer.insert (outer.end(), r.multicontour_[k].begin(), r.multicontour_[k].end());
+
+    if (outer.empty())
+        d_inscr = d_circum = 0;
+    else
+        std::tie(d_inscr, d_circum) = calculate_inscribing_circumscribing_circle (outer, r.fvals[(int)Feature2D::CENTROID_X][0], r.fvals[(int)Feature2D::CENTROID_Y][0]);
 }
 
 void EnclosingInscribingCircumscribingCircleFeature::save_value(std::vector<std::vector<double>>& fvals)
@@ -222,14 +232,13 @@ std::tuple <double, double> EnclosingInscribingCircumscribingCircleFeature::calc
     //-----------------circumscribing and inscribing circle ---------------------------
     //https://git.rwth-aachen.de/ants/sensorlab/imea/-/blob/master/imea/measure_2d/macro.py#L199
 
-    double yCentroid2 = yCentroid - 1;
-    double xCentroid2 = xCentroid - 1;
+    // the contour and the centroid are both in absolute pixel coordinates
     std::vector <double> distances;
 
-    for (size_t j = 0; j < contours.size(); j++) 
+    for (size_t j = 0; j < contours.size(); j++)
     {
-        double tmpx = (contours[j].x - xCentroid2);
-        double tmpy = (contours[j].y - yCentroid2);
+        double tmpx = (contours[j].x - xCentroid);
+        double tmpy = (contours[j].y - yCentroid);
         double distance = sqrt(tmpx * tmpx + tmpy * tmpy);
         distances.push_back(distance);
     }

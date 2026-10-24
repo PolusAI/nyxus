@@ -285,6 +285,30 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   agree to 3.8e-15. Note `nnz(bwperim(...))` counts perimeter *pixels* (846 here) and MATLAB's
   `regionprops('Perimeter')` returns 952.848 - neither is this quantity.
 
+## contour.closed_forms
+- ROIs built from pixel sets by `contour_roi_from_pixels()` (`test_2d_contour_common.h`) and placed
+  away from the image origin, at `make_shape2d_settings()`: a 10x10 square, a disk R=20, a 12x12
+  square with a centred 4x4 hole, two separate squares 6x6 and 8x8 under one label, a one-pixel-wide
+  line of 5 and a single pixel. Oracle: `analytic`. Used by: `test_2d_contour_analytic.h`.
+- Each has a closed form for its borders and PERIMETER: one border of 4(n-1) unit steps for the
+  square; the disk pixels with a 4-neighbour outside it, each at a squared distance in ((R-1)^2, R^2]
+  from the centre; 44 + 12 + 4*sqrt(2) for the ring, the hole's border taking one diagonal step at
+  each corner; 4*5 + 4*7 = 48 for the two squares, with no step between them; 2(n-1) for the line,
+  whose border goes out and back; 0 for the pixel. Placed off the origin so a contour in any frame
+  but the ROI's own absolute pixel coordinates cannot match.
+
+## contour.opencv_borders
+- `bench_blob97_filled` at `make_shape2d_settings()`, and the `shape2d_morphology_{mask,intensity}`
+  fixture under `morphology.shape2d_native`. Oracle: `opencv`
+  `cv2.findContours(mask, RETR_LIST, CHAIN_APPROX_NONE)` on the mask padded by one background pixel.
+  Used by: `test_2d_contour_opencv.h`. Generator: `oracles/gen_contour_opencv.py`, which reads both
+  fixtures from their headers.
+- RETR_LIST returns every border, holes included, as the closed walk Suzuki and Abe's border
+  following produces; Nyxus traces the same borders the same way, so the number of borders, the set
+  of pixels on them and PERIMETER (each walk's closed length, summed) agree exactly. The reference
+  length is accumulated in double from OpenCV's integer points, because `cv2.arcLength` sums in
+  float32.
+
 ## morphology.radius_disks
 - Three filled digital disks, R = 10, 20 and 40, built by `calculate_disk_radius_values()`
   (`test_2d_morphology_common.h`) at `make_shape2d_settings()` (`test_main_nyxus.h`):

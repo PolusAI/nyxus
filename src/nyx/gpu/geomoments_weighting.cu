@@ -22,19 +22,31 @@ namespace NyxusGpu
         return dist;
     }
 
-    __device__ double pixel_sqdist_2_contour(StatsInt x, StatsInt y, const Pixel2* d_roicontour, size_t contour_len)
+    // Pixel2::min_sqdist over one border of the contour, the ordered walk W[0..n), n >= 1: up to 10
+    // points are scanned exhaustively, a longer walk is searched coarse to fine
+    __device__ double pixel_sqdist_2_border (StatsInt x, StatsInt y, const Pixel2* W, size_t n)
     {
-        size_t n = contour_len;
+        auto extrem_d = sqdist(x, y, W[0]);
+        if (n <= 10)
+        {
+            for (size_t i = 1; i < n; i++)
+            {
+                auto dist = sqdist(x, y, W[i]);
+                if (extrem_d > dist)
+                    extrem_d = dist;
+            }
+            return extrem_d;
+        }
+
         size_t a = 0,
             b = n;
-        auto extrem_d = sqdist(x, y, d_roicontour[a]);
         auto extrem_i = a;
         int step = (b - a) / logf(b - a);
         do
         {
             for (size_t i = a + step; i < b; i += step)
             {
-                auto dist = sqdist(x, y, d_roicontour[i]);
+                auto dist = sqdist(x, y, W[i]);
                 if (extrem_d > dist)
                 {
                     extrem_d = dist;
@@ -54,6 +66,23 @@ namespace NyxusGpu
         return extrem_d;
     }
 
+    // Pixel2::min_sqdist over a contour made of borders: border k is d_roicontour[ends[k-1] .. ends[k])
+    // (from 0 for k == 0), and each border is searched on its own
+    __device__ double pixel_sqdist_2_contour(StatsInt x, StatsInt y, const Pixel2* d_roicontour, const size_t* d_border_ends, size_t n_borders)
+    {
+        double mind = 0.0;
+        size_t begin = 0;
+        for (size_t k = 0; k < n_borders; k++)
+        {
+            size_t end = d_border_ends[k];
+            double dist = pixel_sqdist_2_border(x, y, d_roicontour + begin, end - begin);
+            if (k == 0 || dist < mind)
+                mind = dist;
+            begin = end;
+        }
+        return mind;
+    }
+
     __global__ void kerCalcWeightedImage3(
         // output
         RealPixIntens* d_realintens,
@@ -62,7 +91,8 @@ namespace NyxusGpu
         const Pixel2* d_roicloud,
         size_t cloud_len,
         const Pixel2* d_roicontour,
-        size_t contour_len)
+        const size_t* d_border_ends,
+        size_t n_borders)
     {
         // pixel index
         size_t pxIdx = threadIdx.x + blockIdx.x * blockSize;
@@ -73,7 +103,7 @@ namespace NyxusGpu
             y = d_roicloud[pxIdx].y;
 
         // distance
-        double mind2 = pixel_sqdist_2_contour(x, y, d_roicontour, contour_len);
+        double mind2 = pixel_sqdist_2_contour(x, y, d_roicontour, d_border_ends, n_borders);
         double dist = std::sqrt(mind2);
 
         // weighted intensity
@@ -116,6 +146,14 @@ namespace NyxusGpu
         [[maybe_unused]] StatsInt x = d_roicloud[pxIdx].x,
             y = d_roicloud[pxIdx].y;
 
+        // the contour holds the slide's corners, each once: fewer than 4 only on a slide one pixel
+        // wide or high, every pixel of which lies on the slide's edge
+        if (contour_len < 4)
+        {
+            d_realintens[pxIdx] = WEIGHTING_EPSILON;
+            return;
+        }
+
         const Pixel2 & p = d_roicloud[pxIdx], 
             & c0 = d_roicontour[0],
             & c1 = d_roicontour[1],
@@ -150,7 +188,9 @@ namespace NyxusGpu
         const Pixel2* d_roicloud,
         size_t cloud_len,
         const Pixel2* d_roicontour,
-        size_t contour_len)
+        size_t contour_len,
+        const size_t* d_border_ends,
+        size_t n_borders)
     {
         // prepare the shape/intensity selector
         int ipow = need_shape_moments ? 0 : 1;
@@ -160,7 +200,7 @@ namespace NyxusGpu
         if (wholeslide)
             kerCalcWeightedImageWholeslide <<< nb, blockSize >>> (d_realintens_buf, ipow, d_roicloud, cloud_len, d_roicontour, contour_len);
         else
-            kerCalcWeightedImage3 <<< nb, blockSize >>> (d_realintens_buf, ipow, d_roicloud, cloud_len, d_roicontour, contour_len);
+            kerCalcWeightedImage3 <<< nb, blockSize >>> (d_realintens_buf, ipow, d_roicloud, cloud_len, d_roicontour, d_border_ends, n_borders);
 
         cudaError_t ok = cudaDeviceSynchronize();
         CHECKERR(ok);

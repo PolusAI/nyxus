@@ -1,4 +1,6 @@
 #include <limits.h>
+#include <cstdint>
+#include <unordered_set>
 #include "globals.h"
 #include "roi_cache.h"
 
@@ -62,6 +64,9 @@ void LR::recycle_aux_obj (RoiDataCacheItem itm)
 		break;
 	case CONTOUR:
 		multicontour_.clear();
+		multicontour_hole_.clear();
+		contour_pixels_.clear();
+		contour_border_ends_.clear();
 		break;
 	case CONVEX_HULL:
 		convHull_CH.clear();
@@ -116,12 +121,23 @@ void LR::initialize_fvals()
 		valVec.push_back(0.0);
 }
 
-void LR::merge_multicontour (std::vector<Pixel2> &super_c) const
+void LR::merge_multicontour()
 {
-	super_c.clear();
+	contour_pixels_.clear();
+	contour_border_ends_.clear();
 
+	std::unordered_set<uint64_t> seen;
 	for (const std::vector<Pixel2> &c : multicontour_)
-		super_c.insert (std::end(super_c), std::begin(c), std::end(c));
+	{
+		const size_t begin = contour_pixels_.size();
+		for (const Pixel2 &p : c)
+			if (seen.insert ((uint64_t(uint32_t(p.x)) << 32) | uint32_t(p.y)).second)
+				contour_pixels_.push_back (p);
+
+		// a border all of whose pixels earlier borders hold adds no run
+		if (contour_pixels_.size() > begin)
+			contour_border_ends_.push_back (contour_pixels_.size());
+	}
 }
 
 

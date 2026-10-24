@@ -14,7 +14,7 @@
      - Mean distance to the contour
      - —
      - regression
-     - 1.124
+     - 0.9288
    * - :ref:`ROI_RADIUS_MAX <feature-roi-radius-max>`
      - Largest distance to the contour
      - —
