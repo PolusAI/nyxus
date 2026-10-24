@@ -68,12 +68,11 @@ def run(image, labels, **kwargs):
 # The worked example as the page walks through it
 check(one, {"POLYGONALITY_AVE": -1, "HEXAGONALITY_AVE": -1, "EDGE_INTEGRATED_INTENSITY": 228}, "ROI 1")
 assert round(one["EDGE_INTEGRATED_INTENSITY"][0] / one["EDGE_MEAN_INTENSITY"][0]) == 44   # contour pixels
-# pins known defect https://github.com/PolusAI/nyxus/issues/497
 check(two, {"AREA_PIXELS_COUNT": 15, "PERIMETER": 12, "CIRCULARITY": 1.144, "ASPECT_RATIO": 0.6,
             "ORIENTATION": 90, "CONVEX_HULL_AREA": 15, "PERCENT_TOUCHING": 41.67,
             "CLOSEST_NEIGHBOR1_ANG": 174.4, "DIAMETER_MIN_ENCLOSING_CIRCLE": 4.4723,
-            "DIAMETER_CIRCUMSCRIBING_CIRCLE": 10, "DIAMETER_INSCRIBING_CIRCLE": 2,
-            "ROI_RADIUS_MEAN": 0.6943, "ROI_RADIUS_MAX": 1.414, "ROI_RADIUS_MEDIAN": 1,
+            "DIAMETER_CIRCUMSCRIBING_CIRCLE": 4.472, "DIAMETER_INSCRIBING_CIRCLE": 2,
+            "ROI_RADIUS_MEAN": 0.2, "ROI_RADIUS_MAX": 1, "ROI_RADIUS_MEDIAN": 0,
             "MAXCHORDS_MIN": 2, "MAXCHORDS_MEAN": 3.722}, "ROI 2")
 
 # Settings that change nothing in memory: IBSI mode, the grey-level depth, the anisotropy keywords
@@ -107,23 +106,35 @@ hole[9, 6] = 0
 check(run(hole, mask), {"AREA_PIXELS_COUNT": 116, "MAXCHORDS_MEAN": 8.8, "ALLCHORDS_MEAN": 5.197},
       "zero pixel")
 
-# PERIMETER of a ROI with a hole, and of a label in two pieces
+# PERIMETER of a ROI with a hole, and of a label in two pieces: the sum of their closed walks. The
+# circles of the holed square are measured to its outer border only.
 sq = np.zeros((13, 13), dtype=np.uint32)
 sq[2:11, 2:11] = 1
 sq[5:8, 5:8] = 0
-check(run(sq * 4, sq), {"PERIMETER": 50.01, "EULER_NUMBER": 0}, "holed square")
+check(run(sq * 4, sq), {"PERIMETER": 45.66, "EULER_NUMBER": 0, "DIAMETER_CIRCUMSCRIBING_CIRCLE": 11.31,
+                        "DIAMETER_INSCRIBING_CIRCLE": 8}, "holed square")
 pieces = np.zeros((10, 16), dtype=np.uint32)
 pieces[2:7, 2:6] = 1
 pieces[2:7, 10:14] = 1
-check(run(pieces * 4, pieces), {"PERIMETER": 42.12, "EULER_NUMBER": 2}, "two pieces")
+check(run(pieces * 4, pieces), {"PERIMETER": 28, "EULER_NUMBER": 2}, "two pieces")
 one_piece = np.zeros((10, 10), dtype=np.uint32)
 one_piece[2:7, 2:6] = 1
 check(run(one_piece * 4, one_piece), {"PERIMETER": 14}, "one piece")
 
-# A 1 x 13 bar: hull of two vertices, Nassenstein 0, Martin only rounding residue below 1e-6
+# A 1 x 13 bar: walked on both sides, so PERIMETER is 24; hull of two vertices, Nassenstein 0,
+# Martin only rounding residue below 1e-6
 line = np.zeros((7, 20), dtype=np.uint32)
 line[3, 3:16] = 1
 flat = run(line * 100, line)
+check(flat, {"PERIMETER": 24}, "1 x 13 bar")
+
+# A single pixel is its own contour; two pixels are walked there and back
+dot = run(np.pad(np.full((1, 1), 7, np.uint32), 2), np.pad(np.ones((1, 1), np.uint32), 2))
+check(dot, {"PERIMETER": 0, "EDGE_MEAN_INTENSITY": 7, "EDGE_INTEGRATED_INTENSITY": 7, "CIRCULARITY": 0,
+            "DIAMETER_MIN_ENCLOSING_CIRCLE": 2e-4, "DIAMETER_CIRCUMSCRIBING_CIRCLE": 0,
+            "DIAMETER_INSCRIBING_CIRCLE": 0, "ROI_RADIUS_MAX": 0, "CONVEX_HULL_AREA": 1}, "one pixel")
+pair = run(np.pad(np.full((1, 2), 7, np.uint32), 2), np.pad(np.ones((1, 2), np.uint32), 2))
+check(pair, {"PERIMETER": 2, "CIRCULARITY": 2.507}, "two pixels")
 for stat in ("MIN", "MAX", "MEAN", "MEDIAN", "STDDEV", "MODE"):
     assert flat[f"STAT_NASSENSTEIN_DIAM_{stat}"][0] == 0, stat
     assert 0 <= flat[f"STAT_MARTIN_DIAM_{stat}"][0] < 1e-6, stat
@@ -174,7 +185,7 @@ assert alone(["ELONGATION"])["ELONGATION"][0] == 0
 circle_codes = ["DIAMETER_MIN_ENCLOSING_CIRCLE", "DIAMETER_CIRCUMSCRIBING_CIRCLE", "DIAMETER_INSCRIBING_CIRCLE"]
 assert (alone(circle_codes)[circle_codes].to_numpy() == 0).all()
 check(alone(circle_codes + ["PERIMETER"]),
-      {"DIAMETER_MIN_ENCLOSING_CIRCLE": 14.17, "DIAMETER_CIRCUMSCRIBING_CIRCLE": 35.61}, "circles with PERIMETER")
+      {"DIAMETER_MIN_ENCLOSING_CIRCLE": 14.17, "DIAMETER_CIRCUMSCRIBING_CIRCLE": 30}, "circles with PERIMETER")
 hex_codes = ["HEXAGONALITY_AVE", "HEXAGONALITY_STDDEV"]
 assert (alone(hex_codes, dimg, disk)[hex_codes].to_numpy() == 0).all()
 

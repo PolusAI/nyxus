@@ -67,8 +67,24 @@ public:
 	// guard (aux_min == aux_max) always keys off computed extrema rather than an indeterminate scalar.
 	PixIntens aux_min = (std::numeric_limits<PixIntens>::max)(), aux_max = 0;
 
+	// One closed walk per border of the ROI (outer border of each fragment, border of each hole).
+	// A walk passes a one-pixel-wide part of the ROI twice, and two borders can share a pixel.
 	std::vector<std::vector<Pixel2>> multicontour_;
-	void merge_multicontour (std::vector<Pixel2> &flattened_contour) const;
+	// multicontour_hole_[k] is true when border k is the border of a hole. A border without an entry
+	// is an outer one.
+	std::vector<bool> multicontour_hole_;
+
+	// The ROI's contour pixels, each once: the borders of multicontour_ one after another, every pixel
+	// kept where it is first met. Each border that adds pixels adds one end to contour_border_ends_,
+	// and its pixels are contour_pixels_[previous end .. its end) (from 0 for the first), in the order
+	// of its walk; a border all of whose pixels earlier borders hold adds none, so the ends are not
+	// indexed like multicontour_. The ends rise strictly and the last is contour_pixels_.size(), the
+	// layout border_ends_cover() (pixel.h) checks. The whole is not a walk: it jumps between borders.
+	std::vector<Pixel2> contour_pixels_;
+	std::vector<size_t> contour_border_ends_;
+	// Fills contour_pixels_ and contour_border_ends_ from multicontour_. ContourFeature calls it once
+	// per ROI after tracing; whatever sets multicontour_ by another route calls it after.
+	void merge_multicontour();
 
 	std::vector<Pixel2> convHull_CH;
 

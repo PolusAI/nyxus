@@ -30,8 +30,7 @@ set again with every pixel also weighted by its distance to the ROI contour.
        GPU values differ from the CPU values: the GPU takes the central moments about the centroid
        rounded down to whole pixels, so the central, normalized central and Hu moments differ, and
        with anisotropy the run can crash, a known defect (`#521 <https://github.com/PolusAI/nyxus/issues/521>`__). The GPU's distance search computes
-       the step with a single-precision logarithm, and it has no guard for a ROI without a traced
-       contour, such as a single pixel.
+       the step with a single-precision logarithm.
    * - **Out-of-core**
      - Partly. Without anisotropy: on an image that Nyxus reads as one tile, the 118 unweighted
        moments have the same values as in memory. On an image read as several tiles, out-of-core
@@ -81,22 +80,22 @@ How the features are computed
 How the distance to the contour is found
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-1. **Contour.** Nyxus traces the border of the ROI in a copy of its bounding box padded by one
-   pixel on every side, and concatenates every traced contour into one list. The traced
-   coordinates keep the padding offset, a known defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__): each contour pixel lies one pixel to the right of and one
-   pixel below the ROI border pixel it stands for. The same contour gives ``PERIMETER``, which the
-   offset does not change.
+1. **Contour.** Nyxus traces every border of the ROI, the outer border of each separate part and
+   the border of each hole, as a closed walk over the ROI pixels that have a 4-neighbour outside
+   the ROI. Each border is a list of its pixels in walking order, every pixel listed once. The same
+   contour gives ``PERIMETER``.
 2. **Search.** :math:`d_i^2` is the smallest squared distance from pixel :math:`i` to the contour
-   pixels that an approximate search visits. With :math:`n` contour pixels, it first visits every
-   :math:`s`-th pixel of the list, :math:`s = \lfloor n / \ln n \rfloor`, starting at the first.
-   Around the nearest one it searches a window of :math:`\pm s` list positions, then narrower
-   windows (step :math:`\lfloor w / \ln w \rfloor` for a window of :math:`w` positions, 1 once
-   :math:`w \le 10`), until the window is 2 positions wide. The window never wraps around the
-   ends of the list, so the true nearest contour pixel can be missed, and :math:`d_i` is then too
-   large. It is never too small.
+   pixels that a search visits, taken over the borders one at a time. A border of at most 10
+   pixels is scanned in full. On a longer border of :math:`n` pixels the search is approximate: it
+   first visits every :math:`s`-th pixel of the list, :math:`s = \lfloor n / \ln n \rfloor`,
+   starting at the first. Around the nearest one it searches a window of :math:`\pm s` list
+   positions, then narrower windows (step :math:`\lfloor w / \ln w \rfloor` for a window of
+   :math:`w` positions, 1 once :math:`w \le 10`), until the window is 2 positions wide. The window
+   never wraps around the ends of the list, so the true nearest contour pixel can be missed, and
+   :math:`d_i` is then too large. It is never too small.
 3. **Weight.** :math:`d_i` is the square root, and the weight is :math:`I_i \ln(d_i + 0.001)`.
 
-A ROI without a traced contour, such as a single pixel, has :math:`d_i = 0` for every pixel.
+A single-pixel ROI is its own contour, so its pixel has :math:`d_i = 0`.
 
 In whole-slide mode (``--segDir`` equal to ``--intDir``, or ``single_roi=True`` in Python) the
 contour is the four corners of the image, at :math:`(0, 0)`, :math:`(W, 0)`, :math:`(W, H)` and
@@ -126,28 +125,28 @@ The top-left entry is :math:`x = 0, y = 0`. The shape moments give :math:`m_{00}
 :math:`\bar{y} = 2.925`. The intensity moments give :math:`m_{00} = 150`, the sum of the
 intensities.
 
-The traced contour has 17 pixels, each one right of and one below a border pixel of the ROI. The
-distances :math:`d_i` that Nyxus uses are:
+The contour is one border of 17 pixels, the ROI pixels with a 4-neighbour outside the ROI,
+listed from :math:`(2, 0)` clockwise on screen. The distances :math:`d_i` that Nyxus uses are:
 
 .. math::
 
    \textbf{d} = \begin{bmatrix}
-   \cdot & \cdot & 1.414 & 1 & 1 & \cdot & \cdot & \cdot\\
-   \cdot & 2 & 1 & 0 & 0 & 0 & 1 & \cdot\\
-   3.162 & 2.236 & 1.414 & 1 & 1 & 1 & 0 & 0\\
-   3.606 & 2.828 & 2.236 & 2 & 2 & 1.414 & 1 & 1\\
-   1 & 0 & 1 & 2 & 2.828 & 2.236 & 1.414 & \cdot\\
-   \cdot & 0 & 1 & 1.414 & 2 & 1.414 & \cdot & \cdot\\
-   \cdot & \cdot & 0 & 1 & 1 & \cdot & \cdot & \cdot \end{bmatrix}
+   \cdot & \cdot & 0 & 0 & 0 & \cdot & \cdot & \cdot\\
+   \cdot & 1.414 & 1 & 1 & 1 & 0 & 0 & \cdot\\
+   2.828 & 2.236 & 2 & 2 & 1.414 & 1 & 1 & 0\\
+   0 & 1 & 2 & 2.828 & 2.236 & 1.414 & 1 & 0\\
+   0 & 1 & 1.414 & 2 & 1.414 & 1 & 0 & \cdot\\
+   \cdot & 0 & 1 & 1 & 1 & 0 & \cdot & \cdot\\
+   \cdot & \cdot & 0 & 0 & 0 & \cdot & \cdot & \cdot \end{bmatrix}
 
-The left-hand pixels of rows 2 and 3 are border pixels, but get :math:`d = 3.162` and
-:math:`d = 3.606`. For :math:`(x, y) = (0, 3)` the search visits list positions 0, 6 and 12
-(:math:`s = \lfloor 17 / \ln 17 \rfloor = 6`), keeps position 0 at :math:`d^2 = 13`, and
-searches positions 0 to 5 around it. The traced pixel at distance 1, position 15, lies outside
-that window. Eight of the 40 pixels get a larger :math:`d` than their nearest traced pixel, by up
-to 2.83 pixels.
+The left-hand pixel of row 2 and the second pixel of row 1 are contour pixels, but get
+:math:`d = 2.828` and :math:`d = 1.414`. For :math:`(x, y) = (0, 2)` the search visits list
+positions 0, 6 and 12 (:math:`s = \lfloor 17 / \ln 17 \rfloor = 6`), keeps position 0 at
+:math:`d^2 = 8`, and searches positions 0 to 5 around it. The pixel itself, position 15, lies
+outside that window. Four of the 40 pixels get a larger :math:`d` than their nearest contour
+pixel, by up to 2.83 pixels.
 
-The weights sum to :math:`m^w_{00} = -42.77` for the shape and :math:`-144.7` for the intensity.
+The weights sum to :math:`m^w_{00} = -95.40` for the shape and :math:`-331.7` for the intensity.
 Both are negative, so every weighted normalized moment of odd order, and weighted Hu invariants 3
 to 7, are not real numbers and are output as 0 (see :ref:`moments-possible-issues`).
 
@@ -193,7 +192,7 @@ Notation
    * - :math:`\eta_{pq}`
      - Normalized central moment, :math:`\mu_{pq} / m_{00}^{(p+q)/2+1}`.
    * - :math:`d_i`
-     - Distance from pixel :math:`i` to the traced contour, as found by the search above.
+     - Distance from pixel :math:`i` to the contour, as found by the search above.
    * - :math:`w_i`
      - Weight of pixel :math:`i` in the weighted moments, :math:`I_i \ln(d_i + 0.001)`.
    * - :math:`m^w_{pq}, \mu^w_{pq}, \eta^w_{pq}`
@@ -538,17 +537,16 @@ Weighted raw moments
 :Range: :math:`(-\infty, \infty)`
 
 The raw moments with each pixel weighted by :math:`w_i = I_i \ln(d_i + 0.001)`, where :math:`d_i`
-is its distance to the traced contour (see `How the distance to the contour is found`_). Pixels
-on the traced contour count negatively (:math:`-6.9\,I_i`), pixels one step from it about 0, and
+is its distance to the contour (see `How the distance to the contour is found`_). Pixels
+on the contour count negatively (:math:`-6.9\,I_i`), pixels one step from it about 0, and
 pixels deeper inside positively.
 
 .. math::
 
    m^w_{pq} = \sum_i w_i\, x_i^p\, y_i^q, \qquad w_i = I_i \ln(d_i + 0.001)
 
-**Possible issues.** :math:`d_i` comes from a contour shifted by one pixel and from an approximate
-search, so these values differ from the same formula with the exact distance to the ROI border
-(see :ref:`moments-possible-issues`).
+**Possible issues.** :math:`d_i` comes from an approximate search, so these values differ from
+the same formula with the exact distance to the ROI border (see :ref:`moments-possible-issues`).
 
 
 .. _feature-weighted-central-moment-02:
@@ -641,7 +639,7 @@ Weighted Hu invariants
 
 Hu's formulas (see `Hu invariants`_) applied to :math:`\eta^w_{pq}` in place of
 :math:`\eta_{pq}`. Unlike :math:`I_1`, the weighted :math:`I_1` can be negative: it is
-:math:`-0.194` on the worked example.
+:math:`-0.1100` on the worked example.
 
 **Possible issues.** Invariants 3 to 7 use the odd-order :math:`\eta^w_{pq}`, so they are output as
 the ``--noval`` substitute whenever :math:`m^w_{00} < 0`. Invariants 1 and 2 use only second-order
@@ -653,40 +651,36 @@ moments and are always computed.
 Possible issues
 ---------------
 
-The contour is shifted by one pixel
-   Each traced contour pixel lies one pixel right of and below the border pixel it stands for, so
-   the distances :math:`d_i` are measured to the wrong pixels. Border pixels on the top and left
-   sides are at distance 1 or more from the traced contour instead of 0. On a 48 × 40 rectangle,
-   85 of the 1920 pixels lie on the traced contour, against 172 border pixels. With the exact
-   distance to the traced contour ``WEIGHTED_SPAT_MOMENT_00`` would be 2422.7; with the exact
-   distance to the ROI's own border it is 1821.3.
-
 The distance search is approximate
-   The search can miss the nearest contour pixel, so :math:`d_i` can be too large, never too
-   small. On the 48 × 40 rectangle 121 of the 1920 pixels get too large a distance, by up to 12
-   pixels, and ``WEIGHTED_SPAT_MOMENT_00`` is 2498.7 instead of 2422.7. Together with the shifted
-   contour, Nyxus reports 37 % more than the exact distance to the ROI border gives. On the worked
-   example 8 of the 40 pixels get too large a distance.
+   On a border of more than 10 pixels the search can miss the nearest contour pixel, so
+   :math:`d_i` can be too large, never too small. On a 48 × 40 rectangle, whose contour is its 172
+   border pixels, 118 of the 1920 pixels get too large a distance, by up to 12 pixels, and
+   ``WEIGHTED_SPAT_MOMENT_00`` is 1895.0 where the exact distance to the contour gives 1821.3,
+   4.0 % more. On the worked example 4 of the 40 pixels get too large a distance.
 
 The sum of the weights is often negative
    Every pixel at :math:`d_i < 0.999` has a negative weight, and a pixel at :math:`d_i = 0` weighs
    :math:`-6.9\,I_i`. On small ROIs the sum :math:`m^w_{00}` is therefore negative, and all odd-order
    weighted normalized moments and weighted Hu invariants 3 to 7 are output as the ``--noval``
-   substitute. On digital disks ``WEIGHTED_SPAT_MOMENT_00`` is -68.94 at radius 5, 6.806 at radius 8
-   and 1549 at radius 20. Near the sign change the normalization divides by a number close to 0:
-   ``WT_NORM_CTR_MOM_30`` is 7881 at radius 8 and 0.007713 at radius 20.
+   substitute. On digital disks ``WEIGHTED_SPAT_MOMENT_00`` is -153.9 at radius 5, 2.195 at
+   radius 12 and 1211 at radius 20. Near the sign change the normalization divides by a number
+   close to 0: ``WT_NORM_CTR_MOM_30`` is -33355 at radius 12 and -0.001704 at radius 20.
 
 Weighted moments differ out of core
    Without anisotropy, an ROI computed out of core gets its contour from a different routine, which places it
    relative to the ROI's bounding box while the pixels keep their image positions, a known defect
    (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). The distances
    :math:`d_i` are then off by the box's offset, and all 62 weighted moments depend on where the
-   ROI lies. On an ellipse of 245 pixels ``WEIGHTED_SPAT_MOMENT_00`` is 49.81 in memory wherever
-   it lies, and 7.484, 58.50 or 338.2 out of core depending on where its bounding box starts:
+   ROI lies. On an ellipse of 245 pixels ``WEIGHTED_SPAT_MOMENT_00`` is -93.36 in memory wherever
+   it lies, and 35.62, 78.42 or 425.0 out of core depending on where its bounding box starts:
    (2, 2), (3, 5) or (10, 12). A ROI whose bounding box starts at (0, 0) is placed correctly, but
    the out-of-core contour can list its pixels in a different order, which changes the
    approximate distance search: a 48 × 40 rectangle there gets the in-memory values, while the
-   ellipse gives 43.75. The 118 unweighted moments are the same on both paths.
+   ellipse keeps ``WEIGHTED_SPAT_MOMENT_00`` at -93.36 but gives ``WEIGHTED_SPAT_MOMENT_10``
+   -708.9 against -1158 in memory. The out-of-core contour is also a single loop, which leaves a
+   hole's border out: a 9 × 9 square with a 3 × 3 hole at the origin gives
+   ``WEIGHTED_SPAT_MOMENT_00`` -194.7 out of core and -274.2 in memory. The 118 unweighted moments
+   are the same on both paths.
 
 Whole-slide mode
    The image corners used as the contour lie one pixel past the last column and row, a known
@@ -712,7 +706,7 @@ ROI with all intensities 0
    output as the ``--noval`` substitute, 0 by default. The shape moments are computed as usual.
 
 Single-pixel ROI
-   No contour is traced, so the pixel has :math:`d = 0` and the weight :math:`\ln 0.001`.
+   The pixel is its own contour, so it has :math:`d = 0` and the weight :math:`\ln 0.001`.
    ``WEIGHTED_SPAT_MOMENT_00`` is -6.908, and the central and normalized central moments are 0.
 
 
@@ -723,7 +717,10 @@ The test suite checks the 118 unweighted moments of both families (raw, central,
 normalized central and Hu) against scikit-image to a relative :math:`10^{-6}`. scikit-image has no
 function for the normalized raw moment, so ``NORM_SPAT_MOMENT_pq`` and ``IMOM_NRM_pq`` are
 checked against its raw moments divided by the same power of :math:`m_{00}`. The 62 weighted
-moments are covered by regression tests only: no reference tool computes the distance weight.
+moments have no reference tool, since none computes the distance weight; they are covered by
+regression tests, and ``WEIGHTED_SPAT_MOMENT_00`` and ``IMOM_WRM_00`` also by an invariant: two
+separate copies of a disk under one label weigh exactly twice one copy, to a relative
+:math:`10^{-12}`.
 The worked-example script asserts every feature value of the worked example and the feature values
 quoted under Possible issues, including the out-of-core ones. It does not assert the distance
 matrix of the worked example, the counts of pixels given too large a distance, the

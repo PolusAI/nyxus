@@ -17,6 +17,9 @@
 #include "../src/nyx/ome/format_detect.h"		// detect_container_family
 #include "../src/nyx/raw_image_loader.h"		// RawImageLoader, the prescan-side dispatch
 #include "test_2d_contour_analytic.h"
+#include "test_2d_contour_invariant.h"
+#include "test_2d_contour_mechanics.h"
+#include "test_2d_contour_opencv.h"
 #include "test_ome_meta_mechanics.h"		// native-OME metadata parsers / OmeAxes descriptor
 #include "test_ometiff_mechanics.h"	// OME-TIFF native (z,c,t)->IFD read (core; no USE_Z5)
 #include "test_2d_firstorder_common.h"
@@ -45,6 +48,8 @@
 #include "test_2d_morphology_mechanics.h"
 #include "test_2d_moments_skimage.h"
 #include "test_2d_moments_regression.h"
+#include "test_2d_moments_invariant.h"
+#include "test_2d_moments_mechanics.h"
 #include "test_2d_zernike_analytic.h"
 #include "test_2d_zernike_invariant.h"
 #include "test_2d_zernike_mechanics.h"
@@ -161,6 +166,74 @@ TEST(TEST_NYXUS, TEST_2D_CONTOUR_VOID_ANALYTIC) {
 
 TEST(TEST_NYXUS, TEST_2D_CONTOUR_MULTI_CONNECTED_ANALYTIC) {
 	ASSERT_NO_THROW(test_2d_contour_multi_connected_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_SQUARE_ANALYTIC) {
+	ASSERT_NO_THROW(test_2d_contour_square_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_DISK_ANALYTIC) {
+	ASSERT_NO_THROW(test_2d_contour_disk_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_RING_ANALYTIC) {
+	ASSERT_NO_THROW(test_2d_contour_ring_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_TWO_FRAGMENTS_ANALYTIC) {
+	ASSERT_NO_THROW(test_2d_contour_two_fragments_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_LINE_ANALYTIC) {
+	ASSERT_NO_THROW(test_2d_contour_line_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_SINGLE_PIXEL_ANALYTIC) {
+	ASSERT_NO_THROW(test_2d_contour_single_pixel_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_NOISY_ROIS_BOUNDARY_RULE_INVARIANT) {
+	ASSERT_NO_THROW(test_2d_contour_noisy_rois_boundary_rule_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_BLOB97_BOUNDARY_RULE_INVARIANT) {
+	ASSERT_NO_THROW(test_2d_contour_blob97_boundary_rule_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_DISTANCE_SEARCH_SHORT_WALK_INVARIANT) {
+	ASSERT_NO_THROW(test_2d_contour_distance_search_short_walk_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_DISTANCE_SEARCH_BORDERS_INVARIANT) {
+	ASSERT_NO_THROW(test_2d_contour_distance_search_borders_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_BORDERED_CONTOUR_BINDS_LVALUES_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_contour_bordered_contour_binds_lvalues_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_BORDERED_CONTOUR_LAYOUT_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_contour_bordered_contour_layout_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_MERGE_SKIPS_COVERED_BORDER_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_contour_merge_skips_covered_border_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_BORDERS_ROW_RUNS_BOUND_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_contour_borders_row_runs_bound_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_PRESCAN_ROW_RUNS_MECHANICS) {
+	ASSERT_NO_THROW(test_2d_contour_prescan_row_runs_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_BLOB97_OPENCV) {
+	ASSERT_NO_THROW(test_2d_contour_blob97_opencv());
+}
+
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_SHAPE2D_OPENCV) {
+	ASSERT_NO_THROW(test_2d_contour_shape2d_opencv());
 }
 
 //***** first-order compatibility *****
@@ -2020,6 +2093,21 @@ TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_DISK_CLOSED_FORM_ANALYTIC)
 	ASSERT_NO_THROW(test_2d_morphology_roi_radius_disk_closed_form_analytic());
 }
 
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_CIRCLE_DIAMETERS_CLOSED_FORM_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_morphology_circle_diameters_closed_form_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_CIRCLE_DIAMETERS_HOLED_DISK_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_morphology_circle_diameters_holed_disk_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_CIRCLE_DIAMETERS_TWO_FRAGMENTS_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_morphology_circle_diameters_two_fragments_analytic());
+}
+
 TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_DISKS_SKIMAGE)
 {
 	ASSERT_NO_THROW(test_2d_morphology_roi_radius_disks_skimage());
@@ -2043,6 +2131,16 @@ TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_ENGINE_CHOICE_INVARIANT)
 TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_ROI_RADIUS_PATHS_AGREE_INVARIANT)
 {
 	ASSERT_NO_THROW(test_2d_morphology_roi_radius_paths_agree_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_FRACTAL_PERIMETER_TWO_COPIES_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_morphology_fractal_perimeter_two_copies_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_FRACTAL_PERIMETER_SHORT_BORDER_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_morphology_fractal_perimeter_short_border_invariant());
 }
 
 TEST(TEST_NYXUS, TEST_2D_EDT_NO_SITES_MECHANICS)
@@ -2143,6 +2241,86 @@ TEST(TEST_NYXUS, TEST_2D_MOMENTS_INTENSITY_SKIMAGE)
 TEST(TEST_NYXUS, TEST_2D_MOMENTS_INTENSITY_REGRESSION)
 {
 	ASSERT_NO_THROW(test_2d_moments_intensity_regression());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_WEIGHTED_DISK_COPIES_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_moments_weighted_disk_copies_invariant());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_WHOLESLIDE_THIN_SLIDE_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_wholeslide_thin_slide_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_CACHE_CLEAR_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_cache_clear_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_BORDER_UPLOAD_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_border_upload_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_CPU_PARITY_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_cpu_parity_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_CACHE_SIZES_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_cache_sizes_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_ANISOTROPIC_BATCH_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_anisotropic_batch_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_CACHE_REALLOCATE_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_cache_reallocate_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_UPLOAD_AFTER_FREE_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_upload_after_free_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_CACHE_FAMILIES_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_cache_families_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_CACHE_REGROW_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_cache_regrow_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_CACHE_DROPS_FAMILIES_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_cache_drops_families_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_CACHE_ALLOC_CLEAR_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_cache_alloc_clear_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MOMENTS_GPU_UNREADY_CACHE_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_moments_gpu_unready_cache_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_GPU_EROSION_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_morphology_gpu_erosion_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GABOR_GPU_UNREADY_CACHE_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_gabor_gpu_unready_cache_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_EROSIONS_REGRESSION)
@@ -2255,6 +2433,21 @@ TEST(TEST_NYXUS, TEST_2D_RADIAL_BIN_INDEX_MECHANICS)
 	ASSERT_NO_THROW(test_2d_radial_bin_index_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_2D_RADIAL_SINGLE_PIXEL_ROI_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_radial_single_pixel_roi_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_TWO_PIXEL_ROI_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_radial_two_pixel_roi_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_RADIAL_TWO_FRAGMENTS_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_radial_two_fragments_mechanics());
+}
+
 TEST(TEST_NYXUS, TEST_2D_ZERNIKE_MOMENTS_REGRESSION)
 {
 	ASSERT_NO_THROW(test_2d_zernike_moments_regression());
@@ -2313,6 +2506,11 @@ TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_PERCENT_TOUCHING_ENCLOSED_INVARIANT)
 TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_COUNTS_AND_FIRST_DISTANCE_CELLPROFILER)
 {
 	ASSERT_NO_THROW(test_2d_neighbor_counts_and_first_distance_cellprofiler());
+}
+
+TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_PERCENT_TOUCHING_CELLPROFILER)
+{
+	ASSERT_NO_THROW(test_2d_neighbor_percent_touching_cellprofiler());
 }
 
 TEST(TEST_NYXUS, TEST_2D_NEIGHBOR_SECOND_DISTANCE_AND_ANGLES_ANALYTIC)

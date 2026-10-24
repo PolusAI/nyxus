@@ -35,7 +35,7 @@ void BasicGeomoms2D::apply_dist2contour_weighting(
     reintenvec& realintens,
     // input
     const pixcloud& cloud,
-    const pixcloud& contour,
+    const BorderedContour& contour,
     const double epsilon)
 {
     size_t n = cloud.size();
@@ -65,6 +65,16 @@ void BasicGeomoms2D::apply_dist2contour_weighting_wholeslide(
     const double epsilon)
 {
     size_t n = cloud.size();
+
+    // 'contour' holds the slide's corners, each once. A slide one pixel wide or high has fewer than 4
+    // distinct corners, and every one of its pixels lies on the slide's edge.
+    if (contour.size() < 4)
+    {
+        for (size_t i = 0; i < n; i++)
+            realintens[i] = epsilon;
+        return;
+    }
+
     for (size_t i = 0; i < n; i++)
     {
         auto& p = cloud[i];
@@ -114,9 +124,8 @@ void BasicGeomoms2D::calculate(LR& r, const Fsettings& s, intenfunction ifun, do
     calcNormCentralMoments(c);
     calcHuInvariants(c);
 
-    // flat multicontour
-    std::vector<Pixel2> K;
-    r.merge_multicontour(K);
+    // the ROI's contour pixels, each once
+    const std::vector<Pixel2>& K = r.contour_pixels_;
 
     // -- prepare weighted pixel cloud
     std::vector<RealPixIntens> w;
@@ -124,7 +133,7 @@ void BasicGeomoms2D::calculate(LR& r, const Fsettings& s, intenfunction ifun, do
     if (STNGS_SINGLEROI(s))   // former theEnvironment.singleROI
         apply_dist2contour_weighting_wholeslide (w, c, K, weighting_epsilon);
     else
-        apply_dist2contour_weighting (w, c, K, weighting_epsilon);
+        apply_dist2contour_weighting (w, c, BorderedContour (K, r.contour_border_ends_), weighting_epsilon);
 
     // -- weighted moments
     calcOrigins(c, w);

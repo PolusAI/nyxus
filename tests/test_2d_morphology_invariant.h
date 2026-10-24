@@ -2,7 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "../src/nyx/features/contour.h"
 #include "../src/nyx/features/edt.h"
+#include "../src/nyx/features/fractal_dim.h"
 #include "../src/nyx/features/roi_radius.h"
 #include "test_main_nyxus.h"   // roi_cache.h / featureset.h / pixel.h
 
@@ -90,8 +92,8 @@ namespace nyxus_ut_edt
         return from_mask ("ring R=" + std::to_string(R) + " w=" + std::to_string(w), m, S, S, 100, 100);
     }
 
-    // A square with a square hole: two contours, so merge_multicontour's flattening is exercised
-    // and the transform is seeded from a non-simply-connected site set.
+    // A square with a square hole: two borders, so the contour the radius is measured to holds the
+    // pixels of both and the transform is seeded from a non-simply-connected site set.
     inline Shape square_with_hole (int S, int hole)
     {
         std::vector<char> m ((size_t)S * S, 1);
@@ -320,6 +322,7 @@ inline void test_2d_morphology_roi_radius_paths_agree_invariant()
             roi.initialize_fvals();
             roi.raw_pixels = shape.cloud;
             roi.multicontour_.push_back (shape.contour);
+            roi.merge_multicontour();
 
             RoiRadiusFeature f;
             f.calculate (roi, s);
@@ -335,6 +338,7 @@ inline void test_2d_morphology_roi_radius_paths_agree_invariant()
             LR roi (1);
             roi.initialize_fvals();
             roi.multicontour_.push_back (shape.contour);
+            roi.merge_multicontour();
 
             roi.raw_pixels_NT.init (1, "nyxus_ut_paths_agree");
             for (const auto& p : shape.cloud)
@@ -370,4 +374,99 @@ inline void test_2d_morphology_roi_radius_paths_agree_invariant()
     ASSERT_GT (n_took_transform, (size_t)0)
         << "no shape in the battery routed the in-RAM path through the distance transform, so this "
            "test no longer compares the two engines";
+}
+
+// FRACT_DIM_PERIMETER walks every closed border of a ROI separately and sums the borders per
+// stride. Two identical, separate disks under one label therefore have exactly the dimension of
+// one: at every stride both the summed length and the number of steps double, so the mean ruler is
+// the same and log(perimeter) shifts by log 2 at every point, which leaves the slope unchanged.
+// Walking the two borders as one sequence would measure chords between the disks and break this.
+inline void test_2d_morphology_fractal_perimeter_two_copies_invariant()
+{
+    auto fractal_perimeter = [] (int n_copies)
+    {
+        const int R = 12, cx = 20, cy = 20, gap = 50;
+        LR roi (1);
+        bool first = true;
+        for (int k = 0; k < n_copies; k++)
+            for (int y = cy - R; y <= cy + R; y++)
+                for (int x = cx - R + k * gap; x <= cx + R + k * gap; x++)
+                {
+                    const int dx = x - (cx + k * gap), dy = y - cy;
+                    if (dx * dx + dy * dy > R * R)
+                        continue;
+                    if (first) { Nyxus::init_label_record_3 (roi, x, y, 1); first = false; }
+                    else Nyxus::update_label_record_3 (roi, x, y, 1);
+                    roi.raw_pixels.push_back (Pixel2 (x, y, (PixIntens) 1));
+                }
+        roi.make_nonanisotropic_aabb();
+        roi.aux_image_matrix = ImageMatrix (roi.raw_pixels);
+        roi.initialize_fvals();
+
+        Fsettings s = make_shape2d_settings();
+        ContourFeature contour;
+        contour.calculate (roi, s);
+        contour.save_value (roi.fvals);
+        FractalDimensionFeature fractal;
+        fractal.calculate (roi, s);
+        fractal.save_value (roi.fvals);
+
+        EXPECT_EQ (roi.multicontour_.size(), (size_t) n_copies);
+        return roi.fvals;
+    };
+
+    const auto one = fractal_perimeter (1), two = fractal_perimeter (2);
+    ASSERT_GT (one[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], 0.0);
+    ASSERT_NEAR (two[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], one[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], 1e-12)
+        << "FRACT_DIM_PERIMETER of two separate copies differs from one copy's";
+}
+
+// A border no longer than the divider's stride is measured whole, at its closed length, rather than
+// dropped. Here every border is measured the same at every stride: a 17x17 square, whose 64-pixel
+// walk the strides 16, 8, 4, 2 and 1 all cut at its corners, so they lay 64 along it, and a separate
+// 3-pixel line, whose 4-pixel walk out and back strides 1 and 2 measure at its closed length 4 and
+// the larger strides take whole. The perimeter is 68 at every ruler, and the dimension exactly 1.
+// Dropping the line at the strides it is too short for would leave 64 at the larger rulers and
+// lift the dimension above 1.
+inline void test_2d_morphology_fractal_perimeter_short_border_invariant()
+{
+    auto fractal_perimeter = [] (bool with_line, size_t& n_borders)
+    {
+        LR roi (1);
+        bool first = true;
+        auto add = [&] (int x, int y)
+        {
+            if (first) { Nyxus::init_label_record_3 (roi, x, y, 1); first = false; }
+            else Nyxus::update_label_record_3 (roi, x, y, 1);
+            roi.raw_pixels.push_back (Pixel2 (x, y, (PixIntens) 1));
+        };
+        for (int y = 10; y <= 26; y++)
+            for (int x = 10; x <= 26; x++)
+                add (x, y);
+        if (with_line)
+            for (int x = 40; x <= 42; x++)
+                add (x, 15);
+        roi.make_nonanisotropic_aabb();
+        roi.aux_image_matrix = ImageMatrix (roi.raw_pixels);
+        roi.initialize_fvals();
+
+        Fsettings s = make_shape2d_settings();
+        ContourFeature contour;
+        contour.calculate (roi, s);
+        contour.save_value (roi.fvals);
+        FractalDimensionFeature fractal;
+        fractal.calculate (roi, s);
+        fractal.save_value (roi.fvals);
+
+        n_borders = roi.multicontour_.size();
+        return roi.fvals;
+    };
+
+    size_t n_square = 0, n_both = 0;
+    const auto square = fractal_perimeter (false, n_square), both = fractal_perimeter (true, n_both);
+    ASSERT_EQ (n_square, (size_t) 1);
+    ASSERT_EQ (n_both, (size_t) 2);
+    ASSERT_NEAR (square[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], 1.0, 1e-12) << "the square alone is measured 64 at every ruler";
+    ASSERT_NEAR (both[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], 1.0, 1e-12)
+        << "the 3-pixel line was not measured whole at the strides it is too short for";
 }

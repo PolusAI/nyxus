@@ -10,23 +10,20 @@
 // PIXELDISTANCE=1 -- the same recipe the oracle files use. SPEC 2 regression tier: a drift guard,
 // no oracle claim.
 //
-// PERCENT_TOUCHING is the one feature in this family with no promotable oracle. Nyxus counts contour
-// pixels 8-adjacent to a neighbour over contour length; CellProfiler counts object outline pixels
-// overlapping a disk(distance+0.5)-dilated neighbour over perimeter, and no CP distance method
-// reproduces Nyxus -- the two disagree on 3 of the 5 ROIs. That is a definition difference, not a
-// defect, so the values are pinned rather than compared. The bounds the feature must obey regardless
-// are asserted in test_2d_neighbor_invariant.h.
+// PERCENT_TOUCHING is vetted against CellProfiler on this fixture in test_2d_neighbor_cellprofiler.h;
+// these pins are its drift guard. Each of the four outer ROIs here touches the centre along one side
+// of its 2x2 or 2x3 border: 2 of its 4, or 3 of its 6, edge pixels, hence 50. The bounds the feature
+// must obey regardless are asserted in test_2d_neighbor_invariant.h.
 //
 // The other eight features in the family are vetted at the exact tier against CellProfiler
 // (test_2d_neighbor_cellprofiler.h) and the analytic recomputation (test_2d_neighbor_analytic.h) on
-// this same fixture, so they are deliberately not duplicated here: a second assertion of the same
-// value at a looser band adds no coverage.
+// this same fixture, and are not duplicated here.
 static const ref_vals_map_by_label<double> neighbor_2d_regression_ref_vals_by_label{
 	{1, {{"PERCENT_TOUCHING", 100.0}}},
-	{2, {{"PERCENT_TOUCHING", 66.666666666666671}}},
-	{3, {{"PERCENT_TOUCHING", 66.666666666666671}}},
+	{2, {{"PERCENT_TOUCHING", 50.0}}},
+	{3, {{"PERCENT_TOUCHING", 50.0}}},
 	{4, {{"PERCENT_TOUCHING", 50.0}}},
-	{5, {{"PERCENT_TOUCHING", 33.333333333333336}}}
+	{5, {{"PERCENT_TOUCHING", 50.0}}}
 };
 
 static void assert_neighbor2d_regression(

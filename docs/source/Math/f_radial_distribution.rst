@@ -51,21 +51,20 @@ sorts every ROI pixel into a ring by its distance from the centre and into a wed
   from 0, with :math:`y` growing downward. Distances are in pixels, between pixel centres; the
   physical pixel size is not used. Anisotropy (files only) scales each pixel's position by the
   factors before distances and angles are taken (see :ref:`conventions-units`).
-- **Contour:** the boundary of the ROI as Nyxus's contour tracer returns it, around the outside of
-  the ROI and around each hole. On compact ROIs such as the worked example it holds every ROI pixel
-  with a 4-neighbour in the background; on irregular ROIs the tracer skips some of them (350 of 400
-  noisy random ROIs in a test). All contours of the ROI are joined into one list, outer contour
-  first. Every contour point comes back one pixel to the right and one pixel down of the boundary
-  pixel it stands for, :math:`(x+1, y+1)`; the features use these shifted points, a known defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__; see
-  :ref:`radial-possible-issues`).
+- **Contour:** the ROI pixels with a 4-neighbour outside the ROI, as Nyxus's contour tracer
+  returns them: one closed walk around the outside of each separate part of the ROI and one around
+  each hole. Each walk is a border, listed in walking order, and every contour pixel is listed
+  once.
 - **Whole-slide mode:** the contour is not traced. It is the four points :math:`(0, 0)`,
-  :math:`(W, 0)`, :math:`(W, H)` and :math:`(0, H)` of a :math:`W \times H` image, without the
-  :math:`(+1, +1)` shift. The centre found from them lies on the image's top edge, a known defect
-  (`#516 <https://github.com/PolusAI/nyxus/issues/516>`__; see :ref:`radial-possible-issues`).
+  :math:`(W, 0)`, :math:`(W, H)` and :math:`(0, H)` of a :math:`W \times H` image, one pixel past
+  the last column and row, a known defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__).
+  The centre found from them is the pixel equally far from all four when :math:`W` and :math:`H`
+  are even, :math:`(W/2, H/2)`, half a pixel right of and below the middle of the image.
 - **Centre:** the ROI pixel :math:`O` with the smallest spread of squared distances to the contour,
-  the largest squared distance minus the smallest. The largest and smallest distances are found by
-  a coarse-to-fine search along the contour list, not by checking every contour point; on many ROIs
-  the search returns a smaller maximum or a larger minimum than the true ones. When several pixels
+  the largest squared distance minus the smallest. The largest and smallest distances are found
+  border by border. A border of at most 10 pixels is checked point by point; a longer one by a
+  coarse-to-fine search along its walk, not by checking every contour point, and on many ROIs that
+  search returns a smaller maximum or a larger minimum than the true ones. When several pixels
   share the smallest spread, the first one in the order the pixels were read wins: column by column
   for an array given to ``Nyxus.featurize``; tile by tile, and row by row within each tile, for an
   image read from a file.
@@ -89,8 +88,9 @@ sorts every ROI pixel into a ring by its distance from the centre and into a wed
   the code; ``--tinyval`` does not change it. An empty ring therefore reports 0 in all three
   features.
 - **ROIs of one intensity** are computed like any other ROI.
-- **No contour:** a ROI whose tracer finds no contour, such as a ROI of 1 or 2 pixels, reports 0
-  in all 24 columns.
+- **One-pixel ROI:** the pixel is its own contour and the centre, and :math:`R = 0`; ring 0 holds
+  the pixel, so ``FRAC_AT_D_0`` is 1, ``MEAN_FRAC_0`` is its intensity and ``RADIAL_CV_0`` is
+  :math:`\sqrt{7}` when that intensity is not 0. The other 21 columns are 0.
 - **IBSI mode:** ``--ibsi=true`` does not change these features.
 
 
@@ -111,33 +111,34 @@ belongs to the ROI, and every zero is background:
    0&3&4&6&6&5&4&2&0\\
    0&0&2&3&3&0&0&0&0 \end{bmatrix}
 
-The intensities sum to 224. The contour has 20 points, the 20 boundary pixels shifted by
-:math:`(+1, +1)`; 9 of them are not ROI pixels. The centre is :math:`O = (5, 4)`, intensity 7: its
-squared distances to the contour run from 5 to 17, a spread of 12, the smallest of all pixels; the
-next best, :math:`(5, 3)`, has 16. The radius is :math:`R = \sqrt{17} = 4.123`. The ring and the wedge of each pixel are (· is background):
+The intensities sum to 224. The contour is one border of 20 points, the 20 ROI pixels with a
+4-neighbour outside the ROI. The centre is :math:`O = (4, 3)`, intensity 9: its squared distances
+to the contour run from 5 to 17, a spread of 12, the smallest of all pixels; the next best,
+:math:`(4, 2)`, has 16. The radius is :math:`R = \sqrt{17} = 4.123`. The ring and the wedge of each
+pixel are (· is background):
 
 .. math::
 
    k = \begin{bmatrix}
-   \cdot&\cdot&7&7&7&6&\cdot&\cdot&\cdot\\
-   \cdot&7&7&6&5&5&5&6&\cdot\\
-   7&7&6&4&3&3&3&4&\cdot\\
-   7&7&5&3&2&1&2&3&5\\
-   7&6&5&3&1&\mathbf{0}&1&3&5\\
-   \cdot&7&5&3&2&1&2&3&\cdot\\
-   \cdot&\cdot&6&4&3&\cdot&\cdot&\cdot&\cdot \end{bmatrix}
+   \cdot&\cdot&6&5&5&5&\cdot&\cdot&\cdot\\
+   \cdot&6&4&3&3&3&4&6&\cdot\\
+   7&5&3&2&1&2&3&5&\cdot\\
+   6&5&3&1&\mathbf{0}&1&3&5&6\\
+   7&5&3&2&1&2&3&5&7\\
+   \cdot&6&4&3&3&3&4&6&\cdot\\
+   \cdot&\cdot&6&5&5&\cdot&\cdot&\cdot&\cdot \end{bmatrix}
    \qquad
    j = \begin{bmatrix}
-   \cdot&\cdot&5&5&5&6&\cdot&\cdot&\cdot\\
-   \cdot&4&5&5&5&6&6&6&\cdot\\
-   4&4&4&5&5&6&6&7&\cdot\\
-   4&4&4&4&5&6&7&7&7\\
-   4&4&4&4&4&\mathbf{0}&0&0&0\\
-   \cdot&3&3&3&3&2&1&0&\cdot\\
-   \cdot&\cdot&3&3&2&\cdot&\cdot&\cdot&\cdot \end{bmatrix}
+   \cdot&\cdot&5&5&6&6&\cdot&\cdot&\cdot\\
+   \cdot&4&5&5&6&6&7&7&\cdot\\
+   4&4&4&5&6&7&7&7&\cdot\\
+   4&4&4&4&\mathbf{0}&0&0&0&0\\
+   3&3&3&3&2&1&0&0&0\\
+   \cdot&3&3&2&2&1&1&0&\cdot\\
+   \cdot&\cdot&2&2&2&\cdot&\cdot&\cdot&\cdot \end{bmatrix}
 
-Eight pixels lie farther than :math:`R` from the centre and three exactly at :math:`R`, so ring 7
-holds 11 pixels. Per ring:
+No pixel lies farther than :math:`R` from the centre, and three lie exactly at :math:`R`, so ring 7
+holds 3 pixels. Per ring:
 
 .. list-table::
    :widths: 7 7 8 34 14 14 16
@@ -152,64 +153,64 @@ holds 11 pixels. Per ring:
      - ``RADIAL_CV``
    * - 0
      - 1
-     - 7
-     - 7, 0, 0, 0, 0, 0, 0, 0
+     - 9
+     - 9, 0, 0, 0, 0, 0, 0, 0
      - 0.02128
-     - 7
+     - 9
      - 2.646
    * - 1
      - 4
-     - 26
-     - 5, 0, 5, 0, 8, 0, 8, 0
+     - 34
+     - 8, 0, 8, 0, 9, 0, 9, 0
      - 0.08511
-     - 6.5
-     - 1.052
+     - 8.5
+     - 1.003
    * - 2
      - 4
-     - 25
-     - 0, 4, 0, 6, 0, 9, 0, 6
+     - 30
+     - 0, 7, 0, 8, 0, 8, 0, 7
      - 0.08511
-     - 6.25
-     - 1.079
+     - 7.5
+     - 1.004
    * - 3
-     - 10
-     - 56
-     - 5, 0, 3, 6, 17, 9, 12, 4
-     - 0.2128
-     - 5.6
-     - 0.7284
+     - 12
+     - 69
+     - 11, 5, 12, 6, 13, 6, 11, 5
+     - 0.2553
+     - 5.75
+     - 0.3709
    * - 4
-     - 3
-     - 14
-     - 0, 0, 0, 3, 0, 8, 0, 3
-     - 0.06383
-     - 4.667
-     - 1.532
+     - 4
+     - 16
+     - 0, 4, 0, 4, 0, 5, 0, 3
+     - 0.08511
+     - 4
+     - 1.031
    * - 5
-     - 8
-     - 35
-     - 2, 0, 0, 4, 13, 6, 8, 2
-     - 0.1702
-     - 4.375
-     - 0.9558
-   * - 6
-     - 6
-     - 23
-     - 0, 0, 0, 2, 10, 6, 5, 0
-     - 0.1277
-     - 3.833
-     - 1.223
-   * - 7
      - 11
-     - 38
-     - 0, 0, 0, 3, 19, 16, 0, 0
+     - 40
+     - 7, 0, 6, 4, 9, 4, 7, 3
      - 0.2340
-     - 3.455
-     - 1.571
+     - 3.636
+     - 0.5292
+   * - 6
+     - 8
+     - 20
+     - 4, 0, 2, 3, 6, 3, 0, 2
+     - 0.1702
+     - 2.5
+     - 0.7483
+   * - 7
+     - 3
+     - 6
+     - 2, 0, 0, 2, 2, 0, 0, 0
+     - 0.06383
+     - 2
+     - 1.291
 
-For ring 3, ``FRAC_AT_D_3`` is :math:`10/47 = 0.2128` and ``MEAN_FRAC_3`` is :math:`56/10 = 5.6`.
-The wedge sums have mean :math:`56/8 = 7` and population variance :math:`208/8 = 26`, so
-``RADIAL_CV_3`` is :math:`\sqrt{26}/7 = 0.7284`.
+For ring 5, ``FRAC_AT_D_5`` is :math:`11/47 = 0.2340` and ``MEAN_FRAC_5`` is :math:`40/11 = 3.636`.
+The wedge sums have mean :math:`40/8 = 5` and population variance :math:`56/8 = 7`, so
+``RADIAL_CV_5`` is :math:`\sqrt{7}/5 = 0.5292`.
 
 The *Example* value of each feature in the :ref:`index <radial-index>` is its first column, ring 0.
 The test suite runs this example and checks all 24 columns.
@@ -245,8 +246,8 @@ Notation
    * - :math:`I_p`
      - Intensity of ROI pixel :math:`p`, in grey levels.
    * - :math:`C`
-     - The contour points: the boundary pixels the tracer returns, each moved to
-       :math:`(x+1, y+1)`.
+     - The contour points: the ROI pixels with a 4-neighbour outside the ROI, grouped by
+       border.
    * - :math:`O = (x_O, y_O)`
      - The centre pixel.
    * - :math:`R`
@@ -408,7 +409,8 @@ and an empty ring, report 0.
 
 **Possible issues.** Because the sums are taken over all 8 wedges, a ring that covers only part of
 the circle, as rings near the edge of a non-round ROI do, reports a large value even when its
-intensity is uniform: the 5 × 5 square of one intensity reports 1.183 in ring 7. CellProfiler
+intensity is uniform: the 5 × 5 square of one intensity reports 1 in ring 7, whose 4 pixels, the
+corners, fill 4 of the 8 wedges. CellProfiler
 averages wedge means over the occupied wedges only; see :ref:`radial-other-tools`.
 
 
@@ -417,61 +419,44 @@ averages wedge means over the occupied wedges only; see :ref:`radial-other-tools
 Possible issues
 ---------------
 
-The contour is one pixel off
-   The contour points stand one pixel to the right of and one pixel below the ROI's boundary, a
-   known defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__), so the centre is pulled down and to the right, and :math:`R` is measured to points outside the
-   ROI. On the worked example 9 of the 20 contour points are not ROI pixels. With the contour on
-   the boundary pixels themselves, the formulas of this page give the centre :math:`(4, 3)`, of
-   intensity 9, instead of :math:`(5, 4)`: ``MEAN_FRAC_0`` would be 9 instead of 7, ring 7 would
-   hold 3 pixels instead of 11, and ``RADIAL_CV_3`` would be 0.3709 instead of 0.7284. On a 3 × 3
-   square with intensities 1 to 9 row by row, Nyxus takes the bottom-right corner as the centre:
-   ``MEAN_FRAC_0`` is 9 and the rings hold 1, 2 and 6 pixels, where the middle pixel, 5, and rings
-   of 1, 4 and 4 pixels would be expected.
-
 The centre and the radius come from an approximate search
-   The largest and smallest distances to the contour are found by stepping along the contour list
-   and refining around the best step, which assumes the distance rises and falls only once along
-   it. Around a hole the list is two contours joined end to end, and even on a convex ROI the
-   distance to the boundary has more than one minimum. Against a full scan of the same contour,
-   the search changes the centre or the radius on 97 of 300 random ellipses, 249 of 451 random
-   ROIs without holes and 836 of 1020 random ROIs with holes. On a 7 × 8 ROI with a 2-pixel hole
-   in the example script, the search finds :math:`R^2 = 18` where the farthest contour point is at
-   20, so 11 pixels instead of 8 lie beyond :math:`R`, and ``FRAC_AT_D_4`` is 0.08 instead of
-   0.14. The worked example is not affected.
+   On a border of more than 10 pixels the largest and smallest distances to the contour are found
+   by stepping along the border's walk and refining around the best step, which assumes the
+   distance rises and falls only once along it. Even on a convex ROI the distance to the boundary
+   has more than one minimum. Against a full scan of the same contour, the search changes the
+   centre or the radius on 191 of 300 random ellipses, 75 of 108 random ROIs without holes and
+   1232 of 1388 random ROIs with holes. On a 5 × 4 rectangle in the example script, the search
+   finds :math:`R^2 = 5` where the farthest contour point is at 8, so 2 pixels lie beyond
+   :math:`R`, ring 7 holds 8 pixels instead of 2, and ``FRAC_AT_D_2`` is 0 instead of 0.2. The
+   worked example is not affected.
 
 Ring 7 collects everything at or beyond R
    The ring index is scaled by 7, not 8: rings 0 to 6 share the distances below :math:`R`, and
-   ring 7 receives the pixels at :math:`R` or farther. Because the contour is shifted and the
-   search can stop short, pixels beyond :math:`R` are common, and ring 7 is often the most
-   populated ring: 11 of the 47 pixels on the worked example.
+   ring 7 receives the pixels at :math:`R` or farther. No ROI pixel lies farther from the centre
+   than the farthest contour pixel, so with the exact radius ring 7 holds only the pixels at
+   :math:`R`: 3 of the 47 pixels on the worked example. Where the search stops short, the pixels
+   beyond :math:`R` join them.
 
 Ties between centre candidates depend on the pixel order
    When several pixels share the smallest spread, the first one read wins, and an array given to
-   ``Nyxus.featurize`` is read in a different order from the same image read from a file. For a
-   10-pixel ROI with two tied candidates, ``MEAN_FRAC_0`` is 9 for the array and 2 for the same
+   ``Nyxus.featurize`` is read in a different order from the same image read from a file. For an
+   11-pixel ROI with two tied candidates, ``MEAN_FRAC_0`` is 9 for the array and 2 for the same
    image read from a file.
 
 Out-of-core ROIs
    Without anisotropy, an out-of-core ROI keeps its contour relative to its bounding box but its
    pixels in image coordinates, a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). A ROI whose bounding box does not start at the image's first row
    and column gets different values: the worked example moved 2 pixels right and 3 down reports
-   ``FRAC_AT_D_7`` 0.3404 out-of-core instead of 0.2340, and ``MEAN_FRAC_0`` 6 instead of 7. A ROI
-   whose bounding box starts there is placed correctly, but the out-of-core contour can list its
-   points in a different order, which changes the approximate searches: the worked example at the
-   origin gets the in-memory values, while 2 of 15 random ellipses at the origin did not. With anisotropy an
-   out-of-core ROI is measured as in memory and gets the in-memory values.
+   ``FRAC_AT_D_7`` 0.5532 out-of-core instead of 0.06383, and ``MEAN_FRAC_0`` 3 instead of 9. A ROI
+   whose bounding box starts there is placed correctly, but the out-of-core contour is a single
+   loop that can list its points in a different order, which changes the approximate searches:
+   the worked example at the origin gets the in-memory values, while 2 of 15 random ellipses at
+   the origin did not. With anisotropy an out-of-core ROI is measured as in memory and gets the
+   in-memory values.
 
 Small ROIs
-   A ROI of 1 or 2 pixels has no contour, and all 24 columns are 0.
-
-Whole-slide centre on the top edge
-   In whole-slide mode the centre is not the middle of the image but a pixel of the top rows near
-   the right edge, a known defect (`#516 <https://github.com/PolusAI/nyxus/issues/516>`__). On the four corners of the contour the
-   coarse-to-fine search compares only :math:`(0, 0)` and :math:`(W, H)`, so every pixel as far
-   from one as from the other has a spread of 0, and the first one read wins. The centre is
-   :math:`(19, 1)` on a 20 × 20 image, with :math:`R = 19.03` and 11 pixels in ring 0, and
-   :math:`(50, 0)` on a 64 × 48 image, with :math:`R = 50` and 88 pixels in ring 0; the outer
-   rings then cover only part of the image.
+   A ROI of 1 pixel has :math:`R = 0` and puts its pixel in ring 0. A ROI of 2 pixels puts one
+   pixel in ring 0 and the other, at :math:`R`, in ring 7.
 
 Intensity domain
    ``MEAN_FRAC`` is reported in grey levels, not in the image's units. An array with negative
@@ -505,58 +490,58 @@ Other tools
       * - 0
         - 0.02128
         - 0.04018
-        - 7
+        - 9
         - 1.888
         - 2.646
         - 0
       * - 1
         - 0.08511
         - 0.04018
-        - 6.5
+        - 8.5
         - 1.888
-        - 1.052
+        - 1.003
         - 0
       * - 2
         - 0.08511
         - 0.1429
-        - 6.25
+        - 7.5
         - 1.679
-        - 1.079
+        - 1.004
         - 0.08839
       * - 3
-        - 0.2128
+        - 0.2553
         - 0.2009
-        - 5.6
+        - 5.75
         - 1.349
-        - 0.7284
+        - 0.3709
         - 0.1545
       * - 4
-        - 0.06383
+        - 0.08511
         - 0.1161
-        - 4.667
+        - 4
         - 1.364
-        - 1.532
+        - 1.031
         - 0.06281
       * - 5
-        - 0.1702
+        - 0.2340
         - 0.2812
-        - 4.375
+        - 3.636
         - 0.8812
-        - 0.9558
+        - 0.5292
         - 0.2079
       * - 6
-        - 0.1277
+        - 0.1702
         - 0.1786
-        - 3.833
+        - 2.5
         - 0.5595
-        - 1.223
+        - 0.7483
         - 0.2041
       * - 7
-        - 0.2340
+        - 0.06383
         - 0
-        - 3.455
+        - 2
         - 0
-        - 1.571
+        - 1.291
         - 0
 
    All 24 values differ by more than 1%. No setting makes Nyxus compute CellProfiler's
@@ -572,11 +557,12 @@ definition of the rings: ``FRAC_AT_D`` sums to 1, an empty ring is 0 in all thre
 ``RADIAL_CV`` stays within :math:`\sqrt{7}`. CellProfiler ``MeasureObjectIntensityDistribution``
 was run on the same ROI as a candidate reference and disagrees, for the reasons under
 :ref:`radial-other-tools`; it validates none of the features. The worked-example script asserts
-the values of the worked example, the contour offset, the 5 × 5 and 3 × 3 squares, the ROI with a
-hole (:math:`R^2 = 18` against 20, 11 pixels beyond :math:`R` instead of 8), the tie between
-centre candidates and the out-of-core values of the moved and unmoved worked example. It does not
-assert the CellProfiler values or the counts over random ROIs (search changes, tracer skips,
-out-of-core differences at the origin); these were measured separately.
+the values of the worked example and that the page's full-scan formulas reproduce them, the 5 × 5
+and 3 × 3 squares, the 5 × 4 rectangle (:math:`R^2 = 5` against 8, 2 pixels beyond :math:`R`), the
+ROIs of 1 and 2 pixels, the tie between centre candidates, the out-of-core values of the moved and
+unmoved worked example and the whole-slide rings. It does not assert the CellProfiler values or
+the counts over random ROIs (search changes, out-of-core differences at the origin); these were
+measured separately.
 
 
 References

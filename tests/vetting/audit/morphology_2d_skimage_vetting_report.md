@@ -1,5 +1,9 @@
 # 2D morphology vs scikit-image — vetting report
 
+> **Current state.** The shape2d `PERIMETER` is 22.970562748477146 and is vetted against OpenCV's
+> border following (`test_2d_contour_opencv.h`); scikit-image's `measure.perimeter` still gives
+> 12.657 there. The 26.935 below is the earlier value.
+
 Closes the two `oracle=skimage` gap rows (`DIAMETER_EQUAL_AREA`, `ROI_RADIUS_MEDIAN`), re-homes
 `PERIMETER` to the oracle that actually backs it, and puts the previously inline-pinned
 `ORIENTATION` / `EROSIONS_2_VANISH` goldens under generator verification.

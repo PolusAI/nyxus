@@ -26,9 +26,6 @@ SOURCES = [
 ]
 
 NOTE = {
-    "PERCENT_TOUCHING": ("no oracle by definition, not by defect: CellProfiler measures a different "
-                         "quantity and diverges on 3/5 ROIs. Drift-pinned, with its construction "
-                         "bounds asserted as invariants"),
     "NUM_NEIGHBORS": ("also pinned by test_2d_morphology_regression.h, which asserts it for label 1 "
                       "while exercising an unrelated family"),
 }

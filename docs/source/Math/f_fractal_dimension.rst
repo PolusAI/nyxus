@@ -21,9 +21,11 @@ rough or ragged shapes give larger values.
    * - **Out-of-core**
      - Partly. Out of core, box counting always uses the unshifted grid, so ROIs whose padded
        side :math:`S` is 32 or less can read differently (the worked example gives 1.3966 instead
-       of 1.3732). The divider walks only the first loop of the contour, so ROIs with holes or
-       several parts differ (two separate 25 × 25 squares give 1.000 instead of 1.107); with
-       anisotropy every ROI's divider value can differ. These contour differences are a known
+       of 1.3732). The divider walks only the first loop of the contour, and walks a one-pixel-wide
+       part once instead of along and back, so ROIs with holes, several parts or one-pixel-wide parts
+       can differ (a 24 × 24 square with a 10 × 10 hole gives 1.005 instead of 1.045, while identical
+       separate parts read the same on both paths); with anisotropy every ROI's divider value can
+       differ. These contour differences are a known
        defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). On an image
        that Nyxus reads as several tiles out-of-core processing raises an error or returns wrong
        values, depending on the ROI (see :ref:`large-images-tiles`
@@ -64,20 +66,19 @@ half a box, along :math:`x`, along :math:`y` and along both, and the smallest of
 kept. When :math:`S > 32` only the unshifted grid is used. The dimension is minus the least-squares
 slope of :math:`\ln N(s)` against :math:`\ln s`.
 
-**Divider walk.** For a contour of :math:`n` pixels, Nyxus walks the contour with strides of
-:math:`d = \lfloor n/4 \rfloor, \lfloor d/2 \rfloor, \ldots, 1` pixels. Each walk starts at the
-first contour pixel and jumps :math:`d` pixels at a time while a full stride remains, adding the
-straight-line length of each jump. It then closes the loop with one chord from the last pixel
-reached back to the first pixel; this chord spans the remaining :math:`n - qd` pixels, which can be
-fewer than :math:`d`. The walk's length :math:`P(d)` and its mean chord, the ruler
-:math:`r(d) = P(d)/m(d)` over its :math:`m(d)` chords, give one point. The dimension is 1 minus the
-least-squares slope of :math:`\ln P` against :math:`\ln r`. At stride 1 the walk is the contour's
-``PERIMETER``.
-
-A ROI with holes or separate parts has several contours. Nyxus joins them, in the order it found
-them, into one chain and walks that chain as a single closed contour (see
-:ref:`fractal-possible-issues`). The contour coordinates are offset by one pixel in both axes, a known defect
-(`#497 <https://github.com/PolusAI/nyxus/issues/497>`__); a translation changes no distance, so neither feature depends on it.
+**Divider walk.** The contour is one closed walk per border of the ROI: around the outside of each
+separate part and around each hole, as the :ref:`contour features <features-contour>` trace it.
+With :math:`n` the length of the longest walk, Nyxus uses strides of
+:math:`d = \lfloor n/4 \rfloor, \lfloor d/2 \rfloor, \ldots, 1` pixels. At each stride every
+border is walked on its own: it starts at the border's first pixel and jumps :math:`d` pixels at a
+time while a full stride remains, adding the straight-line length of each jump, then closes the
+loop with one chord from the last pixel reached back to the first; this chord spans the remaining
+:math:`n_b - qd` pixels of the border, which can be fewer than :math:`d`. A border of at most
+:math:`d` pixels is not walked: it adds its closed length, as measured at stride 1, and no chord.
+The summed length :math:`P(d)` and the mean chord, the ruler :math:`r(d) = P(d)/m(d)` over the
+:math:`m(d)` chords of the walked borders, give one point. The dimension is 1 minus the
+least-squares slope of :math:`\ln P` against :math:`\ln r`. At stride 1 the walks are the
+contour's ``PERIMETER``. No chord joins one border to another.
 
 
 Worked example
@@ -141,7 +142,8 @@ The least-squares slope of :math:`\ln(1, 3, 7, 18)` against :math:`\ln(16, 8, 4,
 :math:`-1.3732`, so ``FRACT_DIM_BOXCOUNT`` is 1.3732. The unshifted grid alone, with counts 1, 4, 8
 and 20, would give 1.3966.
 
-**Divider walk.** The contour has :math:`n = 26` pixels, so the strides are 6, 3 and 1.
+**Divider walk.** The contour is one border, a walk of :math:`n = 26` pixels, so the strides are
+6, 3 and 1.
 
 .. list-table::
    :widths: 14 18 34 34
@@ -210,15 +212,21 @@ Notation
      - Box size, one of :math:`S, S/2, \ldots, 2`.
    * - :math:`N(s)`
      - Number of boxes of size :math:`s` that hold at least one ROI pixel.
-   * - :math:`K_0, \ldots, K_{n-1}`
-     - Contour pixels in walking order; :math:`n` is their number.
+   * - :math:`K^b_0, \ldots, K^b_{n_b-1}`
+     - The walk around border :math:`b`, in walking order; :math:`n_b` is its length and
+       :math:`n = \max_b n_b`.
+   * - :math:`L_b`
+     - Closed length of border :math:`b`'s walk at stride 1.
    * - :math:`d`
      - Stride of the divider walk, in contour pixels.
-   * - :math:`q`
-     - Number of full strides in a walk, :math:`q = \lceil n/d \rceil - 1`.
+   * - :math:`q_b`
+     - Number of full strides along border :math:`b`, :math:`q_b = \lceil n_b/d \rceil - 1`.
+   * - :math:`B(d)`
+     - The borders walked at stride :math:`d`, those with :math:`n_b > d`.
    * - :math:`P(d),\; m(d),\; r(d)`
-     - Length of the walk with stride :math:`d`, its number of chords :math:`m(d) = q + 1`, and its
-       mean chord :math:`r(d) = P(d)/m(d)`.
+     - Summed length of the borders at stride :math:`d`, the number of chords of the walked
+       borders :math:`m(d) = \sum_{b \in B(d)} (q_b + 1)`, and the mean chord
+       :math:`r(d) = P(d)/m(d)`.
    * - :math:`\beta\{(a_j, b_j)\}`
      - Least-squares slope of :math:`\ln b_j` against :math:`\ln a_j`, defined below.
 
@@ -263,13 +271,13 @@ Settings
      - ``Nyxus(..., anisotropy_x=..., anisotropy_y=...)``, with ``featurize_files`` or
        ``featurize_directory``; arrays passed to ``Nyxus.featurize`` are not rescaled
      - The image is resampled before the ROIs are measured, which changes both features. The
-       worked example gives 1.3732 and 1.1311 without anisotropy, 1.2459 and 1.1731 with
-       ``anisotropy_x=2``, and 1.4458 and 1.2546 with ``anisotropy_y=3``.
+       worked example gives 1.3732 and 1.1311 without anisotropy, 1.2459 and 1.1566 with
+       ``anisotropy_x=2``, and 1.4458 and 1.1635 with ``anisotropy_y=3``.
    * - Merged ROIs
      - ``--mergerois=true``
      - ``Nyxus(..., mergerois=True)``
      - All labels of a mask form one ROI. Two 25 × 25 squares with labels 1 and 2 give 1.8416 and
-       1.000 each; merged, they give 1.4231 and 1.107.
+       1.000 each; merged, they give 1.4231 and 1.000.
 
 No other setting changes these features: not ``--coarseGrayDepth``, not ``--ibsi`` and not the
 image intensity map. All options are listed in the :ref:`cli-reference`.
@@ -339,30 +347,35 @@ Perimeter (divider) dimension
 
 :Code: ``FRACT_DIM_PERIMETER``
 :Range: about :math:`[1, 2)` in practice, dimensionless; smooth outlines can read slightly below 1
-   (a 6 × 6 square gives 0.9947); 0 for a contour of fewer than 3 pixels
+   (a 6 × 6 square gives 0.9947); 0 when the longest border walk has fewer than 3 pixels
 
 How fast the measured length of the contour grows as the ruler shrinks, after Richardson. Values
 near 1 mean a smooth outline; larger values mean a rough or wiggly one.
 
 .. math::
 
-   P(d) = \sum_{j=0}^{q-1} \left\| K_{(j+1)d} - K_{jd} \right\| + \left\| K_0 - K_{qd} \right\|,
+   P(d) = \sum_{b \in B(d)} \left( \sum_{j=0}^{q_b-1} \left\| K^b_{(j+1)d} - K^b_{jd} \right\|
+   + \left\| K^b_0 - K^b_{q_b d} \right\| \right) + \sum_{b \notin B(d)} L_b,
    \qquad
-   r(d) = \frac{P(d)}{q + 1}
+   r(d) = \frac{P(d)}{m(d)}
 
 .. math::
 
    \mathrm{FRACT\_DIM\_PERIMETER} = 1 - \beta\left\{ \left(r(d), P(d)\right) :
    d = \lfloor n/4 \rfloor, \lfloor d/2 \rfloor, \ldots, 1 \right\}
 
-The value is 0 when the contour has fewer than 3 pixels. A contour of 3 to 7 pixels gives at most one
-point, so :math:`\beta = 0` and the value is exactly 1.
+The value is 0 when the longest border walk has fewer than 3 pixels. A longest walk of 3 to 7
+pixels gives at most one point, so :math:`\beta = 0` and the value is exactly 1.
 
 **Relations.** In memory, :math:`P(1)` is ``PERIMETER``; out of core, ``PERIMETER`` is the number
 of contour pixels instead (26 on the worked example). The fit runs against the mean chord
-:math:`r(d)`, not against the stride :math:`d`.
+:math:`r(d)`, not against the stride :math:`d`. Copies of one shape under one label read the
+dimension of a single copy: at every stride both :math:`P(d)` and :math:`m(d)` scale with the
+number of copies.
 
-**Possible issues.** For a ROI with several contours the walk includes the jumps between them (see
+**Possible issues.** A border no longer than the stride adds its full length and no chord, so a
+ROI with small holes or small separate parts can read higher than its outer border alone: a
+24 × 24 square with a 10 × 10 hole gives 1.045 against 1.005 for the square (see
 :ref:`fractal-possible-issues`).
 
 
@@ -380,9 +393,9 @@ Box counting depends on the ROI's size
    32 but 0.755 at length 10 and 0.926 at length 100, below the dimension of a line.
 
 One-pixel-wide parts in the divider walk
-   The contour of a one-pixel-wide line visits each pixel once, from one end to the other, and the
-   closing chord jumps back across the whole length. That long chord enters every ruler
-   :math:`r(d)`, and a straight line reads above 1: 1.190 at length 16, 1.205 at length 10. Thin
+   The walk around a one-pixel-wide line runs along it and back. A chord that spans an end of the
+   line folds back on itself and is shorter than its stride, which shortens the walk at the larger
+   strides, so a straight line reads above 1: 1.035 at length 16, 1.101 at length 10. Thin
    branches of larger ROIs are affected in the same way.
 
 Shifted grids only for small ROIs
@@ -397,23 +410,28 @@ Out-of-core ROIs
    An out-of-core ROI uses the unshifted grid whatever its size, so a ROI with :math:`S \le 32`
    can read a different ``FRACT_DIM_BOXCOUNT``: the worked example gives 1.3966 out of core and
    1.3732 in memory. The out-of-core contour holds only the first loop of the ROI's boundary, so
-   the divider walk ignores holes and separate parts: two separate 25 × 25 squares in one ROI give
-   1.000 out of core and 1.107 in memory. Without anisotropy, a ROI with a single contour gives the
-   same ``FRACT_DIM_PERIMETER`` on both paths. With anisotropy the out-of-core contour is wrong,
-   so single-contour ROIs differ too: a disk of radius 8 with ``anisotropy_x=2`` gives 1.1431 in
-   memory and 1.0482 out of core. The out-of-core contour is a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). Images that Nyxus reads as several tiles have further
+   the divider walk ignores holes and separate parts: a 24 × 24 square with a 10 × 10 hole gives
+   1.005 out of core, the value of the square without its hole, and 1.045 in memory. Without
+   anisotropy, a ROI with a single contour can differ too: in memory the walk passes a
+   one-pixel-wide part along and back, out of core once, so a 1 × 16 line gives 1.035 in memory
+   and 1.190 out of core, and an 8 × 8 square with a one-pixel-wide branch 1.190 and 1.102. The
+   worked example, whose border has no one-pixel-wide part, gives the same value on both paths.
+   With anisotropy the out-of-core contour is wrong, so single-contour ROIs differ
+   too: a disk of radius 8 with ``anisotropy_x=2`` gives 1.0917 in memory and 1.0482 out of core.
+   The out-of-core contour is a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). Images that Nyxus reads as several tiles have further
    out-of-core differences (see :ref:`large-images-tiles`).
 
-Several contours are walked as one
-   A ROI with holes, or with parts that do not touch, has several contours. The divider walk joins
-   them into one chain, so the chords between the end of one contour and the start of the next are
-   part of the walk. Two separate 25 × 25 squares in one ROI give 1.107; one such square gives
-   1.000.
+Short borders are measured whole
+   A ROI with holes, or with parts that do not touch, has several borders, each walked on its own.
+   At a stride longer than a border, that border adds its full length and no chord, so it raises
+   both :math:`P(d)` and the ruler :math:`r(d)` at the large strides. A 24 × 24 square with a 10 × 10
+   hole gives 1.045, where the square alone gives 1.005. Two separate 25 × 25 squares in one ROI
+   give 1.000, as one such square does.
 
 Small ROIs
    ``FRACT_DIM_BOXCOUNT`` is 0 for fewer than 2 pixels and for bounding boxes no larger than
-   2 × 2. ``FRACT_DIM_PERIMETER`` is 0 for contours of fewer than 3 pixels and exactly 1 for
-   contours of 3 to 7 pixels. A 3 × 3 square gives 2 and 1.
+   2 × 2. ``FRACT_DIM_PERIMETER`` is 0 when the longest border walk has fewer than 3 pixels and
+   exactly 1 when it has 3 to 7. A 3 × 3 square gives 2 and 1.
 
 Largest 32-bit intensity
    This is a known defect (`#515 <https://github.com/PolusAI/nyxus/issues/515>`__). In memory, on ROIs whose padded side :math:`S` exceeds 32, box
@@ -437,7 +455,8 @@ image:
 The tests also check shapes with a known dimension: box counting gives 2 for a 256 × 256 square, 1
 for a straight line and :math:`\log_2 3 = 1.585` for a Sierpinski triangle, to an absolute 0.1; the
 divider gives 1 for a disk and :math:`\log 4 / \log 3 = 1.262` for a Koch snowflake, to an absolute
-0.05. The feature values quoted above Validation, and the box counts of the worked example and of
+0.05, and two identical separate disks under one label give exactly the divider dimension of one.
+The feature values quoted above Validation, and the box counts of the worked example and of
 the 20 × 20 square, are asserted by the worked-example script; the divider-walk table of the worked
 example is not. None is compared with a reference tool.
 

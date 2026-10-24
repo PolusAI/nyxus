@@ -78,17 +78,26 @@ check(fd(disk(8)), [1.430, 1.060], "disk 8")
 check(fd(disk(40)), [1.686, 1.032], "disk 40")
 
 # One-pixel-wide straight lines: box counting reaches 1 only at power-of-two lengths, and the
-# divider walk reads above 1 because the closing chord spans the whole line
-check(fd(np.ones((1, 16))), [1.0, 1.190], "line 16")
-check(fd(np.ones((1, 10))), [0.7551, 1.205], "line 10")
+# divider walk reads above 1 because the walk runs along the line and back, and the chords that
+# span an end fold back
+check(fd(np.ones((1, 16))), [1.0, 1.035], "line 16")
+check(fd(np.ones((1, 10))), [0.7551, 1.101], "line 10")
 check(fd(np.ones((1, 100)))[:1], [0.9257], "line 100")
 
-# Two separate squares form one ROI with two contours; the divider walk joins them
+# Two separate squares form one ROI with two borders, each walked on its own: the divider value is
+# that of one square
 two = np.zeros((40, 80), np.uint32)
 two[5:30, 5:30] = 1
 two[5:30, 45:70] = 1
-check(fd(two), [1.423, 1.107], "two squares")
+check(fd(two), [1.423, 1.0], "two squares")
 check(fd(square(25)), [1.842, 1.0], "one square")
+
+# A hole's border, shorter than the large strides, is measured whole
+holed = np.zeros((30, 30), np.uint32)
+holed[3:27, 3:27] = 1
+check(fd(holed)[1:], [1.005], "24 x 24 square")
+holed[10:20, 10:20] = 0
+check(fd(holed)[1:], [1.045], "24 x 24 square with a 10 x 10 hole")
 
 # A 40 x 40 square and one separate pixel. In memory an intensity of 4294967295 makes the box
 # count's marker overflow its 32-bit conversion, which is undefined, so only 100 is checked here
@@ -143,23 +152,37 @@ def from_files(m, intensity=None, single_roi=False, codes=F + ["PERIMETER"], **k
 
 check(from_files(mask, ram_limit=0)[0], [1.3966, 1.1311, 26.0], "example out of core")
 # pins known defect https://github.com/PolusAI/nyxus/issues/509
-check(from_files(two, ram_limit=0)[0][1:2], [1.0], "two squares out of core")
+check(from_files(holed, ram_limit=0)[0][1:2], [1.005], "square with a hole out of core")
 for value in (100, 4294967295):
     inten = lone * 100
     inten[70, 70] = value
     check(from_files(lone, inten, ram_limit=0)[0][:1], [1.4156], f"lone pixel {value} out of core")
 check(from_files(mask)[0][:2], [1.3732, 1.1311], "example, no anisotropy")
-check(from_files(mask, anisotropy_x=2)[0][:2], [1.2459, 1.1731], "anisotropy_x=2")
-check(from_files(mask, anisotropy_y=3)[0][:2], [1.4458, 1.2546], "anisotropy_y=3")
+check(from_files(mask, anisotropy_x=2)[0][:2], [1.2459, 1.1566], "anisotropy_x=2")
+check(from_files(mask, anisotropy_y=3)[0][:2], [1.4458, 1.1635], "anisotropy_y=3")
 # With anisotropy the out-of-core contour differs, so a single-contour disk differs too
-check(from_files(disk(8), anisotropy_x=2)[0][1:2], [1.1431], "disk 8, anisotropy_x=2")
+check(from_files(disk(8), anisotropy_x=2)[0][1:2], [1.0917], "disk 8, anisotropy_x=2")
 # pins known defect https://github.com/PolusAI/nyxus/issues/509
 check(from_files(disk(8), anisotropy_x=2, ram_limit=0)[0][1:2], [1.0482], "disk 8, anisotropy_x=2, out of core")
+# Without anisotropy a single contour can still differ out of core, which walks a one-pixel-wide
+# part once where the in-memory walk goes along and back: a 1 x 16 line and an 8 x 8 square with a
+# one-pixel-wide branch, at the image origin
+line16 = np.zeros((4, 19), np.uint32)
+line16[0, 0:16] = 1
+check(from_files(line16)[0][1:2], [1.035], "line 16")
+# pins known defect https://github.com/PolusAI/nyxus/issues/509
+check(from_files(line16, ram_limit=0)[0][1:2], [1.190], "line 16, out of core")
+branch = np.zeros((18, 18), np.uint32)
+branch[0:8, 0:8] = 1
+branch[3, 8:16] = 1
+check(from_files(branch)[0][1:2], [1.190], "square with a branch")
+# pins known defect https://github.com/PolusAI/nyxus/issues/509
+check(from_files(branch, ram_limit=0)[0][1:2], [1.102], "square with a branch, out of core")
 labels = two.copy()
 labels[5:30, 45:70] = 2
 for row in from_files(labels, (labels > 0) * 100):
     check(row[:2], [1.8416, 1.0], "two labels")
-check(from_files(labels, (labels > 0) * 100, mergerois=True)[0][:2], [1.4231, 1.107], "merged")
+check(from_files(labels, (labels > 0) * 100, mergerois=True)[0][:2], [1.4231, 1.0], "merged")
 # pins known defect https://github.com/PolusAI/nyxus/issues/493: the box is 201 x 201, which rounds
 # up to the same 256 canvas as 200 x 200
 check(from_files(np.ones((200, 200)), single_roi=True)[0][:2], [1.8703, 1.0], "whole slide")

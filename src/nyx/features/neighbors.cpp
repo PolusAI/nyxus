@@ -88,9 +88,8 @@ void parallel_process_1_batch_of_collision_pairs (
 		if (r1.multicontour_.empty())
 			continue;
 
-		std::vector<Pixel2> K1, K2;
-		r1.merge_multicontour (K1);
-		r2.merge_multicontour (K2);
+		const std::vector<Pixel2>& K1 = r1.contour_pixels_,
+			& K2 = r2.contour_pixels_;
 
 		if (K1.empty())
 			continue;
@@ -253,9 +252,8 @@ void NeighborsFeature::manual_reduce (
 				LR& r1 = roiData[l1];
 				LR& r2 = roiData[l2];
 
-				std::vector<Pixel2> K1, K2;
-				r1.merge_multicontour(K1);
-				r2.merge_multicontour(K2);
+				const std::vector<Pixel2>& K1 = r1.contour_pixels_,
+					& K2 = r2.contour_pixels_;
 
 				// Both segments' outer pixels must be available
 				if (K1.size() == 0 || K2.size() == 0)
@@ -295,8 +293,7 @@ void NeighborsFeature::manual_reduce (
 			{
 				LR& r1 = roiData[l];
 
-				std::vector<Pixel2> K1;
-				r1.merge_multicontour(K1);
+				const std::vector<Pixel2>& K1 = r1.contour_pixels_;
 
 				// Finalize % touching = distinct touching contour pixels / contour length
 				size_t nt = 0;

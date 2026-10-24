@@ -14,8 +14,8 @@ gldm = "A pixel's dependence is one plus the number of its 8 neighbours of nonze
 gldzm = "A zone is an 8-connected group of pixels sharing one grey level. Its distance is the smallest, over its pixels, of the steps along a row or column to the nearest pixel of stored intensity 0 plus one, or to the bounding-box edge, where a pixel on the bounding-box edge is at distance 1. With a positive --coarseGrayDepth (the default) the pixels outside the ROI are binned to grey level 1 and form zones like ROI pixels, so only the bounding-box edge counts; under --ibsi pixels of stored intensity 0 are skipped. The matrix counts zones by grey level and distance; each code is one value per ROI. Grey levels come from --coarseGrayDepth binning, or are the raw intensities under --ibsi."
 ngldm = "Every ROI pixel is a neighbourhood centre whose dependence count is one plus the number of its 8 neighbours inside the ROI with the same grey level; the matrix counts centres by grey level and dependence count. Each code is one value per ROI. Grey levels come from scaling the range 0 to the ROI maximum by --coarseGrayDepth and truncating (levels 0 to --coarseGrayDepth), or are the raw intensities under --ibsi."
 ngtdm = "For each pixel of nonzero binned grey level that has at least one such neighbour, the matrix accumulates the absolute difference between its grey level and the average grey level of its 8 neighbours (neighbours whose binned grey level is 0 are left out), grouped by grey level, together with the probability of each grey level. Each code is one value per ROI. Grey levels come from --coarseGrayDepth binning, or are the raw intensities under --ibsi. With a positive --coarseGrayDepth (the default), pixels outside the ROI are binned to grey level 1 and take part both as centres and as neighbours."
-shape_moments = "Geometric moments of the ROI's shape: every ROI pixel counts as 1. The two digits of a code are the powers of x and y. The weighted moments weight each pixel by ln(d + 0.001), where d is an approximate distance from the pixel to the traced ROI contour (taken one pixel down and to the right of the ROI), found by a sampled search that can overestimate it."
-intensity_moments = "The same moments with each pixel weighted by its intensity, in grey levels. The two digits of a code are the powers of x and y. The weighted moments multiply each intensity by ln(d + 0.001), where d is an approximate distance from the pixel to the traced ROI contour (taken one pixel down and to the right of the ROI), found by a sampled search that can overestimate it."
+shape_moments = "Geometric moments of the ROI's shape: every ROI pixel counts as 1. The two digits of a code are the powers of x and y. The weighted moments weight each pixel by ln(d + 0.001), where d is an approximate distance from the pixel to the traced ROI contour, found by a sampled search that can overestimate it."
+intensity_moments = "The same moments with each pixel weighted by its intensity, in grey levels. The two digits of a code are the powers of x and y. The weighted moments multiply each intensity by ln(d + 0.001), where d is an approximate distance from the pixel to the traced ROI contour, found by a sampled search that can overestimate it."
 gabor = "GABOR has one output column per frequency and orientation pair, GABOR_0, GABOR_1 and so on."
 intensity_3d = "The 3D counterparts of the 2D intensity features, computed over the ROI's voxels and reported in the volume's own units."
 glcm_3d = "The co-occurrence matrix counts pairs of voxels one voxel apart within the bounding box, built separately for the 13 unique directions of the 26-voxel neighbourhood; with a positive grey depth (the default) the background around the ROI is binned to level 1 and its pairs are counted, while with a zero or negative grey depth and under --ibsi pairs touching level 0 are skipped. Each _AVE code is the mean over the 13 directions; the plain code is a single value taken from the first direction only (one voxel step along x, y and z together), not an average. Grey levels come from --coarseGrayDepth binning (overridable with the 3glcm/greydepth metaparameter) or are the raw intensities under --ibsi; each ordered pair is counted once with a positive grey depth, and the matrix is made symmetric with a negative or zero grey depth and under --ibsi."
@@ -132,7 +132,7 @@ EXTENT = "Fraction of the ROI's axis-aligned bounding box covered by the ROI: th
 ASPECT_RATIO = "Width of the ROI's axis-aligned bounding box divided by its height."
 
 [contour]
-PERIMETER = "Length of the ROI's traced contour in pixels: the sum of the Euclidean distances between consecutive contour pixels, closing back to the first one. A hole or a second fragment appends its loop to the same list, and the jumps between loops are counted too. On the out-of-core path it is the number of contour pixels instead."
+PERIMETER = "Length of the ROI's traced contour in pixels: the sum of the Euclidean distances between consecutive pixels of the closed walk around each border of the ROI (the outside of each separate part and each hole), each walk closing back to its first pixel. On the out-of-core path it is the number of contour pixels instead."
 DIAMETER_EQUAL_PERIMETER = "Diameter of a circle with the same perimeter as the ROI: PERIMETER divided by pi, in pixels."
 EDGE_MEAN_INTENSITY = "Mean intensity of ROI's contour pixels"
 EDGE_STDDEV_INTENSITY = "Unbiased (n-1) standard deviation of the intensities of the ROI's contour pixels."
@@ -158,13 +158,13 @@ ROUNDNESS = "4 times the ROI's area divided by pi times the square of MAJOR_AXIS
 
 [circles]
 DIAMETER_MIN_ENCLOSING_CIRCLE = "Diameter in pixels of the circle that Welzl's algorithm fits to the ROI's contour pixels, with chord midpoints truncated to whole pixels (known defect, https://github.com/PolusAI/nyxus/issues/498); it approximates the smallest enclosing circle and can come out about a pixel larger or smaller than it."
-DIAMETER_CIRCUMSCRIBING_CIRCLE = "Twice the largest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left (known defect, https://github.com/PolusAI/nyxus/issues/497)."
-DIAMETER_INSCRIBING_CIRCLE = "Twice the smallest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left (known defect, https://github.com/PolusAI/nyxus/issues/497)."
+DIAMETER_CIRCUMSCRIBING_CIRCLE = "Twice the largest distance from the ROI's centroid to the pixels of its outer borders, in pixels; the borders of holes are left out."
+DIAMETER_INSCRIBING_CIRCLE = "Twice the smallest distance from the ROI's centroid to the pixels of its outer borders, in pixels; the borders of holes are left out."
 
 [roi_radius]
-ROI_RADIUS_MEAN = "Mean over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)"
-ROI_RADIUS_MAX = "Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)"
-ROI_RADIUS_MEDIAN = "Median over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)"
+ROI_RADIUS_MEAN = "Mean over ROI pixels of the distance from a pixel to the nearest contour pixel, in pixels; contour pixels are at distance 0."
+ROI_RADIUS_MAX = "Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel, in pixels: the radius of the largest disk inside the ROI, measured from a pixel centre."
+ROI_RADIUS_MEDIAN = "Median over ROI pixels of the distance from a pixel to the nearest contour pixel, in pixels."
 
 [extrema]
 EXTREMA_P1_X = "X coordinate of extremum point 1: the leftmost ROI pixel in the ROI's top row."
@@ -193,7 +193,7 @@ EROSIONS_2_VANISH_COMPLEMENT = "Not computed: the column is never assigned and k
 
 [fractal]
 FRACT_DIM_BOXCOUNT = "Box-counting fractal dimension of the ROI mask: minus the least-squares slope of log box count versus log box size over power-of-two box sizes; ROIs whose padded side is 32 pixels or less take the smallest count over four grid offsets."
-FRACT_DIM_PERIMETER = "Divider (Richardson) fractal dimension of the ROI's contour: 1 minus the least-squares slope of log perimeter versus log mean ruler length, where the contour is walked with strides of decreasing numbers of contour pixels."
+FRACT_DIM_PERIMETER = "Divider (Richardson) fractal dimension of the ROI's contour: 1 minus the least-squares slope of log perimeter versus log mean ruler length, where each border of the contour (the outside of each separate part and each hole) is walked on its own with strides of decreasing numbers of contour pixels, and a border no longer than the stride counts its full length."
 
 [geodetic]
 GEODETIC_LENGTH = "Length of a rectangle with the same area and perimeter as the ROI: PERIMETER divided by 4 plus the square root of (PERIMETER squared divided by 16 minus the area), in pixels; when that difference is negative, as for a disk, no such rectangle exists and the value is PERIMETER divided by 4."
