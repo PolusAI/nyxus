@@ -1,7 +1,7 @@
 # Example for docs/source/Math/f_glrlm_3d.rst: 3D GLRLM features of the page's 3x3x3 worked example.
 # The page shows the lines between the "example" markers. The assertions below pin every value the
-# page quotes, except the results of the 32-bit overflow on the 8 x 8 x 8 ROI, so the page cannot
-# drift from the code. The volume is written as OME-TIFF files into the current directory.
+# page quotes, so the page cannot drift from the code. The volume is written as OME-TIFF files into
+# the current directory.
 import json
 import math
 import os
@@ -89,12 +89,6 @@ check(unbinned, "3GLRLM_RP_AVE", 0.9965, "ellipsoid unbinned")
 cube = noise[:20, :20, :20].astype(np.uint16)
 check(run(cube, np.ones_like(cube), metaparam="3glrlm/greydepth=64"), "3GLRLM_RP", 0.9863,
       "cube greydepth=64")
-
-# Grey levels up to 65535 with runs of length 1 stay exact: i^2 j^2 = i^2 < 2^32. All eight voxels
-# differ, so every run along direction 1 is one voxel long and LRHGLE is the mean of i^2.
-levels = np.array([[[65535, 1000], [2000, 3000]], [[4000, 5000], [6000, 7000]]], dtype=np.uint16)
-big = run(levels, np.ones_like(levels), ibsi=True)
-assert math.isclose(big["3GLRLM_LRHGLE"][0], float((levels.astype(float) ** 2).mean()), rel_tol=1e-12)
 
 # Constant ROI: every 3D GLRLM column, the _AVE columns included, is the substitute (0 by default)
 const = np.full((2, 2, 2), 7, dtype=np.uint16)

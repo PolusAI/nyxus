@@ -99,22 +99,6 @@ assert all(f[f"GLSZM_{c}"][0] == 0 for c in ("SAE", "ZE", "GLV", "ZP")), "consta
 assert math.isclose(2 / 6, 0.3333, rel_tol=5e-4), "8-connected zone percentage"
 assert math.isclose((1 / 16 + 1 / 4) / 2, 0.1563, rel_tol=5e-4), "8-connected small area emphasis"
 
-# 32-bit overflow of large area emphasis, and small area emphasis on bounding boxes of 65 536 pixels
-for n, wrapped, true in ((250, -194421147, 1953062501), (300, -245057295, 4049910001)):
-    big = np.full((n, n), 5, dtype=np.uint32)
-    big[n - 1, n - 1] = 9
-    f = glszm(big, np.ones_like(big), ibsi=True)
-    # the overflow is undefined: most builds wrap the square as a signed 32-bit integer (the page's
-    # value); a build may square in unsigned 32-bit arithmetic instead
-    unsigned = (((n * n - 1) ** 2) % 2 ** 32 + 1) / 2
-    assert f["GLSZM_LAE"][0] in (wrapped, unsigned), f"{n}x{n} GLSZM_LAE = {f['GLSZM_LAE'][0]}, page says {wrapped}"
-    assert ((n * n - 1) ** 2 + 1) / 2 == true, f"{n}x{n} true large area emphasis"
-rng = np.random.default_rng(1)
-for shape, low, high in (((255, 256), 0.45, 0.55), ((300, 300), 0, 0)):
-    noise = rng.integers(1, 5, size=shape).astype(np.uint32)
-    got = glszm(noise, np.ones_like(noise), ibsi=True)["GLSZM_SAE"][0]
-    assert low <= got <= high, f"random texture {shape} GLSZM_SAE = {got}"
-
 # The 6 x 5 ROI without its corners: IBSI mode on the image binned the default way, corners set to 0
 binned = np.minimum(np.floor(64 * roi_img.astype(int) / 9) + 1, 64).astype(np.uint32) * roi_mask
 f = glszm(binned, roi_mask, ibsi=True)

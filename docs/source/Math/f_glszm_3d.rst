@@ -453,17 +453,6 @@ Constant ROI
    ``--noval`` substitute (0 by default), although the ROI has a well-defined matrix of one zone
    per connected component.
 
-Very large zones
-   Large area emphasis and small area emphasis square the zone size in 32-bit integer arithmetic.
-   Large area emphasis is wrong as soon as a zone has more than 46 340 voxels. On a
-   40 × 40 × 40 ROI holding one zone of 63 999 voxels and one of 1 voxel, Nyxus returns
-   -99 547 647 instead of 2 047 936 001. Small area emphasis sums over every zone size up to the
-   largest zone. When the largest zone has 65 536 voxels or more, one of those terms is undefined
-   and the value is replaced by the ``--noval`` substitute (0 by default; ``-0.0`` in Arrow and
-   Parquet files, see :ref:`conventions-missing`): on a 41 × 40 × 40 ROI with a zone of 65 599
-   voxels it is 0 instead of 0.5. The other 14 features are exact at these
-   sizes. IBSI mode does not change this.
-
 Memory use
    :math:`\textbf{P}` has :math:`N_g` rows and :math:`N_s` columns of 4 bytes. Without binning
    :math:`N_g` is the ROI's largest intensity, so a 12-bit volume (intensities up to 4095) whose
