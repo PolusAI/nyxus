@@ -416,6 +416,12 @@ CMake options
      - ``OFF``
      - Arrow IPC and Parquet output (``--outputType=arrowipc`` or ``parquet``). Dropped with a
        warning when Arrow or Parquet is missing.
+   * - ``USE_STATIC_ARROW``
+     - ``OFF``
+     - macOS only. Links Arrow and Parquet statically into the Python module and exports only its
+       init symbol, so the module's Arrow stays private when pyarrow loads its own Arrow in the
+       same process. Configuring stops when the Arrow installation has no static libraries. The
+       macOS wheels are built with it on. Elsewhere it is ignored with a warning.
    * - ``USEGPU``
      - ``OFF``
      - Builds the CUDA kernels and the ``--useGpu`` and ``--gpuDeviceID`` options. Configuring

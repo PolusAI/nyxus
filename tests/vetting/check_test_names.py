@@ -76,6 +76,7 @@ DIMS = {"2d", "3d"}
 DIM_AGNOSTIC = {
     "test_arrow_mechanics.h": "Arrow/Parquet writer plumbing - no image is read",
     "test_arrow_file_name_mechanics.h": "output-file naming rules",
+    "test_arrow_coexistence_mechanics.py": "nyxus' Arrow and pyarrow's loaded in one process; a library-loading property, not an image one",
     "test_initialization_mechanics.h": "environment init",
     "test_feature_manager_mechanics.h": "FeatureManager registration/dependency compile, both dims at once",
     "test_feature_settings_mechanics.h": "the Environment settings registry, every family of both dims at once",
