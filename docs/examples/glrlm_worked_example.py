@@ -76,16 +76,6 @@ def glrlm(image, **kw):
     return Nyxus(["*ALL_GLRLM*"], **kw).featurize(image, np.ones_like(image))
 
 
-# 32-bit overflow in IBSI mode: one run of 8 pixels above eight runs of 1 pixel at levels 1 and 2
-f = glrlm([[10000] * 8, [1, 2] * 4], ibsi=True)
-assert math.isclose(f["GLRLM_LRHGLE_0"][0], 2.339e8, rel_tol=5e-4), "wrapped LRHGLE"
-assert math.isclose((10000**2 * 64 + 4 * 1 + 4 * 4) / 9, 7.111e8, rel_tol=5e-4), "true LRHGLE"
-assert glrlm([[8192] * 8, [1, 2] * 4], ibsi=True)["GLRLM_SRLGLE_0"][0] == 0, "SRLGLE at 8192"
-assert math.isclose((1 / (8192**2 * 64) + 4 + 4 / 4) / 9, 0.5556, rel_tol=5e-4), "true SRLGLE"
-assert glrlm([[65535, 7, 7, 3]], ibsi=True)["GLRLM_SRLGLE_0"][0] == 0, "SRLGLE with maximum 65535"
-f = glrlm([[70000, 7, 8, 3]], ibsi=True)
-assert f["GLRLM_LGLRE_0"][0] == 0 and f["GLRLM_LRLGLE_0"][0] == 0, "N_g above 65536"
-
 # Constant ROI: every feature, the _AVE columns included, is the missing-value substitute
 f = glrlm(np.full((4, 4), 7))
 assert all(f[c][0] == 0 for c in f.columns if c.startswith("GLRLM_")), "constant ROI is not the substitute"

@@ -281,9 +281,6 @@ texture. IBSI calls it *large zone emphasis*.
 
    \mathrm{LAE} = \frac{1}{N_z}\sum_{j=1}^{N_s} s_j\, j^2
 
-**Possible issues.** Wrong, and often negative, when a zone has more than 46 340 pixels (see
-:ref:`glszm-possible-issues`).
-
 
 .. _feature-glszm-lahgle:
 
@@ -356,8 +353,6 @@ fine texture. IBSI calls it *small zone emphasis*.
 
 **Possible issues.** A zone split by the scan adds smaller zones and changes the value: 0.4537
 instead of 0.1563 on the 2 × 3 image in :ref:`glszm-possible-issues`.
-When the bounding box has 65 536 pixels or more, the value is the ``--noval`` substitute, 0 by
-default (``-0.0`` in Arrow and Parquet files; see :ref:`conventions-missing`).
 
 
 .. _feature-glszm-sahgle:
@@ -528,20 +523,6 @@ Pixels of intensity 0 inside the mask
 Constant ROI
    When all of a ROI's pixels have the same intensity, every GLSZM feature returns the ``--noval``
    substitute (0 by default).
-
-Very large zones and bounding boxes
-   Large area emphasis and small area emphasis square the zone size in 32-bit integer arithmetic.
-   Large area emphasis is wrong as soon as a zone has more than 46 340 pixels. On a 250 × 250 ROI
-   holding one zone of 62 499 pixels and one of 1 pixel, Nyxus returns -194 421 147 instead of
-   1 953 062 501, and on a 300 × 300 ROI with a zone of 89 999 pixels, -245 057 295 instead of
-   4 049 910 001. The overflow is undefined behaviour, so the value depends on the build: one macOS
-   ARM build squares in unsigned 32-bit arithmetic and returns 1 953 062 501 and 1 902 426 353. Small area emphasis sums over every zone size up to the size of the bounding box.
-   When the bounding box has 65 536 pixels or more, one of those terms is undefined and the value
-   is replaced by the ``--noval`` substitute (0 by default; ``-0.0`` in Arrow and Parquet files),
-   whatever the zones: a random texture of four grey levels gives about 0.5 in a 255 × 256 box and
-   0 in a 300 × 300 box. The other 14
-   features are computed in double precision and are exact at these sizes, including the two
-   large area grey level emphases. IBSI mode does not change this.
 
 Memory use
    :math:`\textbf{P}` has :math:`N_g` rows and one column per bounding-box pixel. In IBSI mode

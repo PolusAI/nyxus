@@ -301,8 +301,7 @@ High grey level run emphasis
 :Code: ``3GLRLM_HGLRE``
 :Range: :math:`[1, \infty)`, squared grey levels
 
-Defined as :ref:`GLRLM_HGLRE <feature-glrlm-hglre>`. Unlike the 2D code, the 3D code computes
-:math:`i^2` in floating point, so it does not wrap for large grey levels.
+Defined as :ref:`GLRLM_HGLRE <feature-glrlm-hglre>`.
 
 .. _feature-3glrlm-lglre:
 
@@ -333,11 +332,6 @@ Long run high grey level emphasis
 :Range: :math:`[1, \infty)`, squared grey levels times squared voxels
 
 Defined as :ref:`GLRLM_LRHGLE <feature-glrlm-lrhgle>`.
-
-**Possible issues.** :math:`i^2 j^2` is computed in 32-bit unsigned integers and wraps once it
-reaches :math:`2^{32}`. An 8 × 8 × 8 ROI at intensity 10000, with one voxel at 9999, has a run of 8
-along direction 1 and gives :math:`1.0529 \times 10^9` instead of :math:`1.2308 \times 10^9` in IBSI
-mode (see :ref:`glrlm-3d-possible-issues`).
 
 .. _feature-3glrlm-lrlgle:
 
@@ -439,11 +433,6 @@ Short run low grey level emphasis
 
 Defined as :ref:`GLRLM_SRLGLE <feature-glrlm-srlgle>`.
 
-**Possible issues.** :math:`i^2 j^2` is computed in 32-bit unsigned integers. When it wraps to 0
-for any cell of the matrix, empty or not, the result is 0: the 8 × 8 × 8 ROI described under long
-run high grey level emphasis gives 0 instead of :math:`3.374 \times 10^{-9}` (see
-:ref:`glrlm-3d-possible-issues`).
-
 
 .. _glrlm-3d-possible-issues:
 
@@ -476,27 +465,6 @@ Grey-level values depend on the binning
    As in 2D, ``GLV`` and the six emphasis features that weight runs by grey level use the grey
    level's value: the intensity by default, the bin number with a ``3glrlm/greydepth``. Compare
    them only between runs with the same setting.
-
-Integer overflow with large grey levels or long runs
-   The products :math:`i^2` and :math:`i^2 j^2` are computed in 32-bit unsigned integers before
-   conversion to floating point, except :math:`i^2` in ``HGLRE``, which is computed in floating
-   point:
-
-   .. list-table::
-      :widths: 40 60
-      :header-rows: 1
-
-      * - Feature
-        - Effect
-      * - ``LGLRE``, ``SRHGLE``, ``LRLGLE``
-        - Wrong for grey levels of 65536 and above, which 8- and 16-bit images do not reach
-      * - ``LRHGLE``
-        - Wrong when :math:`i^2 j^2 \ge 2^{32}` for a run
-      * - ``SRLGLE``
-        - 0 when :math:`i^2 j^2` wraps to 0 for any cell of the matrix
-
-   Without binning, the default, this happens with 16-bit intensities and short runs. A 2 × 2 × 2
-   ROI with maximum intensity 65535 and runs of length 1 is still exact.
 
 Constant ROI
    When all of a ROI's voxels have one intensity, every 3D GLRLM feature, including the ``_AVE``

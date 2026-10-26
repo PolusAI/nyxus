@@ -263,8 +263,7 @@ The mean over all runs of the squared grey level. High values mean bright runs d
    \mathrm{HGLRE} = \frac{1}{N_s}\sum_{i}\sum_{j=1}^{N_r} i^2\,\textbf{P}(i,j)
 
 **Possible issues.** Depends on the binning: 10.53 in IBSI mode and 1756.7 with the default
-settings on the worked example. :math:`i^2` is computed in 32-bit unsigned integers and wraps
-for grey levels of 65536 and above (see :ref:`glrlm-possible-issues`).
+settings on the worked example.
 
 
 .. _feature-glrlm-lglre:
@@ -282,9 +281,7 @@ The mean over all runs of one over the squared grey level. High values mean dark
    \mathrm{LGLRE} = \frac{1}{N_s}\sum_{i}\sum_{j=1}^{N_r} \frac{\textbf{P}(i,j)}{i^2}
 
 **Possible issues.** Depends on the binning: 0.2301 in IBSI mode and 0.001363 with the default
-settings on the worked example. When :math:`N_g` reaches 65536 the result is the ``--noval``
-substitute, 0 by default (``-0.0`` in Arrow and Parquet files; see :ref:`conventions-missing` and
-:ref:`glrlm-possible-issues`).
+settings on the worked example.
 
 
 .. _feature-glrlm-lre:
@@ -318,10 +315,6 @@ long bright runs dominate.
 
    \mathrm{LRHGLE} = \frac{1}{N_s}\sum_{i}\sum_{j=1}^{N_r} i^2 j^2\,\textbf{P}(i,j)
 
-**Possible issues.** :math:`i^2 j^2` is computed in 32-bit unsigned integers and wraps once it
-reaches :math:`2^{32}`. A run of 8 pixels at intensity 10000 in IBSI mode gives
-:math:`2.339 \times 10^8` instead of :math:`7.111 \times 10^8` (see :ref:`glrlm-possible-issues`).
-
 
 .. _feature-glrlm-lrlgle:
 
@@ -337,9 +330,6 @@ long dark runs dominate.
 .. math::
 
    \mathrm{LRLGLE} = \frac{1}{N_s}\sum_{i}\sum_{j=1}^{N_r} \frac{j^2\,\textbf{P}(i,j)}{i^2}
-
-**Possible issues.** :math:`i^2` wraps for grey levels of 65536 and above, as for low grey level
-run emphasis.
 
 
 .. _feature-glrlm-re:
@@ -456,9 +446,6 @@ short bright runs dominate.
 
    \mathrm{SRHGLE} = \frac{1}{N_s}\sum_{i}\sum_{j=1}^{N_r} \frac{i^2\,\textbf{P}(i,j)}{j^2}
 
-**Possible issues.** :math:`i^2` wraps for grey levels of 65536 and above, as for high grey level
-run emphasis.
-
 
 .. _feature-glrlm-srlgle:
 
@@ -474,11 +461,6 @@ values mean short dark runs dominate.
 .. math::
 
    \mathrm{SRLGLE} = \frac{1}{N_s}\sum_{i}\sum_{j=1}^{N_r} \frac{\textbf{P}(i,j)}{i^2 j^2}
-
-**Possible issues.** :math:`i^2 j^2` is computed in 32-bit unsigned integers. When it wraps to 0
-for any cell of the matrix the result is the ``--noval`` substitute, 0 by default (``-0.0`` in
-Arrow and Parquet files): a run of 8 pixels at intensity 8192 in IBSI mode gives 0 instead of
-0.5556 (see :ref:`glrlm-possible-issues`).
 
 
 .. _glrlm-possible-issues:
@@ -503,32 +485,6 @@ Grey-level values depend on the binning
    counts (``SRE``, ``LRE``, ``RLN``, ``RLNN``, ``RP``, ``RV``) change only when binning merges or
    splits runs. ``GLN``, ``GLNN`` and ``RE`` group the runs by grey level, so they also change when
    binning merges grey levels.
-
-Integer overflow with large grey levels or long runs
-   The products :math:`i^2` and :math:`i^2 j^2` are computed in 32-bit unsigned integers before
-   conversion to floating point:
-
-   .. list-table::
-      :widths: 40 60
-      :header-rows: 1
-
-      * - Feature
-        - Effect
-      * - ``HGLRE``, ``SRHGLE``
-        - Wrong when a run has grey level 65536 or above
-      * - ``LGLRE``, ``LRLGLE``
-        - The ``--noval`` substitute when :math:`N_g` reaches 65536 in IBSI mode or a run has grey
-          level 65536; wrong for runs above 65536
-      * - ``LRHGLE``
-        - Wrong when :math:`i^2 j^2 \ge 2^{32}` for a run
-      * - ``SRLGLE``
-        - The ``--noval`` substitute when :math:`i^2 j^2` wraps to 0 for any cell of the matrix
-
-   With the default 64 levels this needs runs of 1024 pixels or more. In IBSI mode it can happen
-   with 16-bit intensities and short runs: an ROI with maximum intensity 65535 and one run of 2
-   pixels returns the ``--noval`` substitute (0 by default) for ``SRLGLE``. These substitutes are
-   applied when the value is written, so Arrow and Parquet files hold ``-0.0`` instead, whatever
-   ``--noval`` is (see :ref:`conventions-missing`).
 
 Direction labels
    45° runs down and to the right with rows numbered from the top. Tools that measure angles
