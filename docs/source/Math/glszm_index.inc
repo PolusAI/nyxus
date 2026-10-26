@@ -13,12 +13,12 @@
    * - :ref:`GLSZM_SAE <feature-glszm-sae>`
      - Small area emphasis
      - 5QRC
-     - MIRP (abs. 1e-9)
+     - analytic (rel. 1e-12), MIRP (abs. 1e-9)
      - 0.6852
    * - :ref:`GLSZM_LAE <feature-glszm-lae>`
      - Large area emphasis
      - 48P8
-     - MIRP (abs. 1e-9)
+     - analytic (rel. 1e-12), MIRP (abs. 1e-9)
      - 4.333
    * - :ref:`GLSZM_GLN <feature-glszm-gln>`
      - Grey level non-uniformity

@@ -1081,10 +1081,10 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm`.
      - Validation
    * - ``GLRLM_SRE``
      - Short run emphasis: the mean over all runs of one over the squared run length, which is high when short runs dominate (fine texture).
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_LRE``
      - Long run emphasis: the mean over all runs of the squared run length, which is high when long runs dominate (coarse texture).
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_GLN``
      - Grey level non-uniformity: the sum over grey levels of the squared number of runs at that level, divided by the number of runs; it is low when runs are spread evenly over the grey levels.
      - vetted: PyRadiomics
@@ -1111,28 +1111,28 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm`.
      - vetted: PyRadiomics
    * - ``GLRLM_LGLRE``
      - Low grey level run emphasis: the mean over all runs of one over the squared grey level, which is high when dark runs dominate.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_HGLRE``
      - High grey level run emphasis: the mean over all runs of the squared grey level, which is high when bright runs dominate.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_SRLGLE``
      - Short run low grey level emphasis: the mean over all runs of one over the squared run length times the squared grey level, which is high for short dark runs.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_SRHGLE``
      - Short run high grey level emphasis: the mean over all runs of the squared grey level over the squared run length, which is high for short bright runs.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_LRLGLE``
      - Long run low grey level emphasis: the mean over all runs of the squared run length over the squared grey level, which is high for long dark runs.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_LRHGLE``
      - Long run high grey level emphasis: the mean over all runs of the squared run length times the squared grey level, which is high for long bright runs.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_SRE_AVE``
      - Short run emphasis, averaged over the angles.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_LRE_AVE``
      - Long run emphasis, averaged over the angles.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_GLN_AVE``
      - Grey level non-uniformity, averaged over the angles.
      - vetted: PyRadiomics
@@ -1165,16 +1165,16 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm`.
      - vetted: PyRadiomics
    * - ``GLRLM_SRLGLE_AVE``
      - Short run low grey level emphasis, averaged over the angles.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_SRHGLE_AVE``
      - Short run high grey level emphasis, averaged over the angles.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_LRLGLE_AVE``
      - Long run low grey level emphasis, averaged over the angles.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``GLRLM_LRHGLE_AVE``
      - Long run high grey level emphasis, averaged over the angles.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
 
 .. _features-glszm:
 
@@ -1194,10 +1194,10 @@ Definitions, formulas and settings: :doc:`/Math/f_glszm`.
      - Validation
    * - ``GLSZM_SAE``
      - Small area emphasis: the mean over all zones of one over the squared zone size, which is high when small zones dominate (fine texture); IBSI calls it small zone emphasis.
-     - vetted: MIRP
+     - vetted: analytic, MIRP
    * - ``GLSZM_LAE``
      - Large area emphasis: the mean over all zones of the squared zone size, which is high when large zones dominate (coarse texture); IBSI calls it large zone emphasis.
-     - vetted: MIRP
+     - vetted: analytic, MIRP
    * - ``GLSZM_GLN``
      - Grey level non-uniformity: the sum over grey levels of the squared number of zones at that level, divided by the number of zones; it is low when zones are spread evenly over the grey levels.
      - vetted: MIRP
@@ -2510,10 +2510,10 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm_3d`.
      - Validation
    * - ``3GLRLM_SRE``
      - Short run emphasis: the mean over all runs of one over the squared run length, which is high when short runs dominate (fine texture).
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_LRE``
      - Long run emphasis: the mean over all runs of the squared run length, which is high when long runs dominate (coarse texture).
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_GLN``
      - Grey level non-uniformity: the sum over grey levels of the squared number of runs at that level, divided by the number of runs; it is low when runs are spread evenly over the grey levels.
      - vetted: PyRadiomics
@@ -2540,28 +2540,28 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm_3d`.
      - vetted: PyRadiomics
    * - ``3GLRLM_LGLRE``
      - Low grey level run emphasis: the mean over all runs of one over the squared grey level, which is high when dark runs dominate.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_HGLRE``
      - High grey level run emphasis: the mean over all runs of the squared grey level, which is high when bright runs dominate.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_SRLGLE``
      - Short run low grey level emphasis: the mean over all runs of one over the squared run length times the squared grey level, which is high for short dark runs.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_SRHGLE``
      - Short run high grey level emphasis: the mean over all runs of the squared grey level over the squared run length, which is high for short bright runs.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_LRLGLE``
      - Long run low grey level emphasis: the mean over all runs of the squared run length over the squared grey level, which is high for long dark runs.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_LRHGLE``
      - Long run high grey level emphasis: the mean over all runs of the squared run length times the squared grey level, which is high for long bright runs.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_SRE_AVE``
      - Short run emphasis, averaged over the directions.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_LRE_AVE``
      - Long run emphasis, averaged over the directions.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_GLN_AVE``
      - Grey level non-uniformity, averaged over the directions.
      - vetted: PyRadiomics
@@ -2594,16 +2594,16 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm_3d`.
      - vetted: PyRadiomics
    * - ``3GLRLM_SRLGLE_AVE``
      - Short run low grey level emphasis, averaged over the directions.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_SRHGLE_AVE``
      - Short run high grey level emphasis, averaged over the directions.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_LRLGLE_AVE``
      - Long run low grey level emphasis, averaged over the directions.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLRLM_LRHGLE_AVE``
      - Long run high grey level emphasis, averaged over the directions.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
 
 .. _features-glszm-3d:
 
@@ -2623,10 +2623,10 @@ Definitions, formulas and settings: :doc:`/Math/f_glszm_3d`.
      - Validation
    * - ``3GLSZM_SAE``
      - Small area emphasis: the mean over all zones of one over the squared zone size, which is high when small zones dominate (fine texture); IBSI calls it small zone emphasis.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLSZM_LAE``
      - Large area emphasis: the mean over all zones of the squared zone size, which is high when large zones dominate (coarse texture); IBSI calls it large zone emphasis.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLSZM_GLN``
      - Grey level non-uniformity: the sum over grey levels of the squared number of zones at that level, divided by the number of zones; it is low when zones are spread evenly over the grey levels.
      - vetted: PyRadiomics

@@ -13,12 +13,12 @@
    * - :ref:`3GLRLM_SRE <feature-3glrlm-sre>`
      - Short run emphasis
      - 22OV
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 0.8961
    * - :ref:`3GLRLM_LRE <feature-3glrlm-lre>`
      - Long run emphasis
      - W4KF
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 1.609
    * - :ref:`3GLRLM_GLN <feature-3glrlm-gln>`
      - Grey level non-uniformity
@@ -63,30 +63,30 @@
    * - :ref:`3GLRLM_LGLRE <feature-3glrlm-lglre>`
      - Low grey level run emphasis
      - V3SW
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 0.3463
    * - :ref:`3GLRLM_HGLRE <feature-3glrlm-hglre>`
      - High grey level run emphasis
      - G3QZ
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 6.435
    * - :ref:`3GLRLM_SRLGLE <feature-3glrlm-srlgle>`
      - Short run low grey level emphasis
      - HTZT
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 0.2669
    * - :ref:`3GLRLM_SRHGLE <feature-3glrlm-srhgle>`
      - Short run high grey level emphasis
      - GD3A
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 6.233
    * - :ref:`3GLRLM_LRLGLE <feature-3glrlm-lrlgle>`
      - Long run low grey level emphasis
      - IVPO
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 0.8572
    * - :ref:`3GLRLM_LRHGLE <feature-3glrlm-lrhgle>`
      - Long run high grey level emphasis
      - 3KUM
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 7.435
