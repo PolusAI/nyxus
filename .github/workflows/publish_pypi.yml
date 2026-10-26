@@ -416,6 +416,7 @@ jobs:
             LDFLAGS="-isysroot $SDKROOT -lc++ -lc++abi -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
             PIP_ONLY_BINARY="imagecodecs"
             ARROW_HAVE_LIBATOMIC=OFF
+            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON"
             REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
@@ -502,6 +503,7 @@ jobs:
             CXXFLAGS="-isysroot $SDKROOT -stdlib=libc++ -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
             LDFLAGS="-isysroot $SDKROOT -lc++ -lc++abi -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
             ARROW_HAVE_LIBATOMIC=OFF
+            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON"
             REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: |

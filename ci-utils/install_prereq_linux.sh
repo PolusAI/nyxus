@@ -167,7 +167,9 @@ cd tiff-4.7.0
 mkdir build_man
 cd build_man
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
+    # -Dwebp=OFF: libtiff would otherwise link the runner's Homebrew libwebp, whose minimum
+    # macOS version is above the wheels' deployment target, and delocate-wheel rejects it
+    cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include -Dwebp=OFF ..
 else
     cmake -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/ ..
 fi

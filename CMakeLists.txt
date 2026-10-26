@@ -13,6 +13,9 @@ endif()
 option(USE_Z5 "Support OMEZarr" OFF)
 option(USE_DCMTK "Use DCMTK" OFF)
 option(USE_ARROW "Use Arrow" OFF)
+# macOS: link Arrow/Parquet statically into the Python module and export nothing but its
+# init symbol, so the module's Arrow cannot be merged with pyarrow's at run time (see below).
+option(USE_STATIC_ARROW "Link Arrow/Parquet statically and keep their symbols private (macOS)" OFF)
 option(ALLEXTRAS "Building with all I/O support" OFF)
 option(NOEXTRAS "Building with Only Tiff and Pybind11(For Python package)" ON)
 
@@ -431,8 +434,27 @@ if(USE_ARROW)
 		# headers-only Boost shipped under the dependency prefix (no CMake config)
 		include_directories("$ENV{NYXUS_DEP_DIR}/include")
 	endif()
-	list(APPEND Nyxus_LIBRARIES arrow_shared)
-	list(APPEND Nyxus_LIBRARIES parquet_shared)
+	# On macOS, dyld merges every exported weak definition across all loaded images, first
+	# loaded wins. A shared libarrow exports hundreds of them (function-local statics such as
+	# the filesystem factory registry, template code, vtables), so a process that loads this
+	# module's libarrow and pyarrow's ends up with both libraries writing into one registry and
+	# running each other's Arrow code. Linking Arrow statically and exporting only the module's
+	# init symbol (below) keeps this module's Arrow private. Linux and Windows do not merge
+	# symbols across libraries this way and keep the shared libraries.
+	if(USE_STATIC_ARROW AND APPLE)
+		if(NOT (TARGET Arrow::arrow_static AND TARGET Parquet::parquet_static))
+			message(FATAL_ERROR "USE_STATIC_ARROW=ON needs the static Arrow and Parquet libraries "
+				"(Arrow::arrow_static, Parquet::parquet_static); this Arrow installation has none.")
+		endif()
+		message(STATUS "Arrow and Parquet are linked statically")
+		list(APPEND Nyxus_LIBRARIES Parquet::parquet_static Arrow::arrow_static)
+	else()
+		if(USE_STATIC_ARROW)
+			message(WARNING "USE_STATIC_ARROW applies to macOS only; linking the shared Arrow libraries.")
+		endif()
+		list(APPEND Nyxus_LIBRARIES arrow_shared)
+		list(APPEND Nyxus_LIBRARIES parquet_shared)
+	endif()
 endif()
 
 if(BUILD_LIB)
@@ -452,6 +474,11 @@ endif()
 
 if (APPLE AND BUILD_LIB)
 	set_target_properties(backend PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+	if(USE_ARROW AND USE_STATIC_ARROW)
+		# The static Arrow objects are compiled with default visibility; exporting only the
+		# module init symbol makes them private to this module, so dyld has nothing to merge.
+		target_link_options(backend PRIVATE "LINKER:-exported_symbol,_PyInit_backend")
+	endif()
 endif()
 
 if(BUILD_CLI)
