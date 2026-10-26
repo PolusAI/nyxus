@@ -2879,7 +2879,7 @@ Definitions, formulas and settings: :doc:`/Math/f_ngldm_3d`.
 NGTDM (3D)
 ^^^^^^^^^^
 
-For each voxel of the bounding box the matrix accumulates the absolute difference between its grey level and the average grey level of the voxels within the 3ngtdm/radius Chebyshev distance (default 1, the 26 neighbours) in the bounding box, grouped by grey level, together with the probability of each grey level. Each code is one value per ROI. Grey levels are binned to the 3ngtdm/greydepth metaparameter, which defaults to 0 (no binning, raw intensities) rather than following ``--coarseGrayDepth``; ``--ibsi`` also uses the raw intensities. With the default 3ngtdm/greydepth of 0, and under ``--ibsi``, the background voxels of the bounding box are centres too and form their own grey level; with a positive greydepth they are skipped.
+For each ROI voxel the matrix accumulates the absolute difference between its grey level and the average grey level of the ROI voxels within the 3ngtdm/radius Chebyshev distance (default 1, at most 26 neighbours), grouped by grey level, together with the probability of each grey level. Each code is one value per ROI. Grey levels are binned to the 3ngtdm/greydepth metaparameter, which defaults to 0 (no binning, raw intensities) rather than following ``--coarseGrayDepth``; ``--ibsi`` also uses the raw intensities. Voxels of the bounding box outside the mask are neither centres nor neighbours, in every mode, and a ROI voxel with no ROI neighbour is left out.
 
 Definitions, formulas and settings: :doc:`/Math/f_ngtdm_3d`.
 
@@ -2892,19 +2892,19 @@ Definitions, formulas and settings: :doc:`/Math/f_ngtdm_3d`.
      - Validation
    * - ``3NGTDM_COARSENESS``
      - Coarseness: one over the probability-weighted sum of the differences between each grey level and its neighbourhood averages, which is high when intensity changes slowly (large uniform patches).
-     - vetted: PyRadiomics
+     - vetted: MIRP, PyRadiomics
    * - ``3NGTDM_CONTRAST``
      - Contrast: the spread of the grey levels present multiplied by the mean difference between a voxel and its neighbourhood average, which is high when both the dynamic range and the local variation are large.
-     - vetted: PyRadiomics
+     - vetted: MIRP, PyRadiomics
    * - ``3NGTDM_BUSYNESS``
      - Busyness: the probability-weighted neighbourhood differences divided by the summed differences between probability-weighted grey levels, which is high when intensity changes rapidly from voxel to voxel.
-     - vetted: PyRadiomics
+     - vetted: MIRP, PyRadiomics
    * - ``3NGTDM_COMPLEXITY``
      - Complexity: the grey-level differences between pairs of levels weighted by their neighbourhood differences, which is high when the image has many abrupt intensity changes.
-     - vetted: PyRadiomics
+     - vetted: MIRP, PyRadiomics
    * - ``3NGTDM_STRENGTH``
      - Strength: the probability-weighted squared differences between grey levels divided by the summed neighbourhood differences, which is high when the image has large, distinct regions of different intensity.
-     - vetted: PyRadiomics
+     - vetted: MIRP, PyRadiomics
 
 Image quality features
 ----------------------

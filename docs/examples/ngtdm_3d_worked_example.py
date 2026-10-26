@@ -74,29 +74,25 @@ check(run(vol, mask, metaparams=["3ngtdm/radius=2"]),
       {"COARSENESS": 0.1583, "CONTRAST": 0.1860, "BUSYNESS": 1.445, "COMPLEXITY": 5.173,
        "STRENGTH": 0.7222}, "radius=2")
 
-# The eight corner voxels left out of the mask: they still take part, as grey level 1
+# The eight corner voxels left out of the mask: neither centres nor neighbours, as in PyRadiomics;
+# IBSI mode moves busyness only
 corners = np.ones_like(vol)
 corners[::2, ::2, ::2] = 0
-for ibsi in (False, True):
-    check(run(vol, corners, ibsi=ibsi),
-          {"COARSENESS": 0.1015, "CONTRAST": 0.3376, "BUSYNESS": 1.663, "COMPLEXITY": 15.68,
-           "STRENGTH": 1.024}, f"corners off (ibsi={ibsi})")
+check(run(vol, corners),
+      {"COARSENESS": 0.1843, "CONTRAST": 0.2407, "BUSYNESS": 1.097, "COMPLEXITY": 6.190,
+       "STRENGTH": 0.9691}, "corners off")
+check(run(vol, corners, ibsi=True),
+      {"COARSENESS": 0.1843, "CONTRAST": 0.2407, "BUSYNESS": 1.121, "COMPLEXITY": 6.190,
+       "STRENGTH": 0.9691}, "corners off (IBSI)")
 
-# A centre voxel of intensity 0 inside the mask is counted as grey level 1
-zero = vol.copy()
-zero[1, 1, 1] = 0
-check(run(zero, mask, ibsi=True), {"COARSENESS": 0.1750, "CONTRAST": 0.1286}, "in-ROI zero")
-
-# A constant ROI: every feature is the substitute (0 in Python) when it fills its box, in every
-# binning mode but IBSI; computed when it does not fill its box
+# A constant ROI: every feature is 0 in Python (the substitute in every binning mode but IBSI),
+# whether or not it fills its box
 const = np.full((3, 3, 3), 7, dtype=np.uint16)
 for ibsi in (False, True):
-    check(run(const, mask, ibsi=ibsi),
-          {"COARSENESS": 0.0, "CONTRAST": 0.0, "BUSYNESS": 0.0, "COMPLEXITY": 0.0, "STRENGTH": 0.0},
-          f"constant (ibsi={ibsi})")
-    check(run(const, corners, ibsi=ibsi),
-          {"COARSENESS": 0.02793, "CONTRAST": 31.52, "BUSYNESS": 3.357, "COMPLEXITY": 18.57,
-           "STRENGTH": 1.176}, f"constant, corners off (ibsi={ibsi})")
+    for seg, label in ((mask, "constant"), (corners, "constant, corners off")):
+        check(run(const, seg, ibsi=ibsi),
+              {"COARSENESS": 0.0, "CONTRAST": 0.0, "BUSYNESS": 0.0, "COMPLEXITY": 0.0, "STRENGTH": 0.0},
+              f"{label} (ibsi={ibsi})")
 for depth in (64, -8):
     check(run(const, mask, metaparams=[f"3ngtdm/greydepth={depth}"]),
           {"COARSENESS": 0.0, "CONTRAST": 0.0, "BUSYNESS": 0.0, "COMPLEXITY": 0.0, "STRENGTH": 0.0},
