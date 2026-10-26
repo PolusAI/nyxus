@@ -13,12 +13,12 @@
    * - :ref:`3GLSZM_SAE <feature-3glszm-sae>`
      - Small area emphasis
      - 5QRC
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 0.4938
    * - :ref:`3GLSZM_LAE <feature-3glszm-lae>`
      - Large area emphasis
      - 48P8
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-12), PyRadiomics (rel. 1e-9)
      - 13.89
    * - :ref:`3GLSZM_GLN <feature-3glszm-gln>`
      - Grey level non-uniformity
