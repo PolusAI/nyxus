@@ -282,11 +282,10 @@ background by grey level, not by the mask: a pixel whose grey level is the backg
 left out, whether it lies outside the mask or inside it. The default MATLAB-style binning turns
 intensity 0 into level 1, an ordinary level, so the pixels of the bounding box outside the mask
 then take part as a level of their own. IBSI mode and PyRadiomics-style binning mostly keep them
-at level 0 and leave them out. NGLDM, 2D and 3D, uses the mask and leaves the pixels outside it out
-in every mode. GLDM, 2D and 3D, leaves out every pixel of intensity 0, so the pixels outside the
-mask are out in every mode too, together with ROI pixels of intensity 0. 3D NGTDM uses the pixels
-outside the mask in every mode. ROIs that fill their bounding box with
-non-zero intensities are not affected.
+at level 0 and leave them out. NGLDM, 2D and 3D, and 3D NGTDM use the mask and leave the pixels
+outside it out in every mode. GLDM, 2D and 3D, leaves out every pixel of intensity 0, so the pixels
+outside the mask are out in every mode too, together with ROI pixels of intensity 0. ROIs that fill
+their bounding box with non-zero intensities are not affected.
 
 .. list-table::
    :header-rows: 1
@@ -354,10 +353,9 @@ non-zero intensities are not affected.
      - Excluded
      - Centres at grey level 0
    * - :doc:`3D NGTDM <Math/f_ngtdm_3d>`
-     - Level 1; visited and averaged into their neighbours. A positive ``3ngtdm/greydepth`` stops
-       visiting them, but still averages them into their neighbours.
-     - Level 1; visited and averaged into their neighbours
-     - As voxels outside the mask
+     - Excluded, as centres and as neighbours
+     - Excluded
+     - Counted as ROI voxels, in every mode
 
 "Excluded" means that a pixel is neither counted nor used as a neighbour. Each family page shows
 the effect on a mask that leaves pixels of the bounding box out, under *Possible issues*: for

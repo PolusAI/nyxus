@@ -13,25 +13,25 @@
    * - :ref:`3NGTDM_COARSENESS <feature-3ngtdm-coarseness>`
      - Coarseness
      - QCDE
-     - PyRadiomics (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 0.1549
    * - :ref:`3NGTDM_CONTRAST <feature-3ngtdm-contrast>`
      - Contrast
      - 65HE
-     - PyRadiomics (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 0.1889
    * - :ref:`3NGTDM_BUSYNESS <feature-3ngtdm-busyness>`
      - Busyness
      - NQ30
-     - PyRadiomics (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 1.477
    * - :ref:`3NGTDM_COMPLEXITY <feature-3ngtdm-complexity>`
      - Complexity
      - HDEZ
-     - PyRadiomics (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 5.241
    * - :ref:`3NGTDM_STRENGTH <feature-3ngtdm-strength>`
      - Strength
      - 1X9X
-     - PyRadiomics (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 0.7111
