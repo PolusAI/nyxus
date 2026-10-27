@@ -159,7 +159,8 @@ Notation
    * - :math:`P_q`
      - The ``3Pqq`` feature: the :math:`q`-th percentile read off the 100-bin histogram.
    * - :math:`N_b`
-     - Number of bins of the coarse histogram, the absolute value of ``--coarseGrayDepth``.
+     - Number of bins of the coarse histogram, the absolute value of ``--coarseGrayDepth``, or 24
+       when it is 0.
    * - :math:`p_j`
      - Fraction of ROI voxels in bin :math:`j` of the coarse histogram.
 
@@ -181,8 +182,8 @@ Settings
    * - Histogram bins
      - ``--coarseGrayDepth=64``
      - ``Nyxus3D(..., coarse_gray_depth=64)``
-     - :math:`N_b`, the number of bins of ``3ENTROPY`` and ``3UNIFORMITY``. The sign is ignored.
-       No other 3D intensity feature depends on it. Python accepts only positive values.
+     - :math:`N_b`, the number of bins of ``3ENTROPY`` and ``3UNIFORMITY``: the absolute value, or
+       24 at 0. No other 3D intensity feature depends on it.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus3D(..., ibsi=True)``

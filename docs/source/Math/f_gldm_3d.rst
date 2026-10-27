@@ -29,10 +29,11 @@ the 2D page.
 
 .. tip::
 
-   By default the 3D family does not bin intensities: each integer intensity is a grey level, in
-   IBSI mode and out of it, and ``--coarseGrayDepth`` has no effect. These values match
-   PyRadiomics with ``binWidth=1`` and ``gldm_a=0`` on volumes whose intensities start at 1. To
-   bin, set the ``3gldm/greydepth`` metaparameter (see :ref:`gldm-3d-settings`).
+   By default the 3D family bins intensities into 64 MATLAB-style grey levels, set by
+   ``--coarseGrayDepth`` unless the ``3gldm/greydepth`` metaparameter overrides it (see
+   :ref:`gldm-3d-settings`). With ``--coarseGrayDepth=0``, or in IBSI mode, each integer intensity
+   is a grey level, and the values match PyRadiomics with ``binWidth=1`` and ``gldm_a=0`` on
+   volumes whose intensities start at 1.
 
 
 How the matrix is built
@@ -48,22 +49,24 @@ A voxel of grey level :math:`i` and dependence :math:`j` adds 1 to :math:`\textb
 - **Dependence:** a neighbour is dependent only when its grey level equals the centre's
   (:math:`\alpha = 0`, PyRadiomics ``gldm_a = 0``). The centre voxel counts, so :math:`j` runs from
   1 to 27. A voxel with no dependent neighbour is counted with :math:`j = 1`.
-- **Grey levels:** set by ``3gldm/greydepth``, 0 by default.
+- **Grey levels:** set by ``--coarseGrayDepth``, 64 by default, or by ``3gldm/greydepth``, which
+  overrides it for this family.
 
-  - 0, or IBSI mode: no binning. Each integer intensity is a grey level, and the matrix has rows
-    1 to the ROI maximum.
   - :math:`N > 0`: intensity :math:`x` maps to :math:`\min(\lfloor N x / x_{\max} + 1 \rfloor, N)`,
     where :math:`x_{\max}` is the ROI's maximum intensity.
+  - 0, or IBSI mode: no binning. Each integer intensity is a grey level, and the matrix has rows
+    1 to the ROI maximum.
   - :math:`N < 0`: :math:`|N|` equal-width bins between the ROI minimum and maximum. Intensity
-    :math:`x > 0` maps to :math:`\min(\lfloor (x - x_{\min})/w + 1 \rfloor, |N|)` with
-    :math:`w = (x_{\max} - x_{\min})/|N|`.
+    :math:`x` maps to :math:`\min(\lfloor |N| (x - x_{\min}) / (x_{\max} - x_{\min}) \rfloor + 1, |N|)`,
+    and a ROI of one intensity is one bin.
 
   Formulas use the grey level's value: the intensity without binning, the level otherwise.
-- **Background:** the bounding box holds 0 for every voxel outside the ROI's mask, including
-  voxels of other ROIs. A voxel whose grey level is the background level, 0 (or 1 when
-  :math:`N > 0`), is not counted, and no counted voxel has that level, so background never counts
-  as a neighbour. The mask itself is not consulted: a ROI voxel of intensity 0 is treated as
-  background too (see :ref:`gldm-3d-possible-issues`).
+- **Background:** Nyxus reads which voxels of the bounding box are the ROI's from the ROI's own
+  voxels, and gives every other voxel, voxels of other ROIs included, grey level 0. A voxel of
+  level 0 is not counted, and no counted voxel has that level, so background never counts as a
+  neighbour. With binning every ROI voxel has level 1 or more, one of intensity 0 included. With
+  no binning a ROI voxel of intensity 0 keeps level 0 and is treated as background (see
+  :ref:`gldm-3d-possible-issues`).
 
 
 Worked example
@@ -90,8 +93,11 @@ Take a 3 × 4 × 4 ROI (slices, rows, columns) that already has four grey levels
    4 & 4 & 1 & 1\\
    2 & 4 & 4 & 3 \end{bmatrix}
 
-With the default settings, or in IBSI mode, the matrix is below, with grey levels 1 to 4 as rows
-and dependences 1 to 10 as columns; no voxel has a dependence above 10. The 4 in slice 2, row 4,
+In IBSI mode, or with ``--coarseGrayDepth=0``, the matrix is below, with grey levels 1 to 4 as
+rows and dependences 1 to 10 as columns; no voxel has a dependence above 10. The default 64
+levels map intensities 1 to 4 to levels 17, 33, 49 and 64, so the matrix has the same counts on
+those rows: the features that use only dependences and counts are the same, and the grey-level
+features differ (grey level variance 308.4 instead of 1.248). The 4 in slice 2, row 4,
 column 2 has nine neighbours of level 4 (three in slice 1, two in its own slice, four in slice 3),
 so its dependence is 10. The 4 in slice 3, row 2, column 4 has none, so its dependence is 1.
 
@@ -177,18 +183,21 @@ Settings
      - Python
      - Effect
    * - Grey levels
-     - none
-     - ``Nyxus3D.set_metaparam("3gldm/greydepth=0")``
-     - 0 (default): no binning. Positive :math:`N`: equal-width levels from 0 to the ROI maximum.
-       Negative :math:`N`: :math:`|N|` PyRadiomics-style bins between the ROI minimum and
-       maximum. Read back with ``Nyxus3D.get_metaparam("3gldm/greydepth")``.
+     - ``--coarseGrayDepth=64``
+     - ``Nyxus3D(..., coarse_gray_depth=64)``
+     - Positive :math:`N`: equal-width levels from 0 to the ROI maximum. 0: no binning. Negative
+       :math:`N`: :math:`|N|` PyRadiomics-style bins between the ROI minimum and maximum.
+   * - Grey levels, 3D GLDM only
+     - not available
+     - ``Nyxus3D.set_metaparam("3gldm/greydepth=N")``
+     - Overrides the grey levels for this family only, with the same sign convention. It starts at
+       the coarse grey depth; read it back with ``Nyxus3D.get_metaparam("3gldm/greydepth")``.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus3D(..., ibsi=True)``
      - No binning, whatever ``3gldm/greydepth`` holds.
 
-``--coarseGrayDepth`` and the ``coarse_gray_depth`` argument of ``Nyxus3D`` do not affect this
-family. The neighbourhood, the distance and :math:`\alpha` are fixed. The metaparameter applies to
+The neighbourhood, the distance and :math:`\alpha` are fixed. The grey-level settings apply to
 in-memory and out-of-core ROIs alike. All options are listed in the :ref:`cli-reference`.
 
 
@@ -364,28 +373,28 @@ Defined as :ref:`GLDM_SDLGLE <feature-gldm-sdlgle>`.
 Possible issues
 ---------------
 
-Positive ``3gldm/greydepth`` drops the dimmest voxels
-   With :math:`N > 0`, intensity 0 and every intensity below :math:`x_{\max}/N` share level 1,
-   and level 1 is treated as background: those ROI voxels are neither counted nor counted as
-   neighbours. On the worked example with ``3gldm/greydepth=2`` the 13 voxels of intensity 1
-   leave the matrix, :math:`N_z` drops from 48 to 35, a single level remains, grey level variance
-   is 0, and small dependence emphasis is 0.01297 instead of 0.06470. With
-   ``3gldm/greydepth=1`` every voxel is dropped and every feature returns the ``--noval``
-   substitute. Zero or negative values of the metaparameter do not drop ROI voxels.
+Few grey levels merge neighbouring intensities
+   With a small positive :math:`N`, intensities that differ fall into one level and become
+   dependent on each other. On the worked example with ``3gldm/greydepth=2`` intensity 1 is level 1
+   and intensities 2 to 4 are level 2: all 48 voxels are counted, and small dependence emphasis is
+   0.02213 instead of 0.06470. With ``3gldm/greydepth=1`` every voxel is level 1, grey level
+   variance is 0 and small dependence emphasis 0.006641.
 
-Grey-level values follow the raw intensities by default
-   Without binning, ``GLV`` and the six emphasis features that weight voxels by grey level scale
-   with the intensities. Multiplying the worked example by 250 leaves every dependence feature
-   unchanged and raises high grey level emphasis from 7.292 to 455729; with
-   ``3gldm/greydepth=64`` it is 1916.8. Compare these features only between volumes of the same
-   intensity scale and the same ``3gldm/greydepth``.
+Grey-level values depend on the setting
+   ``GLV`` and the six emphasis features that weight voxels by grey level use the level's value.
+   With binning they do not follow the intensity scale: multiplying the worked example by 250
+   leaves high grey level emphasis at 1916.8 with the default 64 levels. Without binning
+   (``--coarseGrayDepth=0``) they scale with the intensities, and the same volume raises it from
+   7.292 to 455729. Compare these features only between runs with the same grey-level setting.
 
 Voxels of intensity 0 inside the mask
-   A ROI voxel of intensity 0 is treated as background in every mode: it is not counted and does
-   not count as a neighbour. PyRadiomics keeps it as a grey level. On the worked example with the
-   voxel in slice 2, row 2, column 2 set to 0, Nyxus counts 47 voxels and returns small dependence
-   emphasis 0.06801 and large dependence emphasis 33.64, while PyRadiomics (``binWidth=1``) counts
-   48 and returns 0.08743 and 32.96.
+   With no binning, in IBSI mode or with ``--coarseGrayDepth=0``, a ROI voxel of intensity 0 is
+   treated as background: it is not counted and does not count as a neighbour. PyRadiomics keeps it
+   as a grey level. On the worked example with the voxel in slice 2, row 2, column 2 set to 0,
+   Nyxus in IBSI mode counts 47 voxels and returns small dependence emphasis 0.06801 and large
+   dependence emphasis 33.64, while PyRadiomics (``binWidth=1``) counts 48 and returns 0.08743 and
+   32.96. With binning the voxel is a ROI voxel of the lowest level: with the default settings
+   Nyxus counts 48 voxels and returns 0.08743 and 32.96.
 
 Voxels outside the mask
    Voxels of the bounding box outside the mask, including voxels of other ROIs, are excluded in
@@ -411,8 +420,8 @@ The test suite checks every 3D GLDM feature against PyRadiomics, named in the
 thirteen features without a logarithm agree to an absolute 10\ :sup:`-9` (measured
 7 × 10\ :sup:`-15`), and the test also checks every cell of the dependence matrix. Dependence
 entropy agrees to an absolute 4 × 10\ :sup:`-3` because of the approximate logarithm. The
-default (no binning) and the positive ``3gldm/greydepth`` binning are covered by regression tests
-only, and so is the constant-ROI result.
+unbinned and the positive binning are covered by regression tests only, and so is the
+constant-ROI result.
 
 
 References

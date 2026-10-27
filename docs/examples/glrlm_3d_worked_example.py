@@ -50,45 +50,32 @@ for code, facts in extras.items():
 check(features, "3GLRLM_SRE_AVE", 0.9033, "IBSI")
 check(features, "3GLRLM_RP_AVE", 0.8803, "IBSI")
 
-# Default settings: no binning, the same values as IBSI mode; --coarseGrayDepth has no effect
-for kwargs in ({}, {"coarse_gray_depth": 2}):
-    table = run(img, mask, **kwargs)
+# No binning (coarse_gray_depth=0, or 3glrlm/greydepth=0 for this family): the same values as IBSI mode
+for kwargs, meta in (({"coarse_gray_depth": 0}, None), ({}, "3glrlm/greydepth=0")):
+    table = run(img, mask, metaparam=meta, **kwargs)
     for code, facts in extras.items():
-        check(table, code, facts["example"], f"default {kwargs}")
+        check(table, code, facts["example"], f"no binning {kwargs} {meta}")
 
-# 3glrlm/greydepth=2 (MATLAB-style binning)
-binned = run(img, mask, metaparam="3glrlm/greydepth=2")
-check(binned, "3GLRLM_RP", 0.7407, "greydepth=2")
-check(binned, "3GLRLM_GLV", 0.1875, "greydepth=2")
+# Default settings: 64 MATLAB-style levels map 1, 2, 3, 4 to 17, 33, 49, 64; the runs are unchanged,
+# the level-weighted features move
+default = run(img, mask)
+for code in ("3GLRLM_SRE", "3GLRLM_RP", "3GLRLM_SRE_AVE", "3GLRLM_RP_AVE"):
+    check(default, code, features[code][0], "default")
+check(default, "3GLRLM_GLV", 229.4, "default")
+check(default, "3GLRLM_HGLRE", 1707, "default")
 
-# Two voxels of the bounding box outside the mask, 3glrlm/greydepth=2
+# A depth of 2 (MATLAB-style binning), from the coarse grey depth or the family's metaparameter
+for kwargs, meta in (({"coarse_gray_depth": 2}, None), ({}, "3glrlm/greydepth=2")):
+    binned = run(img, mask, metaparam=meta, **kwargs)
+    check(binned, "3GLRLM_RP", 0.7407, f"depth 2 {kwargs} {meta}")
+    check(binned, "3GLRLM_GLV", 0.1875, f"depth 2 {kwargs} {meta}")
+
+# Two voxels of the bounding box outside the mask, 3glrlm/greydepth=2: they form no run
 holes = np.ones_like(img)
 holes[0, 0, 2] = holes[2, 0, 0] = 0
 masked = run(img, holes, metaparam="3glrlm/greydepth=2")
-check(masked, "3GLRLM_RP", 0.8, "masked greydepth=2")
-check(masked, "3GLRLM_LGLRE", 0.5125, "masked greydepth=2")
-
-# Run percentage above 1: an ellipsoid with semi-axes 12, 30 and 30 voxels in a 24 x 60 x 60 box,
-# intensities drawn uniformly from 1 to 255; the bounding-box voxels outside the mask form runs
-z, y, x = np.mgrid[0:24, 0:60, 0:60]
-inside = ((z - 11.5) / 12) ** 2 + ((y - 29.5) / 30) ** 2 + ((x - 29.5) / 30) ** 2 <= 1
-assert inside.sum() == 45224
-noise = np.random.default_rng(0).integers(1, 256, size=inside.shape)
-ellipsoid = np.where(inside, noise, 0).astype(np.uint16)
-emask = inside.astype(np.uint16)
-for depth, rp in ((16, 1.131), (64, 1.182), (128, 1.191)):
-    check(run(ellipsoid, emask, metaparam=f"3glrlm/greydepth={depth}"), "3GLRLM_RP", rp,
-          f"ellipsoid greydepth={depth}")
-check(run(ellipsoid, emask, metaparam="3glrlm/greydepth=64"), "3GLRLM_RP_AVE", 1.130,
-      "ellipsoid greydepth=64")
-unbinned = run(ellipsoid, emask)
-check(unbinned, "3GLRLM_RP", 0.9962, "ellipsoid unbinned")
-check(unbinned, "3GLRLM_RP_AVE", 0.9965, "ellipsoid unbinned")
-
-# A ROI that fills its bounding box: a 20 x 20 x 20 cube of the same intensities
-cube = noise[:20, :20, :20].astype(np.uint16)
-check(run(cube, np.ones_like(cube), metaparam="3glrlm/greydepth=64"), "3GLRLM_RP", 0.9863,
-      "cube greydepth=64")
+check(masked, "3GLRLM_RP", 0.72, "masked greydepth=2")
+check(masked, "3GLRLM_LGLRE", 0.4583, "masked greydepth=2")
 
 # Constant ROI: every 3D GLRLM column, the _AVE columns included, is the substitute (0 by default)
 const = np.full((2, 2, 2), 7, dtype=np.uint16)

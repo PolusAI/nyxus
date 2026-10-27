@@ -1,7 +1,7 @@
 # Example for docs/source/Math/f_ngldm_3d.rst: 3D NGLDM features of the page's 3 x 3 x 3 worked
 # example. The page shows the lines between the "example" markers. The assertions below pin every
-# value the page quotes, in IBSI mode and with the default settings, so the page cannot drift from
-# the code.
+# value the page quotes, in IBSI mode, with the default settings and with a negative or zero grey
+# depth, so the page cannot drift from the code.
 import json
 import math
 import os
@@ -59,6 +59,16 @@ for code, facts in extras.items():
 default = run(vol, mask)
 for name, expected in {"GLM": 38.52, "GLV": 308.3, "HGLCE": 1792.0, "LGLCE": 0.001453, "LDE": 0.08747}.items():
     check(default, f"3NGLDM_{name}", expected, "default")
+
+# Depth 0 gives the IBSI-mode values; depth -8 bins into 8 PyRadiomics-style bins over 1..4
+zero_depth = run(vol, mask, coarse_gray_depth=0)
+for code in extras:
+    assert math.isclose(zero_depth[code].iloc[0], features[code].iloc[0], rel_tol=1e-12), f"depth 0 {code} differs from IBSI"
+radiomics = run(vol, mask, coarse_gray_depth=-8)
+check(radiomics, "3NGLDM_GLM", 4.259, "depth -8")
+check(radiomics, "3NGLDM_HGLCE", 25.15, "depth -8")
+for name in ("LDE", "HDE", "GLNU", "DCENT"):
+    assert math.isclose(radiomics[f"3NGLDM_{name}"].iloc[0], features[f"3NGLDM_{name}"].iloc[0], rel_tol=1e-12), name
 
 # Out of core (ram_limit=0 sends every ROI down the oversized path): the same values
 for ibsi in (True, False):

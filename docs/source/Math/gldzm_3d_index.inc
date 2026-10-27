@@ -13,67 +13,67 @@
    * - :ref:`3GLDZM_SDE <feature-3gldzm-sde>`
      - Small distance emphasis
      - 0GBI
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 0.8929
    * - :ref:`3GLDZM_LDE <feature-3gldzm-lde>`
      - Large distance emphasis
      - MB4I
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 1.429
    * - :ref:`3GLDZM_LGLZE <feature-3gldzm-lglze>`
      - Low grey level zone emphasis
      - S1RA
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 0.2307
    * - :ref:`3GLDZM_HGLZE <feature-3gldzm-hglze>`
      - High grey level zone emphasis
      - K26C
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 12.71
    * - :ref:`3GLDZM_SDLGLE <feature-3gldzm-sdlgle>`
      - Small distance low grey level emphasis
      - RUVG
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 0.2188
    * - :ref:`3GLDZM_SDHGLE <feature-3gldzm-sdhgle>`
      - Small distance high grey level emphasis
      - DKNJ
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 11.75
    * - :ref:`3GLDZM_LDLGLE <feature-3gldzm-ldlgle>`
      - Large distance low grey level emphasis
      - A7WM
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 0.2783
    * - :ref:`3GLDZM_LDHGLE <feature-3gldzm-ldhgle>`
      - Large distance high grey level emphasis
      - KLTH
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 16.57
    * - :ref:`3GLDZM_GLNU <feature-3gldzm-glnu>`
      - Grey level non-uniformity
      - VFT7
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 1.571
    * - :ref:`3GLDZM_GLNUN <feature-3gldzm-glnun>`
      - Grey level non-uniformity normalized
      - 7HP3
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 0.2245
    * - :ref:`3GLDZM_ZDNU <feature-3gldzm-zdnu>`
      - Zone distance non-uniformity
      - V294
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 5.286
    * - :ref:`3GLDZM_ZDNUN <feature-3gldzm-zdnun>`
      - Zone distance non-uniformity normalized
      - IATH
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 0.7551
    * - :ref:`3GLDZM_ZP <feature-3gldzm-zp>`
      - Zone percentage
      - VIWW
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 0.1458
    * - :ref:`3GLDZM_GLM <feature-3gldzm-glm>`
      - Grey level mean
@@ -83,7 +83,7 @@
    * - :ref:`3GLDZM_GLV <feature-3gldzm-glv>`
      - Grey level variance
      - QK93
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 1.918
    * - :ref:`3GLDZM_ZDM <feature-3gldzm-zdm>`
      - Zone distance mean
@@ -93,10 +93,10 @@
    * - :ref:`3GLDZM_ZDV <feature-3gldzm-zdv>`
      - Zone distance variance
      - 7WT1
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-9)
      - 0.1224
    * - :ref:`3GLDZM_ZDE <feature-3gldzm-zde>`
      - Zone distance entropy
      - GBDU
-     - MIRP (abs. 1e-9)
+     - MIRP (abs. 1e-9, rel. 1e-6, rel. 1e-9)
      - 2.522

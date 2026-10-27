@@ -66,12 +66,12 @@ and maximum to ``--coarseGrayDepth`` levels and when they fall into one level ev
 ``--noval`` is (a known defect, `#511 <https://github.com/PolusAI/nyxus/issues/511>`__), so a ROI whose minimum is at least 63/64 of its maximum gets 0
 in every GLCM column (see :ref:`glcm-possible-issues`).
 
-The 3D twins of these families skip binning in the same way. In 3D the default binning differs
-by family; the 3D family pages give it, for example :doc:`Math/f_glcm_3d`.
+The 3D twins of these families skip binning in the same way; by default they bin into 64 levels
+like the 2D families (see :ref:`conventions-grey-levels`).
 
 **The intensity histogram family becomes available.** The 46
 :doc:`IH_* <Math/f_intensity_histogram>` features are computed only in IBSI mode, from a
-histogram with ``--coarseGrayDepth`` bins. In IBSI mode ``*ALL*`` includes
+histogram with ``|--coarseGrayDepth|`` bins (24 at 0). In IBSI mode ``*ALL*`` includes
 them. Without IBSI mode, a request for ``IH_*`` features or ``*ALL_IH*`` gives no ``IH_*``
 columns. The command line then prints a warning; Python prints it only with ``verbose`` above 0.
 

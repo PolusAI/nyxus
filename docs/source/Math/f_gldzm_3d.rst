@@ -59,12 +59,12 @@ smallest of them. :math:`\textbf{P}(i,j)` counts the zones of grey level :math:`
   :math:`N_g`, where :math:`x_{\max}` is the ROI's largest intensity, and intensity 0 gets level 1.
   In IBSI mode, or with ``--coarseGrayDepth=0``, they are not binned: each integer intensity is a
   grey level. A negative ``--coarseGrayDepth`` selects PyRadiomics-style bins (see
-  `Settings`_).
+  `Settings`_). Under either binning scheme every ROI voxel gets level 1 or more.
 - **Background:** only the voxels inside the mask form zones, in every mode. Voxels of the bounding
   box outside the mask are skipped, and they count as outside the ROI for the distances.
-- **Level 0:** a GLDZM grey level starts at 1. When a ROI voxel would get level 0 (intensity 0 in
-  IBSI mode, or with PyRadiomics-style bins), every level of the ROI is raised by one, so that voxel
-  still forms a zone (see :ref:`gldzm-3d-possible-issues`).
+- **Level 0:** a GLDZM grey level starts at 1. When a ROI voxel would get level 0 (intensity 0
+  with no binning), every level of the ROI is raised by one, so that voxel still forms a zone (see
+  :ref:`gldzm-3d-possible-issues`).
 
 
 Worked example
@@ -190,8 +190,7 @@ Settings
      - ``--coarseGrayDepth=64``
      - ``Nyxus3D(..., coarse_gray_depth=64)``
      - Number of grey levels. Positive: equal-width bins from 0 to the ROI maximum; 0: no binning;
-       negative: :math:`|n|` PyRadiomics-style bins of width :math:`(x_{\max}-x_{\min})/|n|` from
-       the ROI minimum, with intensity 0 kept at level 0. Python accepts only a positive value.
+       negative: :math:`|n|` PyRadiomics-style bins over the ROI range, IBSI's fixed bin number.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus3D(..., ibsi=True)``
@@ -457,9 +456,9 @@ ROI voxels of intensity 0 raise every grey level by one
    of the worked example (:math:`z = 1`, row 1, column 1) to 0 gives 8 zones over levels 1 to 6;
    grey level mean is 3.875, where the intensities of those zones average 2.875, and zone percentage
    is 0.1667. The grey-level-weighted features of a ROI shift when a single voxel turns 0, and do
-   not match an implementation that leaves such voxels out. The same lift applies with
-   PyRadiomics-style bins, which keep intensity 0 at level 0. Default binning sends intensity 0 to
-   level 1 and is not affected.
+   not match an implementation that leaves such voxels out. ``--coarseGrayDepth=0`` lifts the
+   levels the same way. Both binning schemes give every ROI voxel level 1 or more and are not
+   affected.
 
 Default binning starts at 0, not at the ROI minimum
    The positive ``--coarseGrayDepth`` bins span 0 to the ROI maximum, so a ROI whose intensities
@@ -468,11 +467,6 @@ Default binning starts at 0, not at the ROI minimum
    PyRadiomics' fixed bin number spans the ROI's own range, so the grey-level-weighted features
    differ from theirs with binning; the distance features do not depend on the bins as long as the
    zones stay the same.
-
-Python offers only the default binning scheme
-   ``Nyxus3D`` accepts only a positive ``coarse_gray_depth``. ``set_params(coarse_gray_depth=0)``
-   leaves the setting unchanged, and a negative value raises a ``TypeError``. Use ``ibsi=True`` for
-   unbinned grey levels, and the command line for PyRadiomics-style bins.
 
 Constant ROI
    When all of a ROI's voxels have the same intensity, every 3D GLDZM feature returns the

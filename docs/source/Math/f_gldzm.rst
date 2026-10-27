@@ -56,8 +56,9 @@ distance :math:`j`.
   :math:`\lfloor N x / x_{\max} \rfloor + 1`, capped at :math:`N`, where :math:`x_{\max}` is
   the ROI's largest intensity. In IBSI mode they are not binned: each integer intensity is a grey
   level.
-- **Background:** in IBSI mode, pixels of intensity 0 belong to no zone, whether they lie outside
-  the mask or inside it, and the distance walks stop at them. With the default binning, intensity
+- **Background:** in IBSI mode, and with a zero or negative ``--coarseGrayDepth``, pixels of
+  intensity 0 belong to no zone, whether they lie outside the mask or inside it, and the distance
+  walks stop at them. With the default binning, intensity
   0 becomes grey level 1, so the bounding-box pixels outside the mask form zones, and the walks run
   through them to the edges of the bounding box.
 
@@ -168,9 +169,8 @@ Settings
      - ``--coarseGrayDepth=64``
      - ``Nyxus(..., coarse_gray_depth=64)``
      - Number of grey levels. Positive: equal-width bins from 0 to the ROI maximum, with background
-       as level 1; negative: PyRadiomics-style bins over the ROI range (command line only, and only
-       for ROIs with no pixel of intensity 0 in the bounding box; see
-       :ref:`gldzm-possible-issues`).
+       as level 1; 0: no binning; negative: PyRadiomics-style bins over the ROI range, with pixels
+       of intensity 0 in no zone.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus(..., ibsi=True)``
@@ -559,19 +559,10 @@ Background as grey level 1 with the default binning
    mean 2.
    Rectangular ROIs with no pixel of intensity 0 are not affected.
 
-PyRadiomics-style binning with background in the bounding box
-   With a negative ``--coarseGrayDepth``, pixels of intensity 0 keep grey level 0 but still start
-   zones, and a zone of level 0 has no row in the matrix. The calculation stops with an error that
-   the command line does not report: every ``GLDZM_*`` column of that ROI is 0, and so is every
-   ``GLDZM_*`` column of the ROIs that the same thread would have computed after it
-   (``--reduceThreads`` splits the ROIs into that many consecutive shares). ROIs computed before
-   it, or by another thread, keep their values. ROIs that fill their bounding
-   box with non-zero intensities are not affected. The Python API accepts only a positive
-   ``coarse_gray_depth``.
-
 Pixels of intensity 0 inside the mask
    In IBSI mode a pixel of intensity 0 belongs to no zone and acts as background for the distances
-   of its neighbours, but it is counted in :math:`N_v`.
+   of its neighbours, but it is counted in :math:`N_v`. With a zero or negative
+   ``--coarseGrayDepth`` it is in no zone and stops the distance walks too.
 
 Constant ROI
    When all of a ROI's pixels have the same intensity, every GLDZM feature returns the ``--noval``

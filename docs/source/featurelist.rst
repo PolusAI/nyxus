@@ -145,7 +145,7 @@ Definitions, formulas and settings: :doc:`/Math/f_pixel_intensity`.
      - Percent image uniformity: (1 minus (MAX minus MIN) divided by (MAX plus MIN)) times 100; 0 when MAX plus MIN is 0.
      - vetted: MATLAB
    * - ``HISTOGRAM``
-     - Multi-column feature HISTOGRAM_BIN_0 to HISTOGRAM_BIN_N-1: the number of ROI pixels in each of N equal-width bins spanning the ROI's minimum to maximum intensity, where N is ``--coarseGrayDepth`` (default 64); a negative value writes no columns (a fix is coming). It is not part of ``*ALL_INTENSITY*``; it is computed only together with another intensity feature or with ``*ALL*``, and requested on its own every column is 0 (known defect, https://github.com/PolusAI/nyxus/issues/489).
+     - Multi-column feature HISTOGRAM_BIN_0 to HISTOGRAM_BIN_N-1: the number of ROI pixels in each of N equal-width bins spanning the ROI's minimum to maximum intensity, where N is \|``--coarseGrayDepth``\| (default 64), or 24 at 0. It is not part of ``*ALL_INTENSITY*``; it is computed only together with another intensity feature or with ``*ALL*``, and requested on its own every column is 0 (known defect, https://github.com/PolusAI/nyxus/issues/489).
      - vetted: analytic
 
 .. _features-intensity-histogram:
@@ -153,7 +153,7 @@ Definitions, formulas and settings: :doc:`/Math/f_pixel_intensity`.
 IBSI intensity histogram
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Available only in IBSI mode (``--ibsi=true``). All features come from one histogram per ROI with ``--coarseGrayDepth`` equal-width bins over the ROI's intensity range.
+Available only in IBSI mode (``--ibsi=true``). All features come from one histogram per ROI with \|``--coarseGrayDepth``\| equal-width bins over the ROI's intensity range, or 24 bins at 0.
 
 Definitions, formulas and settings: :doc:`/Math/f_intensity_histogram`.
 
@@ -165,7 +165,7 @@ Definitions, formulas and settings: :doc:`/Math/f_intensity_histogram`.
      - Description
      - Validation
    * - ``IH_MEAN_VAL``
-     - Mean intensity read from the ROI's N-bin intensity histogram: the frequency-weighted mean of the bin centres. All IH\_ features use N equal-width bins over the ROI's intensity range, N = ``--coarseGrayDepth`` (default 64), and are computed only in IBSI mode (``--ibsi``).
+     - Mean intensity read from the ROI's N-bin intensity histogram: the frequency-weighted mean of the bin centres. All IH\_ features use N equal-width bins over the ROI's intensity range, N = \|``--coarseGrayDepth``\| (default 64), or 24 at 0, and are computed only in IBSI mode (``--ibsi``).
      - vetted: analytic
    * - ``IH_VARIANCE_VAL``
      - Population variance of the histogram's bin-centre intensities, weighted by bin frequency.
@@ -297,7 +297,7 @@ Definitions, formulas and settings: :doc:`/Math/f_intensity_histogram`.
      - Frequency-weighted mean of the 1-based bin indices from the 10th-percentile bin to the 90th-percentile bin, inclusive.
      - vetted: analytic
    * - ``IH_NUM_BINS``
-     - Number of histogram bins N, set by ``--coarseGrayDepth`` (default 64).
+     - Number of histogram bins N, \|``--coarseGrayDepth``\| (default 64), or 24 at 0.
      - vetted: analytic
    * - ``IH_BIN_SIZE``
      - Width of one histogram bin in intensity units: the ROI's intensity range divided by N.
@@ -1376,7 +1376,7 @@ Definitions, formulas and settings: :doc:`/Math/f_gldzm`.
 Neighbouring grey-level dependence matrix (NGLDM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Every ROI pixel is a neighbourhood centre whose dependence count is one plus the number of its 8 neighbours inside the ROI with the same grey level; the matrix counts centres by grey level and dependence count. Each code is one value per ROI. Grey levels come from scaling the range 0 to the ROI maximum by ``--coarseGrayDepth`` and truncating (levels 0 to ``--coarseGrayDepth``), or are the raw intensities under ``--ibsi``.
+Every ROI pixel is a neighbourhood centre whose dependence count is one plus the number of its 8 neighbours inside the ROI with the same grey level; the matrix counts centres by grey level and dependence count. Each code is one value per ROI. With a positive ``--coarseGrayDepth``, grey levels come from scaling the range 0 to the ROI maximum by it and truncating (levels 0 to ``--coarseGrayDepth``); 0 and ``--ibsi`` keep the raw intensities, and a negative value gives PyRadiomics-style bins over the ROI's range.
 
 Definitions, formulas and settings: :doc:`/Math/f_ngldm`.
 
@@ -2303,7 +2303,7 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology_3d`.
 GLCM (3D)
 ^^^^^^^^^
 
-The co-occurrence matrix counts pairs of voxels one voxel apart within the bounding box, built separately for the 13 unique directions of the 26-voxel neighbourhood; with a positive grey depth (the default) the background around the ROI is binned to level 1 and its pairs are counted, while with a zero or negative grey depth and under ``--ibsi`` pairs touching level 0 are skipped. Each _AVE code is the mean over the 13 directions; the plain code is a single value taken from the first direction only (one voxel step along x, y and z together), not an average. Grey levels come from ``--coarseGrayDepth`` binning (overridable with the 3glcm/greydepth metaparameter) or are the raw intensities under ``--ibsi``; each ordered pair is counted once with a positive grey depth, and the matrix is made symmetric with a negative or zero grey depth and under ``--ibsi``.
+The co-occurrence matrix counts pairs of voxels one voxel apart within the bounding box, built separately for the 13 unique directions of the 26-voxel neighbourhood; pairs touching a voxel of the bounding box outside the ROI are skipped under every binning, and with no binning or under ``--ibsi`` so are pairs touching a ROI voxel of intensity 0. Each _AVE code is the mean over the 13 directions; the plain code is a single value taken from the first direction only (one voxel step along x, y and z together), not an average. Grey levels come from ``--coarseGrayDepth`` binning (overridable with the 3glcm/greydepth metaparameter) or are the raw intensities under ``--ibsi``; each ordered pair is counted once with a positive grey depth, and the matrix is made symmetric with a negative or zero grey depth and under ``--ibsi``.
 
 Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
 
@@ -2406,7 +2406,7 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
      - vetted: PyRadiomics
    * - ``3GLCM_ASM_AVE``
      - Angular second moment, averaged over the directions.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLCM_ACOR_AVE``
      - Autocorrelation, averaged over the directions.
      - vetted: PyRadiomics
@@ -2421,7 +2421,7 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
      - vetted: PyRadiomics
    * - ``3GLCM_CONTRAST_AVE``
      - Contrast, averaged over the directions.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLCM_CORRELATION_AVE``
      - Correlation, averaged over the directions.
      - vetted: PyRadiomics
@@ -2497,7 +2497,7 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
 GLRLM (3D)
 ^^^^^^^^^^
 
-Runs of consecutive voxels with the same grey level are collected separately along the 13 unique directions of the 26-voxel neighbourhood. Each _AVE code is the mean over the 13 directions; the plain code is a single value taken from the first direction only (one voxel step along x, y and z together), not an average. Grey levels are binned to the 3glrlm/greydepth metaparameter, which defaults to 0 (no binning, raw intensities) rather than following ``--coarseGrayDepth``; ``--ibsi`` also uses the raw intensities.
+Runs of consecutive voxels with the same grey level are collected separately along the 13 unique directions of the 26-voxel neighbourhood. Each _AVE code is the mean over the 13 directions; the plain code is a single value taken from the first direction only (one voxel step along x, y and z together), not an average. Grey levels come from ``--coarseGrayDepth`` binning (overridable with the 3glrlm/greydepth metaparameter) or are the raw intensities under ``--ibsi``.
 
 Definitions, formulas and settings: :doc:`/Math/f_glrlm_3d`.
 
@@ -2610,7 +2610,7 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm_3d`.
 GLSZM (3D)
 ^^^^^^^^^^
 
-A zone is a 26-connected group of voxels sharing one grey level, and the matrix counts zones by grey level and size. The family has no directions, so each code is one value per ROI. Grey levels are binned to the 3glszm/greydepth metaparameter, which defaults to 0 (no binning, raw intensities) rather than following ``--coarseGrayDepth``; ``--ibsi`` also uses the raw intensities.
+A zone is a 26-connected group of voxels sharing one grey level, and the matrix counts zones by grey level and size. The family has no directions, so each code is one value per ROI. Grey levels come from ``--coarseGrayDepth`` binning (overridable with the 3glszm/greydepth metaparameter) or are the raw intensities under ``--ibsi``.
 
 Definitions, formulas and settings: :doc:`/Math/f_glszm_3d`.
 
@@ -2675,7 +2675,7 @@ Definitions, formulas and settings: :doc:`/Math/f_glszm_3d`.
 GLDM (3D)
 ^^^^^^^^^
 
-A voxel's dependence is one plus the number of its 26 neighbours in the bounding box that have exactly the same grey level, and the matrix counts ROI voxels by grey level and dependence. The family has no directions, so each code is one value per ROI. Grey levels are binned to the 3gldm/greydepth metaparameter, which defaults to 0 (no binning, raw intensities) rather than following ``--coarseGrayDepth``; ``--ibsi`` also uses the raw intensities.
+A voxel's dependence is one plus the number of its 26 neighbours in the bounding box that have exactly the same grey level, and the matrix counts ROI voxels by grey level and dependence. The family has no directions, so each code is one value per ROI. Grey levels come from ``--coarseGrayDepth`` binning (overridable with the 3gldm/greydepth metaparameter) or are the raw intensities under ``--ibsi``.
 
 Definitions, formulas and settings: :doc:`/Math/f_gldm_3d`.
 
@@ -2805,7 +2805,7 @@ Definitions, formulas and settings: :doc:`/Math/f_gldzm_3d`.
 NGLDM (3D)
 ^^^^^^^^^^
 
-Every ROI voxel is a neighbourhood centre whose dependence count is one plus the number of its 26 neighbours inside the ROI with the same grey level; the matrix counts centres by grey level and dependence count. Each code is one value per ROI. Grey levels come from scaling the range 0 to the ROI maximum by ``--coarseGrayDepth`` and truncating (levels 0 to ``--coarseGrayDepth``), or are the raw intensities under ``--ibsi``.
+Every ROI voxel is a neighbourhood centre whose dependence count is one plus the number of its 26 neighbours inside the ROI with the same grey level; the matrix counts centres by grey level and dependence count. Each code is one value per ROI. With a positive ``--coarseGrayDepth``, grey levels come from scaling the range 0 to the ROI maximum by it and truncating (levels 0 to ``--coarseGrayDepth``); 0 and ``--ibsi`` keep the raw intensities, and a negative value gives PyRadiomics-style bins over the ROI's range.
 
 Definitions, formulas and settings: :doc:`/Math/f_ngldm_3d`.
 
@@ -2879,7 +2879,7 @@ Definitions, formulas and settings: :doc:`/Math/f_ngldm_3d`.
 NGTDM (3D)
 ^^^^^^^^^^
 
-For each ROI voxel the matrix accumulates the absolute difference between its grey level and the average grey level of the ROI voxels within the 3ngtdm/radius Chebyshev distance (default 1, at most 26 neighbours), grouped by grey level, together with the probability of each grey level. Each code is one value per ROI. Grey levels are binned to the 3ngtdm/greydepth metaparameter, which defaults to 0 (no binning, raw intensities) rather than following ``--coarseGrayDepth``; ``--ibsi`` also uses the raw intensities. Voxels of the bounding box outside the mask are neither centres nor neighbours, in every mode, and a ROI voxel with no ROI neighbour is left out.
+For each ROI voxel the matrix accumulates the absolute difference between its grey level and the average grey level of the ROI voxels within the 3ngtdm/radius Chebyshev distance (default 1, at most 26 neighbours), grouped by grey level, together with the probability of each grey level. Each code is one value per ROI. Grey levels come from ``--coarseGrayDepth`` binning (overridable with the 3ngtdm/greydepth metaparameter) or are the raw intensities under ``--ibsi``. Voxels of the bounding box outside the mask are neither centres nor neighbours, in every mode, and a ROI voxel with no ROI neighbour is left out.
 
 Definitions, formulas and settings: :doc:`/Math/f_ngtdm_3d`.
 
