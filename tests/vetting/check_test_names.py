@@ -95,8 +95,6 @@ DIM_AGNOSTIC = {
     "test_vetting_mechanics.py": "self-test of check_coverage.py / check_test_names.py",
     "test_environment_lifecycle_mechanics.py":
         "instance -> Environment binding in the bindings; no image dimensionality involved",
-    "test_api_arguments_mechanics.py":
-        "argument checks of the Python constructors, for Nyxus, Nyxus3D and ImageQuality at once",
     # the native-OME readers address one 5D container (X,Y,Z,C,T) and are exercised at every
     # extent it can take -- 2D planes through 5D stacks -- so a dim token would name only one
     # of the shapes each file already covers
