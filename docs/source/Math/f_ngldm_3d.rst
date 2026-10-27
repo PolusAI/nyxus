@@ -49,13 +49,16 @@ to :math:`\textbf{S}(i,j)`.
 - **Coarseness parameter:** two voxels are dependent only when their grey levels are equal: IBSI's
   :math:`\alpha = 0`. :math:`\alpha` cannot be changed.
 - **Directions:** none. One matrix is built per ROI, and each feature has one value.
-- **Grey levels:** the same rule as the 2D family, not the MATLAB-style or PyRadiomics-style binning
-  of the other texture families. With ``--coarseGrayDepth`` :math:`N` (64 by default), intensity :math:`x` becomes
+- **Grey levels:** for a positive ``--coarseGrayDepth``, the same rule as the 2D family, not the
+  MATLAB-style binning of the other texture families. With ``--coarseGrayDepth`` :math:`N` (64 by
+  default), intensity :math:`x` becomes
   grey level :math:`\lfloor N x / x_{\max} \rfloor`, where :math:`x_{\max}` is the ROI's largest
   intensity. Levels run from 0 to :math:`N`: the ROI maximum gets level :math:`N`, and every
-  intensity below :math:`x_{\max}/N`, including 0, gets level 0. In IBSI mode the intensities are
-  not converted: each integer intensity is a grey level. The 3D family has no ``greydepth``
-  metaparameter of its own.
+  intensity below :math:`x_{\max}/N`, including 0, gets level 0. In IBSI mode and with
+  ``--coarseGrayDepth=0`` the intensities are not converted: each integer intensity is a grey
+  level. A negative value gives :math:`|N|` PyRadiomics-style bins over the ROI's range, the shared
+  rule, under which every ROI voxel has level 1 or more (see :ref:`conventions-grey-levels`). The
+  3D family has no ``greydepth`` metaparameter of its own.
 - **Rows:** :math:`\textbf{S}` has one row per grey level present in the ROI, in increasing order,
   in both modes. Levels with no voxel have no row, so the matrix has at most :math:`N + 1` rows with
   the default conversion. Columns run from dependence count 1 to the largest one in the ROI, at most
@@ -169,8 +172,8 @@ Settings
    * - Grey levels
      - ``--coarseGrayDepth=64``
      - ``Nyxus3D(..., coarse_gray_depth=64)``
-     - :math:`N` in :math:`\lfloor N x / x_{\max} \rfloor`, giving levels 0 to :math:`N`. A negative
-       value does not select PyRadiomics-style binning (see :ref:`ngldm-3d-possible-issues`).
+     - Positive: :math:`N` in :math:`\lfloor N x / x_{\max} \rfloor`, giving levels 0 to :math:`N`;
+       0: no conversion; negative: :math:`|N|` PyRadiomics-style bins over the ROI range.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus3D(..., ibsi=True)``
@@ -464,12 +467,11 @@ Grey level 0 is counted but not weighted
    0.001308. The other features treat level 0 as an ordinary grey level.
 
 The grey levels differ from the other 3D texture families
-   The 3D NGLDM converts intensities with the 2D NGLDM rule, :math:`\lfloor N x / x_{\max}
-   \rfloor`, and the global ``--coarseGrayDepth``. 3D GLDM, GLRLM, GLSZM and NGTDM bin to their own
-   ``greydepth`` metaparameters instead, 3D GLCM bins with ``--coarseGrayDepth`` unless its
-   ``3glcm/greydepth`` metaparameter is set, and 3D GLDZM, which also reads ``--coarseGrayDepth``,
-   bins with the shared rule (MATLAB-style for a positive value, PyRadiomics-style for a negative
-   one). The same setting therefore gives different grey levels in this family and the others. The
+   For a positive ``--coarseGrayDepth`` the 3D NGLDM converts intensities with the 2D NGLDM rule,
+   :math:`\lfloor N x / x_{\max} \rfloor`. The other 3D texture families bin the same setting with
+   the shared rule, MATLAB-style for a positive value, unless their own ``greydepth``
+   metaparameter is set. The same positive setting therefore gives different grey levels in this
+   family and the others. The
    eight features that use :math:`g_i` (``GLM``, ``GLV``, ``LGLCE``, ``HGLCE`` and the four
    combined emphases) therefore depend on ``--coarseGrayDepth``; compare them only between runs
    with the same setting. The features that use only counts (``LDE``, ``HDE``, ``GLNU``, ``GLNUN``,
@@ -478,10 +480,10 @@ The grey levels differ from the other 3D texture families
    8 and leaves every count-only feature unchanged.
 
 Negative or zero ``--coarseGrayDepth``
-   A negative value does not select PyRadiomics-style binning. As in the 2D family, the conversion
-   reads it as the unsigned number :math:`2^{32} - |N|`. ``--coarseGrayDepth=0`` puts every voxel
-   at level 0. The ``Nyxus3D`` constructor raises ``ValueError`` for both; ``set_params`` ignores
-   0 and raises ``TypeError`` for a negative value.
+   These follow the shared rule. ``--coarseGrayDepth=0`` gives the IBSI-mode values. A negative
+   value bins into :math:`|N|` PyRadiomics-style bins over the ROI's range: on the worked example
+   ``--coarseGrayDepth=-8`` gives intensities 1 to 4 the levels 1, 3, 6 and 8, ``GLM`` 4.259 and
+   ``HGLCE`` 25.15, while the count-only features keep their IBSI-mode values.
 
 Constant ROI
    When all of a ROI's voxels have one intensity, every 3D NGLDM feature returns the ``--noval``

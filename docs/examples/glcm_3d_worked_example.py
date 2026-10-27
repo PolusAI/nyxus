@@ -73,7 +73,7 @@ check(run(img, seg, "off2", False, metaparams=["3glcm/offset=2"]), "3GLCM_CONTRA
 # A mask that leaves three voxels of the bounding box out of the ROI
 holes = seg.copy()
 holes[1, 1, 1] = holes[1, 1, 2] = holes[3, 4, 4] = 0
-check(run(img, holes, "holes_def", False), "3GLCM_CONTRAST", 745.28, "masked default")
+check(run(img, holes, "holes_def", False), "3GLCM_CONTRAST", 493.2, "masked default")
 check(run(img, holes, "holes_ibsi", True), "3GLCM_CONTRAST", 2.0, "masked IBSI")
 
 # A ROI one plane thick: the (1,1,1) direction has no pairs

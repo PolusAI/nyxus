@@ -27,18 +27,22 @@ the :doc:`2D NGTDM page <f_ngtdm>`; this page covers what is specific to volumes
 
 .. tip::
 
-   The grey levels of this family are set by the ``3ngtdm/greydepth`` metaparameter, not by
-   ``--coarseGrayDepth``. Its default, 0, uses the raw intensities. With that default, a ROI whose
-   lowest intensity is 0 or 1 reproduces PyRadiomics with ``binWidth=1``; with a higher lowest
-   intensity, all features but busyness do. Both hold when every ROI voxel has another ROI voxel
-   within the radius (see :ref:`ngtdm-3d-possible-issues`).
+   The grey levels of this family are set by ``--coarseGrayDepth`` (``coarse_gray_depth``), 64
+   MATLAB-style levels by default, which has no PyRadiomics counterpart. To reproduce PyRadiomics
+   with ``binWidth=1``, turn binning off with ``--coarseGrayDepth=0``: a ROI whose lowest intensity
+   is 0 or 1 then gives PyRadiomics' values, and with a higher lowest intensity all features but
+   busyness do. Both hold when every ROI voxel has another ROI voxel within the radius (see
+   :ref:`ngtdm-3d-possible-issues`).
 
 
 How the matrix is built
 -----------------------
 
-Nyxus copies the ROI's bounding box into a cube and bins the cube's intensities into grey levels.
-When the lowest grey level of the ROI's voxels is 0, every voxel is raised by one level.
+Nyxus bins the ROI's voxels into grey levels in a cube the size of the ROI's bounding box; the
+cells of the box outside the mask are left at level 0 and take no part. Under MATLAB-style and
+PyRadiomics-style binning every ROI voxel gets level 1 or more, one at the volume's lowest intensity
+included. With no binning the levels are the intensities, and when the lowest of them is 0 every
+voxel is raised by one level.
 
 Nyxus then visits every voxel of the ROI. Its neighbourhood is every ROI voxel within a Chebyshev
 distance :math:`\delta` of it, the voxel itself excluded. With the default :math:`\delta = 1` that is
@@ -56,10 +60,12 @@ neighbour adds nothing.
 - **Which voxels count:** the ROI mask decides, in every mode. A voxel of the bounding box outside
   the mask is neither visited nor averaged into a neighbourhood. A ROI voxel of intensity 0 counts
   like any other ROI voxel, at the grey level its intensity bins to. Leaving the eight corners of
-  the worked example out of the mask gives coarseness 0.1843, contrast 0.2407, busyness 1.097,
-  complexity 6.190 and strength 0.9691, the values PyRadiomics gives. In IBSI mode busyness is
-  1.121 and the other four are the same.
-- **Grey levels:** set by ``3ngtdm/greydepth``, described under `Settings`_. In IBSI mode the
+  the worked example out of the mask gives, with ``coarse_gray_depth=0``, coarseness 0.1843,
+  contrast 0.2407, busyness 1.097, complexity 6.190 and strength 0.9691, the values PyRadiomics
+  gives. In IBSI mode busyness is 1.121 and the other four are the same. With the default 64
+  levels they are 0.01173, 932.4, 1.101, 1525 and 15.18.
+- **Grey levels:** set by ``--coarseGrayDepth`` or ``3ngtdm/greydepth``, described under
+  `Settings`_. In IBSI mode the
   intensities are not binned, the matrix has a row for every integer from 0 to the ROI's largest
   intensity, and the levels are always raised by one.
 - **Probabilities:** :math:`p_i = n_i / \sum_k n_k`, where :math:`\sum_k n_k` is the number of ROI
@@ -79,7 +85,8 @@ Take a 3 × 3 × 3 ROI that fills its bounding box and already has four grey lev
    \begin{bmatrix} 4 & 3 & 1\\ 2 & 4 & 3\\ 1 & 3 & 2 \end{bmatrix},\qquad
    \begin{bmatrix} 2 & 1 & 3\\ 4 & 2 & 1\\ 3 & 4 & 4 \end{bmatrix}
 
-With the default settings the grey levels are the intensities. All 27 voxels are visited. Grey
+With ``--coarseGrayDepth=0`` (no binning) the grey levels are the intensities. All 27 voxels are
+visited. Grey
 level 1 has six voxels: one corner, with 7 neighbours averaging :math:`19/7`; one face centre, with
 17 neighbours averaging :math:`42/17`; and four edge voxels, with 11 neighbours averaging
 :math:`26/11`, :math:`30/11`, :math:`29/11` and :math:`30/11`. So
@@ -103,8 +110,11 @@ and :math:`s_i`.
 
 The exact values are :math:`s_2 = 6206/1309`, :math:`s_3 = 4637/1309` and
 :math:`s_4 = 17925/2002`. The *Example* value of each feature in the :ref:`index <ngtdm-3d-index>` is
-what Nyxus returns for this ROI with the default settings; PyRadiomics returns the same five values.
-The test suite runs this example and checks every one of them.
+what Nyxus returns for this ROI with ``coarse_gray_depth=0``; PyRadiomics with ``binWidth=1``
+returns the same five values, and so does ``coarse_gray_depth=-4``, whose four PyRadiomics-style
+bins are the four intensities. With the default 64 MATLAB-style levels the intensities 1 to 4
+become levels 17, 33, 49 and 64 (see `Possible issues`_). The test suite runs this example and
+checks every one of them.
 
 .. tab-set::
 
@@ -119,7 +129,7 @@ The test suite runs this example and checks every one of them.
 
       .. code-block:: console
 
-         $ nyxus --dim=3 --features="*3D_NGTDM*" \
+         $ nyxus --dim=3 --features="*3D_NGTDM*" --coarseGrayDepth=0 \
                  --intDir=int/ --segDir=seg/ --outDir=out/ --outputType=singlecsv
 
 
@@ -136,8 +146,8 @@ differences are:
    * - Symbol
      - Meaning
    * - :math:`g_i`
-     - Grey level of row :math:`i`, after the raise by one when the ROI's lowest level is 0. In IBSI
-       mode this is always the intensity plus one.
+     - Grey level of row :math:`i`, after the raise by one when the ROI's lowest level is 0, which
+       happens only with no binning. In IBSI mode this is always the intensity plus one.
    * - :math:`\bar{A}`
      - Mean grey level of the ROI voxels within distance :math:`\delta`.
    * - :math:`n_i`
@@ -164,11 +174,16 @@ Settings
      - Python
      - Effect
    * - Grey levels
+     - ``--coarseGrayDepth=64``
+     - ``Nyxus3D(..., coarse_gray_depth=64)``
+     - Positive (default 64): :math:`N` MATLAB-style bins from 0 to the ROI maximum. Negative:
+       :math:`|N|` PyRadiomics-style bins over the ROI's range. 0: no binning, the grey levels are
+       the intensities. Under both binning schemes every ROI voxel gets level 1 or more.
+   * - Grey levels, this family only
      - not available
      - ``set_metaparam("3ngtdm/greydepth=N")``
-     - 0 (default): no binning, the grey levels are the intensities. Positive: :math:`N` MATLAB-style
-       bins from 0 to the ROI maximum, with intensity 0 as level 1. Negative:
-       :math:`|N|` PyRadiomics-style bins over the ROI's range, with intensity 0 as level 0.
+     - Overrides ``--coarseGrayDepth`` for 3D NGTDM, with the same meaning of :math:`N`. Its value
+       starts at the coarse grey depth.
    * - Distance
      - not available
      - ``set_metaparam("3ngtdm/radius=N")``
@@ -176,13 +191,13 @@ Settings
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus3D(..., ibsi=True)``
-     - Overrides ``3ngtdm/greydepth`` with 0, and gives the matrix a row for every integer from 0 to
-       the ROI maximum.
+     - Overrides the grey depth with 0, and gives the matrix a row for every integer from 0 to the
+       ROI maximum.
 
-``--coarseGrayDepth`` (``coarse_gray_depth``) has no effect on this family: on the worked example
-``coarse_gray_depth=8`` returns the default values. ``--pixelDistance`` does not apply either. An
-unrecognised ``3ngtdm/...`` parameter is rejected with an error. All options are listed in the
-:ref:`cli-reference`.
+On the worked example ``coarse_gray_depth=8`` and ``3ngtdm/greydepth=8`` give the same values,
+coarseness 0.08807, contrast 0.9837, busyness 1.518, complexity 15.52 and strength 1.198.
+``--pixelDistance`` does not apply. An unrecognised ``3ngtdm/...`` parameter is rejected with an
+error. All options are listed in the :ref:`cli-reference`.
 
 
 Output columns
@@ -199,7 +214,7 @@ Feature index
 
 *Validation* names the independent implementation each feature is checked against in the test
 suite, with its tolerance; see the :doc:`/featurelist` for what the categories mean.
-*Example* is the value on the worked example with the default settings.
+*Example* is the value on the worked example with ``coarse_gray_depth=0``.
 
 .. include:: ngtdm_3d_index.inc
 
@@ -222,11 +237,11 @@ only one grey level has :math:`p_i > 0`.
 
 **Possible issues.** The only feature that depends on the grey levels themselves rather than on
 their differences, so it changes when all levels shift by the same amount. On the worked example it
-is 1.477 with the default settings, which PyRadiomics also returns, and 1.502 in IBSI mode, where
-the levels are raised by one. The other four features are the same in both modes. PyRadiomics
-numbers its bins from 1 at the ROI's lowest intensity, while Nyxus keeps the intensities: adding 9
-to every voxel of the worked example leaves PyRadiomics at 1.477 but gives 0.9682 in Nyxus, and
-0.8984 in IBSI mode.
+is 1.477 with ``coarse_gray_depth=0``, which PyRadiomics also returns, and 1.502 in IBSI mode,
+where the levels are raised by one. The other four features are the same in both modes. PyRadiomics
+numbers its bins from 1 at the ROI's lowest intensity, while Nyxus with no binning keeps the
+intensities: adding 9 to every voxel of the worked example leaves PyRadiomics at 1.477 but gives
+0.9682 in Nyxus with ``coarse_gray_depth=0``, and 0.8984 in IBSI mode.
 
 
 .. _feature-3ngtdm-coarseness:
@@ -293,21 +308,22 @@ A ROI voxel with no ROI neighbour
    substitute.
 
 Grey-level values depend on the binning
-   Every feature except busyness scales with the grey-level spacing. On the worked example
-   ``3ngtdm/greydepth=64`` maps the levels 1 to 4 to 17, 33, 49 and 64, and gives coarseness
-   0.009831, contrast 734.1, busyness 1.485, complexity 1294 and strength 11.13. Compare values
-   only between runs with the same ``3ngtdm/greydepth``.
+   Every feature except busyness scales with the grey-level spacing. On the worked example the
+   default 64 MATLAB-style levels map the intensities 1 to 4 to 17, 33, 49 and 64, and give
+   coarseness 0.009831, contrast 734.1, busyness 1.485, complexity 1294 and strength 11.13, against
+   0.1549, 0.1889, 1.477, 5.241 and 0.7111 with no binning. Compare values only between runs with
+   the same grey depth.
 
 The neighbourhood radius
    A larger :math:`\delta` averages over more voxels and smooths :math:`\bar{A}`. On the worked
-   example ``3ngtdm/radius=2`` gives coarseness 0.1583, contrast 0.1860, busyness 1.445,
-   complexity 5.173 and strength 0.7222. In PyRadiomics the neighbourhood of radius 2 is
+   example ``3ngtdm/radius=2`` with ``coarse_gray_depth=0`` gives coarseness 0.1583, contrast
+   0.1860, busyness 1.445, complexity 5.173 and strength 0.7222. In PyRadiomics the neighbourhood of radius 2 is
    ``distances=[1, 2]``, not ``[2]``, which names one shell only.
 
 Constant ROI
    When all of a ROI's voxels have one intensity, the ROI has a single grey level, whether or not
-   it fills its bounding box. With the default settings, MATLAB-style and PyRadiomics-style
-   binning, every feature returns the ``--noval`` substitute (0 by default). In IBSI mode the
+   it fills its bounding box. With MATLAB-style binning (the default), PyRadiomics-style binning
+   and no binning, every feature returns the ``--noval`` substitute (0 by default). In IBSI mode the
    matrix is built, since its rows run from 0 to the intensity; coarseness and strength return the
    ``--noval`` substitute (``-0.0`` in Arrow and Parquet files) and the other three return 0. IBSI
    gives :math:`10^6` for coarseness.
@@ -321,7 +337,7 @@ Run time with large intensities in IBSI mode
    contrast, busyness, complexity and strength each loop over every pair of rows, empty or not;
    all five are computed whichever ones are selected. A 6 × 6 × 6 ROI takes 0.04 s with
    intensities up to 4095, 0.31 s up to 16383 and 7.1 s up to 65535. With the default settings the
-   matrix has a row only for each intensity present, and the same ROI takes 0.02 s.
+   matrix has a row only for each grey level present, and the same ROI takes 0.02 s.
 
 
 Validation
@@ -334,8 +350,9 @@ box and holds 18 voxels of intensity 0. All five agree to a relative 10\ :sup:`-
 of at most 3 × 10\ :sup:`-16`, and the matrix itself (:math:`n_i`, :math:`p_i`, :math:`s_i` for
 each grey level) is checked against PyRadiomics' too. A ROI holding a voxel with no ROI neighbour
 is checked against MIRP 2.6.0 instead, to the same tolerance, since PyRadiomics keeps that voxel
-(see `Possible issues`_). The out-of-core path is held to the same references. MATLAB-style binning
-is covered by regression tests only, and IBSI mode is not compared with a reference tool. Every
+(see `Possible issues`_). The out-of-core path is held to the same references. MATLAB-style binning,
+the default, is covered by regression tests only, and IBSI mode is not compared with a reference
+tool. Every
 Nyxus feature value quoted on this page is pinned by the worked-example script; the PyRadiomics
 values and the run times are not.
 

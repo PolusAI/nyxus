@@ -13,62 +13,62 @@
    * - :ref:`3NGLDM_LDE <feature-3ngldm-lde>`
      - Low dependence emphasis
      - SODN
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 0.08747
    * - :ref:`3NGLDM_HDE <feature-3ngldm-hde>`
      - High dependence emphasis
      - IMOQ
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 26.26
    * - :ref:`3NGLDM_LGLCE <feature-3ngldm-lglce>`
      - Low grey level count emphasis
      - TL9H
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 0.3719
    * - :ref:`3NGLDM_HGLCE <feature-3ngldm-hglce>`
      - High grey level count emphasis
      - OAE7
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 7
    * - :ref:`3NGLDM_LDLGLE <feature-3ngldm-ldlgle>`
      - Low dependence low grey level emphasis
      - EQ3F
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 0.05245
    * - :ref:`3NGLDM_LDHGLE <feature-3ngldm-ldhgle>`
      - Low dependence high grey level emphasis
      - JA6D
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 0.4688
    * - :ref:`3NGLDM_HDLGLE <feature-3ngldm-hdlgle>`
      - High dependence low grey level emphasis
      - NBZI
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 9.671
    * - :ref:`3NGLDM_HDHGLE <feature-3ngldm-hdhgle>`
      - High dependence high grey level emphasis
      - 9QMG
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 156.1
    * - :ref:`3NGLDM_GLNU <feature-3ngldm-glnu>`
      - Grey level non-uniformity
      - FP8K
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 6.852
    * - :ref:`3NGLDM_GLNUN <feature-3ngldm-glnun>`
      - Grey level non-uniformity normalized
      - 5SPA
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 0.2538
    * - :ref:`3NGLDM_DCNU <feature-3ngldm-dcnu>`
      - Dependence count non-uniformity
      - Z87G
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 5.37
    * - :ref:`3NGLDM_DCNUN <feature-3ngldm-dcnun>`
      - Dependence count non-uniformity normalized
      - OKJI
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 0.1989
    * - :ref:`3NGLDM_DCP <feature-3ngldm-dcp>`
      - Dependence count percentage
@@ -83,7 +83,7 @@
    * - :ref:`3NGLDM_GLV <feature-3ngldm-glv>`
      - Grey level variance
      - 1PFV
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 1.204
    * - :ref:`3NGLDM_DCM <feature-3ngldm-dcm>`
      - Dependence count mean
@@ -93,15 +93,15 @@
    * - :ref:`3NGLDM_DCV <feature-3ngldm-dcv>`
      - Dependence count variance
      - DNX2
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 2.719
    * - :ref:`3NGLDM_DCENT <feature-3ngldm-dcent>`
      - Dependence count entropy
      - FCBV
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-6, rel. 1e-9)
      - 3.56
    * - :ref:`3NGLDM_DCENE <feature-3ngldm-dcene>`
      - Dependence count energy
      - CAS9
-     - MIRP (rel. 1e-3)
+     - MIRP (rel. 1e-3, rel. 1e-9)
      - 0.09191

@@ -1,9 +1,6 @@
 # Example for docs/source/Math/f_glszm_3d.rst: 3D GLSZM features of the page's 3 x 3 x 3 worked
 # example. The page shows the lines between the "example" markers. The assertions below pin every
-# value the page quotes, so the page cannot drift from the code, except the values under
-# "MATLAB-style binning drops the lowest level" for counting the level-1 voxels as zones (4 zones,
-# zone percentage 0.1481, small area emphasis 0.5283, low grey level zone emphasis 0.8125), which no
-# setting produces.
+# value the page quotes, so the page cannot drift from the code.
 import json
 import math
 import os
@@ -105,10 +102,17 @@ def zone_count(v, max_axes):
 
 assert [zone_count(vol, k) for k in (3, 2, 1)] == [9, 10, 15], "26-, 18- and 6-connected zone counts"
 
-# Default settings: no binning, the same values as IBSI mode; --coarseGrayDepth has no effect
-assert same(glszm3d(vol, mask), ref), "default settings differ from IBSI mode"
-assert same(glszm3d(vol, mask, coarse_gray_depth=8), ref), "coarse_gray_depth changed 3GLSZM"
+# coarse_gray_depth=0: no binning, the same values as IBSI mode; IBSI mode ignores both depths
+assert same(glszm3d(vol, mask, coarse_gray_depth=0), ref), "coarse_gray_depth=0 differs from IBSI mode"
 assert same(glszm3d(vol, mask, ibsi=True, meta="3glszm/greydepth=2"), ref), "IBSI mode did not ignore greydepth"
+assert same(glszm3d(vol, mask, ibsi=True, coarse_gray_depth=2), ref), "IBSI mode did not ignore coarse_gray_depth"
+
+# Default settings: 64 MATLAB-style levels move 1-4 to 17, 33, 49 and 64 and keep the 9 zones, so
+# the size-only features match IBSI mode and the grey-level-weighted ones do not
+f = glszm3d(vol, mask)
+for c in ("SAE", "LAE", "GLN", "SZN", "ZP", "ZV"):
+    assert math.isclose(f[c], ref[c], rel_tol=1e-12), f"default 3GLSZM_{c} differs from IBSI mode"
+assert math.isclose(f["GLV"], 389.358, rel_tol=5e-4), f"default 3GLSZM_GLV = {f['GLV']}, page says 389.4"
 
 # Out of core: the same values
 assert same(glszm3d(vol, mask, ibsi=True, ram_limit=0), ref), "out-of-core values differ"
@@ -119,11 +123,14 @@ quoted = {"ZP": 0.1852, "SAE": 0.4286, "GLV": 0.64}
 for name, expected in quoted.items():
     assert math.isclose(f[name], expected, rel_tol=5e-4), f"greydepth=-3 3GLSZM_{name} = {f[name]}, page says {expected}"
 
-# MATLAB-style binning, 2 levels: the five voxels of intensity 1 bin to level 1 and form no zone
+# MATLAB-style binning, 2 levels: the five voxels of intensity 1 bin to level 1 and the other 22 to
+# level 2, in 4 zones; coarse_gray_depth=2 and the metaparameter agree, in memory and out of core
 f = glszm3d(vol, mask, meta="3glszm/greydepth=2")
-quoted = {"ZP": 1 / 27, "SAE": 0.002066, "LAE": 484.0, "LGLZE": 0.25}
+quoted = {"ZP": 4 / 27, "SAE": 0.5283, "LAE": 123.75, "LGLZE": 0.8125}
 for name, expected in quoted.items():
     assert math.isclose(f[name], expected, rel_tol=5e-4), f"greydepth=2 3GLSZM_{name} = {f[name]}, page says {expected}"
+assert same(glszm3d(vol, mask, coarse_gray_depth=2), f), "coarse_gray_depth=2 differs from 3glszm/greydepth=2"
+assert same(glszm3d(vol, mask, meta="3glszm/greydepth=2", ram_limit=0), f), "greydepth=2 out-of-core values differ"
 
 # A ROI that does not fill its bounding box: outside voxels belong to no zone and are not in Np
 part = mask.copy()
@@ -132,25 +139,27 @@ f = glszm3d(vol, part, ibsi=True)
 assert math.isclose(f["ZP"], 9 / 24), f"partial ROI 3GLSZM_ZP = {f['ZP']}, page says 0.375"
 assert same(glszm3d(vol, part, ibsi=True, ram_limit=0), f), "partial ROI out-of-core values differ"
 
-# Voxels of intensity 0 inside the mask: no zone, but counted in Np
+# Voxels of intensity 0 inside the mask: without binning no zone, but counted in Np; with binning a
+# level like any other
 zeros = vol.copy()
 zeros[0, 0, 0] = zeros[1, 1, 1] = 0
 f = glszm3d(zeros, mask, ibsi=True)
 assert math.isclose(f["ZP"], 9 / 27), f"in-mask zeros 3GLSZM_ZP = {f['ZP']}, page says 0.3333"
+assert math.isclose(glszm3d(zeros, mask)["ZP"], 10 / 27), "binned in-mask zeros form no zone"
 
 # Constant ROI: every feature is the missing-value substitute (0 by default)
 const = np.full((2, 2, 2), 7, dtype=np.uint16)
 f = glszm3d(const, np.ones_like(const), ibsi=True)
 assert all(v == 0 for v in f.values()), "constant ROI is not the substitute"
 
-# Whole-volume mode (no mask): 3glszm/greydepth has no effect
+# Whole-volume mode (no mask): 3glszm/greydepth applies as in segmented mode
 wv = Path("wholevolume")
 wv.mkdir()
 tifffile.imwrite(wv / "vol.ome.tif", vol, ome=True, photometric="minisblack", metadata={"axes": "ZYX"})
 n = Nyxus3D(["*3D_GLSZM*"])
 n.set_metaparam("3glszm/greydepth=2")
 f = n.featurize_directory(str(wv.resolve()), None, ".*")
-assert math.isclose(f["3GLSZM_ZP"][0], 9 / 27), "whole-volume mode applied 3glszm/greydepth"
+assert math.isclose(f["3GLSZM_ZP"][0], 4 / 27), "whole-volume mode ignored 3glszm/greydepth"
 
 # Reading the metaparameter back fails, although setting it works
 try:

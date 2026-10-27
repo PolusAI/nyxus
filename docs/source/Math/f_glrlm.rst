@@ -158,8 +158,8 @@ Settings
    * - Grey levels
      - ``--coarseGrayDepth=64``
      - ``Nyxus(..., coarse_gray_depth=64)``
-     - Number of grey levels. Positive: equal-width bins from 0 to the ROI maximum; negative:
-       PyRadiomics-style bins between the ROI minimum and maximum (command line only).
+     - Number of grey levels. Positive: equal-width bins from 0 to the ROI maximum; 0: no binning;
+       negative: PyRadiomics-style bins between the ROI minimum and maximum.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus(..., ibsi=True)``

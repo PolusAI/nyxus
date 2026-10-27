@@ -24,7 +24,8 @@ def write(name, arr):
     return path
 
 
-nyx = Nyxus3D(["*3D_NGTDM*"])
+# coarse_gray_depth=0: no binning, so the grey levels are the intensities
+nyx = Nyxus3D(["*3D_NGTDM*"], coarse_gray_depth=0)
 features = nyx.featurize_files([write("int.ome.tif", vol)], [write("seg.ome.tif", mask)], False)
 print(features[["3NGTDM_COARSENESS", "3NGTDM_CONTRAST", "3NGTDM_BUSYNESS"]])
 # example-end
@@ -38,9 +39,9 @@ for code, facts in extras.items():
 _n = [0]
 
 
-def run(img, seg, ibsi=False, metaparams=()):
+def run(img, seg, ibsi=False, metaparams=(), depth=0):
     _n[0] += 1
-    n = Nyxus3D(["*3D_NGTDM*"], ibsi=ibsi)
+    n = Nyxus3D(["*3D_NGTDM*"], ibsi=ibsi, coarse_gray_depth=depth)
     for m in metaparams:
         n.set_metaparam(m)
     return n.featurize_files([write(f"i{_n[0]}.ome.tif", img)], [write(f"s{_n[0]}.ome.tif", seg)], False)
@@ -61,15 +62,24 @@ check(run(vol, mask, ibsi=True), {"COARSENESS": 0.1549, "CONTRAST": 0.1889, "BUS
 check(run(vol + 9, mask), {"BUSYNESS": 0.9682, "COARSENESS": 0.1549}, "shifted")
 check(run(vol + 9, mask, ibsi=True), {"BUSYNESS": 0.8984}, "shifted IBSI")
 
-# --coarseGrayDepth does not reach the 3D family
-check(Nyxus3D(["*3D_NGTDM*"], coarse_gray_depth=8).featurize_files(
-    [write("cg_i.ome.tif", vol)], [write("cg_s.ome.tif", mask)], False),
-    {"COARSENESS": 0.1549, "BUSYNESS": 1.477}, "coarse_gray_depth=8")
+# The default 64 MATLAB-style levels, from the coarse grey depth or from 3ngtdm/greydepth=64
+grey64 = {"COARSENESS": 0.009831, "CONTRAST": 734.1, "BUSYNESS": 1.485, "COMPLEXITY": 1294.3,
+          "STRENGTH": 11.13}
+check(Nyxus3D(["*3D_NGTDM*"]).featurize_files(
+    [write("d_i.ome.tif", vol)], [write("d_s.ome.tif", mask)], False), grey64, "default")
+check(run(vol, mask, metaparams=["3ngtdm/greydepth=64"]), grey64, "greydepth=64")
 
-# 3ngtdm/greydepth=64 (MATLAB-style binning) and 3ngtdm/radius=2
-check(run(vol, mask, metaparams=["3ngtdm/greydepth=64"]),
-      {"COARSENESS": 0.009831, "CONTRAST": 734.1, "BUSYNESS": 1.485, "COMPLEXITY": 1294.3,
-       "STRENGTH": 11.13}, "greydepth=64")
+# coarse_gray_depth reaches the family as 3ngtdm/greydepth does
+grey8 = {"COARSENESS": 0.08807, "CONTRAST": 0.9837, "BUSYNESS": 1.518, "COMPLEXITY": 15.52,
+         "STRENGTH": 1.198}
+check(run(vol, mask, depth=8), grey8, "coarse_gray_depth=8")
+check(run(vol, mask, metaparams=["3ngtdm/greydepth=8"]), grey8, "greydepth=8")
+
+# Four PyRadiomics-style bins are the four intensities, so they give the unbinned values
+check(run(vol, mask, depth=-4), {code[len("3NGTDM_"):]: facts["example"] for code, facts in extras.items()},
+      "coarse_gray_depth=-4")
+
+# 3ngtdm/radius=2
 check(run(vol, mask, metaparams=["3ngtdm/radius=2"]),
       {"COARSENESS": 0.1583, "CONTRAST": 0.1860, "BUSYNESS": 1.445, "COMPLEXITY": 5.173,
        "STRENGTH": 0.7222}, "radius=2")
@@ -84,6 +94,9 @@ check(run(vol, corners),
 check(run(vol, corners, ibsi=True),
       {"COARSENESS": 0.1843, "CONTRAST": 0.2407, "BUSYNESS": 1.121, "COMPLEXITY": 6.190,
        "STRENGTH": 0.9691}, "corners off (IBSI)")
+check(run(vol, corners, depth=64),
+      {"COARSENESS": 0.01173, "CONTRAST": 932.4, "BUSYNESS": 1.101, "COMPLEXITY": 1525.0,
+       "STRENGTH": 15.18}, "corners off (64 levels)")
 
 # A constant ROI: every feature is 0 in Python (the substitute in every binning mode but IBSI),
 # whether or not it fills its box
@@ -94,7 +107,7 @@ for ibsi in (False, True):
               {"COARSENESS": 0.0, "CONTRAST": 0.0, "BUSYNESS": 0.0, "COMPLEXITY": 0.0, "STRENGTH": 0.0},
               f"{label} (ibsi={ibsi})")
 for depth in (64, -8):
-    check(run(const, mask, metaparams=[f"3ngtdm/greydepth={depth}"]),
+    check(run(const, mask, depth=depth),
           {"COARSENESS": 0.0, "CONTRAST": 0.0, "BUSYNESS": 0.0, "COMPLEXITY": 0.0, "STRENGTH": 0.0},
           f"constant (greydepth={depth})")
 

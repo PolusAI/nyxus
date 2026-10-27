@@ -46,7 +46,8 @@ the pixels' positions, not their neighbours, not the pixels of the bounding box 
 - **Which pixels:** all pixels of the ROI, including pixels of intensity 0 inside the mask.
   :math:`N_v` is the number of ROI pixels.
 - **Bins:** :math:`N` equal-width bins over the ROI's own range, from :math:`X_{\min}` to
-  :math:`X_{\max}`. :math:`N` is ``--coarseGrayDepth``, 64 by default. The bin width is
+  :math:`X_{\max}`. :math:`N` is the absolute value of ``--coarseGrayDepth``, 64 by default, or 24
+  when it is 0. The bin width is
   :math:`w = (X_{\max} - X_{\min}) / N`. A pixel of intensity :math:`x` falls in bin
   :math:`b(x) = \min\left(\lfloor (x - X_{\min}) / w \rfloor,\; N - 1\right) + 1`, so bins are
   numbered from 1 and :math:`X_{\max}` falls in bin :math:`N`. This is the IBSI fixed bin number
@@ -141,7 +142,7 @@ Notation
    * - :math:`X_{\min},\; X_{\max}`
      - Smallest and largest intensity in the ROI.
    * - :math:`N`
-     - Number of bins, ``--coarseGrayDepth``.
+     - Number of bins, the absolute value of ``--coarseGrayDepth``, or 24 when it is 0.
    * - :math:`w`
      - Bin width, :math:`w = (X_{\max} - X_{\min}) / N`.
    * - :math:`i`
@@ -184,10 +185,9 @@ Settings
    * - Bins
      - ``--coarseGrayDepth=64``
      - ``Nyxus(..., coarse_gray_depth=64)``
-     - :math:`N`, the number of bins. Below 2 there is no histogram and every feature returns the
-       ``--noval`` substitute. The only such value Python accepts is 1, since it refuses 0 and
-       negative values; on the command line, 1, 0 or any negative value. The same option sets the
-       grey levels of the texture families.
+     - :math:`N`, the number of bins: the absolute value, or 24 at 0. With a single bin (1 or -1)
+       there is no histogram and every feature returns the ``--noval`` substitute. The same option
+       sets the grey levels of the texture families.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus(..., ibsi=True)``
@@ -731,8 +731,8 @@ Values on a bin edge
    with 14 bins, 10 lies on the lower edge of bin 8, but ``IH_MEDIAN_IDX`` is 7.
 
 No histogram
-   A constant ROI, or a bin count below 2, makes every ``IH_*`` feature return the ``--noval``
-   substitute, 0 by default. ``--coarseGrayDepth=0`` on the command line gives this result too.
+   A constant ROI, or a single bin (``--coarseGrayDepth`` 1 or -1), makes every ``IH_*`` feature
+   return the ``--noval`` substitute, 0 by default.
    IBSI puts a constant ROI in a single bin and defines its features.
 
 Pixels of intensity 0 inside the mask

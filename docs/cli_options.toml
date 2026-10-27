@@ -79,7 +79,7 @@ values = "2 | 3"
 build = ""
 summary = "Sets whether the dataset is processed as 2D images or as 3D volumes."
 notes = "In 3D the default feature set is *3D_ALL*, the Gabor and nested-ROI options are rejected, and --intSegMapFile is ignored."
-evidence = "environment.cpp:124, 527-537, 589-592, 993-997, 1042-1046; main_nyxus.cpp:58, 145"
+evidence = "environment.cpp:124, 527-537, 589-592, 999-1003, 1048-1052; main_nyxus.cpp:58, 145"
 
 [[option]]
 name = "--outDir"
@@ -184,7 +184,7 @@ values = "comma-separated feature and group names (case-insensitive), or the pat
 build = ""
 summary = "Selects the features or feature groups to compute."
 notes = "If omitted, *ALL* (2D) or *3D_ALL* (3D) is computed; in 2D the IH_* features are then left out unless --ibsi=true. If the value is the path of an existing file, the names are read from it: one or more per line, and `#` starts a comment. Names are case-insensitive. An unknown name stops the run and lists the valid names. Image-quality names cannot be mixed with other features. Intensity Histogram (IH_*) features need --ibsi=true."
-evidence = "environment.cpp:587-594, 839-901; env_features.cpp:71-182, 459-529; featureset.cpp:650, 940"
+evidence = "environment.cpp:587-594, 845-907; env_features.cpp:71-182, 459-529; featureset.cpp:650, 940"
 
 [[option]]
 name = "--ibsi"
@@ -196,7 +196,7 @@ values = "true | 1 | on (case-insensitive); any other value means false"
 build = ""
 summary = "Turns on IBSI compliance mode: texture families skip grey-level binning and follow IBSI definitions, and the Intensity Histogram family becomes available."
 notes = "Invalid values are not reported; they silently mean false."
-evidence = "environment.cpp:120, 878-879; env_features.cpp:515-528; features/glcm.cpp:355; features/glrlm.cpp:85; features/ngtdm.cpp:48"
+evidence = "environment.cpp:120, 884-885; env_features.cpp:515-528; features/glcm.cpp:356; features/glrlm.cpp:85; features/ngtdm.cpp:48"
 
 [[option]]
 name = "--mergerois"
@@ -208,7 +208,7 @@ values = "true | 1 | on (case-insensitive); any other value means false"
 build = ""
 summary = "Merges all nonzero mask labels into one ROI covering the whole foreground, instead of one ROI per label."
 notes = "Background (label 0) is still excluded. Invalid values are not reported; they silently mean false."
-evidence = "environment.h:61-62; environment.cpp:882-883; phase1.cpp:76, 330; phase2_2d.cpp:165, 289"
+evidence = "environment.h:61-62; environment.cpp:888-889; phase1.cpp:76, 330; phase2_2d.cpp:165, 289"
 
 [[option]]
 name = "--skiproi"
@@ -219,7 +219,7 @@ values = "label[,label...]  or  maskfile:label[,label...][;maskfile:label...]"
 build = ""
 summary = "Leaves ROIs with the listed labels out of feature calculation and output, either in every image or only in named mask files."
 notes = "File names are mask file names without directories. A plain label list applies to every image and takes precedence over file-specific lists. Not used in whole-slide mode."
-evidence = "environment.cpp:723-731; roi_blacklist.cpp:7-75, 77-135, 147-169; workflow_2d_segmented.cpp:105-120; workflow_3d_segmented.cpp:94"
+evidence = "environment.cpp:729-737; roi_blacklist.cpp:7-75, 77-135, 147-169; workflow_2d_segmented.cpp:105-120; workflow_3d_segmented.cpp:94"
 
 [[option]]
 name = "--pixelDistance"
@@ -242,7 +242,7 @@ values = "real number > 0"
 build = ""
 summary = "Image resolution, for reporting area in square micrometres (AREA_UM2)."
 notes = "The value is accepted and validated but does not reach the results: AREA_UM2 is reported as 0 whatever the resolution (known defect, https://github.com/PolusAI/nyxus/issues/496)."
-evidence = "environment.cpp:904-914; env_features.cpp:719-748 (sets PIXELSIZEUM, never XYRES); features/basic_morphology.cpp:24-28, 101-105"
+evidence = "environment.cpp:910-920; env_features.cpp:719-755 (sets PIXELSIZEUM, never XYRES); features/basic_morphology.cpp:24-28, 101-105"
 
 [[option]]
 name = "--embeddedpixelsize"
@@ -272,11 +272,11 @@ group = "Texture settings"
 required = false
 default = "64"
 default_at = "environment.cpp:coarse_grayscale_depth"
-values = "integer: > 0 MATLAB-style bins from 0 to the ROI maximum, < 0 |n| PyRadiomics-style bins over the ROI range, 0 no binning for the texture families that use the shared rule"
+values = "integer: > 0 MATLAB-style bins from 0 to the ROI maximum, < 0 |n| PyRadiomics-style bins over the ROI range, 0 no binning"
 build = ""
-summary = "Grey depth used to bin intensities for the 2D texture families, 3D GLCM, 3D GLDZM and 3D NGLDM, and the bin count of the ENTROPY, UNIFORMITY and HISTOGRAM histograms and of the Intensity Histogram (IH_*) family."
-notes = "3D GLRLM, GLSZM, GLDM and NGTDM ignore it: they use their own greydepth metaparameter. NGLDM uses its own rule: 0 puts every pixel at level 0, and a negative value does not select PyRadiomics-style bins. ENTROPY and UNIFORMITY use |n| bins; HISTOGRAM writes n columns and none when n is negative (a fix is coming); none of the three has bins at 0; the IH_* features return the --noval substitute when n is below 2. --ibsi=true makes every texture family skip binning, except the 2D GLCM test for a constant ROI. The value is read as its leading integer: 8.5 runs as 8, and a value that does not start with an integer stops the run with an error."
-evidence = "environment.cpp:106, 666-674; env_features.cpp:726, 735; features/texture_feature.h:23-49, 101-103; features/intensity_histogram.cpp:311"
+summary = "Grey depth used to bin intensities for every 2D and 3D texture family, and the bin count of the ENTROPY, UNIFORMITY and HISTOGRAM histograms and of the Intensity Histogram (IH_*) family."
+notes = "A family's own greydepth metaparameter (set_metaparam in Python) overrides it for that family. NGLDM bins a positive value its own way, to levels 0 to n. The histograms use |n| bins, and 24 at 0; HISTOGRAM writes one column per bin, and the IH_* features return the --noval substitute with a single bin. --ibsi=true makes every texture family skip binning, except the 2D GLCM test for a constant ROI. A value that is not an integer, or whose magnitude is past 2147483647, stops the run with an error."
+evidence = "environment.cpp:106, 664-679; env_features.cpp:726, 736, 741-744; helpers/helpers.h:129; features/texture_feature.h:79-99, 141-157; constants.h:10-15; features/intensity_histogram.cpp:311"
 
 [[option]]
 name = "--glcmAngles"
@@ -288,7 +288,7 @@ values = "comma-separated integers from {0, 45, 90, 135}"
 build = ""
 summary = "Directions, in degrees, at which 2D GLCM co-occurrence matrices are computed. GLCM output has one column per angle."
 notes = "2D GLCM only: 3D GLCM always uses its own fixed directions. Other integers pass parsing, but the calculation reports 'unsupported angle' for them and their columns hold 0. A non-integer list stops the run with an error."
-evidence = "cli_glcm_options.h:20-21; cli_glcm_options.cpp:7-24; features/glcm.cpp:9, 229-256; features/3d_glcm.cpp:10; output_2_csv.cpp:116"
+evidence = "cli_glcm_options.h:20-21; cli_glcm_options.cpp:7-24; features/glcm.cpp:9, 229-256; features/3d_glcm.cpp:11; output_2_csv.cpp:116"
 
 [[option]]
 name = "--glcmOff"
@@ -311,7 +311,7 @@ values = "comma-separated real numbers; same count as --gabortheta"
 build = ""
 summary = "Frequencies of the Gabor high-pass filters. A value f gives a wavelength of 2*pi/f pixels. GABOR output has one column per frequency/orientation pair."
 notes = "Give --gaborfreqs and --gabortheta together, with the same number of values: value i of one pairs with value i of the other. Without both, the command line uses its built-in pairs: frequencies 0, pi/4, pi/2 and 3*pi/4 at orientations 4, 16, 32 and 64 radians. The Python API's default set is frequencies 4, 16, 32, 64 at 0, 45, 90, 135 degrees; to compute that set from the command line, pass --gaborfreqs=4,16,32,64 --gabortheta=0,45,90,135. 2D only."
-evidence = "cli_gabor_options.cpp:7-47; features/gabor.cpp:19-25, 107-112, 395 (lambda = 2*pi/f0); features/gabor.h:62-63; python/nyxus/nyxus.py:299-300; environment.cpp:993-997"
+evidence = "cli_gabor_options.cpp:7-47; features/gabor.cpp:19-25, 107-112, 395 (lambda = 2*pi/f0); features/gabor.h:62-63; python/nyxus/nyxus.py:355-356; environment.cpp:999-1003"
 
 [[option]]
 name = "--gabortheta"
@@ -393,7 +393,7 @@ values = "real number, less than --fpimgmax"
 build = ""
 summary = "Lower end of the intensity range that floating-point images are rescaled from before conversion to integer grey levels."
 notes = "Giving any of --fpimgmin, --fpimgmax or --fpimgdr switches every float image from its own scanned min/max to the fixed range [--fpimgmin, --fpimgmax]. Unset ends then default to 0 and 1. A min that is not below the max stops the run with an error. Integer images are not affected."
-evidence = "cli_fpimage_options.h:65-67; cli_fpimage_options.cpp:7-41, 73-78; slideprops.cpp:585-602; environment.cpp:760-768"
+evidence = "cli_fpimage_options.h:65-67; cli_fpimage_options.cpp:7-41, 73-78; slideprops.cpp:585-602; environment.cpp:766-774"
 
 [[option]]
 name = "--fpimgmax"
@@ -428,7 +428,7 @@ values = "true | false | t | f (case-insensitive)"
 build = ""
 summary = "Loads floating-point and rescaled DICOM/NIfTI images with one grey level per intensity unit (offset by the image minimum) instead of min-max rescaling or the stored-integer map."
 notes = "Not needed to get Hounsfield units in the output: intensity features are reported in the image's own units either way. '1', 'on' and 'yes' are rejected with an error. Shape and texture features are unaffected."
-evidence = "cli_fpimage_options.h:68; cli_fpimage_options.cpp:58-68; environment.cpp:756-768; slideprops.cpp:585-636; helpers/helpers.h:120-129"
+evidence = "cli_fpimage_options.h:68; cli_fpimage_options.cpp:58-68; environment.cpp:762-774; slideprops.cpp:585-636; helpers/helpers.h:143-152"
 
 [[option]]
 name = "--anisox"
@@ -476,7 +476,7 @@ values = "true | t | 1 | on | yes (case-insensitive); any other value means fals
 build = ""
 summary = "In 3D, uses each volume's OME PhysicalSize values, scaled so the smallest axis is 1, as the voxel spacing by which the shape features scale their coordinates."
 notes = "3D only. Any --aniso* value other than 1 replaces the physical spacing on all three axes. Invalid values are not reported; they silently mean false. Physical spacing columns are written to the output whether or not this is on."
-evidence = "environment.h:104-110; environment.cpp:804-809; phase2_3d.cpp:29-66; slideprops.cpp:325-327, 506"
+evidence = "environment.h:104-110; environment.cpp:810-815; phase2_3d.cpp:29-66; slideprops.cpp:325-327, 506"
 
 [[option]]
 name = "--reduceThreads"
@@ -499,7 +499,7 @@ values = "integer megabytes >= 0, not above available RAM"
 build = ""
 summary = "Memory budget in megabytes. ROIs whose estimated footprint reaches it are processed out of core, and the rest are batched to fit within it."
 notes = "The value is read as its leading integer: 100.5 and 100MB both run as 100. A value above available RAM, a negative value, or a value that does not start with an integer stops the run with an error."
-evidence = "environment.cpp:137-138, 687-706, 938-954; workflow_2d_segmented.cpp:123-148; workflow_3d_segmented.cpp:103-133"
+evidence = "environment.cpp:137-138, 693-712, 944-960; workflow_2d_segmented.cpp:123-148; workflow_3d_segmented.cpp:103-133"
 
 [[option]]
 name = "--tempDir"
@@ -510,7 +510,7 @@ values = "path to an existing directory"
 build = ""
 summary = "Directory for the temporary files of out-of-core ROIs."
 notes = "The directory must exist and is shown in the run summary, but out-of-core temporary files are written to the system temporary directory regardless."
-evidence = "environment.cpp:709-720; helpers/fsystem.h:25-35; features/image_matrix_nontriv.cpp:36, 102; features/voxel_cloud_nontriv.cpp:67"
+evidence = "environment.cpp:715-726; helpers/fsystem.h:25-35; features/image_matrix_nontriv.cpp:36, 102; features/voxel_cloud_nontriv.cpp:67"
 
 [[option]]
 name = "--hsig"
@@ -521,7 +521,7 @@ values = "string (channel marker in file names, e.g. _c)"
 build = ""
 summary = "Text that marks the channel number in mask file names (for example '_c' in p0_y1_r1_c1.ome.tiff). Nested-ROI analysis uses it to find the parent and child masks of the same image."
 notes = "Nested-ROI analysis runs only when all four of --hsig, --hpar, --hchi and --hag are given. If any is missing, the others are silently ignored. 2D only. The analysis reads back the per-image CSV files, so use --outputType=separatecsv: with singlecsv each parent's row is taken from the first row with its label in the combined file, which can belong to another image. It writes <stem>_nested_features.csv and a relations CSV to --outDir."
-evidence = "cli_nested_roi_options.cpp:15-21, 23-29, 156-183, 431, 682-798; output_2_csv.cpp:212-219; environment.cpp:793-801, 1040-1054; main_nyxus.cpp:125-135"
+evidence = "cli_nested_roi_options.cpp:15-21, 23-29, 156-183, 431, 682-798; output_2_csv.cpp:212-219; environment.cpp:799-807, 1046-1060; main_nyxus.cpp:125-135"
 
 [[option]]
 name = "--hpar"
@@ -566,7 +566,7 @@ values = "integer >= 0"
 build = ""
 summary = "Amount of console output. The version banner, the list of recognized arguments, and errors and warnings are printed at every level; 1 adds the run summary, and higher levels add timing, per-ROI and diagnostic detail."
 notes = "At level 2 and above, ROI metric files are also written to the output directory."
-evidence = "environment_basic.h:28; environment.cpp:500-504, 676-684; main_nyxus.cpp:15, 20; workflow_2d_segmented.cpp:101; environment.h:302-306"
+evidence = "environment_basic.h:28; environment.cpp:500-504, 682-690; main_nyxus.cpp:15, 20; workflow_2d_segmented.cpp:101; environment.h:302-306"
 
 [[option]]
 name = "--exclusivetiming"
@@ -578,7 +578,7 @@ values = "true | 1 | on (case-insensitive); any other value means false"
 build = "CHECKTIMING builds"
 summary = "In timing builds, true measures time per image pair (exclusive) and false measures the whole collection (inclusive)."
 notes = "Rejected as unrecognized in builds without CHECKTIMING."
-evidence = "cli_option_constants.h:27-29; environment.cpp:480-482, 812-821; helpers/timing.cpp:10"
+evidence = "cli_option_constants.h:27-29; environment.cpp:480-482, 818-827; helpers/timing.cpp:10"
 
 [[option]]
 name = "--useGpu"
@@ -590,7 +590,7 @@ values = "true | false (case-insensitive)"
 build = "GPU builds"
 summary = "Runs supported feature calculations on a CUDA GPU."
 notes = "Other values stop the run with an error. If the chosen device cannot be initialized, the run stops and suggests --useGpu=false. Rejected as unrecognized in non-GPU builds."
-evidence = "cli_option_constants.h:31-34; cli_gpu_options.h:28; cli_gpu_options.cpp:76-94; environment.cpp:484-487, 825-833; main_nyxus.cpp:22-31"
+evidence = "cli_option_constants.h:31-34; cli_gpu_options.h:28; cli_gpu_options.cpp:76-94; environment.cpp:484-487, 831-839; main_nyxus.cpp:22-31"
 
 [[option]]
 name = "--gpuDeviceID"

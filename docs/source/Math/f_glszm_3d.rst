@@ -28,17 +28,18 @@ part.
 
 .. tip::
 
-   By default the 3D family does not bin intensities: each integer intensity is a grey level, as in
-   IBSI mode, and ``--coarseGrayDepth`` has no effect on it. Binning is set with the
-   ``3glszm/greydepth`` metaparameter, from Python only (see `Settings`_).
+   To reproduce IBSI values, run in IBSI mode or with ``--coarseGrayDepth=0``: each integer
+   intensity is then a grey level. By default the family bins into 64 MATLAB-style levels, like
+   every texture family; the ``3glszm/greydepth`` metaparameter, from Python only, overrides the
+   depth for this family (see `Settings`_).
 
 
 How the matrix is built
 -----------------------
 
-Nyxus takes the ROI's bounding box, sets the voxels outside the mask to intensity 0 and bins the
-rest. It then visits the voxels slice by slice, row by row. Each voxel that is not yet in a zone and
-does not have the background level starts a new zone. The zone grows through every voxel of the same
+Nyxus takes the ROI's bounding box, bins the ROI's voxels and gives the voxels outside the mask
+level 0, the background level. It then visits the voxels slice by slice, row by row. Each voxel
+that is not yet in a zone and is not at level 0 starts a new zone. The zone grows through every voxel of the same
 grey level that touches a voxel already in it, by a face, an edge or a corner.
 :math:`\textbf{P}(i,j)` counts the zones of grey level :math:`i` and size :math:`j` voxels.
 
@@ -46,7 +47,8 @@ grey level that touches a voxel already in it, by a face, an edge or a corner.
   9 in each adjacent slice. A zone is the full 26-connected component, whatever the scan order. This
   differs from the 2D family, whose zones grow only to the east, south-east, south and south-west.
 - **Directions:** none. One matrix is built per ROI, and each feature has one value.
-- **Grey levels:** set by the ``3glszm/greydepth`` metaparameter, 0 by default.
+- **Grey levels:** set by ``--coarseGrayDepth`` (``coarse_gray_depth``, 64 by default), or by
+  the ``3glszm/greydepth`` metaparameter, which overrides it for this family.
 
   - 0, and always in IBSI mode: no binning. A voxel of intensity :math:`x` has grey level
     :math:`x`, and :math:`\textbf{P}` has one row for every level from 1 to the ROI's largest
@@ -54,14 +56,14 @@ grey level that touches a voxel already in it, by a face, an edge or a corner.
   - Positive :math:`n` (MATLAB-style): level :math:`\lfloor n\,x / x_{\max} + 1 \rfloor`, clipped
     to :math:`[1, n]`, where :math:`x_{\max}` is the ROI's largest intensity. Intensity 0 is level
     1.
-  - Negative :math:`-n` (PyRadiomics-style): level :math:`\lfloor (x - x_{\min}) / w + 1 \rfloor`,
-    capped at :math:`n`, with :math:`w = (x_{\max} - x_{\min}) / n` over the ROI's range. Intensity
-    0 is level 0.
+  - Negative :math:`-n` (PyRadiomics-style): level
+    :math:`\lfloor n\,(x - x_{\min}) / (x_{\max} - x_{\min}) \rfloor + 1`, capped at :math:`n`,
+    over the ROI's range. Intensity 0 is a level like any other.
 
-  With binning, :math:`\textbf{P}` has one row per level present in the bounding box.
-- **Background:** the background level is 0, or 1 with MATLAB-style binning. Voxels at that level
-  belong to no zone: the bounding-box voxels outside the mask, and also ROI voxels whose binned level
-  is the background level (see :ref:`glszm-3d-possible-issues`).
+  With binning, :math:`\textbf{P}` has one row per level present in the ROI.
+- **Background:** level 0. Only the bounding-box voxels outside the mask have it with binning, since
+  every ROI voxel bins to level 1 or more; without binning, ROI voxels of intensity 0 have it too.
+  Voxels at level 0 belong to no zone.
 - **Voxel count:** :math:`N_v` is the number of voxels in the ROI mask, whatever their intensity.
   The 2D family counts the non-zero pixels of the bounding box instead.
 
@@ -89,8 +91,10 @@ Take a 3 × 3 × 3 ROI that fills its bounding box and already has four grey lev
    4 & 4 & 4\\
    4 & 3 & 4 \end{bmatrix}
 
-In IBSI mode, and with the default settings, the matrix is below; rows are grey levels 1 to 4 and
-columns are zone sizes 1 to 6.
+In IBSI mode the matrix is below; rows are grey levels 1 to 4 and columns are zone sizes 1 to 6.
+The default 64-level binning moves the levels to 17, 33, 49 and 64 and keeps the zones, so the
+features that use only zone sizes and counts are the same and the grey-level-weighted ones change
+(grey level variance 389.4 instead of 1.58).
 
 .. math::
 
@@ -139,7 +143,7 @@ The symbols are those of the :doc:`2D page <f_glszm>`, with voxels in place of p
      - Meaning
    * - :math:`N_g`
      - Number of rows of :math:`\textbf{P}`. Without binning, the ROI's largest intensity; with
-       binning, the number of levels present in the bounding box.
+       binning, the number of levels present in the ROI.
    * - :math:`g_i`
      - Grey level of row :math:`i`. Without binning, :math:`g_i = i`; with binning, the
        :math:`i`-th smallest level present.
@@ -173,15 +177,19 @@ Settings
      - Python
      - Effect
    * - Grey levels
+     - ``--coarseGrayDepth=64``
+     - ``Nyxus3D(..., coarse_gray_depth=64)``
+     - Positive (the default, 64): MATLAB-style bins from 0 to the ROI maximum. 0: no binning.
+       Negative: PyRadiomics-style bins over the ROI range.
+   * - Grey levels of this family only
      - none
-     - ``nyx.set_metaparam("3glszm/greydepth=64")`` on a ``Nyxus3D`` object
-     - 0 (the default): no binning. Positive: MATLAB-style bins from 0 to the ROI maximum, with
-       intensity 0 and the lowest bin as background. Negative: PyRadiomics-style bins over the
-       ROI range.
+     - ``nyx.set_metaparam("3glszm/greydepth=8")`` on a ``Nyxus3D`` object
+     - Overrides ``--coarseGrayDepth`` for 3D GLSZM, with the same meaning of the sign.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus3D(..., ibsi=True)``
-     - No binning, whatever ``3glszm/greydepth`` holds. Voxels of intensity 0 are in no zone.
+     - No binning, whatever ``--coarseGrayDepth`` and ``3glszm/greydepth`` hold. Voxels of
+       intensity 0 are in no zone.
    * - Missing value
      - ``--noval=0``
      - —
@@ -192,8 +200,8 @@ Settings
      - ROIs above it are processed out of core, with the same values, unless one read of the file
        returns the whole volume: then such a ROI stops the run with an error.
 
-``--coarseGrayDepth`` and ``coarse_gray_depth`` do not affect this family. The family has no
-direction, distance or connectivity setting. All options are listed in the :ref:`cli-reference`.
+The family has no direction, distance or connectivity setting. All options are listed in the
+:ref:`cli-reference`.
 
 On the worked example, ``3glszm/greydepth=-3`` bins levels 1, 2, 3 and 4 to 1, 2, 3 and 3: 5 zones,
 zone percentage 0.1852, small area emphasis 0.4286 and grey level variance 0.64.
@@ -396,9 +404,9 @@ most zones are small.
 
    \mathrm{ZP} = \frac{N_z}{N_v}
 
-**Possible issues.** :math:`N_v` includes the ROI voxels that belong to no zone: voxels of intensity
-0, and with MATLAB-style binning the voxels of level 1. The value is then lower than for the same
-zones in a ROI without such voxels (see :ref:`glszm-3d-possible-issues`).
+**Possible issues.** Without binning, :math:`N_v` includes the ROI voxels of intensity 0, which
+belong to no zone. The value is then lower than for the same zones in a ROI without such voxels
+(see :ref:`glszm-3d-possible-issues`).
 
 
 .. _feature-3glszm-zv:
@@ -417,19 +425,17 @@ Defined as :ref:`GLSZM_ZV <feature-glszm-zv>`. IBSI calls it *zone size variance
 Possible issues
 ---------------
 
-MATLAB-style binning drops the lowest level
-   With a positive ``3glszm/greydepth``, level 1 is treated as background. ROI voxels that bin to
-   level 1, those with intensity below :math:`x_{\max}/n`, belong to no zone but are still counted
-   in :math:`N_v`. On the worked example with ``3glszm/greydepth=2``, the five voxels of intensity
-   1 bin to level 1 and the other 22 to level 2. Nyxus finds one zone of 22 voxels: zone percentage
-   is 0.03704, small area emphasis 0.002066, large area emphasis 484 and low grey level zone
-   emphasis 0.25. Counting the level-1 voxels as zones would give 4 zones, zone percentage 0.1481,
-   small area emphasis 0.5283 and low grey level zone emphasis 0.8125. The 2D family keeps these
-   pixels, together with the background, in zones of level 1.
+Binning merges levels into fewer, larger zones
+   With few levels, neighbouring levels share a bin and their zones merge. On the worked example
+   with ``3glszm/greydepth=2``, the five voxels of intensity 1 bin to level 1 and the other 22 to
+   level 2: 4 zones, zone percentage 0.1481, small area emphasis 0.5283, large area emphasis 123.75
+   and low grey level zone emphasis 0.8125, in memory and out of core. The 2D family also puts the
+   bounding-box pixels outside the mask in zones of level 1 under MATLAB-style binning; the 3D
+   family does not.
 
 Voxels of intensity 0 inside the mask
-   Without binning, in IBSI mode and with PyRadiomics-style binning, a voxel of intensity 0 belongs to
-   no zone but is counted in :math:`N_v`. On the worked example with two voxels set to 0, Nyxus
+   Without binning, in IBSI mode or with ``--coarseGrayDepth=0``, a voxel of intensity 0 belongs to
+   no zone but is counted in :math:`N_v`. With binning it gets a level like any other voxel. On the worked example with two voxels set to 0, Nyxus
    finds the same 9 zones and zone percentage 9/27 = 0.3333; over the 25 non-zero voxels it would be
    0.36.
 
@@ -437,12 +443,6 @@ ROI that does not fill its bounding box
    The bounding-box voxels outside the mask have intensity 0 and belong to no zone; they are not
    counted in :math:`N_v` either. Removing three voxels of the worked example from the mask gives 9
    zones over 24 voxels, zone percentage 0.375, in memory and out of core.
-
-``3glszm/greydepth`` is ignored in whole-volume mode
-   When a volume is processed as one ROI, without a mask (``Nyxus3D.featurize_directory`` with no
-   label directory), the family does not read ``3glszm/greydepth``, and the intensities are never
-   binned. On the worked example with ``3glszm/greydepth=2`` the whole-volume
-   zone percentage is 0.3333, the unbinned value, not 0.03704.
 
 ``get_metaparam("3glszm/greydepth")`` fails
    Reading the metaparameter back raises an "unrecognized feature" error, although setting it
@@ -469,7 +469,9 @@ liver phantom with PyRadiomics-style binning into 20 levels, fifteen features ag
 3 and 5 in IBSI mode, the same fifteen agree to a relative 10\ :sup:`-9`. Zone entropy agrees to a
 relative 10\ :sup:`-3` on the phantom and 2 × 10\ :sup:`-3` on the small volume, the error of the
 approximate logarithm. MATLAB-style binning, the default setting on a larger phantom and the
-constant ROI are covered by regression tests only.
+constant ROI are covered by regression tests only. On a volume whose ROI holds the volume's
+lowest intensity, and on a control without it, fifteen features agree with PyRadiomics binning
+into 8 levels to a relative 10\ :sup:`-9`, in memory and out of core.
 
 
 References

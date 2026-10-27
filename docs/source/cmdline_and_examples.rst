@@ -215,12 +215,11 @@ A directory of images, and reading and changing parameters
 
 .. note::
 
-   ``features``, ``coarse_gray_depth`` and ``ibsi`` changed with ``set_params`` after the object is
-   created do not reach the computation. After ``set_params(coarse_gray_depth=8)``,
-   ``GLCM_ASM_0`` keeps the value of the 64-level matrix (0.000882 on a random 40 x 40 image,
-   where an object created with ``coarse_gray_depth=8`` gives 0.0162), and after
-   ``set_params(features=["MAX"])`` the object still computes its original features. Pass these
-   three to the constructor, or create a new object.
+   ``features`` and ``ibsi`` changed with ``set_params`` after the object is created do not reach
+   the computation: after ``set_params(features=["MAX"])`` the object still computes its original
+   features. ``set_params`` accepts ``coarse_gray_depth`` only at the object's current value and
+   raises ``ValueError`` for any other. Pass these three to the constructor, or create a new
+   object.
 
 .. literalinclude:: ../examples/directory_and_params.py
    :language: python
@@ -233,7 +232,7 @@ Output:
 
    (4, 194)
    {'coarse_gray_depth': 64, 'n_feature_calc_threads': 4}
-   {'coarse_gray_depth': 256, 'n_feature_calc_threads': 4}
+   {'coarse_gray_depth': 64, 'n_feature_calc_threads': 2}
 
 Arrow IPC and Parquet output
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -148,7 +148,8 @@ Notation
    * - :math:`P_q`
      - The ``Pqq`` feature: the :math:`q`-th percentile read off the 100-bin histogram.
    * - :math:`N_b`
-     - Number of bins of the coarse histogram, the absolute value of ``--coarseGrayDepth``.
+     - Number of bins of the coarse histogram, the absolute value of ``--coarseGrayDepth``, or 24
+       when it is 0.
    * - :math:`h_j,\; p_j`
      - Count of ROI pixels in bin :math:`j` of the coarse histogram, and :math:`p_j = h_j / N_v`.
 
@@ -172,9 +173,8 @@ Settings
    * - Histogram bins
      - ``--coarseGrayDepth=64``
      - ``Nyxus(..., coarse_gray_depth=64)``
-     - :math:`N_b`, the number of bins of ``ENTROPY``, ``UNIFORMITY`` and ``HISTOGRAM``. ``ENTROPY``
-       and ``UNIFORMITY`` ignore the sign; with a negative value ``HISTOGRAM`` writes no columns (a
-       fix is coming). No other intensity feature depends on it. Python accepts only positive values.
+     - :math:`N_b`, the number of bins of ``ENTROPY``, ``UNIFORMITY`` and ``HISTOGRAM``: the
+       absolute value, or 24 at 0. No other intensity feature depends on it.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus(..., ibsi=True)``
@@ -879,11 +879,6 @@ Negative intensities
    Read from a file, an image with negative values, such as a CT, is reported in its own units.
    ``COV``, ``QCOD`` and ``UNIFORMITY_PIU`` are ratios meant for non-negative intensities; with
    negative values they can be negative or exceed their usual range.
-
-A coarse histogram of 0 bins
-   ``--coarseGrayDepth=0`` on the command line leaves the coarse histogram without bins; the
-   result of ``ENTROPY``, ``UNIFORMITY`` and ``HISTOGRAM`` is then undefined. Python refuses 0.
-   Use a positive value with these features.
 
 Anisotropy on 2D images read from files
    ``--anisox``/``--anisoy`` (Python ``anisotropy_x``/``anisotropy_y``) do not change any

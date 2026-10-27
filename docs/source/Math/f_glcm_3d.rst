@@ -68,14 +68,17 @@ pair of their grey levels is counted.
   `Settings`_).
 - **Grey levels:** intensities are binned into :math:`N_g` equal-width levels spanning 0 to the
   ROI's maximum, as set by ``coarse_gray_depth`` (64 by default) or the ``3glcm/greydepth``
-  metaparameter. In IBSI mode they are not binned: each integer intensity is a grey level and
-  :math:`N_g` is the ROI's maximum intensity.
+  metaparameter. A negative value selects PyRadiomics-style bins over the ROI's own range and 0 no
+  binning (see :ref:`conventions-grey-levels`). In IBSI mode they are not binned: each integer
+  intensity is a grey level and :math:`N_g` is the ROI's maximum intensity.
 - **Symmetry:** in IBSI mode, and with a negative or zero grey depth (PyRadiomics-style bins or no
   binning), each pair is counted in both orders, so :math:`\textbf{P}` is symmetric. With a
   positive grey depth, as by default, each ordered pair is counted once.
-- **Background:** in IBSI mode and with PyRadiomics-style binning, pairs that include a voxel
-  outside the ROI (or of intensity 0) are not counted. With the default binning they are counted,
-  with the background voxel at grey level 1 (see :ref:`glcm-3d-possible-issues`).
+- **Background:** pairs that include a voxel of the bounding box outside the ROI are not counted,
+  whatever the binning. Under both binning schemes every ROI voxel gets level 1 or more, so only
+  those voxels are left out; in IBSI mode, or with no binning, a ROI voxel of intensity 0 is left
+  out too. Removing three voxels from the worked example's mask gives ``3GLCM_CONTRAST`` 493.2 with
+  the default settings and 2.0 in IBSI mode.
 
 
 Worked example
@@ -184,18 +187,18 @@ Settings
    * - Grey levels
      - ``--coarseGrayDepth=64``
      - ``Nyxus3D(..., coarse_gray_depth=64)``
-     - Number of grey levels. Positive: equal-width bins; negative: PyRadiomics-style bins (command
-       line only; ``Nyxus3D`` rejects a value below 1).
+     - Number of grey levels. Positive: equal-width bins; 0: no binning; negative: PyRadiomics-style
+       bins.
    * - Grey levels, 3D GLCM only
      - not available
      - ``set_metaparam("3glcm/greydepth=N")``
-     - Overrides the grey levels for this family only, with the same sign convention; a negative
-       value selects PyRadiomics-style bins from Python. On the worked example
+     - Overrides the grey levels for this family only, with the same sign convention. On the worked
+       example
        ``3glcm/greydepth=8`` gives the same values as ``coarse_gray_depth=8``.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus3D(..., ibsi=True)``
-     - No binning, pairs counted in both orders, background pairs skipped.
+     - No binning, pairs counted in both orders.
    * - Distance
      - not available
      - ``set_metaparam("3glcm/offset=N")``
@@ -607,13 +610,6 @@ Directions without pairs enter the average
    one plane thick, the 9 directions with :math:`d_z \neq 0`, :math:`(1,1,1)` among them, have no
    pairs: every plain code is 0, and on the middle plane of the worked example
    ``3GLCM_CONTRAST_AVE`` is 0.673, while the mean of the 4 in-plane directions is 2.1875.
-
-Background counted at grey level 1 with the default binning
-   With the default (positive) grey depth, voxels of the bounding box outside the ROI are binned to
-   level 1 and their pairs are counted. Removing three voxels from the worked example's mask gives
-   ``3GLCM_CONTRAST`` 745.28; counting only pairs of ROI voxels would give 493.2. IBSI mode and
-   PyRadiomics-style binning skip those pairs (2.0 in IBSI mode on the same mask). The 2D family
-   skips them in every mode.
 
 Asymmetric matrix by default
    As in 2D, the default counting takes each ordered pair once, so features centred on

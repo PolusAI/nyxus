@@ -1,8 +1,8 @@
 # Example for docs/source/Math/f_gldm_3d.rst: 3D GLDM features of the page's 3 x 4 x 4 worked example.
 # The page shows the lines between the "example" markers. The assertions below pin every value the
-# page quotes, in IBSI mode, with the default settings and with the 3gldm/greydepth metaparameter,
-# so the page cannot drift from the code. The script writes its OME-TIFF files into the current
-# directory.
+# page quotes, in IBSI mode, with the default settings, with --coarseGrayDepth and with the
+# 3gldm/greydepth metaparameter, so the page cannot drift from the code. The script writes its
+# OME-TIFF files into the current directory.
 import json
 import math
 import os
@@ -63,30 +63,40 @@ for code, facts in extras.items():
     assert math.isclose(got, facts["example"], rel_tol=5e-4), f"{code} = {got}, page says {facts['example']}"
 assert round(voxels(features)) == 48
 
-# The default settings (3gldm/greydepth = 0) give the IBSI values; --coarseGrayDepth has no effect
-for table in (run(img, seg, "default"), run(img, seg, "coarse", coarse_gray_depth=8)):
+# --coarseGrayDepth=0, and 3gldm/greydepth=0 over the default, give the IBSI values
+for table in (run(img, seg, "nobin", coarse_gray_depth=0), run(img, seg, "meta0", "3gldm/greydepth=0")):
     for code in extras:
-        assert math.isclose(table[code][0], features[code][0], rel_tol=1e-12), f"default {code} differs from IBSI"
+        assert math.isclose(table[code][0], features[code][0], rel_tol=1e-12), f"unbinned {code} differs from IBSI"
 
-# Intensities times 250: no binning by default, so the grey-level features scale; 64 levels rescale
+# The default 64 levels put intensities 1 to 4 at levels 17, 33, 49 and 64: the same counts, so the
+# dependence features keep their IBSI values and the grey-level features move
+default = run(img, seg, "default")
+check(default, {"SDE": 0.06470, "LDE": 36.54, "GLN": 12.08, "GLV": 308.4, "HGLE": 1916.8}, "default")
+assert round(voxels(default)) == 48
+probe = Nyxus3D(["*3D_GLDM*"])
+assert probe.get_metaparam("3gldm/greydepth") == 64
+# --coarseGrayDepth reaches the family, and the metaparameter starts at it
+check(run(img, seg, "coarse8", coarse_gray_depth=8), {"SDE": 0.06470, "HGLE": 36.10}, "coarse_gray_depth=8")
+assert Nyxus3D(["*3D_GLDM*"], coarse_gray_depth=8).get_metaparam("3gldm/greydepth") == 8
+
+# Intensities times 250: the 64 levels do not follow the scale; without binning the grey-level
+# features scale with the intensities
 bright = np.where(seg > 0, img * 250, 0)
-check(run(bright, seg, "bright"), {"SDE": 0.06470, "LDE": 36.54, "HGLE": 455729.2}, "x250 default")
-check(run(bright, seg, "bright64", "3gldm/greydepth=64"), {"SDE": 0.06470, "HGLE": 1916.8}, "x250 greydepth=64")
+check(run(bright, seg, "bright"), {"SDE": 0.06470, "LDE": 36.54, "HGLE": 1916.8}, "x250 default")
+check(run(bright, seg, "bright0", coarse_gray_depth=0), {"SDE": 0.06470, "HGLE": 455729.2}, "x250 no binning")
 
 # 3gldm/greydepth = -2: two PyRadiomics-style bins
 check(run(img, seg, "radiomics2", "3gldm/greydepth=-2"),
       {"SDE": 0.02258, "LDE": 87.21, "GLN": 24.0, "GLV": 0.25}, "greydepth=-2")
 
-# 3gldm/greydepth = 2: the 13 voxels of intensity 1 fall in level 1 and leave the matrix
+# 3gldm/greydepth = 2: intensity 1 is level 1 and intensities 2 to 4 are level 2; every voxel counts
 matlab2 = run(img, seg, "matlab2", "3gldm/greydepth=2")
-check(matlab2, {"SDE": 0.01297, "LDE": 146.2, "GLN": 35.0, "GLV": 0.0}, "greydepth=2")
-assert round(voxels(matlab2)) == 35
-probe = Nyxus3D(["*3D_GLDM*"])
-assert probe.get_metaparam("3gldm/greydepth") == 0
+check(matlab2, {"SDE": 0.02213, "LDE": 116.1, "GLN": 29.04, "GLV": 0.1975}, "greydepth=2")
+assert round(voxels(matlab2)) == 48
 probe.set_metaparam("3gldm/greydepth=2")
 assert probe.get_metaparam("3gldm/greydepth") == 2
-# ... and with greydepth = 1 every voxel does, so every feature is the no-value substitute (0)
-check(run(img, seg, "matlab1", "3gldm/greydepth=1"), {"SDE": 0.0, "LDE": 0.0, "GLN": 0.0}, "greydepth=1")
+# ... and with greydepth = 1 every voxel is level 1
+check(run(img, seg, "matlab1", "3gldm/greydepth=1"), {"SDE": 0.006641, "GLN": 48.0, "GLV": 0.0}, "greydepth=1")
 # IBSI mode ignores the metaparameter
 check(run(img, seg, "ibsi2", "3gldm/greydepth=2", ibsi=True), {"SDE": 0.06470, "LDE": 36.54}, "IBSI + greydepth=2")
 
@@ -102,12 +112,15 @@ two = seg.copy()
 two[0, 1, 1] = two[2, 4, 4] = two[1, 2, 3] = 2
 check(run(img, two, "two", ibsi=True), {"SDE": 0.07001, "LDE": 32.87}, "two-ROI")
 
-# A voxel of intensity 0 inside the mask
+# A voxel of intensity 0 inside the mask: background without binning, a ROI voxel with it
 zero = img.copy()
 zero[1, 2, 2] = 0
 zeroed = run(zero, seg, "zero", ibsi=True)
 check(zeroed, {"SDE": 0.06801, "LDE": 33.64}, "zero-voxel")
 assert round(voxels(zeroed)) == 47
+zero_binned = run(zero, seg, "zero64")
+check(zero_binned, {"SDE": 0.08743, "LDE": 32.96}, "zero-voxel default")
+assert round(voxels(zero_binned)) == 48
 
 # Two isolated voxels: each is counted with dependence 1
 iso = np.zeros_like(seg)
@@ -119,5 +132,6 @@ check(run(np.where(seg > 0, 7, 0), seg, "constant", ibsi=True),
       {"SDE": 0.0, "LDE": 0.0, "GLN": 0.0, "DN": 0.0}, "constant")
 
 # Out-of-core (a zero RAM budget) gives the in-memory values, with the metaparameter too
-check(run(img, seg, "ooc", ram_limit=0), {"SDE": 0.06470, "LDE": 36.54}, "out-of-core")
-check(run(img, seg, "ooc2", "3gldm/greydepth=2", ram_limit=0), {"SDE": 0.01297, "LDE": 146.2}, "out-of-core greydepth=2")
+check(run(img, seg, "ooc", ram_limit=0), {"SDE": 0.06470, "LDE": 36.54, "HGLE": 1916.8}, "out-of-core")
+check(run(img, seg, "ooc2", "3gldm/greydepth=2", ram_limit=0), {"SDE": 0.02213, "LDE": 116.1}, "out-of-core greydepth=2")
+check(run(zero, seg, "ooc_zero", ram_limit=0), {"SDE": 0.08743, "LDE": 32.96}, "out-of-core zero-voxel")

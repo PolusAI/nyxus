@@ -46,12 +46,14 @@ exactly the same grey level, and adds 1 for the pixel itself: that is the pixel'
   grey levels are equal (IBSI's coarseness parameter :math:`\alpha = 0`). Neither the distance nor
   :math:`\alpha` can be changed.
 - **Directions:** none. One matrix is built per ROI, and each feature has one value.
-- **Grey levels:** NGLDM converts intensities with its own rule, not with the binning that GLCM,
-  GLRLM and GLSZM share. With ``--coarseGrayDepth`` :math:`N` (64 by default), intensity :math:`x`
-  becomes grey level :math:`\lfloor N x / x_{\max} \rfloor`, where :math:`x_{\max}` is the ROI's
-  largest intensity. Levels run from 0 to :math:`N`: the ROI maximum gets level :math:`N`, and every
-  intensity below :math:`x_{\max}/N`, including 0, gets level 0. In IBSI mode the intensities are not
-  converted: each integer intensity is a grey level. Nyxus computes :math:`(x / x_{\max})\,N` in
+- **Grey levels:** for a positive ``--coarseGrayDepth`` NGLDM converts intensities with its own
+  rule, not with the binning that GLCM, GLRLM and GLSZM share. With ``--coarseGrayDepth``
+  :math:`N` (64 by default), intensity :math:`x` becomes grey level
+  :math:`\lfloor N x / x_{\max} \rfloor`, where :math:`x_{\max}` is the ROI's largest intensity. Levels run from 0 to :math:`N`: the ROI maximum gets level :math:`N`, and every
+  intensity below :math:`x_{\max}/N`, including 0, gets level 0. In IBSI mode and with
+  ``--coarseGrayDepth=0`` the intensities are not converted: each integer intensity is a grey level.
+  A negative value gives :math:`|N|` PyRadiomics-style bins over the ROI's range, the shared rule
+  (see :ref:`conventions-grey-levels`). Nyxus computes :math:`(x / x_{\max})\,N` in
   floating point, so when :math:`N` is not a power of two an intensity whose :math:`N x / x_{\max}`
   is a whole number can get the level below.
 - **Rows:** :math:`\textbf{S}` has one row per grey level present in the ROI, in increasing order, in
@@ -161,9 +163,8 @@ Settings
    * - Grey levels
      - ``--coarseGrayDepth=64``
      - ``Nyxus(..., coarse_gray_depth=64)``
-     - :math:`N` in :math:`\lfloor N x / x_{\max} \rfloor`, giving levels 0 to :math:`N`. A negative
-       value does not select PyRadiomics-style binning for NGLDM (see
-       :ref:`ngldm-possible-issues`).
+     - Positive: :math:`N` in :math:`\lfloor N x / x_{\max} \rfloor`, giving levels 0 to :math:`N`;
+       0: no conversion; negative: :math:`|N|` PyRadiomics-style bins over the ROI range.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus(..., ibsi=True)``
@@ -544,7 +545,7 @@ Grey level 0 is counted but not weighted
    0.00189. The other features treat level 0 as an ordinary grey level.
 
 NGLDM converts grey levels differently from the other texture families
-   NGLDM's :math:`\lfloor N x / x_{\max} \rfloor` gives :math:`N + 1` possible levels, 0 to
+   For a positive :math:`N`, NGLDM's :math:`\lfloor N x / x_{\max} \rfloor` gives :math:`N + 1` possible levels, 0 to
    :math:`N`. GLCM, GLRLM and GLSZM use :math:`\lfloor N x / x_{\max} \rfloor + 1`, capped at
    :math:`N`. With :math:`N = 64`, the two formulas give the worked example's intensities 1 to 5
    the levels 12, 25, 38, 51 and 64 for NGLDM and 13, 26, 39, 52 and 64 for GLRLM. Both count from
@@ -555,13 +556,10 @@ NGLDM converts grey levels differently from the other texture families
    ``DCM``, ``DCV``, ``DCENT``, ``DCENE``) change only when the conversion merges or splits levels.
 
 Negative or zero ``--coarseGrayDepth``
-   A negative value does not select PyRadiomics-style binning for NGLDM. It is read as the unsigned
-   number :math:`2^{32} - |N|`, so no two intensities share a level and the grey levels are of the
-   order of :math:`10^9`. On the worked example ``--coarseGrayDepth=-64`` gives ``GLM``
-   :math:`2.405 \times 10^9` and ``HGLCE`` :math:`6.847 \times 10^{18}`, while the count-only
-   features are unchanged. ``--coarseGrayDepth=0`` puts every pixel at level 0, so all 25 pixels of
-   the worked example share one level and the eight grey-level features return 0. The ``Nyxus``
-   constructor refuses both values.
+   These follow the shared rule. ``--coarseGrayDepth=0`` gives the IBSI-mode values. A negative
+   value bins into :math:`|N|` PyRadiomics-style bins over the ROI's range: on the worked example
+   ``--coarseGrayDepth=-64`` gives intensities 1 to 5 the levels 1, 17, 33, 49 and 64, ``GLM``
+   29.68 and ``HGLCE`` 1241.2, while the count-only features keep their IBSI-mode values.
 
 Constant ROI
    When all of a ROI's pixels have one intensity, every NGLDM feature returns the ``--noval``

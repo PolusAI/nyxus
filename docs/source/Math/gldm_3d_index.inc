@@ -13,37 +13,37 @@
    * - :ref:`3GLDM_SDE <feature-3gldm-sde>`
      - Small dependence emphasis
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 0.0647
    * - :ref:`3GLDM_LDE <feature-3gldm-lde>`
      - Large dependence emphasis
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 36.54
    * - :ref:`3GLDM_GLN <feature-3gldm-gln>`
      - Grey level non-uniformity
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 12.08
    * - :ref:`3GLDM_DN <feature-3gldm-dn>`
      - Dependence non-uniformity
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 7.75
    * - :ref:`3GLDM_DNN <feature-3gldm-dnn>`
      - Dependence non-uniformity normalized
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 0.1615
    * - :ref:`3GLDM_GLV <feature-3gldm-glv>`
      - Grey level variance
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 1.248
    * - :ref:`3GLDM_DV <feature-3gldm-dv>`
      - Dependence variance
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 3.957
    * - :ref:`3GLDM_DE <feature-3gldm-de>`
      - Dependence entropy
@@ -53,30 +53,30 @@
    * - :ref:`3GLDM_LGLE <feature-3gldm-lgle>`
      - Low grey level emphasis
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 0.3725
    * - :ref:`3GLDM_HGLE <feature-3gldm-hgle>`
      - High grey level emphasis
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 7.292
    * - :ref:`3GLDM_SDLGLE <feature-3gldm-sdlgle>`
      - Small dependence low grey level emphasis
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 0.01907
    * - :ref:`3GLDM_SDHGLE <feature-3gldm-sdhgle>`
      - Small dependence high grey level emphasis
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 0.5953
    * - :ref:`3GLDM_LDLGLE <feature-3gldm-ldlgle>`
      - Large dependence low grey level emphasis
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 12.98
    * - :ref:`3GLDM_LDHGLE <feature-3gldm-ldhgle>`
      - Large dependence high grey level emphasis
      - —
-     - PyRadiomics (abs. 1e-9)
+     - PyRadiomics (abs. 1e-9, rel. 1e-9)
      - 292.2

@@ -51,8 +51,8 @@ the image and neither has intensity 0, the pair of their grey levels is counted.
   and 45° matrices, and only 0° matches as it is.
 - **Distance:** :math:`\delta = 1` pixel.
 - **Grey levels:** intensities are first binned into :math:`N_g` grey levels, as set by
-  ``--coarseGrayDepth`` (64 by default). In IBSI mode they are not binned: each integer intensity
-  is a grey level.
+  ``--coarseGrayDepth`` (64 by default) or, from Python, by ``glcm/greydepth``, which overrides it
+  for this family. In IBSI mode they are not binned: each integer intensity is a grey level.
 - **Symmetry:** in IBSI mode, and with a negative or zero ``--coarseGrayDepth`` (PyRadiomics-style
   bins or no binning), each pair is counted in both orders, so :math:`\textbf{P}` is symmetric.
   With a positive grey depth, as by default, each ordered pair is counted once.
@@ -174,8 +174,8 @@ Settings
    * - Grey levels
      - ``--coarseGrayDepth=64``
      - ``Nyxus(..., coarse_gray_depth=64)``
-     - Number of grey levels. Positive: equal-width bins; negative: PyRadiomics-style bins (command
-       line only).
+     - Number of grey levels. Positive: equal-width bins; 0: no binning; negative: PyRadiomics-style
+       bins.
    * - IBSI mode
      - ``--ibsi=true``
      - ``Nyxus(..., ibsi=True)``
@@ -190,8 +190,8 @@ Settings
      - :math:`\delta` in pixels. The command-line option is accepted but has no effect: the
        distance is 1 unless set from Python.
 
-``set_metaparam("glcm/greydepth=N")`` does not change the 2D matrix, which always uses
-``coarse_gray_depth``; it changes only the constant-ROI test (see :ref:`glcm-possible-issues`).
+``set_metaparam("glcm/greydepth=N")`` sets the grey depth of the 2D matrix and of its constant-ROI
+test (see :ref:`glcm-possible-issues`), in place of ``coarse_gray_depth``.
 All options are listed in the :ref:`cli-reference`.
 
 

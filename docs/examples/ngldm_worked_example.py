@@ -1,9 +1,8 @@
 # Example for docs/source/Math/f_ngldm.rst: NGLDM features of the page's 5x5 worked example.
 # The page shows the lines between the "example" markers. The assertions below pin every value the
-# page quotes, in IBSI mode and with the default settings, so the page cannot drift from the code.
-# The values for a negative or zero --coarseGrayDepth are not: they are command-line only. The
-# grey-level ladders under "NGLDM converts grey levels differently" are the formulas evaluated on
-# the page, not Nyxus output.
+# page quotes, in IBSI mode, with the default settings and with a negative or zero grey depth, so
+# the page cannot drift from the code. The grey-level ladders under "NGLDM converts grey levels
+# differently" are the formulas evaluated on the page, not Nyxus output.
 import json
 import math
 import os
@@ -37,6 +36,17 @@ quoted = {"GLM": 35.4, "GLV": 243.36, "HGLCE": 1496.5, "LGLCE": 0.00182, "LDE": 
 for name, expected in quoted.items():
     got = default[f"NGLDM_{name}"][0]
     assert math.isclose(got, expected, rel_tol=5e-4), f"default NGLDM_{name} = {got}, page says {expected}"
+
+# Depth 0 gives the IBSI-mode values; depth -64 bins into 64 PyRadiomics-style bins over 1..5
+zero_depth = Nyxus(["*ALL_NGLDM*"], coarse_gray_depth=0).featurize(img, mask)
+for code in extras:
+    assert math.isclose(zero_depth[code][0], features[code][0], rel_tol=1e-12), f"depth 0 {code} differs from IBSI"
+radiomics = Nyxus(["*ALL_NGLDM*"], coarse_gray_depth=-64).featurize(img, mask)
+for name, expected in {"GLM": 29.68, "HGLCE": 1241.2}.items():
+    got = radiomics[f"NGLDM_{name}"][0]
+    assert math.isclose(got, expected, rel_tol=5e-4), f"depth -64 NGLDM_{name} = {got}, page says {expected}"
+for name in ("LDE", "HDE", "GLNU", "DCENT"):
+    assert math.isclose(radiomics[f"NGLDM_{name}"][0], features[f"NGLDM_{name}"][0], rel_tol=1e-12), name
 
 # Values the page quotes for a mask that leaves three pixels of the bounding box out of the ROI:
 # the same in both modes, because pixels outside the mask are never counted

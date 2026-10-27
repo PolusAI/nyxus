@@ -25,11 +25,11 @@ features = nyx.featurize_directory("data/intensities", "data/labels", file_patte
 print(features.shape)
 
 print(nyx.get_params("coarse_gray_depth", "n_feature_calc_threads"))
-nyx.set_params(coarse_gray_depth=256)
+nyx.set_params(n_feature_calc_threads=2)
 print(nyx.get_params("coarse_gray_depth", "n_feature_calc_threads"))
 # example-end
 
 assert features.shape[0] == 4
 p = nyx.get_params()
-assert p["coarse_gray_depth"] == 256 and p["n_feature_calc_threads"] == 4
+assert p["coarse_gray_depth"] == 64 and p["n_feature_calc_threads"] == 2
 assert {"gabor_freqs", "gabor_thetas", "dynamic_range", "ram_limit"} <= set(p)

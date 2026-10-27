@@ -98,7 +98,7 @@
    * - :ref:`NGLDM_DCENT <feature-ngldm-dcent>`
      - Dependence count entropy
      - FCBV
-     - MIRP (rel. 1e-9)
+     - MIRP (rel. 1e-6, rel. 1e-9)
      - 3.383
    * - :ref:`NGLDM_DCENE <feature-ngldm-dcene>`
      - Dependence count energy

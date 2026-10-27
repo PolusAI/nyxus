@@ -123,9 +123,9 @@ Grey levels
 
 The texture families count grey levels, so they first turn intensities into a small set of integer
 levels. Most of them share one rule, chosen by the sign of a grey-depth setting :math:`N`: the
-global ``--coarseGrayDepth`` (Python ``coarse_gray_depth``, 64 by default) or a family's own
-``greydepth`` metaparameter. With :math:`x_{\max}` and :math:`x_{\min}` the ROI's largest and
-smallest intensity:
+global ``--coarseGrayDepth`` (Python ``coarse_gray_depth``, 64 by default), which every texture
+family uses, or a family's own ``greydepth`` metaparameter, which overrides it for that family.
+With :math:`x_{\max}` and :math:`x_{\min}` the ROI's largest and smallest intensity:
 
 .. list-table::
    :header-rows: 1
@@ -140,31 +140,37 @@ smallest intensity:
        whose intensities lie far from 0 uses only the top levels. Intensity 0 becomes level 1, an
        ordinary grey level.
    * - :math:`N < 0`, PyRadiomics-style
-     - :math:`\lfloor (x - x_{\min}) / w \rfloor + 1`, capped at :math:`|N|`, with
-       :math:`w = (x_{\max} - x_{\min}) / |N|`
-     - :math:`|N|` equal-width bins over the ROI's own range. Intensity 0 stays level 0, the
-       background level.
+     - :math:`\lfloor |N| (x - x_{\min}) / (x_{\max} - x_{\min}) \rfloor + 1`, capped at
+       :math:`|N|`; a ROI of one intensity is one bin
+     - :math:`|N|` equal-width bins over the ROI's own range, IBSI's fixed bin number. An
+       intensity on a bin edge goes to the bin above it, as in PyRadiomics and MIRP. In 2D,
+       intensity 0 stays level 0, the background level.
    * - :math:`N = 0`, or IBSI mode
      - :math:`x`
      - No binning: each integer intensity is a grey level. IBSI mode overrides every family's
        setting with 0, except the 2D GLCM constant-ROI test (see :ref:`glcm-possible-issues`).
 
-The ``Nyxus`` and ``Nyxus3D`` constructors accept only a positive ``coarse_gray_depth`` and raise
-``ValueError`` for 0 or a negative value. 0 and negative values are given on the command line, or,
-for the 3D families that have one, through the family's ``greydepth`` metaparameter, set with
-``set_metaparam``. IBSI mode is described on its own page, :ref:`ibsi-mode`.
+``--coarseGrayDepth``, ``coarse_gray_depth`` and every ``greydepth`` metaparameter accept any
+32-bit integer except :math:`-2^{31}`, and refuse a value that is not an integer. The magnitude
+sizes per-ROI buffers and output columns, so a very large one exhausts memory. ``set_params``
+accepts only the object's current ``coarse_gray_depth``; pass a different one to the constructor.
+IBSI mode is described on its own page, :ref:`ibsi-mode`.
+
+The 3D families read which voxels of the bounding box are the ROI's from the ROI's voxels, not
+from a grey level. Under both binning schemes every ROI voxel gets level 1 or more, one at the
+volume's lowest intensity included, and the rest of the box gets level 0, which the families skip.
+With no binning a ROI voxel of intensity 0 keeps level 0.
 
 Two families do not use the shared rule:
 
-- **NGLDM**, 2D and 3D, maps intensity :math:`x` to :math:`\lfloor N x / x_{\max} \rfloor`, with
-  :math:`N` the global ``--coarseGrayDepth``. Its levels run from 0 to :math:`N`, every intensity
-  below :math:`x_{\max}/N` gets level 0, and a negative :math:`N` does not select PyRadiomics-style
-  bins.
+- **NGLDM**, 2D and 3D, maps intensity :math:`x` to :math:`\lfloor N x / x_{\max} \rfloor` for a
+  positive :math:`N`, the global ``--coarseGrayDepth``. Its levels run from 0 to :math:`N`, and
+  every intensity below :math:`x_{\max}/N` gets level 0. A zero or negative :math:`N` follows the
+  shared rule.
 - The **intensity** and **intensity histogram** families bin only for their histograms, into
-  equal-width bins from the ROI's minimum to its maximum: :math:`|N|` bins for ``ENTROPY`` and
-  ``UNIFORMITY`` (the sign is ignored), :math:`N` bins for ``HISTOGRAM``, which writes no columns
-  when :math:`N` is negative (a fix is coming), and :math:`N` bins for ``IH_*``, which
-  return the ``--noval`` substitute when :math:`N < 2`. IBSI mode does not change these bins.
+  :math:`|N|` equal-width bins from the ROI's minimum to its maximum, or 24 when :math:`N = 0`:
+  ``ENTROPY``, ``UNIFORMITY``, ``HISTOGRAM`` (one column per bin) and ``IH_*``, which return the
+  ``--noval`` substitute with a single bin. IBSI mode does not change these bins.
 
 .. list-table::
    :header-rows: 1
@@ -174,36 +180,32 @@ Two families do not use the shared rule:
      - 2D setting (default)
      - 3D setting (default)
    * - GLCM (:doc:`2D <Math/f_glcm>`, :doc:`3D <Math/f_glcm_3d>`)
-     - ``--coarseGrayDepth`` (64). ``glcm/greydepth`` (Python) does not change the matrix; it
-       changes only the constant-ROI test (see :ref:`glcm-possible-issues`).
+     - ``--coarseGrayDepth`` or ``glcm/greydepth`` (64)
      - ``--coarseGrayDepth`` or ``3glcm/greydepth`` (64)
    * - GLRLM (:doc:`2D <Math/f_glrlm>`, :doc:`3D <Math/f_glrlm_3d>`)
      - ``--coarseGrayDepth`` (64)
-     - ``3glrlm/greydepth`` (0: no binning). ``--coarseGrayDepth`` has no effect.
+     - ``--coarseGrayDepth`` or ``3glrlm/greydepth`` (64)
    * - GLSZM (:doc:`2D <Math/f_glszm>`, :doc:`3D <Math/f_glszm_3d>`)
      - ``--coarseGrayDepth`` (64)
-     - ``3glszm/greydepth`` (0: no binning). ``--coarseGrayDepth`` has no effect, and
-       whole-volume mode ignores the metaparameter.
+     - ``--coarseGrayDepth`` or ``3glszm/greydepth`` (64)
    * - GLDM (:doc:`2D <Math/f_gldm>`, :doc:`3D <Math/f_gldm_3d>`)
      - ``--coarseGrayDepth`` (64)
-     - ``3gldm/greydepth`` (0: no binning). ``--coarseGrayDepth`` has no effect.
+     - ``--coarseGrayDepth`` or ``3gldm/greydepth`` (64)
    * - GLDZM (:doc:`2D <Math/f_gldzm>`, :doc:`3D <Math/f_gldzm_3d>`)
-     - ``--coarseGrayDepth`` (64). A negative value fails on ROIs with background in the
-       bounding box (see :ref:`gldzm-possible-issues`).
+     - ``--coarseGrayDepth`` (64)
      - ``--coarseGrayDepth`` (64); 0 turns binning off. No metaparameter.
    * - NGLDM (:doc:`2D <Math/f_ngldm>`, :doc:`3D <Math/f_ngldm_3d>`)
      - ``--coarseGrayDepth`` (64), NGLDM's own rule
      - ``--coarseGrayDepth`` (64), NGLDM's own rule. No metaparameter.
    * - NGTDM (:doc:`2D <Math/f_ngtdm>`, :doc:`3D <Math/f_ngtdm_3d>`)
      - ``--coarseGrayDepth`` (64)
-     - ``3ngtdm/greydepth`` (0: no binning). ``--coarseGrayDepth`` has no effect.
+     - ``--coarseGrayDepth`` or ``3ngtdm/greydepth`` (64)
    * - ``ENTROPY``, ``UNIFORMITY``, ``HISTOGRAM`` (:doc:`2D <Math/f_pixel_intensity>`),
        ``3ENTROPY``, ``3UNIFORMITY`` (:doc:`3D <Math/f_intensity_3d>`)
-     - ``--coarseGrayDepth`` (64) histogram bins; the sign is ignored, except that ``HISTOGRAM``
-       writes no columns for a negative value (a fix is coming)
+     - ``--coarseGrayDepth`` (64) histogram bins; the sign is ignored
      - ``--coarseGrayDepth`` (64) histogram bins; the sign is ignored
    * - :doc:`Intensity histogram <Math/f_intensity_histogram>`
-     - ``--coarseGrayDepth`` (64) bins; computed only in IBSI mode
+     - ``--coarseGrayDepth`` (64) bins, the sign ignored; computed only in IBSI mode
      - No 3D family
 
 The other families, morphology, moments, Gabor, Zernike, erosion, fractal dimension and image
@@ -232,10 +234,8 @@ they differ in these ways:
      - 3D
    * - Default binning
      - Every texture family bins into 64 levels.
-     - GLCM, GLDZM and NGLDM bin into 64 levels. GLRLM, GLSZM, GLDM and NGTDM do not bin, and
-       ``--coarseGrayDepth`` does not change them. Their default values equal their IBSI-mode
-       values, except 3D NGTDM busyness, which IBSI mode computes over a row for every integer
-       from 0 to the ROI maximum (see :doc:`Math/f_ngtdm_3d`).
+     - Every texture family bins into 64 levels. ``--coarseGrayDepth=0`` turns binning off; for
+       GLRLM, GLSZM and GLDM that gives the IBSI-mode values.
    * - Directions
      - GLCM uses 0°, 45°, 90° and 135° (``--glcmAngles``); GLRLM always uses all four.
      - GLCM and GLRLM use the 13 directions of the 26-voxel neighbourhood; no setting selects
@@ -254,8 +254,8 @@ they differ in these ways:
      - The city-block distance to the nearest voxel outside the ROI, as IBSI defines it.
    * - Background
      - GLCM skips every pair with a pixel of intensity 0.
-     - GLCM counts pairs with voxels outside the mask, at grey level 1, with the default binning.
-       NGTDM uses the voxels outside the mask in every mode. See `Background`_.
+     - Every family takes the mask from the ROI's voxels and leaves the voxels outside it out, in
+       every mode. See `Background`_.
    * - Constant ROI
      - Every GLCM feature returns 0, whatever ``--noval`` is, a known defect (`#511 <https://github.com/PolusAI/nyxus/issues/511>`__).
      - Most 3D GLCM features return their limiting values when the ROI fills its bounding box. See
@@ -282,10 +282,11 @@ background by grey level, not by the mask: a pixel whose grey level is the backg
 left out, whether it lies outside the mask or inside it. The default MATLAB-style binning turns
 intensity 0 into level 1, an ordinary level, so the pixels of the bounding box outside the mask
 then take part as a level of their own. IBSI mode and PyRadiomics-style binning mostly keep them
-at level 0 and leave them out. NGLDM, 2D and 3D, and 3D NGTDM use the mask and leave the pixels
-outside it out in every mode. GLDM, 2D and 3D, leaves out every pixel of intensity 0, so the pixels
-outside the mask are out in every mode too, together with ROI pixels of intensity 0. ROIs that fill
-their bounding box with non-zero intensities are not affected.
+at level 0 and leave them out. 2D NGLDM and every 3D family use the mask and leave the pixels
+outside it out in every mode; under either binning scheme a 3D ROI voxel gets level 1 or more,
+whatever its intensity. 2D GLDM leaves out every pixel of intensity 0, so the pixels outside the
+mask are out in every mode too, together with ROI pixels of intensity 0. ROIs that fill their
+bounding box with non-zero intensities are not affected.
 
 .. list-table::
    :header-rows: 1
@@ -325,33 +326,30 @@ their bounding box with non-zero intensities are not affected.
      - Excluded, as pixels and as neighbours
      - As pixels outside the mask
    * - :doc:`3D GLCM <Math/f_glcm_3d>`
-     - Level 1; their pairs are counted
      - Not counted
-     - As voxels outside the mask
+     - Not counted
+     - Binned: level 1 or more, counted. No binning: pairs with them are not counted.
    * - :doc:`3D GLRLM <Math/f_glrlm_3d>`
-     - Excluded (no binning). A positive ``3glrlm/greydepth`` makes them level 1, and they form
-       runs.
      - Excluded
-     - As voxels outside the mask
+     - Excluded
+     - Binned: level 1 or more, counted. No binning: as voxels outside the mask.
    * - :doc:`3D GLSZM <Math/f_glszm_3d>`
      - In no zone, and not counted in :math:`N_v`
      - The same
-     - In no zone, but counted in :math:`N_v`. A positive ``3glszm/greydepth`` also leaves out
-       every voxel of the lowest level.
+     - Binned: level 1 or more, counted. No binning: in no zone, but counted in :math:`N_v`.
    * - :doc:`3D GLDM <Math/f_gldm_3d>`
      - Excluded
      - Excluded
-     - Excluded, in every mode. A positive ``3gldm/greydepth`` also leaves out every voxel of
-       level 1.
+     - Binned: level 1 or more, counted. No binning: excluded.
    * - :doc:`3D GLDZM <Math/f_gldzm_3d>`
      - In no zone; outside the ROI for the distances
      - The same
-     - Default: level 1. IBSI and PyRadiomics-style: every level of the ROI is raised by one, so
+     - Binned: level 1 or more, counted. No binning: every level of the ROI is raised by one, so
        the voxel keeps its zone.
    * - :doc:`3D NGLDM <Math/f_ngldm_3d>`
      - Excluded, as centres and as neighbours
      - Excluded
-     - Centres at grey level 0
+     - Centres at grey level 0, except under PyRadiomics-style binning, which gives them level 1
    * - :doc:`3D NGTDM <Math/f_ngtdm_3d>`
      - Excluded, as centres and as neighbours
      - Excluded
