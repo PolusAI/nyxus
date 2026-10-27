@@ -5,6 +5,7 @@ import pytest
 import sys
 import numpy as np
 import math
+import numbers
 from pathlib import Path
 import pathlib
 from test_data import intens, seg
@@ -13,6 +14,17 @@ import pandas as pd
 
 from test_tissuenet_data import tissuenet_int, tissuenet_seg
 from test_data import ct_zslice_hounsfeld_inten, ct_zslice_hounsfeld_mask
+
+def approx_cell(expected, tol):
+    '''
+    Comparator for one cell of a feature DataFrame: pytest.approx for numbers, the value itself
+    for everything else. Feature tables carry string columns (intensity_image, mask_image,
+    phys_unit), and pytest.approx refuses a non-numeric expected value once a relative
+    tolerance is given.
+    '''
+    if isinstance(expected, numbers.Number):
+        return pytest.approx(expected, rel=tol, abs=tol)
+    return expected
 
 class TestImport():
     def test_import(self):
@@ -90,7 +102,7 @@ class TestNyxus():
                 files_list = files_features[col].tolist()
                 
                 for directory_val, files_val in zip(directory_list, files_list):
-                    if not directory_val == pytest.approx(files_val, rel=1e-5, abs=1e-5):
+                    if not directory_val == approx_cell(files_val, 1e-5):
                         files_not_equal.append(col)
                         break
             
@@ -127,7 +139,7 @@ class TestNyxus():
                 files_list = files_features[col].tolist()
                 
                 for directory_val, files_val in zip(directory_list, files_list):
-                    if not directory_val == pytest.approx(files_val, rel=1e-5, abs=1e-5):
+                    if not directory_val == approx_cell(files_val, 1e-5):
                         files_not_equal.append(col)
                         break
             
@@ -163,7 +175,7 @@ class TestNyxus():
                 montage_list = montage_features[col].tolist()
                 
                 for directory_val, montage_val in zip(directory_list, montage_list):
-                    if not directory_val == pytest.approx(montage_val, rel=1e-4, abs=1e-4):
+                    if not directory_val == approx_cell(montage_val, 1e-4):
                         montage_not_equal.append(col)
                         break
             
@@ -275,7 +287,7 @@ class TestNyxus():
                 if (isinstance(params[key], float)):
                     assert params[key] == pytest.approx(result[key])
                 else:
-                    assert params[key] == pytest.approx(result[key])
+                    assert params[key] == result[key]
 
         def test_set_params(self):
             
@@ -311,7 +323,7 @@ class TestNyxus():
                 if (isinstance(params[key], float)):
                     assert params[key] == pytest.approx(new_values[key])
                 else:
-                    assert params[key] == pytest.approx(new_values[key])   
+                    assert params[key] == new_values[key]   
 
         def test_set_single_param(self):
             nyx = nyxus.Nyxus (["*ALL*"])
@@ -393,7 +405,7 @@ class TestNyxus():
                 if (isinstance(params[key], float)):
                     assert params[key] == pytest.approx(result[key])
                 else:
-                    assert params[key] == pytest.approx(result[key])    
+                    assert params[key] == result[key]    
                 
         def test_in_memory_2d(self):
                 
@@ -483,7 +495,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                    assert feature_value == approx_cell(arrow_value, 1e-6)
         
         @pytest.mark.arrow        
         def test_parquet_writer_file_naming(self, tmp_path):
@@ -527,7 +539,7 @@ class TestNyxus():
                             assert False
 
                         continue
-                    assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                    assert feature_value == approx_cell(arrow_value, 1e-6)
             
             shutil.rmtree(output_dir)
 
@@ -566,7 +578,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                        assert feature_value == approx_cell(arrow_value, 1e-6)
 
             
             path = nyx.get_arrow_ipc_file()
@@ -613,7 +625,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                        assert feature_value == approx_cell(arrow_value, 1e-6)
             
             shutil.rmtree(output_dir)
 
@@ -658,7 +670,7 @@ class TestNyxus():
 
                             continue
 
-                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                        assert feature_value == approx_cell(arrow_value, 1e-6)
             
             shutil.rmtree(output_dir)
 
@@ -700,7 +712,7 @@ class TestNyxus():
                                 assert False
 
                             continue
-                        assert feature_value == pytest.approx(arrow_value, rel=1e-6, abs=1e-6)
+                        assert feature_value == approx_cell(arrow_value, 1e-6)
             Path(arrow_path).unlink()
                         
         @pytest.mark.arrow         
@@ -1200,7 +1212,7 @@ class TestSingleRoi():
         assert list(df_no_mask.columns) == list(df_with_mask.columns)
         for col in df_no_mask.columns:
             for v1, v2 in zip(df_no_mask[col].tolist(), df_with_mask[col].tolist()):
-                assert v1 == pytest.approx(v2, rel=1e-5, abs=1e-5)
+                assert v1 == approx_cell(v2, 1e-5)
 
     def test_single_roi_false_multi_row(self):
         """featurize_files with single_roi=False (normal segmented mode) must return multiple rows per image."""
@@ -1233,7 +1245,26 @@ class TestSingleRoi():
         not_equal = []
         for col in shared_cols:
             for v1, v2 in zip(df_dir[col].tolist(), df_files[col].tolist()):
-                if v1 != pytest.approx(v2, rel=1e-5, abs=1e-5):
+                if v1 != approx_cell(v2, 1e-5):
                     not_equal.append(col)
                     break
         assert len(not_equal) == 0, f"Columns differ: {not_equal}"
+
+
+class TestApproxCell():
+    """approx_cell compares numeric cells within the tolerance and every other cell exactly."""
+
+    def test_string_cells_compare_exactly(self):
+        assert 'p0_y1_r1_c0.ome.tif' == approx_cell('p0_y1_r1_c0.ome.tif', 1e-5)
+        assert '' == approx_cell('', 1e-5)
+        assert 'p0_y1_r1_c0.ome.tif' != approx_cell('p0_y1_r1_c1.ome.tif', 1e-5)
+
+    def test_none_cells_compare_exactly(self):
+        assert None == approx_cell(None, 1e-5)
+        assert 0.0 != approx_cell(None, 1e-5)
+
+    def test_numeric_cells_use_the_tolerance(self):
+        assert 1.000001 == approx_cell(1.0, 1e-5)
+        assert np.float64(2.0) == approx_cell(np.float64(2.0 + 1e-7), 1e-5)
+        assert 7 == approx_cell(np.uint32(7), 1e-5)
+        assert 1.1 != approx_cell(1.0, 1e-5)
