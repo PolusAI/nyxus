@@ -9,7 +9,7 @@
 #include <sstream>
 #include <utility>
 #include "../src/nyx/3rdparty/quickhull.hpp"   // quick_hull
-#include "../src/nyx/features/3d_mesh.h"   // Triangle3, LatticeBounds, build_roi_surface_mesh, mesh_volume, roi_mesh_volume
+#include "../src/nyx/features/3d_mesh.h"   // Triangle3, LatticeBounds, MeshMeasures, build_roi_surface_mesh, mesh_volume, mesh_area, roi_mesh_measures
 #include "../src/nyx/features/3d_surface.h"   // D3_SurfaceFeature::convex_hull_volume
 #include "../src/nyx/features/pixel.h"   // Pixel3
 #include "../src/nyx/helpers/helpers.h"   // Nyxus::calc_eigvals
@@ -307,24 +307,67 @@ void test_3d_morphology_quick_hull_degenerate_basis_mechanics()
 }
 
 // The refusal paths of the mesh walk: an ROI with no voxels has no surface. The builder must hand back
-// an empty mesh, and the volume integral a zero with no hull points, rather than reading off the end
-// of an empty cloud; bounds that enclose no lattice point give a zero without asking the plane source
-// for a plane.
+// an empty mesh, and the walk a zero volume and area with no hull points, rather than reading off the
+// end of an empty cloud or leaving earlier hull points in place; bounds that enclose no lattice point
+// give zeros without asking the plane source for a plane.
 void test_3d_morphology_empty_roi_mesh_mechanics()
 {
     std::vector<Nyxus::Triangle3> mesh;
     ASSERT_NO_THROW (Nyxus::build_roi_surface_mesh (mesh, std::vector<Pixel3>{}));
     ASSERT_TRUE (mesh.empty());
     ASSERT_EQ (Nyxus::mesh_volume (mesh), 0.0);
+    ASSERT_EQ (Nyxus::mesh_area (mesh, 1.3, 0.8, 2.5), 0.0);
 
     std::vector<std::array<double, 3>> hull_points { { 1., 2., 3. } };
-    ASSERT_EQ (Nyxus::roi_mesh_volume (std::vector<Pixel3>{}, &hull_points), 0.0);
+    const auto empty = Nyxus::roi_mesh_measures (std::vector<Pixel3>{}, 1.3, 0.8, 2.5, &hull_points);
+    ASSERT_EQ (empty.volume, 0.0);
+    ASSERT_EQ (empty.area, 0.0);
     ASSERT_TRUE (hull_points.empty());
 
     int planes_asked = 0;
     const Nyxus::LatticeBounds none = { 5, 4, 0, 3, 0, 3 };
-    ASSERT_EQ (Nyxus::roi_mesh_volume (none, [&planes_asked](StatsInt, std::vector<Pixel3>&) { planes_asked++; }), 0.0);
+    const auto outside = Nyxus::roi_mesh_measures (none, [&planes_asked](StatsInt, std::vector<Pixel3>&) { planes_asked++; }, 1.3, 0.8, 2.5);
     ASSERT_EQ (planes_asked, 0);
+    ASSERT_EQ (outside.volume, 0.0);
+    ASSERT_EQ (outside.area, 0.0);
+}
+
+// mesh_area() over a held mesh and the area roi_mesh_measures() sums during its walk are one
+// integral: the same facets, each through the same facet area, in march_roi_surface()'s emission
+// order, which build_roi_surface_mesh() keeps. They must agree bit for bit on a ragged ROI on voxels
+// unequal along every axis, where a spacing taken on the wrong axis by either one changes the sum.
+//
+// This is a mechanics check (SPEC 2): it names no feature and claims no vetting. 3AREA is vetted
+// against MIRP in test_3d_morphology_mirp.h and against closed-form boxes in
+// test_3d_morphology_analytic.h.
+void test_3d_morphology_mesh_area_matches_walk_mechanics()
+{
+    SCOPED_TRACE("MECHANICS__3d_morphology_mesh_area_matches_walk");
+
+    std::vector<Pixel3> cloud;
+    unsigned int state = 20261029u;
+    for (int x = 0; x < 9; x++)
+        for (int y = 0; y < 7; y++)
+            for (int z = 0; z < 5; z++)
+            {
+                state = state * 1664525u + 1013904223u;
+                if ((state >> 16) & 1u)
+                    cloud.push_back (Pixel3(x + 11, y + 4, z + 7, 1000));
+            }
+    ASSERT_GT (cloud.size(), 100u);
+
+    std::vector<Nyxus::Triangle3> mesh;
+    Nyxus::build_roi_surface_mesh (mesh, cloud);
+    ASSERT_FALSE (mesh.empty());
+
+    const double sx = 1.3, sy = 0.8, sz = 2.5;
+    const double held = Nyxus::mesh_area (mesh, sx, sy, sz),
+        walked = Nyxus::roi_mesh_measures (cloud, sx, sy, sz).area;
+    ASSERT_GT (held, 0.0);
+    ASSERT_EQ (held, walked) << "mesh_area() and the walk's area differ over " << mesh.size() << " facets";
+
+    // the grid is not one the spacings can be swapped on without changing the area
+    ASSERT_NE (held, Nyxus::mesh_area (mesh, sy, sx, sz)) << "the fixture does not tell x and y spacing apart";
 }
 
 // The refusal paths of the hull volume: points that span no volume give 0 rather than reaching

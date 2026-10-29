@@ -91,8 +91,9 @@ Voxel spacing
 
 Nyxus featurizes a volume on its voxels as acquired; nothing is resampled. When the voxels of a
 volume are not cubic, give a scale factor for each axis. The 3D shape features scale their voxel
-coordinates by these factors: volumes scale by the product of the factors, and axis lengths are
-those of the scaled coordinates. The 3D intensity and texture features do not change.
+coordinates by these factors: volumes scale by the product of the factors, ``3AREA`` is the area
+of the mesh on the scaled grid, which no single factor relates to the unscaled area, and axis
+lengths are those of the scaled coordinates. The 3D intensity and texture features do not change.
 
 .. tab-set::
 

@@ -8,7 +8,7 @@
 #include "../feature_method.h"
 #include "../feature_settings.h"
 
-/// @brief 3D shape features of an ROI: its surface (exposed voxel faces and the marching-cubes mesh), the convex hull of that mesh, the voxel-counting volume and the principal axes.
+/// @brief 3D shape features of an ROI: its marching-cubes surface mesh (its area and the volume it encloses), the convex hull of that mesh, the voxel-counting volume and the principal axes.
 class D3_SurfaceFeature : public FeatureMethod
 {
 public:
@@ -50,6 +50,9 @@ private:
 	// Every feature of an ROI that fills its whole w x h x d box (single-ROI mode), in closed form, a
 	// voxel being sx by sy by sz
 	void set_whole_box (StatsInt w, StatsInt h, StatsInt d, double sx, double sy, double sz);
+
+	// The five volume-area ratios, from fval_AREA and fval_MESH_VOLUME
+	void set_area_ratios();
 
 	double fval_AREA,
 		fval_AREA_2_VOLUME,
