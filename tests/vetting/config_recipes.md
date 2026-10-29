@@ -828,13 +828,13 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - Covers all 32 features: the 13 angled values of each base feature and the mean its `*_AVE` twin
   stores. Pinning only the means would be a guard nothing could trip from one direction, since two
   per-angle errors of opposite sign leave the mean where it was.
-- It is the one benchmark in the family at a positive grey depth, which is where `3GLRLM_RP` is known
-  to leave its [0,1] bound — and here it does: **4 of the 13 angles read 1.0231** while the average
-  stays at 0.940. The pins record that, so the eventual fix shows up as a diff rather than as a
-  silent change. The defect stays filed in `audit/glrlm_3d_pyradiomics_vetting_report.md`.
-- Carries the aggregates the family's retired coverage sweep held (to `rel<=3.9e-16`, and `4.1e-10`
-  for `RE`, the family's only `fast_log10` path), so it is not comparable to
-  `glrlm3d.regression_ut_phantom` — the two bin the same voxels differently by construction.
+- It is the one benchmark in the family at a positive grey depth. `3GLRLM_RP` divides by the ROI's
+  voxel count, so it stays inside [0,1] here: the 13 angles top out at 0.8922 and `3GLRLM_RP_AVE`
+  is 0.8423. `TEST_3D_GLRLM_BOUNDED_FEATURES_INVARIANT` holds the bound at `GLRLM_GREYDEPTH=+64`
+  among its depths.
+- Takes over the pins the family's retired coverage sweep held at this recipe. Its values are not
+  comparable to `glrlm3d.regression_ut_phantom` — the two bin the same voxels differently by
+  construction.
 
 ## glrlm3d.analytic_two_long_runs
 - `bench_glrlm_3d_two_long_runs` — a `2L x 1 x 1` line of voxels, `L = 65,536`, built in
