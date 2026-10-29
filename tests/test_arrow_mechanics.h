@@ -320,3 +320,54 @@ void test_arrow_parquet_mechanics() {
     }
 }
 
+// A target that exists as a directory cannot be opened for writing on any platform, so
+// create_arrow_file must report the failure (naming the path) rather than hand back a writer
+// whose first write aborts the process. The same stream then writes a file next to it, so
+// the refusal is specific to the unopenable path.
+void assert_arrow_unopenable_path_refused(Nyxus::SaveOption saveOption, const std::string& ext)
+{
+    auto temp = fs::temp_directory_path() / ("nyxus_unopenable" + ext);
+    fs::remove_all(temp);
+    fs::create_directories(temp);
+
+    fs::path blocked = temp / ("NyxusFeatures" + ext);
+    fs::create_directory(blocked);
+
+    auto arrow_stream = ArrowOutputStream();
+
+    auto [status, msg] = arrow_stream.create_arrow_file(saveOption, blocked.string(), std::get<0>(features888));
+    ASSERT_FALSE(status) << "a writer was created for directory " << blocked.string();
+    ASSERT_TRUE(msg.has_value());
+    ASSERT_NE(msg->find(blocked.string()), std::string::npos) << "message does not name the path: " << *msg;
+
+    auto [wstatus, wmsg] = arrow_stream.write_arrow_file(std::get<1>(features888));
+    ASSERT_FALSE(wstatus);
+
+    std::string writable = (temp / ("writable" + ext)).string();
+
+    auto [status1, msg1] = arrow_stream.create_arrow_file(saveOption, writable, std::get<0>(features888));
+    ASSERT_TRUE(status1) << msg1.value_or("");
+
+    auto [status2, msg2] = arrow_stream.write_arrow_file(std::get<1>(features888));
+    ASSERT_TRUE(status2) << msg2.value_or("");
+
+    auto [status3, msg3] = arrow_stream.close_arrow_file();
+    ASSERT_TRUE(status3) << msg3.value_or("");
+
+    auto table = get_arrow_table(writable);
+    ASSERT_TRUE(table.ok()) << table.status().ToString();
+    ASSERT_EQ((*table)->num_rows(), (int64_t) std::get<1>(features888).size());
+
+    fs::remove_all(temp);
+}
+
+void test_arrow_ipc_unopenable_path_mechanics()
+{
+    assert_arrow_unopenable_path_refused(Nyxus::SaveOption::saveArrowIPC, ".arrow");
+}
+
+void test_arrow_parquet_unopenable_path_mechanics()
+{
+    assert_arrow_unopenable_path_refused(Nyxus::SaveOption::saveParquet, ".parquet");
+}
+
