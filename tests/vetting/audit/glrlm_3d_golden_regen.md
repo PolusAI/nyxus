@@ -112,19 +112,17 @@ the mean unmoved. Negative control, recorded here because §9 asks for the exact
 `TEST_3D_GLRLM_SRE_AVE_GREY64_REGRESSION` **passing** while
 `TEST_3D_GLRLM_SRE_GREY64_REGRESSION` **fails and names both elements**.
 
-The 16 means are the ones `test_3d_glrlm_coverage.h` carried as
+The 16 means take the place of the ones `test_3d_glrlm_coverage.h` carried as
 `glrlm_3d_regression_coverage_ref_vals`, asserted through the parameterized
 `GLRLM_UNVETTED_LOCAL_REGRESSION` suite, which reported a failure as a sanitized test-param string
-rather than a feature name. They agree with the retired literals to `rel<=3.9e-16`, except
-`3GLRLM_RE_AVE` at `4.1e-10` — the family's only sum over logarithms, evaluated through the
-float-precision `Nyxus::fast_log10`. That split is what sets the bands: `rel=1e-9` for everything
-else, `rel=1e-6` for `RE` and `RE_AVE`, which leaves `RE` a factor of ~2400 of headroom where `1e-9`
-would leave 2.4.
+rather than a feature name. The bands are `rel=1e-9` for every feature but `RE` and `RE_AVE`, which
+hold at `rel=1e-6`: `RE` is the family's only sum over logarithms, evaluated through the
+float-precision `Nyxus::fast_log10`.
 
 The recipes had to be proved equal rather than assumed. `D3_GLRLM_feature::calculate()` reads exactly
 three settings — `SOFTNAN`, `IBSI`, `GLRLM_GREYDEPTH` — and `make_3d_coverage_settings()` and
 `run_3d_glrlm_pipeline()` agree on all three (`0.0`, `false`, `64`) over the same phantom and label,
-which is why the aggregates could move unchanged.
+which is why this table takes over the sweep's pins at the same recipe.
 
 Checks run mechanically over the whole table rather than spot-checked (`revet.txt` §9):
 
