@@ -317,7 +317,7 @@ stay statements about the shipped `sharpness.cpp`.
   - For a **morphology** run, pass `base_discretisation_method="none"`: the family is computed from
     mask geometry, so a bin count would be meaningless, and MIRP then leaves the `morph_*` columns
     unsuffixed.
-- **Octave `quantile()` takes a method number 1..9** (`quantile(v, p, m)`), and `prctile()` is
+- **Octave `quantile()` takes a method number 1..9** (`quantile(v, p, dim, m)`), and `prctile()` is
   method 5 — useful when checking whether a Nyxus percentile matches a tool's *native* percentile
   rather than a reimplementation of Nyxus' own. See
   `audit/intensity_histogram_2d_analytic_vetting_report.md` for why that distinction matters.
@@ -373,11 +373,13 @@ stay statements about the shipped `sharpness.cpp`.
   matlab -batch "run('tests/vetting/oracles/gen_firstorder3d_matlab.m')"
   ```
   The generators consume the checked-in fixtures and call native statistics built-ins directly;
-  derived values use only their defining arithmetic. Nyxus' percentile family uses a fixed 100-bin
-  CDF while MATLAB evaluates the raw sample, so the measured tolerance is fixture-specific and
-  recorded in each family's recipe and report. Neither generator recreates that CDF. Historical
-  Octave measurements remain useful audit evidence, but they are not the provenance for either
-  checked-in first-order table.
+  derived values use only their defining arithmetic. Every percentile is taken as
+  `prctile(..., Method="inclusive")`, numpy's default `'linear'` ranks i/(n-1), the rule Nyxus
+  takes, and the interquartile range as P75 - P25, so both sides agree to rounding (`rel=1e-9`).
+  The percentile values in both tables are re-derived on GNU Octave 11.3.0 as
+  `quantile(x, p, 1, 7)`, the same rule, and match `numpy.percentile` to the last digit; each
+  table's provenance block records which of its values come from which tool. MATLAB run pending:
+  the generators' `prctile(..., Method="inclusive")` calls have not yet been run on MATLAB.
 
   **`regionprops` (2D morphology).** The checked-in oracle is generated with licensed MATLAB
   R2026a and Image Processing Toolbox 26.1:

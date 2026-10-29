@@ -6,6 +6,11 @@
 %
 % Every reported value uses MATLAB built-ins; derived statistics apply only their defining
 % normalization to those built-in results.
+%
+% The percentiles take prctile(x, p, Method="inclusive"), numpy's default 'linear' rule. GNU
+% Octave's prctile takes no Method argument; there the same rule is quantile(x, p/100, 1, 7), which
+% is how the pinned percentile goldens were derived. MATLAB run pending: the prctile
+% Method="inclusive" calls below have not yet been run on MATLAB.
 
 intensity_url = ['https://github.com/PolusAI/nyxus/blob/main/' ...
     'tests/data/nifti/phantoms/ut_inten.nii'];
@@ -36,8 +41,8 @@ voxels = intensity(mask == 57);
 
 sample_mean = mean(voxels);
 sample_std = std(voxels, 0);
-p25 = prctile(voxels, 25, Method="midpoint");
-p75 = prctile(voxels, 75, Method="midpoint");
+p25 = prctile(voxels, 25, Method="inclusive");
+p75 = prctile(voxels, 75, Method="inclusive");
 voxel_min = min(voxels);
 voxel_max = max(voxels);
 
@@ -54,7 +59,7 @@ fprintf('3STANDARD_ERROR             std/sqrt(n)    %.17g\n', ...
 fprintf('3UNIFORMITY_PIU             min/max PIU    %.17g\n', ...
     (1 - (voxel_max - voxel_min) / (voxel_max + voxel_min)) * 100);
 fprintf('3INTEGRATED_INTENSITY       sum            %.17g\n', sum(voxels));
-fprintf('3INTERQUARTILE_RANGE        iqr            %.17g\n', iqr(voxels));
+fprintf('3INTERQUARTILE_RANGE        P75-P25        %.17g\n', p75 - p25);
 fprintf('3KURTOSIS                   kurtosis       %.17g\n', kurtosis(voxels, 1));
 fprintf('3MAX                        max            %.17g\n', max(voxels));
 fprintf('3MEAN                       mean           %.17g\n', mean(voxels));
@@ -63,17 +68,17 @@ fprintf('3MEDIAN                     median         %.17g\n', median(voxels));
 fprintf('3MIN                        min            %.17g\n', min(voxels));
 fprintf('3MODE                       mode           %.17g\n', mode(voxels));
 fprintf('3P01                        prctile        %.17g\n', ...
-    prctile(voxels, 1, Method="midpoint"));
+    prctile(voxels, 1, Method="inclusive"));
 fprintf('3P10                        prctile        %.17g\n', ...
-    prctile(voxels, 10, Method="midpoint"));
+    prctile(voxels, 10, Method="inclusive"));
 fprintf('3P25                        prctile        %.17g\n', ...
     p25);
 fprintf('3P75                        prctile        %.17g\n', ...
     p75);
 fprintf('3P90                        prctile        %.17g\n', ...
-    prctile(voxels, 90, Method="midpoint"));
+    prctile(voxels, 90, Method="inclusive"));
 fprintf('3P99                        prctile        %.17g\n', ...
-    prctile(voxels, 99, Method="midpoint"));
+    prctile(voxels, 99, Method="inclusive"));
 fprintf('3RANGE                      range          %.17g\n', range(voxels));
 fprintf('3ROOT_MEAN_SQUARED          rms            %.17g\n', rms(voxels));
 fprintf('3SKEWNESS                   skewness       %.17g\n', skewness(voxels, 1));

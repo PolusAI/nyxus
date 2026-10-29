@@ -22,6 +22,7 @@
 #include "test_2d_firstorder_common.h"
 #include "test_2d_firstorder_regression.h"
 #include "test_2d_firstorder_matlab.h"
+#include "test_2d_firstorder_analytic.h"
 #include "test_2d_intensity_histogram_regression.h"
 #include "test_2d_intensity_degenerate_roi_mechanics.h"
 #include "test_3d_intensity_degenerate_roi_mechanics.h"
@@ -126,6 +127,7 @@
 #include "test_3d_firstorder_pyradiomics.h"
 #include "test_3d_firstorder_regression.h"
 #include "test_3d_firstorder_matlab.h"
+#include "test_3d_firstorder_analytic.h"
 #include "test_3d_glcm_pyradiomics.h"
 #include "test_3d_glcm_regression.h"
 #include "test_3d_gldm_pyradiomics.h"
@@ -244,6 +246,14 @@ TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_VARIANCE_PYRADIOMICS) {
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_MATLAB) {
 	ASSERT_NO_THROW(test_3d_firstorder_matlab());
+}
+
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_PERCENTILES_DISTINCT_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_firstorder_percentiles_distinct_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_PERCENTILES_REPEATED_ANALYTIC) {
+	ASSERT_NO_THROW(test_3d_firstorder_percentiles_repeated_analytic());
 }
 
 TEST(TEST_NYXUS, TEST_3D_FIRSTORDER_COVERED_IMAGE_INTENSITY_RANGE_REGRESSION) {
@@ -3741,9 +3751,14 @@ TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_RANGE_IBSI)
 	ASSERT_NO_THROW(test_2d_firstorder_range_ibsi());
 }
 
-TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_IBSI) 
+TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_MEAN_ABSOLUTE_DEVIATION_IBSI)
 {
 	ASSERT_NO_THROW(test_2d_firstorder_mean_absolute_deviation_ibsi());
+}
+
+TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_firstorder_robust_mean_absolute_deviation_ibsi());
 }
 
 TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_ENERGY_IBSI) 
@@ -3761,6 +3776,18 @@ TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_ROOT_MEAN_SQUARED_IBSI)
 TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_MATLAB)
 {
 	ASSERT_NO_THROW(test_2d_firstorder_matlab());
+}
+
+//***** 2D first-order percentiles vs their closed form (oracle_coverage.csv: oracle=analytic) *****
+
+TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_PERCENTILES_DISTINCT_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_firstorder_percentiles_distinct_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_FIRSTORDER_PERCENTILES_REPEATED_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_firstorder_percentiles_repeated_analytic());
 }
 
 //***** 2D GLDM regression ***** 
@@ -5804,6 +5831,12 @@ TEST(TEST_NYXUS, TEST_3D_LAYOUTA_ANISOTROPIC_THIN_ROI_IS_FEATURIZED_MECHANICS) {
 // Guards and invariants the value-parity tests cannot reach.
 TEST(TEST_NYXUS, TEST_HISTOGRAM_UNIQUES_RESET_MECHANICS) {
 	ASSERT_NO_THROW (test_histogram_uniques_reset_mechanics());
+}
+TEST(TEST_NYXUS, TEST_HISTOGRAM_DEGENERATE_PERCENTILES_MECHANICS) {
+	ASSERT_NO_THROW (test_histogram_degenerate_percentiles_mechanics());
+}
+TEST(TEST_NYXUS, TEST_HISTOGRAM_SHORT_SOURCE_PERCENTILES_MECHANICS) {
+	ASSERT_NO_THROW (test_histogram_short_source_percentiles_mechanics());
 }
 TEST(TEST_NYXUS, TEST_3D_OOC_VOLUME_GUARDS_MECHANICS) {
 	ASSERT_NO_THROW (test_3d_ooc_volume_guards_mechanics());

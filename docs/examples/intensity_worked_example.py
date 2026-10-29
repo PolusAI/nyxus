@@ -56,7 +56,7 @@ assert len(alone) == 64 and not any(alone), alone
 
 # Four bins instead of 64: entropy, uniformity and the histogram change; nothing else does
 four = Nyxus(["*ALL_INTENSITY*", "HISTOGRAM"], coarse_gray_depth=4).featurize(img, mask)
-check(four, {"ENTROPY": 1.942, "UNIFORMITY": 0.2704, "P25": 2.015, "MEAN": 2.8}, "4 bins")
+check(four, {"ENTROPY": 1.942, "UNIFORMITY": 0.2704, "P25": 2.0, "MEAN": 2.8}, "4 bins")
 assert bins(four) == [4, 6, 9, 6], bins(four)
 
 # IBSI mode changes nothing
@@ -65,11 +65,22 @@ for code in extras:
     if code != "HISTOGRAM":
         assert ibsi[code][0] == features[code][0], code
 
-# A percentile whose count p*n lands exactly on the end of a bin: 5 ones and 15 threes
+# The percentiles are numpy's default linear rule; MATLAB's default prctile is numpy's 'hazen' rule
+xs = img.astype(float).ravel()
+pct = [features[f"P{q:02d}"][0] for q in (1, 10, 25, 75, 90, 99)]
+assert all(math.isclose(a, float(np.percentile(xs, q)), rel_tol=1e-12)
+           for a, q in zip(pct, (1, 10, 25, 75, 90, 99))), pct
+assert [round(p, 4) for p in pct] == [1, 1, 2, 3, 4.6, 5], pct
+hazen = [float(np.percentile(xs, q, method="hazen")) for q in (75, 90)]
+assert hazen == [3.25, 5.0], hazen
+
+# A rank between two distinct intensities: 5 ones and 15 threes, then 6 ones and 14 threes
 v = np.array([[1] * 5 + [3] * 15], dtype=np.uint32)
-check(Nyxus(["*ALL_INTENSITY*"]).featurize(v, np.ones_like(v)), {"P25": 2.98}, "boundary")
+check(Nyxus(["*ALL_INTENSITY*"]).featurize(v, np.ones_like(v)), {"P25": 2.5}, "5 ones")
+assert np.percentile(v, 25, method="hazen") == 2.0
 v = np.array([[1] * 6 + [3] * 14], dtype=np.uint32)
-check(Nyxus(["*ALL_INTENSITY*"]).featurize(v, np.ones_like(v)), {"P25": 1.01667}, "6 ones")
+check(Nyxus(["*ALL_INTENSITY*"]).featurize(v, np.ones_like(v)), {"P25": 1.0}, "6 ones")
+assert np.percentile(v, 25, method="hazen") == 1.0
 
 # Small ROIs: skewness needs 4 pixels and kurtosis 5; the 5th and 6th moments have no minimum
 three = np.array([[1, 2, 4]], dtype=np.uint32)

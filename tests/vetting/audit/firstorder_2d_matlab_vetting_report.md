@@ -14,7 +14,7 @@ the family's 36 features under the conventions below.
 | Recipe | `firstorder2d.matlab_native` |
 | Nyxus config | default first-order settings; slide range 0..65535 for `COVERED_IMAGE_INTENSITY_RANGE` |
 | Test | `test_2d_firstorder_matlab.h` |
-| Tolerance | `rel=1e-3` for same-definition statistics; `rel=3e-2` for percentile-derived statistics |
+| Tolerance | `rel=1e-3` for same-definition statistics; `rel=1e-9` for `P01`..`P99`, `INTERQUARTILE_RANGE` and `QCOD` |
 
 Run from the repository root:
 
@@ -35,8 +35,7 @@ when a value exceeds its declared tolerance.
 | `VARIANCE`, `VARIANCE_BIASED` | `var(x,0)`, `var(x,1)` |
 | `SKEWNESS`, `KURTOSIS` | `skewness(x,1)`, `kurtosis(x,1)` |
 | `MEAN_ABSOLUTE_DEVIATION` | `mad(x,0)` |
-| `P01`, `P10`, `P25`, `P75`, `P90`, `P99` | `prctile(..., Method="midpoint")` |
-| `INTERQUARTILE_RANGE` | `iqr` |
+| `P01`, `P10`, `P25`, `P75`, `P90`, `P99` | `prctile(..., Method="inclusive")` |
 | `ROOT_MEAN_SQUARED` | `rms` |
 | `ENERGY` | `dot(x,x)` |
 | `INTEGRATED_INTENSITY` | `sum` |
@@ -47,6 +46,7 @@ The remaining vetted values use only their defining arithmetic over those result
 - `EXCESS_KURTOSIS = kurtosis(x,1) - 3`
 - `HYPERSKEWNESS = moment(x,5) / std(x,0)^5`
 - `HYPERFLATNESS = moment(x,6) / std(x,0)^6`
+- `INTERQUARTILE_RANGE = P75 - P25`
 - `QCOD = (P75-P25) / (P75+P25)`
 - `STANDARD_ERROR = std(x,0) / sqrt(numel(x))`
 - `UNIFORMITY_PIU = (1-(max-min)/(max+min))*100`
@@ -56,23 +56,26 @@ No Nyxus histogram or feature algorithm is reproduced.
 
 ## Percentile agreement
 
-Nyxus estimates percentiles from its fixed 100-bin interpolated CDF; MATLAB evaluates the raw
-sample. These are distinct estimators of the same statistics. All eight comparisons agree within
-`rel=3e-2`; the worst is `QCOD` at 2.75%.
+Both sides take sample percentiles of the same 154 pixels at numpy's default `'linear'` ranks
+i/(n-1), the method PyRadiomics and MIRP use: Nyxus takes them exactly, and MATLAB
+`prctile(..., Method="inclusive")` is the same rule. The percentile goldens are computed on GNU
+Octave 11.3.0 as `quantile(x, p, 1, 7)` and match `numpy.percentile`'s default to the last digit. MATLAB run pending: the generator's `prctile(..., Method="inclusive")` calls have not yet been run on MATLAB. Both
+sides interpolate between the same two pixels by the same fraction, so the eight rows are asserted
+at `rel=1e-9`, and Nyxus agrees exactly.
 
-| Feature | Nyxus | MATLAB R2026a | Relative error |
-|---|---:|---:|---:|
-| `P01` | 11895.3694 | 12081.4 | 1.54e-2 |
-| `P10` | 16107.472 | 16329 | 1.36e-2 |
-| `P25` | 19074.82583333333 | 19552 | 2.44e-2 |
-| `P75` | 45801.205 | 45723 | 1.71e-3 |
-| `P90` | 53381.778 | 53360.7 | 3.95e-4 |
-| `P99` | 63416.7603 | 63380.96 | 5.65e-4 |
-| `INTERQUARTILE_RANGE` | 26726.37916666667 | 26171 | 2.12e-2 |
-| `QCOD` | 0.411960763064047 | 0.40093450785139795 | 2.75e-2 |
+| Feature | Golden (`prctile` inclusive / Octave method 7) | Nyxus |
+|---|---:|---|
+| `P01` | 12527.299999999999 | exact |
+| `P10` | 16329 | exact |
+| `P25` | 19552 | exact |
+| `P75` | 45668.25 | exact |
+| `P90` | 53295.0 | exact |
+| `P99` | 63245.720000000001 | exact |
+| `INTERQUARTILE_RANGE` | 26116.25 | exact |
+| `QCOD` | 0.40043161441423486 | exact |
 
-The C++ table pins the exact MATLAB values, not the Nyxus outputs. The tolerance expresses the
-measured estimator difference; it is not a re-baseline of the oracle.
+The C++ table pins the oracle values, not the Nyxus outputs. The band rejects a percentile read
+off a 100-bin histogram, which misses these goldens by 1.6e-3 to 5.0e-2.
 
 ## Features outside the MATLAB assertion
 
@@ -81,7 +84,7 @@ measured estimator difference; it is not a re-baseline of the oracle.
 - `MEDIAN_ABSOLUTE_DEVIATION` is regression-only: MATLAB `mad(x,1)` takes the median absolute
   deviation, while Nyxus takes the mean absolute deviation about the median.
 - `ROBUST_MEAN` is regression-only: MATLAB `trimmean` removes samples by rank, while Nyxus selects
-  values through histogram-derived P10/P90 thresholds.
+  values through the P10/P90 thresholds.
 - `ENTROPY` and `ROBUST_MEAN_ABSOLUTE_DEVIATION` are already vetted by PyRadiomics.
 
 This yields 34 of 36 2D first-order features vetted by at least one oracle; the two unresolved

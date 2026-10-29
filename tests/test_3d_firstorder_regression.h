@@ -14,9 +14,9 @@ static const ref_vals_map<double> firstorder_3d_regression_ref_vals
     // MATLAB mad(x,1) takes the median absolute deviation; Nyxus takes the mean absolute
     // deviation about its median. Keep regression-only until the intended definition is resolved.
     { "3MEDIAN_ABSOLUTE_DEVIATION", 507.12380480410445 },
-    // MATLAB trimmean removes samples by rank; Nyxus selects values through histogram-derived
-    // P10/P90 thresholds. Keep regression-only until the intended trimming semantics are resolved.
-    { "3ROBUST_MEAN", 953.51896425966447 }
+    // MATLAB trimmean removes samples by rank; Nyxus selects values through the P10/P90 thresholds.
+    // Keep regression-only until the intended trimming semantics are resolved.
+    { "3ROBUST_MEAN", 952.57039303536953 }
 };
 
 static void assert_3d_firstorder_feature_regression(
