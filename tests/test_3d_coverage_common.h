@@ -138,11 +138,11 @@ static const std::set<std::string>& individually_pinned_3d_feature_names()
 TEST(TEST_NYXUS, TEST_3D_FEATURE_COVERAGE_COUNTS)
 {
 	EXPECT_EQ(213u, Nyxus::UserFacing_3D_featureNames.size());
-	// 142 of the 213 have an external reference behind them; the 16 NGLDM features and the 16 GLDZM
-	// features MIRP can discriminate are part of that count. The remaining 71 carry a named regression
-	// pin instead, which is what the loop below enforces.
-	EXPECT_EQ(142u, feature_3d_cases(true).size());
-	EXPECT_EQ(71u, feature_3d_cases(false).size());
+	// 148 of the 213 have an external reference behind them; the 16 NGLDM features and the 16 GLDZM
+	// features MIRP can discriminate, and the mesh area with its five ratios, are part of that count.
+	// The remaining 65 carry a named regression pin instead, which is what the loop below enforces.
+	EXPECT_EQ(148u, feature_3d_cases(true).size());
+	EXPECT_EQ(65u, feature_3d_cases(false).size());
 	EXPECT_EQ(Nyxus::UserFacing_3D_featureNames.size(), feature_3d_cases(true).size() + feature_3d_cases(false).size());
 
 	// SPEC 1: every public feature with no oracle behind it still has to have a named regression pin.

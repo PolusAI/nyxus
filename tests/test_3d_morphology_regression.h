@@ -18,17 +18,16 @@
 //
 // Regenerate with test_3d_morphology_dump_regression() below.
 //
-// 3AREA and the five ratios built from it are regression-only: no oracle shares their definition
-// (see test_3d_morphology_mirp.h). 3VOLUME_CONVEXHULL and 3VOXEL_VOLUME appear here as snapshots and
-// in the MATLAB and MIRP headers as separate oracle assertions. SPEC 3 treats those as distinct
-// claims, not a contradiction.
+// 3AREA, the five ratios built from it, 3VOLUME_CONVEXHULL and 3VOXEL_VOLUME appear here as
+// snapshots and in the MIRP header (and for the two volumes the MATLAB header) as separate oracle
+// assertions. SPEC 3 treats those as distinct claims, not a contradiction.
 static const ref_vals_map<double> morphology_3d_regression_ref_vals{
-    { "3AREA",  59992 },
-    { "3AREA_2_VOLUME", 0.21860475559470999 },
-    { "3COMPACTNESS1",  0.010537043861899255 },
-    { "3COMPACTNESS2",  0.039449347281835329 },
-    { "3SPHERICAL_DISPROPORTION",   2.9375598657539634 },
-    { "3SPHERICITY",    0.34041859424142729 },
+    { "3AREA",  46739.022534087213 },
+    { "3AREA_2_VOLUME", 0.17037000249358961 },
+    { "3COMPACTNESS1",  0.015317649265301225 },
+    { "3COMPACTNESS2",  0.083365524768728425 },
+    { "3SPHERICAL_DISPROPORTION",   2.2891337610474518 },
+    { "3SPHERICITY",    0.43684646874563782 },
     { "3VOLUME_CONVEXHULL", 496958.33333333331 },
     { "3VOXEL_VOLUME",  274431.35826022143 }
 };

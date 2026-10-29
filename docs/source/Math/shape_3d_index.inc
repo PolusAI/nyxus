@@ -11,25 +11,25 @@
      - Validation
      - Example
    * - :ref:`3AREA <feature-3area>`
-     - Surface area (exposed voxel faces)
-     - —
-     - regression
-     - 96
+     - Surface area (mesh)
+     - C0JK
+     - analytic (rel. 1e-12), MIRP (rel. 1e-6), PyRadiomics (rel. 1e-9)
+     - 66.37
    * - :ref:`3AREA_2_VOLUME <feature-3area-2-volume>`
      - Surface to volume ratio
-     - —
-     - regression
-     - 2.182
+     - 2PR5
+     - analytic (rel. 1e-12), MIRP (rel. 1e-6), PyRadiomics (rel. 1e-9)
+     - 1.677
    * - :ref:`3COMPACTNESS1 <feature-3compactness1>`
      - Compactness 1
-     - —
-     - regression
-     - 0.02639
+     - SKGS
+     - analytic (rel. 1e-12), MIRP (rel. 1e-6)
+     - 0.04131
    * - :ref:`3COMPACTNESS2 <feature-3compactness2>`
      - Compactness 2
-     - —
-     - regression
-     - 0.2475
+     - BQWJ
+     - analytic (rel. 1e-12), MIRP (rel. 1e-6)
+     - 0.6062
    * - :ref:`3MESH_VOLUME <feature-3mesh-volume>`
      - Volume (mesh)
      - RNU0
@@ -37,14 +37,14 @@
      - 39.58
    * - :ref:`3SPHERICAL_DISPROPORTION <feature-3spherical-disproportion>`
      - Spherical disproportion
-     - —
-     - regression
-     - 1.593
+     - KRCK
+     - analytic (rel. 1e-12), MIRP (rel. 1e-6)
+     - 1.182
    * - :ref:`3SPHERICITY <feature-3sphericity>`
      - Sphericity
-     - —
-     - regression
-     - 0.6278
+     - QCFX
+     - analytic (rel. 1e-12), MIRP (rel. 1e-6), PyRadiomics (rel. 1e-9)
+     - 0.8463
    * - :ref:`3VOLUME_CONVEXHULL <feature-3volume-convexhull>`
      - Convex hull volume
      - —
