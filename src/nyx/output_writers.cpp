@@ -7,6 +7,7 @@
 #ifdef USE_ARROW
 
 #include <iostream>
+#include <stdexcept>
 #include <parquet/arrow/reader.h>
 #include "helpers/fsystem.h"
 #include "helpers/helpers.h"
@@ -32,7 +33,7 @@ arrow::Status ParquetWriter::setup(const std::vector<std::string>& header) {
 
     schema_ = arrow::schema(fields);
 
-    PARQUET_ASSIGN_OR_THROW(
+    ARROW_ASSIGN_OR_RAISE(
         output_stream_, arrow::io::FileOutputStream::Open(output_file_)
     );
 
@@ -54,14 +55,15 @@ arrow::Status ParquetWriter::setup(const std::vector<std::string>& header) {
 
 
 
+// A writer whose setup failed has no usable output stream or file writer, so the
+// constructor throws rather than return a half-built object; WriterFactory::create_writer
+// turns the exception into its error message.
 ParquetWriter::ParquetWriter(const std::string& output_file, const std::vector<std::string>& header) : output_file_(output_file) {
 
     auto status = this->setup(header);
 
-    if (!status.ok()) {
-        // Handle read error
-        std::cout << "Error writing setting up Arrow writer: " << status.ToString() << std::endl;
-    }
+    if (!status.ok())
+        throw std::runtime_error("cannot set up the Parquet writer for " + output_file_ + ": " + status.ToString());
 }
 
 arrow::Status ParquetWriter::write (const std::vector<FTABLE_RECORD>& features) {
@@ -302,15 +304,19 @@ arrow::Status ArrowIPCWriter::setup(const std::vector<std::string>& header) {
 
     writer_ = arrow::ipc::MakeFileWriter(output_stream_, schema_);
 
-    return arrow::Status::OK();
+    return writer_.status();
 }
 
 
 
+// Throws on a failed setup for the same reason as ParquetWriter's constructor: write() and
+// close() dereference writer_, and an unassigned arrow::Result aborts the process there.
 ArrowIPCWriter::ArrowIPCWriter(const std::string& output_file, const std::vector<std::string>& header) : output_file_(output_file) {
 
     auto status = this->setup(header);
 
+    if (!status.ok())
+        throw std::runtime_error("cannot set up the Arrow IPC writer for " + output_file_ + ": " + status.ToString());
 }
 
 arrow::Status ArrowIPCWriter::write (const std::vector<FTABLE_RECORD>& features)
@@ -531,32 +537,40 @@ arrow::Status ArrowIPCWriter::close() {
 
 std::tuple<std::unique_ptr<ApacheArrowWriter>, std::optional<std::string>> WriterFactory::create_writer(const std::string& output_file, const std::vector<std::string>& header) {
 
-    if (Nyxus::ends_with_substr(output_file, ".parquet")) {
+    // the writers' constructors throw when the file cannot be opened for writing
+    // (a directory, a read-only location, a file another process holds mapped)
+    try {
 
-        return { std::make_unique<ParquetWriter>(output_file, header), std::nullopt };
+        if (Nyxus::ends_with_substr(output_file, ".parquet")) {
+
+            return { std::make_unique<ParquetWriter>(output_file, header), std::nullopt };
+
+        }
+        else if (Nyxus::ends_with_substr(output_file, ".arrow") || Nyxus::ends_with_substr(output_file, ".feather")) {
+
+            return { std::make_unique<ArrowIPCWriter>(output_file, header), std::nullopt };
+
+        }
+    }
+    catch (const std::exception& e) {
+
+        return { nullptr, std::string{ e.what() } };
 
     }
-    else if (Nyxus::ends_with_substr(output_file, ".arrow") || Nyxus::ends_with_substr(output_file, ".feather")) {
 
-        return { std::make_unique<ArrowIPCWriter>(output_file, header), std::nullopt };
+    fs::path path(output_file);
 
-    }
-    else {
+    auto error_msg = [&path]() {
+        if (path.has_extension())
+        {
+            return "No writer option for extension \"" + path.extension().string() + "\". Valid options are \".parquet\" or \".arrow\".";
+        }
+        else {
+            return std::string{ "No extension type was provided in the path." };
+        }
+    };
 
-        fs::path path(output_file);
-
-        auto error_msg = [&path]() {
-            if (path.has_extension())
-            {
-                return "No writer option for extension \"" + path.extension().string() + "\". Valid options are \".parquet\" or \".arrow\".";
-            }
-            else {
-                return std::string{ "No extension type was provided in the path." };
-            }
-        };
-
-        return { nullptr, error_msg() };
-    }
+    return { nullptr, error_msg() };
 }
 #endif
 
