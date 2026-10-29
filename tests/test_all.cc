@@ -874,6 +874,14 @@ TEST(TEST_NYXUS, TEST_ARROW_PARQUET_MECHANICS) {
 	test_arrow_parquet_mechanics();
 }
 
+TEST(TEST_NYXUS, TEST_ARROW_IPC_UNOPENABLE_PATH_MECHANICS) {
+	test_arrow_ipc_unopenable_path_mechanics();
+}
+
+TEST(TEST_NYXUS, TEST_ARROW_PARQUET_UNOPENABLE_PATH_MECHANICS) {
+	test_arrow_parquet_unopenable_path_mechanics();
+}
+
 #endif
 
 //***** 3D shape *****
