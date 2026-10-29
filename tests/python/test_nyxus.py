@@ -723,9 +723,66 @@ class TestNyxus():
             
             arrow_path = nyx.featurize(intens, seg, output_type="arrowipc")
 
-            assert arrow_path == 'NyxusFeatures.arrow'     
+            assert arrow_path == 'NyxusFeatures.arrow'
 
-        
+        @pytest.mark.arrow
+        @pytest.mark.parametrize("output_type, ext", [("arrowipc", ".arrow"), ("parquet", ".parquet")])
+        def test_arrow_unopenable_path_raises(self, tmp_path, output_type, ext):
+            '''
+            An output file that cannot be opened for writing raises RuntimeError naming the
+            file, rather than aborting the interpreter. The target here is a directory, which
+            no platform opens for writing. The same Nyxus object then writes to a writable path.
+            '''
+
+            nyx = nyxus.Nyxus (["MEAN"])
+
+            # a directory output_path resolves to <dir>/NyxusFeatures<ext>
+            blocked = tmp_path/("NyxusFeatures" + ext)
+            blocked.mkdir()
+
+            with pytest.raises(RuntimeError, match="NyxusFeatures" + ext.replace(".", r"\.")):
+                nyx.featurize(intens, seg, output_type=output_type, output_path=str(tmp_path))
+
+            writable = tmp_path/("writable" + ext)
+            out_path = nyx.featurize(intens, seg, output_type=output_type, output_path=str(writable))
+            assert out_path == str(writable)
+            assert writable.is_file()
+
+            if output_type == "parquet":
+                tbl = pq.read_table(out_path)
+            else:
+                with pa.memory_map(out_path, 'rb') as source:
+                    tbl = pa.ipc.open_file(source).read_all()
+            assert tbl.num_rows == len(nyx.featurize(intens, seg))
+
+        @pytest.mark.arrow
+        @pytest.mark.skipif(sys.platform != "win32", reason="only Windows refuses to truncate a memory-mapped file")
+        def test_arrow_ipc_mapped_file_raises(self, tmp_path):
+            '''
+            Featurizing to an Arrow IPC file that a live pyarrow table still maps fails to open
+            on Windows; that failure raises RuntimeError. Once the table is released, the same
+            path is written again.
+            '''
+
+            nyx = nyxus.Nyxus (["MEAN"])
+            out_file = tmp_path/"mapped.arrow"
+
+            arrow_path = nyx.featurize(intens, seg, output_type="arrowipc", output_path=str(out_file))
+            source = pa.memory_map(arrow_path, 'rb')
+            tbl = pa.ipc.open_file(source).read_all()
+            source.close()
+
+            with pytest.raises(RuntimeError, match=r"mapped\.arrow"):
+                nyx.featurize(intens, seg, output_type="arrowipc", output_path=str(out_file))
+
+            n_rows = tbl.num_rows
+            del tbl
+
+            assert nyx.featurize(intens, seg, output_type="arrowipc", output_path=str(out_file)) == str(out_file)
+            with pa.memory_map(arrow_path, 'rb') as source:
+                assert pa.ipc.open_file(source).read_all().num_rows == n_rows
+
+
         def test_image_quality(self):
             '''
             Test that ImageQuality class can be imported and will calculated features.
