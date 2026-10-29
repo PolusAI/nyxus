@@ -37,6 +37,9 @@ MAP_NAME = "morphology_3d_pyradiomics_ref_vals"
 
 # Nyxus feature name -> PyRadiomics shape feature name.
 NAME_MAP = {
+    "3AREA": "SurfaceArea",
+    "3AREA_2_VOLUME": "SurfaceVolumeRatio",
+    "3SPHERICITY": "Sphericity",
     "3MESH_VOLUME": "MeshVolume",
     "3MAJOR_AXIS_LEN": "MajorAxisLength",
     "3MINOR_AXIS_LEN": "MinorAxisLength",
@@ -149,6 +152,24 @@ def main():
         checks.append(("3MESH_VOLUME == unit-spacing MeshVolume * sx*sy*sz",
                        relerr(pins["3MESH_VOLUME"], unit["MeshVolume"] * product) < 1e-12,
                        pins["3MESH_VOLUME"]))
+    if {"3AREA", "3AREA_2_VOLUME", "3MESH_VOLUME"} <= set(pins):
+        # the ratio is taken over the mesh volume, which is what Nyxus divides by too
+        checks.append(("3AREA_2_VOLUME == 3AREA / 3MESH_VOLUME",
+                       relerr(pins["3AREA_2_VOLUME"], pins["3AREA"] / pins["3MESH_VOLUME"]) < 1e-12,
+                       pins["3AREA_2_VOLUME"]))
+    if {"3AREA", "3SPHERICITY", "3MESH_VOLUME"} <= set(pins):
+        checks.append(("3SPHERICITY == (36 pi 3MESH_VOLUME^2)^(1/3) / 3AREA",
+                       relerr(pins["3SPHERICITY"],
+                              (36.0 * math.pi * pins["3MESH_VOLUME"] ** 2) ** (1.0 / 3.0) / pins["3AREA"]) < 1e-12,
+                       pins["3SPHERICITY"]))
+    if "3AREA" in pins:
+        # unlike the volume, the area of a non-cubic grid's mesh is no multiple of the unit-spacing one
+        # by any single factor of the spacing, so these bounds are the only scaling it obeys
+        lo, hi = min(SPACING[0] * SPACING[1], SPACING[1] * SPACING[2], SPACING[0] * SPACING[2]), \
+            max(SPACING[0] * SPACING[1], SPACING[1] * SPACING[2], SPACING[0] * SPACING[2])
+        checks.append(("unit-spacing SurfaceArea * min(sx sy, sy sz, sx sz) < 3AREA < ... * max(...)",
+                       unit["SurfaceArea"] * lo < pins["3AREA"] < unit["SurfaceArea"] * hi,
+                       pins["3AREA"]))
     checks.append(("VoxelVolume == N * sx*sy*sz (N = 274432, the count the axis factor uses)",
                    relerr(result["VoxelVolume"], 274432 * SPACING[0] * SPACING[1] * SPACING[2]) < 1e-12,
                    result["VoxelVolume"]))

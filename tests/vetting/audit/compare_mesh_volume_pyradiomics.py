@@ -12,7 +12,7 @@ while Nyxus carries all 256 masks (see derive_marching_cubes_table.py).
 
 The Nyxus side here is a replay of the MC_TRIANGLES table read from
 src/nyx/features/3d_mesh.cpp, walked the way march_roi_surface() walks it and
-integrated from the first vertex the way roi_mesh_volume() does. It reads the
+integrated from the first vertex the way roi_mesh_measures() does. It reads the
 shipped table, so it follows any change to it; it does not run the Nyxus binary.
 The PyRadiomics side calls the compiled radiomics.cShape.calculate_coefficients
 that shape.py calls, at unit spacing, on the mask cropped to its bounding box,

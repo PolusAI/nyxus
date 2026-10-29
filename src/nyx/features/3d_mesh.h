@@ -48,19 +48,32 @@ namespace Nyxus
 	/// and the result does not change when the mesh is translated.
 	double mesh_volume (const std::vector<Triangle3>& mesh);
 
-	/// @brief Volume (mesh) of an ROI read plane by plane: the same integral as mesh_volume() over
-	/// march_roi_surface()'s triangles, accumulated as they are emitted, so neither the mask nor the
-	/// mesh is ever held whole. In-memory and out-of-core ROIs share it, and an ROI gets the same
-	/// value from both.
+	/// @brief Area of a triangulated lattice surface on a grid of sx x sy x sz voxels: each facet's
+	/// edges are scaled along x, y and z before its area is taken. A grid that is not cubic scales each
+	/// facet's area by a factor of its own orientation, so unlike the volume the area is no multiple of
+	/// the lattice one.
+	double mesh_area (const std::vector<Triangle3>& mesh, double sx, double sy, double sz);
+
+	/// @brief Volume (mesh) and area (mesh) of an ROI's surface, on a grid of sx x sy x sz voxels
+	struct MeshMeasures
+	{
+		double volume = 0.0, area = 0.0;
+	};
+
+	/// @brief Volume (mesh) and area (mesh) of an ROI read plane by plane: mesh_volume() and
+	/// mesh_area() over march_roi_surface()'s triangles, accumulated as they are emitted, so neither
+	/// the mask nor the mesh is ever held whole. In-memory and out-of-core ROIs share it, and an ROI
+	/// gets the same values from both. The volume is taken on the lattice and times a voxel's volume,
+	/// sx*sy*sz; the area is taken facet by facet on the grid.
 	///
 	/// hull_points, when given, receives the points the surface's convex hull is spanned by: of the
 	/// mesh vertices on each lattice row along x, the two ends -- a vertex between two others on one
-	/// line cannot be a vertex of the hull. They are in doubled coordinates, so the half-integer
-	/// vertices become integers, and are ordered by row.
-	double roi_mesh_volume (const LatticeBounds& bounds, const RoiPlaneSource& planes,
-		std::vector<std::array<double, 3>>* hull_points = nullptr);
+	/// line cannot be a vertex of the hull. They are in doubled lattice coordinates, so the
+	/// half-integer vertices become integers, and are ordered by row.
+	MeshMeasures roi_mesh_measures (const LatticeBounds& bounds, const RoiPlaneSource& planes,
+		double sx, double sy, double sz, std::vector<std::array<double, 3>>* hull_points = nullptr);
 
-	/// @brief roi_mesh_volume() over an in-memory voxel cloud.
-	double roi_mesh_volume (const std::vector<Pixel3>& cloud,
-		std::vector<std::array<double, 3>>* hull_points = nullptr);
+	/// @brief roi_mesh_measures() over an in-memory voxel cloud.
+	MeshMeasures roi_mesh_measures (const std::vector<Pixel3>& cloud,
+		double sx, double sy, double sz, std::vector<std::array<double, 3>>* hull_points = nullptr);
 }

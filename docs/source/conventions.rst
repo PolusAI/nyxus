@@ -411,8 +411,8 @@ Units, pixel size and anisotropy
 Nyxus measures in pixels and voxels. It applies no physical pixel size to any feature.
 
 - **Lengths** are in pixels (2D) or voxels (3D), **areas** in pixels, and **volumes** in cubic
-  voxels. ``3AREA`` counts exposed voxel faces. Angles are in degrees, except the chord angles,
-  which are in radians. Run lengths, zone sizes and zone distances count pixels or voxels,
+  voxels. ``3AREA`` is a mesh area in squared voxels. Angles are in degrees, except the chord
+  angles, which are in radians. Run lengths, zone sizes and zone distances count pixels or voxels,
   whatever the spacing.
 - **Pixel size.** ``AREA_UM2`` is always 0, a known defect (`#496 <https://github.com/PolusAI/nyxus/issues/496>`__). ``--pixelsPerCentimeter`` and the Python
   ``pixels_per_micron`` are accepted but change no feature. The ``phys_x``, ``phys_y`` and
@@ -445,7 +445,9 @@ Nyxus measures in pixels and voxels. It applies no physical pixel size to any fe
        ``anisotropy_z``; or ``--use-physical-spacing=true`` (Python ``use_physical_spacing``)
      - The volume (3D or 2.5D) is featurized on its voxels as acquired, and the 3D
        shape features scale their coordinates by the factors: the volumes scale by the factors'
-       product and the axis lengths are those of the scaled coordinates. The 3D intensity and
+       product, ``3AREA`` is the area of the mesh on the scaled grid, which no single factor
+       relates to the unscaled area, and the axis lengths are those of the scaled coordinates. The
+       3D intensity and
        texture features do not change. ``use_physical_spacing`` takes the factors from the OME
        ``PhysicalSize`` values, scaled so that the smallest is 1. A factor other than 1 in any
        ``anisotropy_*`` / ``--aniso*`` replaces the physical spacing on all three axes; the axes

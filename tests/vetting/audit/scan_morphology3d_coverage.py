@@ -20,13 +20,14 @@ SOURCES = [
 ]
 
 NOTE = {
-    "3AREA": "Nyxus counts exposed voxel faces (59992); MIRP/pyradiomics integrate a marching-cubes "
-             "mesh (46739), a 28% convention difference -- regression-only until it is settled",
-    "3AREA_2_VOLUME": "inherits the 3AREA surface-area convention difference",
-    "3COMPACTNESS1": "inherits the 3AREA surface-area convention difference",
-    "3COMPACTNESS2": "inherits the 3AREA surface-area convention difference",
-    "3SPHERICITY": "inherits the 3AREA surface-area convention difference",
-    "3SPHERICAL_DISPROPORTION": "inherits the 3AREA surface-area convention difference",
+    "3AREA": "IBSI area (mesh) = MIRP morph_area_mesh 46739.0195, pinned at rel=1e-6; pyradiomics "
+             "SurfaceArea at spacing (1.3, 0.8, 2.5) at rel=1e-9; closed-form octahedra and bevelled "
+             "boxes on three grids at rel=1e-12 in the analytic file",
+    "3AREA_2_VOLUME": "mesh area over mesh volume = MIRP morph_av and pyradiomics SurfaceVolumeRatio",
+    "3COMPACTNESS1": "over the mesh area and mesh volume = MIRP morph_comp_1",
+    "3COMPACTNESS2": "over the mesh area and mesh volume = MIRP morph_comp_2",
+    "3SPHERICITY": "over the mesh area and mesh volume = MIRP morph_sphericity and pyradiomics Sphericity",
+    "3SPHERICAL_DISPROPORTION": "over the mesh area and mesh volume = MIRP morph_sph_dispr",
     "3MESH_VOLUME": "IBSI volume (mesh) = MIRP morph_volume 274338.3438, pinned at rel=1e-6; also "
                     "pinned against closed-form solids in the analytic file. MATLAB regionprops3 "
                     "carries no mesh volume, so it holds no row for this feature",
