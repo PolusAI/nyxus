@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include "../src/nyx/features/edt.h"
+#include "../src/nyx/features/erosion.h"
 #include "../src/nyx/features/roi_radius.h"
 #include "test_main_nyxus.h"   // roi_cache.h / featureset.h / pixel.h
 
@@ -149,6 +150,7 @@ inline void test_2d_roi_radius_single_pixel_mechanics()
     const Pixel2 p (17L, 23L, (PixIntens)1);
     roi.raw_pixels.push_back (p);
     roi.multicontour_.push_back ({ p });
+    roi.merge_multicontour();
     roi.make_nonanisotropic_aabb();
 
     RoiRadiusFeature f;
@@ -159,9 +161,9 @@ inline void test_2d_roi_radius_single_pixel_mechanics()
     ASSERT_EQ (0.0, roi.fvals[(int)Nyxus::Feature2D::ROI_RADIUS_MEDIAN][0]);
 }
 
-// A contour lying outside the ROI's own bounding box. Contours are traced on a padded image and come
-// back offset from the pixel cloud, so the raster is sized to hold both; sizing it to the cloud
-// alone would index past the buffer here.
+// A contour lying partly outside the ROI's own bounding box, set on the ROI directly rather than
+// traced. RoiRadiusFeature sizes its raster to hold both; sizing it to the cloud alone would index
+// past the buffer here.
 inline void test_2d_roi_radius_contour_outside_bbox_mechanics()
 {
     Fsettings s;
@@ -174,9 +176,10 @@ inline void test_2d_roi_radius_contour_outside_bbox_mechanics()
         {
             roi.raw_pixels.push_back (Pixel2(x, y, (PixIntens)1));
             if (x == 0 || y == 0 || x == 4 || y == 4)
-                contour.push_back (Pixel2(x + 1, y + 1, (PixIntens)1));   // the (+1,+1) offset
+                contour.push_back (Pixel2(x + 1, y + 1, (PixIntens)1));   // shifted one pixel off the cloud
         }
     roi.multicontour_.push_back (contour);
+    roi.merge_multicontour();
     roi.make_nonanisotropic_aabb();
 
     RoiRadiusFeature f;
@@ -188,4 +191,45 @@ inline void test_2d_roi_radius_contour_outside_bbox_mechanics()
     const double mx = roi.fvals[(int)Nyxus::Feature2D::ROI_RADIUS_MAX][0];
     ASSERT_GE (mx, 0.0);
     ASSERT_LE (mx, bound) << "a distance past the union's diagonal means the raster was mis-sized";
+}
+
+// The GPU erosion counts what the CPU counts, through a cache allocated for the ROI and through one
+// reallocated for larger ROIs after an allocation for 3 x 3 ones, whose matrices then have the new
+// size. With the GPU on and its cache not ready -- never allocated, or after an allocation or a free
+// that failed part way -- the erosions are computed on the CPU.
+void test_2d_morphology_gpu_erosion_mechanics()
+{
+#ifdef USE_GPU
+	const Fsettings s = make_shape2d_settings();
+	for (int radius : { 5, 20 })
+	{
+		SCOPED_TRACE("disk of radius " + std::to_string(radius));
+		std::unordered_map<int, LR> rois;
+		gpu_test_roi (rois, 1, gpu_test_disk_rows (radius), 2, 2);
+		const size_t side = 2 * radius + 1;
+		GpuCacheTestRig cache;
+		ASSERT_FALSE(cache.allocate (1, 9, 3, 3, 6, true).has_value());
+		ASSERT_FALSE(cache.allocate (1, side * side, side, side, 2 * side, true).has_value());
+		const std::vector<int> labels { 1 };
+		cache.send (labels, rois, 0, 1);
+		ErosionPixelsFeature::gpu_process_all_rois (labels, rois, 0, 1, cache.g);
+		const double gpu = rois[1].fvals[(int)Nyxus::Feature2D::EROSIONS_2_VANISH][0];
+		ErosionPixelsFeature cpu;
+		cpu.calculate (rois[1], s);
+		cpu.save_value (rois[1].fvals);
+		ASSERT_EQ(gpu, rois[1].fvals[(int)Nyxus::Feature2D::EROSIONS_2_VANISH][0]);
+		ASSERT_GT(gpu, 0.0);
+	}
+
+	for (GpuUnready why : { GpuUnready::never_allocated, GpuUnready::allocation_failed_part_way, GpuUnready::free_failed_part_way })
+	{
+		SCOPED_TRACE(gpu_unready_name (why));
+		std::vector<std::vector<double>> on, off;
+		ASSERT_NO_FATAL_FAILURE(gpu_unready_vs_cpu ({ Nyxus::Feature2D::EROSIONS_2_VANISH, Nyxus::Feature2D::EROSIONS_2_VANISH_COMPLEMENT }, why, on, off));
+		ASSERT_EQ(on[(int)Nyxus::Feature2D::EROSIONS_2_VANISH][0], off[(int)Nyxus::Feature2D::EROSIONS_2_VANISH][0]);
+		ASSERT_GT(off[(int)Nyxus::Feature2D::EROSIONS_2_VANISH][0], 0.0);
+	}
+#else
+	GTEST_SKIP() << "built without USE_GPU";
+#endif
 }

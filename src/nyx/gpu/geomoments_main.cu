@@ -22,7 +22,9 @@ namespace NyxusGpu
         const Pixel2* d_roicloud,
         size_t cloud_len,
         const Pixel2* d_roicontour,
-        size_t contour_len);
+        size_t contour_len,
+        const size_t* d_border_ends,
+        size_t n_borders);
 
     bool ImageMomentsFeature_calcHuInvariants3(gpureal* d_state, bool weighted);
 
@@ -43,6 +45,9 @@ namespace NyxusGpu
         size_t contour_len = devside.gpu_roicontours_2d.ho_lengths[roi_index];
         size_t contour_offset = devside.gpu_roicontours_2d.ho_offsets[roi_index];
         Pixel2* d_contour = &devside.gpu_roicontours_2d.devbuffer[contour_offset];
+        size_t n_borders = devside.gpu_roicontourborders_2d.ho_lengths[roi_index];
+        size_t borders_offset = devside.gpu_roicontourborders_2d.ho_offsets[roi_index];
+        const size_t* d_border_ends = &devside.gpu_roicontourborders_2d.devbuffer[borders_offset];
         double* d_prereduce = devside.dev_prereduce;
         auto& d_devicereduce_tempstorage = devside.dev_devicereduce_temp_storage;
         size_t devicereduce_tempstorage_szb = devside.devicereduce_temp_storage_szb;
@@ -111,7 +116,9 @@ namespace NyxusGpu
             d_cloud,
             cloud_len,
             d_contour,
-            contour_len))
+            contour_len,
+            d_border_ends,
+            n_borders))
             return false;
 
         //==== Weighted raw moments (result in state[WRM...])

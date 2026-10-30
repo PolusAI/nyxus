@@ -309,92 +309,92 @@
      - Intensity weighted raw moment (0, 0)
      - —
      - regression
-     - −144.7
+     - −331.7
    * - :ref:`IMOM_WRM_01 <feature-imom-wrm-01>`
      - Intensity weighted raw moment (0, 1)
      - —
      - regression
-     - −426.2
+     - −988.6
    * - :ref:`IMOM_WRM_02 <feature-imom-wrm-02>`
      - Intensity weighted raw moment (0, 2)
      - —
      - regression
-     - −1873
+     - −4817
    * - :ref:`IMOM_WRM_03 <feature-imom-wrm-03>`
      - Intensity weighted raw moment (0, 3)
      - —
      - regression
-     - −9595
+     - −25120
    * - :ref:`IMOM_WRM_10 <feature-imom-wrm-10>`
      - Intensity weighted raw moment (1, 0)
      - —
      - regression
-     - −496.8
+     - −1092
    * - :ref:`IMOM_WRM_11 <feature-imom-wrm-11>`
      - Intensity weighted raw moment (1, 1)
      - —
      - regression
-     - −864.2
+     - −2983
    * - :ref:`IMOM_WRM_12 <feature-imom-wrm-12>`
      - Intensity weighted raw moment (1, 2)
      - —
      - regression
-     - −2417
+     - −14100
    * - :ref:`IMOM_WRM_20 <feature-imom-wrm-20>`
      - Intensity weighted raw moment (2, 0)
      - —
      - regression
-     - −2298
+     - −5135
    * - :ref:`IMOM_WRM_21 <feature-imom-wrm-21>`
      - Intensity weighted raw moment (2, 1)
      - —
      - regression
-     - −3089
+     - −13840
    * - :ref:`IMOM_WRM_30 <feature-imom-wrm-30>`
      - Intensity weighted raw moment (3, 0)
      - —
      - regression
-     - −12390
+     - −27060
    * - :ref:`IMOM_WCM_02 <feature-imom-wcm-02>`
      - Intensity weighted central moment (0, 2)
      - —
      - regression
-     - −617.3
+     - −1871
    * - :ref:`IMOM_WCM_03 <feature-imom-wcm-03>`
      - Intensity weighted central moment (0, 3)
      - —
      - regression
-     - −440.8
+     - 388.9
    * - :ref:`IMOM_WCM_11 <feature-imom-wcm-11>`
      - Intensity weighted central moment (1, 1)
      - —
      - regression
-     - 599.2
+     - 270.9
    * - :ref:`IMOM_WCM_12 <feature-imom-wcm-12>`
      - Intensity weighted central moment (1, 2)
      - —
      - regression
-     - 483.1
+     - 137.7
    * - :ref:`IMOM_WCM_20 <feature-imom-wcm-20>`
      - Intensity weighted central moment (2, 0)
      - —
      - regression
-     - −592
+     - −1542
    * - :ref:`IMOM_WCM_21 <feature-imom-wcm-21>`
      - Intensity weighted central moment (2, 1)
      - —
      - regression
-     - −434.8
+     - −312.9
    * - :ref:`IMOM_WCM_30 <feature-imom-wcm-30>`
      - Intensity weighted central moment (3, 0)
      - —
      - regression
-     - −434.1
+     - −7.447
    * - :ref:`IMOM_WNCM_02 <feature-imom-wncm-02>`
      - Intensity weighted normalized central moment (0, 2)
      - —
      - regression
-     - −0.02949
+     - −0.01701
    * - :ref:`IMOM_WNCM_03 <feature-imom-wncm-03>`
      - Intensity weighted normalized central moment (0, 3)
      - —
@@ -404,7 +404,7 @@
      - Intensity weighted normalized central moment (1, 1)
      - —
      - regression
-     - 0.02863
+     - 0.002463
    * - :ref:`IMOM_WNCM_12 <feature-imom-wncm-12>`
      - Intensity weighted normalized central moment (1, 2)
      - —
@@ -414,7 +414,7 @@
      - Intensity weighted normalized central moment (2, 0)
      - —
      - regression
-     - −0.02828
+     - −0.01402
    * - :ref:`IMOM_WNCM_21 <feature-imom-wncm-21>`
      - Intensity weighted normalized central moment (2, 1)
      - —
@@ -429,12 +429,12 @@
      - Intensity weighted Hu invariant 1
      - —
      - regression
-     - −0.05777
+     - −0.03103
    * - :ref:`IMOM_WHU2 <feature-imom-whu2>`
      - Intensity weighted Hu invariant 2
      - —
      - regression
-     - 0.003279
+     - 3.318e−05
    * - :ref:`IMOM_WHU3 <feature-imom-whu3>`
      - Intensity weighted Hu invariant 3
      - —

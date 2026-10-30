@@ -19,7 +19,7 @@
      - Mean intensity in a ring
      - —
      - regression
-     - 7
+     - 9
    * - :ref:`RADIAL_CV <feature-radial-cv>`
      - Coefficient of variation across the wedges of a ring
      - —
