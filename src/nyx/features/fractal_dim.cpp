@@ -126,40 +126,62 @@ void FractalDimensionFeature::calculate_boxcount_fdim_oversized (LR & r)
 
 void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 {
-	// The divider walks ONE closed contour. merge_multicontour concatenates every contour of the
-	// ROI, so a multi-contour ROI (holes / disconnected fragments) injects spurious seam chords
-	// between them that bias the dimension; this path assumes a single-contour ROI.
-	std::vector<Pixel2> K;
-	r.merge_multicontour(K);
-
-	auto conLen = K.size();
-	if (conLen < 3)
+	// The divider walks each closed border of the ROI -- the outer border of every fragment and the
+	// border of every hole -- on its own, and the borders' lengths and steps are summed per stride.
+	// No step joins one border to another.
+	size_t longest = 0;
+	for (const std::vector<Pixel2>& K : r.multicontour_)
+		longest = std::max (longest, K.size());
+	if (longest < 3)
 	{
 		perim_fd = 0.;
 		return;
 	}
 
-	// Richardson "structured walk" (divider) method on the CLOSED contour K.
-	// For each stride s, walk the contour in steps of s vertices, summing Euclidean chord
-	// lengths and closing the loop back to the start. Record x = mean ruler (chord) length
-	// and y = perimeter estimate. Since log(perimeter) ~ (1 - D) log(ruler), D = 1 - slope.
+	// Richardson "structured walk" (divider) method on the CLOSED borders.
+	// For each stride s, walk every border in steps of s vertices, summing Euclidean chord
+	// lengths and closing each loop back to its start. A border no longer than the stride cannot
+	// have a ruler that long laid along it and is measured whole instead: it adds its closed length,
+	// the length stride 1 measures it at, and no ruler, so the mean ruler is that of the borders the
+	// stride walks. Record x = mean ruler (chord) length and y = perimeter estimate. Since
+	// log(perimeter) ~ (1 - D) log(ruler), D = 1 - slope.
 	// Validated against the analytic Koch snowflake (D = log4/log3 = 1.2619) and a circle (D = 1).
-	std::vector<std::pair<double, double>> coverage;
-	for (size_t s = conLen / 4; s > 0; s /= 2)
+	std::vector<double> closedLen;
+	for (const std::vector<Pixel2>& K : r.multicontour_)
 	{
-		double perim = 0.;
-		size_t nsteps = 0, i = 0;
-		for (; i + s < conLen; i += s)
+		double len = 0.;
+		for (size_t i = 0, n = K.size(); n > 1 && i < n; i++)
+			len += std::sqrt(K[i].sqdist(K[(i + 1) % n]));
+		closedLen.push_back(len);
+	}
+
+	std::vector<std::pair<double, double>> coverage;
+	for (size_t s = longest / 4; s > 0; s /= 2)
+	{
+		double walked = 0., whole = 0.;
+		size_t nsteps = 0;
+		for (size_t k = 0; k < r.multicontour_.size(); k++)
 		{
-			perim += std::sqrt(K[i].sqdist(K[i + s]));
+			const std::vector<Pixel2>& K = r.multicontour_[k];
+			const size_t conLen = K.size();
+			if (conLen <= s)
+			{
+				whole += closedLen[k];
+				continue;
+			}
+			size_t i = 0;
+			for (; i + s < conLen; i += s)
+			{
+				walked += std::sqrt(K[i].sqdist(K[i + s]));
+				nsteps++;
+			}
+			// close the loop from the last visited vertex back to the start
+			walked += std::sqrt(K[i].sqdist(K[0]));
 			nsteps++;
 		}
-		// close the loop from the last visited vertex back to the start
-		perim += std::sqrt(K[i].sqdist(K[0]));
-		nsteps++;
 
-		double ruler = perim / double(nsteps);	// mean chord (ruler) length at this stride
-		coverage.push_back({ ruler, perim });
+		double ruler = walked / double(nsteps);	// mean chord (ruler) length of the walked borders
+		coverage.push_back({ ruler, walked + whole });
 	}
 
 	// Richardson divider dimension: D = 1 - slope of log(perimeter) vs log(ruler)

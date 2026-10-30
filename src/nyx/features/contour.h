@@ -9,7 +9,7 @@
 #include "../feature_settings.h"
 #include "image_matrix.h"
 
-/// @brief A contour is a vector of X and Y coordinates of all the pixels on the border of a ROI. This class uses Moore's algorithm for cnotour detection.
+/// @brief A ROI's contour is the set of its borders, each a closed walk over the ROI pixels that have a 4-neighbour outside the ROI (LR::multicontour_).
 class ContourFeature: public FeatureMethod
 {
 public:
@@ -40,29 +40,23 @@ public:
 
 	static void buildRegularContour (LR &r, const Fsettings &s);
 
+	/// @brief Traces every border of the ROI in a padded image -- the outer border of each 8-connected
+	/// fragment and the border of each hole -- as a closed walk of 8-connected steps over the ROI
+	/// pixels that have a 4-neighbour outside the ROI.
+	/// @param padded_img (w+2) x (h+2) image whose nonzero pixels are the ROI, each holding its
+	/// intensity + 1; its one-pixel frame is read as background
+	/// @param multicountour one closed walk per border, in padded-image coordinates
+	/// @param is_hole when given, (*is_hole)[k] tells whether border k is the border of a hole
 	static void gather_multicontour (
 		// out
 		std::vector<std::vector<Pixel2>> &multicountour,
 		// in
-		std::vector<PixIntens> padded_img,
+		const std::vector<PixIntens>& padded_img,
 		int w,
 		int h,
-		int verbose);
-
-	static std::vector<Pixel2> find_cands (const std::list<Pixel2> &unordered, const Pixel2 &tip);
-
-	static int get_dial_pos (const Pixel2 &d);
-
-	static bool better_step (const Pixel2 &org, const Pixel2 &cand1, const Pixel2 &cand2);
-
-	static bool prune_cands (std::vector<Pixel2> &cands, const Pixel2 &org);
-
-	static int check_loop(
-		// out
-		std::vector<Pixel2> &S,
-		// in
-		const std::list<Pixel2> &R,
-		const Pixel2 &origin);
+		int verbose,
+		// out, optional
+		std::vector<bool>* is_hole = nullptr);
 
 private:
 	void buildRegularContour_nontriv (LR& roi, const Fsettings& settings);

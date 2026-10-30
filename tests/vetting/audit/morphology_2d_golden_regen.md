@@ -1,5 +1,9 @@
 # Regenerating the 2D morphology oracle goldens
 
+> **Current state.** The shape2d `PERIMETER` is 22.970562748477146, the summed closed walks of the
+> outer border and the hole's, and is vetted against OpenCV's border following
+> (`test_2d_contour_opencv.h`). The 26.935 quoted below is the earlier value.
+
 Every generator here is offline; CI never invokes one. Each prints a paste-ready table **and**
 re-verifies every golden currently pinned in the header it feeds, exiting non-zero on any mismatch
 or on any pin it cannot produce. Run them from the repository root.

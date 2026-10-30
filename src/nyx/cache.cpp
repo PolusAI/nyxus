@@ -1,24 +1,23 @@
 #ifdef USE_GPU
 
+#include <stdexcept>
 #include "cache.h"
 #include "roi_cache.h"
-
-#define OK(x) if (x == false) \
-{ \
-	std::cerr << "gpu cache related error in " << __FILE__ << ":" << __LINE__; \
-	return false; \
-} \
 
 #define OKDETL(x,detl) if (x == false) \
 { \
 	return std::string("error due to ") + detl + " at " + __FILE__ + ":" + std::to_string(__LINE__); \
 } \
 
-#define OKV(x) if (x == false) \
-{ \
-	std::cerr << "gpu cache related error in " << __FILE__ << ":" << __LINE__; \
-	return; \
-} \
+namespace
+{
+	// Border ends the contour buffers hold: one per border, at most the bound the caller gives and,
+	// since every border holds a contour pixel, at most the contour buffer's capacity
+	size_t kontur_borders_capacity (size_t roi_kontur_borders, size_t kontur_capacity)
+	{
+		return (std::max) ((std::min) (roi_kontur_borders, kontur_capacity), size_t(1));
+	}
+}
 
 
 	size_t GpusideCache::ram_comsumption_szb (
@@ -28,6 +27,7 @@
 		bool needMoments,
 		size_t roi_cloud_len,
 		size_t roi_kontur_cloud_len,
+		size_t roi_kontur_borders,
 		size_t n_rois,
 		size_t roi_w,
 		size_t roi_h,
@@ -40,7 +40,9 @@
 		size_t szb_kon = 0;
 		if (needContour)
 		{
-			szb_kon = GpuCache<Pixel2>::/*konturs.*/szb(roi_kontur_cloud_len, n_rois);
+			// the contour pixels, and where each border's run of them ends, one end per border
+			szb_kon = GpuCache<Pixel2>::/*konturs.*/szb(roi_kontur_cloud_len, n_rois) +
+				GpuCache<size_t>::/*kontur_borders.*/szb(kontur_borders_capacity(roi_kontur_borders, roi_cloud_len), n_rois);
 		}
 
 		size_t szb_mom_ri = 0,
@@ -85,6 +87,7 @@
 		// out
 		GpuCache<Pixel2>& clouds,	// geo moments
 		GpuCache<Pixel2>& konturs,
+		GpuCache<size_t>& kontur_borders,
 		RealPixIntens** realintens,
 		double** prereduce,
 		GpuCache<gpureal>& intermediate,
@@ -104,6 +107,7 @@
 		bool needMoments,
 		size_t roi_cloud_len,
 		size_t roi_kontur_cloud_len,
+		size_t roi_kontur_borders,
 		size_t n_rois,
 		size_t roi_area,
 		size_t roi_w,
@@ -111,10 +115,10 @@
 		int n_gabor_filters,
 		int gabor_ker_side)
 	{
-		using_contour =
-			using_erosion =
-			using_gabor =
-			using_moments = false;
+		// the cache as an earlier run left it, every buffer that is set: a run that failed may not have
+		// freed it, and a buffer kept would have the size that run gave it
+		OKDETL(free_gpu_cache(clouds, konturs, kontur_borders, *realintens, *prereduce, intermediate, *devicereduce_buf, *imat1, *imat2,
+			gabor_linear_image, gabor_result, gabor_linear_kernel, gabor_energy_image), "freeing the previous GPU cache");
 
 		//****** plan GPU memory
 		size_t amt = 0;
@@ -131,6 +135,7 @@
 			needMoments,
 			ccl0,
 			roi_kontur_cloud_len,
+			roi_kontur_borders,
 			n_rois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
 
 		batch_len = n_rois;
@@ -151,7 +156,7 @@
 					needErosion,
 					needGabor,
 					needMoments,
-					ccl, ccl, try_nrois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
+					ccl, ccl, roi_kontur_borders, try_nrois, roi_w, roi_h, n_gabFilters, gabor_ker_side);
 
 				if (critAmt > try_szb)
 				{
@@ -169,73 +174,84 @@
 
 		size_t batch_roi_cloud_len = roi_area * batch_len;
 
-		//****** allocate
+		//****** allocate: on any failure what was allocated is freed, so the cache is either ready or empty
 
-		// ROI clouds (always on)
-
-		OKDETL(clouds.clear(), "clouds.clear()");
-		OKDETL(clouds.alloc(batch_roi_cloud_len, batch_len), "clouds.alloc()");
-
-		// contours
-
-		if (needContour)
+		auto allocate_buffers = [&] () -> std::optional<std::string>
 		{
-			using_contour = true;
+			// ROI clouds (always on)
 
-			OKDETL(konturs.clear(), "konturs.clear()");
-			OKDETL(konturs.alloc(batch_roi_cloud_len, batch_len), "konturs.alloc()");
+			OKDETL(clouds.alloc(batch_roi_cloud_len, batch_len), "clouds.alloc()");
+
+			// contours
+
+			if (needContour)
+			{
+				OKDETL(konturs.alloc(batch_roi_cloud_len, batch_len), "konturs.alloc()");
+
+				// one end per border, as many as the plan counts
+				OKDETL(kontur_borders.alloc(kontur_borders_capacity(roi_kontur_borders, batch_roi_cloud_len), batch_len), "kontur_borders.alloc()");
+			}
+
+			// moments
+
+			if (needMoments)
+			{
+				// moments / real intensities
+				OKDETL(allocate_on_device((void**)realintens, sizeof(RealPixIntens) * batch_roi_cloud_len), "allocate_on_device(moments1)");
+
+				// moments / pre-reduce
+				OKDETL(allocate_on_device((void**)prereduce, sizeof(double) * batch_roi_cloud_len * 16), "allocate_on_device(moments2)");	// 16 is the max number of simultaneous totals calculated by a kernel, e.g. RM00-33
+
+				// moments / intermediate
+				OKDETL(intermediate.alloc(GpusideState::__COUNT__, batch_len), "allocate_on_device(moments3)");
+
+				// moments / CUB DeviceReduce's temp buffer
+				OKDETL(devicereduce_evaluate_buffer_szb(devicereduce_buf_szb, batch_roi_cloud_len), "allocate_on_device(moments4)");
+				OKDETL(allocate_on_device((void**)devicereduce_buf, devicereduce_buf_szb), "allocate_on_device(moments5)");
+			}
+
+			// erosion / image matrices 1 and 2
+
+			if (needErosion)
+			{
+				// imat1 is shared by erosion and Gabor: allocated by whichever of the two comes first
+				if (!*imat1)
+					OKDETL(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(eros1)");
+
+				OKDETL(allocate_on_device((void**)imat2, sizeof(imat2[0]) * roi_w * roi_h), "allocate_on_device(eros2)");
+			}
+
+#ifdef NYXUS_GPU_TEST_HOOKS
+			if (test_fail_before_gabor)
+				return std::string("allocation stopped before the Gabor buffers, as a test asked");
+#endif
+
+			// Gabor
+
+			if (needGabor)
+			{
+				// imat1 is shared by erosion and Gabor
+				if (!*imat1)
+					OKDETL(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(gabor)");
+
+				size_t gabTotlen = (roi_w + gabor_ker_side - 1) * (roi_h + gabor_ker_side - 1) * n_gabFilters;
+				OKDETL(gabor_linear_image.alloc(gabTotlen, 1), "gabor_linear_image.alloc()");
+				OKDETL(gabor_result.alloc(gabTotlen, 1), "gabor_result.alloc()");
+				OKDETL(gabor_linear_kernel.alloc(gabTotlen, 1), "gabor_linear_kernel.alloc()");
+				OKDETL(gabor_energy_image.alloc(gabTotlen, 1), "gabor_energy_image.alloc()");
+			}
+
+			return std::nullopt;
+		};
+
+		if (auto err = allocate_buffers())
+		{
+			free_gpu_cache(clouds, konturs, kontur_borders, *realintens, *prereduce, intermediate, *devicereduce_buf, *imat1, *imat2,
+				gabor_linear_image, gabor_result, gabor_linear_kernel, gabor_energy_image);
+			return err;
 		}
 
-		// moments
-
-		if (needMoments)
-		{
-			using_moments = true;
-
-			// moments / real intensities
-			OKDETL(allocate_on_device((void**)realintens, sizeof(RealPixIntens) * batch_roi_cloud_len), "allocate_on_device(moments1)");
-
-			// moments / pre-reduce
-			OKDETL(allocate_on_device((void**)prereduce, sizeof(double) * batch_roi_cloud_len * 16), "allocate_on_device(moments2)");	// 16 is the max number of simultaneous totals calculated by a kernel, e.g. RM00-33
-
-			// moments / intermediate
-			OKDETL(intermediate.alloc(GpusideState::__COUNT__, batch_len), "allocate_on_device(moments3)");
-
-			// moments / CUB DeviceReduce's temp buffer
-			OKDETL(devicereduce_evaluate_buffer_szb(devicereduce_buf_szb, batch_roi_cloud_len), "allocate_on_device(moments4)");
-			OKDETL(allocate_on_device((void**)devicereduce_buf, devicereduce_buf_szb), "allocate_on_device(moments5)");
-		}
-
-		// erosion / image matrices 1 and 2
-
-		if (needErosion)
-		{
-			using_erosion = true;
-
-			// imat1 is shared by erosion and Gabor
-			if (!*imat1)
-				OKDETL(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(eros1)");
-
-			OKDETL(allocate_on_device((void**)imat2, sizeof(imat2[0]) * roi_w * roi_h), "allocate_on_device(eros2)");
-		}
-
-		// Gabor
-
-		if (needGabor)
-		{
-			using_gabor = true;
-
-			// imat1 is shared by erosion and Gabor
-			if (!*imat1)
-				OKDETL(allocate_on_device((void**)imat1, sizeof(imat1[0]) * roi_w * roi_h), "allocate_on_device(gabor)");
-
-			size_t gabTotlen = (roi_w + gabor_ker_side - 1) * (roi_h + gabor_ker_side - 1) * n_gabFilters;
-			OKDETL(gabor_linear_image.alloc(gabTotlen, 1), "gabor_linear_image.alloc()");
-			OKDETL(gabor_result.alloc(gabTotlen, 1), "gabor_result.alloc()");
-			OKDETL(gabor_linear_kernel.alloc(gabTotlen, 1), "gabor_linear_kernel.alloc()");
-			OKDETL(gabor_energy_image.alloc(gabTotlen, 1), "gabor_energy_image.alloc()");
-		}
-
+		using_contour = needContour;
 		return std::nullopt;
 	}
 
@@ -243,6 +259,7 @@
 		// out
 		GpuCache<Pixel2>& clouds,
 		GpuCache<Pixel2>& konturs,
+		GpuCache<size_t>& kontur_borders,
 		RealPixIntens** realintens,
 		double** prereduce,
 		GpuCache<gpureal>& intermediate,
@@ -254,44 +271,19 @@
 		size_t batch_offset,
 		size_t batch_len)
 	{
-		//***** ROI clouds
-
-		// stats of ROI cloud sizes
-		size_t totCloLen = 0, maxLen = 0;
-		for (size_t i = batch_offset; i < batch_len; i++)
-		{
-			int lbl = labels[i];
-			LR& roi = roi_data[lbl];
-			auto n = roi.raw_pixels.size();
-			totCloLen += n;
-			maxLen = (std::max)(maxLen, n);
-		}
-
-		//****** contours
-
-		if (using_contour)
-		{
-			// stats of ROI cloud sizes
-			size_t totKontLen = 0;
-			for (size_t i = batch_offset; i < batch_len; i++)
-			{
-				int lbl = labels[i];
-				LR& roi = roi_data[lbl];
-
-				std::vector<Pixel2> K;
-				roi.merge_multicontour(K);
-
-				totKontLen += K.size();
-			}
-		}
+		// The batch is ROIs batch_offset .. batch_offset + batch_len - 1. A failure throws: the GPU-side
+		// features would otherwise read buffers this batch left unfilled.
 
 		//****** clouds as a solid buffer
 		size_t off = 0;
 		size_t roiIdx = 0;
-		for (size_t i = batch_offset; i < batch_len; i++)
+		for (size_t i = batch_offset; i < batch_offset + batch_len; i++)
 		{
 			int lbl = labels[i];
 			LR& roi = roi_data[lbl];
+
+			if (! clouds.hobuffer || off + roi.raw_pixels.size() > clouds.total_len)
+				throw std::runtime_error ("ROI " + std::to_string(lbl) + ": the batch's pixels exceed the GPU cloud buffer");
 
 			clouds.ho_lengths[roiIdx] = roi.raw_pixels.size();
 			clouds.ho_offsets[roiIdx] = off;
@@ -314,16 +306,30 @@
 		{
 			off = 0;
 			roiIdx = 0;
-			for (size_t i = batch_offset; i < batch_len; i++)
+			size_t offEnds = 0;
+			for (size_t i = batch_offset; i < batch_offset + batch_len; i++)
 			{
 				int lbl = labels[i];
 				LR& roi = roi_data[lbl];
 
-				std::vector<Pixel2> K;
-				roi.merge_multicontour(K);
+				const std::vector<Pixel2>& K = roi.contour_pixels_;
+				const std::vector<size_t>& ends = roi.contour_border_ends_;
+
+				// the kernels read the borders as the CPU searches do (BorderedContour), and a buffer
+				// sized by the memory plan holds them only if every border holds a contour pixel
+				if (!border_ends_cover (K.size(), ends))
+					throw std::runtime_error ("ROI " + std::to_string(lbl) + ": contour border ends do not cover its " + std::to_string(K.size()) + " contour pixels");
+				if (! konturs.hobuffer || ! kontur_borders.hobuffer || off + K.size() > konturs.total_len || offEnds + ends.size() > kontur_borders.total_len)
+					throw std::runtime_error ("ROI " + std::to_string(lbl) + ": the batch's contours exceed the GPU contour buffers");
 
 				konturs.ho_lengths[roiIdx] = K.size();
 				konturs.ho_offsets[roiIdx] = off;
+
+				// where each border's run ends, relative to the ROI's first contour pixel
+				kontur_borders.ho_offsets[roiIdx] = offEnds;
+				kontur_borders.ho_lengths[roiIdx] = ends.size();
+				for (size_t end : ends)
+					kontur_borders.hobuffer[offEnds++] = end;
 				roiIdx++;
 
 				// save to buffer fixing pixel coordinates
@@ -336,80 +342,63 @@
 					konturs.hobuffer[off++] = p;
 				}
 			}
+
+			// only the batch's ends, not the whole capacity
+			if (!kontur_borders.upload (offEnds))
+				throw std::runtime_error ("uploading the contour border ends to the GPU failed");
 		}
 
 		//****** upload
 
-		OKV(clouds.upload());
-		OKV(konturs.upload());
+		if (!clouds.upload() || (using_contour && !konturs.upload()))
+			throw std::runtime_error ("uploading the batch's ROI clouds or contours to the GPU failed");
 	}
 
 	bool GpusideCache::free_gpu_cache(
 		GpuCache<Pixel2>& clouds,
 		GpuCache<Pixel2>& konturs,
+		GpuCache<size_t>& kontur_borders,
 		RealPixIntens*& realintens,
 		double*& prereduce,
 		GpuCache<gpureal>& intermediate,
 		void*& tempstorage,
-		PixIntens* imat1,
-		PixIntens* imat2,
+		PixIntens*& imat1,
+		PixIntens*& imat2,
 		GpuCache <cufftDoubleComplex>& gabor_linear_image,
 		GpuCache <cufftDoubleComplex>& gabor_result,
 		GpuCache <cufftDoubleComplex>& gabor_linear_kernel,
 		GpuCache <RealPixIntens>& gabor_energy_image)
 	{
-		// clouds 
-
-		OK(clouds.clear());
-
-
-		// contour
-
-		if (using_contour)
+		// Every buffer that is set, whichever families the allocation that set it needed, is freed and
+		// nulled; the cache is then empty and not ready
+		auto free_device = [] (auto& devptr)
 		{
-			OK(konturs.clear());
-		}
+			if (! devptr)
+				return true;
+			bool ok = gpu_delete(devptr);
+			devptr = nullptr;
+			return ok;
+		};
 
-		// moments
+		// every free runs, whether or not an earlier one failed
+		bool ok = clouds.clear();
+		ok = konturs.clear() && ok;
+		ok = kontur_borders.clear() && ok;
+		ok = free_device(realintens) && ok;
+		ok = free_device(prereduce) && ok;
+		ok = intermediate.clear() && ok;
+		ok = free_device(tempstorage) && ok;	// devicereduce's temp storage
+		ok = free_device(imat1) && ok;
+		ok = free_device(imat2) && ok;
+		ok = gabor_linear_image.clear() && ok;
+		ok = gabor_result.clear() && ok;
+		ok = gabor_linear_kernel.clear() && ok;
+		ok = gabor_energy_image.clear() && ok;
 
-		if (using_moments)
-		{
-			OK(gpu_delete(realintens));
-			OK(gpu_delete(prereduce));
-			OK(intermediate.clear());
-			OK(gpu_delete(tempstorage));
-			realintens = nullptr;
-			prereduce = nullptr;
-			OK(intermediate.clear());
-			tempstorage = nullptr;	// devicereduce's temp storage
-		}
-
-		// erosion or Gabor
-		if (using_erosion || using_gabor)
-		{
-			OK(gpu_delete(imat1));
-			imat1 = nullptr;
-		}
-
-		// erosion
-
-		if (using_erosion)
-		{
-			OK(gpu_delete(imat2));
-			imat2 = nullptr;
-		}
-
-		// Gabor
-
-		if (using_gabor)
-		{
-			OK(gabor_linear_image.clear());
-			OK(gabor_result.clear());
-			OK(gabor_linear_kernel.clear());
-			OK(gabor_energy_image.clear());
-		}
-
-		return true;
+		using_contour = false;
+		if (!ok)
+			std::cerr << "gpu cache related error in " << __FILE__ << ":" << __LINE__ << ": freeing the GPU cache\n";
+		return ok;
 	}
 
 #ifdef USE_GPU
@@ -420,6 +409,7 @@
 			// out
 			gpu_roiclouds_2d,
 			gpu_roicontours_2d,
+			gpu_roicontourborders_2d,
 			&dev_realintens,
 			&dev_prereduce,
 			gpu_featurestatebuf,

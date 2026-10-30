@@ -22,7 +22,7 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 Both totals are the sum of the two tables below, counting each distinct file once and
 skipping any row struck through as closed, so they can be recomputed from the tables.
 
-### A.1 Correctly absent — plumbing, fixtures and framework self-tests (24 files)
+### A.1 Correctly absent — plumbing, fixtures and framework self-tests (26 files)
 
 These assert no feature value, so they have no `(feature × config × oracle)` row by construction
 (SPEC §1). Recording them here so their absence is a documented decision, not an oversight.
@@ -33,7 +33,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_arrow_mechanics.h` | 2 | Arrow + Parquet writer plumbing |
 | `test_arrow_file_name_mechanics.h` | 1 | output-file naming rules |
 | `test_2d_glcm_mechanics.h` | 1 | guards the `GLCM_OFFSET` default (a setting, not a value) |
-| `test_2d_radial_mechanics.h` | 3 | contour frame, centre pixel and normalising radius — the wiring the radial goldens depend on. **Uncredited by decision, not by construction:** see the note below the table |
+| `test_2d_radial_mechanics.h` | 6 | contour frame, centre pixel and normalising radius — the wiring the radial goldens depend on — and the one-pixel, two-pixel and two-fragment ROIs. **Uncredited by decision, not by construction:** see the note below the table |
 | `test_initialization_mechanics.h` | 1 | environment init |
 | `test_2d_omezarr_mechanics.h` | 14 | OME-Zarr tile/raw loader, including the load-time intensity map on signed and real-valued stores, and the unsigned accessor on every sample class it cannot convert |
 | `test_2d_intensity_degenerate_roi_mechanics.h` | 3 | the intensity ratios — `QCOD`, `UNIFORMITY_PIU` and `COV` — on a populated ROI of one grey level, read before the output NaN substitution, and the empty-ROI guard |
@@ -42,6 +42,8 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_2d_intensity_constant_roi_mechanics.py` | 4 | an ROI of one intensity end to end, on a mapped and on an identity-map slide, through the in-RAM and the out-of-core paths; pins the reported values, not an oracle |
 | `test_3d_nifti_offset_map_mechanics.py` | 4 | the NIfTI load-time maps on a fractional `scl_slope` — rounded on the offset map under `--preserve-hu`, exact on the stored map without it — and a non-finite voxel taking grey level 0 either way; loader plumbing, no oracle |
 | `test_roi_blacklist_mechanics.h` | 1 | ROI blacklisting |
+| `test_2d_moments_mechanics.h` | 1 | the whole-slide weighting on a slide one pixel wide or high, whose contour has fewer than 4 distinct corners; a degenerate-input guard |
+| `test_2d_contour_mechanics.h` | 1 | `BorderedContour` refuses to bind a temporary pixel vector; a compile-time property of the type |
 | `test_2d_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
 | `test_2d_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
 | `test_2d_ooc_mechanics.py` | 1 | oversized-montage failure path |
@@ -52,13 +54,19 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 **`test_2d_radial_mechanics.h` is the one row here that is a judgement rather than a construction.**
 Its third case does read three feature values, so the rule the rest of this table rests on — asserts
 no feature value, therefore no `(feature × config × oracle)` row — does not by itself place it. It is
-uncredited for a different reason: all three cases pin behaviour that
-`audit/radial_2d_cellprofiler_vetting_report.md` §6 shows is wrong (defects 1-3), so each correction
-should invalidate the assertions that characterize the defect it fixes. Listing it in `current_test`
+uncredited for a different reason: its second and third case pin behaviour that
+`audit/radial_2d_cellprofiler_vetting_report.md` §6 shows is wrong (defects 2-3), so each correction
+should invalidate the assertions that characterize the defect it fixes. The other cases are
+requirements, kept beside the wiring they exercise and under the same exclusion. Listing it in `current_test`
 for `FRAC_AT_D`, `MEAN_FRAC` and
 `RADIAL_CV` would make those defects acceptance criteria for the three features (PR #444 review,
 item 4). `audit/scan_radial_coverage.py` carries the exclusion as a declared `UNCREDITED` entry and
 fails in both directions, so the decision cannot be reversed by editing only the registry.
+
+`test_2d_contour_invariant.h` is credited on the `PERIMETER` and `EDGE_*` rows, and two of its
+functions sit outside them: the distance-search invariants, which assert `Pixel2::min_sqdist` and
+`max_sqdist` against exhaustive scans rather than a feature value, and so have no row for the reason
+this table gives.
 
 ### A.2 Assert feature values but no row lists them — real gaps (7 files)
 
@@ -361,7 +369,7 @@ carry numbers.
 
 **An oracle-suffixed test asserted a feature the registry says has no oracle (2D neighbour).**
 `test_2d_neighbor_percent_touching_enclosed_analytic` lived in `test_2d_neighbor_analytic.h` and
-asserted `PERCENT_TOUCHING`, whose registry row correctly reads `status=regression` with an empty
+asserted `PERCENT_TOUCHING`, whose registry row then read `status=regression` with an empty
 oracle. Every coverage scanner in this tree -- `check_test_names.py`, `report_feature_tests.py`, the
 per-family `scan_*` scripts -- attributes an oracle from the test function's **name suffix**, so a
 scan would have credited the feature with `oracle=analytic`. What the function actually asserts are
@@ -540,8 +548,8 @@ convention, and the registry says so in `flag=impl-defect`.
 |---|---:|---:|---|
 | 2D `PERIMETER` | 131.88225099390849 | 112.0 | 15%, and the out-of-core value is an integer |
 | 2D `DIAMETER_EQUAL_PERIMETER` | 41.97942430353313 | 35.65070725258456 | the same ratio, inherited |
-| 2D `ROI_RADIUS_MEAN` | 6.087109772358636 | 7.169174091182726 | +17.8% |
-| 2D `ROI_RADIUS_MEDIAN` | 5.0 | 6.708203932499369 | +34% |
+| 2D `ROI_RADIUS_MEAN` | 6.047026418093836 | 7.423593657857253 | +22.8%; the same 112 edge pixels, out of core relative to the bounding box |
+| 2D `ROI_RADIUS_MEDIAN` | 5.0 | 7.0 | +40%, same cause |
 
 `ContourFeature::calculate()` sums Euclidean step lengths around the contour;
 `ContourFeature::osized_calculate()` sets `fval_PERIMETER = (StatsInt) K.size()`, the contour pixel

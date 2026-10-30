@@ -45,7 +45,7 @@ static const ref_vals_map<double> morphology_2d_skimage_circles_ref_vals{
 	{"PERIMETER", 999.25901807804496},
 };
 
-// ROI_RADIUS_MAX / ROI_RADIUS_MEDIAN on filled digital disks, a third benchmark and so a third table
+// ROI_RADIUS_MEAN / MAX / MEDIAN on filled digital disks, a third benchmark and so a third table
 // (SPEC 6.3.1). RoiRadiusFeature measures every ROI pixel against the ROI's own contour and reports
 // the mean/max/median of those distances; the reference is
 // skimage.segmentation.find_boundaries(connectivity=1, mode='inner') -- the foreground pixels
@@ -59,20 +59,19 @@ static const ref_vals_map<double> morphology_2d_skimage_circles_ref_vals{
 // offset (1, R-1) -- which test_2d_morphology_analytic.h asserts as a second oracle on this same
 // fixture.
 //
-// ROI_RADIUS_MEAN is deliberately absent, because of a defect outside this family:
-// `buildRegularContour` reports every contour pixel one pixel right and one pixel down of where it
-// is, so Nyxus measures its pixels against a shifted boundary. Shifting the reference boundary the
-// same way reproduces all three Nyxus values exactly. On a disk MAX and MEDIAN are unmoved by that
-// shift -- the pixel attaining them moves with it -- while MEAN is not, so MEAN is a regression row
-// until the contour offset is corrected.
+// MEAN is the one of the three that depends on every contour pixel being where it is: a contour
+// shifted by a pixel leaves MAX and MEDIAN of a disk where they are and moves MEAN.
 static const ref_vals_map<double> morphology_2d_skimage_radius_disks_ref_vals{
 	// R=10: 317 pixels, 56 boundary pixels; MAX/(R-1) = 1.006154
+	{"ROI_RADIUS_MEAN_R10", 2.7517095857010947},
 	{"ROI_RADIUS_MAX_R10", 9.055385138137417},
 	{"ROI_RADIUS_MEDIAN_R10", 2.23606797749979},
 	// R=20: 1257 pixels, 112 boundary pixels; MAX/(R-1) = 1.001384
+	{"ROI_RADIUS_MEAN_R20", 6.047026418093844},
 	{"ROI_RADIUS_MAX_R20", 19.026297590440446},
 	{"ROI_RADIUS_MEDIAN_R20", 5.0},
 	// R=40: 5025 pixels, 224 boundary pixels; MAX/(R-1) = 1.000329
+	{"ROI_RADIUS_MEAN_R40", 12.686020245442752},
 	{"ROI_RADIUS_MAX_R40", 39.01281840626232},
 	{"ROI_RADIUS_MEDIAN_R40", 11.045361017187261},
 };
@@ -128,7 +127,7 @@ void test_2d_morphology_diameter_equal_area_skimage()
 	assert_morphology_shape2d_skimage(fvals, Nyxus::Feature2D::DIAMETER_EQUAL_AREA, "DIAMETER_EQUAL_AREA");
 }
 
-// ROI_RADIUS_MAX / ROI_RADIUS_MEDIAN vs the skimage inner boundary on three filled disks
+// ROI_RADIUS_MEAN / MAX / MEDIAN vs the skimage inner boundary on three filled disks
 // (tests/vetting/oracles/gen_morphology_radius_skimage.py). Three radii rather than one because a
 // single disk cannot distinguish a distance from its square -- 9.055 and 82 are each just a number
 // on one fixture. Across R = 10, 20, 40 a distance grows by 2.1x and 2.05x and a square by 4.4x and
@@ -142,6 +141,7 @@ void test_2d_morphology_roi_radius_disks_skimage()
 		std::vector<std::vector<double>> fvals;
 		calculate_disk_radius_values(R, fvals);
 
+		assert_morphology_radius_disks_skimage(fvals, Nyxus::Feature2D::ROI_RADIUS_MEAN, "ROI_RADIUS_MEAN" + tag);
 		assert_morphology_radius_disks_skimage(fvals, Nyxus::Feature2D::ROI_RADIUS_MAX, "ROI_RADIUS_MAX" + tag);
 		assert_morphology_radius_disks_skimage(fvals, Nyxus::Feature2D::ROI_RADIUS_MEDIAN, "ROI_RADIUS_MEDIAN" + tag);
 	}

@@ -281,3 +281,161 @@ static void run_3d_feature_on_volume (
 	f.save_value(r.fvals);
 	fvals = r.fvals;
 }
+
+#ifdef USE_GPU
+#include "../src/nyx/environment.h"
+#include "../src/nyx/features/contour.h"
+
+// GPU-cache fixtures. They live here rather than in a family header because the moments,
+// morphology (erosion) and Gabor families each check their own GPU path through them (SPEC 6.3.1).
+
+// A GPU cache of its own, allocated the way the segmented workflow allocates GpusideCache: contour
+// and moments buffers unless told otherwise, erosion and Gabor (4 filters of 16 x 16 taps) if asked.
+// Freed when it goes out of scope.
+struct GpuCacheTestRig
+{
+	GpusideCache g;
+
+	// 'borders': the most contour borders the batch can have, the plan's bound on border ends
+	std::optional<std::string> allocate (size_t n_rois, size_t roi_area, size_t roi_w, size_t roi_h, size_t borders,
+		bool erosion = false, bool gabor = false, bool contour_and_moments = true)
+	{
+		return g.allocate_gpu_cache(
+			g.gpu_roiclouds_2d, g.gpu_roicontours_2d, g.gpu_roicontourborders_2d, &g.dev_realintens, &g.dev_prereduce,
+			g.gpu_featurestatebuf, g.devicereduce_temp_storage_szb, &g.dev_devicereduce_temp_storage, g.gpu_batch_len,
+			&g.dev_imat1, &g.dev_imat2, g.gabor_linear_image, g.gabor_result, g.gabor_linear_kernel, g.gabor_energy_image,
+			contour_and_moments, erosion, gabor, contour_and_moments,
+			roi_area * n_rois, roi_area * n_rois, borders, n_rois, roi_area, roi_w, roi_h, 4, 16);
+	}
+
+	bool free()
+	{
+		return g.free_gpu_cache(g.gpu_roiclouds_2d, g.gpu_roicontours_2d, g.gpu_roicontourborders_2d, g.dev_realintens, g.dev_prereduce,
+			g.gpu_featurestatebuf, g.dev_devicereduce_temp_storage, g.dev_imat1, g.dev_imat2,
+			g.gabor_linear_image, g.gabor_result, g.gabor_linear_kernel, g.gabor_energy_image);
+	}
+
+	// sends ROIs batch_offset .. batch_offset + batch_len - 1 of 'labels'
+	void send (const std::vector<int>& labels, std::unordered_map<int, LR>& rois, size_t batch_offset, size_t batch_len)
+	{
+		g.send_roi_batch_data_2_gpu(g.gpu_roiclouds_2d, g.gpu_roicontours_2d, g.gpu_roicontourborders_2d, &g.dev_realintens,
+			&g.dev_prereduce, g.gpu_featurestatebuf, g.devicereduce_temp_storage_szb, &g.dev_devicereduce_temp_storage,
+			labels, rois, batch_offset, batch_len);
+	}
+
+	~GpuCacheTestRig() { free(); }
+};
+
+// ROI 'label' over the pixels of 'rows' ('1' = ROI) placed at (x0, y0), with a non-constant intensity,
+// its contour traced: what the GPU upload reads
+static LR& gpu_test_roi (std::unordered_map<int, LR>& rois, int label, const std::vector<std::string>& rows, int x0, int y0)
+{
+	LR& r = rois[label];
+	r.label = label;
+	for (int y = 0; y < (int)rows.size(); y++)
+		for (int x = 0; x < (int)rows[y].size(); x++)
+		{
+			if (rows[y][x] != '1')
+				continue;
+			const int ax = x0 + x, ay = y0 + y;
+			const auto intensity = static_cast<PixIntens>(10 + 3 * ax + 5 * ay + (ax * ay) % 7);
+			if (r.aux_area == 0)
+				Nyxus::init_label_record_3(r, ax, ay, intensity);
+			else
+				Nyxus::update_label_record_3(r, ax, ay, intensity);
+			r.raw_pixels.push_back(Pixel2(ax, ay, intensity));
+		}
+	r.make_nonanisotropic_aabb();
+	r.aux_image_matrix.allocate(r.aabb.get_width(), r.aabb.get_height());
+	r.aux_image_matrix.calculate_from_pixelcloud(r.raw_pixels, r.aabb);
+	r.initialize_fvals();
+	ContourFeature contour;
+	contour.calculate(r, make_shape2d_settings());
+	return r;
+}
+
+// a filled disk of radius 'r' as mask rows
+static std::vector<std::string> gpu_test_disk_rows (int r)
+{
+	std::vector<std::string> rows (2 * r + 1, std::string (2 * r + 1, '.'));
+	for (int y = -r; y <= r; y++)
+		for (int x = -r; x <= r; x++)
+			if (x * x + y * y <= r * r)
+				rows[y + r][x + r] = '1';
+	return rows;
+}
+
+// Why a GPU cache is not ready: nothing allocated it, as on the 2.5D, 3D and array paths; an
+// allocation failed part way, after every family but Gabor, and freed what it had allocated; or a free
+// failed part way, one of its device frees refused.
+enum class GpuUnready { never_allocated, allocation_failed_part_way, free_failed_part_way };
+
+static const char* gpu_unready_name (GpuUnready why)
+{
+	switch (why)
+	{
+	case GpuUnready::never_allocated: return "never allocated";
+	case GpuUnready::allocation_failed_part_way: return "an allocation that failed part way and freed what it had allocated";
+	default: return "a free that failed part way";
+	}
+}
+
+// The values reduce_trivial_rois_manual gives a disk of radius 5 with 'features' enabled, the GPU on
+// and its cache not ready for the reason 'why', against those it gives with the GPU off. Callers wrap
+// it in ASSERT_NO_FATAL_FAILURE.
+static void gpu_unready_vs_cpu (const std::initializer_list<Nyxus::Feature2D>& features, GpuUnready why,
+	std::vector<std::vector<double>>& gpu_on, std::vector<std::vector<double>>& gpu_off)
+{
+	for (bool on : { true, false })
+	{
+		Environment e;
+		e.set_dim (2);
+		e.theFeatureSet.enableAll (false);
+		e.theFeatureSet.enableFeatures (features, true);
+		ASSERT_TRUE(e.theFeatureMgr.compile());
+		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
+		ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+		e.compile_feature_settings();
+		e.set_using_gpu (on);
+		GpusideCache& g = e.devCache;
+		auto allocate = [&g] ()
+		{
+			return g.allocate_gpu_cache(
+				g.gpu_roiclouds_2d, g.gpu_roicontours_2d, g.gpu_roicontourborders_2d, &g.dev_realintens, &g.dev_prereduce,
+				g.gpu_featurestatebuf, g.devicereduce_temp_storage_szb, &g.dev_devicereduce_temp_storage, g.gpu_batch_len,
+				&g.dev_imat1, &g.dev_imat2, g.gabor_linear_image, g.gabor_result, g.gabor_linear_kernel, g.gabor_energy_image,
+				true, true, true, true, 121, 121, 22, 1, 121, 11, 11, 4, 16);
+		};
+		if (on && why == GpuUnready::allocation_failed_part_way)
+		{
+			struct Reset { ~Reset() { GpusideCache::test_fail_before_gabor = false; } } reset;
+			GpusideCache::test_fail_before_gabor = true;
+			ASSERT_TRUE(allocate().has_value());
+			ASSERT_FALSE(g.is_ready());
+			ASSERT_EQ(g.gpu_roiclouds_2d.hobuffer, nullptr);
+			ASSERT_EQ(g.dev_realintens, nullptr);
+			ASSERT_EQ(g.dev_imat2, nullptr);
+		}
+		if (on && why == GpuUnready::free_failed_part_way)
+		{
+			ASSERT_FALSE(allocate().has_value());
+			ASSERT_TRUE(g.is_ready());
+			// a device pointer cudaFree refuses, in place of one of the Gabor buffers
+			ASSERT_TRUE(GpusideCache::gpu_delete (g.gabor_result.devbuffer));
+			static cufftDoubleComplex not_on_device;
+			g.gabor_result.devbuffer = &not_on_device;
+			ASSERT_FALSE(g.free_gpu_cache(g.gpu_roiclouds_2d, g.gpu_roicontours_2d, g.gpu_roicontourborders_2d, g.dev_realintens,
+				g.dev_prereduce, g.gpu_featurestatebuf, g.dev_devicereduce_temp_storage, g.dev_imat1, g.dev_imat2,
+				g.gabor_linear_image, g.gabor_result, g.gabor_linear_kernel, g.gabor_energy_image));
+			cudaGetLastError();	// the refused free is CUDA's last error, which a later CUB call would report
+			ASSERT_FALSE(g.is_ready());
+			ASSERT_EQ(g.gabor_result.devbuffer, nullptr);
+			ASSERT_EQ(g.gabor_energy_image.devbuffer, nullptr);
+		}
+		gpu_test_roi (e.roiData, 1, gpu_test_disk_rows (5), 2, 2);
+		std::vector<int> labels { 1 };
+		ASSERT_NO_THROW(Nyxus::reduce_trivial_rois_manual (labels, e));
+		(on ? gpu_on : gpu_off) = e.roiData[1].fvals;
+	}
+}
+#endif

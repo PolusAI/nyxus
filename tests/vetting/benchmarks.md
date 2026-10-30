@@ -564,9 +564,10 @@ Tests reaching it today: `test_2d_radial_{regression,invariant,mechanics}.h` (th
 `test_2d_radial_common.h`), `test_2d_morphology_common.h` and the morphology files that include it,
 `test_2d_zernike_{analytic,regression,invariant,mechanics}.h` (through `test_2d_zernike_common.h`).
 
-**The interior hole is the load-bearing property, and it is also what limits this fixture.** It is
-what makes `LR::merge_multicontour` concatenate two contours rather than return one, which is the
-condition under which `Pixel2::find_center` and `Pixel2::max_sqdist` return non-extremal answers
+**The interior hole is the load-bearing property, and it is also what limits this fixture.** It
+gives the ROI two borders, the outer one and the hole's, which every contour consumer has to take
+apart rather than read as one walk. The concave outer border is also where `Pixel2::max_sqdist`
+returns a non-extremal answer, 10 where the largest squared distance is 13
 (`audit/radial_2d_cellprofiler_vetting_report.md` §6 defect 2, pinned in
 `test_2d_radial_mechanics.h`). For the same reason it is **not** a fixture the radial family can ever
 be vetted on: its distance-to-edge maximum is attained by 8 of its 26 pixels, so CellProfiler's own
@@ -679,3 +680,23 @@ definition rather than of accumulation, and it is why `matrix/morphology.md` mar
 **It is built rather than added to `test_data.h`** because it is a one-line closed form a reader can
 evaluate by hand, and because a 4096-pixel literal table would be far less checkable than the two
 lines that generate it.
+
+---
+
+## `bench_blob97_filled` — one filled 9066-pixel blob spanning a 97×97 frame
+
+| | |
+|---|---|
+| Data | `bench_blob97_filled_rows` in `tests/test_2d_contour_common.h`, 97 text rows (`1` = ROI), placed at (113, 41) by `contour_mask_pixels()` |
+| ROI | one — **9066 pixels**, one 8-connected component, no holes; **495** of them are edge pixels under the 4-neighbour inner boundary |
+| Shape | a random filled blob whose ragged boundary meets the frame on all four sides, with notches up to 13 pixels deep |
+| Why it exists | 79 of its 495 edge pixels have three or more edge pixels among their 8 neighbours, which is where reconstructing a border's order from an unordered set of edge pixels goes wrong; a border follower has to keep all 495 |
+
+Recipes: `contour.opencv_borders`.
+
+Tests reaching it today: `test_2d_contour_invariant.h`
+(`test_2d_contour_blob97_boundary_rule_invariant`) and `test_2d_contour_opencv.h`
+(`test_2d_contour_blob97_opencv`).
+
+**It is a literal table rather than a closed form** because nothing about it is regular: it is the
+mask the defect was first measured on, kept as found.

@@ -71,8 +71,8 @@ Whole-slide features differ from those of an ordinary ROI in these ways:
   the image, so ``PERIMETER`` is 2 x (width + height): 224 for a 64 x 48 image. Every feature
   built on the contour describes this rectangle: circularity, the perimeter-equivalent diameter,
   geodetic length and thickness, the ROI radii, fractal dimension, radial distribution and the
-  weighted moments. The radial distribution's centre then lies on the image's top edge, a known
-  defect (`#516 <https://github.com/PolusAI/nyxus/issues/516>`__).
+  weighted moments. The radial distribution's centre is the pixel nearest the middle of the four
+  corners.
 * **Edge features are degenerate.** The edge is the four corners, and each corner carries the
   image's maximum grey level. ``EDGE_MIN_INTENSITY`` and ``EDGE_MAX_INTENSITY`` both equal
   ``MAX``, ``EDGE_STDDEV_INTENSITY`` is 0 and ``EDGE_INTEGRATED_INTENSITY`` is 4 x ``MAX``.
@@ -187,7 +187,7 @@ on an image that Nyxus reads as one tile (see :ref:`large-images-tiles` for othe
 texture exceptions: in IBSI mode 2D NGTDM matches only on the first ROI computed out of core, a known
 defect (`#512 <https://github.com/PolusAI/nyxus/issues/512>`__; see :doc:`Math/f_ngtdm`), and NGLDM differs on a constant ROI (see :doc:`Math/f_ngldm`). The
 contour-based features, the weighted moments and the fractal dimension do not. On a 256 x 256 test
-image with 66 ROIs, 116 of the 747 output columns of ``*ALL*`` differ when every ROI is computed
+image with 66 ROIs, 115 of the 747 output columns of ``*ALL*`` differ when every ROI is computed
 out of core.
 
 The rest of this section describes runs without anisotropy. With ``--anisox`` or ``--anisoy``
@@ -201,7 +201,7 @@ The out-of-core contour differs from the in-memory one in three ways, a known de
 keeps the first loop it traces and drops holes and further fragments. Its coordinates are relative
 to the ROI's bounding box, while the pixels keep their image positions. And its pixels come in a
 different order. On a 340 x 340 image, a 300 x 300 square with a 100 x 100 hole has ``PERIMETER``
-1196 out of core, the outer loop only, against 1876 in memory, and the same square cut into two
+1196 out of core, the outer loop only, against 1597.7 in memory, and the same square cut into two
 130-pixel-wide bars has ``DIAMETER_MIN_ENCLOSING_CIRCLE`` 325.6 against 422.9.
 
 .. list-table::
@@ -220,22 +220,27 @@ different order. On a 340 x 340 image, a 300 x 300 square with a 100 x 100 hole 
        (``WEIGHTED_*``, ``WT_NORM_CTR_MOM_*``, ``IMOM_W*``)
      - Without anisotropy, wrong for ROIs away from the image origin, because pixel-to-contour
        distances are off by
-       the bounding box's offset. ``ROI_RADIUS_MAX`` was 28 times its in-memory value on the
+       the bounding box's offset. ``ROI_RADIUS_MAX`` was 29 times its in-memory value on the
        median ROI, and the weighted moments of one ROI change as it moves in the image. A
        bounding box that starts at pixel (0, 0) is necessary for the in-memory values but not
-       sufficient: a ROI with holes or fragments still differs, and the radial distribution
-       can differ through the contour order (2 of 15 random ellipses at the origin).
+       sufficient. The circles are measured to the outer border on both paths, so a hole leaves
+       them unchanged, but ``ROI_RADIUS_*`` and the weighted moments of a ROI with a hole differ,
+       and its radial distribution can, since in memory the centre and the radius are searched
+       over every border, the hole's included (19 of 40 random squares with holes at the origin;
+       a 9 x 9 square with a centred hole does not). A ROI in several fragments differs in all of
+       these features, and the radial distribution can also differ through the contour order (2
+       of 15 random ellipses at the origin).
    * - ``EDGE_*``, ``DIAMETER_MIN_ENCLOSING_CIRCLE``
      - Differ where the out-of-core contour holds other pixels than the in-memory one: the
-       single loop leaves out holes and fragments, and on some ROIs either tracer skips part of
-       the outline. ``DIAMETER_MIN_ENCLOSING_CIRCLE`` also changes with the contour order. On the
-       66-ROI test image, which has no holes or fragments, they differ on 5 and 6 ROIs.
+       single loop leaves out holes and fragments, and on some ROIs the out-of-core tracer skips
+       part of the outline. ``DIAMETER_MIN_ENCLOSING_CIRCLE`` also changes with the contour order.
+       On the 66-ROI test image, which has no holes or fragments, they differ on 10 and 17 ROIs.
    * - ``FRACT_DIM_BOXCOUNT``, ``FRACT_DIM_PERIMETER``
      - Box counting uses a single unshifted grid for every out-of-core ROI, so ROIs whose padded
        side is 32 or less can read differently (the fractal dimension worked example gives
        1.3966 instead of 1.3732). The divider walks the out-of-core contour, which holds one
-       loop in a different order, so it can differ too. ``FRACT_DIM_BOXCOUNT`` differs on 38 of
-       the 66 ROIs and ``FRACT_DIM_PERIMETER`` on 11.
+       loop, in a different order and with one-pixel-wide parts walked once, so it can differ too. ``FRACT_DIM_BOXCOUNT`` differs on 38 of
+       the 66 ROIs and ``FRACT_DIM_PERIMETER`` on 17.
    * - Neighbor features (``NUM_NEIGHBORS``, ``PERCENT_TOUCHING``, ``CLOSEST_NEIGHBOR*``,
        ``ANG_BW_NEIGHBORS_*``), ``POLYGONALITY_AVE``, ``HEXAGONALITY_*``
      - Not computed. The neighbor features are reported as 0, and ``POLYGONALITY_AVE`` and
@@ -294,7 +299,7 @@ ROIs, 30 of them crossing 64 x 64 tile borders, gave the same features tiled and
    The contour is traced from the misplaced pixels as well, so the contour features are wrong
    even for a ROI whose bounding box starts at pixel (0, 0). On a
    plus-shaped ROI of two 20-pixel bars spanning the image, stored in 64 x 64 tiles,
-   ``ROI_RADIUS_MAX`` out of core was 310.7 on a 256 x 256 image, where the in-memory value is
+   ``ROI_RADIUS_MAX`` out of core was 312.1 on a 256 x 256 image, where the in-memory value is
    13.45, and ``PERIMETER``, which out of core counts contour pixels, was 144 where the contour has
    1016 pixels; ``MEAN`` matched. On a 100 x 100 image the same ROI raised the error above. Stored striped (the images are at most 256 x 256
    pixels, so they are read as one tile), the same ROI gave the in-memory ``ROI_RADIUS_*`` values

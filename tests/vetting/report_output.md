@@ -8,8 +8,8 @@ what [`oracle_coverage.csv`](oracle_coverage.csv) CLAIMS to what the test tree A
 
 ## Coverage
 
-Features vetted by >=1 oracle: 636/758 (84%)
-regression: 122  invariant: 0  untested: 0
+Features vetted by >=1 oracle: 640/758 (84%)
+regression: 118  invariant: 0  untested: 0
 
 | family | total | vetted | regression | invariant | untested |
 |---|---|---|---|---|---|
@@ -23,8 +23,8 @@ regression: 122  invariant: 0  untested: 0
 | imq | 6 | 4 | 2 | 0 | 0 |
 | intensity_histogram | 47 | 43 | 4 | 0 | 0 |
 | moments | 180 | 118 | 62 | 0 | 0 |
-| morphology | 113 | 77 | 36 | 0 | 0 |
-| neighbor | 9 | 8 | 1 | 0 | 0 |
+| morphology | 113 | 80 | 33 | 0 | 0 |
+| neighbor | 9 | 9 | 0 | 0 | 0 |
 | ngldm | 38 | 33 | 5 | 0 | 0 |
 | ngtdm | 10 | 10 | 0 | 0 | 0 |
 | radial | 3 | 0 | 3 | 0 | 0 |
@@ -32,11 +32,11 @@ regression: 122  invariant: 0  untested: 0
 
 ## Verdicts
 
-1219 of 1219 assertion rows agree with the tree.
+1229 of 1229 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 1219 | the claim and the tree say the same thing |
+| `agree` | 1229 | the claim and the tree say the same thing |
 
 ### How far each verdict reaches
 
@@ -46,7 +46,7 @@ regression: 122  invariant: 0  untested: 0
 | scope | rows | what was compared |
 |---|---:|---|
 | `feature` | 628 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
-| `row` | 356 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
+| `row` | 366 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 | `row+config` | 235 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
 ## Every oracle a feature was matched against
@@ -66,8 +66,8 @@ that alone understates every family that corroborates.
 | 2D | glszm | 2 | . | . | 16 | . | . | 16 | . | . | . | . |
 | 2D | intensity_histogram | 26 | . | . | 16 | . | . | 23 | . | . | . | 4 |
 | 2D | moments | . | . | . | . | . | . | . | . | . | 118 | 62 |
-| 2D | morphology | 5 | 5 | 2 | . | 20 | 33 | . | . | . | 7 | 30 |
-| 2D | neighbor | 6 | 2 | . | . | . | . | . | . | . | . | 1 |
+| 2D | morphology | 9 | 5 | 2 | . | 20 | 33 | . | 1 | . | 8 | 27 |
+| 2D | neighbor | 6 | 3 | . | . | . | . | . | . | . | . | . |
 | 2D | ngldm | . | . | . | 17 | . | . | 17 | . | . | . | 2 |
 | 2D | ngtdm | . | . | . | 5 | . | . | 5 | . | . | . | . |
 | 2D | radial | . | . | . | . | . | . | . | . | . | . | 3 |
@@ -82,13 +82,13 @@ that alone understates every family that corroborates.
 | 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | 5 | . | 5 | . | . |
 | IMQ | imq | 1 | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **75** | **9** | **2** | **181** | **20** | **95** | **213** | **2** | **272** | **126** | **122** |
+| | **all** | **79** | **10** | **2** | **181** | **20** | **95** | **213** | **3** | **272** | **127** | **118** |
 
 ## By dimensionality
 
 | dim | features | vetted | scanned | no oracle assertion | unscanned |
 |---|---:|---:|---:|---:|---:|
-| 2D | 539 | 433 | 539 | 106 | 0 |
+| 2D | 539 | 437 | 539 | 102 | 0 |
 | 3D | 213 | 199 | 213 | 14 | 0 |
 | IMQ | 6 | 4 | 6 | 2 | 0 |
 

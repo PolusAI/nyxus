@@ -262,7 +262,10 @@ namespace Nyxus
 			doGabor = GaborFeature::required (env.theFeatureSet);
 		if (doEros || doImoms || doSmoms || doGabor)
 		{
-			if (env.using_gpu())
+			// Only the segmented 2D workflow allocates the GPU cache, and it ends the run if the
+			// allocation fails; the ROIs of the other paths that reach here (2.5D, 3D, arrays) are
+			// computed on the CPU
+			if (env.using_gpu() && env.devCache.is_ready())
 			{
 				size_t gbl = env.devCache.gpu_batch_len;		// former NyxusGpu::gpu_batch_len
 				// Cache ROI clouds and contours
@@ -309,7 +312,7 @@ namespace Nyxus
 			}
 			else
 			{
-				// user refused the GPU opportunity, so route calculation via the regular CPU-multithreaded way
+				// the GPU is off, or its cache is not ready: the regular CPU-multithreaded way
 
 				if (doEros)
 				{
