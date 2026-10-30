@@ -18,7 +18,7 @@
    * - :ref:`PERCENT_TOUCHING <feature-percent-touching>`
      - Percent of the contour touching
      - —
-     - regression
+     - CellProfiler (exact)
      - 15.91
    * - :ref:`CLOSEST_NEIGHBOR1_DIST <feature-closest-neighbor1-dist>`
      - Distance to the closest neighbour
