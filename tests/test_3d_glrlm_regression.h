@@ -38,7 +38,7 @@ static const ref_vals_map<double> glrlm_3d_regression_ref_vals{
 };
 
 // The same phantom at the "grey64" profile: GLRLM_GREYDEPTH=+64, a positive value, which routes
-// bin_intensities_3d (texture_feature.h) through matlab_grey_binning -- a FIXED 64-level count --
+// bin_roi_3d (3d_ooc_volume.h) through matlab_grey_binning -- a FIXED 64-level count --
 // rather than the -20 binCount profile the table above uses, where the bin count comes from the
 // ROI's own min/max. The two therefore bin the same voxels differently and are not comparable to
 // each other.

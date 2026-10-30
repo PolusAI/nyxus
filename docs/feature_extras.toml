@@ -692,13 +692,13 @@ EROSIONS_2_VANISH_COMPLEMENT = { name = "Erosions to vanish, complement (not com
 3GLDZM_ZP = { name = "Zone percentage", ibsi = "VIWW", example = 0.1458 }
 
 [shape_3d]
-3AREA = { name = "Surface area (exposed voxel faces)", ibsi = "", example = 96.0 }
-3AREA_2_VOLUME = { name = "Surface to volume ratio", ibsi = "", example = 2.182 }
-3COMPACTNESS1 = { name = "Compactness 1", ibsi = "", example = 0.02639 }
-3COMPACTNESS2 = { name = "Compactness 2", ibsi = "", example = 0.2475 }
+3AREA = { name = "Surface area (mesh)", ibsi = "C0JK", example = 66.37 }
+3AREA_2_VOLUME = { name = "Surface to volume ratio", ibsi = "2PR5", example = 1.677 }
+3COMPACTNESS1 = { name = "Compactness 1", ibsi = "SKGS", example = 0.04131 }
+3COMPACTNESS2 = { name = "Compactness 2", ibsi = "BQWJ", example = 0.6062 }
 3MESH_VOLUME = { name = "Volume (mesh)", ibsi = "RNU0", example = 39.58 }
-3SPHERICAL_DISPROPORTION = { name = "Spherical disproportion", ibsi = "", example = 1.593 }
-3SPHERICITY = { name = "Sphericity", ibsi = "", example = 0.6278 }
+3SPHERICAL_DISPROPORTION = { name = "Spherical disproportion", ibsi = "KRCK", example = 1.182 }
+3SPHERICITY = { name = "Sphericity", ibsi = "QCFX", example = 0.8463 }
 3VOLUME_CONVEXHULL = { name = "Convex hull volume", ibsi = "", example = 40.67 }
 3VOXEL_VOLUME = { name = "Volume (voxel counting)", ibsi = "YEKZ", example = 44.0 }
 3MAJOR_AXIS_LEN = { name = "Major axis length", ibsi = "TDIC", example = 5.786 }

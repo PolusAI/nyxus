@@ -2,15 +2,17 @@
 
 // 3D shape on a non-cubic voxel grid against pyradiomics 3.0.1 (RadiomicsShape), which builds its
 // marching-cubes mesh and its covariance on the voxels as acquired, scaled by the image spacing.
-// 3AREA and the ratios built on it are not pinned here: nyxus' 3AREA is the exposed-voxel-face
-// count, which pyradiomics does not compute.
+// pyradiomics 3.0.1 has compactness 1 and 2 and spherical disproportion only as deprecated features,
+// so of the five area ratios only 3AREA_2_VOLUME and 3SPHERICITY are pinned here; MIRP pins all five
+// at 1x1x1 in test_3d_morphology_mirp.h.
 //
 // Fixture: the segmented phantom (ut_inten.nii / ut_mask57.nii, ROI 57) at voxel spacing
 // (1.3, 0.8, 2.5) in x, y, z, given to nyxus as --aniso* and to pyradiomics as the SimpleITK image
 // spacing in the same axis order (recipe morphology3d.pyradiomics_anisotropic). The spacing is
 // unequal on every axis, so an axis length or ratio that took any axis's spacing from another, or
 // left one out, misses its pin. 3MESH_VOLUME depends on the product sx*sy*sz alone, so it catches a
-// spacing left out or misapplied to the volume, not two axes' spacings swapped.
+// spacing left out or misapplied to the volume, not two axes' spacings swapped. 3AREA does not: each
+// facet's area moves with its own orientation, so it also catches two axes' spacings swapped.
 //
 // Goldens: pyradiomics 3.0.1 + SimpleITK 2.3.1, generated and re-verified by
 // tests/vetting/oracles/gen_morphology3d_pyradiomics.py. The map holds pyradiomics' own values.
@@ -19,12 +21,15 @@
 
 static const ref_vals_map<double> morphology_3d_pyradiomics_ref_vals
 {
+	{"3AREA", 121066.46691610393}, // original_shape_SurfaceArea at spacing (1.3, 0.8, 2.5)
+	{"3AREA_2_VOLUME", 0.16973211570979729}, // original_shape_SurfaceVolumeRatio at spacing (1.3, 0.8, 2.5)
 	{"3ELONGATION", 0.64206222930112822}, // original_shape_Elongation at spacing (1.3, 0.8, 2.5)
 	{"3FLATNESS", 0.46852288961977678}, // original_shape_Flatness at spacing (1.3, 0.8, 2.5)
 	{"3LEAST_AXIS_LEN", 83.765297555890839}, // original_shape_LeastAxisLength at spacing (1.3, 0.8, 2.5)
 	{"3MAJOR_AXIS_LEN", 178.78592361596122}, // original_shape_MajorAxisLength at spacing (1.3, 0.8, 2.5)
 	{"3MESH_VOLUME", 713279.66666661727}, // original_shape_MeshVolume at spacing (1.3, 0.8, 2.5)
 	{"3MINOR_AXIS_LEN", 114.79168868452528}, // original_shape_MinorAxisLength at spacing (1.3, 0.8, 2.5)
+	{"3SPHERICITY", 0.31888455514987352}, // original_shape_Sphericity at spacing (1.3, 0.8, 2.5)
 };
 
 namespace
@@ -91,6 +96,23 @@ namespace
 void test_3d_morphology_aniso_mesh_volume_pyradiomics()
 {
 	assert_3d_morphology_aniso_pyradiomics ("3MESH_VOLUME", Nyxus::Feature3D::MESH_VOLUME);
+}
+
+// The mesh area sums each facet's area with its edges scaled by the spacing along x, y and z
+void test_3d_morphology_aniso_area_pyradiomics()
+{
+	assert_3d_morphology_aniso_pyradiomics ("3AREA", Nyxus::Feature3D::AREA);
+}
+
+// Both ratios take the mesh area against the mesh volume
+void test_3d_morphology_aniso_area_2_volume_pyradiomics()
+{
+	assert_3d_morphology_aniso_pyradiomics ("3AREA_2_VOLUME", Nyxus::Feature3D::AREA_2_VOLUME);
+}
+
+void test_3d_morphology_aniso_sphericity_pyradiomics()
+{
+	assert_3d_morphology_aniso_pyradiomics ("3SPHERICITY", Nyxus::Feature3D::SPHERICITY);
 }
 
 // The axis lengths are 4*sqrt of the covariance eigenvalues of the physical voxel coordinates.

@@ -2256,26 +2256,26 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology_3d`.
      - Description
      - Validation
    * - ``3AREA``
-     - Surface area of the ROI from its exposed voxel faces: faces of ROI voxels whose 6-connected neighbour is not in the ROI, each weighted by its area (the product of the anisotropy factors of the two axes it spans), so with no anisotropy it is the number of exposed faces (a staircase area, not a mesh area).
-     - regression
+     - Surface area of the ROI's marching-cubes surface mesh (the 0.5-isolevel surface 3MESH_VOLUME integrates), the sum of its triangle areas with each triangle's edges scaled by the anisotropy factors along x, y and z, so in squared voxels with no anisotropy and in the squared units of the anisotropy factors otherwise; IBSI area (mesh).
+     - vetted: analytic, MIRP, PyRadiomics
    * - ``3AREA_2_VOLUME``
-     - 3AREA divided by 3VOXEL_VOLUME.
-     - regression
+     - 3AREA divided by 3MESH_VOLUME; IBSI surface to volume ratio.
+     - vetted: analytic, MIRP, PyRadiomics
    * - ``3COMPACTNESS1``
-     - 3VOXEL_VOLUME divided by the square root of pi times 3AREA cubed (differs from IBSI, which uses the mesh area and mesh volume).
-     - regression
+     - 3MESH_VOLUME divided by the square root of pi times 3AREA cubed; IBSI compactness 1.
+     - vetted: analytic, MIRP
    * - ``3COMPACTNESS2``
-     - 36 pi times 3VOXEL_VOLUME squared, divided by 3AREA cubed (differs from IBSI, which uses the mesh area and mesh volume).
-     - regression
+     - 36 pi times 3MESH_VOLUME squared, divided by 3AREA cubed; IBSI compactness 2.
+     - vetted: analytic, MIRP
    * - ``3MESH_VOLUME``
      - Volume enclosed by the ROI's marching-cubes surface mesh, in cubic voxels.
      - vetted: analytic, MIRP, PyRadiomics
    * - ``3SPHERICAL_DISPROPORTION``
-     - 3AREA divided by the surface area of a sphere whose volume is 3VOXEL_VOLUME (differs from IBSI, which uses the mesh area and mesh volume).
-     - regression
+     - 3AREA divided by the surface area of a sphere whose volume is 3MESH_VOLUME; IBSI spherical disproportion.
+     - vetted: analytic, MIRP
    * - ``3SPHERICITY``
-     - Surface area of a sphere whose volume is 3VOXEL_VOLUME, divided by 3AREA; the reciprocal of 3SPHERICAL_DISPROPORTION (differs from IBSI, which uses the mesh area and mesh volume).
-     - regression
+     - Surface area of a sphere whose volume is 3MESH_VOLUME, divided by 3AREA; the reciprocal of 3SPHERICAL_DISPROPORTION; IBSI sphericity.
+     - vetted: analytic, MIRP, PyRadiomics
    * - ``3VOLUME_CONVEXHULL``
      - Volume of the convex hull of the vertices of the ROI's marching-cubes surface mesh, in cubic voxels.
      - vetted: analytic, MATLAB, MIRP

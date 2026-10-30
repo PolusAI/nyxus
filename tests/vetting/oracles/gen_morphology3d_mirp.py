@@ -13,14 +13,11 @@ so no grey-level binning applies and asking for one would be meaningless. On the
 D3_SurfaceFeature with IBSI=true and PIXELSIZEUM=100, which is what test_3d_morphology_common.h sets.
 
 MIRP's `morph_*` block is the IBSI section 3.1 morphology family. Three groups of it are pinned: the
-five PCA axis quantities, two volume quantities (voxel-counting and convex hull), and the volume
-enclosed by the ROI surface mesh, `morph_volume`. MIRP's `morph_area_mesh` is not: it is a
-marching-cubes mesh area while Nyxus' 3AREA counts exposed voxel faces (46739 against 59992, ~28%),
-and the five features derived from area -- 3AREA_2_VOLUME, 3COMPACTNESS1/2, 3SPHERICITY,
-3SPHERICAL_DISPROPORTION -- inherit that convention difference. They stay regression-only; see
-../audit/morphology_3d_mirp_vetting_report.md. Nor is the part Nyxus implements no feature for: the
-density family (`morph_*_dens_*`), `morph_diam`, `morph_integ_int` and the spatial-autocorrelation
-pair.
+five PCA axis quantities, the voxel-counting volume, and the ROI surface mesh -- the volume it
+encloses, `morph_volume`, its area, `morph_area_mesh`, the convex hull of its vertices, and the five
+ratios IBSI takes over area (mesh) and volume (mesh). Not pinned is the part Nyxus implements no
+feature for: the density family (`morph_*_dens_*`), `morph_diam`, `morph_integ_int` and the
+spatial-autocorrelation pair.
 
 NIFTI READING WITHOUT A NIFTI LIBRARY: the mirp env has neither SimpleITK nor nibabel, and adding one
 would make this a two-env, two-step generator. The phantoms are uncompressed single-file NIfTI-1
@@ -32,6 +29,7 @@ Provenance: tool=mirp 2.6.0 (numpy 2.4.6, pandas 3.0.3, Python 3.11); env=nyxus_
 generator=tests/vetting/oracles/gen_morphology3d_mirp.py. Run offline; CI never invokes it.
 """
 import logging
+import math
 import os
 import re
 import sys
@@ -68,22 +66,34 @@ MIRP = {
 #                          rel=1e-3 tier; the measured residual is 2.338e-04%.
 MIRP_VOLUME_SOURCES = ("morph_vol_approx",)
 
-# The ROI surface mesh and its convex hull. Nyxus and MIRP build the same surface -- the
-# marching-cubes triangulation of the mask at the 0.5 isolevel -- integrate it, and hull its vertices,
-# so these are the same quantities on both sides and are pinned at rel=1e-6, which is MIRP's own
-# float32 storage and nothing else.
+# The ROI surface mesh, its convex hull and the ratios over the mesh. Nyxus and MIRP build the same
+# surface -- the marching-cubes triangulation of the mask at the 0.5 isolevel -- integrate it, take
+# its area and hull its vertices, so these are the same quantities on both sides and are pinned at
+# rel=1e-6, which is MIRP's own float32 storage and nothing else.
 #
-#   3MESH_VOLUME        <- morph_volume, IBSI volume (mesh).
-#   3VOLUME_CONVEXHULL  <- morph_volume / morph_vol_dens_conv_hull. IBSI defines volume density
-#                          (convex hull) as V_mesh / V_convex, so the hull volume is the mesh volume
-#                          divided by that density.
+#   3MESH_VOLUME              <- morph_volume, IBSI volume (mesh).
+#   3VOLUME_CONVEXHULL        <- morph_volume / morph_vol_dens_conv_hull. IBSI defines volume density
+#                                (convex hull) as V_mesh / V_convex, so the hull volume is the mesh
+#                                volume divided by that density.
+#   3AREA                     <- morph_area_mesh, IBSI area (mesh).
+#   3AREA_2_VOLUME            <- morph_av, A / V.
+#   3COMPACTNESS1             <- morph_comp_1, V / sqrt(pi A^3).
+#   3COMPACTNESS2             <- morph_comp_2, 36 pi V^2 / A^3.
+#   3SPHERICAL_DISPROPORTION  <- morph_sph_dispr, A / (36 pi V^2)^(1/3).
+#   3SPHERICITY               <- morph_sphericity, (36 pi V^2)^(1/3) / A.
 MIRP_MESH = {
     "3MESH_VOLUME": "morph_volume",
     "3VOLUME_CONVEXHULL": "morph_volume / morph_vol_dens_conv_hull",
+    "3AREA": "morph_area_mesh",
+    "3AREA_2_VOLUME": "morph_av",
+    "3COMPACTNESS1": "morph_comp_1",
+    "3COMPACTNESS2": "morph_comp_2",
+    "3SPHERICAL_DISPROPORTION": "morph_sph_dispr",
+    "3SPHERICITY": "morph_sphericity",
 }
 
 # rel=1e-6 matches assert_3d_morphology_mesh_mirp: same definition on both sides, so the residual is
-# MIRP carrying the mesh in float32 (measured 3.8e-08 and 2.7e-08), not a difference in the quantity.
+# MIRP carrying the mesh in float32 (measured 2.7e-08 to 2.4e-07), not a difference in the quantity.
 MESH_RELTOL = 1e-6
 
 
@@ -95,30 +105,61 @@ def volume_pins(extra):
     return {"3VOXEL_VOLUME": extra["morph_vol_approx"]}
 
 
+MESH_COLUMNS = ("morph_volume", "morph_vol_dens_conv_hull", "morph_area_mesh", "morph_av",
+                "morph_comp_1", "morph_comp_2", "morph_sph_dispr", "morph_sphericity")
+
+# The MIRP_MESH entries mesh_pins() computes rather than reads: their value there is an expression
+# over the columns, not a column name
+MESH_DERIVED = ("3VOLUME_CONVEXHULL",)
+
+
 def mesh_pins(extra):
-    """-> {nyxus feature: MIRP value} for the mesh volume and its hull, from the raw morph_* columns."""
-    missing = [c for c in ("morph_volume", "morph_vol_dens_conv_hull") if c not in extra]
+    """-> {nyxus feature: MIRP value} for the mesh measures, its hull and the ratios over the mesh,
+    from the raw morph_* columns."""
+    missing = [c for c in MESH_COLUMNS if c not in extra]
     if missing:
         raise RuntimeError(f"MIRP produced no {missing}")
     dens = extra["morph_vol_dens_conv_hull"]
     if not dens > 0:
         raise RuntimeError(f"morph_vol_dens_conv_hull={dens}, cannot back out the hull volume")
-    return {
-        "3MESH_VOLUME": extra["morph_volume"],
-        "3VOLUME_CONVEXHULL": extra["morph_volume"] / dens,
+    pins = {name: extra[col] for name, col in MIRP_MESH.items() if name not in MESH_DERIVED}
+    pins["3VOLUME_CONVEXHULL"] = extra["morph_volume"] / dens
+    assert set(pins) == set(MIRP_MESH), sorted(set(MIRP_MESH) ^ set(pins))
+    return pins
+
+
+def check_mesh_identities(mesh):
+    """IBSI's ratios over MIRP's own mesh area and volume. A ratio that fails here would mean MIRP
+    takes it over something other than the two mesh measures, and its pin would not vet Nyxus' ratio."""
+    A, V = mesh["3AREA"], mesh["3MESH_VOLUME"]
+    want = {
+        "3AREA_2_VOLUME": A / V,
+        "3COMPACTNESS1": V / math.sqrt(math.pi * A ** 3),
+        "3COMPACTNESS2": 36. * math.pi * V ** 2 / A ** 3,
+        "3SPHERICAL_DISPROPORTION": A / (36. * math.pi * V ** 2) ** (1. / 3.),
+        "3SPHERICITY": (36. * math.pi * V ** 2) ** (1. / 3.) / A,
     }
+    problems = 0
+    for name, w in want.items():
+        rel = abs(mesh[name] - w) / abs(w)
+        ok = rel <= MESH_RELTOL
+        problems += 0 if ok else 1
+        print(f"  {'OK  ' if ok else 'FAIL'} {name} == its IBSI ratio over morph_area_mesh and morph_volume: rel={rel:.3g}")
+    return problems
 
 
-# Reported for context, and the columns the volume pins are read from. Everything pinned is read from the
-# tables above; nothing here is a golden by itself. The area quantities are the measurement behind
-# the convention gap that keeps 3AREA and its five ratios regression-only.
+# Reported for context, and the columns the volume and mesh pins are read from. Everything pinned is
+# read from the tables above; nothing here is a golden by itself.
 CROSSCHECK = [
     ("morph_vol_approx", "3VOXEL_VOLUME, and MATLAB regionprops3 Volume"),
     ("morph_volume", "IBSI volume (mesh) -> 3MESH_VOLUME, and the numerator of the hull pin"),
     ("morph_vol_dens_conv_hull", "volume / convex-hull volume -> back out the hull volume"),
-    ("morph_area_mesh", "3AREA, but marching-cubes mesh area vs Nyxus' exposed-voxel-face count"),
-    ("morph_sphericity", "3SPHERICITY (inherits the area convention)"),
-    ("morph_av", "3AREA_2_VOLUME (inherits the area convention)"),
+    ("morph_area_mesh", "IBSI area (mesh) -> 3AREA"),
+    ("morph_av", "-> 3AREA_2_VOLUME"),
+    ("morph_comp_1", "-> 3COMPACTNESS1"),
+    ("morph_comp_2", "-> 3COMPACTNESS2"),
+    ("morph_sph_dispr", "-> 3SPHERICAL_DISPROPORTION"),
+    ("morph_sphericity", "-> 3SPHERICITY"),
 ]
 
 # NIfTI-1 datatype code -> numpy dtype, for the codes these phantoms use.
@@ -238,6 +279,7 @@ def main():
 
     print()
     nbad = check_identities(got)
+    nbad += check_mesh_identities(mesh)
 
     print("\n# cross-check only, nothing below is pinned")
     for key, why in CROSSCHECK:

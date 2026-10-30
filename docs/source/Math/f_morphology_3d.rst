@@ -28,19 +28,18 @@ only the ROI's mask; voxel intensities play no part.
        (NIfTI, or OME-Zarr chunked over all of Z), an oversized ROI stops the run with an error
        instead (see :doc:`/large_images`).
    * - **IBSI**
-     - ``3MESH_VOLUME`` (RNU0), ``3VOXEL_VOLUME`` (YEKZ), the three axis lengths (TDIC, P9VJ,
-       7J51), ``3ELONGATION`` (Q3CK) and ``3FLATNESS`` (N17B). ``3AREA`` and the five ratios have
-       no identifier: IBSI defines its surface area (C0JK) and the ratios on the mesh, where Nyxus
-       counts voxel faces and uses the voxel-counting volume. ``3VOLUME_CONVEXHULL`` has no
-       identifier of its own; IBSI uses it only inside the volume density (R3ER).
+     - ``3AREA`` (C0JK), ``3MESH_VOLUME`` (RNU0), ``3VOXEL_VOLUME`` (YEKZ), ``3AREA_2_VOLUME``
+       (2PR5), ``3COMPACTNESS1`` (SKGS), ``3COMPACTNESS2`` (BQWJ), ``3SPHERICAL_DISPROPORTION``
+       (KRCK), ``3SPHERICITY`` (QCFX), the three axis lengths (TDIC, P9VJ, 7J51),
+       ``3ELONGATION`` (Q3CK) and ``3FLATNESS`` (N17B). ``3VOLUME_CONVEXHULL`` has no identifier
+       of its own; IBSI uses it only inside the volume density (R3ER).
 
 .. tip::
 
    Three different volumes are on offer. ``3MESH_VOLUME`` is IBSI's volume (mesh) and is the one
-   to compare with MIRP or PyRadiomics. ``3VOXEL_VOLUME`` is essentially the voxel count. The five
-   ratios use ``3VOXEL_VOLUME`` and the voxel-face count ``3AREA``, not the mesh, so they do not
-   match IBSI's compactness, sphericity or surface-to-volume ratio; see
-   :ref:`shape-3d-possible-issues`.
+   to compare with MIRP or PyRadiomics. ``3VOXEL_VOLUME`` is essentially the voxel count.
+   ``3AREA`` is the area of the same mesh, and the five ratios combine it with ``3MESH_VOLUME``,
+   as IBSI defines them.
 
 
 How the features are computed
@@ -50,16 +49,13 @@ The features start from the ROI's voxels, the voxels of the mask that carry the 
 integer positions :math:`(x_k, y_k, z_k)`: :math:`x` along the columns, :math:`y` down the rows
 and :math:`z` across the slices. :math:`N` is their number. From them Nyxus builds:
 
-- **The voxel faces:** each voxel has six faces, and a face is exposed when the voxel on its other
-  side, along :math:`x`, :math:`y` or :math:`z`, is not in the ROI. Faces towards a cavity inside
-  the ROI count too. ``3AREA`` is the number of exposed faces; with anisotropy it is the sum of
-  their areas.
 - **The surface mesh:** the marching-cubes surface of the binary mask at the 0.5 isolevel, built on
   the ROI's bounding box padded by one empty voxel on every side, so the surface is closed. The
   mask is binary, so every mesh vertex sits halfway between an ROI voxel centre and a neighbouring
-  non-ROI voxel centre: one of its three coordinates is a half-integer. ``3MESH_VOLUME`` is
-  the volume this surface encloses. The case table splits the two inside corners of an ambiguous cube face (two diagonal
-  corners inside, two outside), so the surface stays closed in every case.
+  non-ROI voxel centre: one of its three coordinates is a half-integer. ``3AREA`` is the area of
+  this surface and ``3MESH_VOLUME`` the volume it encloses; the surface around a cavity inside the
+  ROI counts towards both. The case table splits the two inside corners of an ambiguous cube face
+  (two diagonal corners inside, two outside), so the surface stays closed in every case.
 - **The convex hull:** the convex hull of the mesh vertices. ``3VOLUME_CONVEXHULL`` is its volume.
   The hull is computed in doubled, integer coordinates, so the volume is exact.
 - **The covariance matrix:** the 3 × 3 sample covariance (divided by :math:`N-1`) of the voxel
@@ -67,14 +63,14 @@ and :math:`z` across the slices. :math:`N` is their number. From them Nyxus buil
 
 The values are:
 
-- **Units:** lengths in voxels, ``3AREA`` in voxel faces (squared voxel edges), volumes in cubic
+- **Units:** lengths in voxels, ``3AREA`` in squared voxels, volumes in cubic
   voxels. No pixel size is applied. With anisotropy settings the coordinates are scaled by the
   anisotropy, so the units are those of the scaled voxel (see `Settings`_).
 - **Intensities:** not used. A ROI whose voxels are all 0, or all equal, gives the same values as
   one with varying intensities. ``--coarseGrayDepth`` and ``--ibsi`` change nothing.
 - **Which volume where:** ``3AREA_2_VOLUME``, ``3COMPACTNESS1``, ``3COMPACTNESS2``,
-  ``3SPHERICAL_DISPROPORTION`` and ``3SPHERICITY`` combine ``3AREA`` with ``3VOXEL_VOLUME``.
-  ``3MESH_VOLUME`` and ``3VOLUME_CONVEXHULL`` enter no other feature.
+  ``3SPHERICAL_DISPROPORTION`` and ``3SPHERICITY`` combine ``3AREA`` with ``3MESH_VOLUME``.
+  ``3VOXEL_VOLUME`` and ``3VOLUME_CONVEXHULL`` enter no other feature.
 - **One ROI per volume:** in whole-volume mode, and with ``single_roi=True``, Nyxus does not trace
   the ROI's shape: it takes the ROI to be a solid box and uses closed forms; the axis features are
   then 0. With ``single_roi=True`` this is a known defect (`#494 <https://github.com/PolusAI/nyxus/issues/494>`__); see
@@ -86,10 +82,13 @@ The values are:
   the volume itself, into one ROI, and the box is the bounding box of the volume's nonzero
   voxels.
 
-``skimage.measure.marching_cubes`` at level 0.5 on the padded mask, followed by the divergence
-theorem, reproduces ``3MESH_VOLUME`` to the float32 precision of its vertices, and
+On a mask with no ambiguous cube face (see `Possible issues`_),
+``skimage.measure.marching_cubes`` at level 0.5 on the padded mask, followed by
+``skimage.measure.mesh_surface_area`` and the divergence theorem, reproduces ``3AREA`` and
+``3MESH_VOLUME`` to the float32 precision of its vertices, and
 ``scipy.spatial.ConvexHull`` on those vertices reproduces ``3VOLUME_CONVEXHULL`` to double
-precision.
+precision. Where a face is ambiguous, skimage's table splits it differently and its area and
+volume differ from Nyxus'.
 
 
 Worked example
@@ -107,11 +106,11 @@ Slice by slice, rows :math:`y` and columns :math:`x`, with background ``.``:
    .11111               ..1111               ...11.
    ...11.               ....1.               ......
 
-The ROI has 96 exposed voxel faces, so ``3AREA`` is 96. Its 0.5-isolevel mesh encloses
-:math:`475/12 = 39.583` cubic voxels, and the convex hull of the mesh vertices :math:`122/3 =
-40.667`. ``3VOXEL_VOLUME`` is :math:`44 \times 0.9999977 = 43.9999`. The mesh's own surface area,
-which Nyxus does not report, is 66.37 (``skimage.measure.mesh_surface_area``), well below the 96
-faces.
+The ROI's 0.5-isolevel mesh has an area of 66.366 squared voxels, so ``3AREA`` is 66.366, and it
+encloses :math:`475/12 = 39.583` cubic voxels; the convex hull of the mesh vertices has a volume
+of :math:`122/3 = 40.667`. ``3VOXEL_VOLUME`` is :math:`44 \times 0.9999977 = 43.9999`. The ratios
+follow from the mesh area and volume: ``3AREA_2_VOLUME`` is :math:`66.366/39.583 = 1.677` and
+``3SPHERICITY`` is :math:`(36\pi \times 39.583^2)^{1/3}/66.366 = 0.8463`.
 
 The covariance matrix of the voxel coordinates, in the order :math:`x, y, z`, is
 
@@ -161,8 +160,8 @@ Notation
      - Number of ROI voxels.
    * - :math:`(x_k, y_k, z_k)`
      - Integer position of voxel :math:`k`; :math:`\bar x, \bar y, \bar z` are their means.
-   * - :math:`A_f`
-     - Number of exposed voxel faces, ``3AREA``.
+   * - :math:`A_m`
+     - Area of the marching-cubes mesh, ``3AREA``.
    * - :math:`V_v`
      - Voxel-counting volume, ``3VOXEL_VOLUME``.
    * - :math:`V_m`
@@ -170,6 +169,10 @@ Notation
    * - :math:`T`
      - The mesh's triangles; a triangle has vertices :math:`\mathbf a, \mathbf b, \mathbf c`, and
        :math:`\mathbf o` is the first vertex of the first triangle.
+   * - :math:`s_x, s_y, s_z`
+     - The anisotropy factors, the voxel's size along each axis; 1 without anisotropy.
+   * - :math:`w, h, d`
+     - The width, height and depth of a box, in voxels along :math:`x`, :math:`y` and :math:`z`.
    * - :math:`\textbf{K}`
      - Sample covariance matrix of the voxel coordinates, divided by :math:`N-1`.
    * - :math:`\lambda_1 \ge \lambda_2 \ge \lambda_3`
@@ -185,8 +188,8 @@ The 3D shape features have no settings of their own. These options change their 
   ``anisotropy_z``) give the voxel's size along each axis. The volume is featurized on its voxels
   as acquired, and the shape features scale their coordinates by the anisotropy: with
   ``--anisoz=2`` the worked example's ``3VOXEL_VOLUME``, ``3MESH_VOLUME`` and
-  ``3VOLUME_CONVEXHULL`` double, ``3AREA`` sums each exposed face's area, and the axis lengths
-  are those of the coordinates with z doubled.
+  ``3VOLUME_CONVEXHULL`` double, ``3AREA`` is the area of the mesh stretched along z, 103.438
+  rather than twice 66.366, and the axis lengths are those of the coordinates with z doubled.
 - ``--use-physical-spacing=true`` (Python: ``use_physical_spacing``) takes the factors from the
   volume's OME ``PhysicalSize`` values, scaled so that the smallest is 1. The values are then in
   units of the smallest spacing, not in physical units. Any ``--aniso*`` value other than 1
@@ -229,22 +232,39 @@ Surface area
 ^^^^^^^^^^^^
 
 :Code: ``3AREA``
-:Range: without anisotropy, an integer of at least 6 for a nonempty ROI, in voxel faces; with
-  anisotropy, a positive sum of face areas
+:Range: positive; in squared voxels
 
-The number of ROI voxel faces whose neighbour across the face, in the 6-neighbourhood, is not in
-the ROI. It is a staircase area, not the area of a smooth surface.
+The area of the ROI's marching-cubes surface at the 0.5 isolevel, the surface ``3MESH_VOLUME``
+integrates: the sum of the areas of its triangles. Each triangle's area is taken on the voxel
+grid, with its edges scaled by the anisotropy along :math:`x`, :math:`y` and :math:`z` before the
+cross product.
 
 .. math::
 
-   A_f = \sum_{k=1}^{N} \sum_{\mathbf d \in \{\pm\mathbf e_x, \pm\mathbf e_y, \pm\mathbf e_z\}}
-   \big[\, (x_k, y_k, z_k) + \mathbf d \notin \mathrm{ROI} \,\big]
+   A_m = \frac{1}{2} \sum_{(\mathbf a, \mathbf b, \mathbf c) \in T}
+   \big|\, S(\mathbf b - \mathbf a) \times S(\mathbf c - \mathbf a) \,\big|,
+   \qquad S = \mathrm{diag}(s_x, s_y, s_z)
 
-**Relations.** A solid :math:`w \times h \times d` box has :math:`2(wh + hd + wd)` faces.
+Under anisotropy the area is therefore not the unit-spacing area times one factor, unlike the
+volumes, which are the unit-spacing volumes times :math:`s_x s_y s_z`.
 
-**Possible issues.** The face count is well above the mesh area IBSI uses: 96 against 66.37 on the
-worked example, 1902 against 1372 on a digital ball of radius 10. On digital balls of radius 5 to
-30 the ratio stays between 1.36 and 1.43; it does not shrink as the ROI grows.
+**Relations.** A single voxel gives the octahedron of area :math:`\sqrt 3`, or
+:math:`\sqrt{s_x^2 s_y^2 + s_y^2 s_z^2 + s_x^2 s_z^2}` with anisotropy. A solid
+:math:`w \times h \times d` box gives the area of the box with its edges and corners bevelled,
+
+.. math::
+
+   A_m = 2\big[(h-1)(d-1)\, s_y s_z + (w-1)(d-1)\, s_x s_z + (w-1)(h-1)\, s_x s_y\big]
+   + 2\big[(w-1)\, s_x \sqrt{s_y^2+s_z^2} + (h-1)\, s_y \sqrt{s_x^2+s_z^2}
+   + (d-1)\, s_z \sqrt{s_x^2+s_y^2}\big] + \sqrt{s_x^2 s_y^2 + s_y^2 s_z^2 + s_x^2 s_z^2}
+
+which on unit voxels is :math:`2(wh + hd + wd) - 2(w+h+d-3)(2-\sqrt 2) - (6-\sqrt 3)`: 129.673
+for a 6 × 4 × 5 box. A cavity adds the area of its own part of the surface: a solid 5 × 5 × 5
+cube gives 131.673, and the same cube with its centre voxel removed :math:`131.673 + \sqrt 3 =
+133.405`.
+
+**Possible issues.** The mesh is a faceted surface, and its area stays above that of the smooth
+surface it approximates however large the ROI: see ``3SPHERICITY``.
 
 
 .. _feature-3mesh-volume:
@@ -325,9 +345,10 @@ Surface to volume ratio
 
 .. math::
 
-   \mathrm{3AREA\_2\_VOLUME} = \frac{A_f}{V_v}
+   \mathrm{3AREA\_2\_VOLUME} = \frac{A_m}{V_m}
 
-IBSI's surface to volume ratio (2PR5) has the same form with the mesh area and mesh volume.
+The ratio depends on the ROI's size: it falls as the ROI grows, 1.677 on the worked example and
+0.331 on a digital ball of radius 10.
 
 
 .. _feature-3compactness1:
@@ -336,14 +357,13 @@ Compactness 1
 ^^^^^^^^^^^^^
 
 :Code: ``3COMPACTNESS1``
-:Range: positive, dimensionless; a solid cube gives :math:`1/\sqrt{216\pi} = 0.0384`
+:Range: positive, dimensionless, at most :math:`1/(6\pi) = 0.0531`, the value of a sphere
 
 .. math::
 
-   \mathrm{3COMPACTNESS1} = \frac{V_v}{\sqrt{\pi A_f^{3}}}
+   \mathrm{3COMPACTNESS1} = \frac{V_m}{\sqrt{\pi A_m^{3}}}
 
-IBSI's compactness 1 (SKGS) has the same form with the mesh area and mesh volume, and gives
-:math:`1/(6\pi) = 0.0531` for a sphere.
+A solid 5 × 5 × 5 cube gives 0.0441 and a digital ball of radius 10 gives 0.0460.
 
 
 .. _feature-3compactness2:
@@ -352,14 +372,13 @@ Compactness 2
 ^^^^^^^^^^^^^
 
 :Code: ``3COMPACTNESS2``
-:Range: positive, dimensionless; a solid cube gives :math:`\pi/6 = 0.5236`
+:Range: 0 to 1, dimensionless; 1 for a sphere
 
 .. math::
 
-   \mathrm{3COMPACTNESS2} = 36\pi \, \frac{V_v^{2}}{A_f^{3}}
+   \mathrm{3COMPACTNESS2} = 36\pi \, \frac{V_m^{2}}{A_m^{3}}
 
-IBSI's compactness 2 (BQWJ) has the same form with the mesh area and mesh volume, and is 1 for a
-sphere. A digital ball of radius 10 gives 0.2857 here.
+A solid 5 × 5 × 5 cube gives 0.6918 and a digital ball of radius 10 gives 0.7533.
 
 
 .. _feature-3spherical-disproportion:
@@ -368,16 +387,16 @@ Spherical disproportion
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 :Code: ``3SPHERICAL_DISPROPORTION``
-:Range: positive, dimensionless; a solid cube gives :math:`(6/\pi)^{1/3} = 1.241`
+:Range: at least 1, dimensionless; 1 for a sphere
 
-The exposed-face area divided by the surface area of a sphere with volume :math:`V_v`.
+The mesh area divided by the surface area of a sphere with volume :math:`V_m`.
 
 .. math::
 
-   \mathrm{3SPHERICAL\_DISPROPORTION} = \frac{A_f}{\left(36\pi V_v^{2}\right)^{1/3}}
+   \mathrm{3SPHERICAL\_DISPROPORTION} = \frac{A_m}{\left(36\pi V_m^{2}\right)^{1/3}}
 
-**Relations.** ``3SPHERICAL_DISPROPORTION`` is :math:`1/` ``3SPHERICITY``. IBSI's spherical
-disproportion (KRCK) uses the mesh area and mesh volume.
+**Relations.** ``3SPHERICAL_DISPROPORTION`` is :math:`1/` ``3SPHERICITY``. A solid 5 × 5 × 5
+cube gives 1.131 and a digital ball of radius 10 gives 1.099.
 
 
 .. _feature-3sphericity:
@@ -386,17 +405,17 @@ Sphericity
 ^^^^^^^^^^
 
 :Code: ``3SPHERICITY``
-:Range: positive, dimensionless; a solid cube gives :math:`(\pi/6)^{1/3} = 0.806`
+:Range: 0 to 1, dimensionless; 1 for a sphere
 
-The surface area of a sphere with volume :math:`V_v`, divided by the exposed-face area.
+The surface area of a sphere with volume :math:`V_m`, divided by the mesh area.
 
 .. math::
 
-   \mathrm{3SPHERICITY} = \frac{\left(36\pi V_v^{2}\right)^{1/3}}{A_f}
+   \mathrm{3SPHERICITY} = \frac{\left(36\pi V_m^{2}\right)^{1/3}}{A_m}
 
-**Possible issues.** A digital ball of radius 10 gives 0.6586, below a solid cube, because the
-face count overestimates a curved surface. IBSI's sphericity (QCFX), from the mesh, gives 0.9099
-on the same ball.
+**Possible issues.** A digital ball does not reach 1: a ball of radius 10 gives 0.9099, against
+0.8844 for a solid 5 × 5 × 5 cube, and on balls of radius 5 to 30 the value stays between 0.90
+and 0.93. The facets of the mesh keep its area above that of the sphere as the ball grows.
 
 
 .. _feature-3major-axis-len:
@@ -457,19 +476,15 @@ slice.
 Possible issues
 ---------------
 
-``3AREA`` counts voxel faces, and the five ratios inherit it
-   ``3AREA`` is the staircase area of the voxels, not the mesh area of IBSI, MIRP and PyRadiomics.
-   On a digital ball of radius 10 it is 1902, where the mesh area is 1372; on the worked example
-   96 against 66.37. ``3AREA_2_VOLUME``, ``3COMPACTNESS1``, ``3COMPACTNESS2``,
-   ``3SPHERICAL_DISPROPORTION`` and ``3SPHERICITY`` combine it with ``3VOXEL_VOLUME``, so they do
-   not match the IBSI features of the same names: the ball's ``3SPHERICITY`` is 0.659 where the
-   mesh-based sphericity is 0.910. A sphere does not score as the most compact shape: a solid
-   cube has higher ``3COMPACTNESS1``, ``3COMPACTNESS2`` and ``3SPHERICITY``, and lower
-   ``3SPHERICAL_DISPROPORTION`` (1.241 against 1.518 for the ball), than a digital ball.
+The mesh area does not converge to the smooth surface's area
+   ``3AREA`` is the area of a faceted surface, and refining the ROI does not bring it down to the
+   area of the smooth surface the ROI samples. A digital ball therefore keeps a ``3SPHERICITY``
+   below 1, between 0.90 and 0.93 for radii 5 to 30, and the other four ratios do not reach their
+   sphere values either. IBSI, MIRP and PyRadiomics compute the same mesh area and share this.
 
 ``3VOXEL_VOLUME`` is scaled by 0.9999977
    The packing density 0.5236 truncates :math:`\pi/6 = 0.5235988`, so the value is the voxel
-   count times 0.9999976616. The ratios carry the same factor.
+   count times 0.9999976616. No other feature uses it.
 
 Whole-volume mode differs from a segmented ROI that fills the volume
    With no mask, the features come from closed forms of a box (see `How the features are
@@ -478,16 +493,18 @@ Whole-volume mode differs from a segmented ROI that fills the volume
    the packing factor. A 6 × 4 × 5 volume with no zero voxels gives 0 and 120 through
    ``featurize_files(..., single_roi=True)``, 0 and 210 (a 7 × 5 × 6 box, a known defect, `#493 <https://github.com/PolusAI/nyxus/issues/493>`__) on the command line or
    through ``featurize_directory``, and 6.860 for the major axis and 119.99972 for the volume when
-   a mask marks the same box as a ROI. ``3AREA``, ``3MESH_VOLUME`` and ``3VOLUME_CONVEXHULL`` of
-   the ``featurize_files`` run agree with the masked run; on the command line they are those of
-   the larger box (``3AREA`` 214 instead of 148). Through ``featurize_files`` zero voxels are left
-   out: a 3 × 2 × 2 block of nonzero voxels in the same volume gives 12 and a ``3AREA`` of 32.
+   a mask marks the same box as a ROI. ``3AREA``, ``3MESH_VOLUME``, ``3VOLUME_CONVEXHULL`` and the
+   five ratios of the ``featurize_files`` run agree with the masked run; on the command line they
+   are those of the larger box (``3AREA`` 192.158 instead of 129.673). The box values come from
+   the closed forms given under ``3AREA`` and ``3MESH_VOLUME``. Through ``featurize_files`` zero
+   voxels are left out: a 3 × 2 × 2 block of nonzero voxels in the same volume gives 12 and a
+   ``3AREA`` of 23.046.
 
 ``single_roi=True`` measures the bounding box, not the mask
    With ``featurize_files(..., single_roi=True)`` every shape feature describes the solid
    bounding box of the merged mask, and the axis features are 0, whatever the mask's shape. This
    is a known defect (`#494 <https://github.com/PolusAI/nyxus/issues/494>`__). A ball of radius 5 (515 voxels) in a 15 × 15 × 15 volume
-   gives ``3VOXEL_VOLUME`` 514.999 and ``3AREA`` 486 as a segmented ROI, and 1331 and 726, the
+   gives ``3VOXEL_VOLUME`` 514.999 and ``3AREA`` 340.08 as a segmented ROI, and 1331 and 686.58, the
    values of its 11 × 11 × 11 box, with ``single_roi=True``; ``3MAJOR_AXIS_LEN`` is 8.909 and 0.
    The values are right only for a mask that fills its box.
 
@@ -507,32 +524,33 @@ Validation
 
 The test suite checks the 3D shape features against four references:
 
-- **MIRP** 2.6.0, on a segmented phantom: ``3MESH_VOLUME`` and ``3VOLUME_CONVEXHULL`` to a relative
-  10\ :sup:`-6` (measured 3.8 × 10\ :sup:`-8` and 2.7 × 10\ :sup:`-8`, MIRP carrying the mesh in
-  float32); ``3VOXEL_VOLUME`` to a relative 10\ :sup:`-3` (measured 2.3 × 10\ :sup:`-6`, the
-  packing factor); ``3MAJOR_AXIS_LEN``, ``3MINOR_AXIS_LEN``, ``3LEAST_AXIS_LEN``, ``3ELONGATION``
-  and ``3FLATNESS`` to a relative 10\ :sup:`-9`.
-- **PyRadiomics** 3.0.1, on a phantom with anisotropic voxel spacing given as
-  ``--aniso*``: ``3MESH_VOLUME``, ``3MAJOR_AXIS_LEN``, ``3MINOR_AXIS_LEN``, ``3LEAST_AXIS_LEN``,
-  ``3ELONGATION`` and ``3FLATNESS`` to a relative 10\ :sup:`-9`. PyRadiomics divides the
-  covariance by :math:`N` where Nyxus divides by :math:`N - 1`, so its axis lengths are multiplied
-  by :math:`\sqrt{N/(N-1)}` before the comparison.
+- **MIRP** 2.6.0, on a segmented phantom: ``3AREA``, ``3MESH_VOLUME``, ``3VOLUME_CONVEXHULL``,
+  ``3AREA_2_VOLUME``, ``3COMPACTNESS1``, ``3COMPACTNESS2``, ``3SPHERICAL_DISPROPORTION`` and
+  ``3SPHERICITY`` to a relative 10\ :sup:`-6` (measured 2.7 × 10\ :sup:`-8` to 2.4 × 10\ :sup:`-7`,
+  ``3AREA`` 46739.0225 against MIRP's 46739.0195, MIRP carrying the mesh in float32);
+  ``3VOXEL_VOLUME`` to a relative 10\ :sup:`-3`
+  (measured 2.3 × 10\ :sup:`-6`, the packing factor); ``3MAJOR_AXIS_LEN``, ``3MINOR_AXIS_LEN``,
+  ``3LEAST_AXIS_LEN``, ``3ELONGATION`` and ``3FLATNESS`` to a relative 10\ :sup:`-9`.
+- **PyRadiomics** 3.0.1, on a phantom with anisotropic voxel spacing (1.3, 0.8, 2.5) given as
+  ``--aniso*``: ``3AREA`` (``SurfaceArea``), ``3AREA_2_VOLUME`` (``SurfaceVolumeRatio``),
+  ``3SPHERICITY`` (``Sphericity``), ``3MESH_VOLUME``, ``3MAJOR_AXIS_LEN``, ``3MINOR_AXIS_LEN``,
+  ``3LEAST_AXIS_LEN``, ``3ELONGATION`` and ``3FLATNESS`` to a relative 10\ :sup:`-9`.
+  PyRadiomics divides the covariance by :math:`N` where Nyxus divides by :math:`N - 1`, so its
+  axis lengths are multiplied by :math:`\sqrt{N/(N-1)}` before the comparison.
 - **MATLAB** (R2026a, ``regionprops3``), on the same phantom: ``3VOXEL_VOLUME`` to a relative
   10\ :sup:`-3`, and ``3VOLUME_CONVEXHULL`` within 0.5 % of ``ConvexVolume`` (measured 0.17 %),
   which counts the voxels of the rasterised hull rather than integrating it.
 - **Analytic** values on lattice solids: ``3MESH_VOLUME`` on a single voxel and boxes,
-  ``3VOLUME_CONVEXHULL`` also on octahedra and rhombic prisms, both also in whole-volume mode, to
-  a relative 10\ :sup:`-12`.
+  ``3VOLUME_CONVEXHULL`` also on octahedra and rhombic prisms, ``3AREA`` and the five ratios on
+  the single-voxel octahedron and on bevelled boxes with unit spacing and with spacings
+  (1.3, 0.8, 2.5) and (0.5, 2, 1), all also in whole-volume mode, to a relative 10\ :sup:`-12`.
 
-The mesh rows hold for ROIs without ambiguous cube faces; the phantom has none. ``3AREA``,
-``3AREA_2_VOLUME``, ``3COMPACTNESS1``, ``3COMPACTNESS2``, ``3SPHERICAL_DISPROPORTION`` and
-``3SPHERICITY`` are regression-only: their surface-area convention differs from every reference
-tool. Out-of-core results are checked against in-memory results of the same build. The Nyxus
-values quoted on this page (the worked example, the single-voxel, one-slice, ball, box, cube,
-whole-volume and anisotropy values) are pinned by the worked-example script. The mesh areas, the
-IBSI sphericity and the face-count ratio quoted for comparison are computed with
-``skimage.measure.marching_cubes`` and are not pinned, nor are the covariance entries, the
-major-axis direction and the skimage and scipy reproduction.
+The mesh rows hold for ROIs without ambiguous cube faces; the phantom has none. Out-of-core
+results are checked against in-memory results of the same build. The Nyxus values quoted on this
+page (the worked example, the single-voxel, one-slice, ball, box, cube, whole-volume and
+anisotropy values) are pinned by the worked-example script, except the sphericities of the balls
+of radius 5, 20 and 30. The covariance entries, the major-axis direction and the skimage and
+scipy reproduction are not pinned.
 
 
 References

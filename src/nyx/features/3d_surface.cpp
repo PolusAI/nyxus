@@ -115,66 +115,21 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 	double sumPackedV = double(r.raw_pixels_3D.size()) * (4. / 3. * M_PI * ball_r3);
 	fval_VOXEL_VOLUME = sumPackedV / 0.5236 * sx * sy * sz;		// packaging density at kissing number = 4 (cubic lattice)
 
-	// surface area: count exposed voxel faces in the 6-neighborhood
-	struct VoxelKey
-	{
-		StatsInt x, y, z;
-		bool operator==(const VoxelKey& other) const
-		{
-			return x == other.x && y == other.y && z == other.z;
-		}
-	};
-	struct VoxelKeyHash
-	{
-		std::size_t operator()(const VoxelKey& key) const noexcept
-		{
-			std::size_t h = std::hash<StatsInt>{}(key.x);
-			h ^= std::hash<StatsInt>{}(key.y) + 0x9e3779b9 + (h << 6) + (h >> 2);
-			h ^= std::hash<StatsInt>{}(key.z) + 0x9e3779b9 + (h << 6) + (h >> 2);
-			return h;
-		}
-	};
-	std::unordered_set<VoxelKey, VoxelKeyHash> voxels;
-	voxels.reserve(r.raw_pixels_3D.size() * 2);
-	for (const auto& vox : r.raw_pixels_3D)
-		voxels.insert({ vox.x, vox.y, vox.z });
-
-	static constexpr StatsInt nbr[6][3] = {
-		{ 1, 0, 0 }, { -1, 0, 0 },
-		{ 0, 1, 0 }, { 0, -1, 0 },
-		{ 0, 0, 1 }, { 0, 0, -1 }
-	};
-	// a face across x is a voxel's y-z side, and so on
-	const double faceArea[6] = { sy * sz, sy * sz, sx * sz, sx * sz, sx * sy, sx * sy };
-
-	fval_AREA = 0.0;
-	for (const auto& vox : r.raw_pixels_3D)
-	{
-		for (int k = 0; k < 6; k++)
-		{
-			const auto& d = nbr[k];
-			if (voxels.find({ vox.x + d[0], vox.y + d[1], vox.z + d[2] }) == voxels.end())
-				fval_AREA += faceArea[k];
-		}
-	}
-
-	// mesh volume: the volume enclosed by the ROI's marching-cubes surface, which is the surface IBSI
-	// section 3.1 defines volume (mesh) over. MIRP and pyradiomics integrate the same kind of surface;
-	// theirs can differ from this one where a cube face is ambiguous. The convex hull
-	// is the hull of that surface: of its vertices, which the same walk collects in doubled coordinates.
-	// Both are taken on the lattice, where they are exact, and a grid of sx*sy*sz voxels is its linear
-	// image: the surface and its hull scale with it, so each volume is the lattice one times a voxel's.
+	// mesh volume and area: the volume enclosed by the ROI's marching-cubes surface and the area of
+	// that surface, which is the surface IBSI section 3.1 defines volume (mesh) and surface area (mesh)
+	// over. MIRP and pyradiomics integrate the same kind of surface; theirs can differ from this one
+	// where a cube face is ambiguous. The convex hull is the hull of that surface: of its vertices,
+	// which the same walk collects in doubled coordinates. The volumes are taken on the lattice, where
+	// they are exact, and a grid of sx*sy*sz voxels is its linear image: the surface and its hull scale
+	// with it, so each volume is the lattice one times a voxel's. The area has no such factor, so the
+	// walk takes each facet's area on the grid itself.
 	std::vector<std::array<double, 3>> hullPoints;
-	fval_MESH_VOLUME = Nyxus::roi_mesh_volume (r.raw_pixels_3D, &hullPoints) * sx * sy * sz;
+	const Nyxus::MeshMeasures mesh = Nyxus::roi_mesh_measures (r.raw_pixels_3D, sx, sy, sz, &hullPoints);
+	fval_MESH_VOLUME = mesh.volume;
+	fval_AREA = mesh.area;
 	fval_VOLUME_CONVEXHULL = convex_hull_volume (hullPoints) / 8.0 * sx * sy * sz;
 
-	// volume-area ratio features: 3AREA (the exposed-face count) against the voxel-counting volume.
-	// 3MESH_VOLUME comes from the surface mesh above and does not enter them.
-	fval_AREA_2_VOLUME = fval_AREA / fval_VOXEL_VOLUME;
-	fval_COMPACTNESS1 = fval_VOXEL_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
-	fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
-	fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
-	fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
+	set_area_ratios();
 
 	// pca features
 	double K[3][3];
@@ -203,18 +158,35 @@ void D3_SurfaceFeature::calculate (LR& r, const Fsettings& s)
 	}
 }
 
+void D3_SurfaceFeature::set_area_ratios()
+{
+	// IBSI's volume-area ratios take the mesh area against the volume enclosed by the same mesh.
+	// sphere_area is the area of the sphere of the same volume.
+	const double area3 = fval_AREA * fval_AREA * fval_AREA,
+		sphere_area = std::pow(36. * M_PI * fval_MESH_VOLUME * fval_MESH_VOLUME, 1. / 3.);
+	fval_AREA_2_VOLUME = fval_AREA / fval_MESH_VOLUME;
+	fval_COMPACTNESS1 = fval_MESH_VOLUME / std::sqrt(M_PI * area3);
+	fval_COMPACTNESS2 = 36. * M_PI * fval_MESH_VOLUME * fval_MESH_VOLUME / area3;
+	fval_SPHERICAL_DISPROPORTION = fval_AREA / sphere_area;
+	fval_SPHERICITY = sphere_area / fval_AREA;
+}
+
 void D3_SurfaceFeature::set_whole_box (StatsInt w, StatsInt h, StatsInt d, double sx, double sy, double sz)
 {
-	// 3AREA counts the box's exposed voxel faces, each the area of a voxel's side across its axis,
-	// which is what the general path counts for a solid box, and the five ratios take it against the
-	// voxel volume as there.
-	fval_AREA = 2. * (double(w) * h * sx * sy + double(h) * d * sy * sz + double(w) * d * sx * sz);
+	// The ROI is the whole box, so its marching-cubes surface is a bevelled box, with a closed form
+	// for both mesh measures. The cells along an interior edge of the box and the 8 corner cells cut
+	// the staircase off: an edge along x is a strip of width sqrt(sy^2 + sz^2)/2 and length (w-1)*sx,
+	// a corner a triangle of area sqrt(sx^2 sy^2 + sy^2 sz^2 + sx^2 sz^2)/8, and the flat faces are what
+	// remains, (h-1)*(d-1) cells of sy*sz across x and so on. On a cubic grid this is
+	// 2(wh+hd+wd) - 2(w+h+d-3)(2-sqrt 2) - (6-sqrt 3). Both hold down to a one-voxel box. The volume
+	// reproduces the general path's roi_mesh_measures() exactly, and a voxel of sx*sy*sz scales it as
+	// it scales the general path's; the area is the same sum regrouped, so it agrees with the general
+	// path's facet-by-facet sum to rounding, not bit for bit.
+	const double wm = double(w) - 1., hm = double(h) - 1., dm = double(d) - 1.;
+	fval_AREA = 2. * (hm * dm * sy * sz + wm * dm * sx * sz + wm * hm * sx * sy)
+		+ 2. * (wm * sx * std::sqrt(sy * sy + sz * sz) + hm * sy * std::sqrt(sx * sx + sz * sz) + dm * sz * std::sqrt(sx * sx + sy * sy))
+		+ std::sqrt(sx * sx * sy * sy + sy * sy * sz * sz + sx * sx * sz * sz);
 
-	// The ROI is the whole box, so its marching-cubes surface is a bevelled box and the mesh volume
-	// has a closed form: each of the 4*(w+h+d-3) cells along an interior edge and each of the 8
-	// corner cells cuts a fixed amount off the staircase. For 3MESH_VOLUME this reproduces the
-	// general path's roi_mesh_volume() exactly, down to a one-voxel box, and a voxel of sx*sy*sz
-	// scales it as it scales the general path's.
 	const double edgecells = double(w) + double(h) + double(d) - 3.;
 	fval_MESH_VOLUME = (double(w) * h * d - edgecells / 2. - 5. / 6.) * sx * sy * sz;
 
@@ -225,11 +197,7 @@ void D3_SurfaceFeature::set_whole_box (StatsInt w, StatsInt h, StatsInt d, doubl
 	// voxel volume carries the packing constant instead.
 	fval_VOXEL_VOLUME = double(w) * h * d * sx * sy * sz;
 
-	fval_AREA_2_VOLUME = fval_AREA / fval_VOXEL_VOLUME;
-	fval_COMPACTNESS1 = fval_VOXEL_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
-	fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
-	fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
-	fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
+	set_area_ratios();
 
 	fval_MAJOR_AXIS_LEN =
 	fval_MINOR_AXIS_LEN =
@@ -243,10 +211,10 @@ void D3_SurfaceFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t int
 void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& ldr)
 {
 	// Out-of-core surface: stream the disk-backed voxel cloud (raw_voxels_NT) one Z-plane at a
-	// time instead of holding the whole cube (raw_pixels_3D). Per plane we tally exposed-face
-	// adjacencies, and covariance is accumulated online; the mesh walk re-reads the planes two at a
-	// time. Peak memory is two Z-plane occupancy bitmaps plus the hull candidates, two per lattice row
-	// -- bounded by area, not volume. Values mirror the in-core calculate().
+	// time instead of holding the whole cube (raw_pixels_3D). Covariance is accumulated online over
+	// the planes; the mesh walk re-reads them two at a time. Peak memory is two Z-planes plus the hull
+	// candidates, two per lattice row -- bounded by area, not volume. Values mirror the in-core
+	// calculate().
 	size_t n = r.raw_voxels_NT.size();
 	if (n == 0)
 	{
@@ -266,18 +234,6 @@ void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 	double sumPackedV = double(n) * (4. / 3. * M_PI * (1. / 8.));
 	fval_VOXEL_VOLUME = sumPackedV / 0.5236 * spx * spy * spz;
 
-	const int W = (int) r.aabb.get_width(),
-		H = (int) r.aabb.get_height(),
-		minx = (int) r.aabb.get_xmin(),
-		miny = (int) r.aabb.get_ymin();
-
-	// Surface area as exposed faces: along each axis 2*N faces less 2 per adjacent voxel pair along
-	// it, each face the area of a voxel's side across that axis. x/y adjacencies are tallied within
-	// a plane; z adjacencies between a plane and the previous one -- a 2-plane window.
-	double adjx = 0.0, adjy = 0.0, adjz = 0.0;
-	std::vector<char> prevOcc;   // occupancy bitmap of plane (z-1) over the [W x H] ROI bbox
-	long long prevZ = -2;        // z index of prevOcc; -2 = none
-
 	// Online covariance sums over all voxels
 	double sx = 0, sy = 0, sz = 0, sxx = 0, syy = 0, szz = 0, sxy = 0, sxz = 0, syz = 0;
 
@@ -291,61 +247,33 @@ void D3_SurfaceFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader
 		for (const auto& v : slab)
 			r.aabb.require_contains (v.x, v.y, v.z);
 
-		// -- this plane's occupancy bitmap + online covariance sums
-		std::vector<char> curOcc ((size_t) W * H, 0);
+		// -- online covariance sums
 		for (const auto& v : slab)
 		{
-			int lx = (int) v.x - minx, ly = (int) v.y - miny;
-			if (lx >= 0 && lx < W && ly >= 0 && ly < H)
-				curOcc[(size_t) ly * W + lx] = 1;
-
 			double dx = (double) v.x, dy = (double) v.y, dz = (double) v.z;
 			sx += dx; sy += dy; sz += dz;
 			sxx += dx * dx; syy += dy * dy; szz += dz * dz;
 			sxy += dx * dy; sxz += dx * dz; syz += dy * dz;
 		}
-
-		// -- adjacencies. +x / +y within this plane (each unordered in-plane pair once)
-		for (const auto& v : slab)
-		{
-			int lx = (int) v.x - minx, ly = (int) v.y - miny;
-			if (lx + 1 < W && ly >= 0 && ly < H && curOcc[(size_t) ly * W + (lx + 1)])
-				adjx += 1.0;
-			if (ly + 1 < H && lx >= 0 && lx < W && curOcc[(size_t) (ly + 1) * W + lx])
-				adjy += 1.0;
-			// +z: pair with the previous plane at the same (x,y) (each unordered z pair once)
-			if (prevZ == (long long) z - 1 && lx >= 0 && lx < W && ly >= 0 && ly < H
-				&& prevOcc[(size_t) ly * W + lx])
-				adjz += 1.0;
-		}
-
-		prevOcc.swap (curOcc);
-		prevZ = (long long) z;
 	}
 
-	fval_AREA = (2.0 * double(n) - 2.0 * adjx) * spy * spz
-		+ (2.0 * double(n) - 2.0 * adjy) * spx * spz
-		+ (2.0 * double(n) - 2.0 * adjz) * spx * spy;
-
-	// -- mesh volume and convex hull: the in-core integral and hull, fed one Z-plane at a time from the
-	//    disk-backed cloud, both on the lattice and scaled by a voxel's volume as in calculate()
+	// -- mesh volume, mesh area and convex hull: the in-core integrals and hull, fed one Z-plane at a
+	//    time from the disk-backed cloud, the volumes on the lattice and scaled by a voxel's volume and
+	//    the area on the grid, as in calculate()
 	const Nyxus::LatticeBounds bounds = { r.aabb.get_xmin(), r.aabb.get_xmax(), r.aabb.get_ymin(), r.aabb.get_ymax(), r.aabb.get_zmin(), r.aabb.get_zmax() };
 	std::vector<std::array<double, 3>> hullPoints;
-	fval_MESH_VOLUME = Nyxus::roi_mesh_volume (bounds,
+	const Nyxus::MeshMeasures mesh = Nyxus::roi_mesh_measures (bounds,
 		[&r](StatsInt z, std::vector<Pixel3>& voxels)
 		{
 			if (z >= 0)
 				r.raw_voxels_NT.read_slab ((size_t) z, voxels);
 		},
-		&hullPoints) * spx * spy * spz;
+		spx, spy, spz, &hullPoints);
+	fval_MESH_VOLUME = mesh.volume;
+	fval_AREA = mesh.area;
 	fval_VOLUME_CONVEXHULL = convex_hull_volume (hullPoints) / 8.0 * spx * spy * spz;
 
-	// -- volume-area ratio features, as in calculate()
-	fval_AREA_2_VOLUME = fval_AREA / fval_VOXEL_VOLUME;
-	fval_COMPACTNESS1 = fval_VOXEL_VOLUME / std::sqrt(M_PI * fval_AREA * fval_AREA * fval_AREA);
-	fval_COMPACTNESS2 = 36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME / (fval_AREA * fval_AREA * fval_AREA);
-	fval_SPHERICAL_DISPROPORTION = fval_AREA / std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.);
-	fval_SPHERICITY = std::pow(36. * M_PI * fval_VOXEL_VOLUME * fval_VOXEL_VOLUME, 1. / 3.) / fval_AREA;
+	set_area_ratios();
 
 	// -- PCA axis lengths from the covariance matrix (sample covariance, matching calc_covariance:
 	//    Cov(a,b) = (Sum a*b - N*mean_a*mean_b) / (N-1))

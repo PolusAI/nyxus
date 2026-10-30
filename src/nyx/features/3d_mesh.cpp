@@ -419,6 +419,19 @@ namespace
 			+ a[2] * (b[0] * c[1] - b[1] * c[0]);
 	}
 
+	// One facet's area on a grid of sx x sy x sz voxels. Scaling the edges along x, y and z scales the
+	// components of their cross product by sy*sz, sx*sz and sx*sy, so the lattice cross product, which
+	// is exact on half-integer vertices, is taken first and scaled after.
+	double facet_area (const Nyxus::Triangle3& s, double sx, double sy, double sz)
+	{
+		const double ux = s.b[0] - s.a[0], uy = s.b[1] - s.a[1], uz = s.b[2] - s.a[2],
+			vx = s.c[0] - s.a[0], vy = s.c[1] - s.a[1], vz = s.c[2] - s.a[2],
+			cx = (uy * vz - uz * vy) * sy * sz,
+			cy = (uz * vx - ux * vz) * sx * sz,
+			cz = (ux * vy - uy * vx) * sx * sy;
+		return 0.5 * std::sqrt (cx * cx + cy * cy + cz * cz);
+	}
+
 	// The two ends of each lattice row of mesh vertices along x, in doubled (integer) coordinates
 	class RowEnds
 	{
@@ -474,10 +487,18 @@ double Nyxus::mesh_volume (const std::vector<Triangle3>& mesh)
 	return std::abs (v) / 6.0;
 }
 
-double Nyxus::roi_mesh_volume (const LatticeBounds& bounds, const RoiPlaneSource& planes,
-	std::vector<std::array<double, 3>>* hull_points)
+double Nyxus::mesh_area (const std::vector<Triangle3>& mesh, double sx, double sy, double sz)
 {
-	double v = 0.0, o[3] = { 0., 0., 0. };
+	double a = 0.0;
+	for (const auto& s : mesh)
+		a += facet_area (s, sx, sy, sz);
+	return a;
+}
+
+Nyxus::MeshMeasures Nyxus::roi_mesh_measures (const LatticeBounds& bounds, const RoiPlaneSource& planes,
+	double sx, double sy, double sz, std::vector<std::array<double, 3>>* hull_points)
+{
+	double v = 0.0, a = 0.0, o[3] = { 0., 0., 0. };
 	bool have_o = false;
 	RowEnds ends;
 	march_roi_surface (bounds, planes, [&](const Triangle3& s)
@@ -488,6 +509,7 @@ double Nyxus::roi_mesh_volume (const LatticeBounds& bounds, const RoiPlaneSource
 				have_o = true;
 			}
 			v += signed_volume6 (s, o);
+			a += facet_area (s, sx, sy, sz);
 			if (hull_points)
 			{
 				ends.add (s.a);
@@ -498,18 +520,19 @@ double Nyxus::roi_mesh_volume (const LatticeBounds& bounds, const RoiPlaneSource
 
 	if (hull_points)
 		ends.collect (*hull_points);
-	return std::abs (v) / 6.0;
+	return { std::abs (v) / 6.0 * sx * sy * sz, a };
 }
 
-double Nyxus::roi_mesh_volume (const std::vector<Pixel3>& cloud, std::vector<std::array<double, 3>>* hull_points)
+Nyxus::MeshMeasures Nyxus::roi_mesh_measures (const std::vector<Pixel3>& cloud,
+	double sx, double sy, double sz, std::vector<std::array<double, 3>>* hull_points)
 {
 	if (cloud.empty())
 	{
 		if (hull_points)
 			hull_points->clear();
-		return 0.0;
+		return {};
 	}
 
 	CloudPlanes cp (cloud);
-	return roi_mesh_volume (cp.bounds, cp.source (cloud), hull_points);
+	return roi_mesh_measures (cp.bounds, cp.source (cloud), sx, sy, sz, hull_points);
 }

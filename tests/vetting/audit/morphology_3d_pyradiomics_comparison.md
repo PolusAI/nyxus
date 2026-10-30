@@ -10,7 +10,9 @@ only for ROIs whose surface has no ambiguous face. It is registered as one in th
 `test_3d_morphology_pyradiomics.h` pins `3MESH_VOLUME` against PyRadiomics on the segmented phantom
 at voxel spacing (1.3, 0.8, 2.5) (recipe `morphology3d.pyradiomics_anisotropic`, `rel=1e-9`). This
 report covers the masks that pin cannot: its unit-spacing comparison is about the triangulation, not
-the spacing.
+the spacing. `3AREA` is the area of the same mesh and follows the volume: the two agree to 1e-14 on
+the masks without ambiguous faces and differ on the others. The same test pins `3AREA` against
+`SurfaceArea`, and `3AREA_2_VOLUME` and `3SPHERICITY` against `SurfaceVolumeRatio` and `Sphericity`.
 
 ## Tool and configuration
 
@@ -18,7 +20,7 @@ the spacing.
 |---|---|
 | Tool | PyRadiomics 3.0.1 (SimpleITK 2.3.1, NumPy 1.23.5, Python 3.8.20) |
 | PyRadiomics call | `radiomics.cShape.calculate_coefficients`, the C routine `shape.py` calls, at unit spacing, on the mask cropped to its bounding box, transposed to `[z, y, x]` and padded by one voxel — the array `shape.py` builds from what the extractor hands it |
-| Nyxus side | `MC_TRIANGLES` read from `src/nyx/features/3d_mesh.cpp`, walked as `march_roi_surface()` walks it and integrated from the first vertex as `roi_mesh_volume()` does |
+| Nyxus side | `MC_TRIANGLES` read from `src/nyx/features/3d_mesh.cpp`, walked as `march_roi_surface()` walks it and integrated from the first vertex as `roi_mesh_measures()` does |
 | Script | `tests/vetting/audit/compare_mesh_volume_pyradiomics.py` |
 
 ```
@@ -39,9 +41,8 @@ The extractor itself refuses a one-voxel mask, so that row is a direct call. PyR
 - Volume by the divergence theorem: the signed volumes of the tetrahedra each triangle spans with a
   reference point, summed and divided by 6.
 
-PyRadiomics also integrates the mesh area, as half the norm of each triangle's cross product. Nyxus
-computes no mesh area: `3AREA` sums the areas of the exposed voxel faces. The script computes the same mesh area on
-the Nyxus triangles only to compare the two meshes.
+- Area as half the norm of each triangle's cross product, summed. `3AREA` is this area; the script
+  computes it on the Nyxus triangles from the shipped table.
 
 ## Where they differ
 
@@ -51,7 +52,7 @@ the Nyxus triangles only to compare the two meshes.
 | volume reference point | the corner of the padded array, one voxel outside the ROI's bounding box | the first vertex of the surface | over a closed surface the choice does not matter; over PyRadiomics' open one it does (see Result) |
 | voxel spacing | each vertex scaled by the image spacing, so the volume is in the spacing's units (mm³ for a typical medical image) | the mesh is built on the voxels as acquired and its volume multiplied by sx·sy·sz, the spacing being the `--aniso*` factors as given or, with physical spacing on, the spacing ratios with the smallest axis 1 | scaling every vertex is a linear map, so both scale the volume by sx·sy·sz: they agree when Nyxus is given the image's spacing as `--aniso*`, which `test_3d_morphology_pyradiomics.h` checks. With physical spacing on instead, Nyxus reports volume in units of the finest axis's voxel |
 | convex-hull volume | no 3D hull feature | `3VOLUME_CONVEXHULL`, the hull of the mesh vertices | no PyRadiomics counterpart |
-| surface area and its ratios | `SurfaceArea` is the mesh area; `Sphericity`, `SurfaceVolumeRatio` and the deprecated `Compactness1`, `Compactness2`, `SphericalDisproportion` use mesh area and mesh volume | `3AREA` sums the areas of the exposed voxel faces; `3AREA_2_VOLUME`, `3COMPACTNESS1/2`, `3SPHERICAL_DISPROPORTION`, `3SPHERICITY` use `3AREA` and `3VOXEL_VOLUME` | different definitions, not comparable |
+| surface area and its ratios | `SurfaceArea` is the mesh area, each vertex scaled by the image spacing; `Sphericity`, `SurfaceVolumeRatio` and the deprecated `Compactness1`, `Compactness2`, `SphericalDisproportion` use mesh area and mesh volume | `3AREA` is the mesh area, each triangle's edges scaled by the spacing along x, y and z; `3AREA_2_VOLUME`, `3COMPACTNESS1/2`, `3SPHERICAL_DISPROPORTION`, `3SPHERICITY` use `3AREA` and `3MESH_VOLUME` | the same definitions. Scaling a triangle's edges is not one factor on its area, so the area also checks that each axis gets its own spacing; `test_3d_morphology_pyradiomics.h` pins `3AREA`, `3AREA_2_VOLUME` and `3SPHERICITY` at spacing (1.3, 0.8, 2.5); the other three are deprecated in PyRadiomics 3.0.1 and not pinned |
 
 ## Result
 
@@ -63,8 +64,7 @@ The script's output, verbatim. Volumes (V) and areas (A) are in voxel units.
 - **Moved** calls `cShape` directly on the mask placed 7 voxels further from the array's corner
   along each axis. PyRadiomics' extractor never does this, since it crops first; the column only
   exposes the open surface.
-- **Nyxus mesh A** is listed because the script computes it; the Nyxus `3AREA` feature is the
-  exposed-face area, not this area.
+- **Nyxus mesh A** is the area of the Nyxus triangles, the value `3AREA` reports at unit spacing.
 
 | mask | voxels | Nyxus V | Nyxus V, 4 orientations | PyRadiomics V | PyRadiomics V, 4 orientations | gap, 4 orientations | PyRadiomics V moved | Nyxus mesh A | PyRadiomics A | Nyxus mesh closed |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
@@ -141,25 +141,33 @@ triangles.
 
 ## Performance
 
-Measured in one session with a standalone harness that links `src/nyx/features/3d_mesh.cpp` and
-PyRadiomics 3.0.1's `cshape.c`, both built with MSVC 2022 `/O2`, on one Windows 11 workstation. The
-harness is not in the tree. The inputs are digital balls. Each number is the best of 3–10 runs,
+Measured with standalone harnesses that link `src/nyx/features/3d_mesh.cpp` and PyRadiomics 3.0.1's
+`cshape.c`, both built with MSVC 2022 `/O2`, on one Windows 11 workstation. The harnesses are not in
+the tree. The inputs are digital balls. The two sides were timed in separate sessions; the Nyxus
+volume-only column was timed in both and agrees within 12%. Each number is the best of 3–10 runs,
 except PyRadiomics as called by `shape.py` at r=40, which ran once. PyRadiomics' C routine always
 computes the mesh diameters as well, so it was timed with and without that step. These numbers are
 not in a test and will drift with hardware and compiler.
 
-| ball | voxels | Nyxus volume only | Nyxus volume + hull points | PyRadiomics mesh only | PyRadiomics as called by `shape.py` |
-|---|---:|---:|---:|---:|---:|
-| r=10 | 4,169 | 0.12 ms | 0.64 ms | 0.10 ms | 3.7 ms |
-| r=40 | 267,761 | 4.2 ms | 12.4 ms | 3.6 ms | 760 ms |
-| r=100 | 4,187,857 | 61 ms | 135 ms | 50 ms | not run |
+| ball | voxels | Nyxus volume only | Nyxus volume + area | Nyxus volume + area + hull points | PyRadiomics mesh only | PyRadiomics as called by `shape.py` |
+|---|---:|---:|---:|---:|---:|---:|
+| r=10 | 4,169 | 0.12 ms | 0.14 ms | 0.62 ms | 0.10 ms | 3.7 ms |
+| r=40 | 267,761 | 3.9 ms | 3.5 ms | 12.1 ms | 3.6 ms | 760 ms |
+| r=100 | 4,187,857 | 54 ms | 55 ms | 120 ms | 50 ms | not run |
 
-- The mesh passes are within about 20% of each other, PyRadiomics' being the faster. Neither was
-  profiled. They differ in structure: PyRadiomics reads a dense, padded mask; Nyxus starts from the
-  voxel list, keeps two z-planes in memory and hands each triangle to a callback, so that the same
-  walker serves in-memory and out-of-core ROIs.
-- `roi_mesh_volume()` with hull points, the call `3d_surface.cpp` makes, costs 2.2–5.3× the volume
-  alone over balls of r=10 to 100. The extra work is collecting the two ends of each lattice row of
-  vertices, which `RowEnds` keeps in a `std::map`.
+- "Volume only" is the marching-cubes walk with the signed-volume sum and nothing else, over the
+  plane source `roi_mesh_measures()` builds; no feature runs it alone. "Volume + area" is
+  `roi_mesh_measures()` without hull points, and the last Nyxus column is the call `3d_surface.cpp`
+  makes.
+- The area adds a cross product and a square root per facet. That costs about 15% at r=10 and is
+  inside the run-to-run spread at r=40 and r=100.
+- PyRadiomics' mesh pass also returns both the surface area and the volume, so it compares with
+  "volume + area": the two are within about 10% at r=40 and r=100, PyRadiomics' being the faster at
+  r=10 and r=100. Neither was profiled. They differ in structure: PyRadiomics reads a dense, padded
+  mask; Nyxus starts from the voxel list, keeps two z-planes in memory and hands each triangle to a
+  callback, so that the same walker serves in-memory and out-of-core ROIs.
+- Collecting hull points costs 2.2–4.4× the walk without them over balls of r=10 to 100. The extra
+  work is collecting the two ends of each lattice row of vertices, which `RowEnds` keeps in a
+  `std::map`.
 - PyRadiomics' diameter step compares every pair of surface vertices, so its cost grows with the
   square of the surface size. With it, the call takes 37× the mesh pass at r=10 and 214× at r=40.

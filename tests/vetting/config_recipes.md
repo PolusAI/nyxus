@@ -682,16 +682,17 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `base_discretisation_method="none"`). Used by: `test_3d_morphology_mirp.h`.
 - Morphology is computed from the mask geometry, so no grey-level binning applies on either side —
   `GREYDEPTH` is set only because the shared fixture sets it, and MIRP is told `none` explicitly.
-- Covers the five PCA axis features (`morph_pca_*`), `3VOXEL_VOLUME` (`morph_vol_approx`), and the
-  two mesh features, `3MESH_VOLUME` (`morph_volume`) and `3VOLUME_CONVEXHULL`
-  (`morph_volume / morph_vol_dens_conv_hull`).
+- Covers the five PCA axis features (`morph_pca_*`), `3VOXEL_VOLUME` (`morph_vol_approx`), the
+  three mesh features, `3AREA` (`morph_area_mesh`), `3MESH_VOLUME` (`morph_volume`) and
+  `3VOLUME_CONVEXHULL` (`morph_volume / morph_vol_dens_conv_hull`), and the five ratios over area
+  (mesh) and volume (mesh), `3AREA_2_VOLUME` (`morph_av`), `3COMPACTNESS1` (`morph_comp_1`),
+  `3COMPACTNESS2` (`morph_comp_2`), `3SPHERICAL_DISPROPORTION` (`morph_sph_dispr`) and
+  `3SPHERICITY` (`morph_sphericity`).
 - The mesh features are the same quantities on both sides — each builds the marching-cubes surface of
-  the mask at the 0.5 isolevel, integrates it and hulls its vertices — so they are pinned at
-  `rel=1e-6`, which is MIRP's float32 storage of the mesh and nothing else (measured 3.8e-08 and
-  2.7e-08).
-- `morph_area_mesh` is not comparable to `3AREA`: MIRP integrates a marching-cubes mesh while Nyxus
-  counts exposed voxel faces, so `3AREA` and its five derived features stay on
-  `morphology3d.regression_ut_phantom`.
+  the mask at the 0.5 isolevel, takes its area, integrates it and hulls its vertices, and IBSI
+  defines the ratios over area (mesh) and volume (mesh) — so they are pinned at `rel=1e-6`, which is
+  MIRP's float32 storage of the mesh and nothing else (measured 2.7e-08 on `3VOLUME_CONVEXHULL` up to
+  2.4e-07 on `3COMPACTNESS2`; `3AREA` 46739.0225 against `morph_area_mesh` 46739.01953125).
 - Not covered, because Nyxus implements no feature for them: the density family (`morph_*_dens_*`),
   `morph_diam`, `morph_integ_int`, `morph_moran_i`, `morph_geary_c`.
 
@@ -702,16 +703,19 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   `shape.RadiomicsShape(image, mask, label=57)` with SimpleITK 2.3.1, the same spacing set on both
   images, origin 0 and identity direction. Used by: `test_3d_morphology_pyradiomics.h`. Generated and
   re-verified by `tests/vetting/oracles/gen_morphology3d_pyradiomics.py`.
-- Covers what the spacing must reach: `3MESH_VOLUME` (`MeshVolume`), the three axis lengths
+- Covers what the spacing must reach: `3AREA` (`SurfaceArea`), `3MESH_VOLUME` (`MeshVolume`),
+  `3AREA_2_VOLUME` (`SurfaceVolumeRatio`), `3SPHERICITY` (`Sphericity`), the three axis lengths
   (`Major/Minor/LeastAxisLength`) and their ratios `3ELONGATION`, `3FLATNESS`. The spacing is unequal on
   every axis, so an axis length or ratio that took one axis's spacing from another misses its pin;
-  `3MESH_VOLUME` depends on the product sx*sy*sz alone.
+  `3MESH_VOLUME` depends on the product sx*sy*sz alone, while `3AREA` scales each facet's edges by
+  the spacing along x, y and z, so it also catches two axes' spacings swapped.
 - The axis lengths are 4*sqrt of the covariance eigenvalues of the physical voxel coordinates.
   pyradiomics normalizes that covariance by the voxel count N, Nyxus (as MIRP) by N-1, so the test
   compares Nyxus with the pyradiomics pins times sqrt(N/(N-1)), N = 274432. That is Nyxus'
-  normalization, not a tolerance; the ratios cancel it. All six at `rel=1e-9`.
-- `3AREA` and its five ratios are not covered: pyradiomics' `SurfaceArea` is a marching-cubes area,
-  Nyxus' `3AREA` counts exposed voxel faces.
+  normalization, not a tolerance; the ratios cancel it. All nine at `rel=1e-9`.
+- `3COMPACTNESS1`, `3COMPACTNESS2` and `3SPHERICAL_DISPROPORTION` are not covered here: pyradiomics
+  3.0.1 has them only as deprecated features. `morphology3d.mirp_ibsi` and
+  `morphology3d.analytic_lattice_solids` cover them.
 
 ## morphology3d.matlab_regionprops3
 - The same segmented phantom and Nyxus settings as `morphology3d.mirp_ibsi`. MATLAB Image Processing
@@ -744,17 +748,27 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 ## morphology3d.analytic_lattice_solids
 - Voxel clouds built in `test_3d_morphology_analytic.h`, run through `D3_SurfaceFeature::calculate`
   the way the phantom fixtures are (`calculate_3d_morphology_on_cloud`): a single voxel and seven
-  solid boxes for both features; four boxes, three octahedra and two rhombic prisms for the hull; a
-  one-slice slab; and a box with zero intensities. No image is read and no external tool runs.
+  solid boxes for both volume features; four boxes, three octahedra and two rhombic prisms for the
+  hull; the single voxel and six more boxes on three voxel grids, 1×1×1, 1.3×0.8×2.5 and 0.5×2×1, for
+  `3AREA` and the five ratios; a one-slice slab; and a box with zero intensities. No image is read
+  and no external tool runs.
   Oracle: `analytic`. Used by: `test_3d_morphology_analytic.h`. Every golden is exact and pinned at
   `rel=1e-12`.
 - A lone voxel's 0.5-isolevel surface is the octahedron with vertices half a lattice step out, so its
   volume is exactly 1/6. A solid w × h × d box comes out bevelled, and its volume is an exact function
   of w, h and d: whd − (w+h+d−3)/2 − 5/6. Both are convex, so each is also its own hull.
-- The box formula is also what `D3_SurfaceFeature`'s whole-volume (`SINGLEROI`) branch computes in
-  place of meshing every voxel, for both features. The box test runs twice, once per `SINGLEROI`
-  setting, against the same closed form, so the shortcut is held to the values the general path
-  produces.
+- The bevelled box's area is a sum over its faces, edge bevels and corner facets: with spacing
+  (sx, sy, sz), 2[(h−1)(d−1)·sy·sz + (w−1)(d−1)·sx·sz + (w−1)(h−1)·sx·sy]
+  + 2[(w−1)·sx·√(sy²+sz²) + (h−1)·sy·√(sx²+sz²) + (d−1)·sz·√(sx²+sy²)]
+  + √(sx²sy² + sy²sz² + sx²sz²); on unit voxels 2(wh+hd+wd) − 2(w+h+d−3)(2−√2) − (6−√3). The lone
+  voxel's octahedron is the 1×1×1 box, of area √3 on unit voxels. Each ratio is checked against
+  IBSI's definition over that area and the box's mesh volume times sx·sy·sz. The grids are unequal on
+  every axis, so a spacing applied to the wrong axis misses the area, and a voxel-counting volume in
+  a ratio misses that ratio.
+- The box formulas are also what `D3_SurfaceFeature`'s whole-volume (`SINGLEROI`) branch computes in
+  place of meshing every voxel, for the area, both volumes and the ratios. Each box test runs twice,
+  once per `SINGLEROI` setting, against the same closed form, so the shortcut is held to the values
+  the general path produces.
 - `3VOLUME_CONVEXHULL` is the volume of the convex hull of the mesh vertices, each an in-ROI voxel
   moved half a step towards an out-of-ROI neighbour. The octahedron |x|+|y|+|z| ≤ R therefore gives
   4/3·(R + ½)³, and the rhombic prism |x|+|y| ≤ R, |z| ≤ H a prism of rhombus radius R + ½ and height
@@ -782,10 +796,8 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 ## morphology3d.regression_ut_phantom
 - The same phantom and settings, **no oracle** — pinned Nyxus output as drift guards in
   `test_3d_morphology_regression.h`.
-- Carries `3AREA` and everything derived from it. The reason is a convention difference, not a
-  numerical one: 59992 exposed voxel faces against MIRP's 46739 mesh area, ~28%.
-- `3VOXEL_VOLUME` and `3VOLUME_CONVEXHULL` are pinned here as snapshots beside their oracle rows; the
-  two are distinct claims under SPEC 3.
+- `3AREA`, its five ratios, `3VOXEL_VOLUME` and `3VOLUME_CONVEXHULL` are pinned here as snapshots
+  beside their oracle rows; a snapshot and an oracle row are distinct claims under SPEC 3.
 ## glrlm3d.pyradiomics_bincount20
 - The compat phantom (`compat_int/compat_int_mri.nii` + `compat_seg/compat_seg_liver.nii`, label 1)
   at `GREYDEPTH=100`, `IBSI=false`, `GLRLM_GREYDEPTH=-20` (negative activates radiomics
@@ -816,13 +828,13 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - Covers all 32 features: the 13 angled values of each base feature and the mean its `*_AVE` twin
   stores. Pinning only the means would be a guard nothing could trip from one direction, since two
   per-angle errors of opposite sign leave the mean where it was.
-- It is the one benchmark in the family at a positive grey depth, which is where `3GLRLM_RP` is known
-  to leave its [0,1] bound — and here it does: **4 of the 13 angles read 1.0231** while the average
-  stays at 0.940. The pins record that, so the eventual fix shows up as a diff rather than as a
-  silent change. The defect stays filed in `audit/glrlm_3d_pyradiomics_vetting_report.md`.
-- Carries the aggregates the family's retired coverage sweep held (to `rel<=3.9e-16`, and `4.1e-10`
-  for `RE`, the family's only `fast_log10` path), so it is not comparable to
-  `glrlm3d.regression_ut_phantom` — the two bin the same voxels differently by construction.
+- It is the one benchmark in the family at a positive grey depth. `3GLRLM_RP` divides by the ROI's
+  voxel count, so it stays inside [0,1] here: the 13 angles top out at 0.8922 and `3GLRLM_RP_AVE`
+  is 0.8423. `TEST_3D_GLRLM_BOUNDED_FEATURES_INVARIANT` holds the bound at `GLRLM_GREYDEPTH=+64`
+  among its depths.
+- Takes over the pins the family's retired coverage sweep held at this recipe. Its values are not
+  comparable to `glrlm3d.regression_ut_phantom` — the two bin the same voxels differently by
+  construction.
 
 ## glrlm3d.analytic_two_long_runs
 - `bench_glrlm_3d_two_long_runs` — a `2L x 1 x 1` line of voxels, `L = 65,536`, built in

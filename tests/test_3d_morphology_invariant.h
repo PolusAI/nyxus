@@ -17,9 +17,10 @@
 // An ROI goes out-of-core because of its size alone, so which path runs must not be observable in
 // any value. 3MESH_VOLUME is asserted with exact equality: both paths run the one marching-cubes
 // walk over the same planes and sum the same triangles in the same order, so any difference at all
-// means they are not the same integral. 3AREA is a count of exposed faces on both sides, so it is
-// exact too. 3VOLUME_CONVEXHULL hulls the vertices that same walk produces, and its volume is a sum
-// of exact integer terms, so it is held to exact equality as well.
+// means they are not the same integral. 3AREA is a sum of rounded square roots, so it is not exact,
+// but both paths take the same roots of the same triangles and add them in the same order, so it is
+// reproducible and held to exact equality too. 3VOLUME_CONVEXHULL hulls the vertices that same walk
+// produces, and its volume is a sum of exact integer terms, so it is held to exact equality as well.
 //
 // The fixture is an L-shaped slab with a bore through its corner and a notch cut into one arm:
 // non-convex, so mesh and hull volume differ and the comparison cannot pass by one path reporting
@@ -55,9 +56,9 @@ namespace
 			r.fvals[(int)Nyxus::Feature3D::VOLUME_CONVEXHULL][0] };
 	}
 
-	// Featurizes one cloud both ways and returns the two sets of values
+	// Featurizes one cloud of sx x sy x sz voxels both ways and returns the two sets of values
 	void calculate_3d_surface_both_paths (const std::vector<Pixel3>& cloud, bool single_roi,
-		Surface3DValues& in_ram, Surface3DValues& ooc)
+		Surface3DValues& in_ram, Surface3DValues& ooc, double sx = 1., double sy = 1., double sz = 1.)
 	{
 		Fsettings s;
 		s.resize ((int)NyxSetting::__COUNT__);
@@ -65,6 +66,7 @@ namespace
 		s[(int)NyxSetting::VERBOSLVL].ival = 0;
 
 		LR r (1);
+		r.set_spacing (sx, sy, sz);
 		r.aabb.init_x (cloud[0].x);
 		r.aabb.init_y (cloud[0].y);
 		r.aabb.init_z (cloud[0].z);
@@ -114,12 +116,12 @@ namespace
 		}
 	}
 
-	void assert_3d_surface_paths_agree (bool single_roi, Surface3DValues& in_ram)
+	void assert_3d_surface_paths_agree (bool single_roi, Surface3DValues& in_ram, double sx = 1., double sy = 1., double sz = 1.)
 	{
 		const auto cloud = make_3d_morphology_bored_ell();
 
 		Surface3DValues ooc {};
-		calculate_3d_surface_both_paths (cloud, single_roi, in_ram, ooc);
+		calculate_3d_surface_both_paths (cloud, single_roi, in_ram, ooc, sx, sy, sz);
 		if (::testing::Test::HasFatalFailure())
 			return;
 
@@ -177,13 +179,34 @@ void test_3d_morphology_surface_paths_agree_singleroi_invariant()
 	assert_3d_surface_paths_agree (true, in_ram);
 }
 
+// Both paths on voxels unequal along every axis. The volumes take the voxel's volume as one factor, but
+// the area takes each facet's spacing inside the walk, so a path that left the spacing out of the walk,
+// or applied it after, would report a different area. The unit-voxel area is no single spacing product
+// of this one, which is what keeps that from passing by accident. The unit-voxel values come from the
+// in-RAM path alone; the unit-voxel path comparison is the general-path test above.
+void test_3d_morphology_surface_paths_agree_anisotropic_invariant()
+{
+	const double sx = 1.3, sy = 0.8, sz = 2.5;
+	Surface3DValues aniso {};
+	assert_3d_surface_paths_agree (false, aniso, sx, sy, sz);
+	if (::testing::Test::HasFatalFailure())
+		return;
+	const Surface3DValues unit = calculate_3d_surface_in_ram (make_3d_morphology_bored_ell());
+
+	ASSERT_EQ (aniso.mesh_volume, unit.mesh_volume * sx * sy * sz) << "3MESH_VOLUME is not the lattice volume times a voxel's";
+	for (double f : { sx * sy, sy * sz, sx * sz })
+		ASSERT_GT (std::abs (aniso.area - unit.area * f), 1e-6 * aniso.area) << "3AREA scales by a single spacing product " << f;
+}
+
 // A ragged ROI keeps its values when it moves. Each lattice voxel of a 10 x 9 x 6 box is kept or
 // dropped by a fixed pseudo-random sequence, so the surface has ambiguous faces and a hull with
 // facets at many orientations; the ROI is then placed at the origin's neighbourhood and thousands of
 // voxels away. Both volumes are summed relative to a point on the body, from integer (doubled)
-// coordinates, so every term is exact and the three values must agree bit for bit. A sum taken on
-// absolute coordinates against a non-integer centre loses that: its rounding grows with the
-// distance from the origin.
+// coordinates, so every term is exact. The area takes each facet's edges as differences of its
+// half-integer vertices, which are exact at these coordinates, so every facet gets the same square
+// root wherever the ROI sits, in the same order. The three values must agree bit for bit. A sum
+// taken on absolute coordinates against a non-integer centre loses that: its rounding grows with
+// the distance from the origin.
 void test_3d_morphology_translated_roi_invariant()
 {
 	std::vector<Pixel3> blob;
