@@ -25,8 +25,7 @@ them.
        stops the run with an error (see :doc:`/large_images`).
    * - **IBSI**
      - 18 features have an identifier from the IBSI intensity-based statistics, which list 18
-       features. ``3COV`` and the percentiles follow a different convention from IBSI; their 2D
-       entries say how.
+       features. ``3COV`` follows a different convention from IBSI; its 2D entry says how.
 
 .. tip::
 
@@ -46,10 +45,10 @@ bounding box outside the mask.
 - **Which voxels:** all voxels of the ROI in all slices, including voxels of intensity 0 inside
   the mask. :math:`N_v` is the number of ROI voxels.
 - **Values:** the intensities themselves. Nothing is binned except for ``3ENTROPY`` and
-  ``3UNIFORMITY``, which use a histogram of ``--coarseGrayDepth`` bins, and the percentiles, which
-  are read off a histogram of 100 bins. Both histograms have equal-width bins over the ROI's own
-  range, from :math:`X_{\min}` to :math:`X_{\max}`; the maximum goes into the last bin, and a
-  constant ROI puts every voxel into the first bin.
+  ``3UNIFORMITY``, which use a histogram of ``--coarseGrayDepth`` bins. The histogram has
+  equal-width bins over the ROI's own range, from :math:`X_{\min}` to :math:`X_{\max}`; the
+  maximum goes into the last bin, and a constant ROI puts every voxel into the first bin. The
+  median and the percentiles are taken from the sorted intensities.
 - **Units:** the features are reported in the volume's own units; see :ref:`intensity-units`.
   Location features (minimum, maximum, mean, median, mode, percentiles, robust mean, integrated
   intensity, energy, root mean square) go through the whole intensity map, spread features and
@@ -95,17 +94,17 @@ and :math:`\mu = 4.2273`. The squared deviations sum to 29.864, so ``3VARIANCE``
 :math:`29.864/21 = 1.4221`. :math:`N_v` is even, so the median is the mean of the 11th and 12th
 values, both 4. The 3s and the 4s share the highest count; ``3MODE`` is the smaller, 3.
 
-The 100-bin percentile histogram has bins of width :math:`w = (6-2)/100 = 0.04`. The 2 falls in
-bin 0, the 3s in bin 25, the 4s in bin 50, the 5s in bin 75 and the 6s in bin 99. For ``3P90``
-the target count is :math:`0.9 \times 22 = 19.8`. The first 18 voxels lie below bin 99, which
-holds 4 voxels, so
+The percentiles interpolate between the sorted intensities :math:`x_{(0)} \le \dots \le x_{(21)}`.
+For ``3P01`` the rank is :math:`h = (22 - 1) \times 0.01 = 0.21`, between :math:`x_{(0)} = 2` and
+:math:`x_{(1)} = 3`, so
 
 .. math::
 
-   P_{90} = 2 + 99 \times 0.04 + 0.04 \times \frac{19.8 - 18}{4} = 5.978
+   P_{01} = 2 + 0.21 \times (3 - 2) = 2.21
 
-where ``numpy.percentile`` gives 6. In the same way :math:`P_{10} = 3.008`, so ``3ROBUST_MEAN`` is
-the mean of the 4s and 5s, 4.4545. With the default 64 coarse bins the five intensities fall in
+the value of ``numpy.percentile``. ``3P10`` has rank 2.1, among the 3s, and ``3P90`` rank 18.9,
+among the 6s, so they are 3 and 6, and ``3ROBUST_MEAN`` is the mean of the 3s to 6s,
+:math:`91/21 = 4.3333`. With the default 64 coarse bins the five intensities fall in
 bins 0, 16, 32, 48 and 63, and ``3ENTROPY`` is the entropy of the probabilities 1/22, 6/22, 6/22,
 5/22 and 4/22, 2.1581 bits. The ROI is the only one in the volume, so
 ``3COVERED_IMAGE_INTENSITY_RANGE`` is 1.
@@ -157,7 +156,9 @@ Notation
    * - :math:`M`
      - Median intensity.
    * - :math:`P_q`
-     - The ``3Pqq`` feature: the :math:`q`-th percentile read off the 100-bin histogram.
+     - The ``3Pqq`` feature: the :math:`q`-th percentile of the ROI's intensities.
+   * - :math:`x_{(i)}`
+     - The :math:`i`-th smallest intensity of the ROI, counting from :math:`x_{(0)} = X_{\min}`.
    * - :math:`N_b`
      - Number of bins of the coarse histogram, the absolute value of ``--coarseGrayDepth``, or 24
        when it is 0.
@@ -205,8 +206,8 @@ Settings
        change. When one read of the file returns the whole volume (NIfTI, or OME-Zarr chunked over
        all of Z), such a ROI stops the run with an error instead.
 
-The 3D intensity family has no ``3...`` metaparameter of its own, and the percentile histogram
-always has 100 bins. All options are listed in the :ref:`cli-reference`.
+The 3D intensity family has no ``3...`` metaparameter of its own, and no setting changes the
+median or the percentiles. All options are listed in the :ref:`cli-reference`.
 
 
 Output columns
@@ -358,9 +359,8 @@ worked example.
 :Code: ``3INTERQUARTILE_RANGE``
 :Range: :math:`[0, X_{\max} - X_{\min}]`, intensity units
 
-:math:`P_{75} - P_{25}` from the 100-bin histogram; see
-:ref:`INTERQUARTILE_RANGE <feature-interquartile-range>`. 1.998 on the worked example; exact
-quartiles give 2.
+:math:`P_{75} - P_{25}`; see :ref:`INTERQUARTILE_RANGE <feature-interquartile-range>`. 2 on the
+worked example, where the quartiles are 5 and 3.
 
 
 .. _feature-3kurtosis:
@@ -471,11 +471,10 @@ the worked example, where the 3s and the 4s both occur six times.
 :Codes: ``3P01``, ``3P10``, ``3P25``, ``3P75``, ``3P90``, ``3P99``
 :Range: :math:`[X_{\min}, X_{\max}]`, intensity units
 
-The 1st, 10th, 25th, 75th, 90th and 99th percentiles, interpolated within a histogram of 100
-equal-width bins over the ROI's range; see :ref:`Percentiles <feature-p25>` for the formula, the
-bin-boundary rule and the error against exact percentiles. On the worked example they are 2.009,
-3.008, 3.03, 5.028, 5.978 and 5.998; ``numpy.percentile`` with linear interpolation gives 2.21, 3,
-3, 5, 6 and 6.
+The 1st, 10th, 25th, 75th, 90th and 99th percentiles of the ROI's intensities, interpolated
+linearly between the sorted values at rank :math:`(N_v - 1)\,q/100`, the default method of
+``numpy.percentile``; see :ref:`Percentiles <feature-p25>` for the formula and for the midpoint
+ranks MATLAB's ``prctile`` takes by default. On the worked example they are 2.21, 3, 3, 5, 6 and 6.
 
 
 .. _feature-3qcod:
@@ -487,7 +486,7 @@ bin-boundary rule and the error against exact percentiles. On the worked example
 :Range: :math:`[0, 1]` for non-negative intensities, dimensionless
 
 :math:`(P_{75} - P_{25}) / (P_{75} + P_{25})`, 0 when the denominator is 0; see
-:ref:`QCOD <feature-qcod>`. 0.248 on the worked example.
+:ref:`QCOD <feature-qcod>`. 0.25 on the worked example.
 
 
 .. _feature-3range:
@@ -509,11 +508,10 @@ bin-boundary rule and the error against exact percentiles. On the worked example
 :Code: ``3ROBUST_MEAN``
 :Range: :math:`[P_{10}, P_{90}]`, intensity units
 
-The mean of the voxel intensities between the histogram percentiles :math:`P_{10}` and
-:math:`P_{90}`, both included, 0 when the interval holds no voxel; see
-:ref:`ROBUST_MEAN <feature-robust-mean>`. On the worked example :math:`P_{10} = 3.008` and
-:math:`P_{90} = 5.978` exclude the 2, the 3s and the 6s, and the value is 4.4545; with exact
-percentiles (3 and 6) the 3s and 6s are kept and the mean is 4.3333.
+The mean of the voxel intensities between the percentiles :math:`P_{10}` and :math:`P_{90}`,
+both included, 0 when the interval holds no voxel; see :ref:`ROBUST_MEAN <feature-robust-mean>`.
+On the worked example :math:`P_{10} = 3` and :math:`P_{90} = 6` exclude only the 2, and the
+value is 4.3333.
 
 
 .. _feature-3robust-mean-absolute-deviation:
@@ -526,7 +524,7 @@ percentiles (3 and 6) the 3s and 6s are kept and the mean is 4.3333.
 
 The mean absolute deviation of the voxel intensities between :math:`P_{10}` and :math:`P_{90}`
 from their own mean; see :ref:`ROBUST_MEAN_ABSOLUTE_DEVIATION <feature-robust-mean-absolute-deviation>`.
-0.4959 on the worked example.
+0.9524 on the worked example.
 
 
 .. _feature-3root-mean-squared:
@@ -645,12 +643,13 @@ worked example.
 Possible issues
 ---------------
 
-Histogram percentiles
+Percentile ranks
    The six percentiles, and ``3INTERQUARTILE_RANGE``, ``3QCOD``, ``3ROBUST_MEAN`` and
-   ``3ROBUST_MEAN_ABSOLUTE_DEVIATION`` through them, come from a 100-bin histogram rather than from
-   the sorted intensities, exactly as in 2D. On the worked example ``3P90`` is 5.978 where the
-   exact value is 6, and ``3ROBUST_MEAN`` 4.4545 where exact bounds give 4.3333. ``3MEDIAN`` is
-   exact.
+   ``3ROBUST_MEAN_ABSOLUTE_DEVIATION`` through them, interpolate at numpy's default linear ranks,
+   as PyRadiomics and MIRP do, exactly as in 2D. MATLAB's ``prctile`` takes midpoint ranks
+   by default; on the worked example the two rules agree except at ``3P01``, which MATLAB gives as
+   2. With ``Method="inclusive"`` it takes the same ranks as Nyxus. ``3MEDIAN`` is the same under
+   both rules.
 
 Covered range with one ROI
    ``3COVERED_IMAGE_INTENSITY_RANGE`` divides by the range of all ROI voxels of the volume, so in
@@ -693,17 +692,23 @@ Negative intensities
 Validation
 ----------
 
-The test suite checks the 3D intensity features against two references:
+The test suite checks the 3D intensity features against two references and a closed form:
 
 - **MATLAB** (R2026a), for every feature except ``3COVERED_IMAGE_INTENSITY_RANGE``,
   ``3ENERGY``, ``3ENTROPY``, ``3MEDIAN_ABSOLUTE_DEVIATION``, ``3ROBUST_MEAN``,
-  ``3ROBUST_MEAN_ABSOLUTE_DEVIATION`` and ``3UNIFORMITY``: to a relative 10\ :sup:`-3`, and to
-  10\ :sup:`-2` for the six percentiles, ``3INTERQUARTILE_RANGE`` and ``3QCOD``.
-- **PyRadiomics** 3.0.1, for ``3ENERGY``, ``3ENTROPY``, ``3KURTOSIS``, ``3MAX``, ``3MEAN``,
-  ``3MEAN_ABSOLUTE_DEVIATION``, ``3MEDIAN``, ``3MIN``, ``3RANGE``, ``3ROOT_MEAN_SQUARED``,
+  ``3ROBUST_MEAN_ABSOLUTE_DEVIATION`` and ``3UNIFORMITY``: to a relative 10\ :sup:`-3`, and the
+  six percentiles, ``3INTERQUARTILE_RANGE`` and ``3QCOD`` to 10\ :sup:`-9`, which take
+  ``prctile(..., Method="inclusive")``, the same linear ranks as Nyxus. Those percentile
+  references are computed on GNU Octave 11.3.0 with the same rule (``quantile(x, p, 1, 7)``); the
+  MATLAB run of the generator is pending.
+- **PyRadiomics** 3.0.1, for ``3ENERGY``, ``3ENTROPY``, ``3INTERQUARTILE_RANGE``,
+  ``3KURTOSIS``, ``3MAX``, ``3MEAN``, ``3MEAN_ABSOLUTE_DEVIATION``, ``3MEDIAN``, ``3MIN``,
+  ``3P10``, ``3P90``, ``3RANGE``, ``3ROBUST_MEAN_ABSOLUTE_DEVIATION``, ``3ROOT_MEAN_SQUARED``,
   ``3SKEWNESS`` and ``3UNIFORMITY`` to a relative 10\ :sup:`-9`; ``3VARIANCE`` to
-  10\ :sup:`-3`, because PyRadiomics divides by :math:`N_v`; ``3P10``, ``3P90``,
-  ``3INTERQUARTILE_RANGE`` and ``3ROBUST_MEAN_ABSOLUTE_DEVIATION`` to 10\ :sup:`-2`.
+  10\ :sup:`-3`, because PyRadiomics divides by :math:`N_v`.
+- **The closed form** of the linear percentile rule, worked by hand on two small sample sets,
+  for the six percentiles, ``3INTERQUARTILE_RANGE``, ``3QCOD`` and
+  ``3ROBUST_MEAN_ABSOLUTE_DEVIATION``, to an absolute 10\ :sup:`-12`.
 
 ``3COVERED_IMAGE_INTENSITY_RANGE``, ``3MEDIAN_ABSOLUTE_DEVIATION`` and ``3ROBUST_MEAN`` are
 regression-only: no reference tool computes the same quantity (MATLAB's ``mad`` takes a median of

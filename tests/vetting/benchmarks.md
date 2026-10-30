@@ -363,6 +363,29 @@ Tests reaching it today: `test_2d_glrlm_analytic.h`.
 
 ---
 
+## `bench_percentile_hand_samples` — two one-row sample sets worked by hand
+
+| | |
+|---|---|
+| Data | built inline by `firstorder_2d_analytic_values()` (`tests/test_2d_firstorder_analytic.h`) and `firstorder_3d_analytic_values()` (`tests/test_3d_firstorder_analytic.h`) |
+| ROI | one row of five pixels/voxels carrying {4, 10, 1, 3, 2}, and one of four carrying {5, 9, 5, 5}, unsorted |
+| Shape | n = 5, rank h = 4q, sorted {1, 2, 3, 4, 10}; n = 4, rank h = 3q, sorted {5, 5, 5, 9} |
+| Why it exists | the percentiles, IQR, QCOD and robust mean absolute deviation by numpy's linear rule, small enough to work every value by hand |
+
+Recipes: `firstorder2d.percentiles_analytic`, `firstorder3d.percentiles_analytic`.
+
+Tests reaching it today: `test_2d_firstorder_analytic.h`, `test_3d_firstorder_analytic.h`.
+
+**Each set discriminates a different way of getting a percentile wrong.** In the first, the
+upper percentiles interpolate across the wide gap from 4 to 10 (P90 = 7.6, P99 = 9.76), where a
+value read off a binned histogram lands in the right bin but not on the interpolated rank, and a
+rank taken as n q instead of (n-1) q lands elsewhere; P01 and P10 share the lower rank 0, so a pass
+that resolves the ranks out of order is caught too. In the second, repeated values sit in one
+histogram entry: every rank up to 2 lands on a 5, P75 = 6 interpolates from the third 5 to the 9,
+and the robust window [P10, P90] = [5, 7.8] holds only the 5s.
+
+---
+
 ## `bench_glrlm_3d_two_long_runs` — two 3D runs of 65,536 voxels
 
 | | |

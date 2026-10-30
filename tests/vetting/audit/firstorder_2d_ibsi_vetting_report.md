@@ -40,12 +40,11 @@ itself - no Docker, no Octave, nothing to install.
 
 ## Notes
 
-- `ROBUST_MEAN_ABSOLUTE_DEVIATION` confirms the golden (1.11) is correct. The test asserting it
-  (`test_2d_firstorder_robust_mean_absolute_deviation_ibsi`) is commented out in the source with
-  "needs to be updated to pass" - since the reference value itself checks out, that's a bug in
-  Nyxus's live `ROBUST_MEAN_ABSOLUTE_DEVIATION` calculation (or a settings mismatch in how the test
-  invokes it), not a bad golden. See `report_output.csv`'s 2D ROBUST_MEAN_ABSOLUTE_DEVIATION
-  row for the related pyradiomics-side finding (that one's exact and live).
+- `ROBUST_MEAN_ABSOLUTE_DEVIATION` confirms the golden (1.11). The live case
+  `TEST_2D_FIRSTORDER_ROBUST_MEAN_ABSOLUTE_DEVIATION_IBSI` asserts it at `rel=1e-2`: Nyxus takes
+  the window [P10, P90] = [1, 4] by numpy's linear rule and reports 1.11383.
+- `P90` is asserted without rounding: numpy's linear rule, which Nyxus takes, gives exactly 4 on
+  the phantom's 74 voxels, inside the 4-4.2 spread IBSI documents across implementations.
 - No provenance gap here unlike the matlab file: the IBSI phantom and its published reference
   statistics are a fixed external standard, not something generated on demand, so there's no
   version/config/generator-script to pin - the phantom data itself, checked into

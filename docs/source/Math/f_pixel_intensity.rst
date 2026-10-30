@@ -24,8 +24,7 @@ lies.
        :ref:`large-images-tiles`.
    * - **IBSI**
      - 18 features have an identifier from the IBSI intensity-based statistics, which list 18
-       features. ``COV`` and the percentiles follow a different convention from IBSI; their entries
-       say how.
+       features. ``COV`` follows a different convention from IBSI; its entry says how.
 
 .. tip::
 
@@ -45,9 +44,9 @@ mask.
 - **Which pixels:** all pixels of the ROI, including pixels of intensity 0 inside the mask.
   :math:`N_v` is the number of ROI pixels.
 - **Values:** the intensities themselves. Nothing is binned except for ``ENTROPY``,
-  ``UNIFORMITY`` and ``HISTOGRAM``, which use a histogram of ``--coarseGrayDepth`` bins, and the
-  percentiles, which are read off a histogram of 100 bins.
-- **Histograms:** both histograms have equal-width bins over the ROI's own range, from
+  ``UNIFORMITY`` and ``HISTOGRAM``, which use a histogram of ``--coarseGrayDepth`` bins. The
+  median and the percentiles are taken from the sorted intensities.
+- **Histogram:** the histogram has equal-width bins over the ROI's own range, from
   :math:`X_{\min}` to :math:`X_{\max}`. The maximum goes into the last bin. A constant ROI puts
   every pixel into the first bin.
 - **Units:** the features are reported in the image's own units when the image is read from a
@@ -83,16 +82,16 @@ It holds four 1s, six 2s, nine 3s, three 4s and three 5s, so :math:`N_v = 25`,
 :math:`36/24 = 1.5` and ``VARIANCE_BIASED`` is :math:`36/25 = 1.44`. The median is the 13th
 value, 3, and the mode is 3.
 
-The 100-bin percentile histogram has bins of width :math:`w = (5-1)/100 = 0.04`. The four 1s fall
-in bin 0, the 2s in bin 25, the 3s in bin 50, the 4s in bin 75 and the 5s in bin 99. For ``P90``
-the target count is :math:`0.9 \times 25 = 22.5`. The first 22 pixels lie below bin 99, which holds
-3 pixels, so
+The percentiles interpolate between the sorted intensities :math:`x_{(0)} \le \dots \le x_{(24)}`.
+For ``P90`` the rank is :math:`h = (25 - 1) \times 0.9 = 21.6`, between :math:`x_{(21)} = 4`, the
+last 4, and :math:`x_{(22)} = 5`, the first 5, so
 
 .. math::
 
-   P_{90} = 1 + 99 \times 0.04 + 0.04 \times \frac{22.5 - 22}{3} = 4.9667
+   P_{90} = 4 + 0.6 \times (5 - 4) = 4.6
 
-where an exact percentile with linear interpolation, as in ``numpy.percentile``, gives 4.6.
+the value of ``numpy.percentile``. ``P10`` has rank 2.4, among the 1s, and is 1, so
+``ROBUST_MEAN`` is the mean of the 1s to 4s, :math:`55/22 = 2.5`.
 
 With the default 64 bins, ``HISTOGRAM_BIN_0`` to ``HISTOGRAM_BIN_63`` are 0 except bins 0, 16,
 32, 48 and 63, which hold 4, 6, 9, 3 and 3 pixels. Entropy is therefore the entropy of the
@@ -146,7 +145,9 @@ Notation
    * - :math:`M`
      - Median intensity.
    * - :math:`P_q`
-     - The ``Pqq`` feature: the :math:`q`-th percentile read off the 100-bin histogram.
+     - The ``Pqq`` feature: the :math:`q`-th percentile of the ROI's intensities.
+   * - :math:`x_{(i)}`
+     - The :math:`i`-th smallest intensity of the ROI, counting from :math:`x_{(0)} = X_{\min}`.
    * - :math:`N_b`
      - Number of bins of the coarse histogram, the absolute value of ``--coarseGrayDepth``, or 24
        when it is 0.
@@ -185,7 +186,7 @@ Settings
      - Decide how a file's intensities become grey levels, and so the units the features are
        reported in (see :ref:`intensity-units`).
 
-The percentile histogram always has 100 bins; no setting changes it. All options are listed in the
+No setting changes the median or the percentiles. All options are listed in the
 :ref:`cli-reference`.
 
 
@@ -422,9 +423,8 @@ The width of the middle half of the distribution.
 
    \mathrm{INTERQUARTILE\_RANGE} = P_{75} - P_{25}
 
-**Possible issues.** Both quartiles come from the 100-bin histogram (see
-:ref:`Percentiles <feature-p25>`). On the worked example the value is 1.024; exact quartiles give
-1.
+Both quartiles are those of :ref:`Percentiles <feature-p25>`. On the worked example
+:math:`P_{75} = 3` and :math:`P_{25} = 2`, and the value is 1.
 
 
 .. _feature-kurtosis:
@@ -495,7 +495,8 @@ Median
 :Range: :math:`[X_{\min}, X_{\max}]`, intensity units
 
 The middle intensity. It is exact: the middle value when :math:`N_v` is odd, and the average of the
-two middle values when it is even. Unlike the percentiles, it does not use the histogram.
+two middle values when it is even. It is the 50th percentile of the rule the
+:ref:`percentiles <feature-p25>` use.
 
 
 .. _feature-median-absolute-deviation:
@@ -555,26 +556,27 @@ Percentiles
 :Codes: ``P01``, ``P10``, ``P25``, ``P75``, ``P90``, ``P99``
 :Range: :math:`[X_{\min}, X_{\max}]`, intensity units
 
-The 1st, 10th, 25th, 75th, 90th and 99th percentiles, interpolated within a histogram of 100
-equal-width bins of width :math:`w = (X_{\max} - X_{\min})/100`. Let :math:`n_i` be the count of
-bin :math:`i` and :math:`C_i` the number of pixels in bins 0 to :math:`i-1`. For
-:math:`q \in \{1, 10, 25, 75, 90, 99\}` the target count is :math:`c = q\,N_v / 100`, and
+The 1st, 10th, 25th, 75th, 90th and 99th percentiles of the ROI's intensities, interpolated
+linearly between the sorted values :math:`x_{(0)} \le \dots \le x_{(N_v - 1)}`. For
+:math:`q \in \{1, 10, 25, 75, 90, 99\}` the rank is :math:`h = (N_v - 1)\,q / 100`, and
 
 .. math::
 
-   P_q = X_{\min} + w\,i + w\,\frac{c - C_i}{n_i}
+   P_q = x_{(\lfloor h \rfloor)} + (h - \lfloor h \rfloor)
+   \left(x_{(\lfloor h \rfloor + 1)} - x_{(\lfloor h \rfloor)}\right)
 
-where :math:`i` is the last non-empty bin with :math:`C_i \le c \le C_i + n_i`. Within the bin, its
-pixels are taken to be spread evenly over its width. A constant ROI gives :math:`X_{\min}` for
-every percentile.
+This is the default (``'linear'``) method of ``numpy.percentile``, the one PyRadiomics and MIRP
+use, and the one that gives the IBSI digital phantom's reference values. A whole-number rank
+gives that sorted value itself, and a constant ROI gives :math:`X_{\min}` for every percentile. On the worked example the six values are 1, 1, 2, 3, 4.6
+and 5.
 
-**Possible issues.** The values are estimates, not exact sample percentiles. On ROIs of 1600
-pixels with intensities drawn from 0 to 4095, they differ from ``numpy.percentile`` (linear
-interpolation) by up to a few percent of the ROI's range, most for the extreme percentiles. When the ROI holds few distinct values, a percentile that falls between
-two of them is placed inside the bin of the upper one: on the worked example P90 is 4.967 where
-the exact value is 4.6, and on ROIs of integers 0 to 9 the difference reached 9 % of the range.
-When :math:`c` falls exactly on the end of a bin, the result is the start of the next non-empty
-bin. For 5 ones and 15 threes P25 is 2.98; with 6 ones and 14 threes it is 1.017.
+**Possible issues.** Other tools place the ranks differently. MATLAB's ``prctile`` by default
+interpolates at the midpoint ranks :math:`(i - 0.5)/N_v`, numpy's ``'hazen'`` method;
+``Method="inclusive"`` selects the linear rule above. The two rules give the
+same value when both ranks fall among equal intensities, and otherwise differ by a fraction of the
+gap between two neighbouring intensities, most for the extreme percentiles of a small ROI: on the
+worked example MATLAB gives 5 for P90 and 3.25 for P75. For 5 ones and 15 threes P25 is 2.5, where
+MATLAB gives 2; with 6 ones and 14 threes both give 1.
 
 
 .. _feature-qcod:
@@ -626,9 +628,8 @@ The mean of the intensities between the 10th and the 90th percentile, both inclu
 where :math:`N_{10\text{-}90}` is the number of pixels in that interval. The value is 0 when the
 interval holds no pixel.
 
-**Possible issues.** The bounds are the histogram percentiles. On the worked example
-:math:`P_{10} = 1.025` and :math:`P_{90} = 4.967` exclude all 1s and 5s and the mean is 2.833; with
-exact percentiles (1 and 4.6) the 1s are kept and the mean is 2.5.
+The bounds are those of :ref:`Percentiles <feature-p25>`. On the worked example
+:math:`P_{10} = 1` and :math:`P_{90} = 4.6` keep the 1s and exclude the 5s, and the mean is 2.5.
 
 
 .. _feature-robust-mean-absolute-deviation:
@@ -649,8 +650,8 @@ their own mean.
 
 This is the IBSI definition. The value is 0 when the interval holds no pixel.
 
-**Possible issues.** As for ``ROBUST_MEAN``, the bounds are the histogram percentiles. On the
-worked example the value is 0.5556; exact percentiles give 0.8182.
+As for ``ROBUST_MEAN``, the bounds are those of :ref:`Percentiles <feature-p25>`. On the worked
+example the value is 0.8182.
 
 
 .. _feature-root-mean-squared:
@@ -813,13 +814,13 @@ The value is 0 when :math:`N_v = 1`.
 Possible issues
 ---------------
 
-Histogram percentiles
+Percentile ranks
    The six percentiles, and ``INTERQUARTILE_RANGE``, ``QCOD``, ``ROBUST_MEAN`` and
-   ``ROBUST_MEAN_ABSOLUTE_DEVIATION`` through them, come from a 100-bin histogram rather than from
-   the sorted intensities. On ROIs with many distinct values they were within a few percent of the
-   range of the exact values; on ROIs with few distinct values they can differ by most of the gap
-   between two neighbouring intensities (see :ref:`Percentiles <feature-p25>`). ``MEDIAN`` is
-   exact.
+   ``ROBUST_MEAN_ABSOLUTE_DEVIATION`` through them, interpolate at numpy's default linear ranks
+   :math:`(N_v - 1)\,q`, as PyRadiomics and MIRP do. MATLAB's ``prctile`` takes midpoint
+   ranks by default, and its values can differ by a fraction of the gap between two neighbouring
+   intensities (see :ref:`Percentiles <feature-p25>`); with ``Method="inclusive"`` it takes the
+   same ranks as Nyxus. ``MEDIAN`` is the same under both rules.
 
 Mixed standardizations
    ``SKEWNESS``, ``KURTOSIS`` and ``EXCESS_KURTOSIS`` standardize with :math:`\sigma_b`, as IBSI and
@@ -889,31 +890,34 @@ Anisotropy on 2D images read from files
 Validation
 ----------
 
-The test suite checks the intensity features against three references:
+The test suite checks the intensity features against three references and a closed form:
 
 - **MATLAB** (R2026a), on test ROIs, for every feature except ``ENTROPY``, ``UNIFORMITY``,
   ``ROBUST_MEAN``, ``ROBUST_MEAN_ABSOLUTE_DEVIATION``, ``MEDIAN_ABSOLUTE_DEVIATION`` and
-  ``HISTOGRAM``: to a relative 10\ :sup:`-3`, and to 3 × 10\ :sup:`-2` for the six percentiles,
-  ``INTERQUARTILE_RANGE`` and ``QCOD``.
-- **PyRadiomics** 3.0.1, for ``ENERGY``, ``ENTROPY``, ``KURTOSIS``, ``MAX``, ``MEAN``,
-  ``MEAN_ABSOLUTE_DEVIATION``, ``MEDIAN``, ``MIN``, ``RANGE``,
-  ``ROBUST_MEAN_ABSOLUTE_DEVIATION``, ``ROOT_MEAN_SQUARED``, ``SKEWNESS``, ``UNIFORMITY`` and
-  ``VARIANCE_BIASED`` to a relative 10\ :sup:`-6`; ``VARIANCE`` to 10\ :sup:`-2`, because
-  PyRadiomics divides by :math:`N_v`; ``P10``, ``P90`` and ``INTERQUARTILE_RANGE`` to
-  5 × 10\ :sup:`-2`.
+  ``HISTOGRAM``: to a relative 10\ :sup:`-3`, and to 10\ :sup:`-9` for ``P01`` to ``P99``,
+  ``INTERQUARTILE_RANGE`` and ``QCOD``, which take ``prctile(..., Method="inclusive")``, the same
+  linear ranks as Nyxus. Those percentile references are computed on GNU Octave 11.3.0 with the
+  same rule (``quantile(x, p, 1, 7)``); the MATLAB run of the generator is pending.
+- **PyRadiomics** 3.0.1, for ``ENERGY``, ``ENTROPY``, ``INTERQUARTILE_RANGE``, ``KURTOSIS``,
+  ``MAX``, ``MEAN``, ``MEAN_ABSOLUTE_DEVIATION``, ``MEDIAN``, ``MIN``, ``P10``, ``P90``,
+  ``RANGE``, ``ROBUST_MEAN_ABSOLUTE_DEVIATION``, ``ROOT_MEAN_SQUARED``, ``SKEWNESS``,
+  ``UNIFORMITY`` and ``VARIANCE_BIASED`` to a relative 10\ :sup:`-6`; ``VARIANCE`` to
+  10\ :sup:`-2`, because PyRadiomics divides by :math:`N_v`.
 - **IBSI** published values on the IBSI digital phantom, at their three significant figures
   (relative 10\ :sup:`-2`), for ``ENERGY``, ``EXCESS_KURTOSIS``, ``INTERQUARTILE_RANGE``, ``MEAN``,
   ``MEAN_ABSOLUTE_DEVIATION``, ``MEDIAN``, ``MIN``, ``P10``, ``P90``, ``RANGE``,
-  ``ROOT_MEAN_SQUARED`` and ``SKEWNESS``.
+  ``ROBUST_MEAN_ABSOLUTE_DEVIATION``, ``ROOT_MEAN_SQUARED`` and ``SKEWNESS``.
+- **The closed form** of the linear percentile rule, worked by hand on two small sample sets,
+  for the six percentiles, ``INTERQUARTILE_RANGE``, ``QCOD`` and
+  ``ROBUST_MEAN_ABSOLUTE_DEVIATION``, to an absolute 10\ :sup:`-12`.
 
 ``HISTOGRAM`` is checked against hand-computed bin counts to a relative 10\ :sup:`-4`.
 ``MEDIAN_ABSOLUTE_DEVIATION`` and ``ROBUST_MEAN`` are regression-only: MATLAB's ``mad`` and
 trimmed mean use different definitions. Out-of-core results are checked against in-memory results
 of the same build. The worked-example values quoted on this page, the comparisons with the IBSI
-standardizations and the CT ``UNIFORMITY_PIU`` example among them, are pinned by the
-worked-example script; the error rates of the histogram percentiles and the out-of-core example
-were measured once and are not pinned. None of them is compared with a
-reference tool.
+standardizations, the MATLAB percentiles and the CT ``UNIFORMITY_PIU`` example among them, are
+pinned by the worked-example script; the out-of-core example was measured once and is not pinned.
+None of them is compared with a reference tool.
 
 
 References

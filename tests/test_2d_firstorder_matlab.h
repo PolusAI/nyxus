@@ -5,8 +5,12 @@
 #include "test_ref_vals.h"
 
 // Provenance (SPEC 6.4):
-//   tool      = MATLAB R2026a, Statistics and Machine Learning Toolbox 26.1
-//   functions = dot, iqr, kurtosis, mad, max, mean, median, min, mode, moment,
+//   tool      = MATLAB R2026a, Statistics and Machine Learning Toolbox 26.1; the percentile
+//               values (P01 to P99, INTERQUARTILE_RANGE, QCOD) are computed on GNU Octave
+//               11.3.0 as quantile(x, p, 1, 7), the rule prctile Method="inclusive" takes, and
+//               match numpy.percentile's default to the last digit. MATLAB run pending: the
+//               generator's prctile Method="inclusive" calls have not yet been run on MATLAB
+//   functions = dot, kurtosis, mad, max, mean, median, min, mode, moment,
 //               numel, prctile, range, rms, skewness, sqrt, std, sum, var
 //   fixture   = pixelIntensityFeaturesTestData in tests/test_data.h
 //   config    = default first-order settings; slide range 0..65535 for
@@ -23,7 +27,7 @@ static const ref_vals_map<double> firstorder_2d_matlab_ref_vals
 	{ "HYPERFLATNESS", 5.1266592430284605 },
 	{ "HYPERSKEWNESS", 1.9782930866053803 },
 	{ "INTEGRATED_INTENSITY", 5015224.0 },
-	{ "INTERQUARTILE_RANGE", 26171.0 },
+	{ "INTERQUARTILE_RANGE", 26116.25 },
 	{ "KURTOSIS", 1.9278887207100905 },
 	{ "MAX", 64090.0 },
 	{ "MEAN", 32566.389610389611 },
@@ -31,13 +35,13 @@ static const ref_vals_map<double> firstorder_2d_matlab_ref_vals
 	{ "MEDIAN", 29803.5 },
 	{ "MIN", 11079.0 },
 	{ "MODE", 19552.0 },
-	{ "P01", 12081.4 },
+	{ "P01", 12527.299999999999 },
 	{ "P10", 16329.0 },
 	{ "P25", 19552.0 },
-	{ "P75", 45723.0 },
-	{ "P90", 53360.699999999997 },
-	{ "P99", 63380.959999999999 },
-	{ "QCOD", 0.40093450785139795 },
+	{ "P75", 45668.25 },
+	{ "P90", 53295.0 },
+	{ "P99", 63245.720000000001 },
+	{ "QCOD", 0.40043161441423486 },
 	{ "RANGE", 53011.0 },
 	{ "ROOT_MEAN_SQUARED", 35723.410526381209 },
 	{ "SKEWNESS", 0.45025675970449436 },
@@ -53,16 +57,18 @@ static double firstorder_2d_matlab_rel_tol(Nyxus::Feature2D feature)
 {
 	switch (feature)
 	{
-	// 3%: MATLAB sample percentiles vs Nyxus' fixed 100-bin CDF; worst measured residual is 2.75%.
-	case Nyxus::Feature2D::INTERQUARTILE_RANGE:
+	// prctile Method="inclusive" takes numpy's default 'linear' ranks i/(n-1), the rule Nyxus takes, so
+	// both sides interpolate between the same two pixels by the same fraction and agree to rounding.
+	// A percentile read off a 100-bin histogram misses these goldens by 1.6e-3 to 5.0e-2.
 	case Nyxus::Feature2D::P01:
+	case Nyxus::Feature2D::INTERQUARTILE_RANGE:
 	case Nyxus::Feature2D::P10:
 	case Nyxus::Feature2D::P25:
 	case Nyxus::Feature2D::P75:
 	case Nyxus::Feature2D::P90:
 	case Nyxus::Feature2D::P99:
 	case Nyxus::Feature2D::QCOD:
-		return 3.0e-2;
+		return 1.0e-9;
 	default:
 		// 0.1%: same native statistic on the same integer pixel vector (SPEC 7).
 		return 1.0e-3;

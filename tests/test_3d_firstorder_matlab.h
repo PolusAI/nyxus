@@ -8,8 +8,12 @@
 //   tool      = MATLAB R2026a for the definitions; the values below were re-derived on GNU
 //               Octave 11.3.0 + statistics when Nyxus began reporting in the volume's own
 //               domain, with the previous MATLAB values reproduced to 13 significant digits
-//               on the old domain as a control
-//   functions = sum, iqr, kurtosis, max, mean, mad, median, min, mode, moment,
+//               on the old domain as a control. The percentile values (3P01 to 3P99,
+//               3INTERQUARTILE_RANGE, 3QCOD) are computed on Octave as quantile(x, p, 1, 7),
+//               the rule prctile Method="inclusive" takes, and match numpy.percentile to the
+//               last digit. MATLAB run pending: the generator's prctile Method="inclusive"
+//               calls have not yet been run on MATLAB
+//   functions = sum, kurtosis, max, mean, mad, median, min, mode, moment,
 //               prctile, range, rms, skewness, std, var
 //   fixture   = tests/data/nifti/phantoms/ut_{inten,mask57}.nii, label 57
 //   config    = default Nyxus 3D first-order settings, values reported in the volume's own
@@ -24,7 +28,7 @@ static const ref_vals_map<double> firstorder_3d_matlab_ref_vals
     { "3HYPERFLATNESS", 3.8027657005973312 },
     { "3HYPERSKEWNESS", 0.3200133261551748 },
     { "3INTEGRATED_INTENSITY", 263267848.0 },
-    { "3INTERQUARTILE_RANGE", 1018.5 },
+    { "3INTERQUARTILE_RANGE", 1018.25 },
     { "3KURTOSIS", 1.7872368396784082 },
     { "3MAX", 2000.0 },
     { "3MEAN", 959.31905900186564 },
@@ -35,10 +39,10 @@ static const ref_vals_map<double> firstorder_3d_matlab_ref_vals
     { "3P01", 13.0 },
     { "3P10", 164.0 },
     { "3P25", 445.0 },
-    { "3P75", 1463.5 },
+    { "3P75", 1463.25 },
     { "3P90", 1784.0 },
     { "3P99", 1978.0 },
-    { "3QCOD", 0.53366518208016767 },
+    { "3QCOD", 0.53360408751473865 },
     { "3RANGE", 2000.0 },
     { "3ROOT_MEAN_SQUARED", 1123.5165145780536 },
     { "3SKEWNESS", 0.07469052912540243 },
@@ -50,18 +54,16 @@ static const ref_vals_map<double> firstorder_3d_matlab_ref_vals
     { "3VARIANCE_BIASED", 341996.30156537856 }
 };
 
-// The voxel range these residuals are measured against, itself one of the goldens above.
+// The voxel range a zero reference's residual is measured against, itself one of the goldens above.
 static constexpr double firstorder_3d_matlab_span = 2000.0;
 
-// Features Nyxus reads off a 100-bin CDF where MATLAB takes a sample percentile. Their
-// residual is a binning artefact of a couple of grey levels, so it lives on the scale of the
-// voxel range and not on the scale of the individual value: now that the reference domain is
-// absolute, 3P01 is 13 on a 2000-wide range, where 2.4 grey levels is 18% of the value and
-// 0.12% of the range.
-static bool firstorder_3d_matlab_binned_percentile(Nyxus::Feature3D feature)
+static double firstorder_3d_matlab_rel_tol(Nyxus::Feature3D feature)
 {
     switch (feature)
     {
+    // prctile Method="inclusive" takes numpy's default 'linear' ranks i/(n-1), the rule Nyxus takes,
+    // so both sides interpolate between the same two voxels by the same fraction and agree to
+    // rounding. A percentile read off a 100-bin histogram misses these goldens by 1.3e-4 to 1.8e-1.
     case Nyxus::Feature3D::INTERQUARTILE_RANGE:
     case Nyxus::Feature3D::P01:
     case Nyxus::Feature3D::P10:
@@ -69,19 +71,12 @@ static bool firstorder_3d_matlab_binned_percentile(Nyxus::Feature3D feature)
     case Nyxus::Feature3D::P75:
     case Nyxus::Feature3D::P90:
     case Nyxus::Feature3D::P99:
-        return true;
+    case Nyxus::Feature3D::QCOD:
+        return 1.0e-9;
     default:
-        return false;
+        // 0.1%: same native statistic on the same integer voxel vector (SPEC 7).
+        return 1.0e-3;
     }
-}
-
-static double firstorder_3d_matlab_rel_tol(Nyxus::Feature3D feature)
-{
-    // 1%: a ratio of two binned percentiles; measured residual is 1.01e-3.
-    if (feature == Nyxus::Feature3D::QCOD)
-        return 1.0e-2;
-    // 0.1%: same native statistic on the same integer voxel vector (SPEC 7).
-    return 1.0e-3;
 }
 
 static void assert_3d_firstorder_value_matlab(
@@ -104,17 +99,11 @@ static void assert_3d_firstorder_value_matlab(
     const double expected = firstorder_3d_matlab_ref_vals.at(fname);
     const Nyxus::Feature3D feature = static_cast<Nyxus::Feature3D>(fcode);
 
-    // Three scales, because the reference domain is absolute: a binned percentile's residual
-    // lives on the voxel range, a zero reference (3MIN, and 3UNIFORMITY_PIU built from it) has
-    // no relative error to take, and everything else is a native statistic over the same voxel
-    // vector and keeps its relative comparison.
+    // Two scales: a zero reference (3MIN, and 3UNIFORMITY_PIU built from it) has no relative error
+    // to take, so its residual lives on the voxel range; everything else is a native statistic over
+    // the same voxel vector and keeps its relative comparison.
     double residual, tol;
-    if (firstorder_3d_matlab_binned_percentile(feature))
-    {
-        residual = std::abs(actual - expected) / firstorder_3d_matlab_span;
-        tol = 2.0e-3;   // worst measured residual is 1.19e-3 (3P01, 2.38 grey levels)
-    }
-    else if (expected == 0.0)
+    if (expected == 0.0)
     {
         residual = std::abs(actual) / firstorder_3d_matlab_span;
         tol = 1.0e-3;

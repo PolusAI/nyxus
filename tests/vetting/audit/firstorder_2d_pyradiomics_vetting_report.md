@@ -70,9 +70,9 @@ fixture/recipe, compared against the literals hardcoded in
 | ROOT_MEAN_SQUARED | 35723.41052638121 | 35723.41052638121 | 0.0 | yes (exact) | |
 | MEAN_ABSOLUTE_DEVIATION | 12833.084499915672 | 12833.084499915672 | 0.0 | yes (exact) | |
 | ROBUST_MEAN_ABSOLUTE_DEVIATION | 10440.618496000001 | 10440.618496000001 | 0.0 | yes (exact) | |
-| INTERQUARTILE_RANGE | 26116.25 | 26116.25 | 0.0 | yes (well within the 5e-2 tier) | |
-| P10 | 16329.0 | 16329.0 | 0.0 | yes (well within the 5e-2 tier) | |
-| P90 | 53295.0 | 53295.0 | 0.0 | yes (well within the 5e-2 tier) | |
+| INTERQUARTILE_RANGE | 26116.25 | 26116.25 | 0.0 | yes (exact, 1e-6) | Both sides take numpy's default linear percentiles; Nyxus returns the golden exactly. |
+| P10 | 16329.0 | 16329.0 | 0.0 | yes (exact, 1e-6) | Both sides take numpy's default linear percentiles; Nyxus returns the golden exactly. |
+| P90 | 53295.0 | 53295.0 | 0.0 | yes (exact, 1e-6) | Both sides take numpy's default linear percentiles; Nyxus returns the golden exactly. |
 | ENTROPY | 5.54700500819408 | 5.54700500819408 | 0.0 | yes (exact) | |
 | UNIFORMITY | 0.0252993759487266 | 0.0252993759487266 | 0.0 | yes (exact) | |
 

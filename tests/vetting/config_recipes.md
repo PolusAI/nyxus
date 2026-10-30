@@ -28,10 +28,22 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 - `bench_irregular13x18_intensity`, with default 2D first-order settings. The one slide-relative
   feature uses the same ROI with slide range 0..65535.
 - MATLAB R2026a uses the named built-ins directly; derived statistics apply only their defining
-  normalization to those results. MATLAB sample percentiles and Nyxus' fixed 100-bin CDF agree at
-  `rel=3e-2` (worst measured residual 2.75%); all other comparisons use `rel=1e-3`.
+  normalization to those results. `prctile(..., Method="inclusive")` interpolates at numpy's
+  default `'linear'` ranks i/(n-1), the rule Nyxus takes, and INTERQUARTILE_RANGE is P75 - P25.
+  The percentile goldens are computed on GNU Octave 11.3.0 as `quantile(x, p, 1, 7)` and match
+  `numpy.percentile` to the last digit (MATLAB run pending). P01 to P99, IQR and QCOD use `rel=1e-9`: both sides
+  interpolate between the same two pixels by the same fraction, and a percentile read off a 100-bin
+  histogram misses these goldens by 1.6e-3 to 5.0e-2. All other comparisons use `rel=1e-3`.
 - Used by: `test_2d_firstorder_matlab.h`. Generator:
   `oracles/gen_firstorder2d_matlab.m`.
+
+## firstorder2d.percentiles_analytic
+- `bench_percentile_hand_samples`: one-row ROIs carrying {4, 10, 1, 3, 2} and {5, 9, 5, 5}, run
+  through `PixelIntensityFeatures` under default settings.
+- Oracle: `analytic`, the closed form of numpy's default `'linear'` percentile rule, worked by hand:
+  the q-quantile of n sorted samples sits at rank (n-1)q, interpolated between its two neighbours.
+  P01 to P99, IQR, QCOD and ROBUST_MEAN_ABSOLUTE_DEVIATION are asserted at `abs=1e-12`.
+- Used by: `test_2d_firstorder_analytic.h`.
 
 ## firstorder2d.ibsi_digital_phantom
 - The four-slice IBSI digital phantom is treated as one ROI under default 2D first-order settings.
@@ -59,8 +71,9 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   `Uniformity` use the discretized histogram, so the bin count affects those two features.
 - Used by: `test_3d_firstorder_pyradiomics.h`. Generator:
   `oracles/gen_firstorder3d_pyradiomics.py`.
-- The measured bands are `rel=1e-9` for 12 same-definition statistics, `rel=1e-2` for the four
-  percentile-derived values, and `rel=1e-3` for the population-versus-sample variance comparison.
+- The measured bands are `rel=1e-9` for the 16 same-definition statistics, the four
+  percentile-derived values among them (both sides take numpy's default linear percentiles), and
+  `rel=1e-3` for the population-versus-sample variance comparison.
   See `audit/firstorder_3d_pyradiomics_vetting_report.md`.
 
 ## firstorder3d.matlab_native
@@ -69,11 +82,24 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   truncates to integer grey levels, and the intensity family adds that offset back, so the reference
   is the volume's own float domain with the truncation kept.
 - MATLAB R2026a uses the named built-ins directly; derived statistics apply only their defining
-  normalization to those results. `prctile(..., Method="midpoint")` and `iqr`
-  use raw samples; Nyxus' percentile family uses its fixed 100-bin CDF, so that group uses `rel=1e-2`.
-  The other same-definition comparisons use the SPEC `rel=1e-3` tier.
+  normalization to those results. `prctile(..., Method="inclusive")` interpolates at numpy's
+  default `'linear'` ranks i/(n-1), the rule Nyxus takes, and IQR is P75 - P25; the percentile
+  goldens are computed on GNU Octave 11.3.0 as `quantile(x, p, 1, 7)` and match `numpy.percentile` to
+  the last digit (MATLAB run pending). The six percentiles, IQR and QCOD use
+  `rel=1e-9`: both sides interpolate between the same two voxels by the same fraction, and a
+  percentile read off a 100-bin histogram misses these goldens by 1.3e-4 to 1.8e-1. All other
+  comparisons use `rel=1e-3`, except the zero references (MIN and UNIFORMITY_PIU), whose residual
+  is taken on the 2000-wide voxel range.
 - Used by: `test_3d_firstorder_matlab.h`. Generator:
   `oracles/gen_firstorder3d_matlab.m`.
+
+## firstorder3d.percentiles_analytic
+- `bench_percentile_hand_samples`: the same two sample sets as `firstorder2d.percentiles_analytic`,
+  laid out as one-row volumes and run through `D3_VoxelIntensityFeatures` under default settings.
+- Oracle: `analytic`, the closed form of numpy's default `'linear'` percentile rule, worked by hand.
+  3P01 to 3P99, 3INTERQUARTILE_RANGE, 3QCOD and 3ROBUST_MEAN_ABSOLUTE_DEVIATION are asserted at
+  `abs=1e-12`.
+- Used by: `test_3d_firstorder_analytic.h`.
 
 ## firstorder3d.regression_ut_phantom
 - `bench_ut57_3d`, label 57, with the same default settings. Snapshot-only coverage for first-order

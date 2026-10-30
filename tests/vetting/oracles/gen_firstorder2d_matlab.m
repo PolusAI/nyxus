@@ -8,6 +8,12 @@
 % Every reported value uses MATLAB built-ins. Derived statistics apply only
 % their defining normalization to those built-in results.
 %
+% The percentiles take prctile(x, p, Method="inclusive"), numpy's default
+% 'linear' rule. GNU Octave's prctile takes no Method argument; there the same
+% rule is quantile(x, p/100, 1, 7), which is how the pinned percentile goldens
+% were derived. MATLAB run pending: the prctile Method="inclusive" calls below
+% have not yet been run on MATLAB.
+%
 % Run:
 %   matlab -batch "run('tests/vetting/oracles/gen_firstorder2d_matlab.m')"
 
@@ -18,8 +24,8 @@ intensities = load_intensities(fixture_text);
 
 sample_mean = mean(intensities);
 sample_std = std(intensities, 0);
-p25 = prctile(intensities, 25, Method="midpoint");
-p75 = prctile(intensities, 75, Method="midpoint");
+p25 = prctile(intensities, 25, Method="inclusive");
+p75 = prctile(intensities, 75, Method="inclusive");
 roi_min = min(intensities);
 roi_max = max(intensities);
 
@@ -31,7 +37,7 @@ matlab_values('EXCESS_KURTOSIS') = kurtosis(intensities, 1) - 3;
 matlab_values('HYPERFLATNESS') = moment(intensities, 6) / sample_std^6;
 matlab_values('HYPERSKEWNESS') = moment(intensities, 5) / sample_std^5;
 matlab_values('INTEGRATED_INTENSITY') = sum(intensities);
-matlab_values('INTERQUARTILE_RANGE') = iqr(intensities);
+matlab_values('INTERQUARTILE_RANGE') = p75 - p25;
 matlab_values('KURTOSIS') = kurtosis(intensities, 1);
 matlab_values('MAX') = roi_max;
 matlab_values('MEAN') = sample_mean;
@@ -39,12 +45,12 @@ matlab_values('MEAN_ABSOLUTE_DEVIATION') = mad(intensities, 0);
 matlab_values('MEDIAN') = median(intensities);
 matlab_values('MIN') = roi_min;
 matlab_values('MODE') = mode(intensities);
-matlab_values('P01') = prctile(intensities, 1, Method="midpoint");
-matlab_values('P10') = prctile(intensities, 10, Method="midpoint");
+matlab_values('P01') = prctile(intensities, 1, Method="inclusive");
+matlab_values('P10') = prctile(intensities, 10, Method="inclusive");
 matlab_values('P25') = p25;
 matlab_values('P75') = p75;
-matlab_values('P90') = prctile(intensities, 90, Method="midpoint");
-matlab_values('P99') = prctile(intensities, 99, Method="midpoint");
+matlab_values('P90') = prctile(intensities, 90, Method="inclusive");
+matlab_values('P99') = prctile(intensities, 99, Method="inclusive");
 matlab_values('QCOD') = (p75 - p25) / (p75 + p25);
 matlab_values('RANGE') = range(intensities);
 matlab_values('ROOT_MEAN_SQUARED') = rms(intensities);
@@ -84,8 +90,9 @@ for name_index = 1:numel(matlab_names)
     matlab_value = matlab_values(name);
     pinned_value = pinned_values(name);
     relative_error = abs(matlab_value - pinned_value) / max(abs(pinned_value), 1e-12);
+    % the bands of firstorder_2d_matlab_rel_tol() in test_2d_firstorder_matlab.h
     if ismember(name, percentile_names)
-        relative_tolerance = 3e-2;
+        relative_tolerance = 1e-9;
     else
         relative_tolerance = 1e-3;
     end

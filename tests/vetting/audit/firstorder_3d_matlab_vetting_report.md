@@ -42,18 +42,19 @@ parts. The re-derivation ran on GNU Octave 11.3.0 with the statistics package, o
 built-ins the MATLAB generator names, and reproduced all 29 previous MATLAB values to 13
 significant digits on the old domain first as a control.
 
-Twenty-two features use a matching MATLAB function directly: `sum`, `iqr`, `kurtosis`, `max`,
-`mean`, `mad`, `median`, `min`, `mode`, `prctile`, `range`, `rms`, `skewness`, `std`, or `var`.
-Seven use only the feature's defining arithmetic over those built-ins:
+Twenty-one features use a matching MATLAB function directly: `sum`, `kurtosis`, `max`, `mean`,
+`mad`, `median`, `min`, `mode`, `prctile(..., Method="inclusive")`, `range`, `rms`, `skewness`,
+`std`, or `var`. Eight use only the feature's defining arithmetic over those built-ins:
 
 - `3COV`: `std / mean`
+- `3INTERQUARTILE_RANGE`: `P75 - P25`
 - `3STANDARD_ERROR`: `std / sqrt(n)`
 - `3EXCESS_KURTOSIS`: `kurtosis - 3`
 - `3QCOD`: `(P75 - P25) / (P75 + P25)`
 - `3UNIFORMITY_PIU`: the PIU expression over `min` and `max`
 - `3HYPERSKEWNESS` and `3HYPERFLATNESS`: standardized fifth and sixth central moments
 
-No Nyxus histogram, percentile, robust-window, entropy, or uniformity implementation is reproduced
+No Nyxus percentile, robust-window, entropy, or uniformity implementation is reproduced
 inside the MATLAB generator.
 
 ## Tolerances
@@ -61,22 +62,36 @@ inside the MATLAB generator.
 | Group | Tolerance | Reason |
 |---|---:|---|
 | Same-definition native statistics | `rel=1e-3` | SPEC §7 tier for the same statistic on the same integer voxel vector |
-| `3QCOD` | `rel=1e-2` | a ratio of two binned percentiles; measured residual `1.01e-3` |
-| Binned percentiles | `2e-3` of the voxel range | MATLAB sample percentiles versus Nyxus's fixed 100-bin interpolated CDF |
+| Percentiles, `3INTERQUARTILE_RANGE` and `3QCOD` | `rel=1e-9` | MATLAB `prctile(..., Method="inclusive")` and Nyxus take the same numpy-linear ranks; agreement to rounding |
 | Zero reference (`3MIN`, `3UNIFORMITY_PIU`) | `1e-3` of the voxel range | a zero reference has no relative error to take |
 
-The percentile group is measured against the voxel range (`2000`) rather than against each
-value. That changed with the reported domain: the residual is a binning artefact of a couple of
-grey levels wherever the percentile sits, but the values themselves now start at zero, so
-`3P01 = 13` turns `2.38` grey levels into 18% of the value and 0.12% of the range. The worst
-measured residual is `1.19e-3` of the range, on `3P01` (`Nyxus 15.382959641256`, MATLAB `13`).
-The tolerance records agreement; it does not require bit identity between two different
-percentile estimators.
+Both sides take sample percentiles of the same voxel vector at numpy's default `'linear'` ranks
+i/(n-1), the method PyRadiomics and MIRP use: Nyxus takes them exactly, and MATLAB
+`prctile(..., Method="inclusive")` is the same rule. The percentile goldens are computed on GNU
+Octave 11.3.0 as `quantile(x, p, 1, 7)` and match `numpy.percentile`'s default to the last digit. MATLAB run pending: the generator's `prctile(..., Method="inclusive")` calls have not yet been run on MATLAB. Both
+sides interpolate between the same two voxels by the same fraction, so the group is compared
+relatively, like every other nonzero reference.
+
+| Feature | Golden (`prctile` inclusive / Octave method 7) | Nyxus |
+|---|---:|---|
+| `3P01` | 13 | exact |
+| `3P10` | 164 | exact |
+| `3P25` | 445 | exact |
+| `3P75` | 1463.25 | exact |
+| `3P90` | 1784 | exact |
+| `3P99` | 1978 | exact |
+| `3INTERQUARTILE_RANGE` | 1018.25 | exact |
+| `3QCOD` | 0.53360408751473865 | exact |
+
+The band rejects a percentile read off a 100-bin histogram, which misses these goldens by 1.3e-4
+to 1.8e-1.
 
 ## Deliberate oracle boundary
 
 Four features absent from the MATLAB table retain native PyRadiomics coverage from PR 449:
 `3ENERGY`, `3ENTROPY`, `3ROBUST_MEAN_ABSOLUTE_DEVIATION`, and `3UNIFORMITY`.
+`3ROBUST_MEAN_ABSOLUTE_DEVIATION` and the percentile group are also asserted against their
+hand-worked closed form in `test_3d_firstorder_analytic.h`.
 
 Three features remain regression-only:
 
@@ -84,7 +99,7 @@ Three features remain regression-only:
 |---|---|
 | `3COVERED_IMAGE_INTENSITY_RANGE` | Nyxus-specific slide/ROI ratio with no matching external feature |
 | `3MEDIAN_ABSOLUTE_DEVIATION` | MATLAB `mad(x,1)` takes the median absolute deviation; Nyxus averages deviations about the median |
-| `3ROBUST_MEAN` | MATLAB `trimmean` trims by rank; Nyxus selects values through histogram-derived P10/P90 thresholds |
+| `3ROBUST_MEAN` | MATLAB `trimmean` trims by rank; Nyxus selects values through the P10/P90 thresholds |
 
 The distinction is intentional: the regression pins preserve current Nyxus behavior but establish
 no external correctness claim.
