@@ -484,10 +484,10 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - vetted: IMEA
    * - ``DIAMETER_CIRCUMSCRIBING_CIRCLE``
      - Twice the largest distance from the ROI's centroid to the pixels of its outer borders, in pixels; the borders of holes are left out.
-     - regression
+     - vetted: analytic
    * - ``DIAMETER_INSCRIBING_CIRCLE``
      - Twice the smallest distance from the ROI's centroid to the pixels of its outer borders, in pixels; the borders of holes are left out.
-     - regression
+     - vetted: analytic
 
 .. _features-roi-radius:
 
@@ -505,7 +505,7 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - Validation
    * - ``ROI_RADIUS_MEAN``
      - Mean over ROI pixels of the distance from a pixel to the nearest contour pixel, in pixels; contour pixels are at distance 0.
-     - regression
+     - vetted: scikit-image
    * - ``ROI_RADIUS_MAX``
      - Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel, in pixels: the radius of the largest disk inside the ROI, measured from a pixel centre.
      - vetted: analytic, scikit-image
@@ -846,7 +846,7 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - vetted: CellProfiler
    * - ``PERCENT_TOUCHING``
      - Percentage of the ROI's contour pixels that are adjacent, including diagonally, to a contour pixel of another ROI.
-     - regression
+     - vetted: CellProfiler
    * - ``CLOSEST_NEIGHBOR1_DIST``
      - Distance in pixels from the ROI's centroid to the centroid of its nearest neighbor among the ROIs counted in NUM_NEIGHBORS.
      - vetted: CellProfiler
@@ -1672,7 +1672,7 @@ Definitions, formulas and settings: :doc:`/Math/f_2dmoments`.
      - vetted: scikit-image
    * - ``WEIGHTED_SPAT_MOMENT_00``
      - Raw moment of order (0, 0) of the ROI shape with each pixel weighted by ln(d + 0.001), where d is as in the family note.
-     - regression
+     - invariant
    * - ``WEIGHTED_SPAT_MOMENT_01``
      - Raw moment of order (0, 1) of the ROI shape with each pixel weighted by ln(d + 0.001), where d is as in the family note.
      - regression
@@ -1959,7 +1959,7 @@ Definitions, formulas and settings: :doc:`/Math/f_2dmoments`.
      - vetted: scikit-image
    * - ``IMOM_WRM_00``
      - Raw intensity moment of order (0, 0) with each pixel's intensity multiplied by ln(d + 0.001), where d is as in the family note.
-     - regression
+     - invariant
    * - ``IMOM_WRM_01``
      - Raw intensity moment of order (0, 1) with each pixel's intensity multiplied by ln(d + 0.001), where d is as in the family note.
      - regression

@@ -18,10 +18,10 @@
    * - :ref:`DIAMETER_CIRCUMSCRIBING_CIRCLE <feature-diameter-circumscribing-circle>`
      - Circumscribing circle diameter
      - —
-     - regression
+     - analytic (exact)
      - 14.72
    * - :ref:`DIAMETER_INSCRIBING_CIRCLE <feature-diameter-inscribing-circle>`
      - Inscribing circle diameter
      - —
-     - regression
+     - analytic (exact)
      - 1.705

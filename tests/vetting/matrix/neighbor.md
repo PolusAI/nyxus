@@ -12,7 +12,7 @@ is one axis wide, and the matrix is short for a real reason rather than for want
 
 | pixel distance | verdict | recipe / oracle |
 |---|---|---|
-| 1 | VALID | `neighbor.scene2d_radius1` — cellprofiler (2 features) + analytic (6 features) |
+| 1 | VALID | `neighbor.scene2d_radius1` — cellprofiler (3 features) + analytic (6 features) |
 | ≥ 2 | NOT MEASURED | reachable and meaningful; see below |
 | 0 | INVALID | degenerate — the radius gate is `mind > radius²`, so nothing is anyone's neighbour |
 
