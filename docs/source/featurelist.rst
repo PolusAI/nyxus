@@ -378,8 +378,8 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - Description
      - Validation
    * - ``PERIMETER``
-     - Length of the ROI's traced contour in pixels: the sum of the Euclidean distances between consecutive contour pixels, closing back to the first one. A hole or a second fragment appends its loop to the same list, and the jumps between loops are counted too. On the out-of-core path it is the number of contour pixels instead.
-     - vetted: scikit-image
+     - Length of the ROI's traced contour in pixels: the sum of the Euclidean distances between consecutive pixels of the closed walk around each border of the ROI (the outside of each separate part and each hole), each walk closing back to its first pixel. On the out-of-core path it is the number of contour pixels instead.
+     - vetted: analytic, OpenCV, scikit-image
    * - ``DIAMETER_EQUAL_PERIMETER``
      - Diameter of a circle with the same perimeter as the ROI: PERIMETER divided by pi, in pixels.
      - vetted: IMEA
@@ -397,7 +397,7 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - vetted: CellProfiler
    * - ``EDGE_INTEGRATED_INTENSITY``
      - Sum of the intensities of the ROI's contour pixels.
-     - vetted: CellProfiler
+     - vetted: analytic, CellProfiler
 
 .. _features-convex-hull:
 
@@ -483,10 +483,10 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - Diameter in pixels of the circle that Welzl's algorithm fits to the ROI's contour pixels, with chord midpoints truncated to whole pixels (known defect, https://github.com/PolusAI/nyxus/issues/498); it approximates the smallest enclosing circle and can come out about a pixel larger or smaller than it.
      - vetted: IMEA
    * - ``DIAMETER_CIRCUMSCRIBING_CIRCLE``
-     - Twice the largest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left (known defect, https://github.com/PolusAI/nyxus/issues/497).
+     - Twice the largest distance from the ROI's centroid to the pixels of its outer borders, in pixels; the borders of holes are left out.
      - regression
    * - ``DIAMETER_INSCRIBING_CIRCLE``
-     - Twice the smallest distance from the ROI's centroid to its contour pixels, in pixels. The contour is taken one pixel down and to the right of the ROI and the centroid one pixel up and to the left (known defect, https://github.com/PolusAI/nyxus/issues/497).
+     - Twice the smallest distance from the ROI's centroid to the pixels of its outer borders, in pixels; the borders of holes are left out.
      - regression
 
 .. _features-roi-radius:
@@ -504,13 +504,13 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - Description
      - Validation
    * - ``ROI_RADIUS_MEAN``
-     - Mean over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)
+     - Mean over ROI pixels of the distance from a pixel to the nearest contour pixel, in pixels; contour pixels are at distance 0.
      - regression
    * - ``ROI_RADIUS_MAX``
-     - Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)
+     - Maximum over ROI pixels of the distance from a pixel to the nearest contour pixel, in pixels: the radius of the largest disk inside the ROI, measured from a pixel centre.
      - vetted: analytic, scikit-image
    * - ``ROI_RADIUS_MEDIAN``
-     - Median over ROI pixels of the distance from a pixel to the nearest contour pixel, with the contour taken one pixel down and to the right of the ROI (known defect, https://github.com/PolusAI/nyxus/issues/497)
+     - Median over ROI pixels of the distance from a pixel to the nearest contour pixel, in pixels.
      - vetted: scikit-image
 
 .. _features-extrema:
@@ -1482,7 +1482,7 @@ Definitions, formulas and settings: :doc:`/Math/f_ngtdm`.
 Shape moments
 ^^^^^^^^^^^^^
 
-Geometric moments of the ROI's shape: every ROI pixel counts as 1. The two digits of a code are the powers of x and y. The weighted moments weight each pixel by ln(d + 0.001), where d is an approximate distance from the pixel to the traced ROI contour (taken one pixel down and to the right of the ROI), found by a sampled search that can overestimate it.
+Geometric moments of the ROI's shape: every ROI pixel counts as 1. The two digits of a code are the powers of x and y. The weighted moments weight each pixel by ln(d + 0.001), where d is an approximate distance from the pixel to the traced ROI contour, found by a sampled search that can overestimate it.
 
 Definitions, formulas and settings: :doc:`/Math/f_2dmoments`.
 
@@ -1769,7 +1769,7 @@ Definitions, formulas and settings: :doc:`/Math/f_2dmoments`.
 Intensity moments
 ^^^^^^^^^^^^^^^^^
 
-The same moments with each pixel weighted by its intensity, in grey levels. The two digits of a code are the powers of x and y. The weighted moments multiply each intensity by ln(d + 0.001), where d is an approximate distance from the pixel to the traced ROI contour (taken one pixel down and to the right of the ROI), found by a sampled search that can overestimate it.
+The same moments with each pixel weighted by its intensity, in grey levels. The two digits of a code are the powers of x and y. The weighted moments multiply each intensity by ln(d + 0.001), where d is an approximate distance from the pixel to the traced ROI contour, found by a sampled search that can overestimate it.
 
 Definitions, formulas and settings: :doc:`/Math/f_2dmoments`.
 

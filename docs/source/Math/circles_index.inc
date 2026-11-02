@@ -19,9 +19,9 @@
      - Circumscribing circle diameter
      - —
      - regression
-     - 17.41
+     - 14.72
    * - :ref:`DIAMETER_INSCRIBING_CIRCLE <feature-diameter-inscribing-circle>`
      - Inscribing circle diameter
      - —
      - regression
-     - 1.29
+     - 1.705

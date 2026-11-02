@@ -857,7 +857,8 @@ class TestNyxus():
 
         def test_bad_contour (self):
             '''
-            Testing Nyxus ability to not crash ingesting a segment without any contour e.g. speckles only
+            Testing Nyxus ability to not crash ingesting a segment of speckles only: each isolated
+            pixel is a border of its own, so PERIMETER is 0 and every pixel is an edge pixel
             '''
             I = np.random.randint(10, 50, size=(10, 10))    # nonzero everywhere
             M = np.array([
@@ -876,7 +877,7 @@ class TestNyxus():
             f = nyx.featurize (I, M, intensity_names=['I'], label_names=['M'])
             assert f.at[0, "PERIMETER"] == 0
             assert f.at[0, "DIAMETER_EQUAL_PERIMETER"] == 0
-            assert f.at[0, "EDGE_MEAN_INTENSITY"] == 0
+            assert f.at[0, "EDGE_MEAN_INTENSITY"] == pytest.approx (I[M > 0].mean())
 
         def test_3d_glcm_compatibility (self):
             '''

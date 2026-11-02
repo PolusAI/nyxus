@@ -48,6 +48,8 @@ using Point2i = Point2<StatsInt>;
 using Point2f = Point2<float>;
 inline float normL2(const Point2f& p) { return p.normL2(); }
 
+struct BorderedContour;
+
 /// @brief Class encapsulating a 2D pixel
 struct Pixel2 : public Point2i
 {
@@ -128,13 +130,28 @@ struct Pixel2 : public Point2i
 	/// @brief Returns true if this pixel belongs to 'cloud'
 	bool belongs_to(const std::vector<Pixel2>& cloud) const;
 
-	/// @brief Returns an index in argument 'cloud'
+	/// @brief Returns the index in 'cloud' of the pixel whose largest and smallest squared distances
+	/// to 'contour' differ least, both taken by min_sqdist() and max_sqdist()
 	static int find_center(const std::vector<Pixel2>& cloud, const std::vector<Pixel2>& contour, double sx = 1.0, double sy = 1.0);
+
+	/// @brief The same over a contour made of several borders, each searched on its own
+	static int find_center(const std::vector<Pixel2>& cloud, const BorderedContour& contour, double sx = 1.0, double sy = 1.0);
 
 	std::pair<double, double> min_max_sqdist(const std::vector<Pixel2>& contour, double sx = 1.0, double sy = 1.0) const;
 
-	/// @brief Returns the minimum squared distance squared distance from <this> pixel to the <cloud>
+	std::pair<double, double> min_max_sqdist(const BorderedContour& contour, double sx = 1.0, double sy = 1.0) const;
+
+	/// @brief Returns the minimum squared distance from <this> pixel to the <cloud>, read as one
+	/// ordered walk. Up to 10 points are scanned exhaustively; a longer walk is searched coarse to
+	/// fine around the best point found so far, which assumes the distance varies smoothly along the
+	/// walk and can return more than the true minimum where it does not.
 	double min_sqdist (const std::vector<Pixel2>& cloud, double sx = 1.0, double sy = 1.0) const;
+
+	/// @brief The same over a contour made of several borders: each border is searched on its own and
+	/// the smallest result is returned, so the search never steps from one border to another. A border
+	/// whose bounding box lies no nearer than the smallest distance found so far is not searched, as
+	/// it cannot return less.
+	double min_sqdist (const BorderedContour& contour, double sx = 1.0, double sy = 1.0) const;
 
 	/// @brief Exact minimum squared distance from <this> pixel to <cloud> via a full linear scan.
 	/// min_sqdist() is an approximate hill-descent (v2) that assumes a locally-unimodal
@@ -144,8 +161,14 @@ struct Pixel2 : public Point2i
 	/// per-pixel speed (neighbor touch/percent-touching, radius gate).
 	double exact_min_sqdist (const std::vector<Pixel2>& cloud) const;
 
-	/// @brief Returns the maximum squared distance squared distance from <this> pixel to the <cloud>
+	/// @brief Returns the maximum squared distance from <this> pixel to the <cloud>, searched as
+	/// min_sqdist() searches for the minimum, and able to return less than the true maximum
 	double max_sqdist (const std::vector<Pixel2>& cloud, double sx = 1.0, double sy = 1.0) const;
+
+	/// @brief The same over a contour made of several borders, as min_sqdist() over borders: the
+	/// largest of the per-border results, a border whose bounding box lies within the largest
+	/// distance found so far not being searched
+	double max_sqdist (const BorderedContour& contour, double sx = 1.0, double sy = 1.0) const;
 
 	/// @brief Returns the angle in radians between this pixel and 'other' relative to the origin 
 	double angle(const Pixel2& other) const;
@@ -160,6 +183,32 @@ struct Pixel2 : public Point2i
 };
 
 bool operator == (const Pixel2& p1, const Pixel2& p2);
+
+/// @brief Whether 'ends' lays out a contour of 'n_pixels' pixels as borders the way
+/// LR::contour_border_ends_ does: border k is pixels [ends[k-1], ends[k]) (from 0 for k == 0), every
+/// border holds at least one pixel (the ends rise strictly), and the last end is n_pixels, so the
+/// borders cover the contour. No ends at all describes an empty contour. The CPU searches
+/// (BorderedContour) and the GPU upload (GpusideCache::send_roi_batch_data_2_gpu) both require it.
+bool border_ends_cover (size_t n_pixels, const std::vector<size_t>& ends);
+
+/// @brief A contour made of several borders, each an ordered walk (LR::contour_pixels_ and
+/// LR::contour_border_ends_), laid out as border_ends_cover() describes; any other layout throws
+/// std::invalid_argument. Keeps the bounding box of every border.
+struct BorderedContour
+{
+	BorderedContour (const std::vector<Pixel2>& pixels, const std::vector<size_t>& ends);
+	// 'pixels' is kept by reference, so it has to outlive the contour: a temporary does not
+	BorderedContour (const std::vector<Pixel2>&& pixels, const std::vector<size_t>& ends) = delete;
+
+	struct Border
+	{
+		size_t begin, end;
+		StatsInt xmin, xmax, ymin, ymax;
+	};
+
+	const std::vector<Pixel2>& pixels;
+	std::vector<Border> borders;
+};
 
 template <typename T>
 struct Point3
