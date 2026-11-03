@@ -367,7 +367,7 @@ stay statements about the shipped `sharpness.cpp`.
   set (Docker `@sha256`, `pip freeze`, `mvn dependency:tree`) alongside each golden, plus the
   discretisation/aggregation config used.
 - **Licensed MATLAB first-order generators.** Both dimensions are pinned from MATLAB R2026a,
-  Statistics and Machine Learning Toolbox 26.1, except their percentile rows (below):
+  Statistics and Machine Learning Toolbox 26.1:
   ```
   matlab -batch "run('tests/vetting/oracles/gen_firstorder2d_matlab.m')"
   matlab -batch "run('tests/vetting/oracles/gen_firstorder3d_matlab.m')"
@@ -376,15 +376,8 @@ stay statements about the shipped `sharpness.cpp`.
   derived values use only their defining arithmetic. Every percentile is taken as
   `prctile(..., Method="inclusive")`, numpy's default `'linear'` ranks i/(n-1), the rule Nyxus
   takes, and the interquartile range as P75 - P25, so both sides agree to rounding (`rel=1e-9`).
-  The percentile rows of both tables (P01 to P99, IQR, QCOD) are an Octave surrogate, generated
-  on GNU Octave 11.3.0 as `quantile(x, p, 1, 7)`, the same rule, and matching `numpy.percentile`
-  to the last digit:
-  ```
-  octave-cli tests/vetting/oracles/gen_firstorder2d_percentiles_octave.m
-  octave-cli tests/vetting/oracles/gen_firstorder3d_percentiles_octave.m
-  ```
-  Each reads its fixture and the pinned table from the checkout and fails if a golden leaves the
-  `rel=1e-9` band. Each table's provenance block records which of its values come from which tool.
+  Each generator reads its fixture and the pinned table from the checkout, prints every value
+  beside its golden, and fails if a golden leaves its declared band.
 
   **`regionprops` (2D morphology).** The checked-in oracle is generated with licensed MATLAB
   R2026a and Image Processing Toolbox 26.1:

@@ -6,18 +6,15 @@
 
 // Provenance (SPEC 6.4):
 //   tool      = MATLAB R2026a, Statistics and Machine Learning Toolbox 26.1; the percentile
-//               values (P01 to P99, INTERQUARTILE_RANGE, QCOD) are an Octave surrogate,
-//               generated on GNU Octave 11.3.0 as quantile(x, p, 1, 7), the rule prctile
-//               Method="inclusive" takes, and match numpy.percentile's default to the last digit
+//               values (P01 to P99, INTERQUARTILE_RANGE, QCOD) take prctile
+//               Method="inclusive", numpy.percentile's default 'linear' rule
 //   functions = dot, kurtosis, mad, max, mean, median, min, mode, moment,
-//               numel, prctile, range, rms, skewness, sqrt, std, sum, var; Octave quantile
-//               for the percentile values
+//               numel, prctile, range, rms, skewness, sqrt, std, sum, var
 //   fixture   = pixelIntensityFeaturesTestData in tests/test_data.h
 //   config    = default first-order settings; slide range 0..65535 for
 //               COVERED_IMAGE_INTENSITY_RANGE
 //   recipe    = firstorder2d.matlab_native
-//   generator = tests/vetting/oracles/gen_firstorder2d_matlab.m; the percentile values
-//               tests/vetting/oracles/gen_firstorder2d_percentiles_octave.m
+//   generator = tests/vetting/oracles/gen_firstorder2d_matlab.m
 //   report    = tests/vetting/audit/firstorder_2d_matlab_vetting_report.md
 static const ref_vals_map<double> firstorder_2d_matlab_ref_vals
 {

@@ -23,15 +23,17 @@ The MATLAB pins and their owning assertion are in `tests/test_3d_firstorder_matl
 
 | | |
 |---|---|
-| Generator | `tests/vetting/oracles/gen_firstorder3d_matlab.m`; the percentile rows `tests/vetting/oracles/gen_firstorder3d_percentiles_octave.m` |
-| Tool | MATLAB R2026a for the definitions; values re-derived on GNU Octave 11.3.0 + statistics; the percentile rows an Octave surrogate, `quantile(x, p, 1, 7)` |
+| Generator | `tests/vetting/oracles/gen_firstorder3d_matlab.m` |
+| Tool | MATLAB R2026a for the definitions; values re-derived on GNU Octave 11.3.0 + statistics; the percentile rows MATLAB R2026a `prctile(..., Method="inclusive")` |
 | Fixture | `tests/data/nifti/phantoms/ut_inten.nii` and `ut_mask57.nii`, label 57 |
 | Recipe | `firstorder3d.matlab_native` |
 | Test | `TEST_NYXUS.TEST_3D_FIRSTORDER_MATLAB` |
 
-The generator downloads the fixture from the moving `PolusAI/nyxus` `main` tree, applies the
-documented reported-domain setup, and then evaluates the feature values. MATLAB is an
-offline golden generator; CI consumes only the checked-in full-precision values.
+The generator reads the fixture and the C++ golden table from the checkout it runs in, applies the
+documented reported-domain setup, evaluates the feature values, checks feature names in both
+directions, prints MATLAB and C++ values side by side, and fails when a value exceeds its declared
+tolerance. MATLAB is an offline golden generator; CI consumes only the checked-in full-precision
+values.
 
 The pins were re-derived when Nyxus began reporting first-order values in the volume's own
 intensity domain rather than in the loader's grey levels. The fixture's volume minimum is
@@ -67,14 +69,11 @@ inside the MATLAB generator.
 
 Both sides take sample percentiles of the same voxel vector at numpy's default `'linear'` ranks
 i/(n-1), the method PyRadiomics and MIRP use: Nyxus takes them exactly, and MATLAB
-`prctile(..., Method="inclusive")` is the same rule. The percentile goldens are an Octave
-surrogate, generated on GNU Octave 11.3.0 as `quantile(x, p, 1, 7)` by
-`tests/vetting/oracles/gen_firstorder3d_percentiles_octave.m`, and match `numpy.percentile`'s
-default to the last digit. Both
-sides interpolate between the same two voxels by the same fraction, so the group is compared
-relatively, like every other nonzero reference.
+`prctile(..., Method="inclusive")` is the same rule. Both sides interpolate between the same two
+voxels by the same fraction, so the group is compared relatively, like every other nonzero
+reference.
 
-| Feature | Golden (`prctile` inclusive / Octave method 7) | Nyxus |
+| Feature | Golden (`prctile` inclusive) | Nyxus |
 |---|---:|---|
 | `3P01` | 13 | exact |
 | `3P10` | 164 | exact |

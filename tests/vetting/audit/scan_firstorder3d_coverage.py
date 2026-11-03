@@ -19,7 +19,7 @@ SOURCES = [
 ]
 
 MATLAB = "MATLAB R2026a "
-OCTAVE_PCTL = "Octave surrogate quantile method 7 (prctile inclusive's rule)"
+MATLAB_PCTL = MATLAB + "prctile inclusive"
 
 NOTE = {
     "3COV": MATLAB + "std/mean",
@@ -30,7 +30,7 @@ NOTE = {
     "3HYPERFLATNESS": MATLAB + "sixth central moment standardized by std",
     "3HYPERSKEWNESS": MATLAB + "fifth central moment standardized by std",
     "3INTEGRATED_INTENSITY": MATLAB + "sum",
-    "3INTERQUARTILE_RANGE": "three oracle recipes; PyRadiomics, the Octave surrogate of prctile "
+    "3INTERQUARTILE_RANGE": "three oracle recipes; PyRadiomics, MATLAB R2026a prctile "
                             "inclusive and the analytic closed form, all exact",
     "3KURTOSIS": "native kurtosis in both tools",
     "3MAX": "native maximum in both tools",
@@ -41,13 +41,13 @@ NOTE = {
                                   "the median",
     "3MIN": "native minimum in both tools",
     "3MODE": MATLAB + "mode",
-    "3P01": OCTAVE_PCTL + ", numpy's linear ranks; analytic closed form",
+    "3P01": MATLAB_PCTL + ", numpy's linear ranks; analytic closed form",
     "3P10": "two native percentile oracles at separate recipes; analytic closed form",
-    "3P25": OCTAVE_PCTL + "; analytic closed form",
-    "3P75": OCTAVE_PCTL + "; analytic closed form",
+    "3P25": MATLAB_PCTL + "; analytic closed form",
+    "3P75": MATLAB_PCTL + "; analytic closed form",
     "3P90": "two native percentile oracles at separate recipes; analytic closed form",
-    "3P99": OCTAVE_PCTL + "; analytic closed form",
-    "3QCOD": "defining ratio over the Octave surrogate percentiles; analytic closed form",
+    "3P99": MATLAB_PCTL + "; analytic closed form",
+    "3QCOD": "defining ratio over MATLAB R2026a percentile built-ins; analytic closed form",
     "3RANGE": "native range in both tools",
     "3ROBUST_MEAN": "MATLAB trimmean semantics differ from Nyxus P10/P90-threshold selection",
     "3ROBUST_MEAN_ABSOLUTE_DEVIATION": "native PyRadiomics RobustMeanAbsoluteDeviation; analytic "

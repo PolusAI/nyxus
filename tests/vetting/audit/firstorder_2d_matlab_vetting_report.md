@@ -1,8 +1,7 @@
 # 2D first-order MATLAB R2026a vetting report
 
 This replaces the unsupported MATLAB provenance and Nyxus-derived percentile pins in
-`test_2d_firstorder_matlab.h` with a licensed MATLAB R2026a run; the percentile rows are an
-Octave surrogate of the same rule (see Percentile agreement). MATLAB directly supports 31 of
+`test_2d_firstorder_matlab.h` with a licensed MATLAB R2026a run. MATLAB directly supports 31 of
 the family's 36 features under the conventions below.
 
 ## Provenance
@@ -11,7 +10,7 @@ the family's 36 features under the conventions below.
 |---|---|
 | Tool | MATLAB R2026a, Statistics and Machine Learning Toolbox 26.1 |
 | Generator | `tests/vetting/oracles/gen_firstorder2d_matlab.m` |
-| Fixture | `pixelIntensityFeaturesTestData` from `tests/test_data.h` on `PolusAI/nyxus` main |
+| Fixture | `pixelIntensityFeaturesTestData` from `tests/test_data.h` |
 | Recipe | `firstorder2d.matlab_native` |
 | Nyxus config | default first-order settings; slide range 0..65535 for `COVERED_IMAGE_INTENSITY_RANGE` |
 | Test | `test_2d_firstorder_matlab.h` |
@@ -23,8 +22,8 @@ Run from the repository root:
 matlab -batch "run('tests/vetting/oracles/gen_firstorder2d_matlab.m')"
 ```
 
-The generator downloads the fixture and C++ golden table from the moving `PolusAI/nyxus` `main`
-tree, checks feature names in both directions, prints MATLAB and C++ values side by side, and fails
+The generator reads the fixture and C++ golden table from the checkout it runs in, checks feature
+names in both directions, prints MATLAB and C++ values side by side, and fails
 when a value exceeds its declared tolerance.
 
 ## What MATLAB computes
@@ -59,14 +58,11 @@ No Nyxus histogram or feature algorithm is reproduced.
 
 Both sides take sample percentiles of the same 154 pixels at numpy's default `'linear'` ranks
 i/(n-1), the method PyRadiomics and MIRP use: Nyxus takes them exactly, and MATLAB
-`prctile(..., Method="inclusive")` is the same rule. The percentile goldens are an Octave
-surrogate, generated on GNU Octave 11.3.0 as `quantile(x, p, 1, 7)` by
-`tests/vetting/oracles/gen_firstorder2d_percentiles_octave.m`, and match `numpy.percentile`'s
-default to the last digit. Both
-sides interpolate between the same two pixels by the same fraction, so the eight rows are asserted
-at `rel=1e-9`, and Nyxus agrees exactly.
+`prctile(..., Method="inclusive")` is the same rule. Both sides interpolate between the same two
+pixels by the same fraction, so the eight rows are asserted at `rel=1e-9`, and Nyxus agrees
+exactly.
 
-| Feature | Golden (`prctile` inclusive / Octave method 7) | Nyxus |
+| Feature | Golden (`prctile` inclusive) | Nyxus |
 |---|---:|---|
 | `P01` | 12527.299999999999 | exact |
 | `P10` | 16329 | exact |
