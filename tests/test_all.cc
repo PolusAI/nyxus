@@ -209,6 +209,10 @@ TEST(TEST_NYXUS, TEST_2D_CONTOUR_BLOB97_BOUNDARY_RULE_INVARIANT) {
 	ASSERT_NO_THROW(test_2d_contour_blob97_boundary_rule_invariant());
 }
 
+TEST(TEST_NYXUS, TEST_2D_CONTOUR_OUT_OF_CORE_TRACES_THE_SAME_BORDERS_INVARIANT) {
+	ASSERT_NO_THROW(test_2d_contour_out_of_core_traces_the_same_borders_invariant());
+}
+
 TEST(TEST_NYXUS, TEST_2D_CONTOUR_DISTANCE_SEARCH_SHORT_WALK_INVARIANT) {
 	ASSERT_NO_THROW(test_2d_contour_distance_search_short_walk_invariant());
 }

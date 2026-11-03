@@ -657,7 +657,7 @@ ramp leaves 3 surviving points and a fitted slope of 1.7837481542489078.
 
 | | |
 |---|---|
-| Data | built in `tests/python/test_2d_ooc_invariant.py`, `test_2d_ooc_regression.py` and `test_2d_morphology_regression.py`: mask `(y-32)² + (x-32)² <= 400`, intensity `(1 + x + 7y)` inside it, written as a TIFF pair per test |
+| Data | built in `tests/python/test_2d_ooc_invariant.py` and `test_2d_morphology_regression.py`: mask `(y-32)² + (x-32)² <= 400`, intensity `(1 + x + 7y)` inside it, written as a TIFF pair per test |
 | ROI | one — **1257 pixels**, intensity 117–397, total 323049; **112** of them are edge pixels under the 4-neighbour inner boundary |
 | Shape | a filled disk of radius 20 centred in a 64×64 frame |
 | Why it exists | its boundary is genuinely **diagonal**, which is what the other out-of-core fixtures are not |
@@ -666,16 +666,16 @@ Recipes: none — this fixture backs `regression` and `invariant` assertions onl
 
 Tests reaching it today: `test_2d_ooc_invariant.py`
 (`test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invariant`),
-`test_2d_ooc_regression.py`, `test_2d_morphology_regression.py`.
+`test_2d_morphology_regression.py`.
 
-**The diagonal boundary is the load-bearing property.** Every other `_ooc_` fixture is a full-image
-rectangle, and around a rectangle every contour step is an axis-aligned unit step — so the contour
-pixel *count* and the sum of Euclidean step lengths are the same number, and the two contour
-implementations agree by construction rather than by correctness. On this disk they separate: the
-in-RAM path returns 131.88225099390849 and the out-of-core path returns **112.0**, which is exactly
-the edge-pixel count in the row above. That is what identifies the divergence as a difference of
-definition rather than of accumulation, and it is why `matrix/morphology.md` marks the out-of-core
-`PERIMETER` cell a defect.
+**The diagonal boundary is the load-bearing property.** Around a full-image rectangle every contour
+step is an axis-aligned unit step, so the contour pixel *count* and the sum of Euclidean step lengths
+are the same number, and a rectangle cannot tell the two definitions apart. On this disk they
+separate: `PERIMETER` is 131.88225099390849 on both paths, against the **112** edge pixels in the row
+above, so an out-of-core `PERIMETER` that counted contour pixels fails the invariant. The disk also
+lies away from the image origin, with its bounding box at (12, 12), so `ROI_RADIUS_MEAN` and
+`ROI_RADIUS_MEDIAN` tell a contour in image coordinates from one left relative to the bounding box.
+`matrix/morphology.md` records the out-of-core cells as `INVARIANT`.
 
 **It is built rather than added to `test_data.h`** because it is a one-line closed form a reader can
 evaluate by hand, and because a 4096-pixel literal table would be far less checkable than the two

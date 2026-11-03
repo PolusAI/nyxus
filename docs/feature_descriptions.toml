@@ -132,7 +132,7 @@ EXTENT = "Fraction of the ROI's axis-aligned bounding box covered by the ROI: th
 ASPECT_RATIO = "Width of the ROI's axis-aligned bounding box divided by its height."
 
 [contour]
-PERIMETER = "Length of the ROI's traced contour in pixels: the sum of the Euclidean distances between consecutive pixels of the closed walk around each border of the ROI (the outside of each separate part and each hole), each walk closing back to its first pixel. On the out-of-core path it is the number of contour pixels instead."
+PERIMETER = "Length of the ROI's traced contour in pixels: the sum of the Euclidean distances between consecutive pixels of the closed walk around each border of the ROI (the outside of each separate part and each hole), each walk closing back to its first pixel."
 DIAMETER_EQUAL_PERIMETER = "Diameter of a circle with the same perimeter as the ROI: PERIMETER divided by pi, in pixels."
 EDGE_MEAN_INTENSITY = "Mean intensity of ROI's contour pixels"
 EDGE_STDDEV_INTENSITY = "Unbiased (n-1) standard deviation of the intensities of the ROI's contour pixels."

@@ -17,52 +17,46 @@ void FractalDimensionFeature::calculate (LR& r, const Fsettings& s)
 	calculate_perimeter_fdim (r);
 }
 
-void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
+namespace
 {
-	const std::vector<Pixel2>& px = r.raw_pixels;
-	if (px.size() < 2)
+	// Box counting is registration sensitive: the ROI is padded tight to a power of two (ceil_pow2)
+	// and aligned to the ROI origin, since centring it on a larger canvas misaligns it with the coarse
+	// boxes and biases the dimension low (a filled square read 1.75 instead of 2.0). Shifting grids
+	// (the minimum count over grid origins, as FracLac does) remove the residual bias, which matters
+	// only where few box sizes fit (small ROIs) and those are cheap to shift. So a padded side of 64
+	// or more, which fits at least 6 box sizes (2, 4, ..., 64) and so a stable single-grid fit, is
+	// counted on one grid, and a padded side of 32 or less over several grid origins.
+	const int MAX_SHIFTED_GRID_SIDE = 32;
+
+	int padded_side (const AABB& aabb)
 	{
-		box_count_fd = 0.;
-		return;
+		return Nyxus::ceil_pow2 ((int) std::max (aabb.get_width(), aabb.get_height()));
 	}
 
-	// Box counting is registration sensitive: the old code padded to a power of two strictly
-	// larger than the ROI and centered it, misaligning the ROI with the coarse boxes and biasing
-	// the dimension low (a filled square read 1.75 instead of 2.0). We pad tight (ceil_pow2) and
-	// align to the ROI origin. Shifting grids (min count over grid origins, as FracLac does)
-	// remove the residual bias, but that only matters when few box sizes fit (small ROIs), and
-	// those are cheap to shift. So auto-switch:
-	//   - large ROI  -> single origin grid via the padded mask matrix (fast early-exit tile scan)
-	//   - small ROI  -> shift the grid over a few origins and take the minimum box count
-	int bigSide = (int)std::max(r.aabb.get_width(), r.aabb.get_height());
-	int paddedSide = Nyxus::ceil_pow2(bigSide);
-
-	std::vector<std::pair<double, double>> coverage;
-
-	// 32: paddedSide > 32 (i.e. >= 64) fits at least 6 box sizes (2,4,...,64), enough for a stable
-	// single-grid least-squares fit; at or below it too few scales remain and grid-registration
-	// bias dominates, so we shift the grid over several origins instead.
-	if (paddedSide > 32)
+	// (box size, boxes holding a ROI pixel) per box size, on the one grid aligned with the square padded
+	// image 'pim' of side 'side'. tile_contains_signal() stops at a box's first ROI pixel, so a filled
+	// ROI costs about one read per box rather than per pixel.
+	template <class PaddedImage>
+	void count_single_grid (PaddedImage& pim, int side, std::vector<std::pair<double, double>>& coverage)
 	{
-		// Large ROI: single aligned grid. tile_contains_signal early-exits on the first non-zero
-		// pixel, so this is O(#tiles) for filled ROIs - much cheaper than visiting every pixel.
-		Power2PaddedImageMatrix pim(px, r.aabb, 1, 1.0);
-		for (int s = pim.width; s > 1; s /= 2)
+		for (int s = side; s > 1; s /= 2)
 		{
-			int cnt = 0, nt = pim.width / s;
+			int cnt = 0, nt = side / s;
 			for (int tr = 0; tr < nt; tr++)
 				for (int tc = 0; tc < nt; tc++)
-					if (pim.tile_contains_signal(tr, tc, s))
+					if (pim.tile_contains_signal (tr, tc, s))
 						cnt++;
-			coverage.push_back({ double(s), double(cnt) });
+			coverage.push_back ({ double(s), double(cnt) });
 		}
 	}
-	else
+
+	// (box size, boxes holding a ROI pixel) per box size, the minimum over the grid origins
+	// {0, s/2} along each axis. A box index is coord >> log2(s), the box sizes being powers of two.
+	template <class Cloud>
+	void count_shifted_grids (const Cloud& px, const AABB& aabb, int paddedSide, std::vector<std::pair<double, double>>& coverage)
 	{
-		// Small ROI: shifting grids. n_off grid origins per axis ({0, s/2} for 2 -> 4 positions);
-		// box index = coord >> log2(s) since box sizes are powers of two.
-		auto xmin = r.aabb.get_xmin();
-		auto ymin = r.aabb.get_ymin();
+		auto xmin = aabb.get_xmin();
+		auto ymin = aabb.get_ymin();
 		int n_off = 2;
 		int shift = 0;
 		for (int t = paddedSide; t > 1; t >>= 1)
@@ -93,35 +87,58 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 			coverage.push_back({ double(s), double(best) });
 		}
 	}
+}
 
-	// Box-counting dimension = -slope of log(count) vs log(box size)
-	box_count_fd = -loglog_slope(coverage);
+void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
+{
+	const std::vector<Pixel2>& px = r.raw_pixels;
+	if (px.size() < 2)
+	{
+		box_count_fd = 0.;
+		return;
+	}
+
+	int side = padded_side (r.aabb);
+	std::vector<std::pair<double, double>> coverage;
+	if (side > MAX_SHIFTED_GRID_SIDE)
+	{
+		Power2PaddedImageMatrix pim (px, r.aabb, 1, 1.0);
+		count_single_grid (pim, (int) pim.width, coverage);
+	}
+	else
+		count_shifted_grids (px, r.aabb, side, coverage);
+
+	box_count_fd = boxcount_dimension (coverage);
 }
 
 void FractalDimensionFeature::calculate_boxcount_fdim_oversized (LR & r)
 {
-	Power2PaddedImageMatrix_NT pim ("pim", r.label, r.raw_pixels_NT, r.aabb, 1, 1.0);	// image matrix of the mask
-
-	// Oversized/streaming ROIs are always large, so use a single aligned grid (the same path as
-	// the trivial large-ROI branch); shifting grids are only needed for small ROIs.
-	std::vector<std::pair<double, double>> coverage;
-	int s = pim.get_width();	// square tile size
-	for (; s > 1; s /= 2)
+	// calculate_boxcount_fdim() over the disk-backed pixel cloud and padded image
+	const OutOfRamPixelCloud& px = r.raw_pixels_NT;
+	if (px.size() < 2)
 	{
-		int cnt = 0;
-		int n_tiles = pim.get_width() / s;
-		for (int r = 0; r < n_tiles; r++)
-			for (int c = 0; c < n_tiles; c++)
-			{
-				// check the tile for coverage
-				if (pim.tile_contains_signal(r, c, s))
-					cnt++;
-			}
-
-		coverage.push_back({ double(s), double(cnt) });
+		box_count_fd = 0.;
+		return;
 	}
 
-	box_count_fd = -loglog_slope(coverage);
+	int side = padded_side (r.aabb);
+	std::vector<std::pair<double, double>> coverage;
+	if (side > MAX_SHIFTED_GRID_SIDE)
+	{
+		Power2PaddedImageMatrix_NT pim ("pim", r.label, px, r.aabb, 1, 1.0);
+		count_single_grid (pim, (int) pim.get_width(), coverage);
+	}
+	else
+		count_shifted_grids (px, r.aabb, side, coverage);
+
+	box_count_fd = boxcount_dimension (coverage);
+}
+
+double FractalDimensionFeature::boxcount_dimension (const std::vector<std::pair<double, double>>& coverage)
+{
+	// Box-counting dimension = -slope of log(count) vs log(box size), subtracted from 0 rather than
+	// negated so that a zero slope reads +0
+	return 0.0 - loglog_slope (coverage);
 }
 
 void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)

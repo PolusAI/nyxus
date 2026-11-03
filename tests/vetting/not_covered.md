@@ -538,58 +538,41 @@ It is set on this path; the value is not the fallback `1`.
 
 ---
 
-## G. Code paths whose two implementations are required to agree and do not
+## G. Code paths whose two implementations are required to agree
 
 `CLAUDE.md` states the rule these rows are measured against: "the in-RAM path and the out-of-core
 path must produce identical values." Where they do not, the gap is a defect rather than a
-convention, and the registry says so in `flag=impl-defect`.
+convention, and the registry says so in `flag=impl-defect`. No 2D contour row carries that flag:
+the out-of-core contour is the in-RAM one, and every contour-based feature agrees across the two
+paths.
 
-| feature | in-RAM | out-of-core | gap |
-|---|---:|---:|---|
-| 2D `PERIMETER` | 131.88225099390849 | 112.0 | 15%, and the out-of-core value is an integer |
-| 2D `DIAMETER_EQUAL_PERIMETER` | 41.97942430353313 | 35.65070725258456 | the same ratio, inherited |
-| 2D `ROI_RADIUS_MEAN` | 6.047026418093836 | 7.423593657857253 | +22.8%; the same 112 edge pixels, out of core relative to the bounding box |
-| 2D `ROI_RADIUS_MEDIAN` | 5.0 | 7.0 | +40%, same cause |
+| feature | in-RAM | out-of-core |
+|---|---:|---:|
+| 2D `PERIMETER` | 131.88225099390849 | 131.88225099390849 |
+| 2D `DIAMETER_EQUAL_PERIMETER` | 41.97942430353313 | 41.97942430353313 |
+| 2D `ROI_RADIUS_MEAN` | 6.047026418093836 | 6.047026418093836 |
+| 2D `ROI_RADIUS_MEDIAN` | 5.0 | 5.0 |
 
-`ContourFeature::calculate()` sums Euclidean step lengths around the contour;
-`ContourFeature::osized_calculate()` sets `fval_PERIMETER = (StatsInt) K.size()`, the contour pixel
-**count**. Measured on `bench_disk64_diagonal_boundary`. The out-of-core value being exactly an
-integer — and equal to that fixture's 112 edge pixels — is what identifies the definition, rather
-than accumulation order, as the cause.
+Measured on `bench_disk64_diagonal_boundary`. `ContourFeature::calculate()` and
+`ContourFeature::osized_calculate()` trace the same borders, the second on the padded image held on
+disk, and measure them with the same `measure_contour()`; `RoiRadiusFeature` takes
+`sqrt(exact_min_sqdist(K))` over every ROI pixel on both paths, against that contour in absolute
+image coordinates. `tests/python/test_2d_ooc_invariant.py` asserts the agreement on this disk and,
+for every column but the neighbour features, on eight further fixtures; the gtest
+`TEST_2D_CONTOUR_OUT_OF_CORE_TRACES_THE_SAME_BORDERS_INVARIANT` requires the two contour builders to
+return identical borders.
 
-**It is one defect with two public consequences.** `DIAMETER_EQUAL_PERIMETER` is computed as
-`fval_PERIMETER / M_PI` on *both* paths (`contour.cpp` lines 976 and 1000), so it carries the same
-ratio and cannot be right wherever `PERIMETER` is not. Pinning only `PERIMETER` would leave a second
-public value diverging with nothing in the tree to say so.
-`tests/python/test_2d_ooc_regression.py` asserts the derivation as an identity on both paths, so a
-fix to `PERIMETER` alone must fix this one too — and if the two ratios ever stop matching, that is a
-new finding rather than this one.
+**What the disk discriminates.** On it the contour has 112 pixels and a length of 131.882, so a path
+that counted contour pixels for `PERIMETER` reads 112.0; its bounding box starts at (12, 12), so a
+contour left relative to the bounding box reads `ROI_RADIUS_MEAN` 7.4236 and `ROI_RADIUS_MEDIAN` 7.0.
+Either fails the invariant.
 
-**`ROI_RADIUS_*` is a second, distinct defect on the same contour.** `RoiRadiusFeature` takes
-`sqrt(exact_min_sqdist(K))` over every ROI pixel on **both** paths, so the arithmetic is identical and
-the only differing input is `K`. On the same fixture both builders return **112** contour pixels — so
-unlike `PERIMETER`, this is not a count-versus-length difference — and the statistics still move. They
-are not the same 112 pixels. `ROI_RADIUS_MAX` is bit-identical at 19.026297590440446 on both paths,
-so the ROI pixels that end up farther from the out-of-core contour do not include the one attaining
-the maximum. Every translation of the inner boundary in ±4 was searched and none reproduces the
-out-of-core values, so it is recorded as a characterization rather than explained as an offset.
-`tests/python/test_2d_ooc_regression.py` pins both sides, the two inequalities, and `MAX`'s equality —
-the last so that a fix which moves the whole contour cannot repair the mean and quietly break the
-maximum.
-
-**Why no test saw it.** `tests/python/test_2d_ooc_invariant.py` has asserted `*ALL_MORPHOLOGY*`
-equality across the two paths since it was written, and it passes. Its fixture is a full-image
-**rectangle**, and around a rectangle every contour step is an axis-aligned unit step — so the pixel
-count and the Euclidean sum are the same number, and the one feature that differs cannot show up.
-The invariant is sound; the shape could not discriminate. This is the general lesson for path-equality
-tests: a fixture that is symmetric in the axis under test proves nothing about it.
-
-The five `EDGE_*` statistics and `MASS_DISPLACEMENT` were measured on the same disk and **do** agree
-exactly, so the defect is the perimeter pair rather than the contour builder as a whole.
-`test_2d_ooc_invariant.py` now asserts that agreement on the disk as well, and
-`tests/python/test_2d_ooc_regression.py` pins the divergence — a correct fix to `osized_calculate()`
-must break it, at which point `PERIMETER` folds back into the invariant's feature list. The fix is a
-`src/nyx` change and is not made here. Cell table: `matrix/morphology.md`.
+**The general lesson for path-equality tests.** `test_2d_ooc_invariant.py` also asserts
+`*ALL_MORPHOLOGY*` equality on a full-image **rectangle**. Around a rectangle every contour step is an
+axis-aligned unit step, so the pixel count and the Euclidean sum are the same number, and its
+bounding box starts where the image does: that shape cannot tell a pixel count from a length, nor a
+relative contour from an absolute one. A fixture that is symmetric in the axis under test proves
+nothing about it. Cell table: `matrix/morphology.md`.
 
 ---
 

@@ -98,8 +98,7 @@ def disk64_arrays():
     """-> (intensity, mask) for bench_disk64_diagonal_boundary.
 
     1257 ROI pixels, intensity 117..397, total 323049; 112 of them lie on the 4-neighbour inner
-    boundary -- and 112 is exactly what the out-of-core path returns for PERIMETER, which is what
-    identifies that divergence as a difference of definition rather than of accumulation.
+    boundary, a diagonal one, so the contour's pixel count and its length are different numbers.
     """
     y, x = np.mgrid[0:DISK64_SIDE, 0:DISK64_SIDE]
     mask = (((y - DISK64_CENTRE) ** 2 + (x - DISK64_CENTRE) ** 2) <= DISK64_RADIUS ** 2)
