@@ -239,7 +239,7 @@ different order. On a 340 x 340 image, a 300 x 300 square with a 100 x 100 hole 
      - Box counting uses a single unshifted grid for every out-of-core ROI, so ROIs whose padded
        side is 32 or less can read differently (the fractal dimension worked example gives
        1.3966 instead of 1.3732). The divider walks the out-of-core contour, which holds one
-       loop in a different order, so it can differ too. ``FRACT_DIM_BOXCOUNT`` differs on 38 of
+       loop, in a different order and with one-pixel-wide parts walked once, so it can differ too. ``FRACT_DIM_BOXCOUNT`` differs on 38 of
        the 66 ROIs and ``FRACT_DIM_PERIMETER`` on 17.
    * - Neighbor features (``NUM_NEIGHBORS``, ``PERCENT_TOUCHING``, ``CLOSEST_NEIGHBOR*``,
        ``ANG_BW_NEIGHBORS_*``), ``POLYGONALITY_AVE``, ``HEXAGONALITY_*``
