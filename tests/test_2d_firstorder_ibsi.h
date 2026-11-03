@@ -22,7 +22,7 @@ static const ref_vals_map<double> firstorder_2d_ibsi_ref_vals {
     {"ROOT_MEAN_SQUARED", 2.77}
 };
 
-void assert_firstorder_feature_ibsi(const Feature2D& feature, const std::string& feature_name, bool round = false) {
+void assert_firstorder_feature_ibsi(const Feature2D& feature, const std::string& feature_name) {
     std::vector<NyxusPixel> combined_image;
     std::vector<NyxusPixel> combined_mask;
 
@@ -72,8 +72,6 @@ void assert_firstorder_feature_ibsi(const Feature2D& feature, const std::string&
 
     total += roidata.fvals[(int)feature][0];
 
-    if (round) total = std::round(total);
-
     ASSERT_TRUE(agrees_gt(total, firstorder_2d_ibsi_ref_vals.at(feature_name), 100.));
 }
 
@@ -107,11 +105,11 @@ void test_2d_firstorder_p10_ibsi()
     assert_firstorder_feature_ibsi(Nyxus::Feature2D::P10, "P10");
 }
 
-// As noted in ibsi documentation, P90 can vary based on implementation from 4-4.2
-// therefore, we round the result
+// IBSI notes that P90 varies from 4 to 4.2 across implementations; numpy's linear rule, which Nyxus
+// takes, gives exactly 4 on the phantom's 74 voxels.
 void test_2d_firstorder_p90_ibsi()
 {
-    assert_firstorder_feature_ibsi(Nyxus::Feature2D::P90, "P90", true);
+    assert_firstorder_feature_ibsi(Nyxus::Feature2D::P90, "P90");
 }
 
 void test_2d_firstorder_interquartile_ibsi()
@@ -129,12 +127,11 @@ void test_2d_firstorder_mean_absolute_deviation_ibsi()
     assert_firstorder_feature_ibsi(Nyxus::Feature2D::MEAN_ABSOLUTE_DEVIATION, "MEAN_ABSOLUTE_DEVIATION");
 }
 
-/* This feature needs to be updated to pass test
+// The deviation about the mean of the voxels inside [P10, P90] = [1, 4]: 1.1138 on the phantom.
 void test_2d_firstorder_robust_mean_absolute_deviation_ibsi()
 {
     assert_firstorder_feature_ibsi(Nyxus::Feature2D::ROBUST_MEAN_ABSOLUTE_DEVIATION, "ROBUST_MEAN_ABSOLUTE_DEVIATION");
 }
-*/
 
 void test_2d_firstorder_energy_ibsi()
 {

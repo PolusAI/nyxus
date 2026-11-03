@@ -11,8 +11,8 @@ static const ref_vals_map<double> firstorder_2d_regression_ref_vals {
 	// MATLAB mad(x,1) is the median absolute deviation; Nyxus takes the mean absolute
 	// deviation about its median. Keep regression-only until the intended definition is resolved.
 	{"MEDIAN_ABSOLUTE_DEVIATION", 1.269384415584416e+04},
-	// MATLAB trimmean removes samples by rank; Nyxus selects values through histogram-derived
-	// P10/P90 thresholds. Keep regression-only until the intended trimming semantics are resolved.
+	// MATLAB trimmean removes samples by rank; Nyxus selects values through the P10/P90
+	// thresholds. Keep regression-only until the intended trimming semantics are resolved.
 	{"ROBUST_MEAN", 3.142136800000000e+04},
 };
 

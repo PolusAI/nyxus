@@ -146,8 +146,8 @@ ones are:
 * Erosion: ``EROSIONS_2_VANISH_COMPLEMENT`` is always 0. See :ref:`erosion-possible-issues`.
 * Zernike: the disk differs from CellProfiler's, and the features are intensity-weighted. See
   :ref:`zernike-possible-issues`.
-* Intensity: percentiles come from a histogram, and in-memory arrays are not reported in the
-  input's units. See :ref:`intensity-possible-issues`.
+* Intensity: percentiles take numpy's linear ranks, not the midpoint ranks MATLAB's ``prctile``
+  takes by default, and in-memory arrays are not reported in the input's units. See :ref:`intensity-possible-issues`.
 * Fractal dimension and image quality: see :ref:`fractal-possible-issues` and
   :ref:`imq-possible-issues`.
 * 3D families: see :ref:`intensity-3d-possible-issues`, :ref:`glcm-3d-possible-issues`,

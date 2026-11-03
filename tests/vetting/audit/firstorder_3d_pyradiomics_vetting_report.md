@@ -46,26 +46,24 @@ Mechanical range and identity checks over the pin set, all passing:
 Every assertion used `agrees_gt(..., 10.)`. The third argument is a divisor, so that is a **±10%
 band**. Measuring Nyxus against each pin gives the real picture:
 
-**Twelve agree to better than 1e-12** — `3ENERGY`, `3ENTROPY`, `3KURTOSIS`, `3MAX`,
-`3MEAN_ABSOLUTE_DEVIATION`, `3MEAN`, `3MEDIAN`, `3MIN`, `3RANGE`, `3ROOT_MEAN_SQUARED`,
-`3SKEWNESS`, `3UNIFORMITY`. For these the band was eight orders of magnitude too loose.
+**Sixteen agree to better than 1e-12** — `3ENERGY`, `3ENTROPY`, `3INTERQUARTILE_RANGE`,
+`3KURTOSIS`, `3MAX`, `3MEAN_ABSOLUTE_DEVIATION`, `3MEAN`, `3MEDIAN`, `3MIN`, `3P10`, `3P90`,
+`3RANGE`, `3ROBUST_MEAN_ABSOLUTE_DEVIATION`, `3ROOT_MEAN_SQUARED`, `3SKEWNESS`, `3UNIFORMITY`.
 
-**Five diverge, for two distinct reasons:**
+**One diverges, by definition:**
 
 | feature | Nyxus | PyRadiomics | rel | cause |
 |---|---:|---:|---:|---|
-| `3ROBUST_MEAN_ABSOLUTE_DEVIATION` | 33.3279 | 33.4948499916 | 4.99e-3 | binned estimator |
-| `3P10` | 362.675 | 362 | 1.86e-3 | binned estimator |
-| `3P90` | 527.438 | 527 | 8.30e-4 | binned estimator |
-| `3INTERQUARTILE_RANGE` | 78.9528 | 79 | 5.98e-4 | binned estimator |
 | `3VARIANCE` | 4197.79 | 4196.911126692708 | 2.08e-4 | **biased vs unbiased** |
 
 ### The percentile group
 
-`3P10`, `3P90`, `3INTERQUARTILE_RANGE` and `3ROBUST_MEAN_ABSOLUTE_DEVIATION` all come from
-`TrivialHistogram`'s 100-bin interpolated estimator, while PyRadiomics uses NumPy percentiles on the
-sorted array. The residual is the estimator's approximation error, not float noise, and it is the
-same cause as the divergence measured against MATLAB `prctile` in the sibling report.
+`3P10`, `3P90`, `3INTERQUARTILE_RANGE` and `3ROBUST_MEAN_ABSOLUTE_DEVIATION` read their
+percentiles from `TrivialHistogram`, which takes them off the value counts with NumPy's default
+`'linear'` interpolation at rank (n-1)q. PyRadiomics calls `numpy.percentile` with the same
+default on the sorted array, so the two agree exactly: `3P10` 362, `3P90` 527,
+`3INTERQUARTILE_RANGE` 79, and the robust MAD over [P10, P90] to 2e-16. The sibling MATLAB report
+covers `prctile(..., Method="inclusive")`, which takes the same rule.
 
 ### `3VARIANCE` is not the feature PyRadiomics agrees with
 
@@ -81,8 +79,7 @@ Set from the measurements above rather than from a round number.
 
 | band | value | features | measured worst |
 |---|---|---|---|
-| `FO3D_PYRAD_EXACT` | rel 1e-9 | the twelve | < 1e-12 |
-| `FO3D_PYRAD_BINNED` | rel 1e-2 | `3P10`, `3P90`, `3INTERQUARTILE_RANGE`, `3ROBUST_MEAN_ABSOLUTE_DEVIATION` | 4.99e-3 |
+| `FO3D_PYRAD_EXACT` | rel 1e-9 | the sixteen | < 1e-12 |
 | `FO3D_PYRAD_VARIANCE` | rel 1e-3 | `3VARIANCE` | 2.08e-4 |
 
 The helper keeps its two-argument signature because the generic 3D coverage sweep calls it as

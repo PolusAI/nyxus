@@ -137,7 +137,7 @@ column J named a file that did not exist).
 
 ---
 
-## B. Tests that never run — 16 functions plus 13 config-gated cases
+## B. Tests that never run — 15 functions plus 13 config-gated cases
 
 ### B.1 In files `test_all.cc` never includes — 14 functions, zero execution
 
@@ -189,15 +189,14 @@ honest drift guard on the `cat2500` fixture, which no other GLDM test covers.
 Worth a sweep rather than a spot fix: any `assert_*` helper whose body ends without an
 `ASSERT_`/`EXPECT_` on a value has this shape.
 
-### B.2 In wired files but never registered — 2 functions
+### B.2 In wired files but never registered — 1 function
 
 | file | function |
 |---|---|
 | `test_3d_glcm_pyradiomics.h` | `test_3d_glcm_jvar_pyradiomics` |
-| `test_2d_firstorder_ibsi.h` | `test_2d_firstorder_robust_mean_absolute_deviation_ibsi` |
 
-Both are complete assertions with no `TEST()` entry — a missing registration, most likely an
-oversight when the surrounding cases were added. Enabling them may fail, so treat as triage.
+A complete assertion with no `TEST()` entry — a missing registration, most likely an oversight
+when the surrounding cases were added. Enabling it may fail, so treat as triage.
 
 Not dead, listed to avoid double-counting: `assert_gldzm_matrix_ibsi`,
 `assert_ngldm_matrix_ibsi_mode`, `assert_ngldm_matrix_nonibsi_mode` take no arguments and have no `TEST()`
@@ -607,7 +606,7 @@ of the #397-#400 IO stack's review rounds.
 | registry rows whose `target_test` is not yet written (backlog) | 256 refs / 17 files |
 | stale `current_test` refs (rename drift, must fix) | 3 |
 | functions that never execute (unwired) | 14 |
-| functions that never execute (unregistered) | 2 |
+| functions that never execute (unregistered) | 1 |
 | cases gated by a build flag | 13 |
 
 The reorg waves should close A.2 (add the missing `current_test` entries) and decide B.1/B.2 per

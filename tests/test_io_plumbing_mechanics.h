@@ -88,6 +88,72 @@ void test_histogram_is_bounded_by_levels_mechanics()
     }
 }
 
+// The degenerate populations of the percentile rule both dimensions' first-order families read: one
+// sample has rank 0 at every q, and a population of one value has no range to interpolate across, so
+// every percentile is that value and the spread statistics are 0. A histogram with nothing in it
+// reports zeros rather than reading a rank that is not there. Asserted on TrivialHistogram rather than
+// through a feature method because no ROI reaches the calculators empty.
+void test_histogram_degenerate_percentiles_mechanics()
+{
+    for (const auto& values : { std::vector<PixIntens>{ 42 }, std::vector<PixIntens>{ 7, 7, 7, 7, 7, 7 } })
+    {
+        std::vector<Pixel2> cloud;
+        for (size_t k = 0; k < values.size(); k++)
+            cloud.push_back (Pixel2 ((StatsInt) k, (StatsInt) 0, values[k]));
+        TrivialHistogram h;
+        h.initialize (20, (HistoItem) values[0], (HistoItem) values[0], cloud);
+        auto [median, mode, p01, p10, p25, p75, p90, p99, iqr, rmad, entropy, uniformity] = h.get_stats();
+        const double v = values[0];
+        EXPECT_EQ(p01, v);
+        EXPECT_EQ(p10, v);
+        EXPECT_EQ(p25, v);
+        EXPECT_EQ(p75, v);
+        EXPECT_EQ(p90, v);
+        EXPECT_EQ(p99, v);
+        EXPECT_EQ(iqr, 0.0);
+        EXPECT_EQ(rmad, 0.0);
+    }
+
+    TrivialHistogram h;
+    h.initialize (20, (HistoItem) 0, (HistoItem) 0, std::vector<Pixel2>{});
+    auto [median, mode, p01, p10, p25, p75, p90, p99, iqr, rmad, entropy, uniformity] = h.get_stats();
+    EXPECT_EQ(p01, 0.0);
+    EXPECT_EQ(p10, 0.0);
+    EXPECT_EQ(p90, 0.0);
+    EXPECT_EQ(p99, 0.0);
+    EXPECT_EQ(iqr, 0.0);
+}
+
+// The population is what the pass reads, not what the source's size() reports, so a source that
+// counts more items than it yields is described by the items it yields. What this discriminates: a
+// population taken from size() puts the upper ranks past the value counts, where the percentiles
+// read a sample that does not exist, and divides the bin frequencies by items never counted.
+void test_histogram_short_source_percentiles_mechanics()
+{
+    struct ShortSource
+    {
+        std::vector<Pixel2> items;
+        size_t size() const { return items.size() + 3; }   // three items it never yields
+        auto begin() const { return items.begin(); }
+        auto end() const { return items.end(); }
+    } src;
+    for (PixIntens v : { 1, 2, 3, 4, 10 })
+        src.items.push_back (Pixel2 ((StatsInt) v, (StatsInt) 0, v));
+
+    TrivialHistogram h;
+    h.initialize (20, (HistoItem) 1, (HistoItem) 10, src);
+    auto [median, mode, p01, p10, p25, p75, p90, p99, iqr, rmad, entropy, uniformity] = h.get_stats();
+    // the five samples {1, 2, 3, 4, 10}, h = 4q, exactly as test_2d_firstorder_analytic.h works them
+    EXPECT_EQ(h.get_population(), (size_t) 5);
+    EXPECT_NEAR(p01, 1.04, 1e-12);
+    EXPECT_NEAR(p75, 4.0, 1e-12);
+    EXPECT_NEAR(p90, 7.6, 1e-12);
+    EXPECT_NEAR(p99, 9.76, 1e-12);
+    EXPECT_DOUBLE_EQ(median, 3.0);
+    // five values in five separate bins: each frequency is 1/5
+    EXPECT_NEAR(uniformity, 0.2, 1e-12);
+}
+
 // with_tiff_sample_type dispatches on the (SampleFormat, BitsPerSample) pair a TIFF declares, and
 // refuses a pair it has no C++ type for. What this discriminates: falling through to a default
 // type reads the file's bytes as something they are not, silently, for every pixel.

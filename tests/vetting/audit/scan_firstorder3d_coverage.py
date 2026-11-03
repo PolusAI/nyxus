@@ -12,12 +12,14 @@ import sys
 import scanlib
 
 SOURCES = [
+    "test_3d_firstorder_analytic.h",
     "test_3d_firstorder_matlab.h",
     "test_3d_firstorder_pyradiomics.h",
     "test_3d_firstorder_regression.h",
 ]
 
 MATLAB = "MATLAB R2026a "
+OCTAVE_PCTL = "Octave surrogate quantile method 7 (prctile inclusive's rule)"
 
 NOTE = {
     "3COV": MATLAB + "std/mean",
@@ -28,7 +30,8 @@ NOTE = {
     "3HYPERFLATNESS": MATLAB + "sixth central moment standardized by std",
     "3HYPERSKEWNESS": MATLAB + "fifth central moment standardized by std",
     "3INTEGRATED_INTENSITY": MATLAB + "sum",
-    "3INTERQUARTILE_RANGE": "two oracle recipes; percentile-estimator residuals use rel=1e-2",
+    "3INTERQUARTILE_RANGE": "three oracle recipes; PyRadiomics, the Octave surrogate of prctile "
+                            "inclusive and the analytic closed form, all exact",
     "3KURTOSIS": "native kurtosis in both tools",
     "3MAX": "native maximum in both tools",
     "3MEAN": "native mean in both tools",
@@ -38,16 +41,17 @@ NOTE = {
                                   "the median",
     "3MIN": "native minimum in both tools",
     "3MODE": MATLAB + "mode",
-    "3P01": MATLAB + "prctile midpoint; rel=1e-2 covers the Nyxus CDF estimator",
-    "3P10": "two native percentile oracles at separate recipes",
-    "3P25": MATLAB + "prctile midpoint",
-    "3P75": MATLAB + "prctile midpoint",
-    "3P90": "two native percentile oracles at separate recipes",
-    "3P99": MATLAB + "prctile midpoint",
-    "3QCOD": "defining ratio over MATLAB R2026a percentile built-ins",
+    "3P01": OCTAVE_PCTL + ", numpy's linear ranks; analytic closed form",
+    "3P10": "two native percentile oracles at separate recipes; analytic closed form",
+    "3P25": OCTAVE_PCTL + "; analytic closed form",
+    "3P75": OCTAVE_PCTL + "; analytic closed form",
+    "3P90": "two native percentile oracles at separate recipes; analytic closed form",
+    "3P99": OCTAVE_PCTL + "; analytic closed form",
+    "3QCOD": "defining ratio over the Octave surrogate percentiles; analytic closed form",
     "3RANGE": "native range in both tools",
-    "3ROBUST_MEAN": "MATLAB trimmean semantics differ from Nyxus histogram-threshold selection",
-    "3ROBUST_MEAN_ABSOLUTE_DEVIATION": "native PyRadiomics RobustMeanAbsoluteDeviation",
+    "3ROBUST_MEAN": "MATLAB trimmean semantics differ from Nyxus P10/P90-threshold selection",
+    "3ROBUST_MEAN_ABSOLUTE_DEVIATION": "native PyRadiomics RobustMeanAbsoluteDeviation; analytic "
+                                       "closed form",
     "3ROOT_MEAN_SQUARED": "native RMS in both tools",
     "3SKEWNESS": "native skewness in both tools",
     "3STANDARD_DEVIATION": MATLAB + "std with N-1 normalization",
@@ -63,7 +67,7 @@ NOTE = {
 FAMILY = scanlib.Family(
     dim="3D", family="firstorder",
     sources=SOURCES,
-    oracle_suffix={"matlab": "matlab", "pyradiomics": "pyradiomics"},
+    oracle_suffix={"analytic": "analytic", "matlab": "matlab", "pyradiomics": "pyradiomics"},
     notes=NOTE,
     enum_dim_prefix=True,
     # test_3d_firstorder_matlab loops its golden table, whose entries are written `{ "3COV", ... }`

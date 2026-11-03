@@ -20,17 +20,15 @@ public:
 	TrivialHistogram() {}
 
 	// One implementation for every intensity source: the in-RAM std::vector<Pxl>, and the two
-	// disk-backed clouds (OutOfRamPixelCloud, OutOfRamVoxelCloud). All expose size() and a
-	// range-for yielding an item with an .inten field, so a single template serves them and the
-	// in-core / out-of-core histograms stay identical by construction (fixes that had to be
-	// applied to each copy -- e.g. the p10/p90 robust-MAD -- now live in one place).
+	// disk-backed clouds (OutOfRamPixelCloud, OutOfRamVoxelCloud). All a source needs is a
+	// range-for yielding an item with an .inten field -- its size() is not consulted, the
+	// population is counted as it is read -- so a single template serves them all and the
+	// in-core / out-of-core histograms stay identical by construction.
 	template <class Src>
 	void initialize (int n_cust_bins, HistoItem min_value, HistoItem max_value, const Src& raw_data)
 	{
 		// safety
 		int n_custBins = std::abs(n_cust_bins);
-
-		pop_ = raw_data.size();
 
 		// Cache min/max
 		minVal_ = min_value;
@@ -40,50 +38,33 @@ public:
 		// The ONE pass over the intensity source, into the value frequencies every statistic
 		// below is derived from. A disk-backed cloud is therefore read once, and the frequencies
 		// cost one entry per distinct grey level rather than one per voxel -- what lets an
-		// out-of-core ROI of a billion voxels be summarized in bounded memory.
+		// out-of-core ROI of a billion voxels be summarized in bounded memory. The population is
+		// the count of what this pass read, not the source's size(), so the ranks and the bin
+		// frequencies describe the same samples.
 		freq_.clear();
+		pop_ = 0;
 		for (auto s : raw_data)
+		{
 			++ freq_ [s.inten];
+			++ pop_;
+		}
 
-		// Allocate
-		// -- "percentile"
-		bins100_.assign (100 + 1, 0);
-		// -- "uint8"
+		// Allocate the "uint8" histogram
 		bins_cust_.assign (n_custBins + 1, 0);
 
-		binW100_ = double(valRange) / 100.;
-		binWcust_ = double(valRange) / double(n_custBins-1);
-
-		meanVal_ = 0;
 		for (const auto& vc : freq_)
 		{
-			const double v = double(vc.first);
-			const double cnt = double(vc.second);
-
-			// the "percentile" histogram
-			double realIdx = (v - double(minVal_)) / binW100_;
-			int idx = std::isnan(realIdx) ? 0 : int(realIdx);
-			bins100_[idx] += (HistoItem) vc.second;
-
 			// the "uint8" histogram. A constant ROI has no range to bin over: to_grayscale()
 			// would divide by it and cast the resulting NaN to a bin index, which is undefined
 			// and only happens to land on 0 on the toolchains in use. Every sample of a constant
-			// ROI belongs to the first bin, which is what the percentile histogram above already
-			// says through its NaN guard.
+			// ROI belongs to the first bin.
 			HistoItem h = valRange ? Nyxus::to_grayscale (vc.first, minVal_, valRange, n_custBins) : 0;
 			bins_cust_[h] += (HistoItem) vc.second;
-
-			meanVal_ += v * cnt;
 		}
 
-		// -- Fix the special last bins
-		bins100_[100 - 1] += bins100_[100];
-		bins100_[100] = 0;
+		// -- Fix the special last bin
 		bins_cust_[n_custBins - 1] += bins_cust_[n_custBins];
 		bins_cust_[n_custBins] = 0;
-
-		// Mean calculation
-		meanVal_ /= double(pop_);
 
 		// percentiles
 		calc_percentiles();
@@ -218,42 +199,59 @@ private:
 
 	size_t pop_ = 0;
 	HistoItem minVal_, maxVal_;
-	double meanVal_, binW100_, binWcust_;
 	double mean1090val_, rmad_;	// robust estimation (p10/p90-thresholded)
-	std::vector<HistoItem> bins100_, bins_cust_;
+	std::vector<HistoItem> bins_cust_;
 	// how many samples carry each value: one entry per distinct grey level, not per sample
 	std::map<HistoItem, std::size_t> freq_;
 	double p1_, p10_, p25_, p75_, p90_, p99_;
 
+	// Each q-quantile of the samples, read off the value frequencies: the two samples whose ranks
+	// straddle (pop_ - 1) * q, interpolated linearly between. That is the default ('linear') method of
+	// numpy.percentile, which PyRadiomics and MIRP take their percentiles with. The six q ascend, so
+	// the lower ranks ascend and so do the upper ones, and one walk of the frequencies resolves both
+	// sequences. They are walked as two sequences, not interleaved: two q can share a lower rank,
+	// which puts the first one's upper rank above the second one's lower rank.
 	void calc_percentiles()
 	{
-		p1_ = p10_ = p25_ = p75_ = p90_ = p99_ = 0;
+		double* const out[] = { &p1_, &p10_, &p25_, &p75_, &p90_, &p99_ };
+		const double qs[] = { 0.01, 0.1, 0.25, 0.75, 0.9, 0.99 };
+		constexpr int n_q = sizeof(qs) / sizeof(qs[0]);
 
-		double cnt_p1 = double(pop_) * 0.01,
-			cnt_p10 = double(pop_) * 0.1,
-			cnt_p25 = double(pop_) * 0.25,
-			cnt_p75 = double(pop_) * 0.75,
-			cnt_p90 = double(pop_) * 0.9,
-			cnt_p99 = double(pop_) * 0.99;
-		size_t runSum = 0;
-		for (int i = 0; i < 100; i++)
+		if (pop_ == 0)
 		{
-			// interpolate
-			if (runSum <= cnt_p1 && cnt_p1 <= runSum + bins100_[i])
-				p1_ = (cnt_p1 - runSum) * binW100_ / double(bins100_[i]) + minVal_ + binW100_ * i;
-			if (runSum <= cnt_p10 && cnt_p10 <= runSum + bins100_[i])
-				p10_ = (cnt_p10 - runSum) * binW100_ / double(bins100_[i]) + minVal_ + binW100_ * i;
-			if (runSum <= cnt_p25 && cnt_p25 <= runSum + bins100_[i])
-				p25_ = (cnt_p25 - runSum) * binW100_ / double(bins100_[i]) + minVal_ + binW100_ * i;
-			if (runSum <= cnt_p75 && cnt_p75 <= runSum + bins100_[i])
-				p75_ = (cnt_p75 - runSum) * binW100_ / double(bins100_[i]) + minVal_ + binW100_ * i;
-			if (runSum <= cnt_p90 && cnt_p90 <= runSum + bins100_[i])
-				p90_ = (cnt_p90 - runSum) * binW100_ / double(bins100_[i]) + minVal_ + binW100_ * i;
-			if (runSum <= cnt_p99 && cnt_p99 <= runSum + bins100_[i])
-				p99_ = (cnt_p99 - runSum) * binW100_ / double(bins100_[i]) + minVal_ + binW100_ * i;
-
-			runSum += bins100_[i];
+			for (auto p : out)
+				*p = 0;
+			return;
 		}
+
+		std::size_t lo[n_q], hi[n_q];
+		double frac[n_q];
+		for (int i = 0; i < n_q; i++)
+		{
+			const double h = double(pop_ - 1) * qs[i];
+			lo[i] = (std::size_t) std::floor (h);
+			hi[i] = std::min (lo[i] + 1, pop_ - 1);
+			frac[i] = h - double(lo[i]);
+		}
+
+		// the samples of those ranks; hi[i] >= lo[i], so once every upper rank is resolved every
+		// lower one is too. pop_ is the sum of the counts, so every rank below it is resolved.
+		HistoItem a[n_q], b[n_q];
+		int i_lo = 0, i_hi = 0;
+		std::size_t seen = 0;
+		for (const auto& vc : freq_)
+		{
+			seen += vc.second;
+			while (i_lo < n_q && lo[i_lo] < seen)
+				a[i_lo++] = vc.first;
+			while (i_hi < n_q && hi[i_hi] < seen)
+				b[i_hi++] = vc.first;
+			if (i_hi == n_q)
+				break;
+		}
+
+		for (int i = 0; i < n_q; i++)
+			*out[i] = double(a[i]) + frac[i] * (double(b[i]) - double(a[i]));
 	}
 
 	// The sample of rank 'k' (0-based) in value order, walked off the frequencies.

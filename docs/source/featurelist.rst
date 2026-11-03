@@ -62,7 +62,7 @@ Definitions, formulas and settings: :doc:`/Math/f_pixel_intensity`.
      - vetted: MATLAB
    * - ``INTERQUARTILE_RANGE``
      - Difference between the 75th and 25th percentiles (P75 minus P25) of the ROI's pixel intensities.
-     - vetted: IBSI, MATLAB, PyRadiomics
+     - vetted: analytic, IBSI, MATLAB, PyRadiomics
    * - ``KURTOSIS``
      - Pearson kurtosis of the ROI's pixel intensities: the population fourth standardized moment, without subtracting 3; 0 for ROIs with fewer than 5 pixels or a single intensity.
      - vetted: MATLAB, PyRadiomics
@@ -88,26 +88,26 @@ Definitions, formulas and settings: :doc:`/Math/f_pixel_intensity`.
      - Most frequent pixel intensity in the ROI; the smallest such intensity when several share the top count.
      - vetted: MATLAB
    * - ``P01``
-     - 1st percentile of the ROI's pixel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB
+     - 1st percentile of the ROI's pixel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB
    * - ``P10``
-     - 10th percentile of the ROI's pixel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: IBSI, MATLAB, PyRadiomics
+     - 10th percentile of the ROI's pixel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, IBSI, MATLAB, PyRadiomics
    * - ``P25``
-     - 25th percentile (first quartile) of the ROI's pixel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB
+     - 25th percentile (first quartile) of the ROI's pixel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB
    * - ``P75``
-     - 75th percentile (third quartile) of the ROI's pixel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB
+     - 75th percentile (third quartile) of the ROI's pixel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB
    * - ``P90``
-     - 90th percentile of the ROI's pixel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: IBSI, MATLAB, PyRadiomics
+     - 90th percentile of the ROI's pixel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, IBSI, MATLAB, PyRadiomics
    * - ``P99``
-     - 99th percentile of the ROI's pixel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB
+     - 99th percentile of the ROI's pixel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB
    * - ``QCOD``
      - Quartile coefficient of dispersion: (P75 minus P25) divided by (P75 plus P25); 0 when the denominator is 0.
-     - vetted: MATLAB
+     - vetted: analytic, MATLAB
    * - ``RANGE``
      - Difference between the maximum and minimum pixel intensities of the ROI (MAX minus MIN).
      - vetted: IBSI, MATLAB, PyRadiomics
@@ -116,7 +116,7 @@ Definitions, formulas and settings: :doc:`/Math/f_pixel_intensity`.
      - regression
    * - ``ROBUST_MEAN_ABSOLUTE_DEVIATION``
      - Mean absolute deviation from ROBUST_MEAN of the ROI's pixel intensities that lie between P10 and P90, inclusive.
-     - vetted: PyRadiomics
+     - vetted: analytic, IBSI, PyRadiomics
    * - ``ROOT_MEAN_SQUARED``
      - Root mean square of the ROI's pixel intensities: the square root of ENERGY divided by the pixel count.
      - vetted: IBSI, MATLAB, PyRadiomics
@@ -2158,7 +2158,7 @@ Definitions, formulas and settings: :doc:`/Math/f_intensity_3d`.
      - vetted: MATLAB
    * - ``3INTERQUARTILE_RANGE``
      - Difference between the 75th and 25th percentiles (3P75 minus 3P25) of the ROI's voxel intensities.
-     - vetted: MATLAB, PyRadiomics
+     - vetted: analytic, MATLAB, PyRadiomics
    * - ``3KURTOSIS``
      - Pearson kurtosis of the ROI's voxel intensities: the population fourth standardized moment, without subtracting 3; 0 for ROIs with fewer than 5 voxels or a single intensity.
      - vetted: MATLAB, PyRadiomics
@@ -2184,26 +2184,26 @@ Definitions, formulas and settings: :doc:`/Math/f_intensity_3d`.
      - Most frequent voxel intensity in the ROI; the smallest such intensity when several share the top count.
      - vetted: MATLAB
    * - ``3P01``
-     - 1st percentile of the ROI's voxel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB
+     - 1st percentile of the ROI's voxel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB
    * - ``3P10``
-     - 10th percentile of the ROI's voxel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB, PyRadiomics
+     - 10th percentile of the ROI's voxel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB, PyRadiomics
    * - ``3P25``
-     - 25th percentile (first quartile) of the ROI's voxel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB
+     - 25th percentile (first quartile) of the ROI's voxel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB
    * - ``3P75``
-     - 75th percentile (third quartile) of the ROI's voxel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB
+     - 75th percentile (third quartile) of the ROI's voxel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB
    * - ``3P90``
-     - 90th percentile of the ROI's voxel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB, PyRadiomics
+     - 90th percentile of the ROI's voxel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB, PyRadiomics
    * - ``3P99``
-     - 99th percentile of the ROI's voxel intensities, interpolated within a 100-bin histogram spanning the ROI's intensity range.
-     - vetted: MATLAB
+     - 99th percentile of the ROI's voxel intensities, interpolated linearly between the sorted values (numpy.percentile's default method).
+     - vetted: analytic, MATLAB
    * - ``3QCOD``
      - Quartile coefficient of dispersion: (3P75 minus 3P25) divided by (3P75 plus 3P25); 0 when the denominator is 0.
-     - vetted: MATLAB
+     - vetted: analytic, MATLAB
    * - ``3RANGE``
      - Difference between the maximum and minimum voxel intensities of the ROI (3MAX minus 3MIN).
      - vetted: MATLAB, PyRadiomics
@@ -2212,7 +2212,7 @@ Definitions, formulas and settings: :doc:`/Math/f_intensity_3d`.
      - regression
    * - ``3ROBUST_MEAN_ABSOLUTE_DEVIATION``
      - Mean absolute deviation from their own mean of the ROI's voxel intensities that lie between 3P10 and 3P90, inclusive.
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3ROOT_MEAN_SQUARED``
      - Root mean square of the ROI's voxel intensities: the square root of 3ENERGY divided by the voxel count.
      - vetted: MATLAB, PyRadiomics
