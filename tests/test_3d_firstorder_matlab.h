@@ -9,18 +9,15 @@
 //               Octave 11.3.0 + statistics when Nyxus began reporting in the volume's own
 //               domain, with the previous MATLAB values reproduced to 13 significant digits
 //               on the old domain as a control. The percentile values (3P01 to 3P99,
-//               3INTERQUARTILE_RANGE, 3QCOD) are an Octave surrogate, generated as
-//               quantile(x, p, 1, 7), the rule prctile Method="inclusive" takes, and match
-//               numpy.percentile to the last digit
+//               3INTERQUARTILE_RANGE, 3QCOD) take MATLAB R2026a prctile Method="inclusive",
+//               numpy.percentile's default 'linear' rule
 //   functions = sum, kurtosis, max, mean, mad, median, min, mode, moment,
-//               prctile, range, rms, skewness, std, var; Octave quantile for the percentile
-//               values
+//               prctile, range, rms, skewness, std, var
 //   fixture   = tests/data/nifti/phantoms/ut_{inten,mask57}.nii, label 57
 //   config    = default Nyxus 3D first-order settings, values reported in the volume's own
 //               intensity domain (the load-time offset undone, its integer truncation kept)
 //   recipe    = firstorder3d.matlab_native
-//   generator = tests/vetting/oracles/gen_firstorder3d_matlab.m; the percentile values
-//               tests/vetting/oracles/gen_firstorder3d_percentiles_octave.m
+//   generator = tests/vetting/oracles/gen_firstorder3d_matlab.m
 //   report    = tests/vetting/audit/firstorder_3d_matlab_vetting_report.md
 static const ref_vals_map<double> firstorder_3d_matlab_ref_vals
 {

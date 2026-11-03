@@ -7,7 +7,7 @@ which the remaining statistics operate too. Slide range is part of the MATLAB re
 
 | Config point | Nyxus settings | Oracle mapping | Verdict |
 |---|---|---|---|
-| `firstorder2d.matlab_native` | `bench_irregular13x18_intensity`, defaults; slide range 0..65535 for the slide-relative assertion | MATLAB R2026a native built-ins; derived values use only defining arithmetic over built-ins | **VALID** for 31 features at `rel=1e-3`, or `rel=1e-9` for the percentile group, where `prctile(..., Method="inclusive")` takes numpy's linear ranks as Nyxus does; the percentile group is an Octave surrogate, `quantile(x, p, 1, 7)` in `gen_firstorder2d_percentiles_octave.m` |
+| `firstorder2d.matlab_native` | `bench_irregular13x18_intensity`, defaults; slide range 0..65535 for the slide-relative assertion | MATLAB R2026a native built-ins; derived values use only defining arithmetic over built-ins | **VALID** for 31 features at `rel=1e-3`, or `rel=1e-9` for the percentile group, where `prctile(..., Method="inclusive")` takes numpy's linear ranks as Nyxus does |
 | `firstorder.pyradiomics_default` | `bench_irregular13x18_intensity`, `GREYDEPTH=64`, `IBSI=false` | PyRadiomics 3.0.1, `binCount=64`, 2D, spacing 1, label 1 | **VALID** for 18 features at the measured bands in the PyRadiomics report |
 | `firstorder2d.ibsi_digital_phantom` | four-slice IBSI phantom as one ROI, default settings | published IBSI reference values | **VALID** for 13 live assertions at `rel=1e-2` |
 | `firstorder2d.percentiles_analytic` | `bench_percentile_hand_samples`, defaults | closed form of numpy's linear percentile rule, worked by hand | **VALID** for 9 percentile-derived features at `abs=1e-12` |

@@ -698,8 +698,7 @@ The test suite checks the 3D intensity features against two references and a clo
   ``3ENERGY``, ``3ENTROPY``, ``3MEDIAN_ABSOLUTE_DEVIATION``, ``3ROBUST_MEAN``,
   ``3ROBUST_MEAN_ABSOLUTE_DEVIATION`` and ``3UNIFORMITY``: to a relative 10\ :sup:`-3`, and the
   six percentiles, ``3INTERQUARTILE_RANGE`` and ``3QCOD`` to 10\ :sup:`-9`, which take
-  ``prctile(..., Method="inclusive")``, the same linear ranks as Nyxus. Those percentile
-  references are computed with GNU Octave 11.3.0 under the same rule (``quantile(x, p, 1, 7)``).
+  ``prctile(..., Method="inclusive")``, the same linear ranks as Nyxus.
 - **PyRadiomics** 3.0.1, for ``3ENERGY``, ``3ENTROPY``, ``3INTERQUARTILE_RANGE``,
   ``3KURTOSIS``, ``3MAX``, ``3MEAN``, ``3MEAN_ABSOLUTE_DEVIATION``, ``3MEDIAN``, ``3MIN``,
   ``3P10``, ``3P90``, ``3RANGE``, ``3ROBUST_MEAN_ABSOLUTE_DEVIATION``, ``3ROOT_MEAN_SQUARED``,

@@ -30,9 +30,7 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 - MATLAB R2026a uses the named built-ins directly; derived statistics apply only their defining
   normalization to those results. `prctile(..., Method="inclusive")` interpolates at numpy's
   default `'linear'` ranks i/(n-1), the rule Nyxus takes, and INTERQUARTILE_RANGE is P75 - P25.
-  The percentile goldens are an Octave surrogate, generated on GNU Octave 11.3.0 as
-  `quantile(x, p, 1, 7)` by `gen_firstorder2d_percentiles_octave.m`, and match `numpy.percentile`
-  to the last digit. P01 to P99, IQR and QCOD use `rel=1e-9`: both sides
+  P01 to P99, IQR and QCOD use `rel=1e-9`: both sides
   interpolate between the same two pixels by the same fraction, and a percentile read off a 100-bin
   histogram misses these goldens by 1.6e-3 to 5.0e-2. All other comparisons use `rel=1e-3`.
 - Used by: `test_2d_firstorder_matlab.h`. Generator:
@@ -84,11 +82,8 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   is the volume's own float domain with the truncation kept.
 - MATLAB R2026a uses the named built-ins directly; derived statistics apply only their defining
   normalization to those results. `prctile(..., Method="inclusive")` interpolates at numpy's
-  default `'linear'` ranks i/(n-1), the rule Nyxus takes, and IQR is P75 - P25; the percentile
-  goldens are an Octave surrogate, generated on GNU Octave 11.3.0 as `quantile(x, p, 1, 7)` by
-  `gen_firstorder3d_percentiles_octave.m`, and match `numpy.percentile` to the last digit. The six
-  percentiles, IQR and QCOD use
-  `rel=1e-9`: both sides interpolate between the same two voxels by the same fraction, and a
+  default `'linear'` ranks i/(n-1), the rule Nyxus takes, and IQR is P75 - P25. The six
+  percentiles, IQR and QCOD use `rel=1e-9`: both sides interpolate between the same two voxels by the same fraction, and a
   percentile read off a 100-bin histogram misses these goldens by 1.3e-4 to 1.8e-1. All other
   comparisons use `rel=1e-3`, except the zero references (MIN and UNIFORMITY_PIU), whose residual
   is taken on the 2000-wide voxel range.

@@ -7,7 +7,7 @@ recipe because absolute-intensity features depend on them.
 
 | Config point | Nyxus settings | Oracle mapping | Verdict |
 |---|---|---|---|
-| `firstorder3d.matlab_native` | `bench_ut57_3d`, label 57, default settings and float-NIfTI loader domain | MATLAB R2026a native built-ins; derived values use only defining arithmetic over built-ins | **VALID** for 29 features at `rel=1e-3`, or `rel=1e-9` for the percentile group, where `prctile(..., Method="inclusive")` takes numpy's linear ranks as Nyxus does; the percentile group is an Octave surrogate, `quantile(x, p, 1, 7)` in `gen_firstorder3d_percentiles_octave.m` |
+| `firstorder3d.matlab_native` | `bench_ut57_3d`, label 57, default settings and float-NIfTI loader domain | MATLAB R2026a native built-ins; derived values use only defining arithmetic over built-ins | **VALID** for 29 features at `rel=1e-3`, or `rel=1e-9` for the percentile group, where `prctile(..., Method="inclusive")` takes numpy's linear ranks as Nyxus does |
 | `firstorder3d.pyradiomics_bincount20` | `bench_compat_liver_3d`, label 1, `GREYDEPTH=-20` | PyRadiomics 3.0.1, `binCount=20`, no resampling or weighting | **VALID** for 17 features at the measured bands in the PyRadiomics report |
 | `firstorder3d.regression_ut_phantom` | `bench_ut57_3d`, label 57, default settings | No equivalent native external feature | **VALID-PRODUCTION-ONLY** for `3COVERED_IMAGE_INTENSITY_RANGE`, `3MEDIAN_ABSOLUTE_DEVIATION`, and `3ROBUST_MEAN` |
 | `firstorder3d.percentiles_analytic` | `bench_percentile_hand_samples`, defaults | closed form of numpy's linear percentile rule, worked by hand | **VALID** for 9 percentile-derived features at `abs=1e-12` |

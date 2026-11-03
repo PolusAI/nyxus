@@ -896,8 +896,7 @@ The test suite checks the intensity features against three references and a clos
   ``ROBUST_MEAN``, ``ROBUST_MEAN_ABSOLUTE_DEVIATION``, ``MEDIAN_ABSOLUTE_DEVIATION`` and
   ``HISTOGRAM``: to a relative 10\ :sup:`-3`, and to 10\ :sup:`-9` for ``P01`` to ``P99``,
   ``INTERQUARTILE_RANGE`` and ``QCOD``, which take ``prctile(..., Method="inclusive")``, the same
-  linear ranks as Nyxus. Those percentile references are computed with GNU Octave 11.3.0 under the
-  same rule (``quantile(x, p, 1, 7)``).
+  linear ranks as Nyxus.
 - **PyRadiomics** 3.0.1, for ``ENERGY``, ``ENTROPY``, ``INTERQUARTILE_RANGE``, ``KURTOSIS``,
   ``MAX``, ``MEAN``, ``MEAN_ABSOLUTE_DEVIATION``, ``MEDIAN``, ``MIN``, ``P10``, ``P90``,
   ``RANGE``, ``ROBUST_MEAN_ABSOLUTE_DEVIATION``, ``ROOT_MEAN_SQUARED``, ``SKEWNESS``,
