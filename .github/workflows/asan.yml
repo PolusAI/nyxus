@@ -24,7 +24,11 @@ concurrency:
 jobs:
   Sanitize_GTest:
     name: GoogleTest under ASan + UBSan
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: on the ubuntu-26.04 image the suite dies at startup in an endless
+    # "AddressSanitizer:DEADLYSIGNAL" loop, before any test runs. That image's kernel randomizes
+    # mmap addresses over more bits (vm.mmap_rnd_bits) than the sanitizer runtime's fixed shadow
+    # layout allows. Move this forward once the runtime supports that kernel.
+    runs-on: ubuntu-24.04
     timeout-minutes: 120
     defaults:
       run:
