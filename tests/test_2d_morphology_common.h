@@ -274,6 +274,54 @@ static void calculate_circle_shape_values(std::vector<std::vector<double>>& fval
 	fvals = roi.fvals;
 }
 
+// Filled digital disks of radius R centred at 'centres' under one label, each with a centred square
+// hole of side 2 * hole_half + 1 when hole_half >= 0, and basic morphology + contour + the 3 circle
+// diameters on them. The disks are scanned in raster order over a frame padded by 3.
+static void calculate_disks_circle_values (const std::vector<std::pair<int, int>>& centres, double R, int hole_half, std::vector<std::vector<double>>& fvals)
+{
+	Fsettings s = make_shape2d_settings();
+
+	int xmax = 0, ymax = 0;
+	for (const auto& c : centres)
+	{
+		xmax = std::max(xmax, c.first + int(R) + 3);
+		ymax = std::max(ymax, c.second + int(R) + 3);
+	}
+
+	LR roi(4);
+	bool first = true;
+	for (int y = 0; y <= ymax; y++)
+		for (int x = 0; x <= xmax; x++)
+			for (const auto& c : centres)
+			{
+				const int dx = x - c.first, dy = y - c.second;
+				if (dx * dx + dy * dy > R * R)
+					continue;
+				if (std::abs(dx) <= hole_half && std::abs(dy) <= hole_half)
+					continue;
+				if (first) { init_label_record_3(roi, x, y, 1); first = false; }
+				else update_label_record_3(roi, x, y, 1);
+				roi.raw_pixels.push_back(Pixel2(static_cast<size_t>(x), static_cast<size_t>(y), static_cast<PixIntens>(1)));
+			}
+	roi.make_nonanisotropic_aabb();
+	roi.aux_image_matrix = ImageMatrix(roi.raw_pixels);
+	roi.initialize_fvals();
+
+	BasicMorphologyFeatures basic;
+	basic.calculate(roi, s);
+	basic.save_value(roi.fvals);
+
+	ContourFeature contour;
+	contour.calculate(roi, s);
+	contour.save_value(roi.fvals);
+
+	EnclosingInscribingCircumscribingCircleFeature circle;
+	circle.calculate(roi, s);
+	circle.save_value(roi.fvals);
+
+	fvals = roi.fvals;
+}
+
 // A filled digital disk of radius R -- {(x,y) : (x-c)^2 + (y-c)^2 <= R^2} on a frame padded by 3 on
 // every side -- with its contour and the three ROI_RADIUS_* statistics. The radius features are
 // vetted on disks rather than on the 8x8 shape2d raster for the reason PERIMETER is vetted on the

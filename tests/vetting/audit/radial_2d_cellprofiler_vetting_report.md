@@ -1,5 +1,11 @@
 # 2D radial intensity distribution vs CellProfiler — vetting report
 
+> **Current state.** Defect 1 below, the contour's one-pixel offset, no longer exists: contour
+> pixels are ROI pixels in absolute coordinates. Defects 2 and 3 stand, and the 24 pins and the
+> centre/radius pins in `test_2d_radial_mechanics.h` are re-measured on the corrected contour
+> (centre (2,3), radius^2 10 against 13). Defect 2 below describes the searches as they are: each
+> border of the contour searched on its own, the short radius coming from the outer border alone.
+
 **Verdict: not vetted, and not vettable as implemented.** `FRAC_AT_D`, `MEAN_FRAC` and `RADIAL_CV`
 carry CellProfiler's three `RadialDistribution_*` names and CellProfiler's three help strings, and
 compute a different quantity under each of them. 21 of the 24 (feature × bin) values disagree by
@@ -168,19 +174,21 @@ which weights each raw pixel by its distance to the contour). `cache.cpp:300-330
 cloud and the contour onto the ROI bounding box separately for the GPU path and inherits the same
 one-pixel gap between them.
 
-**2. `Pixel2::find_center` and `Pixel2::max_sqdist` return non-extremal answers here.**
-Both are coarse-to-fine searches (`src/nyx/features/pixel.cpp:13-141`) that step through the contour
-assuming it is an ordered walk. `LR::merge_multicontour` concatenates the outer contour and the
-hole's, so the sequence they walk is two walks joined end to end and the descent settles in the wrong
-basin. Measured on this ROI against a full linear scan of the same contour:
+**2. `Pixel2::max_sqdist` returns a non-extremal answer here.**
+`Pixel2::find_center` and `Pixel2::max_sqdist` are coarse-to-fine searches (`search_sqdist()` in
+`src/nyx/features/pixel.cpp`). They search each border of the contour on its own, the outer border and
+the hole's, and on a border longer than 10 pixels the coarse pass samples about every n/ln n-th pixel
+and refines only around the best sample. The outer border here is a 14-pixel walk, sampled every 5th
+pixel from its first, and the farthest pixel, (4,6), lies between the samples. Measured on this ROI
+against a full linear scan of the same contour:
 
 | quantity | searched | exact scan |
 |---|---|---|
-| centre pixel | (3,4) | (4,4) |
+| centre pixel | (2,3) | (2,3) |
 | max squared distance from the centre | 10 | 13 |
 
-The radius the feature normalises by is 23% short of the largest distance actually present, so **4 of
-the 26 pixels have `r/r_max > 1`**. `exact_min_sqdist()` already exists beside `min_sqdist()` for
+The radius the feature normalises by is 23% short of the largest distance actually present, so **1 of
+the 26 pixels has `r/r_max > 1`**. `exact_min_sqdist()` already exists beside `min_sqdist()` for
 exactly this reason and is used by the neighbour features; there is no `exact_max_sqdist`. The
 `ROI_RADIUS_MEDIAN` demotion records the same approximation as a second defect underneath its units
 bug (`morphology_2d_skimage_vetting_report.md`).
@@ -188,8 +196,8 @@ bug (`morphology_2d_skimage_vetting_report.md`).
 **3. The bin index is scaled by `num_bins - 1`.**
 `radial_distribution.cpp:81` computes `int(rat * (n-1))` and clamps to `n-1`. With `n = 8` that is 7
 rings of width 1/7 plus a last bin nothing reaches unless `r >= r_max`. Combined with defect 2 the
-last bin ends up holding 7 of the 26 pixels — 3 sitting exactly on `r_max` and the 4 beyond it —
-more than any of the 7 real rings. CellProfiler scales by `bin_count` and gets 8 equal rings.
+last bin ends up holding 4 of the 26 pixels — 3 sitting exactly on `r_max` and the 1 beyond it.
+CellProfiler scales by `bin_count` and gets 8 equal rings.
 
 **4. `FRAC_AT_D` returns a pixel-count fraction.**
 `get_FracAtD()` is `radial_count_bins[i] / cached_num_pixels`. The name, the header comment and

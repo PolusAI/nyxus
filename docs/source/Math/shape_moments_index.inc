@@ -308,7 +308,7 @@
    * - :ref:`WEIGHTED_SPAT_MOMENT_00 <feature-weighted-spat-moment-00>`
      - Weighted raw moment (0, 0)
      - —
-     - regression
+     - invariant
      - −95.4
    * - :ref:`WEIGHTED_SPAT_MOMENT_01 <feature-weighted-spat-moment-01>`
      - Weighted raw moment (0, 1)
