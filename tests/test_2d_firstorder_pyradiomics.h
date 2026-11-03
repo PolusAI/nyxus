@@ -35,9 +35,9 @@ static const ref_vals_map<double> firstorder_2d_pyradiomics_ref_vals = {
     {"ROOT_MEAN_SQUARED", 35723.41052638121},
     {"MEAN_ABSOLUTE_DEVIATION", 12833.084499915672},
     {"ROBUST_MEAN_ABSOLUTE_DEVIATION", 10440.618496000001},
-    {"INTERQUARTILE_RANGE", 26116.25},                 // approx: percentile interpolation convention
-    {"P10", 16329.0},                                  // approx: percentile interpolation convention
-    {"P90", 53295.0},                                  // approx: percentile interpolation convention
+    {"INTERQUARTILE_RANGE", 26116.25},                 // numpy linear percentiles on both sides
+    {"P10", 16329.0},
+    {"P90", 53295.0},
     {"ENTROPY", 5.54700500819408},
     {"UNIFORMITY", 0.0252993759487266},
 };
@@ -47,8 +47,8 @@ static const ref_vals_map<double> firstorder_2d_pyradiomics_ref_tols = {
     {"MEAN", 1e6}, {"MEDIAN", 1e6}, {"MIN", 1e6}, {"MAX", 1e6}, {"RANGE", 1e6},
     {"VARIANCE_BIASED", 1e6}, {"VARIANCE", 100.0}, {"SKEWNESS", 1e6}, {"KURTOSIS", 1e6}, {"ENERGY", 1e6},
     {"ROOT_MEAN_SQUARED", 1e6}, {"MEAN_ABSOLUTE_DEVIATION", 1e6},
-    {"ROBUST_MEAN_ABSOLUTE_DEVIATION", 1e6}, {"INTERQUARTILE_RANGE", 20.0},
-    {"P10", 20.0}, {"P90", 20.0}, {"ENTROPY", 1e6}, {"UNIFORMITY", 1e6},
+    {"ROBUST_MEAN_ABSOLUTE_DEVIATION", 1e6}, {"INTERQUARTILE_RANGE", 1e6},
+    {"P10", 1e6}, {"P90", 1e6}, {"ENTROPY", 1e6}, {"UNIFORMITY", 1e6},
 };
 
 static void compute_firstorder_pyradiomics_recipe(std::vector<std::vector<double>>& fvals)

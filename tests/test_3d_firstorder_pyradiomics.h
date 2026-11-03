@@ -39,28 +39,23 @@
 // Uniformity read the discretized histogram, which is what binCount 20 sets and what the
 // GREYDEPTH = -20 setting below matches on the Nyxus side.
 
-// Three bands, each set from the measured Nyxus-vs-PyRadiomics residual (audit report
+// Two bands, each set from the measured Nyxus-vs-PyRadiomics residual (audit report
 // firstorder_3d_pyradiomics_vetting_report.md). agrees_gt's third argument is a DIVISOR
 // (tolerance = golden / frac), so a larger number is a tighter band.
 //
-//   _EXACT (rel 1e-9)    twelve of the seventeen, which agree to better than 1e-12.
-//   _BINNED (rel 1e-2)   3P10, 3P90, 3INTERQUARTILE_RANGE, 3ROBUST_MEAN_ABSOLUTE_DEVIATION. Nyxus
-//                        estimates these from the 100-bin interpolated histogram in
-//                        TrivialHistogram while PyRadiomics uses numpy percentiles, so the residual
-//                        is the estimator's error. Worst measured 5.0e-3, on the robust MAD.
+//   _EXACT (rel 1e-9)    sixteen of the seventeen, which agree to better than 1e-12. That includes
+//                        3P10, 3P90, 3INTERQUARTILE_RANGE and 3ROBUST_MEAN_ABSOLUTE_DEVIATION:
+//                        TrivialHistogram reads the percentiles off the value counts with numpy's
+//                        default linear interpolation, the method PyRadiomics calls.
 //   _VARIANCE (rel 1e-3) 3VARIANCE alone. PyRadiomics Variance is the biased (N) estimator and
 //                        Nyxus 3VARIANCE is the unbiased (N-1) one, so the two differ by exactly
 //                        n/(n-1); on this ROI that is 2.1e-4. 3VARIANCE_BIASED is the feature that
 //                        matches PyRadiomics term for term.
 static constexpr double FO3D_PYRAD_EXACT = 1.e9;
-static constexpr double FO3D_PYRAD_BINNED = 100.;
 static constexpr double FO3D_PYRAD_VARIANCE = 1000.;
 
 static double firstorder_3d_pyradiomics_band (const std::string& fname)
 {
-    if (fname == "3P10" || fname == "3P90" || fname == "3INTERQUARTILE_RANGE"
-        || fname == "3ROBUST_MEAN_ABSOLUTE_DEVIATION")
-        return FO3D_PYRAD_BINNED;
     if (fname == "3VARIANCE")
         return FO3D_PYRAD_VARIANCE;
     return FO3D_PYRAD_EXACT;

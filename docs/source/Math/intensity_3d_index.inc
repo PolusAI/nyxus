@@ -53,8 +53,8 @@
    * - :ref:`3INTERQUARTILE_RANGE <feature-3interquartile-range>`
      - Interquartile range
      - SALO
-     - MATLAB (rel. 1e-2), PyRadiomics (rel. 1e-2)
-     - 1.998
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9), PyRadiomics (rel. 1e-9)
+     - 2
    * - :ref:`3KURTOSIS <feature-3kurtosis>`
      - Kurtosis
      - —
@@ -98,38 +98,38 @@
    * - :ref:`3P01 <feature-3p01>`
      - 1st percentile
      - —
-     - MATLAB (rel. 1e-2)
-     - 2.009
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 2.21
    * - :ref:`3P10 <feature-3p10>`
      - 10th percentile
      - QG58
-     - MATLAB (rel. 1e-2), PyRadiomics (rel. 1e-2)
-     - 3.008
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9), PyRadiomics (rel. 1e-9)
+     - 3
    * - :ref:`3P25 <feature-3p25>`
      - 25th percentile
      - —
-     - MATLAB (rel. 1e-2)
-     - 3.03
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 3
    * - :ref:`3P75 <feature-3p75>`
      - 75th percentile
      - —
-     - MATLAB (rel. 1e-2)
-     - 5.028
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 5
    * - :ref:`3P90 <feature-3p90>`
      - 90th percentile
      - 8DWT
-     - MATLAB (rel. 1e-2), PyRadiomics (rel. 1e-2)
-     - 5.978
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9), PyRadiomics (rel. 1e-9)
+     - 6
    * - :ref:`3P99 <feature-3p99>`
      - 99th percentile
      - —
-     - MATLAB (rel. 1e-2)
-     - 5.998
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 6
    * - :ref:`3QCOD <feature-3qcod>`
      - Quartile coefficient of dispersion
      - 9S40
-     - MATLAB (rel. 1e-2)
-     - 0.248
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 0.25
    * - :ref:`3RANGE <feature-3range>`
      - Range
      - 2OJQ
@@ -139,12 +139,12 @@
      - Robust mean
      - —
      - regression
-     - 4.455
+     - 4.333
    * - :ref:`3ROBUST_MEAN_ABSOLUTE_DEVIATION <feature-3robust-mean-absolute-deviation>`
      - Robust mean absolute deviation
      - 1128
-     - PyRadiomics (rel. 1e-2)
-     - 0.4959
+     - analytic (abs. 1e-12), PyRadiomics (rel. 1e-9)
+     - 0.9524
    * - :ref:`3ROOT_MEAN_SQUARED <feature-3root-mean-squared>`
      - Root mean square
      - 5ZWQ

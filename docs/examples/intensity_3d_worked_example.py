@@ -64,20 +64,23 @@ one = features.iloc[0]
 # The voxel count and the values the page derives by hand
 assert int((seg == 1).sum()) == 22
 check(one, {"3INTEGRATED_INTENSITY": 93, "3MEAN": 4.22727, "3MEDIAN": 4.0, "3MODE": 3.0,
-            "3MIN": 2.0, "3VARIANCE": 1.42208, "3P10": 3.008, "3P90": 5.978,
-            "3ROBUST_MEAN": 4.45455, "3ENTROPY": 2.15810, "3COVERED_IMAGE_INTENSITY_RANGE": 1.0},
+            "3MIN": 2.0, "3VARIANCE": 1.42208, "3P01": 2.21, "3P10": 3.0, "3P90": 6.0,
+            "3ROBUST_MEAN": 4.33333, "3ENTROPY": 2.15810, "3COVERED_IMAGE_INTENSITY_RANGE": 1.0},
       "worked example")
 
-# What exact percentiles would give instead (numpy.percentile, linear interpolation)
+# The percentiles are numpy's default linear rule, and the robust mean keeps [P10, P90]
 x = img[seg == 1].astype(float)
-assert np.percentile(x, 10) == 3.0 and np.percentile(x, 90) == 6.0
-exact = x[(x >= 3.0) & (x <= 6.0)].mean()
-assert math.isclose(exact, 4.33333, rel_tol=1e-5), exact
+for q in (1, 10, 25, 75, 90, 99):
+    assert math.isclose(one[f"3P{q:02d}"], float(np.percentile(x, q)), rel_tol=1e-12), q
+assert math.isclose(x[(x >= 3.0) & (x <= 6.0)].mean(), one["3ROBUST_MEAN"], rel_tol=1e-12)
+# MATLAB's default prctile, numpy's 'hazen' rule, agrees on every percentile but 3P01
+hazen = [float(np.percentile(x, q, method="hazen")) for q in (1, 10, 25, 75, 90, 99)]
+assert hazen == [2, 3, 3, 5, 6, 6], hazen
 assert np.median(np.abs(x - np.median(x))) == 1.0      # MEDIAN_ABSOLUTE_DEVIATION is 0.9545
 
 # Four coarse bins instead of 64: only entropy and uniformity change
 four = run(img, seg, "four", coarse_gray_depth=4).iloc[0]
-check(four, {"3ENTROPY": 1.75266, "3UNIFORMITY": 0.318182, "3P10": 3.008, "3MEAN": 4.22727}, "4 bins")
+check(four, {"3ENTROPY": 1.75266, "3UNIFORMITY": 0.318182, "3P10": 3.0, "3MEAN": 4.22727}, "4 bins")
 
 # IBSI mode changes nothing
 ibsi = run(img, seg, "ibsi", ibsi=True).iloc[0]
@@ -125,8 +128,6 @@ assert math.isclose(float((x * 20000) @ (x * 20000)), 1.692e11)
 
 # IBSI's coefficient of variation divides sigma_b by the mean
 assert round(one["3STANDARD_DEVIATION_BIASED"] / one["3MEAN"], 4) == 0.2756
-# Exact percentiles and quartiles (numpy.percentile, linear interpolation)
-exact_p = [round(float(np.percentile(x, q)), 2) for q in (1, 10, 25, 75, 90, 99)]
-assert exact_p == [2.21, 3, 3, 5, 6, 6], exact_p
-check(one, {"3P01": 2.009, "3P25": 3.03, "3P75": 5.028, "3P99": 5.998, "3INTERQUARTILE_RANGE": 1.998},
-      "percentiles")
+# The percentiles and quartiles the page quotes
+check(one, {"3P01": 2.21, "3P25": 3.0, "3P75": 5.0, "3P99": 6.0, "3INTERQUARTILE_RANGE": 2.0,
+            "3QCOD": 0.25, "3ROBUST_MEAN_ABSOLUTE_DEVIATION": 0.952381}, "percentiles")

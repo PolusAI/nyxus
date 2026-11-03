@@ -53,8 +53,8 @@
    * - :ref:`INTERQUARTILE_RANGE <feature-interquartile-range>`
      - Interquartile range
      - SALO
-     - IBSI (rel. 1e-2), MATLAB (rel. 3e-2), PyRadiomics (rel. 5e-2)
-     - 1.024
+     - analytic (abs. 1e-12), IBSI (rel. 1e-2), MATLAB (rel. 1e-9), PyRadiomics (rel. 1e-6)
+     - 1
    * - :ref:`KURTOSIS <feature-kurtosis>`
      - Kurtosis
      - —
@@ -98,38 +98,38 @@
    * - :ref:`P01 <feature-p01>`
      - 1st percentile
      - —
-     - MATLAB (rel. 3e-2)
-     - 1.003
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 1
    * - :ref:`P10 <feature-p10>`
      - 10th percentile
      - QG58
-     - IBSI (rel. 1e-2), MATLAB (rel. 3e-2), PyRadiomics (rel. 5e-2)
-     - 1.025
+     - analytic (abs. 1e-12), IBSI (rel. 1e-2), MATLAB (rel. 1e-9), PyRadiomics (rel. 1e-6)
+     - 1
    * - :ref:`P25 <feature-p25>`
      - 25th percentile
      - —
-     - MATLAB (rel. 3e-2)
-     - 2.015
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 2
    * - :ref:`P75 <feature-p75>`
      - 75th percentile
      - —
-     - MATLAB (rel. 3e-2)
-     - 3.039
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 3
    * - :ref:`P90 <feature-p90>`
      - 90th percentile
      - 8DWT
-     - IBSI (rel. 1e-2), MATLAB (rel. 3e-2), PyRadiomics (rel. 5e-2)
-     - 4.967
+     - analytic (abs. 1e-12), IBSI (rel. 1e-2), MATLAB (rel. 1e-9), PyRadiomics (rel. 1e-6)
+     - 4.6
    * - :ref:`P99 <feature-p99>`
      - 99th percentile
      - —
-     - MATLAB (rel. 3e-2)
-     - 4.997
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 5
    * - :ref:`QCOD <feature-qcod>`
      - Quartile coefficient of dispersion
      - 9S40
-     - MATLAB (rel. 3e-2)
-     - 0.2026
+     - analytic (abs. 1e-12), MATLAB (rel. 1e-9)
+     - 0.2
    * - :ref:`RANGE <feature-range>`
      - Range
      - 2OJQ
@@ -139,12 +139,12 @@
      - Robust mean
      - —
      - regression
-     - 2.833
+     - 2.5
    * - :ref:`ROBUST_MEAN_ABSOLUTE_DEVIATION <feature-robust-mean-absolute-deviation>`
      - Robust mean absolute deviation
      - 1128
-     - PyRadiomics (rel. 1e-6)
-     - 0.5556
+     - analytic (abs. 1e-12), IBSI (rel. 1e-2), PyRadiomics (rel. 1e-6)
+     - 0.8182
    * - :ref:`ROOT_MEAN_SQUARED <feature-root-mean-squared>`
      - Root mean square
      - 5ZWQ

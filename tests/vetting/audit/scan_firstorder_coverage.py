@@ -13,6 +13,7 @@ import sys
 import scanlib
 
 SOURCES = [
+    "test_2d_firstorder_analytic.h",
     "test_2d_firstorder_ibsi.h",
     "test_2d_firstorder_matlab.h",
     "test_2d_firstorder_pyradiomics.h",
@@ -23,7 +24,7 @@ SOURCES = [
     os.path.join("python", "test_2d_intensity_histogram_analytic.py"),
 ]
 
-PERCENTILE = "pyradiomics agrees to rel={} (percentile interpolation convention)"
+PERCENTILE = "pyradiomics agrees exactly: both sides take numpy's default linear percentiles"
 
 NOTE = {
     "COVERED_IMAGE_INTENSITY_RANGE": "the ROI range as a fraction of the slide's dynamic range, so it "
@@ -34,15 +35,16 @@ NOTE = {
     "EXCESS_KURTOSIS": "asserted against IBSI by test_2d_firstorder_kurtosis_ibsi, whose name spells "
                        "KURTOSIS",
     "INTERQUARTILE_RANGE": "the IBSI case is test_2d_firstorder_interquartile_ibsi; "
-                           + PERCENTILE.format("2.34e-2"),
+                           + PERCENTILE,
     "KURTOSIS": "PyRadiomics Kurtosis is the non-excess (+3) convention and matches KURTOSIS "
                 "directly; EXCESS_KURTOSIS is the -3 one",
     "MIN": "the IBSI case is test_2d_firstorder_minimum_ibsi",
-    "P10": PERCENTILE.format("1.36e-2"),
-    "P90": "IBSI documents P90 as 4-4.2 by implementation, so the IBSI assertion rounds before "
-           "comparing; " + PERCENTILE.format("1.63e-3"),
+    "P10": PERCENTILE,
+    "P90": "IBSI documents P90 as 4-4.2 by implementation; numpy's linear rule gives exactly 4 on "
+           "the phantom; " + PERCENTILE,
     "ROBUST_MEAN_ABSOLUTE_DEVIATION": "asserted against pyradiomics twice on one golden, by the family "
-                                      "table and by its own case",
+                                      "table and by its own case; also against ibsi and the "
+                                      "analytic closed form",
     "UNIFORMITY": "asserted at two recipes: matlab at GREYDEPTH=20 with IBSI off, pyradiomics at "
                   "GREYDEPTH=64",
     "VARIANCE": "PyRadiomics Variance is the /N population variance and Nyxus VARIANCE the /(N-1) "
@@ -52,7 +54,8 @@ NOTE = {
 FAMILY = scanlib.Family(
     dim="2D", family="firstorder",
     sources=SOURCES,
-    oracle_suffix={"ibsi": "ibsi", "matlab": "matlab", "pyradiomics": "pyradiomics"},
+    oracle_suffix={"analytic": "analytic", "ibsi": "ibsi", "matlab": "matlab",
+                   "pyradiomics": "pyradiomics"},
     notes=NOTE,
     # the pyradiomics and matlab cases each loop a golden table keyed by feature name
     table_owner={"firstorder_2d_pyradiomics_ref_vals": "test_2d_firstorder_pyradiomics",

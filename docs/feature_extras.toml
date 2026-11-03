@@ -147,7 +147,7 @@ EXCESS_KURTOSIS = { name = "Excess kurtosis", ibsi = "IPH6", example = -0.6667 }
 HYPERFLATNESS = { name = "Hyperflatness", ibsi = "", example = 5.769 }
 HYPERSKEWNESS = { name = "Hyperskewness", ibsi = "", example = 1.227 }
 INTEGRATED_INTENSITY = { name = "Integrated intensity", ibsi = "", example = 70.0 }
-INTERQUARTILE_RANGE = { name = "Interquartile range", ibsi = "SALO", example = 1.024 }
+INTERQUARTILE_RANGE = { name = "Interquartile range", ibsi = "SALO", example = 1.0 }
 KURTOSIS = { name = "Kurtosis", ibsi = "", example = 2.333 }
 MAX = { name = "Maximum", ibsi = "84IY", example = 5.0 }
 MEAN = { name = "Mean", ibsi = "Q4LE", example = 2.8 }
@@ -156,16 +156,16 @@ MEDIAN = { name = "Median", ibsi = "Y12H", example = 3.0 }
 MEDIAN_ABSOLUTE_DEVIATION = { name = "Median absolute deviation", ibsi = "N72L", example = 0.92 }
 MIN = { name = "Minimum", ibsi = "1GSF", example = 1.0 }
 MODE = { name = "Mode", ibsi = "", example = 3.0 }
-P01 = { name = "1st percentile", ibsi = "", example = 1.003 }
-P10 = { name = "10th percentile", ibsi = "QG58", example = 1.025 }
-P25 = { name = "25th percentile", ibsi = "", example = 2.015 }
-P75 = { name = "75th percentile", ibsi = "", example = 3.039 }
-P90 = { name = "90th percentile", ibsi = "8DWT", example = 4.967 }
-P99 = { name = "99th percentile", ibsi = "", example = 4.997 }
-QCOD = { name = "Quartile coefficient of dispersion", ibsi = "9S40", example = 0.2026 }
+P01 = { name = "1st percentile", ibsi = "", example = 1.0 }
+P10 = { name = "10th percentile", ibsi = "QG58", example = 1.0 }
+P25 = { name = "25th percentile", ibsi = "", example = 2.0 }
+P75 = { name = "75th percentile", ibsi = "", example = 3.0 }
+P90 = { name = "90th percentile", ibsi = "8DWT", example = 4.6 }
+P99 = { name = "99th percentile", ibsi = "", example = 5.0 }
+QCOD = { name = "Quartile coefficient of dispersion", ibsi = "9S40", example = 0.2 }
 RANGE = { name = "Range", ibsi = "2OJQ", example = 4.0 }
-ROBUST_MEAN = { name = "Robust mean", ibsi = "", example = 2.833 }
-ROBUST_MEAN_ABSOLUTE_DEVIATION = { name = "Robust mean absolute deviation", ibsi = "1128", example = 0.5556 }
+ROBUST_MEAN = { name = "Robust mean", ibsi = "", example = 2.5 }
+ROBUST_MEAN_ABSOLUTE_DEVIATION = { name = "Robust mean absolute deviation", ibsi = "1128", example = 0.8182 }
 ROOT_MEAN_SQUARED = { name = "Root mean square", ibsi = "5ZWQ", example = 3.046 }
 SKEWNESS = { name = "Skewness", ibsi = "KE2A", example = 0.25 }
 STANDARD_DEVIATION = { name = "Standard deviation", ibsi = "", example = 1.225 }
@@ -601,7 +601,7 @@ EROSIONS_2_VANISH_COMPLEMENT = { name = "Erosions to vanish, complement (not com
 3HYPERFLATNESS = { name = "Hyperflatness", ibsi = "", example = 4.232 }
 3HYPERSKEWNESS = { name = "Hyperskewness", ibsi = "", example = -0.002163 }
 3INTEGRATED_INTENSITY = { name = "Integrated intensity", ibsi = "", example = 93.0 }
-3INTERQUARTILE_RANGE = { name = "Interquartile range", ibsi = "SALO", example = 1.998 }
+3INTERQUARTILE_RANGE = { name = "Interquartile range", ibsi = "SALO", example = 2.0 }
 3KURTOSIS = { name = "Kurtosis", ibsi = "", example = 1.962 }
 3MAX = { name = "Maximum", ibsi = "84IY", example = 6.0 }
 3MEAN = { name = "Mean", ibsi = "Q4LE", example = 4.227 }
@@ -610,16 +610,16 @@ EROSIONS_2_VANISH_COMPLEMENT = { name = "Erosions to vanish, complement (not com
 3MEDIAN_ABSOLUTE_DEVIATION = { name = "Median absolute deviation", ibsi = "N72L", example = 0.9545 }
 3MIN = { name = "Minimum", ibsi = "1GSF", example = 2.0 }
 3MODE = { name = "Mode", ibsi = "", example = 3.0 }
-3P01 = { name = "1st percentile", ibsi = "", example = 2.009 }
-3P10 = { name = "10th percentile", ibsi = "QG58", example = 3.008 }
-3P25 = { name = "25th percentile", ibsi = "", example = 3.03 }
-3P75 = { name = "75th percentile", ibsi = "", example = 5.028 }
-3P90 = { name = "90th percentile", ibsi = "8DWT", example = 5.978 }
-3P99 = { name = "99th percentile", ibsi = "", example = 5.998 }
-3QCOD = { name = "Quartile coefficient of dispersion", ibsi = "9S40", example = 0.248 }
+3P01 = { name = "1st percentile", ibsi = "", example = 2.21 }
+3P10 = { name = "10th percentile", ibsi = "QG58", example = 3.0 }
+3P25 = { name = "25th percentile", ibsi = "", example = 3.0 }
+3P75 = { name = "75th percentile", ibsi = "", example = 5.0 }
+3P90 = { name = "90th percentile", ibsi = "8DWT", example = 6.0 }
+3P99 = { name = "99th percentile", ibsi = "", example = 6.0 }
+3QCOD = { name = "Quartile coefficient of dispersion", ibsi = "9S40", example = 0.25 }
 3RANGE = { name = "Range", ibsi = "2OJQ", example = 4.0 }
-3ROBUST_MEAN = { name = "Robust mean", ibsi = "", example = 4.455 }
-3ROBUST_MEAN_ABSOLUTE_DEVIATION = { name = "Robust mean absolute deviation", ibsi = "1128", example = 0.4959 }
+3ROBUST_MEAN = { name = "Robust mean", ibsi = "", example = 4.333 }
+3ROBUST_MEAN_ABSOLUTE_DEVIATION = { name = "Robust mean absolute deviation", ibsi = "1128", example = 0.9524 }
 3ROOT_MEAN_SQUARED = { name = "Root mean square", ibsi = "5ZWQ", example = 4.385 }
 3SKEWNESS = { name = "Skewness", ibsi = "KE2A", example = 0.06841 }
 3STANDARD_DEVIATION = { name = "Standard deviation", ibsi = "", example = 1.193 }
