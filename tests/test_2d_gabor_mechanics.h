@@ -41,3 +41,23 @@ inline void test_2d_gabor_gpu_runs_mechanics()
     GTEST_SKIP() << "built without USE_GPU";
 #endif
 }
+
+// With the GPU on and its cache not ready -- never allocated, or after an allocation or a free that
+// failed part way -- the Gabor scores are computed on the CPU, with the CPU's values.
+void test_2d_gabor_gpu_unready_cache_mechanics()
+{
+#ifdef USE_GPU
+	for (GpuUnready why : { GpuUnready::never_allocated, GpuUnready::allocation_failed_part_way, GpuUnready::free_failed_part_way })
+	{
+		SCOPED_TRACE(gpu_unready_name (why));
+		std::vector<std::vector<double>> on, off;
+		ASSERT_NO_FATAL_FAILURE(gpu_unready_vs_cpu ({ Nyxus::Feature2D::GABOR }, why, on, off));
+		const std::vector<double>& scores = off[(int)Nyxus::Feature2D::GABOR];
+		ASSERT_TRUE(std::any_of (scores.begin(), scores.end(), [] (double v) { return v != 0.0; }))
+			<< "the CPU gave " << scores.size() << " Gabor scores, none of them non-zero";
+		ASSERT_EQ(on[(int)Nyxus::Feature2D::GABOR], scores);
+	}
+#else
+	GTEST_SKIP() << "built without USE_GPU";
+#endif
+}

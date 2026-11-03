@@ -822,8 +822,13 @@ The workflow fills the scan fields before any feature runs; features then read t
    * - ``SimpleCube<PixIntens> aux_image_cube``
      - In-RAM 3D: the ROI's bounding-box volume.
    * - ``std::vector<std::vector<Pixel2>> multicontour_``
-     - The ROI's contours, written by ``ContourFeature``. ``merge_multicontour`` flattens them.
-       Depend on ``PERIMETER`` to have it.
+     - The ROI's borders, written by ``ContourFeature``: one closed walk per outer border of each
+       fragment and per hole, with ``multicontour_hole_`` marking the holes. Depend on
+       ``PERIMETER`` to have it.
+   * - ``std::vector<Pixel2> contour_pixels_``, ``std::vector<size_t> contour_border_ends_``
+     - The contour pixels, each once, border after border, and where each border's run ends.
+       ``ContourFeature`` fills them once per ROI with ``merge_multicontour()``; a feature reads
+       them instead of merging the borders itself.
    * - ``std::vector<Pixel2> convHull_CH``
      - The convex hull, written by ``ConvexHullFeature``. Depend on ``CONVEX_HULL_AREA`` to have it.
    * - ``std::vector<int> aux_neighboring_labels``

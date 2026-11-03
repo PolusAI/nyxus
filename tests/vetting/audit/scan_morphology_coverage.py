@@ -20,11 +20,15 @@ SOURCES = [
     "test_2d_morphology_fraclac.h",
     "test_2d_morphology_analytic.h",
     "test_2d_morphology_regression.h",
+    # the contour tests assert PERIMETER and EDGE_INTEGRATED_INTENSITY on the traced borders
+    "test_2d_contour_analytic.h",
+    "test_2d_contour_invariant.h",
+    "test_2d_contour_opencv.h",
     os.path.join("python", "test_2d_morphology_fraclac.py"),
     os.path.join("python", "test_2d_morphology_hull_invariant.py"),
     os.path.join("python", "test_2d_morphology_invariant.py"),
     # the registry names this file for PERIMETER, DIAMETER_EQUAL_PERIMETER and EDGE_MEAN_INTENSITY;
-    # it asserts they are 0 on a contourless speckle mask, which is edge-case coverage, not vetting
+    # it asserts their values on a mask of isolated speckles, which is edge-case coverage, not vetting
     os.path.join("python", "test_nyxus.py"),
     # added with the config-matrix cells: the whole-slide snapshot and the two out-of-core
     # assertions cover contour features, so the scanner has to see them or their rows read as
@@ -57,8 +61,11 @@ FAMILY = scanlib.Family(
     dim="2D", family="morphology",
     sources=SOURCES,
     oracle_suffix={"matlab": "matlab", "skimage": "skimage", "imea": "imea",
-                   "cellprofiler": "cellprofiler", "fraclac": "fraclac", "analytic": "analytic"},
+                   "cellprofiler": "cellprofiler", "fraclac": "fraclac", "analytic": "analytic",
+                   "opencv": "opencv"},
     notes=note,
+    # the contour tests are registered under their own family stem
+    fn_prefix=r"test_2d_(?:morphology|contour)",
     scan_helpers=True,
     # test_2d_ooc_invariant.py names the six ellipse features in a local tuple and EROSIONS_2_VANISH
     # in the comprehension that builds the compared column list, then loops that list while

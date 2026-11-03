@@ -38,11 +38,11 @@ public:
 	}
 
 private:
-	double calculate_min_enclosing_circle_diam(std::vector<Pixel2>& Contour);
-	std::tuple <double, double> calculate_inscribing_circumscribing_circle(std::vector<Pixel2>& contours, double xCentroid, double yCentroid);
+	double calculate_min_enclosing_circle_diam(const std::vector<Pixel2>& Contour);
+	std::tuple <double, double> calculate_inscribing_circumscribing_circle(const std::vector<Pixel2>& contours, double xCentroid, double yCentroid);
 	void minEnclosingCircle(
 		// in:
-		std::vector<Pixel2>& Contour,
+		const std::vector<Pixel2>& Contour,
 		// out:
 		Point2f& center,
 		float& radius);
