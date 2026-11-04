@@ -1,0 +1,5 @@
+# The image takes only the version file and the staged executable and libraries;
+# everything else stays out of the build context.
+*
+!.version
+!docker_staging

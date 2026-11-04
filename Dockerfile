@@ -1,25 +1,23 @@
-FROM nvidia/cuda:12.6.0-runtime-ubuntu22.04
+FROM nvidia/cuda:12.6.3-runtime-ubuntu22.04
 
-COPY VERSION /
+COPY .version /VERSION
 
-ARG LIB_LOCATION="3rd_party_libs"
-ARG EXEC_DIR="/opt/executables"
 ARG DATA_DIR="/data"
-ARG LIB_DIR="/usr/lib/x86_64-linux-gnu"
 
 #Create folders
-RUN mkdir -p ${EXEC_DIR} \
+RUN mkdir -p /opt/executables \
     && mkdir -p ${DATA_DIR}/images \
     && mkdir -p ${DATA_DIR}/outputs
 
-# Copy Library
-COPY ${LIB_LOCATION}/*.so* ${LIB_DIR}/
+# The executable's DT_RPATH is $ORIGIN/lib, so its libraries sit next to it and
+# the base image's system libraries stay as the base image ships them
+COPY docker_staging/lib/ /opt/executables/lib/
 
 #Copy executable
-COPY nyxus ${EXEC_DIR}/
+COPY docker_staging/nyxus /opt/executables/
 
-RUN chmod +x ${EXEC_DIR}/nyxus
+RUN chmod +x /opt/executables/nyxus
 
-WORKDIR ${EXEC_DIR}
+WORKDIR /opt/executables
 
 ENTRYPOINT ["/opt/executables/nyxus"]
