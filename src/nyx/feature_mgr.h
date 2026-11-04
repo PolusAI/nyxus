@@ -19,9 +19,9 @@ public:
 
 	void apply_user_selection (FeatureSet & fset);
 
-	// Initializes feature classes 
-	// (allocates lookup tables, precalculates filter banks, etc.)
-	bool init_feature_classes();
+	// Initializes feature classes' GPU-side state (the Gabor filter bank on the
+	// device); a run without the GPU initializes nothing and needs no CUDA device
+	bool init_feature_classes (bool using_gpu);
 
 	// After compiling, returns the number of user-requested features
 	int get_num_requested_features();

@@ -698,12 +698,17 @@ bool GaborFeature::send_filterbank_2_gpuside()
 
 #endif
 
-bool GaborFeature::init_class()
+bool GaborFeature::init_class (bool using_gpu)
 {
     #ifdef USE_GPU
-    GaborFeature::create_filterbank();
-    if (! GaborFeature::send_filterbank_2_gpuside())
-        return false;
+    if (using_gpu)
+    {
+        GaborFeature::create_filterbank();
+        if (! GaborFeature::send_filterbank_2_gpuside())
+            return false;
+    }
+    #else
+    (void) using_gpu;
     #endif
 
     return true;

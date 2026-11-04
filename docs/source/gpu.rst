@@ -131,6 +131,9 @@ When the GPU is not available
 
    * - Situation
      - What happens
+   * - A GPU build, such as the Docker image, run without ``--useGpu`` on a machine with no CUDA
+       device
+     - The features are computed on the CPU; the GPU is not touched.
    * - ``--useGpu`` given to a CPU-only build
      - The run stops: the option is not recognized.
    * - ``--useGpu`` with a value other than ``true`` or ``false``

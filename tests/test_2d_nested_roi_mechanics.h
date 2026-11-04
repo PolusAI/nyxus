@@ -277,7 +277,7 @@ void test_2d_nested_roi_csv_mechanics()
     ASSERT_TRUE(env.parse_cmdline((int) argv.size(), argv.data()));
     ASSERT_TRUE(env.theFeatureMgr.compile());
     env.theFeatureMgr.apply_user_selection(env.theFeatureSet);
-    ASSERT_TRUE(env.theFeatureMgr.init_feature_classes());
+    ASSERT_TRUE(env.theFeatureMgr.init_feature_classes (env.using_gpu()));
     env.compile_feature_settings();
 
     std::vector<std::string> intensFiles, labelFiles;

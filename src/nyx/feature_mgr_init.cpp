@@ -96,8 +96,8 @@ FeatureManager::FeatureManager()
 	register_feature (new SharpnessFeature());
 }
 
-bool FeatureManager::init_feature_classes()
+bool FeatureManager::init_feature_classes (bool using_gpu)
 {
-	return GaborFeature::init_class();
+	return GaborFeature::init_class (using_gpu);
 }
 
