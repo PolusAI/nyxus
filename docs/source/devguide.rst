@@ -551,8 +551,10 @@ Registration and the feature manager
   each enabled code, the providers of its direct dependencies, then its own provider, each once.
   Only direct dependencies are added, so if your dependency has dependencies of its own, list them
   too.
-- ``init_feature_classes()`` runs one-time class initialisation. Today only
-  ``GaborFeature::init_class`` uses it, and only the command-line entry point calls it.
+- ``init_feature_classes (using_gpu)`` runs one-time class initialisation of GPU-side state.
+  Today only ``GaborFeature::init_class`` uses it, to send the Gabor filter bank to the device
+  on a GPU run, and outside the tests only the command-line entry point calls it. On a run
+  without the GPU it initialises nothing, so a GPU build needs no CUDA device for it.
 
 The ordered list is what the out-of-core loops in ``phase3.cpp`` and ``phase3_3d.cpp`` iterate over.
 The in-RAM paths do not use it: they call the classes explicitly in ``reduce_trivial_rois.cpp``.

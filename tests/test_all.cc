@@ -5503,7 +5503,7 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_OVERSIZED_STREAMS_OOC_MECHANICS) {
 		// (SEH 0xc0000005) before this was added.
 		EXPECT_TRUE(e.theFeatureMgr.compile());
 		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-		EXPECT_TRUE(e.theFeatureMgr.init_feature_classes());
+		EXPECT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
 		e.compile_feature_settings();
 		EXPECT_TRUE(e.set_ram_limit(oversized ? 0 : 64));	// 0 -> force oversized; 64 MB comfortably fits this tiny (X8 Y6 Z4) volume
 		e.output_dir = outdir.string();
@@ -5597,7 +5597,7 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_ANISOTROPIC_PRESCAN_BOX_MECHANICS) {
 	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
 	ASSERT_TRUE(e.theFeatureMgr.compile());
 	e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-	ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+	ASSERT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
 	e.compile_feature_settings();
 	e.anisoOptions = aniso_z4;
 	e.output_dir = outdir.string();
@@ -5678,7 +5678,7 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_UNSTREAMABLE_FORMAT_FAILS_LOUDLY_MECHANICS)
 	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
 	ASSERT_TRUE(e.theFeatureMgr.compile());
 	e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-	ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+	ASSERT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
 	e.compile_feature_settings();
 	ASSERT_TRUE(e.set_ram_limit(0));		// force oversized regardless of this small fixture's real size
 	e.output_dir = outdir.string();
@@ -5942,7 +5942,7 @@ TEST(TEST_NYXUS, TEST_3D_SEGMENTED_UNSTREAMABLE_FORMAT_FAILS_THE_RUN_MECHANICS) 
 	e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
 	ASSERT_TRUE(e.theFeatureMgr.compile());
 	e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-	ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+	ASSERT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
 	e.compile_feature_settings();
 	ASSERT_TRUE(e.set_ram_limit(0));	// every ROI reads as oversized, whatever its real footprint
 	e.output_dir = outdir.string();
@@ -6189,7 +6189,7 @@ TEST(TEST_NYXUS, TEST_3D_WHOLEVOLUME_ANISOTROPIC_REDUCE_MATCHES_ISOTROPIC_MECHAN
 		e.theFeatureSet.enableFeatures(D3_SurfaceFeature::featureset);
 		EXPECT_TRUE(e.theFeatureMgr.compile());
 		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-		EXPECT_TRUE(e.theFeatureMgr.init_feature_classes());
+		EXPECT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
 		e.compile_feature_settings();
 		e.refresh_feature_settings_singleroi();
 		EXPECT_TRUE(e.set_ram_limit (64));

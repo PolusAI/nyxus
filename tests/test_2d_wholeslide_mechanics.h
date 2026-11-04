@@ -36,7 +36,7 @@ void test_2d_wsi_thread_unopenable_slide_mechanics()
     e.theFeatureSet.enableFeatures (PixelIntensityFeatures::featureset);
     ASSERT_TRUE(e.theFeatureMgr.compile());
     e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-    ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+    ASSERT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
     e.compile_feature_settings();
     e.output_dir = outdir.string();
 

@@ -144,7 +144,7 @@ void test_3d_wv_thread_unopenable_slide_mechanics()
     e.theFeatureSet.enableFeatures (D3_VoxelIntensityFeatures::featureset);
     ASSERT_TRUE(e.theFeatureMgr.compile());
     e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-    ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+    ASSERT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
     e.compile_feature_settings();
     e.output_dir = outdir.string();
 
@@ -219,7 +219,7 @@ void test_3d_trivial_rois_scan_failure_propagates_mechanics()
     e.theFeatureSet.enableFeatures (D3_VoxelIntensityFeatures::featureset);
     ASSERT_TRUE(e.theFeatureMgr.compile());
     e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-    ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+    ASSERT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
     e.compile_feature_settings();
     ASSERT_TRUE(e.set_ram_limit (64));	// the fixture is kilobytes; a bigger limit is one a busy box can refuse
 

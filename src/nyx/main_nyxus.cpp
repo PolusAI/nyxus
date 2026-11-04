@@ -45,8 +45,8 @@ int main (int argc, char** argv)
 	VERBOSLVL1 (env.get_verbosity_level(), std::cout << "\n>>> STARTING >>> " << Nyxus::getTimeStr(tsStart) << "\n");
 #endif
 
-	// Initialize feature classes 
-	if (! env.theFeatureMgr.init_feature_classes())
+	// Initialize feature classes' GPU-side state; a run without the GPU needs no CUDA device
+	if (! env.theFeatureMgr.init_feature_classes (env.using_gpu()))
 	{
 		std::cerr << "Error: initializing feature classes failed\n";
 		return 1;

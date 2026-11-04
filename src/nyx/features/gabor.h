@@ -65,7 +65,8 @@ public:
     // Returns the angle of i-th pair of 'f0_theta_pairs'
     static double get_theta_in_degrees (int i);
 
-    static bool init_class();
+    // Sends the filter bank to the device on a GPU run; nothing otherwise
+    static bool init_class (bool using_gpu);
 
 private:
 

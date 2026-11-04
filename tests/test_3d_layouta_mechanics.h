@@ -72,7 +72,7 @@ static void enable_3d_intensity (Environment& e)
     e.theFeatureSet.enableFeatures (D3_VoxelIntensityFeatures::featureset);
     ASSERT_TRUE(e.theFeatureMgr.compile());
     e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-    ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+    ASSERT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
     e.compile_feature_settings();
 }
 

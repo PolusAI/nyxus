@@ -151,7 +151,7 @@ namespace
 		e.theFeatureSet.enableFeatures (D3_SurfaceFeature::featureset);
 		ASSERT_TRUE(e.theFeatureMgr.compile());
 		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
-		ASSERT_TRUE(e.theFeatureMgr.init_feature_classes());
+		ASSERT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
 		e.compile_feature_settings();
 		e.refresh_feature_settings_singleroi();
 		ASSERT_TRUE(e.set_ram_limit (64));	// the fixture is kilobytes; a bigger limit is one a busy box can refuse
