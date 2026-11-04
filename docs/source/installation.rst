@@ -148,7 +148,7 @@ The ``polusai/nyxus`` image on Docker Hub holds the command-line program, built 
 optional formats and with CUDA support. The images of releases 0.9.2 to 0.11.0 are built on
 ``nvidia/cuda:11.5.2-runtime-ubuntu20.04`` (CUDA 11.5), images 0.4.0 to 0.8.3 on CUDA 11.0, and
 the tags up to 0.2.3 on one older image without CUDA. The ``Dockerfile`` in the repository uses
-``nvidia/cuda:12.6.0-runtime-ubuntu22.04``, and images built from it get that base. The images are
+``nvidia/cuda:12.6.3-runtime-ubuntu22.04``, and images built from it get that base. The images are
 built for ``linux/amd64`` only: on Apple Silicon, Docker runs them under emulation, and on other
 ARM hosts the command-line program has to be built from source. Each release since 0.9.2 is
 tagged with its version number, for example ``polusai/nyxus:0.11.0``, and the newest release is

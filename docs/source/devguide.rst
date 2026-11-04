@@ -1351,19 +1351,35 @@ are made by `release-please <https://github.com/googleapis/release-please>`_ fro
    ``bump-patch-for-minor-pre-major``). They also decide the release-notes section: ``feat``,
    ``fix``, ``perf``, ``revert``, ``docs``, ``refactor`` and ``build`` are listed; ``chore``,
    ``style``, ``test`` and ``ci`` are hidden.
-#. Merging the release pull request creates the tag and the GitHub release. The workflow then runs
+#. Merging the release pull request creates the tag and the GitHub release. The tag is
+   ``v<version>``, for example ``v0.12.0``: ``include-component-in-tag`` is ``false``, because
+   setuptools_scm's ``tag_regex`` in ``pyproject.toml``, the publish workflows' release test and
+   ``sync_version.py`` all read a ``v<version>`` tag and none of them reads release-please's
+   default ``nyxus-v<version>``. ``tests/python/test_release_tag_mechanics.py`` checks the
+   configured tag against all three. The workflow then runs
    ``python ci-utils/sync_version.py --version <version>``, which writes the version to
    ``.version``, ``plugin.json`` (``version`` and the container tag) and
-   ``src/nyx/version.h`` (``PROJECT_VER``). It uploads ``.version`` to the release and starts
-   ``publish_pypi.yml``, ``publish_cuda11_pypi.yml``, ``publish_cuda12_pypi.yml`` and
-   ``publish_docker.yml`` on the tag.
+   ``src/nyx/version.h`` (``PROJECT_VER``) on its own runner; the tagged tree keeps the files
+   as committed, and release-please's own release commit bumps ``CITATION.cff`` and the
+   setuptools_scm fallback version in ``setup.py`` but not ``.version``.
+   It uploads ``.version`` to the release and starts ``publish_pypi.yml``,
+   ``publish_cuda11_pypi.yml``, ``publish_cuda12_pypi.yml`` and ``publish_docker.yml`` on the
+   tag.
 
 The other version consumers:
 
 - The Python package takes its version from the git tag through ``setuptools_scm``
   (``pyproject.toml``), and ``setup.py`` passes it to the C++ build as ``VERSION_INFO``.
-- The wheel workflows run ``sync_version.py`` before building, so ``version.h`` and
-  ``plugin.json`` in the build carry the tag's version. ``PROJECT_VER`` is printed in the
-  command-line banner.
+- ``build_wheels.yml``, ``build_cuda11_wheels.yml`` and ``build_cuda12_wheels.yml`` run
+  ``sync_version.py`` before building, so ``version.h`` and ``plugin.json`` in the build carry
+  the latest tag's version. The publish wheel workflows run it the same way, except on a ref
+  whose name starts with ``v``, where they build the files as committed. ``PROJECT_VER`` is
+  printed in the command-line banner.
+- ``publish_docker.yml`` takes the version from the tag name when it runs on a tag, and from
+  ``.version`` when it runs on a branch. It runs ``sync_version.py --version`` with that
+  version before building, tags the image with it, and checks that the image's banner prints
+  it. It pushes only on a tag that has a published GitHub release, and moves ``latest`` only
+  when that release is the repository's latest, and logs in to Docker Hub only on a tag; a run
+  on a branch builds and tests the image without credentials and without pushing it.
 
 Without ``--version``, ``sync_version.py`` uses the latest tag from ``git describe --tags``.

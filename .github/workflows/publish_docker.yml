@@ -1,13 +1,15 @@
 name: Publish Docker image
 on:
   workflow_dispatch:
-  
+
 env:
   BUILD_TYPE: Release
+  DOCKER_IMAGE: polusai/nyxus
 
+# One run per ref, and a running release push is never cancelled.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
 
@@ -31,39 +33,157 @@ jobs:
     - name: Fetch git tags
       run: git fetch --force --tags
 
+    # On a tag the version is the tag's: release-please tags v<version>, and
+    # does not bump .version in the tagged tree. The tag pattern is
+    # setuptools_scm's tag_regex in pyproject.toml, so the image and the wheels
+    # take a release tag the same way. On a branch it is the one in .version.
+    # .version, version.h, which the CLI prints, and plugin.json take it before
+    # the build, and so does the image tag.
+    - name: Set version
+      run: |
+        set -eo pipefail
+        if [[ "$GITHUB_REF" == refs/tags/* ]]
+        then
+          if [[ ! "$GITHUB_REF_NAME" =~ ^v?([0-9]+\.[0-9]+\.[0-9]+)$ ]]
+          then
+            echo "::error::tag $GITHUB_REF_NAME is not a release tag v<major>.<minor>.<patch>"
+            exit 1
+          fi
+          VER=${BASH_REMATCH[1]}
+        else
+          VER=$(tr -d '[:space:]' < .version)
+        fi
+        python3 ci-utils/sync_version.py --version "$VER"
+        echo "VERSION=$VER" >> $GITHUB_ENV
+
     - name: Run Build Script
       working-directory: ${{github.workspace}}
       run: |
         bash ci-utils/build_conda.sh ${{github.workspace}}
 
-    - name: Copy 3rd-party libraries to staging directory
-      working-directory: ${{github.workspace}}
-      run: |
-        bash ci-utils/docker_copy_3rd_party_libs.sh ${{github.workspace}}/miniconda-for-nyxus/envs/nyxus-3.11
-
-    - name: Set version from .version file
-      run: |
-        VER=$(cat .version | tr -d '[:space:]')
-        echo "VERSION=$VER" >> $GITHUB_ENV
-
+    # A tag run logs in before the first pull from Docker Hub, so its pulls are
+    # not anonymous. A branch run needs no Docker Hub credentials.
     - name: Log in to Docker Hub
+      if: startsWith(github.ref, 'refs/tags/')
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_TOKEN }}
-    
+
+    # The libraries the base image provides under /usr/local/cuda are left to it.
+    - name: List the CUDA libraries of the base image
+      working-directory: ${{github.workspace}}
+      run: |
+        set -eo pipefail
+        BASE_IMAGE=$(awk '$1 == "FROM" { print $2; exit }' Dockerfile)
+        case "$BASE_IMAGE" in
+          ""|-*|*'$'*) echo "::error::the Dockerfile's first FROM line does not name the base image as its first argument"; exit 1 ;;
+        esac
+        docker run --rm --entrypoint ls "$BASE_IMAGE" /usr/local/cuda/lib64 > base_image_libs.txt
+        cat base_image_libs.txt
+
+    - name: Copy 3rd-party libraries to staging directory
+      working-directory: ${{github.workspace}}
+      run: |
+        set -eo pipefail
+        sudo apt-get update
+        sudo apt-get install -y patchelf
+        bash ci-utils/docker_copy_3rd_party_libs.sh ${{github.workspace}}/miniconda-for-nyxus/envs/nyxus-3.11 ./nyxus base_image_libs.txt
+
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
       with:
-        images: polusai/nyxus
-    
-    - name: Build and push Docker image
-      env:
-        DOCKER_REPO: nyxus
+        images: ${{ env.DOCKER_IMAGE }}
+        # the image's version label is the version it is tagged with
+        labels: org.opencontainers.image.version=${{ env.VERSION }}
+
+    - name: Build Docker image
       uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
       with:
         context: .
-        push: true
-        tags: polusai/${{ env.DOCKER_REPO }}:${{ env.VERSION }}, polusai/${{ env.DOCKER_REPO }}:latest
+        push: false
+        load: true
+        tags: ${{ env.DOCKER_IMAGE }}:${{ env.VERSION }}, ${{ env.DOCKER_IMAGE }}:latest
         labels: ${{ steps.meta.outputs.labels }}
+
+    # The image is pushed only if every shared library and symbol of the
+    # executable resolves inside it, each staged library is the copy the loader
+    # takes, the CLI starts, and it computes features from a DICOM slice.
+    - name: Smoke-test Docker image
+      # nyxus --help exits 1, so the check reads the banner from its output
+      # rather than its exit status.
+      run: |
+        set -eo pipefail
+        docker run --rm --entrypoint ldd ${DOCKER_IMAGE}:${VERSION} -r /opt/executables/nyxus | tee ldd.txt
+        if grep -qE "not found|undefined symbol" ldd.txt; then echo "unresolved shared libraries or symbols"; exit 1; fi
+        for SONAME in $(docker run --rm --entrypoint ls ${DOCKER_IMAGE}:${VERSION} /opt/executables/lib)
+        do
+          if ! awk -v s="$SONAME" '$1 == s && index($3, "/opt/executables/lib/") == 1 { found = 1 } END { exit !found }' ldd.txt
+          then
+            echo "$SONAME does not resolve from /opt/executables/lib"
+            exit 1
+          fi
+        done
+        docker run --rm ${DOCKER_IMAGE}:${VERSION} --help > help.txt || true
+        head -n 1 help.txt
+        head -n 1 help.txt | grep -F "/// ${VERSION} ///"
+        LABEL=$(docker inspect --format '{{ index .Config.Labels "org.opencontainers.image.version" }}' ${DOCKER_IMAGE}:${VERSION})
+        if [ "$LABEL" != "$VERSION" ]; then echo "the image's version label is $LABEL, not $VERSION"; exit 1; fi
+
+    # pydicom's CT_small.dcm as one whole-image ROI; its Hounsfield range is
+    # -896..1167 (tests/data/hounsfield/README.md). The runner has no GPU, so
+    # this is the image on a CPU-only host: a run without --useGpu computes the
+    # features, all of them including those with a GPU path (Gabor, erosion,
+    # moments), and a run that asks for the GPU is refused.
+    - name: Run features on a DICOM slice in the image
+      run: |
+        set -eo pipefail
+        mkdir -p dicom_smoke/in dicom_smoke/out
+        cp tests/data/hounsfield/ct_small.dcm dicom_smoke/in/
+        docker run --rm -v "$PWD/dicom_smoke:/data" ${DOCKER_IMAGE}:${VERSION} \
+          --intDir=/data/in --segDir=/data/in --outDir=/data/out --features=MIN,MAX --outputType=singlecsv
+        cat dicom_smoke/out/NyxusFeatures.csv
+        awk -F, '{ gsub(/"/, "") } NR == 1 { for (i = 1; i <= NF; i++) col[$i] = i; next } $col["MIN"] + 0 == -896 && $col["MAX"] + 0 == 1167 { ok = 1 } END { exit !ok }' dicom_smoke/out/NyxusFeatures.csv
+        mkdir -p dicom_smoke/all
+        docker run --rm -v "$PWD/dicom_smoke:/data" ${DOCKER_IMAGE}:${VERSION} \
+          --intDir=/data/in --segDir=/data/in --outDir=/data/all '--features=*ALL*' --outputType=singlecsv
+        head -n 1 dicom_smoke/all/NyxusFeatures.csv | tr -d '"' | tr ',' '\n' > all_columns.txt
+        for PREFIX in GABOR EROSIONS_2_VANISH SPAT_MOMENT_00
+        do
+          if ! grep -q "^$PREFIX" all_columns.txt; then echo "no $PREFIX column in the *ALL* run"; exit 1; fi
+        done
+        if [ "$(wc -l < dicom_smoke/all/NyxusFeatures.csv)" -lt 2 ]; then echo "the *ALL* run wrote no row"; exit 1; fi
+        if docker run --rm -v "$PWD/dicom_smoke:/data" ${DOCKER_IMAGE}:${VERSION} \
+          --intDir=/data/in --segDir=/data/in --outDir=/data/out --features=MIN,MAX --outputType=singlecsv --useGpu=true > gpu.txt 2>&1
+        then
+          cat gpu.txt
+          echo "--useGpu=true ran on a host with no GPU"
+          exit 1
+        fi
+        cat gpu.txt
+        grep -F "cannot use any of GPU devices" gpu.txt
+
+    # A tag run publishes only for a published GitHub release of that tag, and
+    # moves latest only for the repository's latest release. A branch run is a
+    # dry run that ends after the smoke tests.
+    - name: Push Docker image
+      if: startsWith(github.ref, 'refs/tags/')
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -eo pipefail
+        # releases/tags/<tag> returns published releases only, never a draft
+        if ! gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" --silent
+        then
+          echo "::error::no published GitHub release for tag $GITHUB_REF_NAME; not pushing"
+          exit 1
+        fi
+        LATEST=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq '.tag_name')
+        docker push ${DOCKER_IMAGE}:${VERSION}
+        if [ "$LATEST" = "$GITHUB_REF_NAME" ]
+        then
+          docker push ${DOCKER_IMAGE}:latest
+        else
+          echo "The latest release is $LATEST, so latest stays where it is"
+        fi
