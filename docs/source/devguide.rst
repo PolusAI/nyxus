@@ -1380,6 +1380,9 @@ The other version consumers:
   version before building, tags the image with it, and checks that the image's banner prints
   it. It pushes only on a tag that has a published GitHub release, and moves ``latest`` only
   when that release is the repository's latest, and logs in to Docker Hub only on a tag; a run
-  on a branch builds and tests the image without credentials and without pushing it.
+  on a branch builds and tests the image without credentials and without pushing it. A pull
+  request that changes the ``Dockerfile``, ``.dockerignore``, the staging script
+  ``ci-utils/docker_copy_3rd_party_libs.sh``, ``ci-utils/build_conda.sh``, ``ci-utils/envs/``
+  or the workflow runs it the same way.
 
 Without ``--version``, ``sync_version.py`` uses the latest tag from ``git describe --tags``.

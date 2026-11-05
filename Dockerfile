@@ -13,6 +13,10 @@ RUN mkdir -p /opt/executables \
 # the base image's system libraries stay as the base image ships them
 COPY docker_staging/lib/ /opt/executables/lib/
 
+# DCMTK loads its data dictionary at run time, from the files DCMDICTPATH names
+COPY docker_staging/share/ /opt/executables/share/
+ENV DCMDICTPATH=/opt/executables/share/dcmtk/dicom.dic:/opt/executables/share/dcmtk/private.dic
+
 #Copy executable
 COPY docker_staging/nyxus /opt/executables/
 

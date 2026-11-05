@@ -17,6 +17,7 @@
 # docker_staging/nyxus is a copy of the executable with DT_RPATH $ORIGIN/lib,
 # and docker_staging/lib holds the libraries, so the image keeps the two side by
 # side and leaves the base image's system library directories as they are.
+# docker_staging/share/dcmtk holds DCMTK's data dictionaries.
 #
 if [ -z "$1" ]
 then
@@ -116,6 +117,27 @@ if [ "$COUNT" -eq 0 ]
 then
       echo "No libraries of $EXECUTABLE resolve inside $LIB_ROOT"
       exit 1
+fi
+
+# conda-forge's DCMTK keeps its data dictionary outside the library, in
+# $LIB_LOCATION_ROOT/share/dcmtk-<version>/, and loads it at run time; without
+# it, implicit-VR DICOM headers do not parse. When the executable links
+# libdcmdata, the dictionaries are staged in docker_staging/share/dcmtk, and
+# the image's DCMDICTPATH names them.
+mkdir -p "$STAGING/share/dcmtk"
+if ls "$STAGING"/lib/libdcmdata.so* > /dev/null 2>&1
+then
+      DICT_DIRS=( "$ENV_ROOT"/share/dcmtk-*/ )
+      if [ "${#DICT_DIRS[@]}" -ne 1 ] || [ ! -d "${DICT_DIRS[0]}" ]
+      then
+            echo "Expected one DCMTK data dictionary directory $ENV_ROOT/share/dcmtk-*, found: ${DICT_DIRS[*]}"
+            exit 1
+      fi
+      for DICT in dicom.dic private.dic
+      do
+            cp "${DICT_DIRS[0]}$DICT" "$STAGING/share/dcmtk/" || exit 1
+      done
+      echo "Copied the DCMTK data dictionaries from ${DICT_DIRS[0]} to $STAGING/share/dcmtk"
 fi
 
 # DT_RPATH rather than DT_RUNPATH: LD_LIBRARY_PATH does not override it, and the
