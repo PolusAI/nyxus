@@ -1,15 +1,26 @@
 name: Publish Docker image
 on:
   workflow_dispatch:
+  # A pull request that changes the image, its staging or the build env runs
+  # the branch path: build and smoke-test the image, no credentials, no push.
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - ci-utils/docker_copy_3rd_party_libs.sh
+      - ci-utils/build_conda.sh
+      - ci-utils/envs/**
+      - .github/workflows/publish_docker.yml
 
 env:
   BUILD_TYPE: Release
   DOCKER_IMAGE: polusai/nyxus
 
-# One run per ref, and a running release push is never cancelled.
+# One run per ref. A new push to a pull request cancels its running check; a
+# running release push is never cancelled.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
 
@@ -132,20 +143,30 @@ jobs:
         if [ "$LABEL" != "$VERSION" ]; then echo "the image's version label is $LABEL, not $VERSION"; exit 1; fi
 
     # pydicom's CT_small.dcm as one whole-image ROI; its Hounsfield range is
-    # -896..1167 (tests/data/hounsfield/README.md). The runner has no GPU, so
-    # this is the image on a CPU-only host: a run without --useGpu computes the
-    # features, all of them including those with a GPU path (Gabor, erosion,
-    # moments), and a run that asks for the GPU is refused.
+    # -896..1167 (tests/data/hounsfield/README.md). The slice is explicit VR, so
+    # the env's dcmconv also writes it as implicit VR Little Endian, DICOM's
+    # default transfer syntax, whose headers parse only with DCMTK's data
+    # dictionary; both copies give the same range, and a run that reports a
+    # DcmDataDictionary error fails. The runner has no GPU, so this is the image
+    # on a CPU-only host: a run without --useGpu computes the features, all of
+    # them including those with a GPU path (Gabor, erosion, moments), and a run
+    # that asks for the GPU is refused.
     - name: Run features on a DICOM slice in the image
       run: |
         set -eo pipefail
-        mkdir -p dicom_smoke/in dicom_smoke/out
+        mkdir -p dicom_smoke/in dicom_smoke/in_implicit
         cp tests/data/hounsfield/ct_small.dcm dicom_smoke/in/
-        docker run --rm -v "$PWD/dicom_smoke:/data" ${DOCKER_IMAGE}:${VERSION} \
-          --intDir=/data/in --segDir=/data/in --outDir=/data/out --features=MIN,MAX --outputType=singlecsv
-        cat dicom_smoke/out/NyxusFeatures.csv
-        awk -F, '{ gsub(/"/, "") } NR == 1 { for (i = 1; i <= NF; i++) col[$i] = i; next } $col["MIN"] + 0 == -896 && $col["MAX"] + 0 == 1167 { ok = 1 } END { exit !ok }' dicom_smoke/out/NyxusFeatures.csv
-        mkdir -p dicom_smoke/all
+        miniconda-for-nyxus/envs/nyxus-3.11/bin/dcmconv +ti tests/data/hounsfield/ct_small.dcm dicom_smoke/in_implicit/ct_small.dcm
+        for IN in in in_implicit
+        do
+          mkdir -p dicom_smoke/out_$IN
+          docker run --rm -v "$PWD/dicom_smoke:/data" ${DOCKER_IMAGE}:${VERSION} \
+            --intDir=/data/$IN --segDir=/data/$IN --outDir=/data/out_$IN --features=MIN,MAX --outputType=singlecsv 2>&1 | tee run_$IN.txt
+          if grep -qF DcmDataDictionary run_$IN.txt; then echo "DCMTK could not load its data dictionary"; exit 1; fi
+          cat dicom_smoke/out_$IN/NyxusFeatures.csv
+          awk -F, '{ gsub(/"/, "") } NR == 1 { for (i = 1; i <= NF; i++) col[$i] = i; next } $col["MIN"] + 0 == -896 && $col["MAX"] + 0 == 1167 { ok = 1 } END { exit !ok }' dicom_smoke/out_$IN/NyxusFeatures.csv
+        done
+        mkdir -p dicom_smoke/out dicom_smoke/all
         docker run --rm -v "$PWD/dicom_smoke:/data" ${DOCKER_IMAGE}:${VERSION} \
           --intDir=/data/in --segDir=/data/in --outDir=/data/all '--features=*ALL*' --outputType=singlecsv
         head -n 1 dicom_smoke/all/NyxusFeatures.csv | tr -d '"' | tr ',' '\n' > all_columns.txt
