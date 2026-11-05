@@ -10,7 +10,7 @@ authors:
   - given-names: Andriy
     family-names: Kharchenko
     affiliation: Axle Informatics
-version: 0.11.0 # x-release-please-version
+version: 0.12.0 # x-release-please-version
 license: MIT
 repository-code: "https://github.com/PolusAI/nyxus"
 url: "https://nyxus.readthedocs.io"
