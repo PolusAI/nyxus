@@ -12,28 +12,28 @@
 // neighborhood2d_scene_labels fixture from test_data.h at PIXELDISTANCE=1;
 // generator=tests/vetting/oracles/gen_neighbor_cellprofiler.py.
 //
-// CellProfiler reproduces Nyxus BIT-IDENTICALLY on both features across all five ROIs -- residual
+// CellProfiler reproduces Nyxus BIT-IDENTICALLY on all three features across all five ROIs -- residual
 // exactly 0, not merely small -- so these assert at the SPEC 7 exact tier, which is an ABSOLUTE
 // 1e-9 band. Per label, not aggregated: each ROI carries its own value and every one is asserted.
 //
-// PERCENT_TOUCHING is NOT vetted here: CP and Nyxus use different definitions (Nyxus = contour
-// pixels 8-adjacent to a neighbour / contour length; CP = object outline pixels overlapping a
-// disk(distance+0.5)-dilated neighbour / perimeter), and no CP distance method reproduces Nyxus --
-// it diverges on 3 of the 5 ROIs. It is drift-pinned in test_2d_neighbor_regression.h and its
-// required bounds are asserted in test_2d_neighbor_invariant.h. Same for CLOSEST_NEIGHBOR2_DIST:
+// PERCENT_TOUCHING is vetted here too, at this recipe's distance of one pixel. Nyxus counts the
+// contour pixels 8-adjacent to a neighbour's contour over the number of contour pixels; CellProfiler
+// counts the outline pixels a neighbour, dilated by a disk of radius distance + 0.5, overlaps over
+// the perimeter. At distance 1 that disk is the 3x3 neighbourhood and the two are the same count, so
+// CellProfiler reproduces all five values exactly. CLOSEST_NEIGHBOR2_DIST is not vetted here:
 // CP measures the second-closest of ANY object, Nyxus the second-closest neighbour within the
 // search radius, so CP's column is a different quantity. See
 // tests/vetting/audit/neighbor_2d_cellprofiler_vetting_report.md.
 static const ref_vals_map_by_label<double> neighbor_2d_cellprofiler_ref_vals_by_label{
-	{1, {{"NUM_NEIGHBORS", 4.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5}}},
-	{2, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5495097567963922}}},
-	{3, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5495097567963922}}},
-	{4, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5}}},
-	{5, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5495097567963922}}}
+	{1, {{"NUM_NEIGHBORS", 4.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5}, {"PERCENT_TOUCHING", 100.0}}},
+	{2, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5495097567963922}, {"PERCENT_TOUCHING", 50.0}}},
+	{3, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5495097567963922}, {"PERCENT_TOUCHING", 50.0}}},
+	{4, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5}, {"PERCENT_TOUCHING", 50.0}}},
+	{5, {{"NUM_NEIGHBORS", 1.0}, {"CLOSEST_NEIGHBOR1_DIST", 2.5495097567963922}, {"PERCENT_TOUCHING", 50.0}}}
 };
 
 // SPEC 7's exact tier verbatim: an absolute band, so ASSERT_NEAR rather than the relative agrees_gt
-// the looser-tiered files use. The measured residual over the ten comparisons below is exactly 0 --
+// the looser-tiered files use. The measured residual over the fifteen comparisons below is exactly 0 --
 // CellProfiler returns the same double Nyxus does -- so the band is what SPEC 7 sets rather than
 // what the measurement needs. A relative 1e-9 would also have been the looser of the two here, at
 // 2.5e-9 on CLOSEST_NEIGHBOR1_DIST.
@@ -67,4 +67,13 @@ void test_2d_neighbor_counts_and_first_distance_cellprofiler()
 		assert_neighbor2d_cellprofiler(roiData, label, Nyxus::Feature2D::NUM_NEIGHBORS, "NUM_NEIGHBORS");
 		assert_neighbor2d_cellprofiler(roiData, label, Nyxus::Feature2D::CLOSEST_NEIGHBOR1_DIST, "CLOSEST_NEIGHBOR1_DIST");
 	}
+}
+
+void test_2d_neighbor_percent_touching_cellprofiler()
+{
+	std::unordered_map<int, LR> roiData;
+	calculate_neighbor_feature_values(roiData);
+
+	for (int label : {1, 2, 3, 4, 5})
+		assert_neighbor2d_cellprofiler(roiData, label, Nyxus::Feature2D::PERCENT_TOUCHING, "PERCENT_TOUCHING");
 }

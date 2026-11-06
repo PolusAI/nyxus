@@ -1,5 +1,10 @@
 # 2D ROI_RADIUS vs scikit-image — vetting report
 
+> **Current state.** The traced contour now walks exactly the scikit-image inner-boundary pixels in
+> absolute coordinates, so the (+1, +1) shift measured below no longer exists. `ROI_RADIUS_MEAN`
+> agrees with the same reference on the three disks and is vetted alongside `MAX` and `MEDIAN`
+> (`morphology.radius_disks`); on shape2d the three values are 0.3077, 1 and 0, the reference's.
+
 Vetting record for the three `ROI_RADIUS_*` features. Two of them carry oracle rows; the third does
 not, and the last section measures exactly what stands in its way.
 
