@@ -122,8 +122,8 @@ jobs:
 
 
   prereqs_macos_arm64:
-    name: Build prereqs (macos-14)
-    runs-on: macos-14
+    name: Build prereqs (macos-15)
+    runs-on: macos-15
     continue-on-error: true
     steps:
       - uses: actions/checkout@v3
@@ -140,7 +140,7 @@ jobs:
       - name: Upload prereqs
         uses: actions/upload-artifact@v4
         with:
-          name: prereqs-macos-14
+          name: prereqs-macos-15
           path: prereqs.tar.gz
           retention-days: 1
 
@@ -440,8 +440,8 @@ jobs:
 
 
   wheels_macos_arm64:
-    name: Build & publish wheels (macos-14 / ${{ matrix.cibw_build }})
-    runs-on: macos-14
+    name: Build & publish wheels (macos-15 / ${{ matrix.cibw_build }})
+    runs-on: macos-15
     needs: prereqs_macos_arm64
     continue-on-error: true
     env:
@@ -471,7 +471,7 @@ jobs:
       - name: Download prereqs
         uses: actions/download-artifact@v4
         with:
-          name: prereqs-macos-14
+          name: prereqs-macos-15
           path: .
       - name: Extract prereqs
         run: tar -xzf prereqs.tar.gz
