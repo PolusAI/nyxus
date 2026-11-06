@@ -108,6 +108,18 @@ jobs:
         with:
           python-version: '3.11'
 
+      # pyproject.toml's static project name takes precedence over setup.py's
+      # get_name(), so without this the wheel is named nyxus, not nyxus-cuda11x,
+      # and the upload to the CUDA project is refused (403). assume-unchanged
+      # keeps the edit from making setuptools_scm report a dirty-tree version.
+      - name: Name the wheel nyxus-cuda11x
+        shell: bash
+        run: |
+          sed -i 's/^name = "nyxus"$/name = "nyxus-cuda11x"/' pyproject.toml
+          git update-index --assume-unchanged pyproject.toml
+          python -m pip install setuptools-scm
+          python -m setuptools_scm
+
       - name: Install cibuildwheel
         run: |
           python -m pip install --upgrade pip
