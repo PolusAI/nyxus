@@ -272,8 +272,8 @@ jobs:
 
 
   prereqs_macos_arm64:
-    name: Build prereqs (macos-14)
-    runs-on: macos-14
+    name: Build prereqs (macos-15)
+    runs-on: macos-15
     continue-on-error: true
     steps:
       - uses: actions/checkout@v3
@@ -281,7 +281,7 @@ jobs:
 
       - name: Compute cache key
         id: cache-key
-        run: echo "key=prereqs-macos-14-${{ hashFiles('ci-utils/install_prereq_linux.sh', 'ci-utils/install_prereq_win.bat', 'ci-utils/validate_prereqs.sh') }}" >> "$GITHUB_OUTPUT"
+        run: echo "key=prereqs-macos-15-${{ hashFiles('ci-utils/install_prereq_linux.sh', 'ci-utils/install_prereq_win.bat', 'ci-utils/validate_prereqs.sh') }}" >> "$GITHUB_OUTPUT"
 
       - name: Delete prereq cache (force rebuild)
         if: inputs.force_prereqs == true
@@ -324,7 +324,7 @@ jobs:
       - name: Upload prereqs
         uses: actions/upload-artifact@v4
         with:
-          name: prereqs-macos-14
+          name: prereqs-macos-15
           path: prereqs.tar.gz
           retention-days: 1
 
@@ -601,8 +601,8 @@ jobs:
 
 
   wheels_macos_arm64:
-    name: Build wheels (macos-14 / ${{ matrix.cibw_build }})
-    runs-on: macos-14
+    name: Build wheels (macos-15 / ${{ matrix.cibw_build }})
+    runs-on: macos-15
     needs: prereqs_macos_arm64
     continue-on-error: true
     env:
@@ -627,7 +627,7 @@ jobs:
       - name: Download prereqs
         uses: actions/download-artifact@v4
         with:
-          name: prereqs-macos-14
+          name: prereqs-macos-15
           path: .
       - name: Extract prereqs
         run: tar -xzf prereqs.tar.gz
@@ -671,6 +671,6 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: nyxus-wheels-macos-14-arm64-${{ matrix.cibw_build }}
+          name: nyxus-wheels-macos-15-arm64-${{ matrix.cibw_build }}
           path: dist/*.whl
           retention-days: 1
