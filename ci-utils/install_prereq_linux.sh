@@ -191,7 +191,9 @@ if [[ $BULD_DCMTK_DEP -eq 1 ]]; then
     mkdir build_man
     cd build_man
     if [[ "$OSTYPE" == "darwin"* ]]; then
-        cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
+        # -DDCMTK_WITH_OPENSSL=OFF: DCMTK would otherwise compile its signing code against the
+        # runner's Homebrew OpenSSL, and DCMTK 3.6.9 does not build with OpenSSL 4
+        cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DDCMTK_WITH_OPENSSL=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF -DJPEG_LIBRARY_RELEASE=../../"$LOCAL_INSTALL_DIR"/lib/libjpeg.dylib -DJPEG_INCLUDE_DIRS=../../"$LOCAL_INSTALL_DIR"/include ..
     else
         cmake -DCMAKE_INSTALL_PREFIX=../../"$LOCAL_INSTALL_DIR"/   -DCMAKE_PREFIX_PATH=../../"$LOCAL_INSTALL_DIR"/  -DDCMTK_WITH_ICONV=OFF -DBUILD_SHARED_LIBS=ON -DBUILD_APPS=OFF  ..
     fi
@@ -215,6 +217,11 @@ if [[ $BUILD_ARROW_DEP -eq 1 ]]; then
     unzip arrow-apache-arrow-20.0.0.zip
     cd arrow-apache-arrow-20.0.0
     cd cpp
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        # Arrow has no option for this. Its bundled Thrift would otherwise compile TSSLSocket against
+        # the runner's Homebrew OpenSSL, and Thrift 0.20.0 does not build with OpenSSL 4
+        sed -i '' 's/-DWITH_ZLIB=OFF)/-DWITH_ZLIB=OFF -DWITH_OPENSSL=OFF)/' cmake_modules/ThirdpartyToolchain.cmake
+    fi
     mkdir build
     cd build
     cmake -DCMAKE_INSTALL_PREFIX=../../../"$LOCAL_INSTALL_DIR"/ \
