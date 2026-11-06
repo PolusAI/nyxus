@@ -17,7 +17,7 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 
 ---
 
-## A. Test files no registry row references — 31 files, 105 test functions
+## A. Test files no registry row references — 31 files, 113 test functions
 
 Both totals are the sum of the two tables below, counting each distinct file once and
 skipping any row struck through as closed, so they can be recomputed from the tables.
@@ -30,7 +30,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | file | functions | why it has no row |
 |---|---:|---|
 | `test_3d_nifti_mechanics.h` | 2 | NIfTI loader geometry / data access |
-| `test_arrow_mechanics.h` | 2 | Arrow + Parquet writer plumbing |
+| `test_arrow_mechanics.h` | 4 | Arrow + Parquet writer plumbing, including an output path that cannot be opened |
 | `test_arrow_file_name_mechanics.h` | 1 | output-file naming rules |
 | `test_2d_glcm_mechanics.h` | 1 | guards the `GLCM_OFFSET` default (a setting, not a value) |
 | `test_2d_radial_mechanics.h` | 3 | contour frame, centre pixel and normalising radius — the wiring the radial goldens depend on. **Uncredited by decision, not by construction:** see the note below the table |
@@ -202,15 +202,15 @@ Not dead, listed to avoid double-counting: `assert_gldzm_matrix_ibsi`,
 `assert_ngldm_matrix_ibsi_mode`, `assert_ngldm_matrix_nonibsi_mode` take no arguments and have no `TEST()`
 of their own, but each is called by a registered case — they are helpers wearing a `test_` prefix.
 
-### B.3 Registered but excluded by a build flag — 13 cases
+### B.3 Registered but excluded by a build flag — 73 cases
 
 Not dead; they run only where the feature is compiled in. A CPU/tiff-only build silently omits them,
 so a green local run is not a green matrix.
 
 | flag | cases |
 |---|---|
-| `USE_ARROW` | `TEST_ARROW_IPC_MECHANICS`, `TEST_ARROW_PARQUET_MECHANICS`, `TEST_ARROW_FILE_NAMING_MECHANICS` |
-| `OMEZARR_SUPPORT` | `TEST_2D_OMEZARR_TILELOADER_{GEOMETRY,CONTENT,MULTITILE,SIGNED_OFFSET_MAP,FLOAT_QUANTIZED_MAP,UNSIGNED_UNAFFECTED}_MECHANICS`, `TEST_2D_OMEZARR_RAW_{GEOMETRY,CONTENT,MULTITILE,SIGNED_SOURCE_DOMAIN,FLOAT_SOURCE_DOMAIN,UINT32_ACCESSOR_CLAMPS_NEGATIVE,UINT32_ACCESSOR_UNSIGNED_EXACT,UINT32_ACCESSOR_NONFINITE}_MECHANICS` |
+| `USE_ARROW` | `TEST_ARROW_IPC_MECHANICS`, `TEST_ARROW_PARQUET_MECHANICS`, `TEST_ARROW_FILE_NAMING_MECHANICS`, `TEST_ARROW_IPC_UNOPENABLE_PATH_MECHANICS`, `TEST_ARROW_PARQUET_UNOPENABLE_PATH_MECHANICS` |
+| `OMEZARR_SUPPORT` | the 61 `TEST_*OMEZARR*_MECHANICS` cases in `test_all.cc`; `TEST_OMEZARR_V3_ZSTD_MECHANICS` also needs `WITH_ZSTD` |
 | `DICOM_SUPPORT` | `TEST_2D_HU_LOADER_DICOM_{U16,I16}_PRESERVE_MECHANICS`, `TEST_2D_HU_LOADER_DICOM_CT_SMALL_{PRESERVE,BASELINE}_MECHANICS`, `TEST_2D_HU_LOADER_DICOM_FRACTIONAL_SLOPE_{ROUNDS_UNDER_PRESERVE_HU,TRUNCATES_WITHOUT_ROUND_OFFSET}_MECHANICS`, `TEST_2D_HU_DICOM_FRACTIONAL_SLOPE_LOAD_PATH_MECHANICS` |
 
 ### B.4 Python tests skipped at runtime
@@ -220,7 +220,8 @@ so a green local run is not a green matrix.
 - `test_2d_morphology_invariant.py`, `test_2d_glcm_pyradiomics.py`, `test_2d_gldm_pyradiomics.py` — skip when the
   canonical ROI cannot be parsed out of `test_data.h`. **A skip here silently removes an oracle
   assertion**; these should fail rather than skip, since the fixture is committed.
-- `test_nyxus.py` — one case is skipped on Python 3.12, one is `skip_ci`.
+- `test_nyxus.py` — one case is skipped on Python 3.12, one is `skip_ci`, and `test_arrow_ipc_mapped_file_raises`
+  runs on Windows only, the one platform that refuses to truncate a memory-mapped file.
 
 ---
 
