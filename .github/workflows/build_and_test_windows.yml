@@ -40,6 +40,13 @@ jobs:
         conda install mamba
         mamba install --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
 
+    - name: Check that a Ninja configure defaults to Release
+      shell: bash -l {0}
+      run: |
+        set -e
+        cmake -S . -B build-default-type -G Ninja -DCMAKE_CXX_COMPILER=cl -DCMAKE_PREFIX_PATH=$CONDA_PREFIX/Library
+        grep '^CMAKE_BUILD_TYPE:STRING=Release$' build-default-type/CMakeCache.txt
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON -DRUN_GTEST=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
 

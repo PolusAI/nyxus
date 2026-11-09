@@ -59,21 +59,6 @@ popd
 popd
 
 if "%BUILD_Z5_DEP%" == "1" (
-    for /l %%x in (1, 1, 5) do (
-        curl -L https://archives.boost.io/release/1.79.0/source/boost_1_88_0.zip -o boost_1_88_0.zip
-        if  exist boost_1_88_0.zip (
-            goto :continue_boost
-        )
-    )
-    :continue_boost
-    tar  -xf boost_1_88_0.zip
-    pushd boost_1_88_0 
-    call bootstrap.bat 
-    .\b2 headers --prefix=../local_install
-    .\b2 -j %NUMBER_OF_PROCESSORS% variant=release link=shared runtime-link=shared threading=multi install --prefix=../local_install
-    xcopy /E /I /y boost ..\local_install\include\boost
-    popd
-
     curl -L https://github.com/Blosc/c-blosc/archive/refs/tags/v1.21.6.zip -o v1.21.6.zip
     tar -xf v1.21.6.zip
     pushd c-blosc-1.21.6
@@ -106,7 +91,6 @@ if "%BUILD_Z5_DEP%" == "1" (
 )
 
 
-set _ROOTDIR=%ROOTDIR:\=/%
 if "%BUILD_ARROW%" == "1" (
 
     curl -L https://github.com/apache/arrow/archive/refs/tags/apache-arrow-20.0.0.zip -o  arrow-apache-arrow-20.0.0.zip
@@ -115,7 +99,7 @@ if "%BUILD_ARROW%" == "1" (
     pushd cpp
     mkdir build
     pushd build
-    cmake .. -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=%ABS_INSTALL% -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DARROW_BUILD_TESTS=OFF -DBOOST_ROOT=%_ROOTDIR%/boost_1_88_0
+    cmake .. -A x64 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_INSTALL_PREFIX=../../../local_install/ -DCMAKE_PREFIX_PATH=%ABS_INSTALL% -DARROW_PARQUET=ON -DARROW_WITH_SNAPPY=ON -DARROW_BUILD_TESTS=OFF
     cmake --build . --config Release --target install --parallel 4
     popd 
     popd

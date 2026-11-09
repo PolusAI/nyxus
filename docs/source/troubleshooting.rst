@@ -150,8 +150,8 @@ A build without an optional part refuses its files or outputs:
   available. Please install Nyxus with Arrow enabled to use this functionality.`` and the call
   raises ``RuntimeError``.
 
-The PyPI and conda packages include all of them, except that the Windows wheels on PyPI have no
-OME-Zarr support since 0.9.3 (see :doc:`installation`). The first conda-forge Windows builds of
+The PyPI and conda packages include all of them, except that the Windows wheels on PyPI of 0.9.3
+and 0.11.0 have no OME-Zarr support (see :doc:`installation`). The first conda-forge Windows builds of
 0.11.0 (build number 0) also lack OME-Zarr, ``.nii.gz`` and DICOM; conda installs one of them into
 an environment that holds ``libarrow`` 19 or 20.
 :ref:`installation-check` shows how to check a build.
