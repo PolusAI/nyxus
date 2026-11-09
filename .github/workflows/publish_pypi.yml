@@ -149,6 +149,70 @@ jobs:
   # Wheel build + publish jobs — each starts as soon as its prereq finishes
   # ============================================================
 
+  sdist:
+    name: Build & publish the source distribution
+    runs-on: ubuntu-22.04
+    # Uploaded after the wheels: pip prefers a new version's sdist over an older wheel.
+    needs: [prereqs_ubuntu, wheels_ubuntu, wheels_ubuntu_arm, wheels_windows, wheels_macos_intel, wheels_macos_arm64]
+    if: ${{ !cancelled() }}
+    steps:
+      - uses: actions/checkout@v3
+        name: Check out
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Fetch git tags
+        run: git fetch --force --tags
+      - uses: actions/setup-python@v4
+        name: Install Python
+        with:
+          python-version: '3.11'
+      - name: Verify version detection
+        run: |
+          python -m pip install setuptools-scm
+          if [[ "$GITHUB_REF_NAME" == v* ]]; then
+            echo "Release build on tag $GITHUB_REF_NAME"
+          else
+            python ci-utils/sync_version.py
+          fi
+          python -m setuptools_scm
+        shell: bash
+      - name: Build the source distribution
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --sdist --outdir dist
+      - name: Download prereqs
+        uses: actions/download-artifact@v4
+        with:
+          name: prereqs-ubuntu-22.04
+          path: .
+      - name: Extract prereqs
+        run: tar -xzf prereqs.tar.gz
+      - name: Install from the source distribution
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/work" \
+            -w /work \
+            -e NYXUS_DEP_DIR=/work/local_install \
+            -e LD_LIBRARY_PATH=/work/local_install/lib:/work/local_install/lib64 \
+            quay.io/pypa/manylinux_2_28_x86_64:latest \
+            bash -c "
+              set -e
+              dnf -y install llvm libevent-devel openssl-devel
+              python3.11 -m pip install dist/*.tar.gz
+              cd /tmp
+              python3.11 -c 'import nyxus; print(nyxus.__version__)'
+            "
+      - name: Install Dependencies
+        run: python -m pip install --upgrade twine requests
+      - name: Publish to PyPi
+        run: python -m twine upload dist/*.tar.gz
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TWINE_API_KEY }}
+          TWINE_REPOSITORY: pypi
+
+
   wheels_ubuntu:
     name: Build & publish wheels (ubuntu-22.04 / ${{ matrix.cibw_build }})
     runs-on: ubuntu-22.04

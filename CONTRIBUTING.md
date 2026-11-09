@@ -105,13 +105,13 @@ cannot link them. Run the Visual Studio `vcvars64.bat` first and configure with 
 which also lets `nvcc` use `cl` as its host compiler for a CUDA build:
 
 ```bat
-cmake -S . -B build-cli -G Ninja -DCMAKE_CXX_COMPILER=cl -DCMAKE_BUILD_TYPE=Release ^
+cmake -S . -B build-cli -G Ninja -DCMAKE_CXX_COMPILER=cl ^
       -DBUILD_CLI=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=%CONDA_PREFIX%\Library
 cmake --build build-cli
 ```
 
-Pass `-DCMAKE_BUILD_TYPE=Release`: with MSVC, CMake presets `Debug` for Ninja, and `--config` has
-no effect on a single-configuration generator.
+Ninja builds `Release` by default. To build another type, pass `-DCMAKE_BUILD_TYPE` when configuring:
+`--config` has no effect on a single-configuration generator.
 
 If CMake still misses a dependency, set the environment variable `NYXUS_DEP_DIR` to the same
 prefix before configuring; `CMakeLists.txt` reads it from the environment, not as a `-D` option.
