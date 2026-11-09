@@ -378,7 +378,7 @@ Definitions, formulas and settings: :doc:`/Math/f_morphology`.
      - Description
      - Validation
    * - ``PERIMETER``
-     - Length of the ROI's traced contour in pixels: the sum of the Euclidean distances between consecutive pixels of the closed walk around each border of the ROI (the outside of each separate part and each hole), each walk closing back to its first pixel. On the out-of-core path it is the number of contour pixels instead.
+     - Length of the ROI's traced contour in pixels: the sum of the Euclidean distances between consecutive pixels of the closed walk around each border of the ROI (the outside of each separate part and each hole), each walk closing back to its first pixel.
      - vetted: analytic, OpenCV, scikit-image
    * - ``DIAMETER_EQUAL_PERIMETER``
      - Diameter of a circle with the same perimeter as the ROI: PERIMETER divided by pi, in pixels.

@@ -18,8 +18,9 @@ counts; fine textures give low ones.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Yes, with the same values as in memory on an image that Nyxus reads as one tile (see
-       :ref:`large-images-tiles` for other images), except on a constant ROI (see
+     - Yes, with the same values as in memory on tiled TIFF files and on striped files of up to
+       1024 × 1024 pixels (see :ref:`large-images-tiles` for larger striped files), except on a
+       constant ROI (see
        :ref:`ngldm-possible-issues`).
    * - **IBSI**
      - 17 of the 19 features have an IBSI identifier. Grey level mean and dependence count mean

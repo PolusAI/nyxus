@@ -283,9 +283,10 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - **Nyxus side, the `EDGE_*` statistics:** `ContourFeature::calculate()` at
   `make_shape2d_settings()` with `SINGLEROI=false`, i.e. the in-RAM segmented contour
   (`buildRegularContour`), on the `shape2d_morphology_{mask,intensity}` fixture. That is **one** of
-  the three reachable cells and the only one this recipe vets; `SINGLEROI=true`
-  (`buildWholeSlideContour`) and the out-of-core `osized_calculate()`
-  (`buildRegularContour_nontriv`) build a different contour and are not covered here.
+  the three reachable cells and the only one this recipe vets. `SINGLEROI=true`
+  (`buildWholeSlideContour`) builds a different contour and is not covered here; the out-of-core
+  `osized_calculate()` (`buildRegularContour_nontriv`) traces the same contour and is held equal to
+  the in-RAM cell by an invariant, not vetted here.
 - **Nyxus side, `MASS_DISPLACEMENT`:** a different producer — `BasicMorphologyFeatures::calculate()`,
   which computes the distance between the geometric and intensity-weighted centroids and reads no
   contour at all, and which has its own `osized_calculate()`. It is asserted by this same oracle test
@@ -1604,8 +1605,7 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   (64 MB here), `single_roi=False` — i.e. `ContourFeature::calculate()` at `SINGLEROI=false`, the
   in-RAM segmented contour, and `BasicMorphologyFeatures::calculate()` for `MASS_DISPLACEMENT`.
   Oracles: none — this recipe backs snapshots and the reference side of a path-equality invariant.
-  Used by: `tests/python/test_2d_morphology_regression.py`, `test_2d_ooc_regression.py`,
-  `test_2d_ooc_invariant.py`.
+  Used by: `tests/python/test_2d_morphology_regression.py`, `test_2d_ooc_invariant.py`.
 - It exists as its own id because the three cells below differ only in run mode, and a single
   fixture-named recipe could not say which of them a row was measured at.
 
@@ -1613,12 +1613,12 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - The same fixture at `ram_limit=0`, which forces the oversized branch for any ROI, so
   `ContourFeature::osized_calculate()` (`buildRegularContour_nontriv`) and
   `BasicMorphologyFeatures::osized_calculate()` run instead. Oracles: none. Used by:
-  `tests/python/test_2d_ooc_invariant.py`, `test_2d_ooc_regression.py`.
-- `MASS_DISPLACEMENT` and the five `EDGE_*` statistics are measured **equal** to
-  `morphology.disk64_segmented_inram` and carry `status=invariant` rows. `PERIMETER` and
-  `DIAMETER_EQUAL_PERIMETER` are **not** equal — `osized_calculate()` returns the contour pixel
-  count where `calculate()` sums Euclidean step lengths — and carry `flag=impl-defect`
-  regression rows. See `matrix/morphology.md` and `not_covered.md` §G.
+  `tests/python/test_2d_ooc_invariant.py`.
+- `MASS_DISPLACEMENT`, the five `EDGE_*` statistics, `PERIMETER`, `DIAMETER_EQUAL_PERIMETER` and
+  `ROI_RADIUS_MEAN`/`MAX`/`MEDIAN` are measured **equal** to `morphology.disk64_segmented_inram`
+  and carry `status=invariant` rows: `buildRegularContour_nontriv` traces the same borders as the
+  in-RAM builder, in image coordinates, and both paths measure them with the same
+  `measure_contour()`. See `matrix/morphology.md` and `not_covered.md` §G.
 
 ## morphology.disk64_wholeslide
 - The same fixture at `single_roi=True`, so the ROI is the whole frame:

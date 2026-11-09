@@ -17,9 +17,9 @@ pixels with many same-level neighbours) or heterogeneous (few).
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Yes, with the same values as in memory on an image that Nyxus reads as one tile. On other
-       images out-of-core processing of this family raises an error or returns wrong
-       values, depending on the ROI (see :ref:`large-images-tiles`).
+     - Yes, with the same values as in memory on tiled TIFF files and on striped files of up to
+       1024 × 1024 pixels. On a larger striped file out-of-core processing of this family raises
+       an error or returns wrong values, depending on the ROI (see :ref:`large-images-tiles`).
    * - **IBSI**
      - None. IBSI defines no GLDM; the family follows PyRadiomics. IBSI's neighbouring grey level
        dependence matrix with :math:`\alpha = 0` and :math:`\delta = 1` counts the same

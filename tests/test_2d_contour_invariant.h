@@ -98,6 +98,73 @@ void test_2d_contour_blob97_boundary_rule_invariant()
 	ASSERT_NEAR (r.fvals[(int)Nyxus::Feature2D::EDGE_INTEGRATED_INTENSITY][0], edge_sum, 1e-9);
 }
 
+// The out-of-core builder traces the ROI's padded image held on disk with the same border following
+// the in-RAM builder runs in memory, so the two return the same borders: the same walks, pixel for
+// pixel and in the same order, the same hole flags, and so the same PERIMETER and EDGE_* values. 100
+// random masks away from the image origin, with holes, fragments and isolated pixels, and the blob.
+void test_2d_contour_out_of_core_traces_the_same_borders_invariant()
+{
+	std::mt19937 rng (20261103);
+	std::uniform_int_distribution<int> side (3, 30), origin (1, 200);
+	std::uniform_real_distribution<double> u (0.0, 1.0);
+	std::vector<std::set<std::pair<int, int>>> masks;
+	for (int i = 0; i < 100; i++)
+	{
+		const int w = side(rng), h = side(rng), x0 = origin(rng), y0 = origin(rng);
+		const double fill = 0.3 + 0.6 * u(rng);
+		std::set<std::pair<int, int>> S;
+		for (int y = 0; y < h; y++)
+			for (int x = 0; x < w; x++)
+				if (u(rng) < fill)
+					S.insert({ x0 + x, y0 + y });
+		if (! S.empty())
+			masks.push_back (S);
+	}
+	masks.push_back (contour_mask_pixels (bench_blob97_filled_rows, 113, 41));
+
+	const Fsettings s = make_shape2d_settings();
+	size_t n_multi = 0;
+	for (size_t i = 0; i < masks.size(); i++)
+	{
+		SCOPED_TRACE ("mask #" + std::to_string(i));
+
+		LR ram (1);
+		contour_roi_from_pixels (ram, masks[i]);
+		contour_calculate (ram);
+
+		LR ooc (1);
+		contour_roi_from_pixels (ooc, masks[i]);
+		ooc.raw_pixels_NT.init (1, "nyxus_ut_contour_ooc");
+		for (const Pixel2& p : ooc.raw_pixels)
+			ooc.raw_pixels_NT.add_pixel (p);
+		ImageLoader dummy;	// osized_calculate reads its pixels from the cloud, not the loader
+		ContourFeature f;
+		f.osized_calculate (ooc, s, dummy);
+		ooc.initialize_fvals();
+		f.save_value (ooc.fvals);
+		ooc.raw_pixels_NT.close();
+
+		n_multi += ram.multicontour_.size() > 1;
+		ASSERT_EQ (ooc.multicontour_.size(), ram.multicontour_.size());
+		ASSERT_EQ (ooc.multicontour_hole_, ram.multicontour_hole_);
+		for (size_t k = 0; k < ram.multicontour_.size(); k++)
+		{
+			const auto& A = ram.multicontour_[k], & B = ooc.multicontour_[k];
+			ASSERT_EQ (B.size(), A.size()) << "border " << k;
+			for (size_t j = 0; j < A.size(); j++)
+			{
+				ASSERT_EQ (B[j].x, A[j].x) << "border " << k << " pixel " << j;
+				ASSERT_EQ (B[j].y, A[j].y) << "border " << k << " pixel " << j;
+				ASSERT_EQ (B[j].inten, A[j].inten) << "border " << k << " pixel " << j;
+			}
+		}
+		ASSERT_EQ (ooc.contour_border_ends_, ram.contour_border_ends_);
+		for (auto code : ContourFeature::featureset)
+			ASSERT_EQ (ooc.fvals[(int)code][0], ram.fvals[(int)code][0]) << "feature " << (int)code;
+	}
+	ASSERT_GE (n_multi, (size_t)50) << "too few masks had more than one border";
+}
+
 // Pixel2::min_sqdist and max_sqdist read a contour as one ordered walk. A walk of up to 10 points is
 // scanned whole, so on it both return exactly what an exhaustive scan does, at any pixel size. Every
 // walk length from 1 to 10, on points scattered at random so that the distance along a walk has

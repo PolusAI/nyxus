@@ -18,9 +18,9 @@ regularity that first-order intensity statistics cannot see.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Yes, with the same values as in memory on an image that Nyxus reads as one tile. On other
-       images out-of-core processing of this family raises an error or returns wrong
-       values, depending on the ROI (see :ref:`large-images-tiles`).
+     - Yes, with the same values as in memory on tiled TIFF files and on striped files of up to
+       1024 × 1024 pixels. On a larger striped file out-of-core processing of this family raises
+       an error or returns wrong values, depending on the ROI (see :ref:`large-images-tiles`).
    * - **IBSI**
      - 25 of the 30 features have an IBSI identifier. Four of the other 5 return the same value as
        one that does; ``GLCM_VARIANCE`` equals IBSI joint variance, which ``GLCM_JVAR`` matches only
