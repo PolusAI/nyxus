@@ -106,6 +106,7 @@ DIM_AGNOSTIC = {
     "test_docs_cli_reference_mechanics.py": "the CLI reference generator's checks; no image is read",
     "test_docs_conf_mechanics.py": "the Sphinx configuration's release and title; no image is read",
     "test_release_tag_mechanics.py": "the release tag's name and the release tooling that reads it; no image is read",
+    "test_release_wheel_grid_mechanics.py": "the release's wheel grid and the workflows that build it; no image is read",
     "test_docs_feature_reference_mechanics.py": "the feature reference generator's checks; no image is read",
     "test_ooc_mechanics.py": "out-of-core streaming machinery, asserted for both dims at once",
     "test_physical_calibration_regression.py": "physical voxel spacing read from OME metadata, not from an image of either dimension",

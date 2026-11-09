@@ -398,6 +398,11 @@ CMake options
      - ``OFF``
      - Turns ``USE_Z5``, ``USE_DCMTK`` and ``USE_ARROW`` on. It takes precedence over
        ``NOEXTRAS``. ``setup.py`` always passes it.
+   * - ``REQUIRE_ALLEXTRAS``
+     - ``OFF``
+     - Stops the configure with an error when ``USE_Z5``, ``USE_DCMTK`` or ``USE_ARROW`` is off.
+       Without it, a part whose libraries are missing is dropped with a warning. The PyPI wheels
+       are built with it.
    * - ``USE_Z5``
      - ``OFF``
      - OME-Zarr input. Also enables compressed NIfTI (``.nii.gz``), which needs the zlib that this

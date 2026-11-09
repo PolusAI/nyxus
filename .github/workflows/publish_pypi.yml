@@ -152,7 +152,8 @@ jobs:
   sdist:
     name: Build & publish the source distribution
     runs-on: ubuntu-22.04
-    # Uploaded after the wheels: pip prefers a new version's sdist over an older wheel.
+    # Uploaded after the wheels, and only beside all of them: pip prefers a new version's sdist
+    # over an older wheel.
     needs: [prereqs_ubuntu, wheels_ubuntu, wheels_ubuntu_arm, wheels_windows, wheels_macos_intel, wheels_macos_arm64]
     if: ${{ !cancelled() }}
     steps:
@@ -195,6 +196,7 @@ jobs:
             -w /work \
             -e NYXUS_DEP_DIR=/work/local_install \
             -e LD_LIBRARY_PATH=/work/local_install/lib:/work/local_install/lib64 \
+            -e CMAKE_ARGS=-DREQUIRE_ALLEXTRAS=ON \
             quay.io/pypa/manylinux_2_28_x86_64:latest \
             bash -c "
               set -e
@@ -203,6 +205,8 @@ jobs:
               cd /tmp
               python3.11 -c 'import nyxus; print(nyxus.__version__)'
             "
+      - name: Check that PyPI holds every wheel of this release
+        run: python ci-utils/check_wheel_grid.py dist/*.tar.gz
       - name: Install Dependencies
         run: python -m pip install --upgrade twine requests
       - name: Publish to PyPi
@@ -267,7 +271,7 @@ jobs:
           CIBW_BEFORE_ALL_LINUX:  dnf -y install llvm libevent-devel openssl-devel &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -a local_install /tmp/nyxus_bld
-          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CMAKE_ARGS="-DREQUIRE_ALLEXTRAS=ON"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
           CIBW_TEST_COMMAND: pytest {project}/tests/python
@@ -335,7 +339,7 @@ jobs:
           CIBW_BEFORE_ALL_LINUX:  dnf -y install llvm libevent-devel openssl-devel &&
                                    mkdir -p /tmp/nyxus_bld &&
                                    cp -a local_install /tmp/nyxus_bld
-          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+          CIBW_ENVIRONMENT_LINUX: LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH" NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install" CMAKE_ARGS="-DREQUIRE_ALLEXTRAS=ON"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
           CIBW_TEST_COMMAND: pytest {project}/tests/python
@@ -399,7 +403,7 @@ jobs:
           CIBW_BUILD: ${{ matrix.cibw_build }}
           CIBW_BUILD_VERBOSITY: 3
           CIBW_BEFORE_ALL_WINDOWS: xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
-          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
+          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DREQUIRE_ALLEXTRAS=ON"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: ${{ matrix.cibw_archs }}
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
@@ -480,7 +484,7 @@ jobs:
             LDFLAGS="-isysroot $SDKROOT -lc++ -lc++abi -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
             PIP_ONLY_BINARY="imagecodecs"
             ARROW_HAVE_LIBATOMIC=OFF
-            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON"
+            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON -DREQUIRE_ALLEXTRAS=ON"
             REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
@@ -567,7 +571,7 @@ jobs:
             CXXFLAGS="-isysroot $SDKROOT -stdlib=libc++ -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
             LDFLAGS="-isysroot $SDKROOT -lc++ -lc++abi -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
             ARROW_HAVE_LIBATOMIC=OFF
-            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON"
+            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON -DREQUIRE_ALLEXTRAS=ON"
             REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
