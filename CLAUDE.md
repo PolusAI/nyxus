@@ -149,17 +149,17 @@ build cannot link them. Full-feature + CUDA build (paths below are placeholders:
 2. Configure with the **Ninja** generator so `nvcc` can use `cl` as its host
    compiler (no CUDA MSBuild integration needed): run the Visual Studio
    `vcvars64.bat` first, then `cmake -S . -B build-cli -G Ninja
-   -DCMAKE_CXX_COMPILER=cl -DCMAKE_BUILD_TYPE=Release -DBUILD_CLI=ON
+   -DCMAKE_CXX_COMPILER=cl -DBUILD_CLI=ON
    -DALLEXTRAS=ON -DUSEGPU=ON -DCMAKE_PREFIX_PATH=$ENV\Library` then
-   `cmake --build build-cli`. With MSVC, CMake presets `Debug` for Ninja and
-   `--config` has no effect there, so `-DCMAKE_BUILD_TYPE=Release` is required.
+   `cmake --build build-cli`. Ninja builds `Release` by default; `--config` has
+   no effect there, so another type needs `-DCMAKE_BUILD_TYPE` at configure time.
    (`NYXUS_DEP_DIR` is read only as an environment variable, not as a `-D`
    cache variable.)
 3. To run, put `$ENV\Library\bin` (dependency DLLs) and the CUDA toolkit `bin`
    on PATH.
 
 **Fast Python-extension build** for running the test suite (tiff-only CPU):
-same as above (keep `-DCMAKE_BUILD_TYPE=Release`, which
+same as above (the default `Release` type is what
 `CMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE` below relies on) but `-DBUILD_LIB=ON -DALLEXTRAS=OFF -DUSEGPU=OFF
 -DPYTHON_EXECUTABLE=$ENV\python.exe -Dpybind11_DIR=$ENV\Lib\site-packages\pybind11\share\cmake\pybind11`
 and `--target backend`, with `-DCMAKE_LIBRARY_OUTPUT_DIRECTORY_RELEASE` pointed at
