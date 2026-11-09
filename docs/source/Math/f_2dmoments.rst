@@ -32,15 +32,11 @@ set again with every pixel also weighted by its distance to the ROI contour.
        with anisotropy the run can crash, a known defect (`#521 <https://github.com/PolusAI/nyxus/issues/521>`__). The GPU's distance search computes
        the step with a single-precision logarithm.
    * - **Out-of-core**
-     - Partly. Without anisotropy: on an image that Nyxus reads as one tile, the 118 unweighted
-       moments have the same values as in memory. On an image read as several tiles, out-of-core
-       processing of this family raises an error or returns wrong values, depending on the ROI (see
-       :ref:`large-images-tiles`). The 62 weighted moments
-       differ unless the ROI's bounding box starts at pixel (0, 0), and can differ even then, a
-       known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__; see
-       :ref:`moments-possible-issues` and :doc:`/large_images`). With anisotropy, on an image
-       that Nyxus reads as one tile, the weighted intensity moments get their in-memory values and
-       only weighted shape moments differ.
+     - Yes, all 180 moments, with or without anisotropy, with the same values as in memory on
+       tiled TIFF files and on striped files of up to 1024 × 1024 pixels: the weighted moments are
+       measured against the same contour on both paths. On a larger striped file out-of-core
+       processing of this family raises an error or returns wrong values, depending on the ROI
+       (see :ref:`large-images-tiles`).
    * - **IBSI**
      - None. IBSI defines no geometric moment features.
 
@@ -59,9 +55,8 @@ How the features are computed
   bounding box take no part.
 - **Coordinates:** :math:`x_i` is the column and :math:`y_i` the row of pixel :math:`i`, both
   integers measured from the top-left corner of the ROI's bounding box. A pixel's coordinates are
-  those of its centre. Moving the ROI inside the image does not change any value computed in
-  memory; out of core the weighted moments depend on the ROI's position (see
-  :ref:`moments-possible-issues`). With anisotropy the positions change (see `Settings`_).
+  those of its centre. Moving the ROI inside the image does not change any value, in memory or
+  out of core. With anisotropy the positions change (see `Settings`_).
 - **Values:** the shape moments use :math:`I_i = 1` for every pixel. The intensity moments use the
   pixel's intensity as a grey level, the integer Nyxus holds after loading the image. They are not
   converted back to the image's units (see *Intensity units and CT images* in
@@ -227,9 +222,8 @@ Settings
    * - Memory limit
      - ``--ramLimit``
      - ``Nyxus(..., ram_limit=...)``
-     - ROIs whose footprint reaches the limit are computed out of core, which changes the weighted
-       moments; on an image read as several tiles it raises an error or changes the other moments
-       too.
+     - ROIs whose footprint reaches the limit are computed out of core, with the same values; on
+       a striped file larger than 1024 × 1024 pixels it raises an error or changes the moments.
    * - GPU
      - ``--useGpu=true``
      - ``Nyxus(..., use_gpu_device=0)``
@@ -666,22 +660,6 @@ The sum of the weights is often negative
    radius 12 and 1211 at radius 20. Near the sign change the normalization divides by a number
    close to 0: ``WT_NORM_CTR_MOM_30`` is -33355 at radius 12 and -0.001704 at radius 20.
 
-Weighted moments differ out of core
-   Without anisotropy, an ROI computed out of core gets its contour from a different routine, which places it
-   relative to the ROI's bounding box while the pixels keep their image positions, a known defect
-   (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). The distances
-   :math:`d_i` are then off by the box's offset, and all 62 weighted moments depend on where the
-   ROI lies. On an ellipse of 245 pixels ``WEIGHTED_SPAT_MOMENT_00`` is -93.36 in memory wherever
-   it lies, and 35.62, 78.42 or 425.0 out of core depending on where its bounding box starts:
-   (2, 2), (3, 5) or (10, 12). A ROI whose bounding box starts at (0, 0) is placed correctly, but
-   the out-of-core contour can list its pixels in a different order, which changes the
-   approximate distance search: a 48 × 40 rectangle there gets the in-memory values, while the
-   ellipse keeps ``WEIGHTED_SPAT_MOMENT_00`` at -93.36 but gives ``WEIGHTED_SPAT_MOMENT_10``
-   -708.9 against -1158 in memory. The out-of-core contour is also a single loop, which leaves a
-   hole's border out: a 9 × 9 square with a 3 × 3 hole at the origin gives
-   ``WEIGHTED_SPAT_MOMENT_00`` -194.7 out of core and -274.2 in memory. The 118 unweighted moments
-   are the same on both paths.
-
 Whole-slide mode
    The image corners used as the contour lie one pixel past the last column and row, a known
    defect (`#493 <https://github.com/PolusAI/nyxus/issues/493>`__). Row 0 and
@@ -722,7 +700,8 @@ regression tests, and ``WEIGHTED_SPAT_MOMENT_00`` and ``IMOM_WRM_00`` also by an
 separate copies of a disk under one label weigh exactly twice one copy, to a relative
 :math:`10^{-12}`.
 The worked-example script asserts every feature value of the worked example and the feature values
-quoted under Possible issues, including the out-of-core ones. It does not assert the distance
+quoted under Possible issues, and that out of core every moment has its in-memory value, on
+ROIs away from the image origin and on a ROI with a hole. It does not assert the distance
 matrix of the worked example, the counts of pixels given too large a distance, the
 single-precision rounding of the weights or the comparison with OpenCV and scikit-image Hu
 invariants; these were measured separately. The script compares no value with a reference tool.

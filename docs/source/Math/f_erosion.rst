@@ -21,9 +21,9 @@ thin or ragged ones, so the count is a rough measure of the ROI's thickness in p
        :doc:`/gpu`), a known defect (`#520 <https://github.com/PolusAI/nyxus/issues/520>`__). The GPU uses the same structuring element, the same pixel
        range and the same cap.
    * - **Out-of-core**
-     - Yes, with the same values as in memory on an image that Nyxus reads as one tile. On other
-       images out-of-core erosion raises an error or returns a wrong value, depending on the ROI; see
-       :ref:`large-images-tiles`.
+     - Yes, with the same values as in memory on tiled TIFF files and on striped files of up to
+       1024 × 1024 pixels. On a larger striped file out-of-core erosion raises an error or returns a
+       wrong value, depending on the ROI; see :ref:`large-images-tiles`.
    * - **IBSI**
      - Neither feature has an IBSI identifier; IBSI defines no erosion count.
 

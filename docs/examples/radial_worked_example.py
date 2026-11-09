@@ -166,8 +166,8 @@ assert tie.sum() == 11
 assert math.isclose(nyx.featurize(tie_img, tie)["MEAN_FRAC_0"][0], 9.0, rel_tol=1e-6)
 assert math.isclose(from_files(tie_img, tie)["MEAN_FRAC_0"][0], 2.0, rel_tol=1e-6)
 
-# Out of core (ram_limit=0): the worked example at the image origin gets the in-memory values;
-# moved 2 pixels right and 3 down it does not
+# Out of core (ram_limit=0): the worked example gets the in-memory values, at the image origin and
+# moved 2 pixels right and 3 down
 at_origin = np.zeros((20, 20), np.uint32)
 at_origin_mask = np.zeros((20, 20), np.uint32)
 at_origin[:7, :9], at_origin_mask[:7, :9] = img, mask
@@ -177,10 +177,10 @@ for code in CODES:
 moved = np.roll(np.roll(at_origin, 3, axis=0), 2, axis=1)
 moved_mask = np.roll(np.roll(at_origin_mask, 3, axis=0), 2, axis=1)
 assert np.allclose(vec(from_files(moved, moved_mask), "FRAC_AT_D"), vec(features, "FRAC_AT_D"))
-out = from_files(moved, moved_mask, ram_limit=0)
-# pins known defect https://github.com/PolusAI/nyxus/issues/509
-assert math.isclose(out["FRAC_AT_D_7"][0], 0.5532, rel_tol=5e-4), out["FRAC_AT_D_7"][0]
-assert math.isclose(out["MEAN_FRAC_0"][0], 3.0, rel_tol=1e-6), out["MEAN_FRAC_0"][0]
+mem, out = from_files(moved, moved_mask), from_files(moved, moved_mask, ram_limit=0)
+for code in CODES:
+    assert np.allclose(vec(out, code), vec(mem, code), rtol=1e-9, atol=1e-12), code
+assert math.isclose(out["FRAC_AT_D_7"][0], 0.06383, rel_tol=5e-4), out["FRAC_AT_D_7"][0]
 
 # Whole-slide mode: the contour is the four corners of the bounding box, one pixel past the last
 # column and row; the centre is the pixel equally far from all four, (10, 10) with R = 14.14 on a

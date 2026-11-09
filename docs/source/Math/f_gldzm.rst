@@ -18,9 +18,9 @@ areas deep inside the ROI give large ones.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Yes, with the same values as in memory on an image that Nyxus reads as one tile. On other
-       images out-of-core processing of this family raises an error or returns wrong
-       values, depending on the ROI (see :ref:`large-images-tiles`).
+     - Yes, with the same values as in memory on tiled TIFF files and on striped files of up to
+       1024 × 1024 pixels. On a larger striped file out-of-core processing of this family raises
+       an error or returns wrong values, depending on the ROI (see :ref:`large-images-tiles`).
    * - **IBSI**
      - 16 of the 18 features have an IBSI identifier. Grey level mean and zone distance mean have
        none.

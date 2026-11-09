@@ -23,16 +23,12 @@ intensity-weighted features, they use only the ROI's mask.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Partly. Out of core the contour is traced as a single loop, so a hole or a second fragment
-       is left out of it, which also changes the ``EDGE_*`` features of such ROIs; ``PERIMETER``
-       counts the loop's pixels, which changes the features built on it
-       (``DIAMETER_EQUAL_PERIMETER``, ``CIRCULARITY``, the geodetic length and thickness), and the
-       contour-based circle and radius features use contour coordinates relative to the bounding
-       box. The neighbour features are not computed: they are 0, and ``POLYGONALITY_AVE`` and
-       ``HEXAGONALITY_*`` are −1. With anisotropy the out-of-core contour is wrong, so every
-       contour-based feature can differ. These out-of-core differences are a known defect
-       (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). See :ref:`morphology-possible-issues`,
-       :doc:`/large_images` and :ref:`large-images-tiles`.
+     - Partly. Out of core the contour is traced as in memory, every border of the ROI in image
+       coordinates, so every contour-based feature, with or without anisotropy, has its in-memory
+       value. The neighbour features are not computed: they are 0, and ``POLYGONALITY_AVE`` and
+       ``HEXAGONALITY_*`` are −1. On a striped file larger than 1024 × 1024 pixels out-of-core
+       processing raises an error or returns wrong values, depending on the ROI. See
+       :ref:`morphology-possible-issues`, :doc:`/large_images` and :ref:`large-images-tiles`.
    * - **IBSI**
      - None. IBSI defines morphological features in 3D only (DHQ4), so no 2D code on this page
        has an identifier.
@@ -217,8 +213,9 @@ Settings
    * - Memory limit
      - ``--ramLimit``
      - ``Nyxus.set_params(ram_limit=...)``
-     - ROIs that do not fit are computed out of core, with the differences listed under
-       :ref:`morphology-possible-issues`.
+     - ROIs that do not fit are computed out of core, with the same values except the neighbour
+       features, ``POLYGONALITY_AVE`` and ``HEXAGONALITY_*`` (see
+       :ref:`morphology-possible-issues`).
 
 ``--coarseGrayDepth`` and ``--ibsi`` have no effect on these features. All options are listed in
 the :ref:`cli-reference`.
@@ -532,8 +529,7 @@ and a label made of two 5 × 4 rectangles gives 28, 14 for each.
 
 **Possible issues.** The path runs through pixel centres, so it is shorter than the outline of the
 pixel squares: a 3 × 5 rectangle has a perimeter of 12, not 16. A part one pixel wide is walked
-on both sides: a 1 × 13 bar gives 24. Out of core the value is the number of pixels of the first
-traced loop, without holes or other fragments: 44 for ROI 1 of the worked example.
+on both sides: a 1 × 13 bar gives 24.
 
 
 .. _feature-diameter-equal-perimeter:
@@ -871,9 +867,6 @@ Contour pixels are at distance 0.
 
 The median of an even count is the mean of the two middle values. On the worked example ROI 1 gives
 a mean of 0.9288, a maximum of 3 and a median of 1; ROI 2 gives 0.2, 1 and 0.
-
-**Possible issues.** Out of core the contour coordinates are relative to the bounding box, a known
-defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__), so the values depend on where the ROI lies; there ROI 1 gives a mean of 1.124 and ROI 2 12.25.
 
 
 Extrema
@@ -1312,19 +1305,15 @@ Anisotropy
    at its position scaled by the factors, so the ``EDGE_*`` values do not change. Arrays passed to ``Nyxus.featurize`` are not resampled.
 
 Out of core
-   On ROIs computed out of core, the contour is a single loop: holes and further fragments are
-   left out of it, which changes ``PERIMETER`` and the ``EDGE_*`` features of such ROIs, and the
-   minimum enclosing circle of a ROI in several fragments. On a 300 × 300 square with a centred
-   100 × 100 hole the out-of-core contour is the outer loop of 1196 pixels, where the in-memory
-   contour has 1596, and ``PERIMETER`` is 1196 instead of 1597.7. ``PERIMETER`` is the number of the loop's pixels
-   (44 for ROI 1 instead of 48.14), and ``DIAMETER_EQUAL_PERIMETER``, ``CIRCULARITY``,
-   ``GEODETIC_LENGTH`` and ``THICKNESS`` follow it. The contour's coordinates are relative to the
-   bounding box, which changes the circumscribing and inscribing circles and ``ROI_RADIUS_*``
-   (ROI 2: circumscribing 30.46 instead of 4.472). The neighbour features are not computed and are
+   On ROIs computed out of core, the contour is traced from the ROI's padded image held on disk,
+   by the same border following as in memory: every border, the outer border of each fragment and
+   each hole's border, in image coordinates and in the same order. ``PERIMETER``, the features
+   built on it, the ``EDGE_*`` features, the circles and ``ROI_RADIUS_*`` therefore have their
+   in-memory values, with or without anisotropy. The neighbour features are not computed and are
    0, and an out-of-core ROI is also not seen as a neighbour by the ROIs computed in memory, so
    their neighbour features leave it out. ``POLYGONALITY_AVE`` and ``HEXAGONALITY_*``, which need
-   the neighbour count, are −1 out of core. On the worked example, whose ROIs have no holes, the
-   other 88 codes give the in-memory values; on images that Nyxus reads as several tiles see
+   the neighbour count, are −1 out of core. On the worked example every other code gives its
+   in-memory value; on striped files larger than 1024 × 1024 pixels see
    :ref:`large-images-tiles`, and for the families that differ see :doc:`/large_images`.
 
 Codes that need companions
@@ -1388,8 +1377,10 @@ The test suite checks the morphology features against six references:
 ``COMPACTNESS``, ``EDGE_STDDEV_INTENSITY``, ``POLYGONALITY_AVE``, ``HEXAGONALITY_AVE``,
 ``HEXAGONALITY_STDDEV``, ``MIN_FERET_ANGLE``, ``MAX_FERET_ANGLE``, the three ``*_DIAM_MODE``
 codes and every chord code except ``ALLCHORDS_MIN`` are regression-only. The
-out-of-core values of the ellipse family, the ``EDGE_*`` features and ``MASS_DISPLACEMENT`` are
-checked against the in-memory values of the same build. The *Example* values and the values the
+out-of-core values of every code except the neighbour features, ``POLYGONALITY_AVE`` and
+``HEXAGONALITY_*`` are checked against the in-memory values of the same build, on ROIs away from
+the image origin, with a diagonal boundary, with a hole, in two fragments, across several tiles
+and with anisotropy. The *Example* values and the values the
 worked-example script checks beside them are pinned by that script. The comparisons with
 ``skimage.measure.regionprops``, the alternative conventions (Feret over 18 directions, chords
 counting the last row, merged ROIs) and the out-of-core, anisotropy and

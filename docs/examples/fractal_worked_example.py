@@ -150,9 +150,8 @@ def from_files(m, intensity=None, single_roi=False, codes=F + ["PERIMETER"], **k
     return [[table[c][i] for c in codes] for i in range(len(table))]
 
 
-check(from_files(mask, ram_limit=0)[0], [1.3966, 1.1311, 26.0], "example out of core")
-# pins known defect https://github.com/PolusAI/nyxus/issues/509
-check(from_files(holed, ram_limit=0)[0][1:2], [1.005], "square with a hole out of core")
+check(from_files(mask, ram_limit=0)[0], [1.3732, 1.1311, 32.6274], "example out of core")
+check(from_files(holed, ram_limit=0)[0][1:2], [1.045], "square with a hole out of core")
 for value in (100, 4294967295):
     inten = lone * 100
     inten[70, 70] = value
@@ -160,24 +159,20 @@ for value in (100, 4294967295):
 check(from_files(mask)[0][:2], [1.3732, 1.1311], "example, no anisotropy")
 check(from_files(mask, anisotropy_x=2)[0][:2], [1.2459, 1.1566], "anisotropy_x=2")
 check(from_files(mask, anisotropy_y=3)[0][:2], [1.4458, 1.1635], "anisotropy_y=3")
-# With anisotropy the out-of-core contour differs, so a single-contour disk differs too
+# Out of core the contour of the resampled ROI is the in-memory one, so the values agree
 check(from_files(disk(8), anisotropy_x=2)[0][1:2], [1.0917], "disk 8, anisotropy_x=2")
-# pins known defect https://github.com/PolusAI/nyxus/issues/509
-check(from_files(disk(8), anisotropy_x=2, ram_limit=0)[0][1:2], [1.0482], "disk 8, anisotropy_x=2, out of core")
-# Without anisotropy a single contour can still differ out of core, which walks a one-pixel-wide
-# part once where the in-memory walk goes along and back: a 1 x 16 line and an 8 x 8 square with a
-# one-pixel-wide branch, at the image origin
+check(from_files(disk(8), anisotropy_x=2, ram_limit=0)[0][1:2], [1.0917], "disk 8, anisotropy_x=2, out of core")
+# A one-pixel-wide part is walked along and back on both paths: a 1 x 16 line and an 8 x 8 square
+# with a one-pixel-wide branch, at the image origin
 line16 = np.zeros((4, 19), np.uint32)
 line16[0, 0:16] = 1
 check(from_files(line16)[0][1:2], [1.035], "line 16")
-# pins known defect https://github.com/PolusAI/nyxus/issues/509
-check(from_files(line16, ram_limit=0)[0][1:2], [1.190], "line 16, out of core")
+check(from_files(line16, ram_limit=0)[0][1:2], [1.035], "line 16, out of core")
 branch = np.zeros((18, 18), np.uint32)
 branch[0:8, 0:8] = 1
 branch[3, 8:16] = 1
 check(from_files(branch)[0][1:2], [1.190], "square with a branch")
-# pins known defect https://github.com/PolusAI/nyxus/issues/509
-check(from_files(branch, ram_limit=0)[0][1:2], [1.102], "square with a branch, out of core")
+check(from_files(branch, ram_limit=0)[0][1:2], [1.190], "square with a branch, out of core")
 labels = two.copy()
 labels[5:30, 45:70] = 2
 for row in from_files(labels, (labels > 0) * 100):

@@ -61,6 +61,8 @@ public:
 private:
 	void buildRegularContour_nontriv (LR& roi, const Fsettings& settings);
 	void buildWholeSlideContour(LR& r);
+	// PERIMETER and the EDGE_* features of the contour left on the ROI, the same on both paths
+	void measure_contour (LR& r);
 	std::tuple<double, double, double, double> calc_min_max_mean_stddev_intensity (const std::vector<Pixel2> & contour_pixels);
 	double
 		fval_PERIMETER = 0, 

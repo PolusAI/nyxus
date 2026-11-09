@@ -31,11 +31,10 @@ SOURCES = [
     # the registry names this file for PERIMETER, DIAMETER_EQUAL_PERIMETER and EDGE_MEAN_INTENSITY;
     # it asserts their values on a mask of isolated speckles, which is edge-case coverage, not vetting
     os.path.join("python", "test_nyxus.py"),
-    # added with the config-matrix cells: the whole-slide snapshot and the two out-of-core
-    # assertions cover contour features, so the scanner has to see them or their rows read as
-    # claiming a file that covers nothing
+    # the config-matrix cells: the whole-slide snapshot and the out-of-core equality assertions
+    # cover contour features, so the scanner has to see them or their rows read as claiming a file
+    # that covers nothing
     os.path.join("python", "test_2d_morphology_regression.py"),
-    os.path.join("python", "test_2d_ooc_regression.py"),
     os.path.join("python", "test_2d_ooc_invariant.py"),
 ]
 

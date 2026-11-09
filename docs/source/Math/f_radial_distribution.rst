@@ -19,13 +19,10 @@ unevenly the intensity is spread over the wedges.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Yes. Without anisotropy the values differ from the in-memory ones for a ROI whose bounding
-       box does not start at the image's first row and column, and can differ even when it does, a
-       known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__);
-       with anisotropy an out-of-core ROI gets its in-memory values. On an image that Nyxus reads
-       as several tiles out-of-core processing raises an error or returns wrong values in both
-       cases, depending on the ROI (see
-       :ref:`radial-possible-issues`, :ref:`large-images-tiles` and :doc:`/large_images`).
+     - Yes, with or without anisotropy, with the same values as in memory on tiled TIFF files and
+       on striped files of up to 1024 × 1024 pixels: the contour is the same on both paths. On a
+       larger striped file out-of-core processing raises an error or returns wrong values,
+       depending on the ROI (see :ref:`large-images-tiles`).
    * - **IBSI**
      - None. IBSI defines no radial distribution features.
 
@@ -304,8 +301,7 @@ are fixed in the code.
    * - Memory limit
      - ``--ramLimit``
      - ``set_params(ram_limit=...)``
-     - Decides whether a ROI is processed out-of-core, which, without anisotropy, changes the values
-       of most ROIs (see :ref:`radial-possible-issues`).
+     - Decides whether a ROI is processed out-of-core, which does not change the values.
 
 All options are listed in the :ref:`cli-reference`.
 
@@ -443,17 +439,6 @@ Ties between centre candidates depend on the pixel order
    11-pixel ROI with two tied candidates, ``MEAN_FRAC_0`` is 9 for the array and 2 for the same
    image read from a file.
 
-Out-of-core ROIs
-   Without anisotropy, an out-of-core ROI keeps its contour relative to its bounding box but its
-   pixels in image coordinates, a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). A ROI whose bounding box does not start at the image's first row
-   and column gets different values: the worked example moved 2 pixels right and 3 down reports
-   ``FRAC_AT_D_7`` 0.5532 out-of-core instead of 0.06383, and ``MEAN_FRAC_0`` 3 instead of 9. A ROI
-   whose bounding box starts there is placed correctly, but the out-of-core contour is a single
-   loop that can list its points in a different order, which changes the approximate searches:
-   the worked example at the origin gets the in-memory values, while 2 of 15 random ellipses at
-   the origin did not. With anisotropy an out-of-core ROI is measured as in memory and gets the
-   in-memory values.
-
 Small ROIs
    A ROI of 1 pixel has :math:`R = 0` and puts its pixel in ring 0. A ROI of 2 pixels puts one
    pixel in ring 0 and the other, at :math:`R`, in ring 7.
@@ -561,7 +546,7 @@ the values of the worked example and that the page's full-scan formulas reproduc
 and 3 × 3 squares, the 5 × 4 rectangle (:math:`R^2 = 5` against 8, 2 pixels beyond :math:`R`), the
 ROIs of 1 and 2 pixels, the tie between centre candidates, the out-of-core values of the moved and
 unmoved worked example and the whole-slide rings. It does not assert the CellProfiler values or
-the counts over random ROIs (search changes, out-of-core differences at the origin); these were
+the counts over random ROIs (search changes); these were
 measured separately.
 
 
