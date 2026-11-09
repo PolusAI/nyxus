@@ -10,6 +10,13 @@
 
 void ChordsFeature::calculate (LR & r, const Fsettings& s)
 {
+	// Every output starts at 0, the value of a ROI with no chords. Out of core one instance serves
+	// every ROI, so the previous ROI's values must not survive the early return below.
+	allchords_max = allchords_min = allchords_median = allchords_mean = allchords_mode = allchords_stddev =
+		allchords_min_angle = allchords_max_angle = 0;
+	maxchords_max = maxchords_min = maxchords_median = maxchords_mean = maxchords_mode = maxchords_stddev =
+		maxchords_min_angle = maxchords_max_angle = 0;
+
 	// Center
 	double cenx = (r.aabb.get_xmin() + r.aabb.get_xmax()) / 2.0,
 		ceny = (r.aabb.get_ymin() + r.aabb.get_ymax()) / 2.0;

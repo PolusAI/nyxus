@@ -447,12 +447,9 @@ Power2PaddedImageMatrix_NT::Power2PaddedImageMatrix_NT (const std::string& _name
 	// Cache AABB
 	original_aabb = aabb;
 
-	// Figure out the padded size and allocate. Tight power-of-2 canvas (ceil_pow2) and
-	// origin alignment, matching the trivial Power2PaddedImageMatrix, so the oversized
-	// box-counting path recovers the same grid-aligned dimension.
-	int bigSide = std::max(aabb.get_width(), aabb.get_height());
-	StatsInt paddedSide = Nyxus::ceil_pow2(bigSide);
-	allocate(paddedSide, paddedSide, 0.0);
+	// The ROI's bounding box at the origin of the power-of-2 box grid, as the trivial
+	// Power2PaddedImageMatrix stores it: boxes beyond the bounding box hold no ROI pixel.
+	allocate(aabb.get_width(), aabb.get_height(), 0.0);
 
 	// Place the ROI at the grid origin (no centering) to avoid box-grid misalignment bias.
 	int padOffsetX = 0;
@@ -469,10 +466,11 @@ Power2PaddedImageMatrix_NT::Power2PaddedImageMatrix_NT (const std::string& _name
 
 bool Power2PaddedImageMatrix_NT::tile_contains_signal (int tile_row, int tile_col, int tile_side)
 {
+	// A box may reach past the matrix's right or bottom edge; that part holds no signal
 	int r1 = tile_row * tile_side,
-		r2 = r1 + tile_side,
+		r2 = std::min (r1 + tile_side, (int) get_height()),
 		c1 = tile_col * tile_side,
-		c2 = c1 + tile_side;
+		c2 = std::min (c1 + tile_side, (int) get_width());
 	for (int r = r1; r < r2; r++)
 		for (int c = c1; c < c2; c++)
 			if (yx(r, c) != 0)

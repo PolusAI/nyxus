@@ -53,7 +53,8 @@ Both features use only the ROI's mask. The intensities play no part.
 
 **Box counting.** Nyxus takes the larger side :math:`L` of the ROI's bounding box and rounds it up
 to a power of two, :math:`S`. The ROI is placed with its bounding-box corner at the origin of an
-:math:`S \times S` canvas. For each box size :math:`s = S, S/2, \ldots, 2` it counts the boxes of an
+:math:`S \times S` grid; only the ROI's bounding box is stored, so the memory used follows the ROI
+and not :math:`S^2`. For each box size :math:`s = S, S/2, \ldots, 2` it counts the boxes of an
 :math:`s \times s` grid that hold at least one ROI pixel. Box size 1 is not used, and the largest
 size, which covers the canvas with one box, is. When :math:`S \le 32` the grid is also shifted by
 half a box, along :math:`x`, along :math:`y` and along both, and the smallest of the four counts is

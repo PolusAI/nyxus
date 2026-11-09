@@ -548,3 +548,58 @@ inline void test_2d_morphology_fractal_perimeter_walked_ruler_invariant()
     ASSERT_NEAR (roi.fvals[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], expected, 1e-12)
         << "FRACT_DIM_PERIMETER does not take its mean ruler from the borders the stride walks";
 }
+
+// FRACT_DIM_BOXCOUNT of a long, thin ROI counts its boxes on a grid of side ceil_pow2 of the longer
+// side, but stores only the ROI's bounding box: a 2000 x 3 band with gaps has a 2048-pixel grid and a
+// 2000 x 3 image, not a 2048 x 2048 one. The dimension equals the one counted directly from the pixel
+// coordinates, a box of size s holding pixel (x, y) when it is box ((x - xmin) / s, (y - ymin) / s).
+inline void test_2d_morphology_fractal_boxcount_long_thin_roi_invariant()
+{
+    const int W = 2000, H = 3, x0 = 7, y0 = 11;
+    LR roi (1);
+    bool first = true;
+    for (int y = y0; y < y0 + H; y++)
+        for (int x = x0; x < x0 + W; x++)
+        {
+            const int u = x - x0, v = y - y0;
+            if ((u * 7 + v * 13) % 5 == 0 || (u / 97) % 3 == 1)
+                continue;
+            if (first) { Nyxus::init_label_record_3 (roi, x, y, 1); first = false; }
+            else Nyxus::update_label_record_3 (roi, x, y, 1);
+            roi.raw_pixels.push_back (Pixel2 (x, y, (PixIntens) 1));
+        }
+    roi.make_nonanisotropic_aabb();
+    roi.aux_image_matrix = ImageMatrix (roi.raw_pixels);
+    roi.initialize_fvals();
+    ASSERT_EQ (roi.aabb.get_width(), (StatsInt) W);
+    ASSERT_EQ (roi.aabb.get_height(), (StatsInt) H);
+
+    Power2PaddedImageMatrix pim (roi.raw_pixels, roi.aabb, 1, 1.0);
+    EXPECT_EQ (pim.width, (StatsInt) W);
+    EXPECT_EQ (pim.height, (StatsInt) H) << "the box-counting image is not the ROI's bounding box";
+
+    Fsettings s = make_shape2d_settings();
+    ContourFeature contour;
+    contour.calculate (roi, s);
+    contour.save_value (roi.fvals);
+    FractalDimensionFeature fractal;
+    fractal.calculate (roi, s);
+    fractal.save_value (roi.fvals);
+
+    // The direct count and its least-squares fit of ln N(s) against ln s
+    double sx = 0, sy = 0, sxx = 0, sxy = 0;
+    int n = 0;
+    for (int side = 2048; side > 1; side /= 2)
+    {
+        std::set<std::pair<int, int>> boxes;
+        for (const Pixel2& p : roi.raw_pixels)
+            boxes.insert ({ ((int) p.x - x0) / side, ((int) p.y - y0) / side });
+        const double x = std::log ((double) side), y = std::log ((double) boxes.size());
+        sx += x; sy += y; sxx += x * x; sxy += x * y; n++;
+    }
+    const double expected = 0.0 - (n * sxy - sx * sy) / (n * sxx - sx * sx);
+
+    ASSERT_GT (expected, 0.5);
+    ASSERT_NEAR (roi.fvals[(int)Nyxus::Feature2D::FRACT_DIM_BOXCOUNT][0], expected, 1e-12)
+        << "FRACT_DIM_BOXCOUNT differs from the box count of the ROI's pixel coordinates";
+}

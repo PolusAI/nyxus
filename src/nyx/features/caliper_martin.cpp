@@ -46,6 +46,7 @@ CaliperMartinFeature::CaliperMartinFeature() : FeatureMethod("CaliperMartinFeatu
 {
 	// Letting the feature dependency manager know
 	provide_features (CaliperMartinFeature::featureset);
+	add_dependencies ({ Feature2D::CONVEX_HULL_AREA });
 }
 
 void CaliperMartinFeature::calculate (LR& r, const Fsettings& settings)
@@ -138,20 +139,9 @@ void CaliperMartinFeature::calculate_imp(const std::vector<Pixel2>& convex_hull,
 
 void CaliperMartinFeature::osized_calculate (LR& r, const Fsettings& settings, ImageLoader&)
 {
-	// FIX (caliper reimpl): the out-of-RAM path duplicated the same defective min+max chord logic.
-	// Route it through the corrected area-bisecting calculate_imp so both paths agree.
-	std::vector<double> all_D;
-	calculate_imp(r.convHull_CH, all_D);
-
-	// Process the stats
-	auto s = ComputeCommonStatistics2(all_D);
-
-	_min = (double)s.min;
-	_max = (double)s.max;
-	_mean = s.mean;
-	_median = s.median;
-	_stdev = s.stdev;
-	_mode = (double)s.mode;
+	// The convex hull is in memory on both paths, so the out-of-core ROI takes the in-memory
+	// calculation, its guard for an empty hull (a one-pixel ROI) included
+	calculate (r, settings);
 }
 
 void CaliperMartinFeature::extract (LR& r, const Fsettings& s)
