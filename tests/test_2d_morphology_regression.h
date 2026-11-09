@@ -195,26 +195,25 @@ static const ref_vals_map<double> morphology_2d_regression_ref_vals
 	{"ECCENTRICITY", 0.616173960820708},
 	{"ORIENTATION", 70.4173944984207},
 	{"ROUNDNESS", 0.681656295209303},
-	{"PERIMETER", 26.9349412836191},
+	// The outer border and the border of the one-pixel hole, summed. OpenCV's border following gives
+	// the same number (test_2d_contour_opencv.h), which is where PERIMETER is vetted.
+	{"PERIMETER", 22.970562748477146},
 	{"CIRCULARITY", 0.671081973229055},
 	{"EULER_NUMBER", 0.0},
 	{"DIAMETER_MIN_ENCLOSING_CIRCLE", 6.32475519180298},
 	// The three ROI_RADIUS_* statistics on this ROI. RoiRadiusFeature measures every ROI pixel's
 	// distance to the ROI's contour and reports the mean, maximum and median of those distances.
 	//
-	// MAX and MEDIAN are vetted on filled disks -- against scikit-image in
+	// The statistics are vetted on filled disks -- against scikit-image in
 	// test_2d_morphology_skimage.h and, for MAX, against the closed form in
-	// test_2d_morphology_analytic.h. These three rows are drift guards on shape2d, where the
-	// reference disagrees for a reason outside this family: the traced contour is returned one pixel
-	// right and one pixel down of where it is, so the distances are measured against a shifted
-	// boundary. See the disk table in test_2d_morphology_skimage.h.
+	// test_2d_morphology_analytic.h. These three rows are drift guards on shape2d.
 	//
-	// MEDIAN is 1 here and would also be 1 if the feature reported squared distances, this ROI being
-	// small enough that its median distance is exactly one pixel. That is part of why the vetting
-	// claim lives on disks rather than on this fixture.
-	{"ROI_RADIUS_MEAN", 0.62471694950458789},
-	{"ROI_RADIUS_MAX", 1.4142135623730951},
-	{"ROI_RADIUS_MEDIAN", 1.0},
+	// 18 of the 26 pixels are edge pixels, at distance 0, and the other 8 are one pixel from the
+	// edge: MEAN = 8/26, MAX = 1 and MEDIAN = 0. A ROI this small cannot tell a distance from its
+	// square, which is part of why the vetting claim lives on disks rather than on this fixture.
+	{"ROI_RADIUS_MEAN", 0.30769230769230771},
+	{"ROI_RADIUS_MAX", 1.0},
+	{"ROI_RADIUS_MEDIAN", 0.0},
 	// Its five siblings are vetted against CellProfiler in test_2d_morphology_cellprofiler.h; this
 	// one cannot be. Both tools take the same 18 edge pixels, then Nyxus divides the variance by
 	// n-1 and CellProfiler by n, so the two answers differ by exactly sqrt(18/17) = 1.0289915:
@@ -226,8 +225,11 @@ static const ref_vals_map<double> morphology_2d_regression_ref_vals
 };
 
 static const ref_vals_map<double> morphology_2d_regression_diameters_ref_vals{
-	{"DIAMETER_CIRCUMSCRIBING_CIRCLE", 12.3317073399088},
-	{"DIAMETER_INSCRIBING_CIRCLE", 0.828486893405308},
+	// Both measured from the centroid to the outer border; the hole's border is not part of it. The
+	// centroid and the points cv2.findContours(RETR_EXTERNAL) returns for this mask give the same two
+	// numbers.
+	{"DIAMETER_CIRCUMSCRIBING_CIRCLE", 6.8888040545348037},
+	{"DIAMETER_INSCRIBING_CIRCLE", 3.6047306196492248},
 };
 
 static void assert_morphology_feature_regression(const std::vector<std::vector<double>>& fvals,

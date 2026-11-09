@@ -90,8 +90,8 @@ namespace nyxus_ut_edt
         return from_mask ("ring R=" + std::to_string(R) + " w=" + std::to_string(w), m, S, S, 100, 100);
     }
 
-    // A square with a square hole: two contours, so merge_multicontour's flattening is exercised
-    // and the transform is seeded from a non-simply-connected site set.
+    // A square with a square hole: two borders, so the contour the radius is measured to holds the
+    // pixels of both and the transform is seeded from a non-simply-connected site set.
     inline Shape square_with_hole (int S, int hole)
     {
         std::vector<char> m ((size_t)S * S, 1);
@@ -320,6 +320,7 @@ inline void test_2d_morphology_roi_radius_paths_agree_invariant()
             roi.initialize_fvals();
             roi.raw_pixels = shape.cloud;
             roi.multicontour_.push_back (shape.contour);
+            roi.merge_multicontour();
 
             RoiRadiusFeature f;
             f.calculate (roi, s);
@@ -335,6 +336,7 @@ inline void test_2d_morphology_roi_radius_paths_agree_invariant()
             LR roi (1);
             roi.initialize_fvals();
             roi.multicontour_.push_back (shape.contour);
+            roi.merge_multicontour();
 
             roi.raw_pixels_NT.init (1, "nyxus_ut_paths_agree");
             for (const auto& p : shape.cloud)

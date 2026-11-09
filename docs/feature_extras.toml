@@ -237,35 +237,35 @@ SPAT_MOMENT_21 = { name = "Raw moment (2, 1)", ibsi = "", example = 1604.0 }
 SPAT_MOMENT_22 = { name = "Raw moment (2, 2)", ibsi = "", example = 5786.0 }
 SPAT_MOMENT_23 = { name = "Raw moment (2, 3)", ibsi = "", example = 23950.0 }
 SPAT_MOMENT_30 = { name = "Raw moment (3, 0)", ibsi = "", example = 2873.0 }
-WEIGHTED_CENTRAL_MOMENT_02 = { name = "Weighted central moment (0, 2)", ibsi = "", example = -171.6 }
-WEIGHTED_CENTRAL_MOMENT_03 = { name = "Weighted central moment (0, 3)", ibsi = "", example = -251.6 }
-WEIGHTED_CENTRAL_MOMENT_11 = { name = "Weighted central moment (1, 1)", ibsi = "", example = 153.2 }
-WEIGHTED_CENTRAL_MOMENT_12 = { name = "Weighted central moment (1, 2)", ibsi = "", example = 274.1 }
-WEIGHTED_CENTRAL_MOMENT_20 = { name = "Weighted central moment (2, 0)", ibsi = "", example = -183.1 }
-WEIGHTED_CENTRAL_MOMENT_21 = { name = "Weighted central moment (2, 1)", ibsi = "", example = -248.6 }
-WEIGHTED_CENTRAL_MOMENT_30 = { name = "Weighted central moment (3, 0)", ibsi = "", example = -57.93 }
-WEIGHTED_HU_M1 = { name = "Weighted Hu invariant 1", ibsi = "", example = -0.194 }
-WEIGHTED_HU_M2 = { name = "Weighted Hu invariant 2", ibsi = "", example = 0.0281 }
+WEIGHTED_CENTRAL_MOMENT_02 = { name = "Weighted central moment (0, 2)", ibsi = "", example = -496.9 }
+WEIGHTED_CENTRAL_MOMENT_03 = { name = "Weighted central moment (0, 3)", ibsi = "", example = 141.3 }
+WEIGHTED_CENTRAL_MOMENT_11 = { name = "Weighted central moment (1, 1)", ibsi = "", example = 110.8 }
+WEIGHTED_CENTRAL_MOMENT_12 = { name = "Weighted central moment (1, 2)", ibsi = "", example = 190.0 }
+WEIGHTED_CENTRAL_MOMENT_20 = { name = "Weighted central moment (2, 0)", ibsi = "", example = -504.2 }
+WEIGHTED_CENTRAL_MOMENT_21 = { name = "Weighted central moment (2, 1)", ibsi = "", example = -74.72 }
+WEIGHTED_CENTRAL_MOMENT_30 = { name = "Weighted central moment (3, 0)", ibsi = "", example = 244.2 }
+WEIGHTED_HU_M1 = { name = "Weighted Hu invariant 1", ibsi = "", example = -0.11 }
+WEIGHTED_HU_M2 = { name = "Weighted Hu invariant 2", ibsi = "", example = 0.0005931 }
 WEIGHTED_HU_M3 = { name = "Weighted Hu invariant 3", ibsi = "", example = 0.0 }
 WEIGHTED_HU_M4 = { name = "Weighted Hu invariant 4", ibsi = "", example = 0.0 }
 WEIGHTED_HU_M5 = { name = "Weighted Hu invariant 5", ibsi = "", example = 0.0 }
 WEIGHTED_HU_M6 = { name = "Weighted Hu invariant 6", ibsi = "", example = 0.0 }
 WEIGHTED_HU_M7 = { name = "Weighted Hu invariant 7", ibsi = "", example = 0.0 }
-WEIGHTED_SPAT_MOMENT_00 = { name = "Weighted raw moment (0, 0)", ibsi = "", example = -42.77 }
-WEIGHTED_SPAT_MOMENT_01 = { name = "Weighted raw moment (0, 1)", ibsi = "", example = -113.6 }
-WEIGHTED_SPAT_MOMENT_02 = { name = "Weighted raw moment (0, 2)", ibsi = "", example = -473.2 }
-WEIGHTED_SPAT_MOMENT_03 = { name = "Weighted raw moment (0, 3)", ibsi = "", example = -2419.0 }
-WEIGHTED_SPAT_MOMENT_10 = { name = "Weighted raw moment (1, 0)", ibsi = "", example = -170.2 }
-WEIGHTED_SPAT_MOMENT_11 = { name = "Weighted raw moment (1, 1)", ibsi = "", example = -298.8 }
-WEIGHTED_SPAT_MOMENT_12 = { name = "Weighted raw moment (1, 2)", ibsi = "", example = -795.9 }
-WEIGHTED_SPAT_MOMENT_20 = { name = "Weighted raw moment (2, 0)", ibsi = "", example = -860.8 }
-WEIGHTED_SPAT_MOMENT_21 = { name = "Weighted raw moment (2, 1)", ibsi = "", example = -1315.0 }
-WEIGHTED_SPAT_MOMENT_30 = { name = "Weighted raw moment (3, 0)", ibsi = "", example = -4942.0 }
-WT_NORM_CTR_MOM_02 = { name = "Weighted normalized central moment (0, 2)", ibsi = "", example = -0.09385 }
+WEIGHTED_SPAT_MOMENT_00 = { name = "Weighted raw moment (0, 0)", ibsi = "", example = -95.4 }
+WEIGHTED_SPAT_MOMENT_01 = { name = "Weighted raw moment (0, 1)", ibsi = "", example = -296.0 }
+WEIGHTED_SPAT_MOMENT_02 = { name = "Weighted raw moment (0, 2)", ibsi = "", example = -1415.0 }
+WEIGHTED_SPAT_MOMENT_03 = { name = "Weighted raw moment (0, 3)", ibsi = "", example = -7333.0 }
+WEIGHTED_SPAT_MOMENT_10 = { name = "Weighted raw moment (1, 0)", ibsi = "", example = -360.2 }
+WEIGHTED_SPAT_MOMENT_11 = { name = "Weighted raw moment (1, 1)", ibsi = "", example = -1007.0 }
+WEIGHTED_SPAT_MOMENT_12 = { name = "Weighted raw moment (1, 2)", ibsi = "", example = -4467.0 }
+WEIGHTED_SPAT_MOMENT_20 = { name = "Weighted raw moment (2, 0)", ibsi = "", example = -1864.0 }
+WEIGHTED_SPAT_MOMENT_21 = { name = "Weighted raw moment (2, 1)", ibsi = "", example = -5023.0 }
+WEIGHTED_SPAT_MOMENT_30 = { name = "Weighted raw moment (3, 0)", ibsi = "", example = -10600.0 }
+WT_NORM_CTR_MOM_02 = { name = "Weighted normalized central moment (0, 2)", ibsi = "", example = -0.05459 }
 WT_NORM_CTR_MOM_03 = { name = "Weighted normalized central moment (0, 3)", ibsi = "", example = 0.0 }
-WT_NORM_CTR_MOM_11 = { name = "Weighted normalized central moment (1, 1)", ibsi = "", example = 0.08376 }
+WT_NORM_CTR_MOM_11 = { name = "Weighted normalized central moment (1, 1)", ibsi = "", example = 0.01217 }
 WT_NORM_CTR_MOM_12 = { name = "Weighted normalized central moment (1, 2)", ibsi = "", example = 0.0 }
-WT_NORM_CTR_MOM_20 = { name = "Weighted normalized central moment (2, 0)", ibsi = "", example = -0.1001 }
+WT_NORM_CTR_MOM_20 = { name = "Weighted normalized central moment (2, 0)", ibsi = "", example = -0.05539 }
 WT_NORM_CTR_MOM_21 = { name = "Weighted normalized central moment (2, 1)", ibsi = "", example = 0.0 }
 WT_NORM_CTR_MOM_30 = { name = "Weighted normalized central moment (3, 0)", ibsi = "", example = 0.0 }
 
@@ -329,37 +329,37 @@ IMOM_RM_21 = { name = "Intensity raw moment (2, 1)", ibsi = "", example = 5639.0
 IMOM_RM_22 = { name = "Intensity raw moment (2, 2)", ibsi = "", example = 20800.0 }
 IMOM_RM_23 = { name = "Intensity raw moment (2, 3)", ibsi = "", example = 87620.0 }
 IMOM_RM_30 = { name = "Intensity raw moment (3, 0)", ibsi = "", example = 9497.0 }
-IMOM_WCM_02 = { name = "Intensity weighted central moment (0, 2)", ibsi = "", example = -617.3 }
-IMOM_WCM_03 = { name = "Intensity weighted central moment (0, 3)", ibsi = "", example = -440.8 }
-IMOM_WCM_11 = { name = "Intensity weighted central moment (1, 1)", ibsi = "", example = 599.2 }
-IMOM_WCM_12 = { name = "Intensity weighted central moment (1, 2)", ibsi = "", example = 483.1 }
-IMOM_WCM_20 = { name = "Intensity weighted central moment (2, 0)", ibsi = "", example = -592.0 }
-IMOM_WCM_21 = { name = "Intensity weighted central moment (2, 1)", ibsi = "", example = -434.8 }
-IMOM_WCM_30 = { name = "Intensity weighted central moment (3, 0)", ibsi = "", example = -434.1 }
-IMOM_WHU1 = { name = "Intensity weighted Hu invariant 1", ibsi = "", example = -0.05777 }
-IMOM_WHU2 = { name = "Intensity weighted Hu invariant 2", ibsi = "", example = 0.003279 }
+IMOM_WCM_02 = { name = "Intensity weighted central moment (0, 2)", ibsi = "", example = -1871.0 }
+IMOM_WCM_03 = { name = "Intensity weighted central moment (0, 3)", ibsi = "", example = 388.9 }
+IMOM_WCM_11 = { name = "Intensity weighted central moment (1, 1)", ibsi = "", example = 270.9 }
+IMOM_WCM_12 = { name = "Intensity weighted central moment (1, 2)", ibsi = "", example = 137.7 }
+IMOM_WCM_20 = { name = "Intensity weighted central moment (2, 0)", ibsi = "", example = -1542.0 }
+IMOM_WCM_21 = { name = "Intensity weighted central moment (2, 1)", ibsi = "", example = -312.9 }
+IMOM_WCM_30 = { name = "Intensity weighted central moment (3, 0)", ibsi = "", example = -7.447 }
+IMOM_WHU1 = { name = "Intensity weighted Hu invariant 1", ibsi = "", example = -0.03103 }
+IMOM_WHU2 = { name = "Intensity weighted Hu invariant 2", ibsi = "", example = 3.318e-05 }
 IMOM_WHU3 = { name = "Intensity weighted Hu invariant 3", ibsi = "", example = 0.0 }
 IMOM_WHU4 = { name = "Intensity weighted Hu invariant 4", ibsi = "", example = 0.0 }
 IMOM_WHU5 = { name = "Intensity weighted Hu invariant 5", ibsi = "", example = 0.0 }
 IMOM_WHU6 = { name = "Intensity weighted Hu invariant 6", ibsi = "", example = 0.0 }
 IMOM_WHU7 = { name = "Intensity weighted Hu invariant 7", ibsi = "", example = 0.0 }
-IMOM_WNCM_02 = { name = "Intensity weighted normalized central moment (0, 2)", ibsi = "", example = -0.02949 }
+IMOM_WNCM_02 = { name = "Intensity weighted normalized central moment (0, 2)", ibsi = "", example = -0.01701 }
 IMOM_WNCM_03 = { name = "Intensity weighted normalized central moment (0, 3)", ibsi = "", example = 0.0 }
-IMOM_WNCM_11 = { name = "Intensity weighted normalized central moment (1, 1)", ibsi = "", example = 0.02863 }
+IMOM_WNCM_11 = { name = "Intensity weighted normalized central moment (1, 1)", ibsi = "", example = 0.002463 }
 IMOM_WNCM_12 = { name = "Intensity weighted normalized central moment (1, 2)", ibsi = "", example = 0.0 }
-IMOM_WNCM_20 = { name = "Intensity weighted normalized central moment (2, 0)", ibsi = "", example = -0.02828 }
+IMOM_WNCM_20 = { name = "Intensity weighted normalized central moment (2, 0)", ibsi = "", example = -0.01402 }
 IMOM_WNCM_21 = { name = "Intensity weighted normalized central moment (2, 1)", ibsi = "", example = 0.0 }
 IMOM_WNCM_30 = { name = "Intensity weighted normalized central moment (3, 0)", ibsi = "", example = 0.0 }
-IMOM_WRM_00 = { name = "Intensity weighted raw moment (0, 0)", ibsi = "", example = -144.7 }
-IMOM_WRM_01 = { name = "Intensity weighted raw moment (0, 1)", ibsi = "", example = -426.2 }
-IMOM_WRM_02 = { name = "Intensity weighted raw moment (0, 2)", ibsi = "", example = -1873.0 }
-IMOM_WRM_03 = { name = "Intensity weighted raw moment (0, 3)", ibsi = "", example = -9595.0 }
-IMOM_WRM_10 = { name = "Intensity weighted raw moment (1, 0)", ibsi = "", example = -496.8 }
-IMOM_WRM_11 = { name = "Intensity weighted raw moment (1, 1)", ibsi = "", example = -864.2 }
-IMOM_WRM_12 = { name = "Intensity weighted raw moment (1, 2)", ibsi = "", example = -2417.0 }
-IMOM_WRM_20 = { name = "Intensity weighted raw moment (2, 0)", ibsi = "", example = -2298.0 }
-IMOM_WRM_21 = { name = "Intensity weighted raw moment (2, 1)", ibsi = "", example = -3089.0 }
-IMOM_WRM_30 = { name = "Intensity weighted raw moment (3, 0)", ibsi = "", example = -12390.0 }
+IMOM_WRM_00 = { name = "Intensity weighted raw moment (0, 0)", ibsi = "", example = -331.7 }
+IMOM_WRM_01 = { name = "Intensity weighted raw moment (0, 1)", ibsi = "", example = -988.6 }
+IMOM_WRM_02 = { name = "Intensity weighted raw moment (0, 2)", ibsi = "", example = -4817.0 }
+IMOM_WRM_03 = { name = "Intensity weighted raw moment (0, 3)", ibsi = "", example = -25120.0 }
+IMOM_WRM_10 = { name = "Intensity weighted raw moment (1, 0)", ibsi = "", example = -1092.0 }
+IMOM_WRM_11 = { name = "Intensity weighted raw moment (1, 1)", ibsi = "", example = -2983.0 }
+IMOM_WRM_12 = { name = "Intensity weighted raw moment (1, 2)", ibsi = "", example = -14100.0 }
+IMOM_WRM_20 = { name = "Intensity weighted raw moment (2, 0)", ibsi = "", example = -5135.0 }
+IMOM_WRM_21 = { name = "Intensity weighted raw moment (2, 1)", ibsi = "", example = -13840.0 }
+IMOM_WRM_30 = { name = "Intensity weighted raw moment (3, 0)", ibsi = "", example = -27060.0 }
 
 [zernike]
 ZERNIKE2D = { name = "Zernike moments", ibsi = "", example = 0.3183 }
@@ -424,14 +424,11 @@ ROUNDNESS = { name = "Roundness", ibsi = "", example = 0.7635 }
 [circles]
 # example pins known defect https://github.com/PolusAI/nyxus/issues/498
 DIAMETER_MIN_ENCLOSING_CIRCLE = { name = "Minimum enclosing circle diameter", ibsi = "", example = 14.17 }
-# example pins known defect https://github.com/PolusAI/nyxus/issues/497
-DIAMETER_CIRCUMSCRIBING_CIRCLE = { name = "Circumscribing circle diameter", ibsi = "", example = 17.41 }
-# example pins known defect https://github.com/PolusAI/nyxus/issues/497
-DIAMETER_INSCRIBING_CIRCLE = { name = "Inscribing circle diameter", ibsi = "", example = 1.29 }
+DIAMETER_CIRCUMSCRIBING_CIRCLE = { name = "Circumscribing circle diameter", ibsi = "", example = 14.72 }
+DIAMETER_INSCRIBING_CIRCLE = { name = "Inscribing circle diameter", ibsi = "", example = 1.705 }
 
 [roi_radius]
-# example pins known defect https://github.com/PolusAI/nyxus/issues/497
-ROI_RADIUS_MEAN = { name = "Mean distance to the contour", ibsi = "", example = 1.124 }
+ROI_RADIUS_MEAN = { name = "Mean distance to the contour", ibsi = "", example = 0.9288 }
 ROI_RADIUS_MAX = { name = "Largest distance to the contour", ibsi = "", example = 3 }
 ROI_RADIUS_MEDIAN = { name = "Median distance to the contour", ibsi = "", example = 1 }
 
@@ -757,5 +754,5 @@ IH_BIN_SIZE = { name = "Bin width", ibsi = "", example = 0.8 }
 
 [radial]
 FRAC_AT_D = { name = "Fraction of pixels in a ring", ibsi = "", example = 0.02128 }
-MEAN_FRAC = { name = "Mean intensity in a ring", ibsi = "", example = 7.0 }
+MEAN_FRAC = { name = "Mean intensity in a ring", ibsi = "", example = 9.0 }
 RADIAL_CV = { name = "Coefficient of variation across the wedges of a ring", ibsi = "", example = 2.646 }

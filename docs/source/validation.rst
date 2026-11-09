@@ -122,9 +122,11 @@ Where Nyxus deliberately or knowingly computes something other than a reference 
 family page says so in its *Possible issues* section, with the size of the difference. The main
 ones are:
 
-* Morphology: traced contours are offset by one pixel, a known defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__), which affects the contour-based radii and
-  circle diameters. See :ref:`morphology-possible-issues`.
-* Moments: the weighted moments use an approximate distance search and the offset contour. See
+* Morphology: the minimum enclosing circle truncates chord midpoints, a known defect
+  (`#498 <https://github.com/PolusAI/nyxus/issues/498>`__), and the Feret statistics count one
+  direction twice, a known defect (`#500 <https://github.com/PolusAI/nyxus/issues/500>`__). See
+  :ref:`morphology-possible-issues`.
+* Moments: the weighted moments use an approximate distance search. See
   :ref:`moments-possible-issues`.
 * GLCM: the matrix is asymmetric by default, so several features differ from PyRadiomics and
   MIRP unless IBSI mode is on. See :ref:`glcm-possible-issues`.

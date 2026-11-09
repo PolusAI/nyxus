@@ -126,11 +126,10 @@ void FractalDimensionFeature::calculate_boxcount_fdim_oversized (LR & r)
 
 void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 {
-	// The divider walks ONE closed contour. merge_multicontour concatenates every contour of the
-	// ROI, so a multi-contour ROI (holes / disconnected fragments) injects spurious seam chords
-	// between them that bias the dimension; this path assumes a single-contour ROI.
-	std::vector<Pixel2> K;
-	r.merge_multicontour(K);
+	// The divider walks ONE closed contour. The merged contour lists every border of the ROI one
+	// after another, so a multi-contour ROI (holes / disconnected fragments) injects spurious seam
+	// chords between them that bias the dimension; this path assumes a single-contour ROI.
+	const std::vector<Pixel2>& K = r.contour_pixels_;
 
 	auto conLen = K.size();
 	if (conLen < 3)

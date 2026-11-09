@@ -16,11 +16,11 @@
 // exactly 0, not merely small -- so these assert at the SPEC 7 exact tier, which is an ABSOLUTE
 // 1e-9 band. Per label, not aggregated: each ROI carries its own value and every one is asserted.
 //
-// PERCENT_TOUCHING is NOT vetted here: CP and Nyxus use different definitions (Nyxus = contour
-// pixels 8-adjacent to a neighbour / contour length; CP = object outline pixels overlapping a
-// disk(distance+0.5)-dilated neighbour / perimeter), and no CP distance method reproduces Nyxus --
-// it diverges on 3 of the 5 ROIs. It is drift-pinned in test_2d_neighbor_regression.h and its
-// required bounds are asserted in test_2d_neighbor_invariant.h. Same for CLOSEST_NEIGHBOR2_DIST:
+// PERCENT_TOUCHING is NOT vetted here: CP and Nyxus state it with different definitions (Nyxus =
+// contour pixels 8-adjacent to a neighbour / contour length; CP = object outline pixels overlapping
+// a disk(distance+0.5)-dilated neighbour / perimeter). It is drift-pinned in
+// test_2d_neighbor_regression.h and its required bounds are asserted in
+// test_2d_neighbor_invariant.h. CLOSEST_NEIGHBOR2_DIST is not vetted here either:
 // CP measures the second-closest of ANY object, Nyxus the second-closest neighbour within the
 // search radius, so CP's column is a different quantity. See
 // tests/vetting/audit/neighbor_2d_cellprofiler_vetting_report.md.
