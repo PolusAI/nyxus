@@ -633,7 +633,7 @@ Definitions, formulas and settings: :doc:`/Math/f_fractal_dimension`.
      - Box-counting fractal dimension of the ROI mask: minus the least-squares slope of log box count versus log box size over power-of-two box sizes; ROIs whose padded side is 32 pixels or less take the smallest count over four grid offsets.
      - vetted: FracLac
    * - ``FRACT_DIM_PERIMETER``
-     - Divider (Richardson) fractal dimension of the ROI's contour: 1 minus the least-squares slope of log perimeter versus log mean ruler length, where the contour is walked with strides of decreasing numbers of contour pixels.
+     - Divider (Richardson) fractal dimension of the ROI's contour: 1 minus the least-squares slope of log perimeter versus log mean ruler length, where each border of the contour (the outside of each separate part and each hole) is walked on its own with strides of decreasing numbers of contour pixels, and a border no longer than the stride counts its full length.
      - vetted: FracLac
 
 .. _features-geodetic:
