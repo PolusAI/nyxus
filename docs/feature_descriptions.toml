@@ -193,7 +193,7 @@ EROSIONS_2_VANISH_COMPLEMENT = "Not computed: the column is never assigned and k
 
 [fractal]
 FRACT_DIM_BOXCOUNT = "Box-counting fractal dimension of the ROI mask: minus the least-squares slope of log box count versus log box size over power-of-two box sizes; ROIs whose padded side is 32 pixels or less take the smallest count over four grid offsets."
-FRACT_DIM_PERIMETER = "Divider (Richardson) fractal dimension of the ROI's contour: 1 minus the least-squares slope of log perimeter versus log mean ruler length, where the contour is walked with strides of decreasing numbers of contour pixels."
+FRACT_DIM_PERIMETER = "Divider (Richardson) fractal dimension of the ROI's contour: 1 minus the least-squares slope of log perimeter versus log mean ruler length, where each border of the contour (the outside of each separate part and each hole) is walked on its own with strides of decreasing numbers of contour pixels, and a border no longer than the stride counts its full length."
 
 [geodetic]
 GEODETIC_LENGTH = "Length of a rectangle with the same area and perimeter as the ROI: PERIMETER divided by 4 plus the square root of (PERIMETER squared divided by 16 minus the area), in pixels; when that difference is negative, as for a disk, no such rectangle exists and the value is PERIMETER divided by 4."
