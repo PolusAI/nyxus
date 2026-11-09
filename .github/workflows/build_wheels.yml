@@ -385,6 +385,7 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: >
             LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+            CMAKE_ARGS="-DREQUIRE_ALLEXTRAS=ON"
           CIBW_ARCHS: auto64
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
@@ -448,6 +449,7 @@ jobs:
           CIBW_ENVIRONMENT_LINUX: >
             LD_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64:$LD_LIBRARY_PATH"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
+            CMAKE_ARGS="-DREQUIRE_ALLEXTRAS=ON"
           CIBW_ARCHS: auto64
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
           CIBW_TEST_COMMAND: pytest -vv {project}/tests/python
@@ -506,7 +508,7 @@ jobs:
           CIBW_BUILD: ${{ matrix.cibw_build }}-*
           CIBW_BUILD_VERBOSITY: 3
           CIBW_BEFORE_ALL_WINDOWS: xcopy /E /I /y local_install C:\TEMP\nyxus_bld\local_install
-          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install"
+          CIBW_ENVIRONMENT_WINDOWS: PATH="C:\\TEMP\\nyxus_bld\\local_install\\bin;$PATH" NYXUS_DEP_DIR="C:\\TEMP\\nyxus_bld\\local_install" CMAKE_ARGS="-DREQUIRE_ALLEXTRAS=ON"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ARCHS: auto64
           CIBW_TEST_REQUIRES: numpy pandas pyarrow pytest bfio imagecodecs
@@ -579,7 +581,7 @@ jobs:
             LDFLAGS="-isysroot $SDKROOT -lc++ -lc++abi -mmacosx-version-min=$MACOSX_DEPLOYMENT_TARGET"
             PIP_ONLY_BINARY="imagecodecs"
             ARROW_HAVE_LIBATOMIC=OFF
-            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON"
+            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON -DREQUIRE_ALLEXTRAS=ON"
             REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
@@ -655,7 +657,7 @@ jobs:
             CMAKE_C_COMPILER="$CC" CMAKE_CXX_COMPILER="$CXX"
             CXXFLAGS="-isysroot $SDKROOT -stdlib=libc++"
             LDFLAGS="-isysroot $SDKROOT -lc++ -lc++abi"
-            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON"
+            CMAKE_ARGS="-DUSE_STATIC_ARROW=ON -DREQUIRE_ALLEXTRAS=ON"
             REPAIR_LIBRARY_PATH="/tmp/nyxus_bld/local_install/lib:/tmp/nyxus_bld/local_install/lib64"
             NYXUS_DEP_DIR="/tmp/nyxus_bld/local_install"
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: |
