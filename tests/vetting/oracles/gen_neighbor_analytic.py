@@ -21,9 +21,9 @@ Formulas recomputed here, all from the centroids:
 Agreement with Nyxus is 1.2e-16 worst case (29 of the 30 values are bit-identical; the exception is
 ANG_BW_NEIGHBORS_STDDEV on label 1, one ulp), so the header asserts at the SPEC 7 exact tier.
 
-NOT covered here: PERCENT_TOUCHING, which is not a centroid closed form. It has no promotable oracle
--- CellProfiler uses a different definition -- and is drift-pinned in test_2d_neighbor_regression.h,
-with its required bounds asserted in test_2d_neighbor_invariant.h.
+NOT covered here: PERCENT_TOUCHING, which is not a centroid closed form. It is vetted against
+CellProfiler (gen_neighbor_cellprofiler.py), drift-pinned in test_2d_neighbor_regression.h, and its
+required bounds are asserted in test_2d_neighbor_invariant.h.
 
 Provenance: tool=analytic (numpy, version printed by this script); generator=
 tests/vetting/oracles/gen_neighbor_analytic.py. Run offline; CI never invokes it.
