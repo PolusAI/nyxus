@@ -20,6 +20,7 @@ SOURCES = [
     "test_2d_morphology_fraclac.h",
     "test_2d_morphology_analytic.h",
     "test_2d_morphology_regression.h",
+    "test_2d_morphology_invariant.h",
     # the contour tests assert PERIMETER and EDGE_INTEGRATED_INTENSITY on the traced borders
     "test_2d_contour_analytic.h",
     "test_2d_contour_invariant.h",

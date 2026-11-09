@@ -24,16 +24,16 @@ convention at all, and is computed here twice -- an exhaustive numpy minimum and
 scipy.ndimage.distance_transform_edt over the complement of the boundary -- with the two required to
 agree, so neither implementation is taken on trust.
 
-WHY DISKS AND NOT THE 8x8 shape2d RASTER. Same reason PERIMETER is vetted on the circles benchmark:
-on a 26-pixel object with a hole the two boundary conventions have nothing to converge to. A disk
-also has an EXACT closed form for the maximum -- sqrt((R-1)^2+1), the centre's distance to the
-boundary pixel at offset (1, R-1) -- which test_2d_morphology_analytic.h asserts as a second oracle.
-MAX/(R-1) = sqrt(1+1/(R-1)^2) then converges to 1 as 1/(2(R-1)^2): 0.62%, 0.14%, 0.03% at
+WHY DISKS AND NOT THE 8x8 shape2d RASTER. On 26 pixels, whose distances to the edge are all 0 or 1,
+a distance and its square are the same number, so the raster cannot catch a units error; three disks
+can. A disk also has an EXACT closed form for the maximum -- sqrt((R-1)^2+1), the centre's distance
+to the boundary pixel at offset (1, R-1) -- which test_2d_morphology_analytic.h asserts as a second
+oracle. MAX/(R-1) = sqrt(1+1/(R-1)^2) then converges to 1 as 1/(2(R-1)^2): 0.62%, 0.14%, 0.03% at
 R = 10, 20, 40, i.e. LINEAR growth in R.
 
-WHAT IS VETTED. MAX and MEDIAN agree with this reference to double precision and are pinned below.
-The script also prints the reference's MEAN, MAX and MEDIAN on the three disks and on the shape2d
-raster, which are the values Nyxus reports there.
+WHAT IS VETTED. MEAN, MAX and MEDIAN agree with this reference to double precision on the three
+disks and are pinned below. The script also prints the reference on the shape2d raster, where it
+equals the Nyxus drift guards in test_2d_morphology_regression.h.
 
 Provenance: tool=scikit-image 0.26.0, scipy 1.17.1, numpy 2.4.6; env=nyxus_mirp (conda);
 generator=tests/vetting/oracles/gen_morphology_radius_skimage.py. Run offline; CI never invokes it.
@@ -109,8 +109,10 @@ def main():
     for R in RADII:
         m = disk(R)
         ref, nb = radius_stats(m)
+        got[f"ROI_RADIUS_MEAN_R{R}"] = ref["MEAN"]
         got[f"ROI_RADIUS_MAX_R{R}"] = ref["MAX"]
         got[f"ROI_RADIUS_MEDIAN_R{R}"] = ref["MEDIAN"]
+        print(f'\t{{"ROI_RADIUS_MEAN_R{R}", {ref["MEAN"]!r}}},')
         print(f'\t{{"ROI_RADIUS_MAX_R{R}", {ref["MAX"]!r}}},')
         print(f'\t{{"ROI_RADIUS_MEDIAN_R{R}", {ref["MEDIAN"]!r}}},')
         print(f"\t# R={R}: {int(m.sum())} pixels, {nb} boundary pixels, "

@@ -308,7 +308,7 @@
    * - :ref:`IMOM_WRM_00 <feature-imom-wrm-00>`
      - Intensity weighted raw moment (0, 0)
      - —
-     - regression
+     - invariant
      - −331.7
    * - :ref:`IMOM_WRM_01 <feature-imom-wrm-01>`
      - Intensity weighted raw moment (0, 1)

@@ -10,16 +10,14 @@
 // PIXELDISTANCE=1 -- the same recipe the oracle files use. SPEC 2 regression tier: a drift guard,
 // no oracle claim.
 //
-// Nyxus counts contour pixels 8-adjacent to a neighbour over contour length; CellProfiler counts
-// object outline pixels overlapping a disk(distance+0.5)-dilated neighbour over perimeter. Each of
-// the four outer ROIs here touches the centre along one side of its 2x2 or 2x3 border: 2 of its 4,
-// or 3 of its 6, edge pixels, hence 50. The bounds the feature must obey regardless are asserted in
-// test_2d_neighbor_invariant.h.
+// PERCENT_TOUCHING is vetted against CellProfiler on this fixture in test_2d_neighbor_cellprofiler.h;
+// these pins are its drift guard. Each of the four outer ROIs here touches the centre along one side
+// of its 2x2 or 2x3 border: 2 of its 4, or 3 of its 6, edge pixels, hence 50. The bounds the feature
+// must obey regardless are asserted in test_2d_neighbor_invariant.h.
 //
 // The other eight features in the family are vetted at the exact tier against CellProfiler
 // (test_2d_neighbor_cellprofiler.h) and the analytic recomputation (test_2d_neighbor_analytic.h) on
-// this same fixture, so they are deliberately not duplicated here: a second assertion of the same
-// value at a looser band adds no coverage.
+// this same fixture, and are not duplicated here.
 static const ref_vals_map_by_label<double> neighbor_2d_regression_ref_vals_by_label{
 	{1, {{"PERCENT_TOUCHING", 100.0}}},
 	{2, {{"PERCENT_TOUCHING", 50.0}}},

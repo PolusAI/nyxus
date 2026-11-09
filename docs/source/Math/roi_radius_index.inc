@@ -13,7 +13,7 @@
    * - :ref:`ROI_RADIUS_MEAN <feature-roi-radius-mean>`
      - Mean distance to the contour
      - —
-     - regression
+     - scikit-image (rel. 1e-3)
      - 0.9288
    * - :ref:`ROI_RADIUS_MAX <feature-roi-radius-max>`
      - Largest distance to the contour

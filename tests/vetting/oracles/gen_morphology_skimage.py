@@ -36,7 +36,7 @@ DIAMETER_EQUAL_AREA -- regionprops(...).equivalent_diameter_area = sqrt(4*Area/p
 
 PERIMETER -- skimage.measure.perimeter (the 4-neighbourhood boundary walk regionprops.perimeter
   uses) on the circles benchmark, where it and the Nyxus chain-code contour walk agree to ~4e-15.
-  They do NOT agree on the small shape2d mask (12.657 vs 26.935), so PERIMETER is vetted on the
+  They do NOT agree on the small shape2d mask (12.657 vs 22.971), so PERIMETER is vetted on the
   circles benchmark only.
 
 Provenance: tool=scikit-image 0.26.0; numpy; env=nyxus_mirp (conda);

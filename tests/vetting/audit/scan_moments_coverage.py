@@ -6,11 +6,12 @@ The mapping is read out of the test sources rather than written by hand, so it c
 tree, and `report_features.py` joins it into `report_output.csv`. `--check` runs the acceptance checks,
 which live in scanlib.py.
 
-This family reads the tree its own way, so it overrides scanlib's collect. Nothing here names a
-feature on an assertion line: every case passes a golden TABLE to the looping helper
-`assert_2d_geomoment_features(...)`, so coverage is resolved table by table -- which function uses
-which table, and which features that table holds. Applying the shared line rule would find nothing
-at all.
+This family reads the tree its own way, so it overrides scanlib's collect. The oracle and
+regression cases name no feature on an assertion line: each passes a golden TABLE to the looping
+helper `assert_2d_geomoment_features(...)`, so their coverage is resolved table by table -- which
+function uses which table, and which features that table holds. The invariant cases assert a
+relation between two computed values and name the feature on the assertion line, which the shared
+line rule reads.
 """
 import os
 import re
@@ -18,7 +19,8 @@ import sys
 
 import scanlib
 
-SOURCES = ["test_2d_moments_skimage.h", "test_2d_moments_regression.h", "test_2d_moments_common.h"]
+SOURCES = ["test_2d_moments_skimage.h", "test_2d_moments_regression.h", "test_2d_moments_common.h",
+           "test_2d_moments_invariant.h"]
 ORACLE_SUFFIX = {"skimage": "skimage", "pyradiomics": "pyradiomics", "mirp": "mirp",
                  "ibsi": "ibsi", "analytic": "analytic"}
 
@@ -63,6 +65,11 @@ def collect(fam, feat_re):
             for tbl in USES.findall(block):
                 for feat in tables.get(tbl, ()):
                     covers.setdefault(feat, set()).add(fn)
+            # the shared rule: a feature named on an assertion line
+            for line in block.splitlines():
+                if scanlib.ASSERTION.search(line):
+                    for feat in feat_re.findall(line):
+                        covers.setdefault(feat, set()).add(fn)
 
     asserted, oracles, regression, other = {}, {}, {}, {}
     for feat, fns in covers.items():

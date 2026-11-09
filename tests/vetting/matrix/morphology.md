@@ -94,19 +94,16 @@ oracle cell, which fixture it is measured on.
 
 | run mode | fixture | verdict | oracle / reason |
 |---|---|---|---|
-| in-RAM (`calculate`) | disks R = 10, 20, 40 | **VALID** | `skimage` on `morphology.radius_disks`, and `analytic` for `MAX` on the same recipe |
-| in-RAM (`calculate`) | 8×8 `shape2d` | **VALID-BUT-PRODUCTION-ONLY** | no tool reproduces it *on this fixture*; recipe `morphology.shape2d_native`, drift guard only |
+| in-RAM (`calculate`) | disks R = 10, 20, 40 | **VALID** | `skimage` on `morphology.radius_disks` for all three, and `analytic` for `MAX` on the same recipe |
+| in-RAM (`calculate`) | 8×8 `shape2d` | drift guard | recipe `morphology.shape2d_native`; the skimage reference gives the same three values, but on 26 pixels a distance and its square coincide, so the vetting claim lives on the disks |
 | out-of-core (`osized_calculate`) | disk64 | **impl-defect** | the two paths disagree; recipe `morphology.disk64_forced_ooc` |
 | whole-slide (`SINGLEROI=true`) | disk64 frame | **VALID-BUT-PRODUCTION-ONLY** | a real config no tool reproduces; recipe `morphology.disk64_wholeslide` |
 
-**Why the shape2d cell is production-only and the disk cell is not.** The reference —
-`find_boundaries(connectivity=1, mode='inner')` plus a minimum over it — reproduces `MAX` and
-`MEDIAN` on a disk to double precision and reproduces nothing on the 8×8 raster. The difference is
-`buildRegularContour`, which reports every contour pixel one pixel right and one pixel down of where
-it is: on the 8×8 mask the traced contour **is** the skimage inner boundary shifted by (+1, +1), all
-18 pixels, and shifting the reference the same way reproduces all three Nyxus values. On a disk
-`MAX` and `MEDIAN` are unmoved by that shift because the pixel attaining them moves with it, so they
-promote there and `MEAN` does not, at either fixture.
+**Why the vetting claim lives on the disks.** The reference — `find_boundaries(connectivity=1,
+mode='inner')` plus a minimum over it — reproduces all three statistics to double precision on the
+disks and on the 8×8 raster alike, because the traced contour walks exactly the reference's
+boundary pixels. On the raster every distance is 0 or 1 (`MEAN` = 8/26, `MAX` = 1, `MEDIAN` = 0), so
+a squared distance would read the same; across three radii it would not.
 
 ### The whole-slide cell is reached, and it is a distance-to-corner map
 
@@ -122,7 +119,7 @@ image:
 | | whole-slide | segmented |
 |---|---|---|
 | pixels measured | 4096 (the frame) | 1257 (the disk) |
-| `ROI_RADIUS_MEAN` | 24.490797504013532 | 6.087109772358636 |
+| `ROI_RADIUS_MEAN` | 24.490797504013532 | 6.047026418093836 |
 | `ROI_RADIUS_MAX` | 45.254833995939045 | 19.026297590440446 |
 | `ROI_RADIUS_MEDIAN` | 25.495097567963924 | 5.0 |
 
@@ -147,17 +144,16 @@ differ is `K`. Measured on `bench_disk64_diagonal_boundary`:
 
 | | in-RAM | out-of-core | |
 |---|---|---|---|
-| contour pixels | 112 | 112 | same size |
-| `ROI_RADIUS_MEAN` | 6.087109772358636 | 7.169174091182726 | **+17.8%** |
-| `ROI_RADIUS_MEDIAN` | 5.0 | 6.708203932499369 | **+34%** |
+| contour pixels | 112 | 112 | the same 112 edge pixels |
+| `ROI_RADIUS_MEAN` | 6.047026418093836 | 7.423593657857253 | **+22.8%** |
+| `ROI_RADIUS_MEDIAN` | 5.0 | 7.0 | **+40%** |
 | `ROI_RADIUS_MAX` | 19.026297590440446 | 19.026297590440446 | bit-identical |
 
-Same count, different pixels: `buildRegularContour_nontriv` and `buildRegularContour` do not return
-the same 112. `MEAN` and `MEDIAN` rise, so some ROI pixels are farther from the out-of-core contour,
-and `MAX` is unchanged, so the pixel attaining it is not among them. No translation of the inner
-boundary reproduces the out-of-core numbers — searched over every shift in ±4 — so this is pinned as
-a characterization rather than explained as an offset, and the explanation is left to whoever
-corrects the builder.
+Same pixels, different frame: `buildRegularContour_nontriv` returns the disk's 112 edge pixels
+relative to the ROI's bounding box, whose origin is (12, 12), and `buildRegularContour` returns them
+in absolute coordinates, the frame of the ROI pixels both paths measure. The scikit-image inner
+boundary shifted by (−12, −12) reproduces all three out-of-core values exactly, and unshifted all
+three in-RAM ones. `MAX` happens to come out the same in both frames.
 
 `impl-defect` rather than `INVALID`, for the reason the `PERIMETER` cell already gives: the config is
 legitimate and reachable production code, and `CLAUDE.md` requires the two paths to return identical
