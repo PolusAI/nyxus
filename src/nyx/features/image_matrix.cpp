@@ -238,10 +238,11 @@ int ImageMatrix::get_chlen (int col)
 
 bool ImageMatrix::tile_contains_signal (int tile_row, int tile_col, int tile_side)
 {
+	// A box may reach past the matrix's right or bottom edge; that part holds no signal
 	int r1 = tile_row * tile_side,
-		r2 = r1 + tile_side,
+		r2 = std::min (r1 + tile_side, (int) height),
 		c1 = tile_col * tile_side,
-		c2 = c1 + tile_side;
+		c2 = std::min (c1 + tile_side, (int) width);
 	for (int r = r1; r < r2; r++)
 		for (int c = c1; c < c2; c++)
 			if (_pix_plane.yx(r, c) != 0)

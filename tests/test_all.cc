@@ -2331,6 +2331,11 @@ TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_FRACTAL_PERIMETER_WALKED_RULER_INVARIANT)
 	ASSERT_NO_THROW(test_2d_morphology_fractal_perimeter_walked_ruler_invariant());
 }
 
+TEST(TEST_NYXUS, TEST_2D_MORPHOLOGY_FRACTAL_BOXCOUNT_LONG_THIN_ROI_INVARIANT)
+{
+	ASSERT_NO_THROW(test_2d_morphology_fractal_boxcount_long_thin_roi_invariant());
+}
+
 TEST(TEST_NYXUS, TEST_2D_EDT_NO_SITES_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_edt_no_sites_mechanics());

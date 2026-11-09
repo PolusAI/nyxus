@@ -545,6 +545,43 @@ def _make_pair_2d_two_rois(tmp_path, size=128):
     return str(intdir) + os.sep, str(segdir) + os.sep
 
 
+def test_2d_ooc_2d_one_pixel_roi_after_ordinary_roi_matches_in_ram_invariant(tmp_path):
+    """A one-pixel ROI computed after an ordinary ROI in the same out-of-core run. It has no chords
+    and an empty convex hull, so the chord features must read 0 rather than the previous ROI's values
+    (one feature instance serves every out-of-core ROI) and the Martin and Nassenstein diameters must
+    take the guard for an empty hull rather than read past it. Those diameters are requested without
+    any convex hull feature, so the ordinary ROI's nonzero values also require their dependency on
+    the hull."""
+    inten = np.arange(1, 64 * 64 + 1, dtype=np.uint32).reshape(64, 64)
+    mask = np.zeros((64, 64), np.uint32)
+    mask[5:35, 5:35] = 1
+    mask[50, 50] = 2
+    intdir = tmp_path / "int"
+    segdir = tmp_path / "seg"
+    intdir.mkdir()
+    segdir.mkdir()
+    tifffile.imwrite(str(intdir / "img.tif"), inten)
+    tifffile.imwrite(str(segdir / "img.tif"), mask)
+
+    feats = ["MAXCHORDS_MAX", "MAXCHORDS_MEAN", "ALLCHORDS_MAX", "ALLCHORDS_MEAN",
+             "STAT_MARTIN_DIAM_MAX", "STAT_MARTIN_DIAM_MEAN",
+             "STAT_NASSENSTEIN_DIAM_MAX", "STAT_NASSENSTEIN_DIAM_MEAN"]
+    frames = []
+    for limit in (RAM_LIMIT_LARGE_MB, 0):
+        n = nyxus.Nyxus(feats)
+        _set_ram_limit_mb(n, limit)
+        df = n.featurize_directory(str(intdir) + os.sep, str(segdir) + os.sep)
+        frames.append(df.sort_values("ROI_label").reset_index(drop=True))
+    df_ram, df_ooc = frames
+
+    assert df_ooc["MAXCHORDS_MAX"].iloc[0] > 0, "the ordinary ROI must have chords to leak"
+    assert df_ooc["STAT_MARTIN_DIAM_MAX"].iloc[0] > 0
+    assert df_ooc["STAT_NASSENSTEIN_DIAM_MAX"].iloc[0] > 0
+    for c in feats:
+        assert df_ooc[c].to_numpy() == pytest.approx(df_ram[c].to_numpy(), rel=1e-6, abs=1e-9), c
+        assert df_ooc[c].iloc[1] == 0, c
+
+
 def test_2d_ooc_2d_two_rois_no_state_leak_invariant(tmp_path):
     """A non-degenerate ROI and a degenerate (constant) ROI in the same image, all feature groups.
     The out-of-core feature loop reuses one persistent feature-method instance across ROIs (unlike

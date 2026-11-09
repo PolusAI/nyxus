@@ -160,11 +160,13 @@ void test_buffer_from_cloud_ooc_places_pixels_mechanics()
 	}
 
 	{
+		// The box-counting image is the 4 x 3 box itself, not a square of its longer side
 		Power2PaddedImageMatrix_NT p ("buffer_from_cloud_ooc_places_p", 1, cloud, box, 0, 1.0);
 		EXPECT_EQ (p.get_width(), 4u);
+		EXPECT_EQ (p.get_height(), 3u);
 		EXPECT_EQ (p.yx (0, 3), 8.0);
 		EXPECT_EQ (p.yx (2, 3), 11.0);
-		EXPECT_EQ (p.yx (3, 3), 0.0);
+		EXPECT_EQ (p.yx (1, 1), 0.0);
 	}
 
 	cloud.clear();
