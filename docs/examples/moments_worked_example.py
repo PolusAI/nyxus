@@ -54,8 +54,8 @@ assert features["SPAT_MOMENT_00"][0] == 40 and features["IMOM_RM_00"][0] == 150
 assert same(features["SPAT_MOMENT_10"][0] / features["SPAT_MOMENT_00"][0], 3.275)
 assert same(features["SPAT_MOMENT_01"][0] / features["SPAT_MOMENT_00"][0], 2.925)
 
-# 48 x 40 rectangle: Nyxus, and the same moment with exact distances to the contour as traced
-# (one pixel right of and below the ROI's border) and to the ROI's own border pixels
+# 48 x 40 rectangle: Nyxus, and the same moment with exact distances to the contour, the ROI's
+# border pixels
 H, W = 40, 48
 rect = np.ones((H, W), dtype=np.uint32)
 w00 = Nyxus(["WEIGHTED_SPAT_MOMENT_00"]).featurize(rect, rect)["WEIGHTED_SPAT_MOMENT_00"][0]
@@ -70,13 +70,12 @@ def weight_sum(cx, cy):
     return float(np.sum(np.log(d + 0.001)))
 
 
-assert same(w00, 2498.7), w00
-assert same(weight_sum(bx + 1, by + 1), 2422.7)
+assert same(w00, 1895.0), w00
 assert same(weight_sum(bx, by), 1821.3)
 
-# Digital disks: the sum of the weights changes sign between radius 5 and radius 8, and the
+# Digital disks: the sum of the weights changes sign between radius 5 and radius 12, and the
 # odd-order normalized weighted moments follow it
-for r, m00, ncm30 in ((5, -68.94, 0.0), (8, 6.806, 7881.0), (20, 1549.1, 0.007713)):
+for r, m00, ncm30 in ((5, -153.9, 0.0), (12, 2.195, -33355.0), (20, 1210.6, -0.001704)):
     n = 2 * r + 3
     yy, xx = np.mgrid[0:n, 0:n]
     disk = (((yy - r - 1) ** 2 + (xx - r - 1) ** 2) <= r * r).astype(np.uint32)
@@ -105,9 +104,9 @@ assert single["CENTRAL_MOMENT_20"][0] == 0 and single["NORM_CENTRAL_MOMENT_20"][
 for code in ("CENTRAL_MOMENT_01", "CENTRAL_MOMENT_10", "IMOM_CM_01", "IMOM_CM_10"):
     assert abs(features[code][0]) < 1e-13, (code, features[code][0])
 
-# The 48 x 40 rectangle has 172 border pixels; 85 ROI pixels lie on the traced (shifted) contour
-on_traced = (bx + 1 < W) & (by + 1 < H)
-assert len(bx) == 172 and on_traced.sum() == 85
+# The 48 x 40 rectangle's contour is its 172 border pixels: with intensity 1 they sum to 172
+edge = Nyxus(["EDGE_INTEGRATED_INTENSITY"]).featurize(rect, rect)["EDGE_INTEGRATED_INTENSITY"][0]
+assert len(bx) == 172 and edge == 172
 
 # Out of core (ram_limit=0, file input): the weighted moments of a 245-pixel ellipse depend on where
 # its bounding box starts; the 118 unweighted moments do not
@@ -129,23 +128,34 @@ def ellipse(n, cx, cy):
 weighted = [c for c in codes if c.startswith(("WEIGHTED_", "WT_NORM_", "IMOM_W"))]
 assert len(weighted) == 62
 # pins known defect https://github.com/PolusAI/nyxus/issues/509
-for n, cx, cy, corner, ooc in ((30, 12, 10, (2, 2), 7.484), (26, 13, 13, (3, 5), 58.50),
-                               (40, 20, 20, (10, 12), 338.2)):
+for n, cx, cy, corner, ooc in ((30, 12, 10, (2, 2), 35.62), (26, 13, 13, (3, 5), 78.42),
+                               (40, 20, 20, (10, 12), 425.0)):
     e = ellipse(n, cx, cy)
     ys, xs = np.nonzero(e)
     assert e.sum() == 245 and (xs.min(), ys.min()) == corner
     mem, out = from_files(e), from_files(e, ram_limit=0)
-    assert same(mem["WEIGHTED_SPAT_MOMENT_00"][0], 49.81)
+    assert same(mem["WEIGHTED_SPAT_MOMENT_00"][0], -93.36)
     assert same(out["WEIGHTED_SPAT_MOMENT_00"][0], ooc), (corner, out["WEIGHTED_SPAT_MOMENT_00"][0])
     for code in codes:
         if code not in weighted:
             assert math.isclose(out[code][0], mem[code][0], rel_tol=1e-9, abs_tol=1e-9), code
-# At the image origin: the same ellipse still differs, the rectangle does not
+# At the image origin: the ellipse keeps WEIGHTED_SPAT_MOMENT_00 but not its weighted first moment,
+# the rectangle gets the in-memory values
 e = ellipse(30, 12, 10)[2:, 2:]
+mem, out = from_files(e), from_files(e, ram_limit=0)
+assert same(out["WEIGHTED_SPAT_MOMENT_00"][0], -93.36)
+assert same(mem["WEIGHTED_SPAT_MOMENT_10"][0], -1158.2)
 # pins known defect https://github.com/PolusAI/nyxus/issues/509
-assert same(from_files(e, ram_limit=0)["WEIGHTED_SPAT_MOMENT_00"][0], 43.75)
+assert same(out["WEIGHTED_SPAT_MOMENT_10"][0], -708.9)
 corner_rect = np.zeros((50, 60), dtype=np.uint16)
 corner_rect[:40, :48] = 1
 mem, out = from_files(corner_rect), from_files(corner_rect, ram_limit=0)
 for code in codes:
     assert math.isclose(out[code][0], mem[code][0], rel_tol=1e-9, abs_tol=1e-9), code
+# A ROI with a hole at the origin differs too: the out-of-core contour leaves the hole out
+# pins known defect https://github.com/PolusAI/nyxus/issues/509
+holed = np.zeros((20, 20), dtype=np.uint16)
+holed[:9, :9] = 1
+holed[3:6, 3:6] = 0
+assert same(from_files(holed)["WEIGHTED_SPAT_MOMENT_00"][0], -274.2)
+assert same(from_files(holed, ram_limit=0)["WEIGHTED_SPAT_MOMENT_00"][0], -194.7)

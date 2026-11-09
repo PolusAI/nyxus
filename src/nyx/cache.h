@@ -87,6 +87,10 @@ enum GpusideState
 
 class LR;
 
+// One border of a ROI's contour as the GPU reads it: where its run of contour pixels begins and ends
+// (LR::contour_border_ends_) and its bounding box, both in the frame the contour is uploaded in
+using GpuContourBorder = BorderedContour::Border;
+
 template <class T>
 class GpuCache
 {
@@ -96,11 +100,12 @@ public:
 	size_t* ho_lengths = nullptr;
 	size_t* ho_offsets = nullptr;
 	size_t* dev_offsets = nullptr;
-	size_t total_len, num_rois;
+	size_t total_len = 0, num_rois = 0;
 	bool alloc(size_t total_len) { OK(alloc(total_len, 1)); return true; };
 	bool alloc(size_t total_len, size_t num_rois);
 	static size_t szb(size_t total_len, size_t num_rois);
 	bool upload();
+	bool upload(size_t n_items);	// the first n_items of the buffer, and every ROI's offset
 	bool download();
 	bool clear();
 	~GpuCache() { clear(); }
@@ -115,7 +120,8 @@ public:
 	/*--extern--*/ GpuCache<gpureal> gpu_featurestatebuf;	// n_rois * GeomomentsState::__COUNT__
 
 	/*--extern--*/ GpuCache<Pixel2> gpu_roiclouds_2d;	// continuous ROI clouds
-	/*--extern--*/ GpuCache<Pixel2> gpu_roicontours_2d;	// continuous ROI contours
+	/*--extern--*/ GpuCache<Pixel2> gpu_roicontours_2d;	// continuous ROI contours (LR::contour_pixels_)
+	/*--extern--*/ GpuCache<GpuContourBorder> gpu_roicontourborders_2d;	// per ROI, each border of its contour; sized by the memory plan's bound on a batch's borders
 
 	// helper buffers of 2D moments features
 	/*--extern--*/ RealPixIntens* dev_realintens = nullptr;	// max cloud size over batch
@@ -145,6 +151,7 @@ public:
 		bool needMoments,
 		size_t roi_cloud_len,
 		size_t roi_kontur_cloud_len,
+		size_t roi_kontur_borders,	// the most contour borders a batch can have
 		size_t n_rois,
 		size_t roi_w,
 		size_t roi_h,
@@ -155,6 +162,7 @@ public:
 		// out
 		GpuCache<Pixel2>& clouds,
 		GpuCache<Pixel2>& konturs,
+		GpuCache<GpuContourBorder>& kontur_borders,
 		RealPixIntens** realintens,
 		double** prereduce,
 		GpuCache<gpureal>& state,
@@ -174,6 +182,7 @@ public:
 		bool needMoments,
 		size_t roi_cloud_len,
 		size_t roi_kontur_cloud_len,
+		size_t roi_kontur_borders,	// the most contour borders a batch can have
 		size_t n_rois,
 		size_t roi_area,
 		size_t roi_w,
@@ -184,12 +193,13 @@ public:
 	bool free_gpu_cache(
 		GpuCache<Pixel2>& clouds,
 		GpuCache<Pixel2>& konturs,
+		GpuCache<GpuContourBorder>& kontur_borders,
 		RealPixIntens*& realintens,
 		double*& prereduce,
 		GpuCache<gpureal>& intermediate,
 		void*& tempstorage,
-		PixIntens* imat1,
-		PixIntens* imat2,
+		PixIntens*& imat1,
+		PixIntens*& imat2,
 		GpuCache <cufftDoubleComplex>& gabor_linear_image,
 		GpuCache <cufftDoubleComplex>& gabor_result,
 		GpuCache <cufftDoubleComplex>& gabor_linear_kernel,
@@ -203,6 +213,7 @@ public:
 		// out
 		GpuCache<Pixel2>& cloud,
 		GpuCache<Pixel2>& contours,
+		GpuCache<GpuContourBorder>& contour_borders,
 		RealPixIntens** real_intens,
 		double** prereduce,
 		GpuCache<gpureal>& intermediate,
@@ -223,12 +234,22 @@ public:
 	static bool devicereduce_evaluate_buffer_szb(size_t& devicereduce_buf_szb, size_t maxLen);
 	static bool gpu_get_free_mem(size_t& amt);
 
+	// Whether allocate_gpu_cache() has allocated every buffer its families need, and nothing has freed
+	// them since. The ROI clouds are allocated by every allocation, an allocation that fails frees what
+	// it had allocated, and free_gpu_cache() nulls every host buffer, so the clouds' host buffer is set
+	// exactly then.
+	bool is_ready() const { return gpu_roiclouds_2d.hobuffer != nullptr; }
+
+#ifdef NYXUS_GPU_TEST_HOOKS
+	// for tests: makes allocate_gpu_cache() fail part way, with every family but Gabor allocated
+	static bool test_fail_before_gabor;
+	// for tests: makes the next host allocation of a GpuCache fail; reset by that allocation
+	static bool test_fail_next_host_alloc;
+#endif
+
 protected:
 
-	bool using_contour = false,
-		using_erosion = false,
-		using_gabor = false,
-		using_moments = false;
+	bool using_contour = false;
 
 };
 

@@ -8,6 +8,9 @@
 #include <regex>
 #include <string>
 #include <limits>
+#include <cmath>
+#include <exception>
+#include <stdexcept>
 
 #ifdef WITH_PYTHON_H
 	#include <pybind11/pybind11.h>
@@ -158,6 +161,45 @@ namespace Nyxus
 		return true;
 	}
 
+	GpuCacheSizes gpu_cache_sizes (const Environment& env)
+	{
+		// The trivial pipeline resamples a ROI only with custom anisotropy (--anisox, --anisoy; not
+		// the physical pixel size), each pixel to at most ceil(ax) columns and ceil(ay) rows. A
+		// resampled row holds the runs of the row it repeats, so a slide's borders, at most twice its
+		// row runs (SlideProps::n_row_runs), grow by ceil(ay) only.
+		size_t rx = 1, ry = 1;
+		if (env.anisoOptions.customized())
+		{
+			const double ax = env.anisoOptions.get_aniso_x(), ay = env.anisoOptions.get_aniso_y();
+			rx = ax > 1.0 ? (size_t) std::ceil (ax) : 1;
+			ry = ay > 1.0 ? (size_t) std::ceil (ay) : 1;
+		}
+
+		GpuCacheSizes s;
+		s.roi_area = env.dataset.dataset_max_roi_area * rx * ry;
+		s.roicloud_len = env.dataset.dataset_max_combined_roicloud_len * rx * ry;
+		s.kontur_len = env.singleROI ? 4 : s.roicloud_len;	// a whole slide's contour is its 4 corners
+
+		s.kontur_borders = 1;	// a whole slide's contour is one border
+		if (!env.singleROI)
+			for (const SlideProps& p : env.dataset.dataset_props)
+				s.kontur_borders = (std::max) (s.kontur_borders, 2 * p.n_row_runs * ry);
+		return s;
+	}
+
+#ifdef USE_GPU
+	// Frees the GPU cache processDataset_2D_segmented allocated, if it allocated one
+	static bool free_gpu_cache_of (Environment& env)
+	{
+		if (! env.using_gpu())
+			return true;
+		GpusideCache& g = env.devCache;
+		return g.free_gpu_cache(g.gpu_roiclouds_2d, g.gpu_roicontours_2d, g.gpu_roicontourborders_2d, g.dev_realintens,
+			g.dev_prereduce, g.gpu_featurestatebuf, g.dev_devicereduce_temp_storage, g.dev_imat1, g.dev_imat2,
+			g.gabor_linear_image, g.gabor_result, g.gabor_linear_kernel, g.gabor_energy_image);
+	}
+#endif
+
 	int processDataset_2D_segmented (
 		Environment & env,
 		const std::vector<std::string>& intensFiles,
@@ -177,6 +219,22 @@ namespace Nyxus
 
 		// slide properties
 		size_t nf = intensFiles.size();
+
+#ifdef USE_GPU
+		// Once the GPU cache is allocated, frees it on every way out of this function, an error return
+		// or an exception included; a failure to free cannot replace the error being reported. A run
+		// that succeeds disarms it and frees the cache itself, to report a failure to free.
+		struct GpuCacheRelease
+		{
+			Environment& env;
+			bool armed = false;
+			~GpuCacheRelease()
+			{
+				if (armed)
+					try { free_gpu_cache_of (env); } catch (...) {}
+			}
+		} gpu_cache_release { env };
+#endif
 
 		{ STOPWATCH("prescan/p0/P/#ccbbaa", "\t=");
 		VERBOSLVL1 (env.get_verbosity_level(), std::cout << "\nphase 0: prescanning " << nf << " slides \n");
@@ -216,8 +274,7 @@ namespace Nyxus
 			needSmoments = Smoms2D_feature::required(env.theFeatureSet),
 			needMoments = needImoments || needSmoments;
 
-		// whole slide's contour is just 4 vertices long
-		size_t kontrLen = env.singleROI ? 4 : env.dataset.dataset_max_combined_roicloud_len;
+		const GpuCacheSizes gsz = gpu_cache_sizes (env);
 
 		if (env.using_gpu())
 		{
@@ -227,6 +284,7 @@ namespace Nyxus
 				// out
 				env.devCache.gpu_roiclouds_2d,
 				env.devCache.gpu_roicontours_2d,
+				env.devCache.gpu_roicontourborders_2d,
 				&env.devCache.dev_realintens,
 				&env.devCache.dev_prereduce,
 				env.devCache.gpu_featurestatebuf,
@@ -244,10 +302,11 @@ namespace Nyxus
 				needErosion,
 				needGabor,
 				needMoments,
-				env.dataset.dataset_max_combined_roicloud_len, // desired totCloLen,
-				kontrLen, // desired totKontLen,
+				gsz.roicloud_len, // desired totCloLen,
+				gsz.kontur_len, // desired totKontLen,
+				gsz.kontur_borders,
 				env.dataset.dataset_max_n_rois,	// labels.size()
-				env.dataset.dataset_max_roi_area,
+				gsz.roi_area,
 				env.dataset.dataset_max_roi_w,
 				env.dataset.dataset_max_roi_h,
 				GaborFeature::f0_theta_pairs.size(),
@@ -257,6 +316,7 @@ namespace Nyxus
 				std::cerr << "allocating GPU cache failed: " << allocErr.value() << "\n";
 				return 1;
 			}
+			gpu_cache_release.armed = true;
 
 			VERBOSLVL1 (env.get_verbosity_level(), std::cout << "\t ---done allocating GPU cache \n");
 		}
@@ -313,8 +373,53 @@ namespace Nyxus
 				return 1;
 			}
 
-			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing
-			if (! processIntSegImagePair(env, ifp, lfp, i, nf))
+			// Do phased processing: prescan, trivial ROI processing, oversized ROI processing. A failure
+			// that throws, such as a ROI batch the GPU cache cannot take, ends the run here, and the GPU
+			// cache is freed on the way out (gpu_cache_release).
+			bool pairOk = false;
+			try
+			{
+				pairOk = processIntSegImagePair(env, ifp, lfp, i, nf);
+			}
+			catch (const std::exception& e)
+			{
+				std::cerr << "Error featurizing segmented slide " << ifp << ": " << e.what() << "\n";
+#ifdef WITH_PYTHON_H
+				throw;
+#else
+				return 1;
+#endif
+			}
+			catch (const std::string& s)
+			{
+				// the trivial path also throws strings and string literals; under Python they go on as
+				// std::runtime_error, which pybind11 carries with its text
+				std::cerr << "Error featurizing segmented slide " << ifp << ": " << s << "\n";
+#ifdef WITH_PYTHON_H
+				throw std::runtime_error (s);
+#else
+				return 1;
+#endif
+			}
+			catch (const char* s)
+			{
+				std::cerr << "Error featurizing segmented slide " << ifp << ": " << s << "\n";
+#ifdef WITH_PYTHON_H
+				throw std::runtime_error (s);
+#else
+				return 1;
+#endif
+			}
+			catch (...)
+			{
+				std::cerr << "Error featurizing segmented slide " << ifp << "\n";
+#ifdef WITH_PYTHON_H
+				throw;
+#else
+				return 1;
+#endif
+			}
+			if (! pairOk)
 			{
 				std::cerr << "Error featurizing segmented slide " << ifp << " @ " << __FILE__ << ":" << __LINE__ << "\n";
 				return 1;
@@ -406,25 +511,11 @@ namespace Nyxus
 		}
 
 #ifdef USE_GPU
-		if (env.using_gpu())
+		gpu_cache_release.armed = false;
+		if (! free_gpu_cache_of (env))
 		{
-			if (! env.devCache.free_gpu_cache(
-				env.devCache.gpu_roiclouds_2d,
-				env.devCache.gpu_roicontours_2d,
-				env.devCache.dev_realintens,
-				env.devCache.dev_prereduce,
-				env.devCache.gpu_featurestatebuf,
-				env.devCache.dev_devicereduce_temp_storage,
-				env.devCache.dev_imat1,
-				env.devCache.dev_imat2,
-				env.devCache.gabor_linear_image,
-				env.devCache.gabor_result,
-				env.devCache.gabor_linear_kernel,
-				env.devCache.gabor_energy_image))
-			{
-				std::cerr << "error in free_gpu_cache()\n";
-				return 1;
-			}
+			std::cerr << "error in free_gpu_cache()\n";
+			return 1;
 		}
 #endif
 

@@ -24,6 +24,9 @@ set(TEST_SRC
 # compile units belong here.
 add_executable(runAllTests ${TEST_SRC})
 
+# the GPU cache's test hooks (GpusideCache::test_fail_*) exist in this target only
+target_compile_definitions(runAllTests PRIVATE NYXUS_GPU_TEST_HOOKS)
+
 if(USEGPU)
 	include_directories("${CUDA_INCLUDE_DIRS}")
 	if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")

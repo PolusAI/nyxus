@@ -132,7 +132,7 @@ churn names).
 | `fraclac` | FracLac (ImageJ plugin) | fractal dimension (box-count) | Java / macro |
 | `mirp` | MIRP | texture, first-order, shape (IBSI-compliant) | Python |
 | `pydicom` | pydicom 3.0.2 | DICOM decode + `RescaleSlope`/`RescaleIntercept` → true HU (CT) | Python |
-| `opencv` | OpenCV 4.13 (`cv2`) | image-quality focus measures (`cv2.Laplacian(...).var()`), filters/convolution | Python |
+| `opencv` | OpenCV 4.13 (`cv2`) | image-quality focus measures (`cv2.Laplacian(...).var()`), filters/convolution, 2D contour borders and `PERIMETER` (`cv2.findContours`) | Python |
 | `ibsi` | IBSI reference tables | texture + first-order consensus values | hardcoded |
 | `analytic` | closed-form / hand-computed | any (on tiny fixtures) | in-test |
 

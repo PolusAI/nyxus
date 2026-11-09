@@ -63,7 +63,7 @@ private:
 	void get_RadialCV();
 
 	// Returns the index of the pixel in parameter 'cloud' having maximum distance from 'contour'
-	size_t find_center_NT (const OutOfRamPixelCloud& cloud, const std::vector<Pixel2>& contour);
+	size_t find_center_NT (const OutOfRamPixelCloud& cloud, const BorderedContour& contour);
 
 	// Zeros the counters
 	void reset_buffers();

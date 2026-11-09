@@ -44,6 +44,7 @@ public:
 		slide_w = slide_h = volume_d = 0;
 		max_roi_area = 0;
 		n_rois = 0;
+		n_row_runs = 0;
 		max_roi_w = 0;
 		max_roi_h = 0;
 		max_roi_d = 0;
@@ -170,6 +171,12 @@ public:
 		max_roi_w,
 		max_roi_h,
 		max_roi_d;
+
+	// The number of row runs of the slide's 2D ROIs, all ROIs together: maximal horizontal stretches of
+	// one ROI's pixels, a stretch cut by a tile's left edge counted as two. A ROI's contour has no more
+	// borders than twice its row runs, since every outer border starts at a run's first pixel and every
+	// hole's border at a run's last. 0 for a volume or a montage.
+	size_t n_row_runs;
 
 	// slide file names
 	std::string fname_int, fname_seg;

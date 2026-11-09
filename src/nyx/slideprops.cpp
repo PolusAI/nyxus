@@ -161,6 +161,7 @@ namespace Nyxus
 
 		// iterate abstract tiles (in a tiled slide /e.g. tiled tiff/ they correspond to physical tiles, in a nontiled slide /e.g. scanline tiff or strip tiff/ they correspond to )
 		int cnt = 1;
+		size_t nRowRuns = 0;
 		for (unsigned int row = 0; row < ntVert; row++)
 			for (unsigned int col = 0; col < ntHor; col++)
 			{
@@ -175,6 +176,7 @@ namespace Nyxus
 				}
 
 				// Iterate pixels
+				uint32_t prevMsk = 0;	// the label of the pixel to the left in the tile's row
 				for (size_t i = 0; i < tileSize; i++)
 				{
 					int y = row * th + i / tw,
@@ -202,6 +204,13 @@ namespace Nyxus
 					if (!wholeslide)
 						msk = ilo.get_cur_tile_seg_pixel(i);
 
+					// a row run of a ROI starts where the label changes along a tile's row, or at the row's
+					// start
+					if (i % tw == 0)
+						prevMsk = 0;
+					const bool runStart = msk != prevMsk;
+					prevMsk = msk;
+
 					// Skip non-mask pixels
 					if (!msk)
 						continue;
@@ -212,6 +221,9 @@ namespace Nyxus
 						slide_I_max = (std::max)(slide_I_max, dxequiv_I);
 						slide_I_min = (std::min)(slide_I_min, dxequiv_I);
 					}
+
+					if (runStart)
+						nRowRuns++;
 
 					// Update pixel's ROI metrics
 					//		- the following block mocks feed_pixel_2_metrics (x, y, dataI[i], msk, tidx)
@@ -301,6 +313,7 @@ namespace Nyxus
 
 		p.max_roi_area = maxArea;
 		p.n_rois = R.size();
+		p.n_row_runs = nRowRuns;
 		p.max_roi_w = max_w;
 		p.max_roi_h = max_h;
 

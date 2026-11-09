@@ -79,12 +79,14 @@ protected:
 
     // helpers
 
+    // a pixel's distance to 'contour' is the smallest of its distances to the borders, each searched
+    // on its own
     void apply_dist2contour_weighting (
         // input & output
         reintenvec& realintens,
         // input
         const pixcloud& cloud,
-        const pixcloud& contour,
+        const BorderedContour& contour,
         const double epsilon);
 
     void apply_dist2contour_weighting_wholeslide (

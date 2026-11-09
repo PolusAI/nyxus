@@ -48,13 +48,14 @@ DIAMETER_EQUAL_PERIMETER_IN_RAM = 41.97942430353313
 DIAMETER_EQUAL_PERIMETER_OUT_OF_CORE = 35.65070725258456
 
 # The same contour reaches RoiRadiusFeature, which measures every ROI pixel against it. Both builders
-# return 112 contour pixels here, so the gap is not a count: it is which pixels they are. MAX is
-# unchanged to the last digit while MEAN and MEDIAN rise, i.e. some ROI pixels are farther from the
-# out-of-core contour and the one attaining the maximum is not among them.
-ROI_RADIUS_MEAN_IN_RAM = 6.087109772358636
-ROI_RADIUS_MEAN_OUT_OF_CORE = 7.169174091182726
+# return the fixture's 112 edge pixels, but the out-of-core contour is relative to the ROI's bounding
+# box, whose origin here is (12, 12): measuring the ROI against the scikit-image inner boundary
+# shifted by (-12, -12) reproduces all three out-of-core values, and against the unshifted boundary
+# all three in-RAM ones. MAX happens to come out the same either way.
+ROI_RADIUS_MEAN_IN_RAM = 6.047026418093836
+ROI_RADIUS_MEAN_OUT_OF_CORE = 7.423593657857253
 ROI_RADIUS_MEDIAN_IN_RAM = 5.0
-ROI_RADIUS_MEDIAN_OUT_OF_CORE = 6.708203932499369
+ROI_RADIUS_MEDIAN_OUT_OF_CORE = 7.0
 ROI_RADIUS_MAX_BOTH_PATHS = 19.026297590440446
 
 
@@ -149,11 +150,10 @@ def test_2d_ooc_roi_radius_diverges_from_in_ram_regression(tmp_path):
     """ROI_RADIUS_MEAN and ROI_RADIUS_MEDIAN do not survive the out-of-core round trip.
 
     Not a units or arithmetic difference: both paths take sqrt(exact_min_sqdist(K)) over the same
-    ROI pixels, so the only input that can differ is K, and it does. Both builders return 112 contour
-    pixels on this fixture -- the in-RAM count is measured in test_2d_morphology_skimage.h's disk
-    table and the out-of-core count is what PERIMETER reports there -- so the two contours are the
-    same size and different sets. No translation of the boundary reproduces the out-of-core numbers,
-    which is why this is pinned as a characterization rather than explained as an offset.
+    ROI pixels, so the only input that can differ is K, and it does. Both builders return the same
+    112 edge pixels on this fixture, but the out-of-core contour is relative to the bounding box,
+    whose origin is (12, 12), while the ROI pixels it is measured against are absolute. The
+    scikit-image inner boundary shifted by (-12, -12) reproduces all three out-of-core values.
 
     MAX is asserted EQUAL on both paths deliberately. It is the part that already agrees, so a fix
     that repairs MEAN and MEDIAN by moving the whole contour would break it, and this test would say

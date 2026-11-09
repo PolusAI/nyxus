@@ -21,7 +21,7 @@ research pass per tool; see per-tool detail below and the setup matrix first.
 | `matlab` | R2026a | **licensed install** with Image Processing Toolbox 26.1 | high (offline) | native first-order and morphology oracle generators; never a CI dependency |
 | `octave` | 10.3.0 / 11.3.0 | **conda** `conda install -c conda-forge octave octave-statistics` (no Docker, no license) | high | license-free MATLAB substitute (MIGRATION 5.13); `mean`/`median`/`std`/`var`/`skewness`/`kurtosis`/`prctile`/`quantile` all present. Add `octave-image` for `regionprops`/`bweuler` (2D morphology) |
 | `skimage` | 0.26.0 | **conda** — already present in `nyxus_mirp` (mirp pulls scikit-image, scipy, numpy) | high | no separate env needed; `gabor_kernel` + `regionprops` + `moments*`; see the skimage note below |
-| `opencv` | 4.13.0 | **conda** — already present in `nyxus_mirp` (`opencv-python`) | high | no separate env needed; `cv2.Laplacian` (IMQ focus scores) and `cv2.medianBlur`; see the opencv note below |
+| `opencv` | 4.13.0 | **conda** — already present in `nyxus_mirp` (`opencv-python`) | high | no separate env needed; `cv2.Laplacian` (IMQ focus scores), `cv2.medianBlur`, and `cv2.findContours` (2D contour borders and `PERIMETER`, `gen_contour_opencv.py`); see the opencv note below |
 
 ## conda route (verified 2026-08, 2D GLCM vetting)
 

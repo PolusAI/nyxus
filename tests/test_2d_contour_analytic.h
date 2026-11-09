@@ -2,8 +2,7 @@
 
 #include <gtest/gtest.h>
 #include <vector>
-#include "test_data.h"
-#include "../src/nyx/features/contour.h"
+#include "test_2d_contour_common.h"
 
 void test_2d_contour_single_tailed_analytic()
 {
@@ -213,7 +212,190 @@ void test_2d_contour_multi_connected_analytic()
 		0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0  // 46
 	};
 
+	// Three fragments: unlike the disconnected variant, the upper-right shape is one piece here, its
+	// rows 8 and 9 meeting diagonally, so it has one border, not two.
 	std::vector<std::vector<Pixel2>> multic;
 	ContourFeature::gather_multicontour (multic, I, w-2, h-2, 0/*verbose lvl*/);
-	ASSERT_TRUE (multic.size() == 4);
+	ASSERT_TRUE (multic.size() == 3);
+}
+
+// The closed forms below are evaluated on ROIs placed away from the image origin, so a contour
+// reported in any frame other than the ROI's own absolute pixel coordinates cannot match them.
+
+// A filled n x n square: one border, made of the 4(n-1) pixels on its edge, walked in unit steps,
+// so PERIMETER = 4(n-1).
+void test_2d_contour_square_analytic()
+{
+	const int n = 10, x0 = 37, y0 = 52;
+	std::set<std::pair<int, int>> square, edge;
+	for (int y = y0; y < y0 + n; y++)
+		for (int x = x0; x < x0 + n; x++)
+		{
+			square.insert({ x, y });
+			if (x == x0 || x == x0 + n - 1 || y == y0 || y == y0 + n - 1)
+				edge.insert({ x, y });
+		}
+	ASSERT_EQ (edge.size(), size_t(4 * (n - 1)));
+
+	LR r (1);
+	contour_roi_from_pixels (r, square);
+	contour_calculate (r);
+
+	ASSERT_EQ (r.multicontour_.size(), size_t(1));
+	ASSERT_TRUE (contour_is_closed_8_walk (r.multicontour_[0]));
+	ASSERT_EQ (r.multicontour_[0].size(), edge.size());
+	ASSERT_EQ (contour_pixel_set (r), edge);
+	ASSERT_NEAR (r.fvals[(int)Nyxus::Feature2D::PERIMETER][0], 4.0 * (n - 1), 1e-9);
+}
+
+// A filled digital disk (x-cx)^2 + (y-cy)^2 <= R^2. Its border is exactly the disk pixels with a
+// 4-neighbour outside the disk, and each of them lies at a squared distance in ((R-1)^2, R^2] from
+// the centre: a pixel at distance <= R-1 has all four neighbours within R.
+void test_2d_contour_disk_analytic()
+{
+	const int R = 20, cx = 60, cy = 45;
+	auto inside = [&](int x, int y) { return (x - cx) * (x - cx) + (y - cy) * (y - cy) <= R * R; };
+	std::set<std::pair<int, int>> disk, edge;
+	for (int y = cy - R; y <= cy + R; y++)
+		for (int x = cx - R; x <= cx + R; x++)
+			if (inside (x, y))
+			{
+				disk.insert({ x, y });
+				if (!inside (x - 1, y) || !inside (x + 1, y) || !inside (x, y - 1) || !inside (x, y + 1))
+					edge.insert({ x, y });
+			}
+
+	LR r (1);
+	contour_roi_from_pixels (r, disk);
+	contour_calculate (r);
+
+	ASSERT_EQ (r.multicontour_.size(), size_t(1));
+	ASSERT_TRUE (contour_is_closed_8_walk (r.multicontour_[0]));
+	ASSERT_EQ (contour_pixel_set (r), edge);
+	for (const Pixel2& p : r.multicontour_[0])
+	{
+		int d2 = ((int)p.x - cx) * ((int)p.x - cx) + ((int)p.y - cy) * ((int)p.y - cy);
+		ASSERT_GT (d2, (R - 1) * (R - 1));
+		ASSERT_LE (d2, R * R);
+	}
+}
+
+// A 12 x 12 square with a centred 4 x 4 hole: two borders. The outer one walks the 44 edge pixels
+// in unit steps. The hole's one walks the 16 pixels 4-adjacent to the hole, 3 unit steps along
+// each side and one diagonal step around each corner. PERIMETER is their sum, 44 + 12 + 4*sqrt(2),
+// with nothing joining the two.
+void test_2d_contour_ring_analytic()
+{
+	const int n = 12, x0 = 20, y0 = 30;
+	std::set<std::pair<int, int>> ring;
+	for (int y = 0; y < n; y++)
+		for (int x = 0; x < n; x++)
+			if (!(x >= 4 && x < 8 && y >= 4 && y < 8))
+				ring.insert({ x0 + x, y0 + y });
+
+	LR r (1);
+	contour_roi_from_pixels (r, ring);
+	contour_calculate (r);
+
+	ASSERT_EQ (r.multicontour_.size(), size_t(2));
+	double walks = 0;
+	for (const auto& K : r.multicontour_)
+	{
+		ASSERT_TRUE (contour_is_closed_8_walk (K));
+		walks += contour_closed_walk_length (K);
+	}
+	ASSERT_EQ (contour_pixel_set (r).size(), size_t(44 + 16));
+
+	// The outer border is found first and walked clockwise on screen from its top-left pixel, East
+	// first; the hole's is walked counterclockwise. Twice the shoelace sum is positive for a
+	// clockwise walk when y points down.
+	auto twice_signed_area = [](const std::vector<Pixel2>& K)
+	{
+		long long a = 0;
+		for (size_t i = 0; i < K.size(); i++)
+		{
+			const Pixel2& p = K[i == 0 ? K.size() - 1 : i - 1], & q = K[i];
+			a += (long long)p.x * q.y - (long long)q.x * p.y;
+		}
+		return a;
+	};
+	const auto& outer = r.multicontour_[0];
+	ASSERT_EQ (outer[0].x, x0);
+	ASSERT_EQ (outer[0].y, y0);
+	ASSERT_EQ (outer[1].x, x0 + 1);
+	ASSERT_EQ (outer[1].y, y0);
+	ASSERT_GT (twice_signed_area (outer), 0);
+	ASSERT_LT (twice_signed_area (r.multicontour_[1]), 0);
+
+	const double expected = 44.0 + 12.0 + 4.0 * std::sqrt(2.0);
+	ASSERT_NEAR (walks, expected, 1e-9);
+	ASSERT_NEAR (r.fvals[(int)Nyxus::Feature2D::PERIMETER][0], expected, 1e-9);
+}
+
+// Two separate squares, 6 x 6 and 8 x 8, under one label: one border each, and PERIMETER is
+// 4*5 + 4*7 = 48, the sum of the two square perimeters.
+void test_2d_contour_two_fragments_analytic()
+{
+	const int x0 = 15, y0 = 25;
+	std::set<std::pair<int, int>> two;
+	for (int y = 0; y < 6; y++)
+		for (int x = 0; x < 6; x++)
+			two.insert({ x0 + x, y0 + y });
+	for (int y = 1; y < 9; y++)
+		for (int x = 11; x < 19; x++)
+			two.insert({ x0 + x, y0 + y });
+
+	LR r (1);
+	contour_roi_from_pixels (r, two);
+	contour_calculate (r);
+
+	ASSERT_EQ (r.multicontour_.size(), size_t(2));
+	for (const auto& K : r.multicontour_)
+		ASSERT_TRUE (contour_is_closed_8_walk (K));
+	ASSERT_EQ (contour_pixel_set (r).size(), size_t(20 + 28));
+	ASSERT_NEAR (r.fvals[(int)Nyxus::Feature2D::PERIMETER][0], 48.0, 1e-9);
+}
+
+// A one-pixel-wide line of n pixels: its border goes out along the line and comes back, so the walk
+// visits the n-2 inner pixels twice and PERIMETER = 2(n-1). The EDGE_* statistics are over the
+// ROI's edge pixels, so each pixel counts once however often the walk passes it.
+void test_2d_contour_line_analytic()
+{
+	const int n = 5, x0 = 8, y0 = 3;
+	std::set<std::pair<int, int>> line;
+	double inten_sum = 0;
+	for (int x = x0; x < x0 + n; x++)
+	{
+		line.insert({ x, y0 });
+		inten_sum += contour_fixture_intensity (x, y0);
+	}
+
+	LR r (1);
+	contour_roi_from_pixels (r, line);
+	contour_calculate (r);
+
+	ASSERT_EQ (r.multicontour_.size(), size_t(1));
+	ASSERT_TRUE (contour_is_closed_8_walk (r.multicontour_[0]));
+	ASSERT_EQ (r.multicontour_[0].size(), size_t(2 * (n - 1)));
+	ASSERT_EQ (contour_pixel_set (r), line);
+	ASSERT_NEAR (r.fvals[(int)Nyxus::Feature2D::PERIMETER][0], 2.0 * (n - 1), 1e-9);
+	ASSERT_NEAR (r.fvals[(int)Nyxus::Feature2D::EDGE_INTEGRATED_INTENSITY][0], inten_sum, 1e-9);
+
+	ASSERT_EQ (r.contour_pixels_.size(), size_t(n));
+	ASSERT_EQ (r.contour_border_ends_, std::vector<size_t>{ size_t(n) });
+}
+
+// A single pixel is its own border: one contour of one pixel, and PERIMETER 0.
+void test_2d_contour_single_pixel_analytic()
+{
+	LR r (1);
+	contour_roi_from_pixels (r, { { 7, 9 } });
+	contour_calculate (r);
+
+	ASSERT_EQ (r.multicontour_.size(), size_t(1));
+	ASSERT_EQ (r.multicontour_[0].size(), size_t(1));
+	ASSERT_EQ (r.multicontour_[0][0].x, 7);
+	ASSERT_EQ (r.multicontour_[0][0].y, 9);
+	ASSERT_EQ (r.fvals[(int)Nyxus::Feature2D::PERIMETER][0], 0.0);
+	ASSERT_EQ (r.fvals[(int)Nyxus::Feature2D::EDGE_INTEGRATED_INTENSITY][0], (double)contour_fixture_intensity (7, 9));
 }

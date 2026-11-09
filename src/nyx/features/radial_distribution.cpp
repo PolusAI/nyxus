@@ -48,8 +48,9 @@ void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 
 	auto& raw_pixels = r.raw_pixels;
 
-	std::vector<Pixel2> K;
-	r.merge_multicontour(K);
+	// the contour, as borders the distance searches below search one at a time
+	const std::vector<Pixel2>& K = r.contour_pixels_;
+	const BorderedContour Kb (K, r.contour_border_ends_);
 
 	// Skip calculation if we have insofficient informative data 
 	if (raw_pixels.size() == 0 || K.size() == 0)
@@ -59,7 +60,7 @@ void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 	this->cached_num_pixels = raw_pixels.size();
 
 	// Find the center (most distant pixel from the edge)
-	int idxO = Pixel2::find_center(raw_pixels, K, pixel_w, pixel_h);
+	int idxO = Pixel2::find_center(raw_pixels, Kb, pixel_w, pixel_h);
 
 	// Cache it
 	this->cached_center_x = raw_pixels[idxO].x;
@@ -69,15 +70,15 @@ void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 	const Pixel2& pxO = raw_pixels[idxO];
 
 	// Max radius
-	double dstOC = std::sqrt (pxO.max_sqdist (K, pixel_w, pixel_h)); //std::sqrt(pxContour.sqdist(pxO));
+	double dstOC = std::sqrt (pxO.max_sqdist (Kb, pixel_w, pixel_h));
 
 	for (auto& pxA : raw_pixels)
 	{
 		// Distance center to cloud pixel
 		double dstOA = std::sqrt(pxA.sqdist(pxO, pixel_w, pixel_h));		
 		
-		// Find the radial bin index
-		double rat = dstOA / dstOC;
+		// Find the radial bin index. The radius is 0 only for a one-pixel ROI, whose pixel is the centre.
+		double rat = dstOC > 0 ? dstOA / dstOC : 0.0;
 		int bi = int(rat * (n-1));	// bin index
 		if (bi >= n)
 			bi = n - 1;
@@ -106,7 +107,7 @@ void RadialDistributionFeature::calculate (LR& r, const Fsettings& s)
 
 void RadialDistributionFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity) {}
 
-size_t RadialDistributionFeature::find_center_NT (const OutOfRamPixelCloud& cloud, const std::vector<Pixel2>& contour)
+size_t RadialDistributionFeature::find_center_NT (const OutOfRamPixelCloud& cloud, const BorderedContour& contour)
 {
 	int idxMinDif = 0;
 	auto minmaxDist = cloud[idxMinDif].min_max_sqdist(contour);
@@ -130,8 +131,8 @@ void RadialDistributionFeature::osized_calculate (LR& r, const Fsettings& s, Ima
 
 	auto n = RadialDistributionFeature::num_bins;
 
-	std::vector<Pixel2> K;
-	r.merge_multicontour(K);
+	const std::vector<Pixel2>& K = r.contour_pixels_;
+	const BorderedContour Kb (K, r.contour_border_ends_);
 
 	// Skip calculation if we have insofficient informative data 
 	if (r.raw_pixels_NT.size() == 0 || K.size() == 0)
@@ -141,7 +142,7 @@ void RadialDistributionFeature::osized_calculate (LR& r, const Fsettings& s, Ima
 	this->cached_num_pixels = r.raw_pixels_NT.size();
 
 	// Find the center (most distant pixel from the edge)
-	int idxO = find_center_NT (r.raw_pixels_NT, K);
+	int idxO = find_center_NT (r.raw_pixels_NT, Kb);
 
 	// Cache it
 	this->cached_center_x = r.raw_pixels_NT[idxO].x;
@@ -151,15 +152,15 @@ void RadialDistributionFeature::osized_calculate (LR& r, const Fsettings& s, Ima
 	const Pixel2 pxO = r.raw_pixels_NT[idxO];
 
 	// Max radius
-	double dstOC = std::sqrt(pxO.max_sqdist(K)); 
+	double dstOC = std::sqrt(pxO.max_sqdist(Kb));
 
 	for (auto pxA : r.raw_pixels_NT)
 	{
 		// Distance center to cloud pixel
 		double dstOA = std::sqrt(pxA.sqdist(pxO));
 
-		// Find the radial bin index 
-		double rat = dstOA / dstOC;
+		// Find the radial bin index. The radius is 0 only for a one-pixel ROI, whose pixel is the centre.
+		double rat = dstOC > 0 ? dstOA / dstOC : 0.0;
 		int bi = int(rat * (n - 1));	// bin index
 		if (bi >= n)
 			bi = n - 1;

@@ -149,12 +149,20 @@ for value in (100, 4294967295):
     inten[70, 70] = value
     check(from_files(lone, inten, ram_limit=0)[0][:1], [1.4156], f"lone pixel {value} out of core")
 check(from_files(mask)[0][:2], [1.3732, 1.1311], "example, no anisotropy")
-check(from_files(mask, anisotropy_x=2)[0][:2], [1.2459, 1.1731], "anisotropy_x=2")
-check(from_files(mask, anisotropy_y=3)[0][:2], [1.4458, 1.2546], "anisotropy_y=3")
+check(from_files(mask, anisotropy_x=2)[0][:2], [1.2459, 1.1717], "anisotropy_x=2")
+check(from_files(mask, anisotropy_y=3)[0][:2], [1.4458, 1.1635], "anisotropy_y=3")
 # With anisotropy the out-of-core contour differs, so a single-contour disk differs too
-check(from_files(disk(8), anisotropy_x=2)[0][1:2], [1.1431], "disk 8, anisotropy_x=2")
+check(from_files(disk(8), anisotropy_x=2)[0][1:2], [1.0771], "disk 8, anisotropy_x=2")
 # pins known defect https://github.com/PolusAI/nyxus/issues/509
 check(from_files(disk(8), anisotropy_x=2, ram_limit=0)[0][1:2], [1.0482], "disk 8, anisotropy_x=2, out of core")
+# Without anisotropy a single contour can still be listed in a different order out of core: an 8 x 8
+# square with a one-pixel-wide branch, at the image origin
+branch = np.zeros((18, 18), np.uint32)
+branch[0:8, 0:8] = 1
+branch[3, 8:16] = 1
+check(from_files(branch)[0][1:2], [1.131], "square with a branch")
+# pins known defect https://github.com/PolusAI/nyxus/issues/509
+check(from_files(branch, ram_limit=0)[0][1:2], [1.102], "square with a branch, out of core")
 labels = two.copy()
 labels[5:30, 45:70] = 2
 for row in from_files(labels, (labels > 0) * 100):

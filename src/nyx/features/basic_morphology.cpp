@@ -8,7 +8,9 @@ using namespace Nyxus;
 
 bool BasicMorphologyFeatures::required(const FeatureSet& fs) 
 {
-	return fs.anyEnabled (BasicMorphologyFeatures::featureset);
+	// the inscribing and circumscribing circles are measured from the centroid
+	return fs.anyEnabled (BasicMorphologyFeatures::featureset)
+		|| fs.anyEnabled ({ Feature2D::DIAMETER_INSCRIBING_CIRCLE, Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE });
 }
 
 BasicMorphologyFeatures::BasicMorphologyFeatures(): FeatureMethod("BasicMorphologyFeatures")

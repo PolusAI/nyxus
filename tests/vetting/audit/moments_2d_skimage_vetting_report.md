@@ -79,8 +79,8 @@ the outermost ring, so the exact Euclidean distance from a pixel to the contour 
 | | `WEIGHTED_SPAT_MOMENT_00` |
 |---|---|
 | exact distance to contour | 1821.28398639964 |
-| Nyxus (pinned) | 2498.7137504625134 |
-| ratio | **1.372x**, i.e. a 37.2% overestimate |
+| Nyxus (pinned) | 1895.0047386658844 |
+| ratio | **1.040x**, i.e. a 4.0% overestimate |
 
 These values therefore match no external tool by construction, which is why they are pinned as drift
 guards and claim no oracle. **Fixing it is deliberately out of scope here**: it changes 62 published

@@ -13,7 +13,7 @@
    * - :ref:`PERIMETER <feature-perimeter>`
      - Perimeter
      - —
-     - scikit-image (rel. 1e-3)
+     - analytic (exact), OpenCV (exact), scikit-image (rel. 1e-3)
      - 48.14
    * - :ref:`DIAMETER_EQUAL_PERIMETER <feature-diameter-equal-perimeter>`
      - Equal-perimeter diameter
@@ -43,5 +43,5 @@
    * - :ref:`EDGE_INTEGRATED_INTENSITY <feature-edge-integrated-intensity>`
      - Edge integrated intensity
      - —
-     - CellProfiler (rel. 1e-6)
+     - analytic (exact), CellProfiler (rel. 1e-6)
      - 228

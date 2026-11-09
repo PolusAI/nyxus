@@ -74,10 +74,9 @@ fewer than :math:`d`. The walk's length :math:`P(d)` and its mean chord, the rul
 least-squares slope of :math:`\ln P` against :math:`\ln r`. At stride 1 the walk is the contour's
 ``PERIMETER``.
 
-A ROI with holes or separate parts has several contours. Nyxus joins them, in the order it found
-them, into one chain and walks that chain as a single closed contour (see
-:ref:`fractal-possible-issues`). The contour coordinates are offset by one pixel in both axes, a known defect
-(`#497 <https://github.com/PolusAI/nyxus/issues/497>`__); a translation changes no distance, so neither feature depends on it.
+A ROI with holes or separate parts has several borders. Nyxus lists their pixels one border after
+another, in the order it found the borders, each pixel once, and walks that list as a single closed
+contour (see :ref:`fractal-possible-issues`).
 
 
 Worked example
@@ -263,8 +262,8 @@ Settings
      - ``Nyxus(..., anisotropy_x=..., anisotropy_y=...)``, with ``featurize_files`` or
        ``featurize_directory``; arrays passed to ``Nyxus.featurize`` are not rescaled
      - The image is resampled before the ROIs are measured, which changes both features. The
-       worked example gives 1.3732 and 1.1311 without anisotropy, 1.2459 and 1.1731 with
-       ``anisotropy_x=2``, and 1.4458 and 1.2546 with ``anisotropy_y=3``.
+       worked example gives 1.3732 and 1.1311 without anisotropy, 1.2459 and 1.1717 with
+       ``anisotropy_x=2``, and 1.4458 and 1.1635 with ``anisotropy_y=3``.
    * - Merged ROIs
      - ``--mergerois=true``
      - ``Nyxus(..., mergerois=True)``
@@ -358,8 +357,9 @@ near 1 mean a smooth outline; larger values mean a rough or wiggly one.
 The value is 0 when the contour has fewer than 3 pixels. A contour of 3 to 7 pixels gives at most one
 point, so :math:`\beta = 0` and the value is exactly 1.
 
-**Relations.** In memory, :math:`P(1)` is ``PERIMETER``; out of core, ``PERIMETER`` is the number
-of contour pixels instead (26 on the worked example). The fit runs against the mean chord
+**Relations.** In memory, :math:`P(1)` is ``PERIMETER`` for a ROI with a single border that its
+walk passes only once, such as the worked example; out of core, ``PERIMETER`` is the number of
+contour pixels instead (26 on the worked example). The fit runs against the mean chord
 :math:`r(d)`, not against the stride :math:`d`.
 
 **Possible issues.** For a ROI with several contours the walk includes the jumps between them (see
@@ -399,8 +399,11 @@ Out-of-core ROIs
    1.3732 in memory. The out-of-core contour holds only the first loop of the ROI's boundary, so
    the divider walk ignores holes and separate parts: two separate 25 × 25 squares in one ROI give
    1.000 out of core and 1.107 in memory. Without anisotropy, a ROI with a single contour gives the
-   same ``FRACT_DIM_PERIMETER`` on both paths. With anisotropy the out-of-core contour is wrong,
-   so single-contour ROIs differ too: a disk of radius 8 with ``anisotropy_x=2`` gives 1.1431 in
+   same ``FRACT_DIM_PERIMETER`` on both paths as long as both tracers list its pixels in the same
+   order, as on the worked example and on straight lines; on a ROI with one-pixel-wide parts they
+   can differ, and an 8 × 8 square with a one-pixel-wide branch gives 1.131 in memory and 1.102
+   out of core. With anisotropy the out-of-core contour is wrong, so single-contour ROIs differ
+   too: a disk of radius 8 with ``anisotropy_x=2`` gives 1.0771 in
    memory and 1.0482 out of core. The out-of-core contour is a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). Images that Nyxus reads as several tiles have further
    out-of-core differences (see :ref:`large-images-tiles`).
 

@@ -68,9 +68,7 @@ RoiRadiusFeature::RoiRadiusFeature() : FeatureMethod("RoiRadiusFeature")
 void RoiRadiusFeature::calculate (LR& r, const Fsettings& s)
 {
 	const std::vector<Pixel2>& cloud = r.raw_pixels;
-
-	std::vector<Pixel2> K;
-	r.merge_multicontour (K);
+	const std::vector<Pixel2>& K = r.contour_pixels_;
 
 	std::vector<double> dists;
 	dists.reserve (cloud.size());
@@ -85,8 +83,9 @@ void RoiRadiusFeature::calculate (LR& r, const Fsettings& s)
 	// extents are measured here rather than read from r.aabb: that member is accumulated while the
 	// ROI is scanned, not derived from raw_pixels, so a caller that fills the cloud by another route
 	// would leave it disagreeing with the pixels and the lookups below would run off the raster.
-	// The contour is traced on a padded image and comes back offset from the pixel cloud, so its
-	// extent is not the cloud's either, and taking the union is what keeps every site inside.
+	// A traced contour lies on the cloud's own edge pixels, but one set on the ROI by any other route
+	// need not, so its extent is not assumed to be the cloud's either, and taking the union is what
+	// keeps every site inside.
 	StatsInt xmin = cloud[0].x, xmax = cloud[0].x, ymin = cloud[0].y, ymax = cloud[0].y;
 	for (const auto& p : cloud)
 	{
@@ -133,9 +132,7 @@ void RoiRadiusFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t inte
 void RoiRadiusFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
 {
 	const auto& cloud = r.raw_pixels_NT; 
-
-	std::vector<Pixel2> K;
-	r.merge_multicontour(K);
+	const std::vector<Pixel2>& K = r.contour_pixels_;
 
 	std::vector<double> dists;
 	dists.reserve (cloud.size());
