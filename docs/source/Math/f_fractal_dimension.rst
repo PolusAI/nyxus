@@ -19,17 +19,11 @@ rough or ragged shapes give larger values.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Partly. Out of core, box counting always uses the unshifted grid, so ROIs whose padded
-       side :math:`S` is 32 or less can read differently (the worked example gives 1.3966 instead
-       of 1.3732). The divider walks only the first loop of the contour, and walks a one-pixel-wide
-       part once instead of along and back, so ROIs with holes, several parts or one-pixel-wide parts
-       can differ (a 24 × 24 square with a 10 × 10 hole gives 1.005 instead of 1.045, while identical
-       separate parts read the same on both paths); with anisotropy every ROI's divider value can
-       differ. These contour differences are a known
-       defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). On an image
-       that Nyxus reads as several tiles out-of-core processing raises an error or returns wrong
-       values, depending on the ROI (see :ref:`large-images-tiles`
-       and :doc:`/large_images`). See :ref:`fractal-possible-issues`.
+     - Yes. Out of core both features have their in-memory values: box counting follows the same
+       rule for the padded side :math:`S`, and the divider walks the same borders, traced the same
+       way (the worked example gives 1.3732 and 1.1311 on both paths). On a striped image larger
+       than 1024 pixels in either direction out-of-core processing raises an error or returns wrong
+       values, depending on the ROI (see :ref:`large-images-tiles`).
    * - **IBSI**
      - Neither feature has an IBSI identifier; IBSI defines no fractal dimension.
 
@@ -262,9 +256,8 @@ Settings
    * - Memory limit
      - ``--ramLimit``
      - ``Nyxus(..., ram_limit=...)``, with ``featurize_files`` or ``featurize_directory``
-     - ROIs whose estimated footprint reaches the limit are processed out of core. Their box count
-       always uses the unshifted grid, and their divider walk covers only the first loop of the
-       contour. Arrays passed to ``Nyxus.featurize`` are never processed out of core: an oversized
+     - ROIs whose estimated footprint reaches the limit are processed out of core, with the same
+       values. Arrays passed to ``Nyxus.featurize`` are never processed out of core: an oversized
        ROI raises ``RuntimeError``.
    * - Anisotropy
      - ``--anisox``, ``--anisoy``
@@ -367,8 +360,7 @@ near 1 mean a smooth outline; larger values mean a rough or wiggly one.
 The value is 0 when the longest border walk has fewer than 3 pixels. A longest walk of 3 to 7
 pixels gives at most one point, so :math:`\beta = 0` and the value is exactly 1.
 
-**Relations.** In memory, :math:`P(1)` is ``PERIMETER``; out of core, ``PERIMETER`` is the number
-of contour pixels instead (26 on the worked example). The fit runs against the mean chord
+**Relations.** :math:`P(1)` is ``PERIMETER``. The fit runs against the mean chord
 :math:`r(d)`, not against the stride :math:`d`. Copies of one shape under one label read the
 dimension of a single copy: at every stride both :math:`P(d)` and :math:`m(d)` scale with the
 number of copies.
@@ -399,27 +391,12 @@ One-pixel-wide parts in the divider walk
    branches of larger ROIs are affected in the same way.
 
 Shifted grids only for small ROIs
-   Grid shifts are tried only when the padded side :math:`S` is 32 or less. Larger ROIs, and every
-   out-of-core ROI, use the unshifted grid anchored at the bounding-box corner. The shifts matter
+   Grid shifts are tried only when the padded side :math:`S` is 32 or less, in memory and out of
+   core. Larger ROIs use the unshifted grid anchored at the bounding-box corner. The shifts matter
    for irregular shapes: the worked example reads 1.3732 with them and 1.3966 on the unshifted
    grid alone. On a filled square they change nothing; the drop from 2 for a 32 × 32 square to
    1.582 for a 33 × 33 square comes from :math:`S` doubling from 32 to 64, which leaves the coarse
    boxes mostly empty.
-
-Out-of-core ROIs
-   An out-of-core ROI uses the unshifted grid whatever its size, so a ROI with :math:`S \le 32`
-   can read a different ``FRACT_DIM_BOXCOUNT``: the worked example gives 1.3966 out of core and
-   1.3732 in memory. The out-of-core contour holds only the first loop of the ROI's boundary, so
-   the divider walk ignores holes and separate parts: a 24 × 24 square with a 10 × 10 hole gives
-   1.005 out of core, the value of the square without its hole, and 1.045 in memory. Without
-   anisotropy, a ROI with a single contour can differ too: in memory the walk passes a
-   one-pixel-wide part along and back, out of core once, so a 1 × 16 line gives 1.035 in memory
-   and 1.190 out of core, and an 8 × 8 square with a one-pixel-wide branch 1.190 and 1.102. The
-   worked example, whose border has no one-pixel-wide part, gives the same value on both paths.
-   With anisotropy the out-of-core contour is wrong, so single-contour ROIs differ
-   too: a disk of radius 8 with ``anisotropy_x=2`` gives 1.0917 in memory and 1.0482 out of core.
-   The out-of-core contour is a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). Images that Nyxus reads as several tiles have further
-   out-of-core differences (see :ref:`large-images-tiles`).
 
 Short borders are measured whole
    A ROI with holes, or with parts that do not touch, has several borders, each walked on its own.

@@ -291,13 +291,11 @@ inline void test_2d_morphology_roi_radius_engine_choice_invariant()
 // makes it a distance transform against a scan across a path boundary, which is the widest gap the
 // three implementations have to close.
 //
-// WHAT THIS DOES NOT COVER, deliberately. Both paths are handed the SAME contour, set on the ROI
-// directly rather than traced. The two contour builders do not agree with each other -- same count
-// and different pixels below the tile size (todo item 65), and a contour truncated to the first tile
-// above it (item 68) -- and those are defects of contour construction, pinned by their own tests. If
-// this test traced instead of supplying, it would fail for reasons that have nothing to do with the
-// distance engines and would stop discriminating between them. When 65 and 68 are fixed, the
-// stronger end-to-end equality belongs in tests/python/test_2d_ooc_invariant.py on a disk fixture.
+// Both paths are handed the SAME contour, set on the ROI directly rather than traced, so a
+// disagreement here is one between the distance engines and nothing else. That the two contour
+// builders trace the same contour is test_2d_contour_out_of_core_traces_the_same_borders_invariant,
+// and the end-to-end equality of every contour-based feature, traced on each path from a file, is
+// tests/python/test_2d_ooc_invariant.py.
 inline void test_2d_morphology_roi_radius_paths_agree_invariant()
 {
     Fsettings s;
