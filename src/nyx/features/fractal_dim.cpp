@@ -33,17 +33,22 @@ namespace
 		return Nyxus::ceil_pow2 ((int) std::max (aabb.get_width(), aabb.get_height()));
 	}
 
-	// (box size, boxes holding a ROI pixel) per box size, on the one grid aligned with the square padded
-	// image 'pim' of side 'side'. tile_contains_signal() stops at a box's first ROI pixel, so a filled
+	// (box size, boxes holding a ROI pixel) per box size, on the one grid of side 'side' whose origin is
+	// the corner of 'pim', the ROI's bounding box. Only the boxes over the bounding box are visited, the
+	// rest of the grid being empty. tile_contains_signal() stops at a box's first ROI pixel, so a filled
 	// ROI costs about one read per box rather than per pixel.
 	template <class PaddedImage>
-	void count_single_grid (PaddedImage& pim, int side, std::vector<std::pair<double, double>>& coverage)
+	void count_single_grid (PaddedImage& pim, int side, const AABB& aabb, std::vector<std::pair<double, double>>& coverage)
 	{
+		int w = (int) aabb.get_width(),
+			h = (int) aabb.get_height();
 		for (int s = side; s > 1; s /= 2)
 		{
-			int cnt = 0, nt = side / s;
-			for (int tr = 0; tr < nt; tr++)
-				for (int tc = 0; tc < nt; tc++)
+			int cnt = 0,
+				ntr = (h + s - 1) / s,
+				ntc = (w + s - 1) / s;
+			for (int tr = 0; tr < ntr; tr++)
+				for (int tc = 0; tc < ntc; tc++)
 					if (pim.tile_contains_signal (tr, tc, s))
 						cnt++;
 			coverage.push_back ({ double(s), double(cnt) });
@@ -103,7 +108,7 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 	if (side > MAX_SHIFTED_GRID_SIDE)
 	{
 		Power2PaddedImageMatrix pim (px, r.aabb, 1, 1.0);
-		count_single_grid (pim, (int) pim.width, coverage);
+		count_single_grid (pim, side, r.aabb, coverage);
 	}
 	else
 		count_shifted_grids (px, r.aabb, side, coverage);
@@ -126,7 +131,7 @@ void FractalDimensionFeature::calculate_boxcount_fdim_oversized (LR & r)
 	if (side > MAX_SHIFTED_GRID_SIDE)
 	{
 		Power2PaddedImageMatrix_NT pim ("pim", r.label, px, r.aabb, 1, 1.0);
-		count_single_grid (pim, (int) pim.get_width(), coverage);
+		count_single_grid (pim, side, r.aabb, coverage);
 	}
 	else
 		count_shifted_grids (px, r.aabb, side, coverage);

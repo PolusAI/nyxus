@@ -394,12 +394,11 @@ public:
 		// Cache AABB
 		original_aabb = aabb;
 
-		// Tight power-of-2 canvas (ceil_pow2) with the ROI at the grid origin. Box counting is
-		// registration sensitive; centering on an over-sized canvas misaligned the ROI with the
-		// coarse boxes and biased the dimension low (a filled square read 1.75 instead of 2.0).
-		int bigSide = std::max(aabb.get_width(), aabb.get_height());
-		StatsInt paddedSide = Nyxus::ceil_pow2 (bigSide);
-		allocate (paddedSide, paddedSide);
+		// The ROI's bounding box, placed at the origin of the power-of-2 box grid (box counting is
+		// registration sensitive; the ROI is never centred). The grid's square of side
+		// ceil_pow2(longer side) is not stored: its boxes beyond the bounding box hold no ROI pixel,
+		// and a long thin ROI would need a square far larger than itself.
+		allocate (aabb.get_width(), aabb.get_height());
 
 		int padOffsetX = 0;
 		int padOffsetY = 0;
