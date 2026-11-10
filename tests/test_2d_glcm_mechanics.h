@@ -112,7 +112,12 @@ inline void test_2d_glcm_ibsi_small_roi_not_refused_mechanics()
     const double noval = -7.5;
     const auto fvals = extract_2d_glcm_ibsi (8, noval);
 
-    for (double x : fvals[(int)Feature2D::GLCM_ASM])
-        ASSERT_NE (x, noval);
-    ASSERT_NE (fvals[(int)Feature2D::GLCM_ASM_AVE][0], noval);
+    for (auto fc : GLCMFeature::featureset)
+    {
+        SCOPED_TRACE ("2D feature code " + std::to_string ((int)fc));
+        const auto& v = fvals[(int)fc];
+        ASSERT_FALSE (v.empty());
+        for (double x : v)
+            ASSERT_NE (x, noval);
+    }
 }
