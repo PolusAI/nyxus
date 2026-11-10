@@ -36,10 +36,10 @@ The PyPI wheels are built for CPython 3.10, 3.11, 3.12 and 3.13 on these platfor
 * Windows x86_64;
 * macOS x86_64 (10.15 or newer) and arm64 (11.0 or newer).
 
-Later releases also publish a source distribution; where no wheel fits, ``pip`` builds it, which
-needs CMake, a C++20 compiler and the libraries listed in `Building from source`_. Releases up to
-0.12.0 have none, so where no wheel fits, ``pip`` falls back to an older release without a warning,
-or stops with ``No matching distribution found for nyxus``:
+Later releases also publish a source distribution once all their wheels are on PyPI; where no
+wheel fits, ``pip`` builds it, which needs CMake, a C++20 compiler and the libraries listed in
+`Building from source`_. Releases up to 0.12.0, and a release with a wheel missing, have none, so
+where no wheel fits, ``pip`` falls back to an older release without a warning, or stops with ``No matching distribution found for nyxus``:
 
 * On Linux with a glibc older than 2.28 (for example CentOS 7 or Ubuntu 18.04), ``pip`` installs
   0.8.3, the last release built for ``manylinux2014``, on x86_64 with Python 3.8 to 3.12, and an
@@ -401,8 +401,8 @@ CMake options
    * - ``REQUIRE_ALLEXTRAS``
      - ``OFF``
      - Stops the configure with an error when ``USE_Z5``, ``USE_DCMTK`` or ``USE_ARROW`` is off.
-       Without it, a part whose libraries are missing is dropped with a warning. The PyPI wheels
-       are built with it.
+       Without it, a part whose libraries are missing is dropped with a warning. The ``nyxus``
+       wheels on PyPI are built with it; the ``nyxus-cuda11x`` and ``nyxus-cuda12x`` wheels are not.
    * - ``USE_Z5``
      - ``OFF``
      - OME-Zarr input. Also enables compressed NIfTI (``.nii.gz``), which needs the zlib that this
