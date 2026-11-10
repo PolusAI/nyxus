@@ -23,6 +23,11 @@ with open(os.path.join(_repo_root, 'CITATION.cff'), encoding='utf-8') as _f:
                    for line in _f if line.startswith('version:'))
 version = '.'.join(release.split('.')[:2])
 
+# Read the Docs builds a tag from the release it names and every other version from a branch,
+# which runs ahead of the latest release. The index page states which of the two it describes.
+if os.environ.get('READTHEDOCS_VERSION_TYPE') == 'tag':
+    tags.add('release_docs')
+
 
 # -- General configuration ---------------------------------------------------
 
@@ -61,7 +66,7 @@ master_doc = 'index'
 # -- Options for HTML output -------------------------------------------------
 
 html_theme = 'pydata_sphinx_theme'
-# The pages describe the development head, not a release, so the title carries no version number.
+# The index page states the version the pages describe, so the title carries no version number.
 html_title = 'Nyxus'
 html_theme_options = {
     'github_url': 'https://github.com/PolusAI/nyxus',

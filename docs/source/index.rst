@@ -7,6 +7,17 @@ volumes and 6 image quality features. It runs from the command line or from Pyth
 TIFF, OME-TIFF, OME-Zarr, NIfTI and DICOM files (OME-TIFF and OME-Zarr with up to five
 dimensions), and assembles ROIs that span several image tiles.
 
+.. only:: release_docs
+
+   This documentation describes Nyxus |release|.
+
+.. only:: not release_docs
+
+   This documentation describes the development version of Nyxus on the ``main`` branch, which
+   is newer than the latest release, |release|. Features and options added since |release| are
+   not in the packages on PyPI and conda-forge until the next release; :doc:`release_notes` lists
+   what each release contains.
+
 ROIs larger than the memory budget are processed out of core when they come from files; which
 features then keep their in-memory values is listed under :ref:`large-images`.
 
