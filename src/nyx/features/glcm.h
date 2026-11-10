@@ -228,6 +228,15 @@ private:
 
 	void clear_result_buffers();
 
+	// Appends 'w' to the per-angle buffer of every GLCM feature
+	void push_angle_value (double w);
+
+	// Replaces the ROI's results with 'w' for every angle and reports the ROI on stderr
+	void refuse_roi (int label, double w, const char* reason);
+
+	// Sizes a square co-occurrence matrix; throws std::length_error when SimpleMatrix cannot index it
+	static void allocate_cooc (SimpleMatrix<double>& GLCM, size_t n_levels);
+
 	double hx = -1, hy = -1, hxy = -1, hxy1 = -1, hxy2 = -1;	// Entropies for f12/f13_icorr calculation
 	void calcH(const SimpleMatrix<double>& P_matrix, std::vector<double>& px, std::vector<double>& py);
 	double f_info_meas_corr1(const SimpleMatrix<double>& P_matrix, double softnan);
