@@ -1,4 +1,8 @@
+#include <iostream>
+#include <new>
 #include <numeric>
+#include <stdexcept>
+#include <string>
 #include "glcm.h"
 #include "../helpers/helpers.h"
 #include "../environment.h"
@@ -94,9 +98,66 @@ void GLCMFeature::calculate (LR& r, const Fsettings& s)
 		return;
 	}
 
-	// Calculate features for all the directions
-	for (auto a : angles)
-		Extract_Texture_Features2 (s, a, r.aux_image_matrix, offset, r.aux_min, r.aux_max);
+	// Calculate features for all the directions. A ROI whose matrix cannot be held is reported on
+	// its own, so the caller goes on to the next ROI
+	try
+	{
+		for (auto a : angles)
+			Extract_Texture_Features2 (s, a, r.aux_image_matrix, offset, r.aux_min, r.aux_max);
+	}
+	catch (const std::length_error& e)
+	{
+		refuse_roi (r.label, softNAN, e.what());
+	}
+	catch (const std::bad_alloc& e)
+	{
+		refuse_roi (r.label, softNAN, e.what());
+	}
+}
+
+void GLCMFeature::refuse_roi (int label, double w, const char* reason)
+{
+	SimpleMatrix<double>().swap (P_matrix);	// frees the matrix before anything else is allocated
+
+	clear_result_buffers();
+	for (size_t i = 0; i < angles.size(); i++)
+		push_angle_value (w);
+
+	std::cerr << "Error: ROI " + std::to_string(label) + ": GLCM features not calculated, set to the no-value substitute: " + reason + "\n";
+}
+
+void GLCMFeature::push_angle_value (double w)
+{
+	fvals_ASM.push_back(w);
+	fvals_acor.push_back(w);
+	fvals_cluprom.push_back(w);
+	fvals_clushade.push_back(w);
+	fvals_clutend.push_back(w);
+	fvals_contrast.push_back(w);
+	fvals_correlation.push_back(w);
+	fvals_diff_avg.push_back(w);
+	fvals_diff_var.push_back(w);
+	fvals_diff_entropy.push_back(w);
+	fvals_dis.push_back(w);
+	fvals_energy.push_back(w);
+	fvals_entropy.push_back(w);
+	fvals_homo.push_back(w);
+	fvals_hom2.push_back(w);
+	fvals_id.push_back(w);
+	fvals_idn.push_back(w);
+	fvals_IDM.push_back(w);
+	fvals_idmn.push_back(w);
+	fvals_meas_corr1.push_back(w);
+	fvals_meas_corr2.push_back(w);
+	fvals_iv.push_back(w);
+	fvals_jave.push_back(w);
+	fvals_je.push_back(w);
+	fvals_jmax.push_back(w);
+	fvals_jvar.push_back(w);
+	fvals_sum_avg.push_back(w);
+	fvals_sum_var.push_back(w);
+	fvals_sum_entropy.push_back(w);
+	fvals_variance.push_back(w);
 }
 
 void GLCMFeature::clear_result_buffers()
@@ -259,37 +320,7 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 	if (sum_p == 0)
 	{
-		double _ = s[(int)NyxSetting::SOFTNAN].rval;
-		fvals_ASM.push_back(_);
-		fvals_acor.push_back(_);
-		fvals_cluprom.push_back(_);
-		fvals_clushade.push_back(_);
-		fvals_clutend.push_back(_);
-		fvals_contrast.push_back(_);
-		fvals_correlation.push_back(_);
-		fvals_diff_avg.push_back(_);
-		fvals_diff_var.push_back(_);
-		fvals_diff_entropy.push_back(_);
-		fvals_dis.push_back(_);
-		fvals_energy.push_back(_);
-		fvals_entropy.push_back(_);
-		fvals_homo.push_back(_);
-		fvals_hom2.push_back(_);
-		fvals_id.push_back(_);
-		fvals_idn.push_back(_);
-		fvals_IDM.push_back(_);
-		fvals_idmn.push_back(_);
-		fvals_meas_corr1.push_back(_);
-		fvals_meas_corr2.push_back(_);
-		fvals_iv.push_back(_);
-		fvals_jave.push_back(_);
-		fvals_je.push_back(_);
-		fvals_jmax.push_back(_);
-		fvals_jvar.push_back(_);
-		fvals_sum_avg.push_back(_);
-		fvals_sum_var.push_back(_);
-		fvals_sum_entropy.push_back(_);
-		fvals_variance.push_back(_);
+		push_angle_value (s[(int)NyxSetting::SOFTNAN].rval);
 
 		return;
 	}
@@ -338,6 +369,16 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	fvals_je.push_back (f_GLCM_JE(P_matrix));
 	fvals_jmax.push_back (f_GLCM_JMAX(P_matrix));
 	fvals_jvar.push_back (f_GLCM_JVAR(P_matrix, jave));
+}
+
+void GLCMFeature::allocate_cooc (SimpleMatrix<double>& GLCM, size_t n_levels)
+{
+	// SimpleMatrix addresses a cell as W*y+x in an int, which bounds the side of a square matrix
+	const size_t max_levels = 46340;
+	if (n_levels > max_levels)
+		throw std::length_error ("a co-occurrence matrix of " + std::to_string(n_levels) + " grey levels exceeds the limit of " + std::to_string(max_levels));
+
+	GLCM.allocate ((int)n_levels, (int)n_levels);
 }
 
 void GLCMFeature::calculateCoocMatAtAngle(
@@ -392,35 +433,29 @@ void GLCMFeature::calculateCoocMatAtAngle(
 		I.assign(U.begin(), U.end());
 		std::sort(I.begin(), I.end());
 
-		GLCM.allocate((int)I.size(), (int)I.size());
+		allocate_cooc (GLCM, I.size());
 	}
 	else
 		if (matlab_grey_binning(greyInfo))
 		{
 			auto n_matlab_levels = greyInfo;
+			allocate_cooc (GLCM, n_matlab_levels);
+
 			I.resize (n_matlab_levels);
 			for (int i=0; i< n_matlab_levels; i++)
 				I[i] = i+1;
-		
-			GLCM.allocate (n_matlab_levels, n_matlab_levels);
 		}
 		else
 		{
 			// IBSI
 			auto ibsi_levels_it = std::max_element (D.begin(), D.end());
 			auto n_ibsi_levels = *ibsi_levels_it;
+			allocate_cooc (GLCM, n_ibsi_levels);
 
 			I.resize (n_ibsi_levels);
 			for (int i = 0; i < n_ibsi_levels; i++)
 				I[i] = i + 1;
-
-			GLCM.allocate (n_ibsi_levels, n_ibsi_levels);
 		}
-	if (GLCM.capacity() < GLCM.width()*GLCM.height())
-	{
-		std::cerr << "Error: cannot allocate a " << GLCM.width() << "x" << GLCM.height() << " matrix \n";
-		throw std::runtime_error ("Allocation error in GLCMFeature::calculateCoocMatAtAngle(): requested " + std::to_string(GLCM.width()*GLCM.height()) + " but received " + std::to_string(GLCM.capacity()));
-	}
 
 	std::fill (GLCM.begin(), GLCM.end(), 0.0);
 

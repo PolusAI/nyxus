@@ -17,7 +17,7 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 
 ---
 
-## A. Test files no registry row references — 31 files, 105 test functions
+## A. Test files no registry row references — 32 files, 111 test functions
 
 Both totals are the sum of the two tables below, counting each distinct file once and
 skipping any row struck through as closed, so they can be recomputed from the tables.
@@ -32,7 +32,8 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_3d_nifti_mechanics.h` | 2 | NIfTI loader geometry / data access |
 | `test_arrow_mechanics.h` | 2 | Arrow + Parquet writer plumbing |
 | `test_arrow_file_name_mechanics.h` | 1 | output-file naming rules |
-| `test_2d_glcm_mechanics.h` | 1 | guards the `GLCM_OFFSET` default (a setting, not a value) |
+| `test_2d_glcm_mechanics.h` | 4 | guards the `GLCM_OFFSET` default and own grey depth (settings, not values) and the substitute for a ROI whose matrix cannot be held |
+| `test_2d_glcm_mechanics.py` | 3 | a ROI whose IBSI matrix cannot be held is refused on its own, in RAM and out of core |
 | `test_2d_radial_mechanics.h` | 3 | contour frame, centre pixel and normalising radius — the wiring the radial goldens depend on. **Uncredited by decision, not by construction:** see the note below the table |
 | `test_initialization_mechanics.h` | 1 | environment init |
 | `test_2d_omezarr_mechanics.h` | 14 | OME-Zarr tile/raw loader, including the load-time intensity map on signed and real-valued stores, and the unsigned accessor on every sample class it cannot convert |
