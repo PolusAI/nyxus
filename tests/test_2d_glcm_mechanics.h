@@ -70,3 +70,54 @@ inline void test_2d_glcm_own_greydepth_bins_the_matrix_mechanics()
     }
     ASSERT_TRUE (any_differs);
 }
+
+static std::vector<std::vector<double>> extract_2d_glcm_ibsi (unsigned int top_level, double noval)
+{
+    std::vector<NyxusPixel> intensity, mask;
+    make_2d_glcm_dense_phantom (intensity, mask);
+    for (auto& px : intensity)
+        if (px.intensity == 8)
+            px.intensity = top_level;
+
+    Fsettings s = make_2d_glcm_dense_settings();
+    s[(int)NyxSetting::SOFTNAN].rval = noval;
+
+    LR roidata;
+    GLCMFeature::angles = {0, 45, 90, 135};
+    Nyxus::load_masked_test_roi_data (roidata, intensity.data(), mask.data(), intensity.size());
+    roidata.initialize_fvals();
+    GLCMFeature::extract (roidata, s);
+    return roidata.fvals;
+}
+
+// 46340 levels is the largest square matrix SimpleMatrix can index, so 46341 is refused before anything
+// is allocated, and every value of the ROI carries the caller's no-value substitute.
+inline void test_2d_glcm_ibsi_refused_roi_gets_noval_mechanics()
+{
+    const double noval = -7.5;
+    const auto fvals = extract_2d_glcm_ibsi (46341, noval);
+
+    for (auto fc : GLCMFeature::featureset)
+    {
+        SCOPED_TRACE ("2D feature code " + std::to_string ((int)fc));
+        const auto& v = fvals[(int)fc];
+        ASSERT_FALSE (v.empty());
+        for (double x : v)
+            ASSERT_EQ (x, noval);
+    }
+}
+
+inline void test_2d_glcm_ibsi_small_roi_not_refused_mechanics()
+{
+    const double noval = -7.5;
+    const auto fvals = extract_2d_glcm_ibsi (8, noval);
+
+    for (auto fc : GLCMFeature::featureset)
+    {
+        SCOPED_TRACE ("2D feature code " + std::to_string ((int)fc));
+        const auto& v = fvals[(int)fc];
+        ASSERT_FALSE (v.empty());
+        for (double x : v)
+            ASSERT_NE (x, noval);
+    }
+}

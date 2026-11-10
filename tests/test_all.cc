@@ -3158,6 +3158,16 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_BUG_OFFSET_DEFAULT_IS_ONE_MECHANICS)
 	ASSERT_NO_THROW(test_2d_glcm_bug_offset_default_is_one_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_2D_GLCM_IBSI_REFUSED_ROI_GETS_NOVAL_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_glcm_ibsi_refused_roi_gets_noval_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_IBSI_SMALL_ROI_NOT_REFUSED_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_glcm_ibsi_small_roi_not_refused_mechanics());
+}
+
 TEST(TEST_NYXUS, TEST_2D_GLCM_OWN_GREYDEPTH_BINS_THE_MATRIX_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_glcm_own_greydepth_bins_the_matrix_mechanics());

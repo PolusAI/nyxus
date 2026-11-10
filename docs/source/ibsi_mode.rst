@@ -115,10 +115,11 @@ Edge cases
 .. warning::
 
    **Images with large intensities.** Without binning, the 2D GLCM matrix has one row and one
-   column per grey value up to the ROI's largest intensity. A ROI whose largest value is 50 000
-   needs a 50 000 × 50 000 matrix of doubles, about 20 GB. When that allocation fails, Nyxus
-   prints ``cannot allocate a ... matrix`` and reports 0 for every GLCM feature of the image. On a
-   16-bit image whose ROI maxima ran from 19 552 to 65 519, every GLCM value of all 66 ROIs was 0.
+   column per grey value up to the ROI's largest intensity. A ROI whose largest value is 40 000
+   needs a 40 000 × 40 000 matrix of doubles, about 13 GB. A ROI whose largest value is above
+   46 340, or whose matrix cannot be allocated, is not calculated: every GLCM feature of that
+   ROI returns the ``--noval`` substitute (0 from Python), a message on standard error names the
+   ROI, and the other ROIs of the image are calculated as usual.
    Rescale such images to a small integer range before using IBSI mode, or leave it off.
 
 .. warning::

@@ -799,6 +799,14 @@ Constant ROI
    :math:`N`, a ROI of intensities 1000 and 1001 returns 0 in every column, while one of 10 and
    11 does not. With a zero or negative ``--coarseGrayDepth`` only a constant ROI does.
 
+ROI with too many grey levels
+   In IBSI mode the matrix has one row and one column per integer level up to the ROI's maximum.
+   A ROI whose maximum is above 46340, or whose matrix cannot be allocated, is not calculated:
+   every GLCM feature of that ROI returns the ``--noval`` substitute (0 from Python) and a message
+   on standard error names the ROI. The other ROIs of the image are not affected. The same limit
+   applies to a ``--coarseGrayDepth`` above 46340. A ROI covered by "Constant ROI" above returns
+   before any matrix is sized, so it gets neither the substitute nor the message.
+
 Grey-level values and indices
    With PyRadiomics-style binning (negative ``--coarseGrayDepth``) the grey levels are the distinct
    binned values present in the ROI. Most features use those values, but ``DIS``, ``HOM1``,
