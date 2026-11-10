@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.12.1](https://github.com/PolusAI/nyxus/compare/v0.12.0...v0.12.1) (2026-11-10)
+
+
+### Bug Fixes
+
+* **ci:** build the macOS prereqs without OpenSSL ([697eaeb](https://github.com/PolusAI/nyxus/commit/697eaeb15d12edc45111213144eb4ab5c67edeb5))
+* **ci:** name the CUDA wheels nyxus-cuda11x / nyxus-cuda12x again ([6224be6](https://github.com/PolusAI/nyxus/commit/6224be6f7ee365a4a740b1a30fdffd021af49ef9))
+* **ci:** run the macOS arm64 jobs on macos-15 ([74b4c20](https://github.com/PolusAI/nyxus/commit/74b4c208d3bcff61b5372cf1718ec5423c1ff5c4))
+
 ## [0.12.0](https://github.com/PolusAI/nyxus/compare/0.11.0...v0.12.0) (2026-11-05)
 
 
