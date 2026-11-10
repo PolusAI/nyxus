@@ -38,7 +38,7 @@ The PyPI wheels are built for CPython 3.10, 3.11, 3.12 and 3.13 on these platfor
 
 Later releases also publish a source distribution once all their wheels are on PyPI; where no
 wheel fits, ``pip`` builds it, which needs CMake, a C++20 compiler and the libraries listed in
-`Building from source`_. Releases up to 0.12.0, and a release with a wheel missing, have none, so
+`Building from source`_. Releases up to 0.12.1, and a release with a wheel missing, have none, so
 where no wheel fits, ``pip`` falls back to an older release without a warning, or stops with ``No matching distribution found for nyxus``:
 
 * On Linux with a glibc older than 2.28 (for example CentOS 7 or Ubuntu 18.04), ``pip`` installs
@@ -81,7 +81,7 @@ output, in addition to TIFF, OME-TIFF and NIfTI. They also read OME-Zarr and com
 
 * The Windows wheels on PyPI (``nyxus`` 0.9.3 and 0.11.0, and ``nyxus-cuda12x`` 0.9.3) were built
   without OME-Zarr support, and so without ``.nii.gz``: they refuse OME-Zarr and fail on
-  ``.nii.gz`` files. The ``nyxus`` 0.12.0 Windows wheels read both.
+  ``.nii.gz`` files. The ``nyxus`` Windows wheels of 0.12.0 and later read both.
 * The first conda-forge Windows builds of 0.11.0 (build number 0, a build string ending in ``_0``
   in ``conda list nyxus``) read none of OME-Zarr, ``.nii.gz`` and DICOM; conda installs one of
   them into an environment that holds ``libarrow`` 19 or 20.
@@ -91,8 +91,8 @@ libraries it finds (see `Building from source`_).
 
 .. warning::
 
-   The conda-forge Windows packages of 0.11.0 were built in Debug mode: their extension module
-   imports the Visual Studio debug runtime (``MSVCP140D.dll``, ``VCRUNTIME140D.dll``,
+   The conda-forge Windows packages of 0.11.0 and 0.12.0 were built in Debug mode: their extension
+   module imports the Visual Studio debug runtime (``MSVCP140D.dll``, ``VCRUNTIME140D.dll``,
    ``ucrtbased.dll``), which only an installation of Visual Studio provides, not the Visual C++
    redistributable. Without Visual Studio, ``import nyxus`` fails. This is a known issue
    (`#528 <https://github.com/PolusAI/nyxus/issues/528>`__).
