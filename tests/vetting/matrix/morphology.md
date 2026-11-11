@@ -9,14 +9,11 @@ it reads one definition. The CellProfiler oracle cell for the `EDGE_*` statistic
 **Dispositions are SPEC §5.1's, used literally.** `VALID` means *an external tool computes this and
 agrees* — oracle-backed, nothing else. `VALID-BUT-PRODUCTION-ONLY` means a real config no tool
 reproduces, kept as a snapshot. `INVALID` means degenerate or nonsensical, dropped with a reason.
-Two cells here are none of those and are labelled accordingly:
+The out-of-core cells here are none of those and are labelled accordingly:
 
 - **`INVARIANT`** — backed by a required relation between two Nyxus code paths, with no tool
   involved. SPEC §3 lists `invariant` among the outcome values; it is not a weaker `vetted`, and
   reading path-equality as evidence of correctness is exactly the mistake it exists to prevent.
-- **`impl-defect`** — real production code whose two implementations are required to agree and do
-  not. That is a defect, not an `INVALID` config: the configuration is legitimate and reachable, so
-  it cannot be dropped with a reason.
 
 **Scope.** This file covers the features `ContourFeature` produces — `PERIMETER`,
 `DIAMETER_EQUAL_PERIMETER` and the five `EDGE_*` statistics — plus `MASS_DISPLACEMENT` and
@@ -33,17 +30,17 @@ contour at any setting, and has its own `BasicMorphologyFeatures::osized_calcula
 
 `ROI_RADIUS_*` is a third producer, `RoiRadiusFeature`. It *does* consume the contour, but it is not
 `ContourFeature`'s output feature, and it consumes the contour differently — as a set of positions
-measured against every ROI pixel, rather than as a walk. That distinction is what makes its
-out-of-core cell a separate finding from `PERIMETER`'s rather than the same one: `PERIMETER` diverges
-because the two builders *summarise* the contour differently, `ROI_RADIUS_*` because they return
-different pixels. Its section is below.
+measured against every ROI pixel, rather than as a walk. That distinction is why its out-of-core
+cell is asserted on its own rather than read off `PERIMETER`'s: `PERIMETER` tells two paths that
+*summarise* the contour differently, `ROI_RADIUS_*` two paths that place its pixels differently. Its
+section is below.
 
 ### `ContourFeature` — the axis is which contour builder runs
 
 | cell | path | `EDGE_*` | `PERIMETER`, `DIAMETER_EQUAL_PERIMETER` |
 |---|---|---|---|
 | segmented, in-RAM | `calculate()` at `SINGLEROI=false` → `buildRegularContour()` | **VALID** — cellprofiler, recipe `morphology.cellprofiler_edge_intensity` (shape8 fixture) | **VALID** — skimage, recipe `morphology.perimeter_circles` |
-| forced out-of-core | `osized_calculate()` → `buildRegularContour_nontriv()` | **INVARIANT** — measured equal to the in-RAM cell | **impl-defect** — measured *unequal*, see below |
+| forced out-of-core | `osized_calculate()` → `buildRegularContour_nontriv()` | **INVARIANT** — measured equal to the in-RAM cell | **INVARIANT** — measured equal to the in-RAM cell, see below |
 | whole-slide | `calculate()` at `SINGLEROI=true` → `buildWholeSlideContour()` | **VALID-BUT-PRODUCTION-ONLY** — degenerate, and CellProfiler measured as not comparable | **VALID-BUT-PRODUCTION-ONLY** — AABB walk |
 
 ### `BasicMorphologyFeatures` — `MASS_DISPLACEMENT`
@@ -67,8 +64,8 @@ under a matching name is not thereby an oracle for it, and
 
 | feature | segmented in-RAM | forced out-of-core | whole-slide |
 |---|---:|---:|---:|
-| `PERIMETER` | 131.88225099390849 | **112.0** | 256.0 |
-| `DIAMETER_EQUAL_PERIMETER` | 41.97942430353313 | **35.65070725258456** | 81.48733086305042 |
+| `PERIMETER` | 131.88225099390849 | 131.88225099390849 | 256.0 |
+| `DIAMETER_EQUAL_PERIMETER` | 41.97942430353313 | 41.97942430353313 | 81.48733086305042 |
 | `MASS_DISPLACEMENT` | 2.7526140113386943 | 2.7526140113386943 | 3.3453118163885427 |
 | `EDGE_MEAN_INTENSITY` | 257.0 | 257.0 | 397.0 |
 | `EDGE_STDDEV_INTENSITY` | 98.12659593009853 | 98.12659593009853 | 0.0 |
@@ -78,12 +75,11 @@ under a matching name is not thereby an oracle for it, and
 
 **What backs each column, because they are not backed the same way.** The segmented and whole-slide
 columns are pinned literally, in `SEGMENTED` and `WHOLE_SLIDE` in
-`tests/python/test_2d_morphology_regression.py`. In the out-of-core column only `PERIMETER` and
-`DIAMETER_EQUAL_PERIMETER` are pinned to literals (`test_2d_ooc_regression.py`); the other six cells
-are asserted **equal to the segmented column** by
-`test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invariant`, not pinned
-independently — so a change that moved both paths together would keep those six agreeing while the
-segmented pin caught it. Every cell has its own registry row naming its recipe.
+`tests/python/test_2d_morphology_regression.py`. The out-of-core column is asserted **equal to the
+segmented column** by `test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invariant`
+in `test_2d_ooc_invariant.py`, not pinned independently — so a change that moved both paths together
+would keep the columns agreeing while the segmented pin caught it. Every cell has its own registry
+row naming its recipe.
 
 ## `RoiRadiusFeature` — the axis is the run mode, and the contour it is handed
 
@@ -94,19 +90,16 @@ oracle cell, which fixture it is measured on.
 
 | run mode | fixture | verdict | oracle / reason |
 |---|---|---|---|
-| in-RAM (`calculate`) | disks R = 10, 20, 40 | **VALID** | `skimage` on `morphology.radius_disks`, and `analytic` for `MAX` on the same recipe |
-| in-RAM (`calculate`) | 8×8 `shape2d` | **VALID-BUT-PRODUCTION-ONLY** | no tool reproduces it *on this fixture*; recipe `morphology.shape2d_native`, drift guard only |
-| out-of-core (`osized_calculate`) | disk64 | **impl-defect** | the two paths disagree; recipe `morphology.disk64_forced_ooc` |
+| in-RAM (`calculate`) | disks R = 10, 20, 40 | **VALID** | `skimage` on `morphology.radius_disks` for all three, and `analytic` for `MAX` on the same recipe |
+| in-RAM (`calculate`) | 8×8 `shape2d` | drift guard | recipe `morphology.shape2d_native`; the skimage reference gives the same three values, but on 26 pixels a distance and its square coincide, so the vetting claim lives on the disks |
+| out-of-core (`osized_calculate`) | disk64 | **INVARIANT** | equal to the in-RAM cell; recipe `morphology.disk64_forced_ooc` |
 | whole-slide (`SINGLEROI=true`) | disk64 frame | **VALID-BUT-PRODUCTION-ONLY** | a real config no tool reproduces; recipe `morphology.disk64_wholeslide` |
 
-**Why the shape2d cell is production-only and the disk cell is not.** The reference —
-`find_boundaries(connectivity=1, mode='inner')` plus a minimum over it — reproduces `MAX` and
-`MEDIAN` on a disk to double precision and reproduces nothing on the 8×8 raster. The difference is
-`buildRegularContour`, which reports every contour pixel one pixel right and one pixel down of where
-it is: on the 8×8 mask the traced contour **is** the skimage inner boundary shifted by (+1, +1), all
-18 pixels, and shifting the reference the same way reproduces all three Nyxus values. On a disk
-`MAX` and `MEDIAN` are unmoved by that shift because the pixel attaining them moves with it, so they
-promote there and `MEAN` does not, at either fixture.
+**Why the vetting claim lives on the disks.** The reference — `find_boundaries(connectivity=1,
+mode='inner')` plus a minimum over it — reproduces all three statistics to double precision on the
+disks and on the 8×8 raster alike, because the traced contour walks exactly the reference's
+boundary pixels. On the raster every distance is 0 or 1 (`MEAN` = 8/26, `MAX` = 1, `MEDIAN` = 0), so
+a squared distance would read the same; across three radii it would not.
 
 ### The whole-slide cell is reached, and it is a distance-to-corner map
 
@@ -122,7 +115,7 @@ image:
 | | whole-slide | segmented |
 |---|---|---|
 | pixels measured | 4096 (the frame) | 1257 (the disk) |
-| `ROI_RADIUS_MEAN` | 24.490797504013532 | 6.087109772358636 |
+| `ROI_RADIUS_MEAN` | 24.490797504013532 | 6.047026418093836 |
 | `ROI_RADIUS_MAX` | 45.254833995939045 | 19.026297590440446 |
 | `ROI_RADIUS_MEDIAN` | 25.495097567963924 | 5.0 |
 
@@ -140,62 +133,50 @@ descriptor, so nothing can vet it, and it is kept as a snapshot. That is the sam
 `test_2d_morphology_regression.py`, which asserts the closed forms alongside the literals so a change
 that made whole-slide mode trace the real slide boundary breaks all three.
 
-### The out-of-core cell is a defect, measured on the same disk that exposed `PERIMETER`
+### The out-of-core cell equals the in-RAM cell, on a disk away from the image origin
 
-Both paths take `sqrt(exact_min_sqdist(K))` over the same ROI pixels, so the only input that can
-differ is `K`. Measured on `bench_disk64_diagonal_boundary`:
+Both paths take `sqrt(exact_min_sqdist(K))` over the same ROI pixels, so the only input that could
+differ is `K`, and `buildRegularContour_nontriv` returns the in-RAM contour, in absolute image
+coordinates. Measured on `bench_disk64_diagonal_boundary`:
 
-| | in-RAM | out-of-core | |
-|---|---|---|---|
-| contour pixels | 112 | 112 | same size |
-| `ROI_RADIUS_MEAN` | 6.087109772358636 | 7.169174091182726 | **+17.8%** |
-| `ROI_RADIUS_MEDIAN` | 5.0 | 6.708203932499369 | **+34%** |
-| `ROI_RADIUS_MAX` | 19.026297590440446 | 19.026297590440446 | bit-identical |
+| | in-RAM | out-of-core |
+|---|---|---|
+| contour pixels | 112 | 112 |
+| `ROI_RADIUS_MEAN` | 6.047026418093836 | 6.047026418093836 |
+| `ROI_RADIUS_MEDIAN` | 5.0 | 5.0 |
+| `ROI_RADIUS_MAX` | 19.026297590440446 | 19.026297590440446 |
 
-Same count, different pixels: `buildRegularContour_nontriv` and `buildRegularContour` do not return
-the same 112. `MEAN` and `MEDIAN` rise, so some ROI pixels are farther from the out-of-core contour,
-and `MAX` is unchanged, so the pixel attaining it is not among them. No translation of the inner
-boundary reproduces the out-of-core numbers — searched over every shift in ±4 — so this is pinned as
-a characterization rather than explained as an offset, and the explanation is left to whoever
-corrects the builder.
+**What the assertion discriminates.** The disk's bounding box starts at (12, 12), so a contour left
+relative to the bounding box is measured against ROI pixels 12 pixels away along each axis: the
+scikit-image inner boundary shifted by (−12, −12) gives `MEAN` 7.423593657857253 and `MEDIAN` 7.0,
+and an out-of-core path returning those fails
+`test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invariant`. `MAX` comes out the
+same in both frames, so its row records the agreement without discriminating the frame.
+`test_2d_ooc_2d_contour_features_match_in_ram_invariant` holds the three on eight further fixtures,
+among them a 3 × 5 rectangle away from the origin whose analytic values
+`test_2d_ooc_2d_offset_rectangle_contour_features_are_analytic_invariant` asserts on both paths.
 
-`impl-defect` rather than `INVALID`, for the reason the `PERIMETER` cell already gives: the config is
-legitimate and reachable production code, and `CLAUDE.md` requires the two paths to return identical
-values. Asserted by `test_2d_ooc_roi_radius_diverges_from_in_ram_regression` in
-`test_2d_ooc_regression.py`, which pins both sides *and* the inequality, so a partial fix cannot
-pass, and pins `MAX`'s equality so a fix that moves the whole contour cannot break the part that
-already works.
+## The out-of-core contour is the in-RAM contour
 
-**It was invisible for the same reason `PERIMETER`'s was.** `test_2d_ooc_invariant.py` runs
-`*ALL_MORPHOLOGY*` — which includes these three — and requires every column to agree, but on a
-full-image rectangle, where the two contour builders coincide. The disk is what separates them.
+`buildRegularContour()` and `buildRegularContour_nontriv()` fill the same padded image of the ROI,
+the second one held on disk, and trace it with the same Suzuki-Abe border following: every border,
+the outer border of each fragment and each hole's border, in the same order. Both then go through
+the same `measure_contour()`, which sums the Euclidean steps of each closed walk for `PERIMETER` and
+takes `DIAMETER_EQUAL_PERIMETER` as `PERIMETER / M_PI`. The gtest
+`TEST_2D_CONTOUR_OUT_OF_CORE_TRACES_THE_SAME_BORDERS_INVARIANT` (`test_2d_contour_invariant.h`)
+requires the two builders to return identical borders.
 
-## The out-of-core contour divergence is a defect, not a convention
+**What the disk discriminates.** On the disk the contour has 112 pixels (`benchmarks.md`) and a
+length of 131.882, so an out-of-core `PERIMETER` that counted the contour's pixels would read 112.0
+and `DIAMETER_EQUAL_PERIMETER` 35.651, and both fail the out-of-core invariant.
 
-`calculate()` sums Euclidean step lengths around the contour; `osized_calculate()` sets
-`fval_PERIMETER = (StatsInt) K.size()`, the contour pixel **count**. On the disk that is 131.882
-against 112.0 — and 112 is exactly the fixture's edge-pixel count (`benchmarks.md`), which
-identifies the cause as the definition rather than an accumulation error.
-
-**`DIAMETER_EQUAL_PERIMETER` inherits it exactly.** Both paths compute it as `fval_PERIMETER / M_PI`
-(`contour.cpp` lines 976 and 1000), so the ratio between the two paths is identical for the two
-features: 41.979 against 35.651. It is one defect with two public consequences, not two defects —
-`test_2d_ooc_regression.py` asserts that identity, so a fix to `PERIMETER` alone must fix this one
-too, and a future run where the two ratios stop matching is a new finding rather than this one.
-
-`CLAUDE.md` requires that "the in-RAM path and the out-of-core path must produce identical values",
-so this is a defect. It is characterized rather than fixed here: the fix is a `src/nyx` change, and
-`PERIMETER` is vetted under a different recipe. Both rows carry `flag=impl-defect` — **not** a
-dropped `INVALID` cell, because the configuration is real production code that runs whenever an ROI
-exceeds `ram_limit`.
-
-**Why no existing test caught it.** `test_2d_ooc_invariant.py` has asserted `*ALL_MORPHOLOGY*`
-equality across the two paths since it was written, and passes. Its fixture is a full-image
-**rectangle**, and around a rectangle every contour step is an axis-aligned unit step — so the pixel
-count and the Euclidean sum are the same number, and the two features that differ cannot appear. The
-invariant is sound; that shape cannot discriminate. The general form is recorded in
-`not_covered.md` §G: *a path-equality fixture symmetric in the axis under test proves nothing about
-that axis.*
+**Why the fixture is a disk.** `test_2d_ooc_invariant.py` also asserts `*ALL_MORPHOLOGY*` equality
+across the two paths on a full-image **rectangle**. Around a rectangle every contour step is an
+axis-aligned unit step, so the pixel count and the Euclidean sum are the same number, and the
+rectangle's bounding box starts where the image does: that shape cannot tell a pixel count from a
+length, nor a contour relative to the bounding box from one in image coordinates. The general form
+is recorded in `not_covered.md` §G: *a path-equality fixture symmetric in the axis under test proves
+nothing about that axis.*
 
 ## The whole-slide cell is degenerate by construction
 

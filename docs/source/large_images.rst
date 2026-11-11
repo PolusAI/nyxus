@@ -71,8 +71,8 @@ Whole-slide features differ from those of an ordinary ROI in these ways:
   the image, so ``PERIMETER`` is 2 x (width + height): 224 for a 64 x 48 image. Every feature
   built on the contour describes this rectangle: circularity, the perimeter-equivalent diameter,
   geodetic length and thickness, the ROI radii, fractal dimension, radial distribution and the
-  weighted moments. The radial distribution's centre then lies on the image's top edge, a known
-  defect (`#516 <https://github.com/PolusAI/nyxus/issues/516>`__).
+  weighted moments. The radial distribution's centre is the pixel nearest the middle of the four
+  corners.
 * **Edge features are degenerate.** The edge is the four corners, and each corner carries the
   image's maximum grey level. ``EDGE_MIN_INTENSITY`` and ``EDGE_MAX_INTENSITY`` both equal
   ``MAX``, ``EDGE_STDDEV_INTENSITY`` is 0 and ``EDGE_INTEGRATED_INTENSITY`` is 4 x ``MAX``.
@@ -181,74 +181,34 @@ the last digits (see :doc:`Math/f_morphology_3d`). A test volume with two ROIs, 
 volume. This holds for inputs Nyxus can stream; see the end of
 :ref:`large-images-tiles` for those it refuses.
 
-In 2D, the intensity, basic morphology, convex hull, ellipse, caliper, chord, Euler, extrema,
-erosion, texture, Gabor and Zernike features and the unweighted moments match the in-memory values
-on an image that Nyxus reads as one tile (see :ref:`large-images-tiles` for other images), with two
-texture exceptions: in IBSI mode 2D NGTDM matches only on the first ROI computed out of core, a known
-defect (`#512 <https://github.com/PolusAI/nyxus/issues/512>`__; see :doc:`Math/f_ngtdm`), and NGLDM differs on a constant ROI (see :doc:`Math/f_ngldm`). The
-contour-based features, the weighted moments and the fractal dimension do not. On a 256 x 256 test
-image with 66 ROIs, 116 of the 747 output columns of ``*ALL*`` differ when every ROI is computed
-out of core.
+In 2D, every family matches the in-memory values on tiled TIFF files and on striped files of up to
+1024 x 1024 pixels (see :ref:`large-images-tiles` for larger striped files), with these
+exceptions:
 
-The rest of this section describes runs without anisotropy. With ``--anisox`` or ``--anisoy``
-(Python ``anisotropy_x``, ``anisotropy_y``), the radial distribution and the weighted intensity
-moments get their in-memory values out of core, while the out-of-core contour is wrong, so every
-contour-based feature can differ, a known defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). See :doc:`Math/f_morphology`,
-:doc:`Math/f_radial_distribution` and :doc:`Math/f_2dmoments`.
+* In IBSI mode 2D NGTDM matches only on the first ROI computed out of core, a known defect
+  (`#512 <https://github.com/PolusAI/nyxus/issues/512>`__; see :doc:`Math/f_ngtdm`).
+* NGLDM differs on a constant ROI (see :doc:`Math/f_ngldm`).
+* ``POWER_SPECTRUM_SLOPE`` and ``SHARPNESS`` are not computed, a known defect
+  (`#508 <https://github.com/PolusAI/nyxus/issues/508>`__; see :doc:`Math/f_image_quality`).
+* The neighbor features (``NUM_NEIGHBORS``, ``PERCENT_TOUCHING``, ``CLOSEST_NEIGHBOR*``,
+  ``ANG_BW_NEIGHBORS_*``), ``POLYGONALITY_AVE`` and ``HEXAGONALITY_*`` are not computed. The
+  neighbor features are reported as 0, and ``POLYGONALITY_AVE`` and ``HEXAGONALITY_*`` as -1,
+  their value for a ROI with fewer than 3 neighbors. An out-of-core ROI is also not seen as a
+  neighbor by the ROIs computed in memory.
 
-The out-of-core contour differs from the in-memory one in three ways, a known defect
-(`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). It is a single loop: Nyxus
-keeps the first loop it traces and drops holes and further fragments. Its coordinates are relative
-to the ROI's bounding box, while the pixels keep their image positions. And its pixels come in a
-different order. On a 340 x 340 image, a 300 x 300 square with a 100 x 100 hole has ``PERIMETER``
-1196 out of core, the outer loop only, against 1876 in memory, and the same square cut into two
-130-pixel-wide bars has ``DIAMETER_MIN_ENCLOSING_CIRCLE`` 325.6 against 422.9.
-
-.. list-table::
-   :header-rows: 1
-   :widths: 35 65
-
-   * - Features
-     - Out-of-core value
-   * - ``PERIMETER``, ``DIAMETER_EQUAL_PERIMETER``, ``CIRCULARITY``, ``GEODETIC_LENGTH``,
-       ``THICKNESS``
-     - The perimeter is the number of pixels of the single loop, not the traced length: 14%
-       shorter on the median ROI, and shorter still on a ROI with holes or fragments. The
-       features derived from it change accordingly.
-   * - ``ROI_RADIUS_*``, ``DIAMETER_INSCRIBING_CIRCLE``, ``DIAMETER_CIRCUMSCRIBING_CIRCLE``,
-       ``FRAC_AT_D_*``, ``MEAN_FRAC_*``, ``RADIAL_CV_*``, the weighted moments
-       (``WEIGHTED_*``, ``WT_NORM_CTR_MOM_*``, ``IMOM_W*``)
-     - Without anisotropy, wrong for ROIs away from the image origin, because pixel-to-contour
-       distances are off by
-       the bounding box's offset. ``ROI_RADIUS_MAX`` was 28 times its in-memory value on the
-       median ROI, and the weighted moments of one ROI change as it moves in the image. A
-       bounding box that starts at pixel (0, 0) is necessary for the in-memory values but not
-       sufficient: a ROI with holes or fragments still differs, and the radial distribution
-       can differ through the contour order (2 of 15 random ellipses at the origin).
-   * - ``EDGE_*``, ``DIAMETER_MIN_ENCLOSING_CIRCLE``
-     - Differ where the out-of-core contour holds other pixels than the in-memory one: the
-       single loop leaves out holes and fragments, and on some ROIs either tracer skips part of
-       the outline. ``DIAMETER_MIN_ENCLOSING_CIRCLE`` also changes with the contour order. On the
-       66-ROI test image, which has no holes or fragments, they differ on 5 and 6 ROIs.
-   * - ``FRACT_DIM_BOXCOUNT``, ``FRACT_DIM_PERIMETER``
-     - Box counting uses a single unshifted grid for every out-of-core ROI, so ROIs whose padded
-       side is 32 or less can read differently (the fractal dimension worked example gives
-       1.3966 instead of 1.3732). The divider walks the out-of-core contour, which holds one
-       loop in a different order, so it can differ too. ``FRACT_DIM_BOXCOUNT`` differs on 38 of
-       the 66 ROIs and ``FRACT_DIM_PERIMETER`` on 11.
-   * - Neighbor features (``NUM_NEIGHBORS``, ``PERCENT_TOUCHING``, ``CLOSEST_NEIGHBOR*``,
-       ``ANG_BW_NEIGHBORS_*``), ``POLYGONALITY_AVE``, ``HEXAGONALITY_*``
-     - Not computed. The neighbor features are reported as 0, and ``POLYGONALITY_AVE`` and
-       ``HEXAGONALITY_*`` as -1, their value for a ROI with fewer than 3 neighbors.
-
-If you need these features for large ROIs, raise the RAM limit so that the ROIs are computed in
-memory.
+The contour is traced out of core by the same border following as in memory, on the ROI's padded
+image held in a temporary file: every border of the ROI, the outer border of each fragment and
+each hole's border, in image coordinates. So the contour-based features (``PERIMETER`` and the
+features built on it, ``EDGE_*``, the circles, ``ROI_RADIUS_*``, the fractal dimensions, the
+weighted moments and the radial distribution) have their in-memory values, with or without
+``--anisox`` and ``--anisoy`` (Python ``anisotropy_x``, ``anisotropy_y``). If you need the
+neighbor features for large ROIs, raise the RAM limit so that the ROIs are computed in memory.
 
 When a feature fails on an out-of-core 2D ROI, Python raises ``RuntimeError`` with the message
 ``Error while computing feature ... over oversized ROI ...``. The command line prints the same
 message and continues: the ROI's row is written with 0 in that feature's columns, and the run
-exits with status 0. For example, on a 120 x 120 ROI of a 256 x 256 image stored in 64 x 64
-tiles, ``EROSIONS_2_VANISH`` failed out of core with ``invalid vector subscript`` (see
+exits with status 0. For example, on a 300 x 300 ROI of a striped 1200 x 1200 image, the contour
+failed out of core with ``pixel ... lies outside the bounding box ... that sizes its buffer`` (see
 :ref:`large-images-tiles`). After a command-line run with large ROIs, search the console output for
 ``Error while computing feature``.
 
@@ -266,39 +226,30 @@ same tile size; a pair with different tile sizes is refused with an error that s
 In memory and in whole-slide mode, tiling does not change the results: a 256 x 256 image with 66
 ROIs, 30 of them crossing 64 x 64 tile borders, gave the same features tiled and striped.
 
+Out of core, tiling does not change the results either: a tiled TIFF of several tiles gives the
+values of a striped copy of the same image, and the in-memory values, for ROIs inside one tile and
+for ROIs that span tiles.
+
 .. warning::
 
-   Out-of-core processing of a 2D image is correct only when Nyxus reads the image as one tile: a
-   tiled TIFF with a single tile, or a striped TIFF of at most 1024 x 1024 pixels. On any other
-   image it places the pixels of later tiles at wrong positions, and on a striped image larger
-   than 1024 pixels it can also read ROI pixels more than once, so the results depend on the
-   family. Measured on a 120 x 120 square and a 120 x 120 elliptical ROI of a 256 x 256 image
-   stored in 64 x 64 tiles, and on a 300 x 300 square and a 300 x 240 elliptical ROI inside the
-   first 1024 x 1024 region of a striped 1200 x 1200 image:
+   Out-of-core processing of a 2D striped TIFF larger than 1024 pixels in either direction, which
+   Nyxus reads as several 1024 x 1024 tiles, places the pixels of later tiles at wrong positions
+   and can read ROI pixels more than once, so the results depend on the family. Measured on a
+   300 x 300 square and a 300 x 240 elliptical ROI inside the first 1024 x 1024 region of a
+   striped 1200 x 1200 image:
 
    * Every family that builds the ROI's pixel matrix or contour (the texture families, the
      moments, morphology, the radial distribution, the fractal dimension, Zernike and Gabor) stops
      when a misplaced pixel lies outside the ROI's bounding box: from Python the call raises
      ``RuntimeError`` ("pixel ... lies outside the bounding box ... that sizes its buffer"); the
-     command line prints that error and leaves those features uncomputed. Erosion stops with
-     ``invalid vector subscript`` instead. This happened for both ROIs on both images.
+     command line prints that error and leaves those features uncomputed.
    * When every misplaced pixel stays inside the bounding box, the same families return wrong
-     values without an error (see the plus-shaped ROI below).
-   * The intensity features were correct on the tiled image. On the striped image ROI pixels
-     were read more than once: the intensity features built from sums, such as ``MEAN``, differed
-     from the in-memory values, while ``MIN`` and ``MAX`` kept them.
+     values without an error.
+   * ROI pixels were read more than once: the intensity features built from sums, such as
+     ``MEAN``, differed from the in-memory values, while ``MIN`` and ``MAX`` kept them.
 
-   Keep large 2D ROIs in memory by raising the RAM limit, or split large images so that each is
-   read as one tile.
-
-   The contour is traced from the misplaced pixels as well, so the contour features are wrong
-   even for a ROI whose bounding box starts at pixel (0, 0). On a
-   plus-shaped ROI of two 20-pixel bars spanning the image, stored in 64 x 64 tiles,
-   ``ROI_RADIUS_MAX`` out of core was 310.7 on a 256 x 256 image, where the in-memory value is
-   13.45, and ``PERIMETER``, which out of core counts contour pixels, was 144 where the contour has
-   1016 pixels; ``MEAN`` matched. On a 100 x 100 image the same ROI raised the error above. Stored striped (the images are at most 256 x 256
-   pixels, so they are read as one tile), the same ROI gave the in-memory ``ROI_RADIUS_*`` values
-   out of core.
+   Keep large 2D ROIs of such images in memory by raising the RAM limit, store the images as tiled
+   TIFF files, or split them so that each is at most 1024 x 1024 pixels.
 
 Out-of-core processing of a volume streams it one read at a time. When a single read of the
 intensity or label file returns the whole volume, as with a NIfTI file or an OME-Zarr array

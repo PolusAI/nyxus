@@ -131,7 +131,7 @@ def parse_mechanics():
     # message naming the defect they pin, so anchoring on ");" stops finding them
     cx = re.search(r"ASSERT_EQ\(pxO\.x,\s*(\d+)\)", src)
     cy = re.search(r"ASSERT_EQ\(pxO\.y,\s*(\d+)\)", src)
-    r2 = re.search(r"ASSERT_DOUBLE_EQ\(pxO\.max_sqdist\(K\),\s*([0-9.]+)\)", src)
+    r2 = re.search(r"ASSERT_DOUBLE_EQ\(pxO\.max_sqdist\(Kb\),\s*([0-9.]+)\)", src)
     if not (cx and cy and r2):
         raise SystemExit("cannot find the centre / radius pins in test_2d_radial_mechanics.h")
     return int(cx.group(1)), int(cy.group(1)), float(r2.group(1))
@@ -145,8 +145,8 @@ def nyxus_model(pixels, cx, cy, r_max, n=NBINS, epsilon=1e-9):
     Follows src/nyx/features/radial_distribution.cpp: the bin index is scaled by n-1 and
     clamped, FRAC_AT_D is a pixel-count fraction, MEAN_FRAC is a raw bin mean intensity,
     and RADIAL_CV is the population CV of the eight wedge SUMS including empty wedges.
-    The centre and r_max are inputs because the feature obtains them from two approximate
-    searches over a concatenated contour, which no clean reimplementation reproduces.
+    The centre and r_max are inputs, read from the mechanics header, where they are pinned as
+    the feature's coarse-to-fine searches over the contour's borders find them.
     """
     cnt = [0] * n
     isum = [0.0] * n

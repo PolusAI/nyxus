@@ -23,16 +23,12 @@ intensity-weighted features, they use only the ROI's mask.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Partly. Out of core the contour is traced as a single loop, so a hole or a second fragment
-       is left out of it, which also changes the ``EDGE_*`` features of such ROIs; ``PERIMETER``
-       counts the loop's pixels, which changes the features built on it
-       (``DIAMETER_EQUAL_PERIMETER``, ``CIRCULARITY``, the geodetic length and thickness), and the
-       contour-based circle and radius features use contour coordinates relative to the bounding
-       box. The neighbour features are not computed: they are 0, and ``POLYGONALITY_AVE`` and
-       ``HEXAGONALITY_*`` are −1. With anisotropy the out-of-core contour is wrong, so every
-       contour-based feature can differ. These out-of-core differences are a known defect
-       (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__). See :ref:`morphology-possible-issues`,
-       :doc:`/large_images` and :ref:`large-images-tiles`.
+     - Partly. Out of core the contour is traced as in memory, every border of the ROI in image
+       coordinates, so every contour-based feature, with or without anisotropy, has its in-memory
+       value. The neighbour features are not computed: they are 0, and ``POLYGONALITY_AVE`` and
+       ``HEXAGONALITY_*`` are −1. On a striped file larger than 1024 × 1024 pixels out-of-core
+       processing raises an error or returns wrong values, depending on the ROI. See
+       :ref:`morphology-possible-issues`, :doc:`/large_images` and :ref:`large-images-tiles`.
    * - **IBSI**
      - None. IBSI defines morphological features in 3D only (DHQ4), so no 2D code on this page
        has an identifier.
@@ -53,10 +49,10 @@ Each family starts from one of four sets derived from the ROI's mask:
 - **Pixels:** every pixel of the mask with the ROI's label, at its integer position
   :math:`(x_k, y_k)`. :math:`N` is their number. The basic morphology, ellipse, extrema, Euler and
   chord families use them.
-- **Contour:** the ROI's outer boundary, traced on the mask: the ROI pixels that have a 4-neighbour
-  outside the ROI, walked around the ROI in order. :math:`M` is their number. A hole or a second
-  fragment adds further loops, appended to the same list. The contour, perimeter, circle, ROI
-  radius, neighbour and polygonality features use it.
+- **Contour:** the ROI's boundary, traced on the mask: the ROI pixels that have a 4-neighbour
+  outside the ROI. :math:`M` is their number. They are walked border by border, once around the
+  outside of each separate part of the ROI and once around each hole. The contour, perimeter,
+  circle, ROI radius, neighbour and polygonality features use it.
 - **Convex hull:** the convex polygon spanned by the pixel centres. The convex hull and the three
   caliper families use it.
 - **Other ROIs:** the neighbour family compares the ROI's contour and centroid with those of the
@@ -157,9 +153,12 @@ Notation
      - Width and height of the bounding box, :math:`W = \max_k x_k - \min_k x_k + 1` and
        :math:`H = \max_k y_k - \min_k y_k + 1`.
    * - :math:`(u_j, v_j)`
-     - Position of the :math:`j`-th contour pixel, in walking order, :math:`j = 1 \dots M`.
+     - Position of the :math:`j`-th contour pixel, :math:`j = 1 \dots M`.
    * - :math:`M`
      - Number of contour pixels.
+   * - :math:`(u^b_i, v^b_i)`
+     - Position of the :math:`i`-th step of the walk around border :math:`b`,
+       :math:`i = 1 \dots L_b`.
    * - :math:`P`
      - ``PERIMETER``.
    * - :math:`A_h`
@@ -214,8 +213,9 @@ Settings
    * - Memory limit
      - ``--ramLimit``
      - ``Nyxus.set_params(ram_limit=...)``
-     - ROIs that do not fit are computed out of core, with the differences listed under
-       :ref:`morphology-possible-issues`.
+     - ROIs that do not fit are computed out of core, with the same values except the neighbour
+       features, ``POLYGONALITY_AVE`` and ``HEXAGONALITY_*`` (see
+       :ref:`morphology-possible-issues`).
 
 ``--coarseGrayDepth`` and ``--ibsi`` have no effect on these features. All options are listed in
 the :ref:`cli-reference`.
@@ -237,10 +237,11 @@ When a feature cannot be computed, its column holds a substitute value:
   neighbours: with ``--pixelDistance=1`` two ROIs that touch only diagonally are not neighbours
   but still count as touching.
 - ``WEIGHTED_CENTROID_X`` and ``WEIGHTED_CENTROID_Y`` are 0 when the ROI's grey levels sum to 0.
-- The contour features are 0 for a ROI too small to trace, such as one or two pixels.
+- ``PERIMETER`` and the features built on it are 0 for a single pixel, whose contour is the pixel
+  itself.
 
-The ellipse, circle and hexagonality codes are right only when the codes they read from are in the
-same run, a known defect (`#495 <https://github.com/PolusAI/nyxus/issues/495>`__); see :ref:`morphology-possible-issues`.
+The ellipse and hexagonality codes are right only when the codes they read from are in the same
+run, a known defect (`#495 <https://github.com/PolusAI/nyxus/issues/495>`__); see :ref:`morphology-possible-issues`.
 
 
 .. _morphology-index:
@@ -500,10 +501,12 @@ wide and 5 tall.
 Contour
 ^^^^^^^
 
-The contour is traced on the mask padded by one pixel. For a ROI without holes it is the ROI's
-pixels that have a 4-neighbour outside the ROI, walked in order: from the first contour pixel in
-row order, each step goes to an unvisited contour pixel that is a 4-neighbour if there is one,
-otherwise to a diagonal neighbour. Steps are 1 or :math:`\sqrt{2}` long.
+The contour is the ROI's pixels that have a 4-neighbour outside the ROI. Nyxus traces it on the
+mask padded by one pixel, by Suzuki and Abe's border following, the algorithm behind OpenCV's
+``findContours``: one closed walk of 8-connected steps around the outside of each separate part of
+the ROI, and one around each hole. Steps are 1 or :math:`\sqrt{2}` long. A walk passes a part
+of the ROI that is one pixel wide twice, once on each side, and two borders can share a pixel; the
+contour pixels themselves, :math:`M` of them, are each counted once.
 
 .. _feature-perimeter:
 
@@ -513,20 +516,20 @@ Perimeter
 :Code: ``PERIMETER``
 :Range: :math:`[0, \infty)`, pixels
 
-The length of the closed path through the contour pixels' centres.
+The summed length of the closed walks around the ROI's borders, through the contour pixels'
+centres.
 
 .. math::
 
-   \mathrm{PERIMETER} = \sum_{j=1}^{M} \sqrt{(u_j - u_{j-1})^2 + (v_j - v_{j-1})^2},
-   \qquad (u_0, v_0) = (u_M, v_M)
+   \mathrm{PERIMETER} = \sum_b \sum_{i=1}^{L_b} \sqrt{(u^b_i - u^b_{i-1})^2 + (v^b_i - v^b_{i-1})^2},
+   \qquad (u^b_0, v^b_0) = (u^b_{L_b}, v^b_{L_b})
+
+A 9 × 9 square with a 3 × 3 hole gives 45.66, its outer walk of 32 and the hole's walk of 13.66,
+and a label made of two 5 × 4 rectangles gives 28, 14 for each.
 
 **Possible issues.** The path runs through pixel centres, so it is shorter than the outline of the
-pixel squares: a 3 × 5 rectangle has a perimeter of 12, not 16. On ROIs with holes or several
-fragments the loops are joined into one list, and the steps between loops are counted: a 9 × 9
-square with a 3 × 3 hole gives 50.01 where its two loops measure 32 and 13.66, and a label made of
-two 5 × 4 rectangles gives 42.12 where each measures 14. Out of core the value is the number of
-pixels of the first traced loop, without holes or other fragments: 44 for ROI 1 of the worked
-example.
+pixel squares: a 3 × 5 rectangle has a perimeter of 12, not 16. A part one pixel wide is walked
+on both sides: a 1 × 13 bar gives 24.
 
 
 .. _feature-diameter-equal-perimeter:
@@ -628,7 +631,7 @@ The ratio of the area to the area of a circle with the ROI's perimeter, square-r
 
 **Possible issues.** :math:`N` counts whole pixels while :math:`P` runs through pixel centres, so
 small or blocky ROIs exceed 1: ROI 2 of the worked example, a 3 × 5 rectangle, gives 1.144. The
-value is 0 when no contour could be traced.
+value is 0 for a single pixel, whose perimeter is 0.
 
 
 .. _feature-polygonality-ave:
@@ -825,21 +828,20 @@ Circumscribing and inscribing circles
 :Codes: ``DIAMETER_CIRCUMSCRIBING_CIRCLE``, ``DIAMETER_INSCRIBING_CIRCLE``
 :Range: :math:`[0, \infty)`, pixels
 
-Twice the largest and twice the smallest distance from the centroid to the contour: the circles
-centred on the centroid that just enclose the contour and just touch it from inside. As the code
-computes them, the contour pixels are two pixels further along both axes than they lie:
+Twice the largest and twice the smallest distance from the centroid to the ROI's outer borders: the
+circles centred on the centroid that just enclose the outline and just touch it from inside. The
+borders of holes are left out, as in imea, which reads the external contour only; a ROI in several
+parts has one outer border per part, and all of them count.
 
 .. math::
 
-   d_j = \sqrt{(u_j + 2 - c_x)^2 + (v_j + 2 - c_y)^2}, \qquad
+   d_j = \sqrt{(u_j - c_x)^2 + (v_j - c_y)^2}, \qquad
    \mathrm{DIAMETER\_CIRCUMSCRIBING\_CIRCLE} = 2\max_j d_j, \qquad
    \mathrm{DIAMETER\_INSCRIBING\_CIRCLE} = 2\min_j d_j
 
-**Possible issues.** The traced contour is returned one pixel down and to the right of the ROI,
-and the centroid is moved one pixel up and to the left before the distances are taken, a known
-defect (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__). On the
-worked example ROI 1 gives 17.41 and 1.290, where the distances to the contour as it lies give 14.72
-and 1.705; ROI 2 gives 10 where :math:`2\sqrt{5} = 4.472`.
+with :math:`j` over the pixels of the outer borders. On the worked example ROI 1 gives 14.72 and
+1.705, and ROI 2 gives :math:`2\sqrt{5} = 4.472` and 2. A 9 × 9 square with a centred 3 × 3 hole
+gives 11.31 and 8, the values of the square without the hole.
 
 
 ROI radius
@@ -857,20 +859,14 @@ Distance to the contour
 
 The mean, largest and median distance from a ROI pixel to the nearest contour pixel, over all ROI
 pixels. The maximum is the radius of the largest disk inside the ROI, measured from a pixel centre.
-As the code computes it, the contour lies one pixel down and to the right, a known defect
-(`#497 <https://github.com/PolusAI/nyxus/issues/497>`__):
+Contour pixels are at distance 0.
 
 .. math::
 
-   r_k = \min_j \sqrt{(x_k - u_j - 1)^2 + (y_k - v_j - 1)^2}
+   r_k = \min_j \sqrt{(x_k - u_j)^2 + (y_k - v_j)^2}
 
-The median of an even count is the mean of the two middle values.
-
-**Possible issues.** Because of the contour offset, contour pixels themselves are not at distance
-0. On the worked example ROI 1 gives a mean of 1.124 where the contour as it lies gives 0.9288; its
-maximum, 3, and median, 1, are unchanged. ROI 2 gives 0.6943, 1.414 and 1 where the contour as it
-lies gives 0.2, 1 and 0. Out of core the contour coordinates are relative to the bounding box, a known
-defect (`#509 <https://github.com/PolusAI/nyxus/issues/509>`__), so the values depend on where the ROI lies; there ROI 1 gives 0.9288 and ROI 2 11.13.
+The median of an even count is the mean of the two middle values. On the worked example ROI 1 gives
+a mean of 0.9288, a maximum of 3 and a median of 1; ROI 2 gives 0.2, 1 and 0.
 
 
 Extrema
@@ -1201,8 +1197,11 @@ another ROI: those within :math:`\sqrt{2}` of one.
 
 A pixel touching several ROIs counts once. The value does not depend on :math:`D`.
 
-**Possible issues.** CellProfiler's ``MeasureObjectNeighbors`` defines its percent touching
-differently, so the two values differ; Nyxus counts direct contact between contour pixels only.
+**Possible issues.** CellProfiler's ``MeasureObjectNeighbors`` counts the outline pixels that a
+neighbour dilated by a disk of radius :math:`D + 0.5` overlaps. At :math:`D = 1` that disk is the
+3 × 3 neighbourhood and the two counts are the same; at larger distances CellProfiler also counts
+outline pixels farther from the neighbour, while Nyxus counts direct contact between contour
+pixels whatever :math:`D` is.
 
 
 .. _feature-closest-neighbor1-dist:
@@ -1254,18 +1253,6 @@ their directions, a known defect (`#499 <https://github.com/PolusAI/nyxus/issues
 Possible issues
 ---------------
 
-Contour offset
-   The traced contour is returned one pixel down and to the right of the ROI, a known defect
-   (`#497 <https://github.com/PolusAI/nyxus/issues/497>`__). ``PERIMETER``, the
-   ``EDGE_*`` features, the minimum enclosing circle and the neighbour features do not depend on
-   where the contour lies. The circumscribing and inscribing circles (17.41 and 1.290 for ROI 1,
-   where the contour as it lies gives 14.72 and 1.705) and ``ROI_RADIUS_*`` (mean 1.124 against
-   0.9288) do.
-
-Holes and fragments in the contour
-   A hole or a second fragment adds a loop to the contour, and ``PERIMETER`` counts the step from
-   one loop to the next: 50.01 for a 9 × 9 square with a 3 × 3 hole, whose loops measure 32 and 13.66.
-
 Minimum enclosing circle
    Truncated chord midpoints make the circle too large on some ROIs, a known defect
    (`#498 <https://github.com/PolusAI/nyxus/issues/498>`__): 14.17 for ROI 1 where the
@@ -1295,9 +1282,11 @@ Neighbour statistics
    3 × 5 rectangle.
 
 Small ROIs
-   A ROI of one or two pixels has no traceable contour: ``PERIMETER``, the ``EDGE_*`` features,
-   ``CIRCULARITY``, the circles and ``ROI_RADIUS_*`` are 0. A single pixel has a hull area of 1, and 0
-   for every caliper and chord feature. A ROI whose pixel centres lie on one straight line, such
+   A single pixel is its own contour: the ``EDGE_*`` features are its grey level (the standard
+   deviation 0), ``PERIMETER``, ``CIRCULARITY``, the circumscribing and inscribing circles and
+   ``ROI_RADIUS_*`` are 0, and the minimum enclosing circle is :math:`2 \times 10^{-4}`. A single
+   pixel has a hull area of 1, and 0 for every caliper and chord feature. A ROI of two pixels is
+   walked there and back, so ``PERIMETER`` is 2 and ``CIRCULARITY`` 2.507. A ROI whose pixel centres lie on one straight line, such
    as a one-pixel-wide bar, has a hull of two vertices and gives 0 for every Nassenstein
    statistic and Martin statistics of at most about 10\ :sup:`-6`, rounding residue of the
    rotated hull (``STAT_MARTIN_DIAM_MAX`` 4.8 × 10\ :sup:`-7` on a 1 × 13 bar); angles at which
@@ -1316,19 +1305,15 @@ Anisotropy
    at its position scaled by the factors, so the ``EDGE_*`` values do not change. Arrays passed to ``Nyxus.featurize`` are not resampled.
 
 Out of core
-   On ROIs computed out of core, the contour is a single loop: holes and further fragments are
-   left out of it, which changes ``PERIMETER`` and the ``EDGE_*`` features of such ROIs, and the
-   minimum enclosing circle of a ROI in several fragments. On a 300 × 300 square with a centred
-   100 × 100 hole the out-of-core contour is the outer loop of 1196 pixels, where the in-memory
-   contour has 1596, and ``PERIMETER`` is 1196 instead of 1876. ``PERIMETER`` is the number of the loop's pixels
-   (44 for ROI 1 instead of 48.14), and ``DIAMETER_EQUAL_PERIMETER``, ``CIRCULARITY``,
-   ``GEODETIC_LENGTH`` and ``THICKNESS`` follow it. The contour's coordinates are relative to the
-   bounding box, which changes the circumscribing and inscribing circles and ``ROI_RADIUS_*``
-   (ROI 2: circumscribing 25.30 instead of 10). The neighbour features are not computed and are
+   On ROIs computed out of core, the contour is traced from the ROI's padded image held on disk,
+   by the same border following as in memory: every border, the outer border of each fragment and
+   each hole's border, in image coordinates and in the same order. ``PERIMETER``, the features
+   built on it, the ``EDGE_*`` features, the circles and ``ROI_RADIUS_*`` therefore have their
+   in-memory values, with or without anisotropy. The neighbour features are not computed and are
    0, and an out-of-core ROI is also not seen as a neighbour by the ROIs computed in memory, so
    their neighbour features leave it out. ``POLYGONALITY_AVE`` and ``HEXAGONALITY_*``, which need
-   the neighbour count, are −1 out of core. On the worked example, whose ROIs have no holes, the
-   other 88 codes give the in-memory values; on images that Nyxus reads as several tiles see
+   the neighbour count, are −1 out of core. On the worked example every other code gives its
+   in-memory value; on striped files larger than 1024 × 1024 pixels see
    :ref:`large-images-tiles`, and for the families that differ see :doc:`/large_images`.
 
 Codes that need companions
@@ -1338,10 +1323,8 @@ Codes that need companions
    ``ROUNDNESS``, ``ELONGATION``) need a basic morphology code such as ``AREA_PIXELS_COUNT``:
    without one the moments are taken about the image origin, and ROI 1 of the worked example
    gives ``MAJOR_AXIS_LENGTH`` 39.36 instead of 13.91, ``ORIENTATION`` 45.93 instead of −18.77
-   and ``ROUNDNESS`` 0. ``ELONGATION`` is 0 unless another ellipse code is in the run too. The
-   three circle diameters need a contour code such as ``PERIMETER`` and a basic morphology code:
-   alone they are 0, and with ``PERIMETER`` only ``DIAMETER_MIN_ENCLOSING_CIRCLE`` is right (ROI
-   1's ``DIAMETER_CIRCUMSCRIBING_CIRCLE`` is 35.61 instead of 17.41). ``HEXAGONALITY_AVE`` and
+   and ``ROUNDNESS`` 0. ``ELONGATION`` is 0 unless another ellipse code is in the run too.
+   ``HEXAGONALITY_AVE`` and
    ``HEXAGONALITY_STDDEV`` need a Feret code such as ``STAT_FERET_DIAM_MAX``: without one they
    are 0, where the disk with four neighbours gives 9.223 and 0.08352. ``*ALL_MORPHOLOGY*``
    computes every one of them correctly.
@@ -1359,7 +1342,7 @@ Whole-slide mode
 Validation
 ----------
 
-The test suite checks the morphology features against five references:
+The test suite checks the morphology features against six references:
 
 - **MATLAB** (R2026a, ``regionprops`` and ``bweuler``), on a test ROI, to a relative
   10\ :sup:`-3`: ``AREA_PIXELS_COUNT``, ``AREA_UM2``, ``CENTROID_X``, ``CENTROID_Y``,
@@ -1370,27 +1353,37 @@ The test suite checks the morphology features against five references:
   `#496 <https://github.com/PolusAI/nyxus/issues/496>`__).
 - **CellProfiler** 4.2.8: ``MASS_DISPLACEMENT`` and ``EDGE_MEAN_INTENSITY``, ``EDGE_MAX_INTENSITY``,
   ``EDGE_MIN_INTENSITY`` and ``EDGE_INTEGRATED_INTENSITY`` to a relative 10\ :sup:`-6`;
-  ``NUM_NEIGHBORS`` and ``CLOSEST_NEIGHBOR1_DIST`` to an absolute 10\ :sup:`-9`.
-- **scikit-image**: ``DIAMETER_EQUAL_AREA``, ``PERIMETER`` (on digital circles), ``ROI_RADIUS_MAX``
-  and ``ROI_RADIUS_MEDIAN`` to a relative 10\ :sup:`-3`; ``CONVEX_HULL_AREA``, ``SOLIDITY`` and
-  ``ORIENTATION``.
+  ``NUM_NEIGHBORS`` and ``CLOSEST_NEIGHBOR1_DIST`` to an absolute 10\ :sup:`-9`;
+  ``PERCENT_TOUCHING`` exactly, on a scene of five ROIs with ``--pixelDistance=1``.
+- **scikit-image**: ``DIAMETER_EQUAL_AREA``, ``PERIMETER`` (on digital circles), ``ROI_RADIUS_MAX``,
+  ``ROI_RADIUS_MEAN`` and ``ROI_RADIUS_MEDIAN`` to a relative 10\ :sup:`-3`; ``CONVEX_HULL_AREA``,
+  ``SOLIDITY`` and ``ORIENTATION``.
+- **OpenCV** 4.13.0 (``cv2.findContours`` with ``RETR_LIST`` and ``CHAIN_APPROX_NONE``):
+  ``PERIMETER`` exactly, the summed closed length of every border, on an irregular blob and on a
+  ROI with a hole.
 - **imea** 0.3.5: ``DIAMETER_EQUAL_PERIMETER``, ``GEODETIC_LENGTH`` and ``THICKNESS`` exactly,
   computed from Nyxus' own area and perimeter; ``DIAMETER_MIN_ENCLOSING_CIRCLE``, the minimum,
   maximum, mean, median and standard deviation of the Feret, Martin and Nassenstein diameters, and
   ``ALLCHORDS_MIN`` to a relative 6 × 10\ :sup:`-2`, on an ellipse.
-- **Analytic** values: ``ROI_RADIUS_MAX`` exactly on digital disks; ``CLOSEST_NEIGHBOR1_ANG``,
+- **Analytic** values: ``PERIMETER`` exactly on squares, a square with a hole, two separate
+  squares under one label, one-pixel-wide lines and a single pixel; ``EDGE_INTEGRATED_INTENSITY``
+  exactly on a one-pixel-wide line, whose walk passes its inner pixels twice, each counted once;
+  ``ROI_RADIUS_MAX`` exactly on digital disks; ``DIAMETER_CIRCUMSCRIBING_CIRCLE`` and
+  ``DIAMETER_INSCRIBING_CIRCLE`` exactly on a digital circle, the same circle with a hole and two
+  separate disks under one label; ``CLOSEST_NEIGHBOR1_ANG``,
   ``CLOSEST_NEIGHBOR2_DIST``, ``CLOSEST_NEIGHBOR2_ANG`` and the three ``ANG_BW_NEIGHBORS_*`` codes
   to an absolute 10\ :sup:`-9`; ``CIRCULARITY`` and ``ROUNDNESS`` against their formulas.
 
 ``COMPACTNESS``, ``EDGE_STDDEV_INTENSITY``, ``POLYGONALITY_AVE``, ``HEXAGONALITY_AVE``,
-``HEXAGONALITY_STDDEV``, ``DIAMETER_CIRCUMSCRIBING_CIRCLE``, ``DIAMETER_INSCRIBING_CIRCLE``,
-``ROI_RADIUS_MEAN``, ``MIN_FERET_ANGLE``, ``MAX_FERET_ANGLE``, the three ``*_DIAM_MODE`` codes,
-``PERCENT_TOUCHING`` and every chord code except ``ALLCHORDS_MIN`` are regression-only. The
-out-of-core values of the ellipse family, the ``EDGE_*`` features and ``MASS_DISPLACEMENT`` are
-checked against the in-memory values of the same build. The *Example* values and the values the
+``HEXAGONALITY_STDDEV``, ``MIN_FERET_ANGLE``, ``MAX_FERET_ANGLE``, the three ``*_DIAM_MODE``
+codes and every chord code except ``ALLCHORDS_MIN`` are regression-only. The
+out-of-core values of every code except the neighbour features, ``POLYGONALITY_AVE`` and
+``HEXAGONALITY_*`` are checked against the in-memory values of the same build, on ROIs away from
+the image origin, with a diagonal boundary, with a hole, in two fragments, across several tiles
+and with anisotropy. The *Example* values and the values the
 worked-example script checks beside them are pinned by that script. The comparisons with
-``skimage.measure.regionprops``, the alternative conventions (contour as it lies, Feret over 18
-directions, chords counting the last row, merged ROIs) and the out-of-core, anisotropy and
+``skimage.measure.regionprops``, the alternative conventions (Feret over 18 directions, chords
+counting the last row, merged ROIs) and the out-of-core, anisotropy and
 whole-slide values are measured but not pinned.
 
 

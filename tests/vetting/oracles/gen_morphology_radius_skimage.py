@@ -17,29 +17,23 @@ calls, with no part of Nyxus re-implemented:
 find_boundaries(connectivity=1, mode='inner') is the whole of the convention: the foreground pixels
 4-adjacent to background. It is CellProfiler's own edge definition, which is why
 gen_morphology_cellprofiler.py and gen_morphology_wholeslide_cellprofiler.py already reproduce the
-EDGE_* statistics through it. On the 8x8 shape2d mask it does not merely agree in COUNT with the
-Nyxus chain-code contour: measured pixel by pixel, the Nyxus contour IS this boundary shifted by
-(+1,+1) -- all 18 coordinates, exactly. On the r=20 disk it returns 112, the edge-pixel count
-benchmarks.md records for `bench_disk64_diagonal_boundary`, the same 1257-pixel shape. The distance step carries no
+EDGE_* statistics through it, and the set of pixels on the Nyxus contour: every border of the ROI,
+traced as a closed walk over exactly these pixels. On the r=20 disk it returns 112, the edge-pixel
+count benchmarks.md records for `bench_disk64_diagonal_boundary`, the same 1257-pixel shape. The distance step carries no
 convention at all, and is computed here twice -- an exhaustive numpy minimum and
 scipy.ndimage.distance_transform_edt over the complement of the boundary -- with the two required to
 agree, so neither implementation is taken on trust.
 
-WHY DISKS AND NOT THE 8x8 shape2d RASTER. Same reason PERIMETER is vetted on the circles benchmark:
-on a 26-pixel object with a hole the two boundary conventions have nothing to converge to. A disk
-also has an EXACT closed form for the maximum -- sqrt((R-1)^2+1), the centre's distance to the
-boundary pixel at offset (1, R-1) -- which test_2d_morphology_analytic.h asserts as a second oracle.
-MAX/(R-1) = sqrt(1+1/(R-1)^2) then converges to 1 as 1/(2(R-1)^2): 0.62%, 0.14%, 0.03% at
+WHY DISKS AND NOT THE 8x8 shape2d RASTER. On 26 pixels, whose distances to the edge are all 0 or 1,
+a distance and its square are the same number, so the raster cannot catch a units error; three disks
+can. A disk also has an EXACT closed form for the maximum -- sqrt((R-1)^2+1), the centre's distance
+to the boundary pixel at offset (1, R-1) -- which test_2d_morphology_analytic.h asserts as a second
+oracle. MAX/(R-1) = sqrt(1+1/(R-1)^2) then converges to 1 as 1/(2(R-1)^2): 0.62%, 0.14%, 0.03% at
 R = 10, 20, 40, i.e. LINEAR growth in R.
 
-WHAT IS VETTED AND WHAT IS NOT. MAX and MEDIAN agree with this reference to double precision.
-ROI_RADIUS_MEAN does not, for a reason outside this family: ContourFeature::buildRegularContour
-reports every contour pixel one pixel right and one pixel down of where it is (it never subtracts the
-pad it traces in), so Nyxus measures its pixels against a shifted boundary. Shifting the reference
-boundary by (+1, +1) reproduces all three Nyxus values exactly, on the disks and on the shape2d
-raster alike -- this script prints that comparison on every run as the standing measurement. MAX and
-MEDIAN are unmoved by the shift on a disk because the pixel attaining them moves with it; MEAN is
-not, and is a regression row until the contour offset is corrected.
+WHAT IS VETTED. MEAN, MAX and MEDIAN agree with this reference to double precision on the three
+disks and are pinned below. The script also prints the reference on the shape2d raster, where it
+equals the Nyxus drift guards in test_2d_morphology_regression.h.
 
 Provenance: tool=scikit-image 0.26.0, scipy 1.17.1, numpy 2.4.6; env=nyxus_mirp (conda);
 generator=tests/vetting/oracles/gen_morphology_radius_skimage.py. Run offline; CI never invokes it.
@@ -91,20 +85,18 @@ def parse_pins(txt, table):
             re.findall(r'\{\s*"([A-Z0-9_]+)"\s*,\s*([-0-9.eE+]+)\s*\}', body)}
 
 
-def radius_stats(mask, shift=0):
-    """Mean/max/median distance from each mask pixel to the inner boundary, optionally shifted."""
+def radius_stats(mask):
+    """Mean/max/median distance from each mask pixel to the inner boundary."""
     b = find_boundaries(mask, connectivity=1, mode="inner")
     by, bx = np.nonzero(b)
-    by, bx = by + shift, bx + shift
     py, px = np.nonzero(mask)
     d = np.sqrt(np.min((py[:, None] - by) ** 2 + (px[:, None] - bx) ** 2, axis=1).astype(float))
 
-    if shift == 0:
-        # Second, independent implementation of the same distance: an EDT over everything that is
-        # not boundary. Only the boundary definition above may carry a convention; this catches a
-        # mistake in the exhaustive minimum rather than trusting it.
-        edt = distance_transform_edt(~b)[mask]
-        assert np.allclose(d, edt, rtol=0, atol=1e-12), "numpy minimum and scipy EDT disagree"
+    # Second, independent implementation of the same distance: an EDT over everything that is not
+    # boundary. Only the boundary definition above may carry a convention; this catches a mistake in
+    # the exhaustive minimum rather than trusting it.
+    edt = distance_transform_edt(~b)[mask]
+    assert np.allclose(d, edt, rtol=0, atol=1e-12), "numpy minimum and scipy EDT disagree"
 
     return {"MEAN": float(d.mean()), "MAX": float(d.max()), "MEDIAN": float(np.median(d))}, int(b.sum())
 
@@ -117,25 +109,22 @@ def main():
     for R in RADII:
         m = disk(R)
         ref, nb = radius_stats(m)
+        got[f"ROI_RADIUS_MEAN_R{R}"] = ref["MEAN"]
         got[f"ROI_RADIUS_MAX_R{R}"] = ref["MAX"]
         got[f"ROI_RADIUS_MEDIAN_R{R}"] = ref["MEDIAN"]
+        print(f'\t{{"ROI_RADIUS_MEAN_R{R}", {ref["MEAN"]!r}}},')
         print(f'\t{{"ROI_RADIUS_MAX_R{R}", {ref["MAX"]!r}}},')
         print(f'\t{{"ROI_RADIUS_MEDIAN_R{R}", {ref["MEDIAN"]!r}}},')
         print(f"\t# R={R}: {int(m.sum())} pixels, {nb} boundary pixels, "
               f"MAX/(R-1) = {ref['MAX'] / (R - 1):.6f}")
 
-    print("\n# the contour offset, measured: reference vs reference shifted by (+1,+1)")
+    print("\n# the reference on every fixture, the values Nyxus reports")
     data = open(DATA_H, encoding="utf-8", errors="replace").read()
     shapes = [(f"disk_r{R}", disk(R)) for R in RADII]
     shapes.append(("shape2d", parse_fixture(data, "shape2d_morphology_mask") > 0))
     for name, m in shapes:
-        a, _ = radius_stats(m, shift=0)
-        b, _ = radius_stats(m, shift=1)
-        print(f"  {name:9s} MEAN {a['MEAN']!r} -> {b['MEAN']!r}   "
-              f"MAX {a['MAX']!r} -> {b['MAX']!r}   "
-              f"MEDIAN {a['MEDIAN']!r} -> {b['MEDIAN']!r}")
-    print("  (the shifted column is what Nyxus reports today; MAX and MEDIAN are unmoved by the")
-    print("   shift on a disk, MEAN is not, which is why only the first two are vetted)")
+        a, _ = radius_stats(m)
+        print(f"  {name:9s} MEAN {a['MEAN']!r}   MAX {a['MAX']!r}   MEDIAN {a['MEDIAN']!r}")
 
     test = open(TEST_H, encoding="utf-8", errors="replace").read()
     pins = parse_pins(test, "morphology_2d_skimage_radius_disks_ref_vals")

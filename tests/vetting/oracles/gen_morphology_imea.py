@@ -13,9 +13,10 @@ SHAPE2D (the 8x8 mask from test_data.h) -- the two DIN ISO 9276-6 transforms onl
   P/4 +- sqrt(P^2/16 - A). imea implements both in imea.measure_2d.macro, and fed the NYXUS area and
   perimeter it reproduces the Nyxus values to double precision.
   SCOPE: this vets the TRANSFORM, not the area and perimeter it consumes. imea derives its own
-  perimeter from cv2.arcLength (12.657 here) rather than a chain-code contour walk (26.935), so
-  imea's END-TO-END values on this mask do not agree with Nyxus; the whole gap is inherited from
-  PERIMETER, which is vetted separately against scikit-image on the circles benchmark.
+  perimeter from cv2.arcLength (12.657 here) rather than the summed closed walks of every border,
+  outer and hole (22.971), so imea's END-TO-END values on this mask do not agree with Nyxus; the
+  whole gap is inherited from PERIMETER, which is vetted separately against OpenCV's border
+  following on this mask and against scikit-image on the circles benchmark.
   The 19 caliper/chord statistics that used to be pinned in this file's imea table were never imea
   values at all -- imea's own numbers on this 8x8 raster differ by 12-79%, printed below as the
   `raster gap` block. They are now regression snapshots in test_2d_morphology_regression.h.
@@ -53,7 +54,7 @@ RELTOL_CALIPER = 0.06      # hull-vs-raster convention gap, matching the C++ ass
 
 # Nyxus inputs to the ISO transforms, from the shape2d fixture (test_2d_morphology_regression.h)
 NYX_AREA = 26.0
-NYX_PERIMETER = 26.9349412836191
+NYX_PERIMETER = 22.970562748477146
 
 CALIPER_KEYS = {
     "STAT_MARTIN_DIAM_MIN": "martin_min", "STAT_MARTIN_DIAM_MAX": "martin_max",

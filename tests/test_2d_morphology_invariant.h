@@ -2,7 +2,9 @@
 
 #include <gtest/gtest.h>
 
+#include "../src/nyx/features/contour.h"
 #include "../src/nyx/features/edt.h"
+#include "../src/nyx/features/fractal_dim.h"
 #include "../src/nyx/features/roi_radius.h"
 #include "test_main_nyxus.h"   // roi_cache.h / featureset.h / pixel.h
 
@@ -90,8 +92,8 @@ namespace nyxus_ut_edt
         return from_mask ("ring R=" + std::to_string(R) + " w=" + std::to_string(w), m, S, S, 100, 100);
     }
 
-    // A square with a square hole: two contours, so merge_multicontour's flattening is exercised
-    // and the transform is seeded from a non-simply-connected site set.
+    // A square with a square hole: two borders, so the contour the radius is measured to holds the
+    // pixels of both and the transform is seeded from a non-simply-connected site set.
     inline Shape square_with_hole (int S, int hole)
     {
         std::vector<char> m ((size_t)S * S, 1);
@@ -289,13 +291,11 @@ inline void test_2d_morphology_roi_radius_engine_choice_invariant()
 // makes it a distance transform against a scan across a path boundary, which is the widest gap the
 // three implementations have to close.
 //
-// WHAT THIS DOES NOT COVER, deliberately. Both paths are handed the SAME contour, set on the ROI
-// directly rather than traced. The two contour builders do not agree with each other -- same count
-// and different pixels below the tile size (todo item 65), and a contour truncated to the first tile
-// above it (item 68) -- and those are defects of contour construction, pinned by their own tests. If
-// this test traced instead of supplying, it would fail for reasons that have nothing to do with the
-// distance engines and would stop discriminating between them. When 65 and 68 are fixed, the
-// stronger end-to-end equality belongs in tests/python/test_2d_ooc_invariant.py on a disk fixture.
+// Both paths are handed the SAME contour, set on the ROI directly rather than traced, so a
+// disagreement here is one between the distance engines and nothing else. That the two contour
+// builders trace the same contour is test_2d_contour_out_of_core_traces_the_same_borders_invariant,
+// and the end-to-end equality of every contour-based feature, traced on each path from a file, is
+// tests/python/test_2d_ooc_invariant.py.
 inline void test_2d_morphology_roi_radius_paths_agree_invariant()
 {
     Fsettings s;
@@ -320,6 +320,7 @@ inline void test_2d_morphology_roi_radius_paths_agree_invariant()
             roi.initialize_fvals();
             roi.raw_pixels = shape.cloud;
             roi.multicontour_.push_back (shape.contour);
+            roi.merge_multicontour();
 
             RoiRadiusFeature f;
             f.calculate (roi, s);
@@ -335,6 +336,7 @@ inline void test_2d_morphology_roi_radius_paths_agree_invariant()
             LR roi (1);
             roi.initialize_fvals();
             roi.multicontour_.push_back (shape.contour);
+            roi.merge_multicontour();
 
             roi.raw_pixels_NT.init (1, "nyxus_ut_paths_agree");
             for (const auto& p : shape.cloud)
@@ -370,4 +372,234 @@ inline void test_2d_morphology_roi_radius_paths_agree_invariant()
     ASSERT_GT (n_took_transform, (size_t)0)
         << "no shape in the battery routed the in-RAM path through the distance transform, so this "
            "test no longer compares the two engines";
+}
+
+// FRACT_DIM_PERIMETER walks every closed border of a ROI separately and sums the borders per
+// stride. Two identical, separate disks under one label therefore have exactly the dimension of
+// one: at every stride both the summed length and the number of steps double, so the mean ruler is
+// the same and log(perimeter) shifts by log 2 at every point, which leaves the slope unchanged.
+// Walking the two borders as one sequence would measure chords between the disks and break this.
+inline void test_2d_morphology_fractal_perimeter_two_copies_invariant()
+{
+    auto fractal_perimeter = [] (int n_copies)
+    {
+        const int R = 12, cx = 20, cy = 20, gap = 50;
+        LR roi (1);
+        bool first = true;
+        for (int k = 0; k < n_copies; k++)
+            for (int y = cy - R; y <= cy + R; y++)
+                for (int x = cx - R + k * gap; x <= cx + R + k * gap; x++)
+                {
+                    const int dx = x - (cx + k * gap), dy = y - cy;
+                    if (dx * dx + dy * dy > R * R)
+                        continue;
+                    if (first) { Nyxus::init_label_record_3 (roi, x, y, 1); first = false; }
+                    else Nyxus::update_label_record_3 (roi, x, y, 1);
+                    roi.raw_pixels.push_back (Pixel2 (x, y, (PixIntens) 1));
+                }
+        roi.make_nonanisotropic_aabb();
+        roi.aux_image_matrix = ImageMatrix (roi.raw_pixels);
+        roi.initialize_fvals();
+
+        Fsettings s = make_shape2d_settings();
+        ContourFeature contour;
+        contour.calculate (roi, s);
+        contour.save_value (roi.fvals);
+        FractalDimensionFeature fractal;
+        fractal.calculate (roi, s);
+        fractal.save_value (roi.fvals);
+
+        EXPECT_EQ (roi.multicontour_.size(), (size_t) n_copies);
+        return roi.fvals;
+    };
+
+    const auto one = fractal_perimeter (1), two = fractal_perimeter (2);
+    ASSERT_GT (one[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], 0.0);
+    ASSERT_NEAR (two[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], one[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], 1e-12)
+        << "FRACT_DIM_PERIMETER of two separate copies differs from one copy's";
+}
+
+// A border no longer than the divider's stride is measured whole, at its closed length, rather than
+// dropped. Here every border is measured the same at every stride: a 17x17 square, whose 64-pixel
+// walk the strides 16, 8, 4, 2 and 1 all cut at its corners, so they lay 64 along it, and a separate
+// 3-pixel line, whose 4-pixel walk out and back strides 1 and 2 measure at its closed length 4 and
+// the larger strides take whole. The perimeter is 68 at every ruler, and the dimension exactly 1.
+// Dropping the line at the strides it is too short for would leave 64 at the larger rulers and
+// lift the dimension above 1.
+inline void test_2d_morphology_fractal_perimeter_short_border_invariant()
+{
+    auto fractal_perimeter = [] (bool with_line, size_t& n_borders)
+    {
+        LR roi (1);
+        bool first = true;
+        auto add = [&] (int x, int y)
+        {
+            if (first) { Nyxus::init_label_record_3 (roi, x, y, 1); first = false; }
+            else Nyxus::update_label_record_3 (roi, x, y, 1);
+            roi.raw_pixels.push_back (Pixel2 (x, y, (PixIntens) 1));
+        };
+        for (int y = 10; y <= 26; y++)
+            for (int x = 10; x <= 26; x++)
+                add (x, y);
+        if (with_line)
+            for (int x = 40; x <= 42; x++)
+                add (x, 15);
+        roi.make_nonanisotropic_aabb();
+        roi.aux_image_matrix = ImageMatrix (roi.raw_pixels);
+        roi.initialize_fvals();
+
+        Fsettings s = make_shape2d_settings();
+        ContourFeature contour;
+        contour.calculate (roi, s);
+        contour.save_value (roi.fvals);
+        FractalDimensionFeature fractal;
+        fractal.calculate (roi, s);
+        fractal.save_value (roi.fvals);
+
+        n_borders = roi.multicontour_.size();
+        return roi.fvals;
+    };
+
+    size_t n_square = 0, n_both = 0;
+    const auto square = fractal_perimeter (false, n_square), both = fractal_perimeter (true, n_both);
+    ASSERT_EQ (n_square, (size_t) 1);
+    ASSERT_EQ (n_both, (size_t) 2);
+    ASSERT_NEAR (square[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], 1.0, 1e-12) << "the square alone is measured 64 at every ruler";
+    ASSERT_NEAR (both[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], 1.0, 1e-12)
+        << "the 3-pixel line was not measured whole at the strides it is too short for";
+}
+
+// The divider's mean ruler at a stride is the mean chord of the borders that stride walks; a border
+// it measures whole adds to the perimeter but not to the ruler. Checked on a disk with four 2x2
+// holes, whose 4-pixel hole borders the strides above 4 take whole, by recomputing the dimension
+// from the ROI's own borders: the least-squares slope of log(perimeter) against log(ruler) over the
+// strides longest/4, longest/8, ..., 1. The same walk with the whole borders' lengths counted into
+// the ruler gives a different dimension, which is what makes the fixture discriminate.
+inline void test_2d_morphology_fractal_perimeter_walked_ruler_invariant()
+{
+    const int R = 20, c = 25;
+    const int holes[4][2] = { { -9, -8 }, { 6, -5 }, { -4, 7 }, { 9, 9 } };
+    LR roi (1);
+    bool first = true;
+    for (int y = c - R; y <= c + R; y++)
+        for (int x = c - R; x <= c + R; x++)
+        {
+            const int dx = x - c, dy = y - c;
+            if (dx * dx + dy * dy > R * R)
+                continue;
+            bool in_hole = false;
+            for (const auto& h : holes)
+                in_hole = in_hole || (dx >= h[0] && dx <= h[0] + 1 && dy >= h[1] && dy <= h[1] + 1);
+            if (in_hole)
+                continue;
+            if (first) { Nyxus::init_label_record_3 (roi, x, y, 1); first = false; }
+            else Nyxus::update_label_record_3 (roi, x, y, 1);
+            roi.raw_pixels.push_back (Pixel2 (x, y, (PixIntens) 1));
+        }
+    roi.make_nonanisotropic_aabb();
+    roi.aux_image_matrix = ImageMatrix (roi.raw_pixels);
+    roi.initialize_fvals();
+
+    Fsettings s = make_shape2d_settings();
+    ContourFeature contour;
+    contour.calculate (roi, s);
+    contour.save_value (roi.fvals);
+    FractalDimensionFeature fractal;
+    fractal.calculate (roi, s);
+    fractal.save_value (roi.fvals);
+    ASSERT_EQ (roi.multicontour_.size(), (size_t) 5);
+
+    // the divider by its definition; 'whole_in_ruler' counts the whole borders into the ruler too
+    auto dimension = [&] (bool whole_in_ruler)
+    {
+        size_t longest = 0;
+        for (const auto& K : roi.multicontour_)
+            longest = std::max (longest, K.size());
+        double sx = 0, sy = 0, sxx = 0, sxy = 0;
+        int n = 0;
+        for (size_t st = longest / 4; st > 0; st /= 2)
+        {
+            double walked = 0, whole = 0;
+            size_t steps = 0;
+            for (const auto& K : roi.multicontour_)
+            {
+                const size_t len = K.size();
+                if (len <= st)
+                {
+                    for (size_t i = 0; len > 1 && i < len; i++)
+                        whole += std::sqrt (K[i].sqdist (K[(i + 1) % len]));
+                    continue;
+                }
+                size_t i = 0;
+                for (; i + st < len; i += st, steps++)
+                    walked += std::sqrt (K[i].sqdist (K[i + st]));
+                walked += std::sqrt (K[i].sqdist (K[0]));
+                steps++;
+            }
+            const double x = std::log ((whole_in_ruler ? walked + whole : walked) / double (steps)),
+                y = std::log (walked + whole);
+            sx += x; sy += y; sxx += x * x; sxy += x * y; n++;
+        }
+        return 1.0 - (n * sxy - sx * sy) / (n * sxx - sx * sx);
+    };
+
+    const double expected = dimension (false);
+    ASSERT_GT (std::abs (dimension (true) - expected), 1e-4) << "the fixture no longer separates the two rulers";
+    ASSERT_NEAR (roi.fvals[(int)Nyxus::Feature2D::FRACT_DIM_PERIMETER][0], expected, 1e-12)
+        << "FRACT_DIM_PERIMETER does not take its mean ruler from the borders the stride walks";
+}
+
+// FRACT_DIM_BOXCOUNT of a long, thin ROI counts its boxes on a grid of side ceil_pow2 of the longer
+// side, but stores only the ROI's bounding box: a 2000 x 3 band with gaps has a 2048-pixel grid and a
+// 2000 x 3 image, not a 2048 x 2048 one. The dimension equals the one counted directly from the pixel
+// coordinates, a box of size s holding pixel (x, y) when it is box ((x - xmin) / s, (y - ymin) / s).
+inline void test_2d_morphology_fractal_boxcount_long_thin_roi_invariant()
+{
+    const int W = 2000, H = 3, x0 = 7, y0 = 11;
+    LR roi (1);
+    bool first = true;
+    for (int y = y0; y < y0 + H; y++)
+        for (int x = x0; x < x0 + W; x++)
+        {
+            const int u = x - x0, v = y - y0;
+            if ((u * 7 + v * 13) % 5 == 0 || (u / 97) % 3 == 1)
+                continue;
+            if (first) { Nyxus::init_label_record_3 (roi, x, y, 1); first = false; }
+            else Nyxus::update_label_record_3 (roi, x, y, 1);
+            roi.raw_pixels.push_back (Pixel2 (x, y, (PixIntens) 1));
+        }
+    roi.make_nonanisotropic_aabb();
+    roi.aux_image_matrix = ImageMatrix (roi.raw_pixels);
+    roi.initialize_fvals();
+    ASSERT_EQ (roi.aabb.get_width(), (StatsInt) W);
+    ASSERT_EQ (roi.aabb.get_height(), (StatsInt) H);
+
+    Power2PaddedImageMatrix pim (roi.raw_pixels, roi.aabb, 1, 1.0);
+    EXPECT_EQ (pim.width, (StatsInt) W);
+    EXPECT_EQ (pim.height, (StatsInt) H) << "the box-counting image is not the ROI's bounding box";
+
+    Fsettings s = make_shape2d_settings();
+    ContourFeature contour;
+    contour.calculate (roi, s);
+    contour.save_value (roi.fvals);
+    FractalDimensionFeature fractal;
+    fractal.calculate (roi, s);
+    fractal.save_value (roi.fvals);
+
+    // The direct count and its least-squares fit of ln N(s) against ln s
+    double sx = 0, sy = 0, sxx = 0, sxy = 0;
+    int n = 0;
+    for (int side = 2048; side > 1; side /= 2)
+    {
+        std::set<std::pair<int, int>> boxes;
+        for (const Pixel2& p : roi.raw_pixels)
+            boxes.insert ({ ((int) p.x - x0) / side, ((int) p.y - y0) / side });
+        const double x = std::log ((double) side), y = std::log ((double) boxes.size());
+        sx += x; sy += y; sxx += x * x; sxy += x * y; n++;
+    }
+    const double expected = 0.0 - (n * sxy - sx * sy) / (n * sxx - sx * sx);
+
+    ASSERT_GT (expected, 0.5);
+    ASSERT_NEAR (roi.fvals[(int)Nyxus::Feature2D::FRACT_DIM_BOXCOUNT][0], expected, 1e-12)
+        << "FRACT_DIM_BOXCOUNT differs from the box count of the ROI's pixel coordinates";
 }

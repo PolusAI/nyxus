@@ -17,52 +17,51 @@ void FractalDimensionFeature::calculate (LR& r, const Fsettings& s)
 	calculate_perimeter_fdim (r);
 }
 
-void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
+namespace
 {
-	const std::vector<Pixel2>& px = r.raw_pixels;
-	if (px.size() < 2)
+	// Box counting is registration sensitive: the ROI is padded tight to a power of two (ceil_pow2)
+	// and aligned to the ROI origin, since centring it on a larger canvas misaligns it with the coarse
+	// boxes and biases the dimension low (a filled square read 1.75 instead of 2.0). Shifting grids
+	// (the minimum count over grid origins, as FracLac does) remove the residual bias, which matters
+	// only where few box sizes fit (small ROIs) and those are cheap to shift. So a padded side of 64
+	// or more, which fits at least 6 box sizes (2, 4, ..., 64) and so a stable single-grid fit, is
+	// counted on one grid, and a padded side of 32 or less over several grid origins.
+	const int MAX_SHIFTED_GRID_SIDE = 32;
+
+	int padded_side (const AABB& aabb)
 	{
-		box_count_fd = 0.;
-		return;
+		return Nyxus::ceil_pow2 ((int) std::max (aabb.get_width(), aabb.get_height()));
 	}
 
-	// Box counting is registration sensitive: the old code padded to a power of two strictly
-	// larger than the ROI and centered it, misaligning the ROI with the coarse boxes and biasing
-	// the dimension low (a filled square read 1.75 instead of 2.0). We pad tight (ceil_pow2) and
-	// align to the ROI origin. Shifting grids (min count over grid origins, as FracLac does)
-	// remove the residual bias, but that only matters when few box sizes fit (small ROIs), and
-	// those are cheap to shift. So auto-switch:
-	//   - large ROI  -> single origin grid via the padded mask matrix (fast early-exit tile scan)
-	//   - small ROI  -> shift the grid over a few origins and take the minimum box count
-	int bigSide = (int)std::max(r.aabb.get_width(), r.aabb.get_height());
-	int paddedSide = Nyxus::ceil_pow2(bigSide);
-
-	std::vector<std::pair<double, double>> coverage;
-
-	// 32: paddedSide > 32 (i.e. >= 64) fits at least 6 box sizes (2,4,...,64), enough for a stable
-	// single-grid least-squares fit; at or below it too few scales remain and grid-registration
-	// bias dominates, so we shift the grid over several origins instead.
-	if (paddedSide > 32)
+	// (box size, boxes holding a ROI pixel) per box size, on the one grid of side 'side' whose origin is
+	// the corner of 'pim', the ROI's bounding box. Only the boxes over the bounding box are visited, the
+	// rest of the grid being empty. tile_contains_signal() stops at a box's first ROI pixel, so a filled
+	// ROI costs about one read per box rather than per pixel.
+	template <class PaddedImage>
+	void count_single_grid (PaddedImage& pim, int side, const AABB& aabb, std::vector<std::pair<double, double>>& coverage)
 	{
-		// Large ROI: single aligned grid. tile_contains_signal early-exits on the first non-zero
-		// pixel, so this is O(#tiles) for filled ROIs - much cheaper than visiting every pixel.
-		Power2PaddedImageMatrix pim(px, r.aabb, 1, 1.0);
-		for (int s = pim.width; s > 1; s /= 2)
+		int w = (int) aabb.get_width(),
+			h = (int) aabb.get_height();
+		for (int s = side; s > 1; s /= 2)
 		{
-			int cnt = 0, nt = pim.width / s;
-			for (int tr = 0; tr < nt; tr++)
-				for (int tc = 0; tc < nt; tc++)
-					if (pim.tile_contains_signal(tr, tc, s))
+			int cnt = 0,
+				ntr = (h + s - 1) / s,
+				ntc = (w + s - 1) / s;
+			for (int tr = 0; tr < ntr; tr++)
+				for (int tc = 0; tc < ntc; tc++)
+					if (pim.tile_contains_signal (tr, tc, s))
 						cnt++;
-			coverage.push_back({ double(s), double(cnt) });
+			coverage.push_back ({ double(s), double(cnt) });
 		}
 	}
-	else
+
+	// (box size, boxes holding a ROI pixel) per box size, the minimum over the grid origins
+	// {0, s/2} along each axis. A box index is coord >> log2(s), the box sizes being powers of two.
+	template <class Cloud>
+	void count_shifted_grids (const Cloud& px, const AABB& aabb, int paddedSide, std::vector<std::pair<double, double>>& coverage)
 	{
-		// Small ROI: shifting grids. n_off grid origins per axis ({0, s/2} for 2 -> 4 positions);
-		// box index = coord >> log2(s) since box sizes are powers of two.
-		auto xmin = r.aabb.get_xmin();
-		auto ymin = r.aabb.get_ymin();
+		auto xmin = aabb.get_xmin();
+		auto ymin = aabb.get_ymin();
 		int n_off = 2;
 		int shift = 0;
 		for (int t = paddedSide; t > 1; t >>= 1)
@@ -93,73 +92,118 @@ void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
 			coverage.push_back({ double(s), double(best) });
 		}
 	}
+}
 
-	// Box-counting dimension = -slope of log(count) vs log(box size)
-	box_count_fd = -loglog_slope(coverage);
+void FractalDimensionFeature::calculate_boxcount_fdim (LR & r)
+{
+	const std::vector<Pixel2>& px = r.raw_pixels;
+	if (px.size() < 2)
+	{
+		box_count_fd = 0.;
+		return;
+	}
+
+	int side = padded_side (r.aabb);
+	std::vector<std::pair<double, double>> coverage;
+	if (side > MAX_SHIFTED_GRID_SIDE)
+	{
+		Power2PaddedImageMatrix pim (px, r.aabb, 1, 1.0);
+		count_single_grid (pim, side, r.aabb, coverage);
+	}
+	else
+		count_shifted_grids (px, r.aabb, side, coverage);
+
+	box_count_fd = boxcount_dimension (coverage);
 }
 
 void FractalDimensionFeature::calculate_boxcount_fdim_oversized (LR & r)
 {
-	Power2PaddedImageMatrix_NT pim ("pim", r.label, r.raw_pixels_NT, r.aabb, 1, 1.0);	// image matrix of the mask
-
-	// Oversized/streaming ROIs are always large, so use a single aligned grid (the same path as
-	// the trivial large-ROI branch); shifting grids are only needed for small ROIs.
-	std::vector<std::pair<double, double>> coverage;
-	int s = pim.get_width();	// square tile size
-	for (; s > 1; s /= 2)
+	// calculate_boxcount_fdim() over the disk-backed pixel cloud and padded image
+	const OutOfRamPixelCloud& px = r.raw_pixels_NT;
+	if (px.size() < 2)
 	{
-		int cnt = 0;
-		int n_tiles = pim.get_width() / s;
-		for (int r = 0; r < n_tiles; r++)
-			for (int c = 0; c < n_tiles; c++)
-			{
-				// check the tile for coverage
-				if (pim.tile_contains_signal(r, c, s))
-					cnt++;
-			}
-
-		coverage.push_back({ double(s), double(cnt) });
+		box_count_fd = 0.;
+		return;
 	}
 
-	box_count_fd = -loglog_slope(coverage);
+	int side = padded_side (r.aabb);
+	std::vector<std::pair<double, double>> coverage;
+	if (side > MAX_SHIFTED_GRID_SIDE)
+	{
+		Power2PaddedImageMatrix_NT pim ("pim", r.label, px, r.aabb, 1, 1.0);
+		count_single_grid (pim, side, r.aabb, coverage);
+	}
+	else
+		count_shifted_grids (px, r.aabb, side, coverage);
+
+	box_count_fd = boxcount_dimension (coverage);
+}
+
+double FractalDimensionFeature::boxcount_dimension (const std::vector<std::pair<double, double>>& coverage)
+{
+	// Box-counting dimension = -slope of log(count) vs log(box size), subtracted from 0 rather than
+	// negated so that a zero slope reads +0
+	return 0.0 - loglog_slope (coverage);
 }
 
 void FractalDimensionFeature::calculate_perimeter_fdim (LR& r)
 {
-	// The divider walks ONE closed contour. merge_multicontour concatenates every contour of the
-	// ROI, so a multi-contour ROI (holes / disconnected fragments) injects spurious seam chords
-	// between them that bias the dimension; this path assumes a single-contour ROI.
-	std::vector<Pixel2> K;
-	r.merge_multicontour(K);
-
-	auto conLen = K.size();
-	if (conLen < 3)
+	// The divider walks each closed border of the ROI -- the outer border of every fragment and the
+	// border of every hole -- on its own, and the borders' lengths and steps are summed per stride.
+	// No step joins one border to another.
+	size_t longest = 0;
+	for (const std::vector<Pixel2>& K : r.multicontour_)
+		longest = std::max (longest, K.size());
+	if (longest < 3)
 	{
 		perim_fd = 0.;
 		return;
 	}
 
-	// Richardson "structured walk" (divider) method on the CLOSED contour K.
-	// For each stride s, walk the contour in steps of s vertices, summing Euclidean chord
-	// lengths and closing the loop back to the start. Record x = mean ruler (chord) length
-	// and y = perimeter estimate. Since log(perimeter) ~ (1 - D) log(ruler), D = 1 - slope.
+	// Richardson "structured walk" (divider) method on the CLOSED borders.
+	// For each stride s, walk every border in steps of s vertices, summing Euclidean chord
+	// lengths and closing each loop back to its start. A border no longer than the stride cannot
+	// have a ruler that long laid along it and is measured whole instead: it adds its closed length,
+	// the length stride 1 measures it at, and no ruler, so the mean ruler is that of the borders the
+	// stride walks. Record x = mean ruler (chord) length and y = perimeter estimate. Since
+	// log(perimeter) ~ (1 - D) log(ruler), D = 1 - slope.
 	// Validated against the analytic Koch snowflake (D = log4/log3 = 1.2619) and a circle (D = 1).
-	std::vector<std::pair<double, double>> coverage;
-	for (size_t s = conLen / 4; s > 0; s /= 2)
+	std::vector<double> closedLen;
+	for (const std::vector<Pixel2>& K : r.multicontour_)
 	{
-		double perim = 0.;
-		size_t nsteps = 0, i = 0;
-		for (; i + s < conLen; i += s)
+		double len = 0.;
+		for (size_t i = 0, n = K.size(); n > 1 && i < n; i++)
+			len += std::sqrt(K[i].sqdist(K[(i + 1) % n]));
+		closedLen.push_back(len);
+	}
+
+	std::vector<std::pair<double, double>> coverage;
+	for (size_t s = longest / 4; s > 0; s /= 2)
+	{
+		double walked = 0., whole = 0.;
+		size_t nsteps = 0;
+		for (size_t k = 0; k < r.multicontour_.size(); k++)
 		{
-			perim += std::sqrt(K[i].sqdist(K[i + s]));
+			const std::vector<Pixel2>& K = r.multicontour_[k];
+			const size_t conLen = K.size();
+			if (conLen <= s)
+			{
+				whole += closedLen[k];
+				continue;
+			}
+			size_t i = 0;
+			for (; i + s < conLen; i += s)
+			{
+				walked += std::sqrt(K[i].sqdist(K[i + s]));
+				nsteps++;
+			}
+			// close the loop from the last visited vertex back to the start
+			walked += std::sqrt(K[i].sqdist(K[0]));
 			nsteps++;
 		}
-		// close the loop from the last visited vertex back to the start
-		perim += std::sqrt(K[i].sqdist(K[0]));
-		nsteps++;
 
-		double ruler = perim / double(nsteps);	// mean chord (ruler) length at this stride
-		coverage.push_back({ ruler, perim });
+		double ruler = walked / double(nsteps);	// mean chord (ruler) length of the walked borders
+		coverage.push_back({ ruler, walked + whole });
 	}
 
 	// Richardson divider dimension: D = 1 - slope of log(perimeter) vs log(ruler)

@@ -9,8 +9,10 @@
 #include <thread>
 #include <future>
 #include <array>
-#include <list>
+#include <deque>
 #include <iomanip>
+#include <stdexcept>
+#include <string>
 #include "moments.h"
 #include "contour.h"
 #include "../globals.h"
@@ -33,9 +35,13 @@ bool ContourFeature::required (const FeatureSet & fset)
 		Feature2D::EDGE_MEAN_INTENSITY,
 		Feature2D::EDGE_STDDEV_INTENSITY,
 		// dependencies:
-		Feature2D::CONVEX_HULL_AREA, 
+		Feature2D::CONVEX_HULL_AREA,
 		Feature2D::SOLIDITY,
 		Feature2D::CIRCULARITY,
+		// the circles, measured to the contour
+		Feature2D::DIAMETER_MIN_ENCLOSING_CIRCLE,
+		Feature2D::DIAMETER_INSCRIBING_CIRCLE,
+		Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE,
 		// weighted spatial moments
 		Feature2D::WEIGHTED_SPAT_MOMENT_00,
 		Feature2D::WEIGHTED_SPAT_MOMENT_01,
@@ -187,460 +193,249 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 	provide_features (ContourFeature::featureset);
 }
 
-//
-// returns neighboring pixels of 'tip'
-//
-/*static*/ std::vector<Pixel2> ContourFeature::find_cands (const std::list<Pixel2> &unordered, const Pixel2 &tip)
+namespace
 {
-	// straight neighbors first
-	std::vector<Pixel2> cands10;
-	for (const Pixel2& px : unordered)
+	// The 8 neighbour directions, clockwise on screen (y pointing down) starting East.
+	const int DIR_DX[8] = { 1, 1, 0, -1, -1, -1, 0, 1 };
+	const int DIR_DY[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+
+	int direction_of (int dx, int dy)
 	{
-		auto dx = std::fabs((int)px.x - (int)tip.x),
-			dy = std::fabs((int)px.y - (int)tip.y);
-		if (dx+dy>1)
-			continue;
-		cands10.push_back (px);
-	}
-
-	// straight neighbors, if any
-	if (cands10.size())
-		return cands10;
-
-	// then diagonal neighbors
-	std::vector<Pixel2> cands11;
-
-	for (const Pixel2& px : unordered)
-	{
-		auto dx = std::fabs((int)px.x - (int)tip.x),
-			dy = std::fabs((int)px.y - (int)tip.y);
-		if (dx==1 && dy==1)
-			cands11.push_back(px);
-	}
-
-	// diagonal neighbors
-	return cands11;
-}
-
-/*static*/ int ContourFeature::get_dial_pos (const Pixel2 &d)
-{
-	/*
-
-	  (-,-)  (0,-)  (+,-)
-		  4    3    2
-			 \ | /
-	(-,0) 5----o----1 (+,0)
-			 / | \
-          6    7    8
-	     -3   -2   -1
-	  (-,+)  (0,+)  (+,+)
-
-	*/
-
-	int p = -1; // initially, no position
-	if (d.x > 0)
-	{
-		if (d.y < 0)
-			p = 2;
-		else
-		if (d.y > 0)
-			p = -1; // eq pos 8;
-		else
-			p = 1;
-	}
-	else
-	if (d.x < 0)
-	{
-		if (d.y < 0)
-			p = 4;
-		else
-		if (d.y > 0)
-			p = -3; // eq pos 6;
-		else
-			p = 5;
-	}
-	else // (d.x == 0)
-	{
-		if (d.y < 0)
-			p = 3;
-		else
-		if (d.y > 0)
-			p = -2; // eq pos 7;
-		else
-			p = 0;
-	}
-	return p;
-}
-
-// returns T if c1 is better than c2 as a contour walking pixel candidate
-/*static*/ bool ContourFeature::better_step (const Pixel2 &o, const Pixel2 &c1, const Pixel2 &c2)
-{
-	Pixel2 dif1 = c1 - o,
-		dif2 = c2 - o;
-	int pos1 = get_dial_pos (dif1),
-		pos2 = get_dial_pos (dif2);
-	return pos1 > pos2;
-}
-
-/*static*/ bool ContourFeature::prune_cands (std::vector<Pixel2> &cands, const Pixel2 &o)
-{
-	if (cands.empty())
-		return false;
-
-	if (cands.size() == 1)
-		return true;
-
-	Pixel2 best = cands[0];
-	for (int i=1; i<cands.size(); i++)
-		if (better_step (o, cands[i], best))
-			best = cands[i];
-
-	cands.clear();
-	cands.push_back (best);
-	return true;
-}
-
-//
-// given a starting element "t" ("tip") of set "R" ("raw"), returns loop's length or 0 if "t" leads to no closing
-//
-/*static*/ int ContourFeature::check_loop(
-	// out
-	std::vector<Pixel2>& S,
-	// in
-	const std::list<Pixel2>& R,
-	const Pixel2& origin)
-{
-	// void loop?
-	if (R.size() == 0)
-		return 0;
-
-	// worker vars
-	std::list<Pixel2> U (R.begin(), R.end());
-	std::vector<Pixel2> P;
-	int looplen = 0;
-
-	//	--initialize vector 'ordered' (S) with 1st pixel of 'unordered' (U) to prevent finding it as a loop element
-	S.push_back (origin);
-	U.remove (origin);
-	Pixel2 pxTip = origin;
-
-	//	-- harvest items of 'unordered' 
-	while (U.size())
-	{
-		//	--find tip's neighbors 
-		std::vector<Pixel2> cands = find_cands (U, pxTip);
-
-		//	--do we have pants?
-		size_t n_cands = cands.size();
-		if (n_cands > 1) 
+		static const int lookup[3][3] =
 		{
-			P.push_back (pxTip);
+			{ 5, 6, 7 },	// dy = -1: NW, N, NE
+			{ 4, -1, 0 },	// dy =  0: W, -, E
+			{ 3, 2, 1 }		// dy = +1: SW, S, SE
+		};
+		return lookup[dy + 1][dx + 1];
+	}
+
+	// The padded image of a ROI and its border labels, held in RAM. The padded image holds each ROI
+	// pixel's intensity + 1 and 0 elsewhere; a label is 0 for background, 1 for a ROI pixel no border
+	// has reached, and +-k for a pixel of border k.
+	class RamGrid
+	{
+	public:
+		RamGrid (const std::vector<PixIntens>& P, int W, int H) : P_(P), W_(W), f_(P.size(), 0)
+		{
+			for (int y = 1; y < H - 1; y++)
+				for (int x = 1; x < W - 1; x++)
+					f_[x + y * W] = P[x + y * W] != 0 ? 1 : 0;
 		}
+		int label (int x, int y) const { return f_[x + y * W_]; }
+		void set_label (int x, int y, int v) { f_[x + y * W_] = v; }
+		PixIntens padded (int x, int y) const { return P_[x + y * W_]; }
+		// the labels of row y, current as of the call
+		const int* row (int y) { return f_.data() + (size_t) y * W_; }
 
-		bool okCand = prune_cands (cands, pxTip);
+	private:
+		const std::vector<PixIntens>& P_;
+		int W_;
+		std::vector<int> f_;
+	};
 
-		switch (cands.size())
+	// The same two images held on disk, for a ROI too large to hold them in RAM. The caller fills the
+	// padded image; the label image starts at 0 and holds only the labels a walk writes (+-k, k >= 2),
+	// a ROI pixel no border has reached reading as 1 off the padded image. Rows are read whole into a
+	// cache of at most ROW_CACHE_BYTES and evicted oldest first, as a walk visits a few neighbouring
+	// rows at a time; a label is written to the disk and to its cached row alike.
+	class DiskGrid
+	{
+	public:
+		DiskGrid (WriteImageMatrix_nontriv& P, WriteImageMatrix_nontriv& f, int W) : P_(P), f_(f), W_(W),
+			capacity_ (std::max ((size_t) 3, ROW_CACHE_BYTES / ((size_t) W * (sizeof(int) + sizeof(PixIntens)))))
+		{}
+		int label (int x, int y) { return load (y).label[x]; }
+		void set_label (int x, int y, int v)
 		{
-		case 0:
+			f_.set_at (x + (size_t) y * W_, v);
+			load (y).label[x] = v;
+		}
+		PixIntens padded (int x, int y) { return load (y).padded[x]; }
+		// the labels of row y, valid until the next call that reads another row
+		const int* row (int y) { return load (y).label.data(); }
+
+	private:
+		static constexpr size_t ROW_CACHE_BYTES = 8 << 20;
+
+		struct Row
+		{
+			std::vector<int> label;
+			std::vector<PixIntens> padded;
+		};
+
+		Row& load (int y)
+		{
+			auto it = rows_.find (y);
+			if (it != rows_.end())
+				return it->second;
+
+			if (rows_.size() >= capacity_)
 			{
-				// Reached the end of the chain. 
-				// Can we close it and observe a loop ("origin" is "pxTip's" neighbor), or we have a loose chain (pxTip has no neighbors)?
-				Pixel2 dist2org = pxTip - origin;
-				if (std::fabs(dist2org.x) == 1 || std::fabs(dist2org.y) == 1)
-				{
-					looplen++;
-					return looplen;
-				}
-				else
-				{
-					if (P.empty())
-						return 0;	// not a loop
-					else
-					{
-						// restore the pre-bifurcation tip and proceed with the other (initially rejected) candidate
-						pxTip = P.back();
-						P.pop_back();
-					}
-				}
+				rows_.erase (order_.front());
+				order_.pop_front();
 			}
-			break;
-		case 1:
-			// trivial loop element
-			looplen++;
-			pxTip = cands[0];
-			S.push_back(pxTip);
-			U.remove(pxTip);
-			break;
-		default:
-			// 2-branch or 3-branch: normally we should not fall through here
-			return 0;	// not a loop
-			break;
+			Row& r = rows_[y];
+			order_.push_back (y);
+
+			P_.get_row (y, buf_);
+			r.padded.assign (buf_.begin(), buf_.end());
+			f_.get_row (y, buf_);
+			r.label.resize (W_);
+			for (int x = 0; x < W_; x++)
+			{
+				int written = (int) buf_[x];
+				r.label[x] = written != 0 ? written : (r.padded[x] != 0 ? 1 : 0);
+			}
+			return r;
+		}
+
+		WriteImageMatrix_nontriv& P_;
+		WriteImageMatrix_nontriv& f_;
+		int W_;
+		size_t capacity_;
+		std::unordered_map<int, Row> rows_;
+		std::deque<int> order_;
+		std::vector<double> buf_;
+	};
+	// Follows one border of the grid's labels from its start pixel (x0, y0), whose background
+	// neighbour lies in direction 'from', and returns the border as a closed walk of 8-connected
+	// steps beginning at (x0, y0), an outer border clockwise on screen and a hole border
+	// counterclockwise. Suzuki & Abe (1985), steps 3.1-3.5: every pixel of the border is labelled
+	// 'nbd', or '-nbd' where the walk examined its background East neighbour, so the raster scan
+	// neither restarts this border nor misses the next one.
+	template <class Grid>
+	std::vector<Pixel2> follow_border (Grid& g, int x0, int y0, int from, int nbd)
+	{
+		auto pixel = [&](int x, int y) { return Pixel2 (x, y, g.padded (x, y) - 1); };	// undecorate the intensity
+
+		std::vector<Pixel2> walk { pixel (x0, y0) };
+
+		// 3.1: the first ROI neighbour clockwise from the background neighbour
+		int d1 = -1;
+		for (int k = 0; k < 8 && d1 < 0; k++)
+		{
+			int d = (from + k) % 8;
+			if (g.label (x0 + DIR_DX[d], y0 + DIR_DY[d]) != 0)
+				d1 = d;
+		}
+		if (d1 < 0)
+		{
+			// an isolated pixel is a border of its own
+			g.set_label (x0, y0, -nbd);
+			return walk;
+		}
+
+		const int x1 = x0 + DIR_DX[d1], y1 = y0 + DIR_DY[d1];
+		int x2 = x1, y2 = y1,	// the walk's previous pixel
+			x3 = x0, y3 = y0;	// the walk's current pixel
+		while (true)
+		{
+			// 3.3: the first ROI neighbour of the current pixel counterclockwise after the previous one
+			const int dprev = direction_of (x2 - x3, y2 - y3);
+			bool eastIsBackground = false;
+			int d4 = dprev;
+			for (int k = 1; k <= 8; k++)
+			{
+				int d = (dprev - k + 16) % 8;
+				if (g.label (x3 + DIR_DX[d], y3 + DIR_DY[d]) != 0)
+				{
+					d4 = d;
+					break;
+				}
+				if (d == 0)
+					eastIsBackground = true;
+			}
+			const int x4 = x3 + DIR_DX[d4], y4 = y3 + DIR_DY[d4];
+
+			// 3.4: label the current pixel
+			if (eastIsBackground)
+				g.set_label (x3, y3, -nbd);
+			else
+				if (g.label (x3, y3) == 1)
+					g.set_label (x3, y3, nbd);
+
+			// 3.5: back at the start, about to repeat the first step. The walk ran counterclockwise on
+			// screen around an outer border; it is returned in the opposite direction, from the same
+			// start pixel, so an outer border runs clockwise on screen. The approximate distance
+			// searches (Pixel2::min_sqdist and co.) depend on that order.
+			if (x4 == x0 && y4 == y0 && x3 == x1 && y3 == y1)
+			{
+				std::reverse (walk.begin() + 1, walk.end());
+				return walk;
+			}
+
+			x2 = x3;
+			y2 = y3;
+			x3 = x4;
+			y3 = y4;
+			walk.push_back (pixel (x3, y3));
 		}
 	}
 
-	return looplen;
+	// Every border of the ROI held in 'g', a padded image of w + 2 by h + 2 pixels, in the raster
+	// order of their start pixels. See gather_multicontour.
+	template <class Grid>
+	void trace_borders (Grid& g, int w, int h, std::vector<std::vector<Pixel2>>& borders, std::vector<bool>* is_hole)
+	{
+		borders.clear();
+		if (is_hole)
+			is_hole->clear();
+
+		int nbd = 1;	// border labels start at 2
+		for (int y = 1; y <= h; y++)
+		{
+			const int* f = g.row (y);
+			for (int x = 1; x <= w; x++)
+			{
+				int from;
+				if (f[x] == 1 && f[x - 1] == 0)
+					from = 4;	// an outer border starts here: its background neighbour is West
+				else
+					if (f[x] >= 1 && f[x + 1] == 0)
+						from = 0;	// a hole border starts here: its background neighbour is East
+					else
+						continue;
+
+				nbd++;
+				borders.push_back (follow_border (g, x, y, from, nbd));
+				if (is_hole)
+					is_hole->push_back (from == 0);
+
+				// the walk may have read other rows since, and labelled pixels of this one
+				f = g.row (y);
+			}
+		}
+	}
 }
 
 /*static*/ void ContourFeature::gather_multicontour (
 	// out
 	std::vector<std::vector<Pixel2>>& multicountour,
 	// in
-	std::vector<PixIntens> P,	// padded image
+	const std::vector<PixIntens>& P,	// padded image
 	int w,
 	int h,
-	int verbose)
+	int verbose,
+	// out, optional
+	std::vector<bool>* is_hole)
 {
-	// This function fills the caller-owned contour container from scratch.
-	// Clearing it up front prevents stale contours from surviving the early
-	// return below when a ROI degenerates to isolated speckles.
-	multicountour.clear();
+	// Every border of the ROI -- the outer border of each 8-connected fragment and the border of each
+	// hole -- as a closed walk of 8-connected steps over the ROI pixels with a 4-neighbour outside
+	// the ROI. Raster-scan border following of Suzuki & Abe (1985), "Topological structural analysis
+	// of digitized binary images by border following", the algorithm behind OpenCV's findContours.
+	// Coordinates are those of the padded image; its one-pixel frame is read as background.
 
-	const int BLANK = 0;
-	bool inside = false;
-	int pos = 0;
+	const int W = w + 2, H = h + 2;
+	if (P.size() != (size_t)W * (size_t)H)
+		throw std::invalid_argument ("gather_multicontour: padded image of " + std::to_string(P.size()) + " pixels is not " + std::to_string(W) + " x " + std::to_string(H));
 
-	//==== Prepare a contour ("border") image
-	std::vector<PixIntens> borderImage((h + 2) * (w + 2), 0);
-
-	// Initialize the entire image to blank
-	for (int y = 0; y < (h + 2); y++)
-		for (int x = 0; x < (w + 2); x++)
-			borderImage.at(x + y * (w + 2)) = BLANK;
-
-	//==== Scan the padded image and fill the border one
-
-	for (int y = 0; y < (h + 2); y++)
-	{
-		for (int x = 0; x < (w + 2); x++)
-		{
-			pos = x + y * (w + 2);
-
-			// Scan for a non-blank pixel
-			PixIntens bi, pi;
-			bi = borderImage.at(pos);
-			pi = P.at(pos);
-			if (bi != 0 && !inside)		// Entering an already discovered border
-			{
-				inside = true;
-			}
-			else if (pi != 0 && inside)	// Already discovered border point
-			{
-				continue;
-			}
-			else if (pi == BLANK && inside)	// Leaving a border
-			{
-				inside = false;
-			}
-			else if (pi != 0 && !inside)	// Undiscovered border point
-			{
-				borderImage.at(pos) = P.at(pos); // Non-blank
-
-				int checkLocationNr = 1;	// The neighbor number of the location we want to check for a new border point
-				int checkPosition;			// The corresponding absolute array address of checkLocationNr
-				int newCheckLocationNr; 	// Variable that holds the neighborhood position we want to check if we find a new border at checkLocationNr
-				int startPos = pos;			// Set start position
-				int counter = 0; 			// Counter is used for the jacobi stop criterion
-				int counter2 = 0; 			// Counter2 is used to determine if the point we have discovered is one single point
-
-				// Defines the neighborhood offset position from current position and the neighborhood
-				// position we want to check next if we find a new border at checkLocationNr
-				int neighborhood[8][2] =
-				{
-						{-1,7},
-						{-3 - w,7},
-						{-w - 2,1},
-						{-1 - w,1},
-						{1,3},
-						{3 + w,3},
-						{w + 2,5},
-						{1 + w,5}
-				};
-
-				// Trace around the neighborhood
-				while (true)
-				{
-					checkPosition = pos + neighborhood[checkLocationNr - 1][0];
-					newCheckLocationNr = neighborhood[checkLocationNr - 1][1];
-
-					PixIntens pi2 = 0;
-					if (checkPosition >= P.size())		// we're done if we start checking outside the image
-						break;
-					pi2 = P.at(checkPosition);
-					if (pi2 != 0) // Next border point found?
-					{
-						if (checkPosition == startPos)
-						{
-							counter++;
-
-							// Stopping criterion (jacob)
-							if (newCheckLocationNr == 1 || counter >= 3)
-							{
-								// Close loop
-								inside = true; // Since we are starting the search at were we first started we must set inside to true
-								break;
-							}
-						}
-
-						checkLocationNr = newCheckLocationNr; // Update which neighborhood position we should check next
-						pos = checkPosition;
-						counter2 = 0; 						// Reset the counter that keeps track of how many neighbors we have visited
-						borderImage.at(checkPosition) = P.at(checkPosition); // Non-blank
-					}
-					else
-					{
-						// Rotate clockwise in the neighborhood
-						checkLocationNr = 1 + (checkLocationNr % 8);
-						if (counter2 > 8)
-						{
-							// If counter2 is above 8, we have sought around the neighborhood and
-							// therefore the border is a single non-blank pixel, and we can exit
-							counter2 = 0;
-							break;
-						}
-						else
-						{
-							counter2++;
-						}
-					}
-				}
-			}
-		}
-	}
+	RamGrid g (P, W, H);
+	trace_borders (g, w, h, multicountour, is_hole);
 
 	if (verbose >= 4)
-		dump_2d_image_1d_layout(borderImage, w + 2, h + 2, "\n\nPadded contour image \n", "\n\n");
-
-	//==== remove padding 
-	std::vector<Pixel2> C;	// current temp contour
-
-	// gather contour pixels undecorating their intensities back to original values
-	Pixel2 lastNonzeroPx(0, 0, 0);
-	for (int y = 0; y < h + 2; y++)
-		for (int x = 0; x < w + 2; x++)
-		{
-			size_t idx = x + y * (w + 2);
-			auto inte = borderImage.at(idx);
-			if (inte)
-			{
-				// this pixel may happen to be isolated (a speckle), nonetheless, remember it 
-				// as we'll need to report it as a degenerate contour if no properly neighbored 
-				// pixel group is found
-				lastNonzeroPx = { x, y, inte - 1 };
-
-				// register a pixel only if it has any immediate neighbor
-				bool hasNeig = false;
-				if (x > 0)	// left neighbor
-				{
-					size_t idxNeig = (x - 1) + y * (w + 2);
-					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
-				}
-				if (x < w - 1)	// right neighbor
-				{
-					size_t idxNeig = (x + 1) + y * (w + 2);
-					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
-				}
-				if (y > 0)	// upper neighbor
-				{
-					size_t idxNeig = x + (y - 1) * (w + 2);
-					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
-				}
-				if (y < h - 1)	// lower neighbor
-				{
-					size_t idxNeig = x + (y + 1) * (w + 2);
-					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
-				}
-				if (x > 0 && y > 0)	// upper left neighbor
-				{
-					size_t idxNeig = (x - 1) + (y - 1) * (w + 2);
-					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
-				}
-				if (x < w - 1 && y > 0)	// upper right neighbor
-				{
-					size_t idxNeig = (x + 1) + (y - 1) * (w + 2);
-					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
-				}
-				if (x > 0 && y < h - 1)	// lower left neighbor
-				{
-					size_t idxNeig = (x - 1) + (y + 1) * (w + 2);
-					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
-				}
-				if (x < w - 1 && y < h - 1)	// lower right neighbor
-				{
-					size_t idxNeig = (x + 1) + (y + 1) * (w + 2);
-					hasNeig = hasNeig || borderImage.at(idxNeig) != 0;
-				}
-				if (!hasNeig)
-					continue;
-				// pixel is good, save it
-				Pixel2 p(x, y, inte - 1);
-				C.push_back(p);
-			}
-		}
-
-	if (verbose >= 4)
-		dump_2d_image_with_vertex_chain(borderImage, C, w + 2, h + 2, "\n\nUnsorted contour cloud (on padded image)\n", "\n\n");
-
-	// no candidates for a contour?
-	if (C.size() == 0)
-		return;
-
-	// C - raw unordered contour
-	// U - unordered subset of C subject to order
-	// S - ordered subset of C
-
-	
-	// fix X-crossing points
-
-	std::vector<Pixel2> C_fix = C;
-	int n_xxings = 0;
-	for (const Pixel2& p : C)
-	{
-		Pixel2 pN (p.x, p.y - 1, p.inten),
-			pS (p.x, p.y + 1, p.inten),
-			pW (p.x - 1, p.y, p.inten),
-			pE (p.x + 1, p.y, p.inten);
-		auto itN = std::find (C_fix.begin(), C_fix.end(), pN);
-		auto itS = std::find (C_fix.begin(), C_fix.end(), pS);
-		auto itE = std::find (C_fix.begin(), C_fix.end(), pE);
-		auto itW = std::find (C_fix.begin(), C_fix.end(), pW);
-		if (itN != C_fix.end() && itS != C_fix.end() && itW != C_fix.end() && itE != C_fix.end())
-		{
-			auto itP = std::find (C_fix.begin(), C_fix.end(), p);
-			C_fix.erase (itP);
-			n_xxings++;
-		}
-	}
-	std::list<Pixel2> U (C_fix.begin(), C_fix.end());
-
-	// find contour by contour
-	while (!U.empty())
-	{
-		std::vector<Pixel2> S;
-		Pixel2 pxTip = U.front();
-
-		int looplen = check_loop (S, U, pxTip);
-		if (looplen)
-		{
-			if (verbose >= 4)
-				dump_2d_image_with_vertex_chain (borderImage, S, w+2, h+2, "\n\nLoop\n", "||S||=" + std::to_string(S.size()) + "\n");
-			
-			multicountour.push_back(S);
-
-			// subtract the newly found contour from U
-			for (Pixel2 & p : S)
-				U.remove (p);
-		}
-		else
-		{
-			// failed loop, optionally look into why it failed
-			if (verbose >= 5)
-				dump_2d_image_with_vertex_chain (borderImage, S, w+2, h+2, "\n\nfailed loop\n", "||S||=" + std::to_string(S.size()) + "\n");
-
-			// subtract the failed loop from U
-			for (Pixel2& p : S)
-				U.remove(p);
-		}
-	}
+		for (size_t k = 0; k < multicountour.size(); k++)
+			dump_2d_image_with_vertex_chain (P, multicountour[k], W, H, "\n\nBorder " + std::to_string(k + 1) + "\n", "||K||=" + std::to_string(multicountour[k].size()) + "\n");
 }
 
 /*static*/ void ContourFeature::buildRegularContour(LR& r, const Fsettings& s)
@@ -656,6 +451,7 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 
 	// Rebuild the contour cache from scratch for this ROI.
 	r.multicontour_.clear();
+	r.multicontour_hole_.clear();
 
 	for (auto px : r.raw_pixels)
 	{
@@ -668,253 +464,57 @@ ContourFeature::ContourFeature() : FeatureMethod("ContourFeature")
 		dump_2d_image_1d_layout(paddedImage, width + 2, height + 2, "\n\n\n ContourFeature / buildRegularContour / Padded image ROI " + std::to_string(r.aabb.get_width()) + " W " + std::to_string(r.aabb.get_height()) + " H \n", "\n\n\n");
 
 	// gather all the contours
-	gather_multicontour (r.multicontour_, paddedImage, width, height, STNGS_VERBOSLVL(s));
+	gather_multicontour (r.multicontour_, paddedImage, width, height, STNGS_VERBOSLVL(s), &r.multicontour_hole_);
 
-	// fix pixel positions back to absolute
+	// padded-image positions back to absolute: the padded image starts one pixel before the AABB
 	for (std::vector<Pixel2> &K : r.multicontour_)
 		for (Pixel2 &p : K)
 		{
-			p.x += base_x;
-			p.y += base_y;
+			p.x += base_x - 1;
+			p.y += base_y - 1;
 		}
 }
 
 void ContourFeature::buildRegularContour_nontriv (LR& r, const Fsettings& s)
 {
-	//==== Pad the image
+	// The contour buildRegularContour() traces, of the same padded image held on disk: a ROI reaches
+	// here because its box is too large for RAM, and the padded image and its border labels are each
+	// the size of that box. The label image is filled by the walks alone (see DiskGrid).
 
 	int width = r.aabb.get_width(),
 		height = r.aabb.get_height(),
-		minx = r.aabb.get_xmin(),
-		miny = r.aabb.get_ymin();
-	int paddingColor = 0;
+		base_x = r.aabb.get_xmin(),
+		base_y = r.aabb.get_ymin();
+	const int W = width + 2, H = height + 2;
 
-	WriteImageMatrix_nontriv paddedImage("paddedImage", r.label);
-	paddedImage.allocate(width + 2, height + 2, paddingColor);
+	WriteImageMatrix_nontriv paddedImage ("paddedImage", r.label),
+		labels ("contourLabels", r.label);
+	// allocate() writes from the file's current position, so each image is allocated once, before
+	// any pixel is set
+	paddedImage.allocate (W, H, 0);
+	labels.allocate (W, H, 0);
 
 	for (auto px : r.raw_pixels_NT)
 	{
 		r.aabb.require_contains (px.x, px.y);
-		auto x = px.x - minx + 1,
-			y = px.y - miny + 1;
-		paddedImage.set_at(x + y * (width + 2), px.inten + 1);	// Decorate the intensity
+		size_t i = (px.x - base_x + 1) + (size_t) (px.y - base_y + 1) * W;
+		paddedImage.set_at (i, (PixIntens) (px.inten + 1));	// as buildRegularContour() stores it
 	}
 
-	const int WHITE = 0;
+	DiskGrid g (paddedImage, labels, W);
+	trace_borders (g, width, height, r.multicontour_, &r.multicontour_hole_);
 
-	bool inside = false;
-	int pos = 0;
+	if (STNGS_VERBOSLVL(s) >= 4)
+		for (size_t k = 0; k < r.multicontour_.size(); k++)
+			std::cout << "ContourFeature / buildRegularContour_nontriv / ROI " << r.label << " border " << k + 1 << " ||K||=" << r.multicontour_[k].size() << "\n";
 
-	//==== Prepare the contour image
-	WriteImageMatrix_nontriv borderImage("borderImage", r.label);
-	// allocate() writes from the file's current position, so it is called on the fresh border image
-	// only; on paddedImage it would zero every slot after the last pixel written above
-	borderImage.allocate(width + 2, height + 2, 0);
-
-	// Set entire image to WHITE
-	for (int y = 0; y < (height + 2); y++)
-		for (int x = 0; x < (width + 2); x++)
+	// padded-image positions back to absolute: the padded image starts one pixel before the AABB
+	for (std::vector<Pixel2> &K : r.multicontour_)
+		for (Pixel2 &p : K)
 		{
-			borderImage.set_at(x + y * (width + 2), WHITE);
+			p.x += base_x - 1;
+			p.y += base_y - 1;
 		}
-
-	//==== Scan 
-	for (int y = 0; y < (height + 2); y++)
-		for (int x = 0; x < (width + 2); x++)
-		{
-			pos = x + y * (width + 2);
-
-			// Scan for BLACK pixel
-			if (borderImage[pos] != 0 /*borderImage[pos] == BLACK*/ && !inside)		// Entering an already discovered border
-			{
-				inside = true;
-			}
-			else if (paddedImage[pos] != 0 /*paddedImage[pos] == BLACK*/ && inside)	// Already discovered border point
-			{
-				continue;
-			}
-			else if (paddedImage[pos] == WHITE && inside)	// Leaving a border
-			{
-				inside = false;
-			}
-			else if (paddedImage[pos] != 0 /*paddedImage[pos] == BLACK*/ && !inside)	// Undiscovered border point
-			{
-				borderImage.set_at(pos, paddedImage[pos]); /*BLACK*/
-
-				int checkLocationNr = 1;	// The neighbor number of the location we want to check for a new border point
-				int checkPosition;			// The corresponding absolute array address of checkLocationNr
-				int newCheckLocationNr; 	// Variable that holds the neighborhood position we want to check if we find a new border at checkLocationNr
-				int startPos = pos;			// Set start position
-				int counter = 0; 			// Counter is used for the jacobi stop criterion
-				int counter2 = 0; 			// Counter2 is used to determine if the point we have discovered is one single point
-
-				// Defines the neighborhood offset position from current position and the neighborhood
-				// position we want to check next if we find a new border at checkLocationNr
-				int neighborhood[8][2] = {
-						{-1,7},
-						{-3 - width,7},
-						{-width - 2,1},
-						{-1 - width,1},
-						{1,3},
-						{3 + width,3},
-						{width + 2,5},
-						{1 + width,5}
-				};
-				// Trace around the neighborhood
-				while (true)
-				{
-					checkPosition = pos + neighborhood[checkLocationNr - 1][0];
-					newCheckLocationNr = neighborhood[checkLocationNr - 1][1];
-
-					if (paddedImage[checkPosition] != 0 /*paddedImage[checkPosition] == BLACK*/) // Next border point found
-					{
-						if (checkPosition == startPos)
-						{
-							counter++;
-
-							// Stopping criterion (jacob)
-							if (newCheckLocationNr == 1 || counter >= 3)
-							{
-								// Close loop
-								inside = true; // Since we are starting the search at were we first started we must set inside to true
-								break;
-							}
-						}
-
-						checkLocationNr = newCheckLocationNr; // Update which neighborhood position we should check next
-						pos = checkPosition;
-						counter2 = 0; 						// Reset the counter that keeps track of how many neighbors we have visited
-						borderImage.set_at(checkPosition, paddedImage[checkPosition]); /*BLACK*/
-					}
-					else
-					{
-						// Rotate clockwise in the neighborhood
-						checkLocationNr = 1 + (checkLocationNr % 8);
-						if (counter2 > 8)
-						{
-							// If counter2 is above 8 we have traced around the neighborhood and
-							// therefore the border is a single black pixel and we can exit
-							counter2 = 0;
-							break;
-						}
-						else
-						{
-							counter2++;
-						}
-					}
-				}
-			}
-		}
-
-	//==== Remove padding and save the contour image as a vector of contour-onlu pixels
-	AABB& bb = r.aabb;
-	int base_x = bb.get_xmin(),
-		base_y = bb.get_ymin();
-	
-	r.multicontour_.clear();
-	r.multicontour_.push_back (std::vector<Pixel2>());
-
-	for (int y = 0; y < height + 2; y++)
-		for (int x = 0; x < width + 2; x++)
-		{
-			size_t idx = x + y * (width + 2);
-			auto inte = borderImage[idx];
-			if (inte)
-			{
-				Pixel2 p(x, y, inte - 1);	// Undecorate the intensity
-				r.multicontour_[0].push_back(p);
-			}
-		}
-
-	//==== Reorder
-	//	--containers for unordered (temp) and ordered (result) pixels
-	std::list<Pixel2> unordered (r.multicontour_[0].begin(), r.multicontour_[0].end());
-	std::vector<Pixel2> ordered;
-	ordered.reserve(unordered.size());
-
-	//	--initialize vector 'ordered' with 1st pixel of 'unordered'
-	auto itBeg = unordered.begin();
-	Pixel2 pxTip = *itBeg;
-	ordered.push_back(pxTip);
-	unordered.remove(pxTip);
-
-	//	--tip of the ordered contour
-	pxTip = ordered[0];
-
-	//	--harvest items of 'unordered' 
-	while (unordered.size())
-	{
-		//	--find the neighbor of the current tip pixel 
-		std::vector<Pixel2> cands;	// candidates
-		for (Pixel2& px : unordered)
-		{
-			//	--test for proximity and skio non-neighbors
-			auto dx = std::fabs((int)px.x - (int)pxTip.x),
-				dy = std::fabs((int)px.y - (int)pxTip.y);
-			if (dx > 1 || dy > 1)
-				continue;	// not a neighbor of pxTip
-
-			//	--we found the neighbor; grab it; make it the new tip pixel; quit this search loop 
-			cands.push_back(px);
-		}
-
-		if (!cands.empty())
-		{
-			int distMin = (int)pxTip.sqdist(cands[0]);
-			int idxMin = 0;
-			for (int i = 1; i < cands.size(); i++)
-			{
-				Pixel2& px = cands[i];
-				int dist = (int)pxTip.sqdist(cands[i]);
-				if (dist < distMin)
-				{
-					idxMin = i;
-					distMin = dist;
-				}
-			}
-			Pixel2& px = cands[idxMin];
-			// find the closest candidate to pxTip
-			ordered.push_back(px);
-			unordered.remove(px);
-			pxTip = ordered[ordered.size() - 1];
-		}
-		else //	--any gaps left by the contour algorithm?
-		{
-			// Most likely cause is the closing pixel is in 'ordered' already and the pixels in 'unordered' are redundant due to the Moore based algorithm above
-			if (STNGS_VERBOSLVL(s) >= 4)
-			{
-				std::cerr << "gap in contour!\n" << "tip pixel: " << pxTip.x << "," << pxTip.y << "\n";
-				std::cerr << "ordered:\n";
-				int i = 1;
-				for (auto& pxo : ordered)
-				{
-					std::cerr << "\t" << pxo.x << "," << pxo.y;
-					if (i++ % 10 == 0)
-						std::cerr << "\n";
-				}
-				std::cerr << "\n";
-
-				int neigR2 = 400;	// squared
-				std::cerr << "unordered around the tip (R^2=" << neigR2 << "):\n";
-				i = 1;
-				for (auto& pxu : unordered)
-				{
-					// filter out the far neighborhood
-					if (pxTip.sqdist(pxu) > neigR2)
-						continue;
-
-					std::cerr << "\t" << pxu.x << "," << pxu.y;
-					if (i++ % 10 == 0)
-						std::cerr << "\n";
-				}
-				std::cerr << "\n";
-			}
-			break;
-		}
-	}
-
-	// replace the unordered contour with ordered one
-	r.multicontour_[0] = ordered;
 }
 
 void ContourFeature::buildWholeSlideContour(LR& r)
@@ -933,6 +533,7 @@ void ContourFeature::buildWholeSlideContour(LR& r)
 	K.push_back(bl);
 	r.multicontour_.clear();
 	r.multicontour_.push_back (K);
+	r.multicontour_hole_.clear();
 }
 
 void ContourFeature::calculate (LR& r, const Fsettings& s)
@@ -942,9 +543,25 @@ void ContourFeature::calculate (LR& r, const Fsettings& s)
 	else
 		buildRegularContour(r, s);
 
-	// flat representation
-	std::vector<Pixel2> K;
-	r.merge_multicontour(K);
+	measure_contour (r);
+}
+
+void ContourFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
+{}
+
+void ContourFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
+{
+	// a whole slide is refused before it reaches the out-of-core path, so only a segmented ROI does
+	buildRegularContour_nontriv(r, s);
+
+	measure_contour (r);
+}
+
+void ContourFeature::measure_contour (LR& r)
+{
+	// the ROI's contour pixels, each once, kept on the ROI for every feature that reads the contour
+	r.merge_multicontour();
+	const std::vector<Pixel2>& K = r.contour_pixels_;
 
 	// is there any contour?
 	if (K.empty())
@@ -960,51 +577,22 @@ void ContourFeature::calculate (LR& r, const Fsettings& s)
 	}
 
 	// ok to calculate features
+	// PERIMETER is the summed length of the ROI's closed contours, each walked back to its start
 	fval_PERIMETER = 0;
-	size_t clen = K.size();
-	for (size_t i = 0; i < clen; i++)
-		if (i == 0)
-		{
-			Pixel2& p1 = K[clen-1],
-				& p2 = K[i];
-			fval_PERIMETER += std::sqrt(p1.sqdist(p2));
-		}
-		else
-		{
-			Pixel2& p1 = K[i-1],
-				& p2 = K[i];
-			fval_PERIMETER += std::sqrt(p1.sqdist(p2));
-		}
+	for (const std::vector<Pixel2>& C : r.multicontour_)
+	{
+		size_t clen = C.size();
+		if (clen < 2)
+			continue;
+		for (size_t i = 0; i < clen; i++)
+			fval_PERIMETER += std::sqrt (C[i == 0 ? clen - 1 : i - 1].sqdist(C[i]));
+	}
 
 	fval_DIAMETER_EQUAL_PERIMETER = fval_PERIMETER / M_PI;
 	auto [cmin, cmax, cmean, cstddev] = calc_min_max_mean_stddev_intensity (K);
 	fval_EDGE_MEAN_INTENSITY = cmean;
 	fval_EDGE_STDDEV_INTENSITY = cstddev;
 	fval_EDGE_MAX_INTENSITY  = cmax;
-	fval_EDGE_MIN_INTENSITY = cmin;
-
-	fval_EDGE_INTEGRATEDINTENSITY = 0;
-	for (const Pixel2 &px : K)
-		fval_EDGE_INTEGRATEDINTENSITY += px.inten;
-}
-
-void ContourFeature::osized_add_online_pixel(size_t x, size_t y, uint32_t intensity)
-{}
-
-void ContourFeature::osized_calculate (LR& r, const Fsettings& s, ImageLoader& imloader)
-{
-	buildRegularContour_nontriv(r, s);	// leaves the contour pixels in field 'contour'
-
-	std::vector<Pixel2> K;
-	r.merge_multicontour(K);
-
-	//=== Calculate the features
-	fval_PERIMETER = (StatsInt) K.size();
-	fval_DIAMETER_EQUAL_PERIMETER = fval_PERIMETER / M_PI;
-	auto [cmin, cmax, cmean, cstddev] = calc_min_max_mean_stddev_intensity (K);
-	fval_EDGE_MEAN_INTENSITY = cmean;
-	fval_EDGE_STDDEV_INTENSITY = cstddev;
-	fval_EDGE_MAX_INTENSITY = cmax;
 	fval_EDGE_MIN_INTENSITY = cmin;
 
 	fval_EDGE_INTEGRATEDINTENSITY = 0;

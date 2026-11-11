@@ -239,17 +239,15 @@ def test_2d_ooc_2d_morphology_matches_in_ram_invariant(tmp_path):
     _ooc_vs_ram_2d(tmp_path, ["*ALL_MORPHOLOGY*"])
 
 
-# The fixture every _ooc_vs_ram_2d test above uses is a full-image RECTANGLE, and that shape cannot
-# discriminate the contour features: every step around a rectangle's boundary is an axis-aligned unit
-# step, so the contour pixel COUNT and the sum of Euclidean step lengths are the same number. The
-# out-of-core path computes PERIMETER the first way and the in-RAM path the second
-# (contour.cpp: osized_calculate sets fval_PERIMETER = K.size(), calculate sums sqrt(sqdist)), and on
-# a rectangle that difference is invisible. It stayed invisible here for as long as this file has
-# existed. A disk has a genuinely diagonal boundary, so the two definitions separate.
+# The fixture every _ooc_vs_ram_2d test above uses is a full-image RECTANGLE at the image origin, and
+# that shape cannot discriminate the contour features: every step around a rectangle's boundary is an
+# axis-aligned unit step, so the contour's pixel count and its length are the same number, and its
+# bounding box starts where the image does. A disk away from the origin has a diagonal boundary and a
+# bounding box that does not.
 def _disk_pair(tmp_path):
-    """bench_disk64_diagonal_boundary, built by test_data.disk64_arrays() so the three modules that
-    read this fixture cannot drift apart. ram_limit=0 forces the oversized branch for any ROI, so it
-    does not have to be large to reach the out-of-core path."""
+    """bench_disk64_diagonal_boundary, built by test_data.disk64_arrays() so the modules that read
+    this fixture cannot drift apart. ram_limit=0 forces the oversized branch for any ROI, so it does
+    not have to be large to reach the out-of-core path."""
     return test_data.write_disk64_pair(tmp_path, tifffile, as_dirs=True)
 
 
@@ -264,12 +262,14 @@ def assert_ooc_agrees(df_ram, df_ooc, feature):
 
 
 def test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invariant(tmp_path):
-    """The five EDGE_* statistics and MASS_DISPLACEMENT must agree out-of-core on a shape whose
-    boundary is diagonal, not only on the rectangle the other tests use.
+    """The contour's own features, MASS_DISPLACEMENT and ROI_RADIUS_* must agree out-of-core on a
+    shape whose boundary is diagonal, not only on the rectangle the other tests use.
 
-    This is the cell tests/vetting/matrix/morphology.md records for the out-of-core contour path.
-    PERIMETER is deliberately NOT among them: it does NOT agree, and that divergence is pinned as a
-    known defect in test_2d_ooc_regression.py rather than hidden by leaving this fixture rectangular.
+    This is the cell tests/vetting/matrix/morphology.md records for the out-of-core contour path. On
+    a diagonal boundary the contour's pixel count and its length are different numbers, so PERIMETER
+    tells a path that counts pixels from one that sums step lengths. The disk lies away from the
+    image origin, so ROI_RADIUS_MEAN and ROI_RADIUS_MEDIAN tell a contour placed in absolute
+    coordinates from one left relative to the bounding box.
     """
     intdir, segdir = _disk_pair(tmp_path)
     feats = ["*ALL_MORPHOLOGY*", "*BASIC_MORPHOLOGY*"]
@@ -282,12 +282,210 @@ def test_2d_ooc_2d_contour_intensity_matches_in_ram_on_diagonal_boundary_invaria
     _set_ram_limit_mb(n_ooc, 0)          # 0 forces the oversized branch for any ROI
     df_ooc = n_ooc.featurize_directory(intdir, segdir)
 
+    assert_ooc_agrees(df_ram, df_ooc, "PERIMETER")
+    assert_ooc_agrees(df_ram, df_ooc, "DIAMETER_EQUAL_PERIMETER")
+    assert_ooc_agrees(df_ram, df_ooc, "ROI_RADIUS_MEAN")
+    assert_ooc_agrees(df_ram, df_ooc, "ROI_RADIUS_MAX")
+    assert_ooc_agrees(df_ram, df_ooc, "ROI_RADIUS_MEDIAN")
     assert_ooc_agrees(df_ram, df_ooc, "MASS_DISPLACEMENT")
     assert_ooc_agrees(df_ram, df_ooc, "EDGE_MEAN_INTENSITY")
     assert_ooc_agrees(df_ram, df_ooc, "EDGE_STDDEV_INTENSITY")
     assert_ooc_agrees(df_ram, df_ooc, "EDGE_MAX_INTENSITY")
     assert_ooc_agrees(df_ram, df_ooc, "EDGE_MIN_INTENSITY")
     assert_ooc_agrees(df_ram, df_ooc, "EDGE_INTEGRATED_INTENSITY")
+
+
+# Every 2D feature whose value is computed from the ROI's contour: the contour's own features, those
+# built on PERIMETER, the circles, the ROI radii, the fractal dimensions, the moments weighted by the
+# distance to the contour and the radial distribution. Matched by exact code or by prefix.
+CONTOUR_FEATURE_CODES = (
+    "PERIMETER", "DIAMETER_EQUAL_PERIMETER", "EDGE_MEAN_INTENSITY", "EDGE_STDDEV_INTENSITY",
+    "EDGE_MAX_INTENSITY", "EDGE_MIN_INTENSITY", "EDGE_INTEGRATED_INTENSITY",
+    "CIRCULARITY", "GEODETIC_LENGTH", "THICKNESS",
+    "DIAMETER_MIN_ENCLOSING_CIRCLE", "DIAMETER_INSCRIBING_CIRCLE", "DIAMETER_CIRCUMSCRIBING_CIRCLE",
+    "ROI_RADIUS_MEAN", "ROI_RADIUS_MAX", "ROI_RADIUS_MEDIAN",
+    "FRACT_DIM_BOXCOUNT", "FRACT_DIM_PERIMETER",
+)
+CONTOUR_FEATURE_PREFIXES = (
+    "WEIGHTED_SPAT_MOMENT_", "WEIGHTED_CENTRAL_MOMENT_", "WT_NORM_CTR_MOM_", "WEIGHTED_HU_M",
+    "IMOM_WRM_", "IMOM_WCM_", "IMOM_WNCM_", "IMOM_WHU",
+    "FRAC_AT_D_", "MEAN_FRAC_", "RADIAL_CV_",
+)
+
+# The neighbour features are measured between ROIs, by a pass over every ROI's contour at once that
+# the out-of-core path does not run, so out of core they keep their initial values. POLYGONALITY_AVE
+# and HEXAGONALITY_* are computed only for a ROI with neighbours. All of them are left out here.
+NEIGHBOR_FEATURE_PREFIXES = (
+    "NUM_NEIGHBORS", "PERCENT_TOUCHING", "CLOSEST_NEIGHBOR", "ANG_BW_NEIGHBORS", "POLYGONALITY_",
+    "HEXAGONALITY_",
+)
+
+
+def _is_contour_feature(col):
+    return col in CONTOUR_FEATURE_CODES or col.startswith(CONTOUR_FEATURE_PREFIXES)
+
+
+def _write_pair(tmp_path, mask, inten=None, tile=None):
+    """Write one intensity + mask pair as TIFFs, tiled `tile` x `tile` when `tile` is given. The
+    default intensity is a gradient, so the edge and intensity-weighted features see distinct
+    pixel values."""
+    if inten is None:
+        yy, xx = np.mgrid[0:mask.shape[0], 0:mask.shape[1]]
+        inten = 1 + xx + 3 * yy
+    intdir = tmp_path / "int"
+    segdir = tmp_path / "seg"
+    intdir.mkdir()
+    segdir.mkdir()
+    kw = {"tile": (tile, tile)} if tile else {}
+    tifffile.imwrite(str(intdir / "img.tif"), inten.astype(np.uint32), **kw)
+    tifffile.imwrite(str(segdir / "img.tif"), mask.astype(np.uint32), **kw)
+    if tile:
+        with tifffile.TiffFile(str(segdir / "img.tif")) as tf:
+            assert tf.pages[0].is_tiled
+    return str(intdir) + os.sep, str(segdir) + os.sep
+
+
+def _contour_mask(name):
+    """(mask, tile, anisotropy_x) of one contour fixture."""
+    if name == "offset_rectangle":
+        # a 3 x 5 rectangle away from the image origin: a contour left relative to the bounding box
+        # lies (4, 7) pixels from the ROI it is measured against
+        m = np.zeros((20, 20), np.uint32)
+        m[7:10, 4:9] = 1
+        return m, None, 1.0
+    if name == "diagonal_disk":
+        # a disk: its boundary steps diagonally, so a pixel count is not its length
+        yy, xx = np.mgrid[0:64, 0:64]
+        return (((xx - 31.5) ** 2 + (yy - 31.5) ** 2) <= 20 ** 2).astype(np.uint32), None, 1.0
+    if name == "holed_square":
+        # one outer border and one hole border
+        m = np.zeros((40, 40), np.uint32)
+        m[5:29, 5:29] = 1
+        m[12:22, 12:22] = 0
+        return m, None, 1.0
+    if name == "two_fragments":
+        # one label in two separate pieces, each with an outer border of its own
+        m = np.zeros((80, 80), np.uint32)
+        m[5:30, 5:30] = 1
+        m[40:65, 45:70] = 1
+        return m, None, 1.0
+    if name == "small_irregular":
+        # the worked example of the fractal dimension page: padded side 16, so box counting takes
+        # the minimum count over shifted grids
+        M = np.array([
+            [0, 0, 1, 1, 0, 0, 0, 0, 0, 0],
+            [0, 1, 1, 1, 1, 0, 0, 1, 1, 0],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+            [1, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+            [0, 1, 1, 1, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 1, 1, 1, 0],
+            [0, 0, 1, 1, 0, 0, 1, 1, 1, 1],
+            [0, 0, 0, 0, 0, 0, 0, 1, 1, 0]], np.uint32)
+        m = np.zeros((20, 20), np.uint32)
+        m[5:14, 3:13] = M
+        return m, None, 1.0
+    if name == "two_rois":
+        # two labels in one image: the out-of-core path measures them one after the other with
+        # the same feature instances
+        m = np.zeros((128, 128), np.uint32)
+        m[0:21, 0:21] = 1
+        yy, xx = np.mgrid[0:128, 0:128]
+        m[((xx - 100) ** 2 + (yy - 90) ** 2) <= 15 ** 2] = 2
+        return m, None, 1.0
+    if name == "multi_tile":
+        # a holed ROI away from the origin across 32 x 32 tiles of a 160 x 96 image, plus a second
+        # piece of the same label in another tile
+        m = np.zeros((96, 160), np.uint32)
+        m[20:80, 40:130] = 1
+        m[40:60, 70:100] = 0
+        m[84:92, 140:156] = 1
+        return m, 32, 1.0
+    if name == "anisotropic_disk":
+        # a disk of radius 8, resampled twice along x
+        yy, xx = np.mgrid[0:40, 0:40]
+        return (((xx - 20) ** 2 + (yy - 20) ** 2) <= 64).astype(np.uint32), None, 2.0
+    raise ValueError(name)
+
+
+CONTOUR_FIXTURES = ("offset_rectangle", "diagonal_disk", "holed_square", "two_fragments",
+                    "small_irregular", "two_rois", "multi_tile", "anisotropic_disk")
+
+
+def _featurize_both_paths(tmp_path, mask, tile=None, aniso=1.0, feats=("*ALL*",)):
+    """(in-RAM frame, out-of-core frame) of one pair, rows sorted by ROI_label."""
+    intdir, segdir = _write_pair(tmp_path, mask, tile=tile)
+    frames = []
+    for ram_mb in (RAM_LIMIT_LARGE_MB, 0):    # 0 forces the oversized branch for any ROI
+        kw = {"anisotropy_x": aniso} if aniso != 1.0 else {}
+        nyx = nyxus.Nyxus(list(feats), **kw)
+        _set_ram_limit_mb(nyx, ram_mb)
+        frames.append(nyx.featurize_directory(intdir, segdir).sort_values("ROI_label").reset_index(drop=True))
+    return frames
+
+
+@pytest.mark.parametrize("fixture", CONTOUR_FIXTURES)
+def test_2d_ooc_2d_contour_features_match_in_ram_invariant(tmp_path, fixture):
+    """Every contour-based feature of a ROI forced out of core equals its in-memory value.
+
+    Each fixture is a shape on which a contour that differs from the in-memory one changes values:
+    a ROI away from the image origin (a contour relative to the bounding box), a diagonal boundary
+    (PERIMETER as a pixel count), a hole and a second fragment (a contour of one border), a small
+    irregular ROI (box counting on a single grid), two ROIs in one image (state carried from one
+    ROI to the next), a ROI across several tiles, and an anisotropic ROI (a contour of the resampled
+    ROI). Every column but the neighbour features is compared, and the comparison is required to
+    include every contour-based feature code."""
+    mask, tile, aniso = _contour_mask(fixture)
+    df_ram, df_ooc = _featurize_both_paths(tmp_path, mask, tile=tile, aniso=aniso)
+
+    assert list(df_ram["ROI_label"]) == list(df_ooc["ROI_label"])
+    cols = [c for c in _feature_cols(df_ram)[0] if not c.startswith(NEIGHBOR_FEATURE_PREFIXES)]
+    contour_cols = [c for c in cols if _is_contour_feature(c)]
+    missing = [c for c in CONTOUR_FEATURE_CODES if c not in contour_cols]
+    assert not missing, "contour features missing from the frame: %r" % missing
+    for p in CONTOUR_FEATURE_PREFIXES:
+        assert any(c.startswith(p) for c in contour_cols), "no %s* column in the frame" % p
+
+    # Tolerance: same build, same contour, same formulas; only the order the pixels are visited in
+    # differs, and so the float summation order.
+    bad = []
+    for row in range(df_ram.shape[0]):
+        lab = int(df_ram["ROI_label"].iloc[row])
+        for c in cols:
+            p = float(df_ram[c].iloc[row])
+            q = float(df_ooc[c].iloc[row])
+            if np.isnan(p) and np.isnan(q):
+                continue
+            if np.isnan(p) != np.isnan(q) or abs(p - q) > 1e-6 * max(abs(p), abs(q), 1.0) + 1e-9:
+                bad.append((lab, c, p, q))
+    assert not bad, "%s: out-of-core features diverge from in-RAM: %r" % (fixture, bad[:10])
+
+
+def test_2d_ooc_2d_offset_rectangle_contour_features_are_analytic_invariant(tmp_path):
+    """Both paths give the analytic values on the 3 x 5 rectangle away from the image origin.
+
+    The centroid is (6, 8) and the farthest contour pixels are the corners, 1 down and 2 across, so
+    the circumscribing circle's diameter is 2 sqrt(5). The three middle-row interior pixels lie 1
+    from the contour and the other twelve on it, so ROI_RADIUS_MEAN is 3/15, ROI_RADIUS_MAX 1 and
+    ROI_RADIUS_MEDIAN 0. The in-memory value is part of the check: agreeing on a value that moved
+    would not satisfy it."""
+    mask, _, _ = _contour_mask("offset_rectangle")
+    for df in _featurize_both_paths(tmp_path, mask, feats=("*ALL_MORPHOLOGY*",)):
+        assert float(df["DIAMETER_CIRCUMSCRIBING_CIRCLE"].iloc[0]) == pytest.approx(2 * np.sqrt(5), rel=1e-12)
+        assert float(df["ROI_RADIUS_MEAN"].iloc[0]) == pytest.approx(0.2, rel=1e-12)
+        assert float(df["ROI_RADIUS_MAX"].iloc[0]) == pytest.approx(1.0, rel=1e-12)
+        assert float(df["ROI_RADIUS_MEDIAN"].iloc[0]) == pytest.approx(0.0, abs=1e-12)
+        assert float(df["PERIMETER"].iloc[0]) == pytest.approx(12.0, rel=1e-12)
+
+
+def test_2d_ooc_2d_boxcount_of_two_box_sizes_is_positive_zero_invariant(tmp_path):
+    """A 2 x 2 square leaves too few box sizes to fit a slope, so FRACT_DIM_BOXCOUNT is 0 on both
+    paths, with a positive sign."""
+    mask = np.zeros((8, 8), np.uint32)
+    mask[3:5, 2:4] = 1
+    for df in _featurize_both_paths(tmp_path, mask, feats=("*ALL_MORPHOLOGY*",)):
+        v = float(df["FRACT_DIM_BOXCOUNT"].iloc[0])
+        assert v == 0.0 and not np.signbit(v), "FRACT_DIM_BOXCOUNT is %r" % v
 
 
 def test_2d_ooc_2d_zernike_matches_in_ram_invariant(tmp_path):
@@ -347,6 +545,43 @@ def _make_pair_2d_two_rois(tmp_path, size=128):
     return str(intdir) + os.sep, str(segdir) + os.sep
 
 
+def test_2d_ooc_2d_one_pixel_roi_after_ordinary_roi_matches_in_ram_invariant(tmp_path):
+    """A one-pixel ROI computed after an ordinary ROI in the same out-of-core run. It has no chords
+    and an empty convex hull, so the chord features must read 0 rather than the previous ROI's values
+    (one feature instance serves every out-of-core ROI) and the Martin and Nassenstein diameters must
+    take the guard for an empty hull rather than read past it. Those diameters are requested without
+    any convex hull feature, so the ordinary ROI's nonzero values also require their dependency on
+    the hull."""
+    inten = np.arange(1, 64 * 64 + 1, dtype=np.uint32).reshape(64, 64)
+    mask = np.zeros((64, 64), np.uint32)
+    mask[5:35, 5:35] = 1
+    mask[50, 50] = 2
+    intdir = tmp_path / "int"
+    segdir = tmp_path / "seg"
+    intdir.mkdir()
+    segdir.mkdir()
+    tifffile.imwrite(str(intdir / "img.tif"), inten)
+    tifffile.imwrite(str(segdir / "img.tif"), mask)
+
+    feats = ["MAXCHORDS_MAX", "MAXCHORDS_MEAN", "ALLCHORDS_MAX", "ALLCHORDS_MEAN",
+             "STAT_MARTIN_DIAM_MAX", "STAT_MARTIN_DIAM_MEAN",
+             "STAT_NASSENSTEIN_DIAM_MAX", "STAT_NASSENSTEIN_DIAM_MEAN"]
+    frames = []
+    for limit in (RAM_LIMIT_LARGE_MB, 0):
+        n = nyxus.Nyxus(feats)
+        _set_ram_limit_mb(n, limit)
+        df = n.featurize_directory(str(intdir) + os.sep, str(segdir) + os.sep)
+        frames.append(df.sort_values("ROI_label").reset_index(drop=True))
+    df_ram, df_ooc = frames
+
+    assert df_ooc["MAXCHORDS_MAX"].iloc[0] > 0, "the ordinary ROI must have chords to leak"
+    assert df_ooc["STAT_MARTIN_DIAM_MAX"].iloc[0] > 0
+    assert df_ooc["STAT_NASSENSTEIN_DIAM_MAX"].iloc[0] > 0
+    for c in feats:
+        assert df_ooc[c].to_numpy() == pytest.approx(df_ram[c].to_numpy(), rel=1e-6, abs=1e-9), c
+        assert df_ooc[c].iloc[1] == 0, c
+
+
 def test_2d_ooc_2d_two_rois_no_state_leak_invariant(tmp_path):
     """A non-degenerate ROI and a degenerate (constant) ROI in the same image, all feature groups.
     The out-of-core feature loop reuses one persistent feature-method instance across ROIs (unlike
@@ -357,10 +592,9 @@ def test_2d_ooc_2d_two_rois_no_state_leak_invariant(tmp_path):
     assign(). Also guards the ellipse-fitting family, whose out-of-core body had drifted from the
     in-RAM formulas for eccentricity/elongation and disagreed on any non-circular ROI.
 
-    Scoped to families whose out-of-core body this change makes match the in-RAM path. Neighbor,
-    enclosing/inscribing-circle, ROI-radius and distance-weighted-moment families have separate,
-    pre-existing out-of-core gaps (the streaming path does not run the cross-ROI neighbor reduce and
-    discards the contour data those need); they are intentionally not asserted here."""
+    Scoped to the families whose state a degenerate ROI must reset. The contour-based features of two
+    ROIs in one image are compared by test_2d_ooc_2d_contour_features_match_in_ram_invariant; the
+    neighbour features are not compared out of core at all (see NEIGHBOR_FEATURE_PREFIXES)."""
     intdir, segdir = _make_pair_2d_two_rois(tmp_path)
 
     n_ram = nyxus.Nyxus(ALL_2D_FEATURE_GROUPS)

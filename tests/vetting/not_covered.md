@@ -22,7 +22,7 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 Both totals are the sum of the two tables below, counting each distinct file once and
 skipping any row struck through as closed, so they can be recomputed from the tables.
 
-### A.1 Correctly absent — plumbing, fixtures and framework self-tests (24 files)
+### A.1 Correctly absent — plumbing, fixtures and framework self-tests (26 files)
 
 These assert no feature value, so they have no `(feature × config × oracle)` row by construction
 (SPEC §1). Recording them here so their absence is a documented decision, not an oversight.
@@ -33,7 +33,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_arrow_mechanics.h` | 2 | Arrow + Parquet writer plumbing |
 | `test_arrow_file_name_mechanics.h` | 1 | output-file naming rules |
 | `test_2d_glcm_mechanics.h` | 1 | guards the `GLCM_OFFSET` default (a setting, not a value) |
-| `test_2d_radial_mechanics.h` | 3 | contour frame, centre pixel and normalising radius — the wiring the radial goldens depend on. **Uncredited by decision, not by construction:** see the note below the table |
+| `test_2d_radial_mechanics.h` | 6 | contour frame, centre pixel and normalising radius — the wiring the radial goldens depend on — and the one-pixel, two-pixel and two-fragment ROIs. **Uncredited by decision, not by construction:** see the note below the table |
 | `test_initialization_mechanics.h` | 1 | environment init |
 | `test_2d_omezarr_mechanics.h` | 14 | OME-Zarr tile/raw loader, including the load-time intensity map on signed and real-valued stores, and the unsigned accessor on every sample class it cannot convert |
 | `test_2d_intensity_degenerate_roi_mechanics.h` | 3 | the intensity ratios — `QCOD`, `UNIFORMITY_PIU` and `COV` — on a populated ROI of one grey level, read before the output NaN substitution, and the empty-ROI guard |
@@ -42,6 +42,8 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_2d_intensity_constant_roi_mechanics.py` | 4 | an ROI of one intensity end to end, on a mapped and on an identity-map slide, through the in-RAM and the out-of-core paths; pins the reported values, not an oracle |
 | `test_3d_nifti_offset_map_mechanics.py` | 4 | the NIfTI load-time maps on a fractional `scl_slope` — rounded on the offset map under `--preserve-hu`, exact on the stored map without it — and a non-finite voxel taking grey level 0 either way; loader plumbing, no oracle |
 | `test_roi_blacklist_mechanics.h` | 1 | ROI blacklisting |
+| `test_2d_moments_mechanics.h` | 1 | the whole-slide weighting on a slide one pixel wide or high whose box ends on its last pixel, so its contour has fewer than 4 distinct corners; a degenerate-input guard that a file run, whose whole-slide box ends one past the last pixel, never reaches |
+| `test_2d_contour_mechanics.h` | 1 | `BorderedContour` refuses to bind a temporary pixel vector; a compile-time property of the type |
 | `test_2d_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
 | `test_2d_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
 | `test_2d_ooc_mechanics.py` | 1 | oversized-montage failure path |
@@ -52,13 +54,19 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 **`test_2d_radial_mechanics.h` is the one row here that is a judgement rather than a construction.**
 Its third case does read three feature values, so the rule the rest of this table rests on — asserts
 no feature value, therefore no `(feature × config × oracle)` row — does not by itself place it. It is
-uncredited for a different reason: all three cases pin behaviour that
-`audit/radial_2d_cellprofiler_vetting_report.md` §6 shows is wrong (defects 1-3), so each correction
-should invalidate the assertions that characterize the defect it fixes. Listing it in `current_test`
+uncredited for a different reason: its second and third case pin behaviour that
+`audit/radial_2d_cellprofiler_vetting_report.md` §6 shows is wrong (defects 2-3), so each correction
+should invalidate the assertions that characterize the defect it fixes. The other cases are
+requirements, kept beside the wiring they exercise and under the same exclusion. Listing it in `current_test`
 for `FRAC_AT_D`, `MEAN_FRAC` and
 `RADIAL_CV` would make those defects acceptance criteria for the three features (PR #444 review,
 item 4). `audit/scan_radial_coverage.py` carries the exclusion as a declared `UNCREDITED` entry and
 fails in both directions, so the decision cannot be reversed by editing only the registry.
+
+`test_2d_contour_invariant.h` is credited on the `PERIMETER` and `EDGE_*` rows, and two of its
+functions sit outside them: the distance-search invariants, which assert `Pixel2::min_sqdist` and
+`max_sqdist` against exhaustive scans rather than a feature value, and so have no row for the reason
+this table gives.
 
 ### A.2 Assert feature values but no row lists them — real gaps (7 files)
 
@@ -360,7 +368,7 @@ carry numbers.
 
 **An oracle-suffixed test asserted a feature the registry says has no oracle (2D neighbour).**
 `test_2d_neighbor_percent_touching_enclosed_analytic` lived in `test_2d_neighbor_analytic.h` and
-asserted `PERCENT_TOUCHING`, whose registry row correctly reads `status=regression` with an empty
+asserted `PERCENT_TOUCHING`, whose registry row then read `status=regression` with an empty
 oracle. Every coverage scanner in this tree -- `check_test_names.py`, `report_feature_tests.py`, the
 per-family `scan_*` scripts -- attributes an oracle from the test function's **name suffix**, so a
 scan would have credited the feature with `oracle=analytic`. What the function actually asserts are
@@ -529,58 +537,41 @@ It is set on this path; the value is not the fallback `1`.
 
 ---
 
-## G. Code paths whose two implementations are required to agree and do not
+## G. Code paths whose two implementations are required to agree
 
 `CLAUDE.md` states the rule these rows are measured against: "the in-RAM path and the out-of-core
 path must produce identical values." Where they do not, the gap is a defect rather than a
-convention, and the registry says so in `flag=impl-defect`.
+convention, and the registry says so in `flag=impl-defect`. No 2D contour row carries that flag:
+the out-of-core contour is the in-RAM one, and every contour-based feature agrees across the two
+paths.
 
-| feature | in-RAM | out-of-core | gap |
-|---|---:|---:|---|
-| 2D `PERIMETER` | 131.88225099390849 | 112.0 | 15%, and the out-of-core value is an integer |
-| 2D `DIAMETER_EQUAL_PERIMETER` | 41.97942430353313 | 35.65070725258456 | the same ratio, inherited |
-| 2D `ROI_RADIUS_MEAN` | 6.087109772358636 | 7.169174091182726 | +17.8% |
-| 2D `ROI_RADIUS_MEDIAN` | 5.0 | 6.708203932499369 | +34% |
+| feature | in-RAM | out-of-core |
+|---|---:|---:|
+| 2D `PERIMETER` | 131.88225099390849 | 131.88225099390849 |
+| 2D `DIAMETER_EQUAL_PERIMETER` | 41.97942430353313 | 41.97942430353313 |
+| 2D `ROI_RADIUS_MEAN` | 6.047026418093836 | 6.047026418093836 |
+| 2D `ROI_RADIUS_MEDIAN` | 5.0 | 5.0 |
 
-`ContourFeature::calculate()` sums Euclidean step lengths around the contour;
-`ContourFeature::osized_calculate()` sets `fval_PERIMETER = (StatsInt) K.size()`, the contour pixel
-**count**. Measured on `bench_disk64_diagonal_boundary`. The out-of-core value being exactly an
-integer — and equal to that fixture's 112 edge pixels — is what identifies the definition, rather
-than accumulation order, as the cause.
+Measured on `bench_disk64_diagonal_boundary`. `ContourFeature::calculate()` and
+`ContourFeature::osized_calculate()` trace the same borders, the second on the padded image held on
+disk, and measure them with the same `measure_contour()`; `RoiRadiusFeature` takes
+`sqrt(exact_min_sqdist(K))` over every ROI pixel on both paths, against that contour in absolute
+image coordinates. `tests/python/test_2d_ooc_invariant.py` asserts the agreement on this disk and,
+for every column but the neighbour features, on eight further fixtures; the gtest
+`TEST_2D_CONTOUR_OUT_OF_CORE_TRACES_THE_SAME_BORDERS_INVARIANT` requires the two contour builders to
+return identical borders.
 
-**It is one defect with two public consequences.** `DIAMETER_EQUAL_PERIMETER` is computed as
-`fval_PERIMETER / M_PI` on *both* paths (`contour.cpp` lines 976 and 1000), so it carries the same
-ratio and cannot be right wherever `PERIMETER` is not. Pinning only `PERIMETER` would leave a second
-public value diverging with nothing in the tree to say so.
-`tests/python/test_2d_ooc_regression.py` asserts the derivation as an identity on both paths, so a
-fix to `PERIMETER` alone must fix this one too — and if the two ratios ever stop matching, that is a
-new finding rather than this one.
+**What the disk discriminates.** On it the contour has 112 pixels and a length of 131.882, so a path
+that counted contour pixels for `PERIMETER` reads 112.0; its bounding box starts at (12, 12), so a
+contour left relative to the bounding box reads `ROI_RADIUS_MEAN` 7.4236 and `ROI_RADIUS_MEDIAN` 7.0.
+Either fails the invariant.
 
-**`ROI_RADIUS_*` is a second, distinct defect on the same contour.** `RoiRadiusFeature` takes
-`sqrt(exact_min_sqdist(K))` over every ROI pixel on **both** paths, so the arithmetic is identical and
-the only differing input is `K`. On the same fixture both builders return **112** contour pixels — so
-unlike `PERIMETER`, this is not a count-versus-length difference — and the statistics still move. They
-are not the same 112 pixels. `ROI_RADIUS_MAX` is bit-identical at 19.026297590440446 on both paths,
-so the ROI pixels that end up farther from the out-of-core contour do not include the one attaining
-the maximum. Every translation of the inner boundary in ±4 was searched and none reproduces the
-out-of-core values, so it is recorded as a characterization rather than explained as an offset.
-`tests/python/test_2d_ooc_regression.py` pins both sides, the two inequalities, and `MAX`'s equality —
-the last so that a fix which moves the whole contour cannot repair the mean and quietly break the
-maximum.
-
-**Why no test saw it.** `tests/python/test_2d_ooc_invariant.py` has asserted `*ALL_MORPHOLOGY*`
-equality across the two paths since it was written, and it passes. Its fixture is a full-image
-**rectangle**, and around a rectangle every contour step is an axis-aligned unit step — so the pixel
-count and the Euclidean sum are the same number, and the one feature that differs cannot show up.
-The invariant is sound; the shape could not discriminate. This is the general lesson for path-equality
-tests: a fixture that is symmetric in the axis under test proves nothing about it.
-
-The five `EDGE_*` statistics and `MASS_DISPLACEMENT` were measured on the same disk and **do** agree
-exactly, so the defect is the perimeter pair rather than the contour builder as a whole.
-`test_2d_ooc_invariant.py` now asserts that agreement on the disk as well, and
-`tests/python/test_2d_ooc_regression.py` pins the divergence — a correct fix to `osized_calculate()`
-must break it, at which point `PERIMETER` folds back into the invariant's feature list. The fix is a
-`src/nyx` change and is not made here. Cell table: `matrix/morphology.md`.
+**The general lesson for path-equality tests.** `test_2d_ooc_invariant.py` also asserts
+`*ALL_MORPHOLOGY*` equality on a full-image **rectangle**. Around a rectangle every contour step is an
+axis-aligned unit step, so the pixel count and the Euclidean sum are the same number, and its
+bounding box starts where the image does: that shape cannot tell a pixel count from a length, nor a
+relative contour from an absolute one. A fixture that is symmetric in the axis under test proves
+nothing about it. Cell table: `matrix/morphology.md`.
 
 ---
 
