@@ -13,6 +13,11 @@ Stores (same encoding throughout; absent axes are pinned to index 0):
   dim5_noaxes.ome.zarr (no 'axes' key)  5D TCZYX -> proves the legacy fallback
   dim3_chunked.ome.zarr axes z,y,x      3D, chunk (3,4,5) -> uneven chunk grid in Z, Y and X
   dim5_zwholechunk.ome.zarr axes t,c,z,y,x  Z chunk = whole Z, T=2 -> one read is a whole frame
+  dim2_xy.ome.zarr     axes x,y         2D stored X before Y -> proves the spatial order is honored
+  dim3_xyz.ome.zarr    axes x,y,z       3D with the spatial axes reversed
+  dim3_xyz_chunked.ome.zarr axes x,y,z  the same, chunk (5,4,3) -> Z chunk 3 deep, uneven grid
+  dim5_xtzcy.ome.zarr  axes x,t,z,c,y   5D with Z, Y, X interleaved among T and C
+  dim3_v3_zxy.ome.zarr axes z,x,y       Zarr v3 with X before Y
 
 Unless its writer below says otherwise, a store is chunked one z-slice per chunk and written
 UNCOMPRESSED (compressor=None) so it reads with header-only z5 (no blosc/zlib link).
@@ -272,21 +277,24 @@ def write_v3_zchunked(name):
           % (name, C, T, Z, Y, X, chunks))
 
 
-def write_label_mask(name):
-    """P4/N3: a single-channel ZYX label mask (mostly background, a few small ROIs), the
+def write_label_mask(name, order="zyx"):
+    """P4/N3: a single-channel label mask (mostly background, a few small ROIs), the
     OME-Zarr twin of dim3_mask.ome.tif. Pairs with a T>1 Zarr intensity to exercise the
-    1-mask : N-timeframe reuse on the Zarr path (the crash's positive twin)."""
+    1-mask : N-timeframe reuse on the Zarr path (the crash's positive twin). `order` is a
+    permutation of 'zyx'; the mask is stored in it, one z-slice per chunk."""
     path = os.path.join(HERE, name)
     shutil.rmtree(path, ignore_errors=True)
     m = np.zeros((Z, Y, X), "uint32")
     m[:, 1:5, 1:7] = 1                                  # one ROI (label 1), interior bbox
+    m = np.transpose(m, tuple("zyx".index(a) for a in order)).copy()
+    chunks = tuple(1 if a == "z" else s for a, s in zip(order, m.shape))
     g = zarr.open_group(path, mode="w", zarr_format=2)
-    a = g.create_array("0", shape=m.shape, dtype=m.dtype, chunks=(1, Y, X), compressors=None)
+    a = g.create_array("0", shape=m.shape, dtype=m.dtype, chunks=chunks, compressors=None)
     a[:] = m
-    g.attrs.put({"multiscales": [{"version": "0.4", "axes": [_AX[c] for c in "zyx"],
+    g.attrs.put({"multiscales": [{"version": "0.4", "axes": [_AX[c] for c in order],
         "datasets": [{"path": "0", "coordinateTransformations": [
             {"type": "scale", "scale": [1.0, 1.0, 1.0]}]}]}]})
-    print("wrote %-24s (ZYX label mask, ROI voxels=%d)" % (name, int(m.sum())))
+    print("wrote %-24s (%s label mask, ROI voxels=%d)" % (name, order.upper(), int(m.sum())))
 
 
 def write_v3_badcodec(name):
@@ -477,6 +485,15 @@ def main():
     # nested v2 chunk keys ('/' separator) + blosc -- the layout bioformats2raw writes by
     # default, and the one v2 trait no other fixture here has. Must read like dim3_zyx.
     write_nested("dim3_nested.ome.zarr", "zyx")
+    # --- spatial axes stored out of z,y,x order (OME-NGFF requires z,y,x; the reader follows
+    # whatever 'axes' declares). Same voxels as the z,y,x stores above.
+    write_store("dim2_xy.ome.zarr", "xy")                         # the 2D array transposed
+    write_store("dim3_xyz.ome.zarr", "xyz")                       # tiled like dim3_mask
+    write_label_mask("dim3_mask_xyz.ome.zarr", "xyz")             # dim3_mask, stored x,y,z
+    # chunk (5,4,3) along (x,y,z): a Z chunk 3 planes deep and an uneven grid on every axis
+    write_chunked("dim3_xyz_chunked.ome.zarr", "xyz", (5, 4, 3))
+    write_store("dim5_xtzcy.ome.zarr", "xtzcy")                   # Z, Y, X among T and C
+    write_v3("dim3_v3_zxy.ome.zarr", "zxy")                       # Zarr v3, X before Y
     # --- illegal / adversarial: must be rejected cleanly, not crash ---
     # big-endian samples: unopenable through z5, and the refusal must name the cause
     write_bigendian("bigendian.ome.zarr", "zyx")

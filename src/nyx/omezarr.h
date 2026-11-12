@@ -86,14 +86,13 @@ public:
         z5::multiarray::readSubarray<FileType> (*ds_, view, b.offset.begin());
 
         // dest is plane-major: plane p, row k at (p*tile_height + k)*tile_width, matching the
-        // stride ImageLoader::assemble_tile_layer reads. The sample goes through the same load-time
-        // map every other backend applies, so a signed dataset keeps its negatives and a
-        // real-valued one its fraction.
-        const size_t th = layout_.tile_height, tw = layout_.tile_width;
-        for (size_t p = 0; p < b.depth; ++p)
-            for (size_t k = 0; k < b.height; ++k)
-                for (size_t j = 0; j < b.width; ++j)
-                    dest[(p * th + k) * tw + j] = map_intensity ((double) buffer[(p * b.height + k) * b.width + j]);
+        // stride ImageLoader::assemble_tile_layer reads, whatever order the array stores Z, Y and X
+        // in. The sample goes through the same load-time map every other backend applies, so a
+        // signed dataset keeps its negatives and a real-valued one its fraction.
+        b.for_each_sample (layout_.tile_height, layout_.tile_width, [&] (size_t to, size_t from)
+            {
+                dest[to] = map_intensity ((double) buffer[from]);
+            });
     }
 
     /// @brief Tiff file height
