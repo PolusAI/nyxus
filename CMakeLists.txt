@@ -1,4 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
+
+# A single-configuration generator builds Release unless told otherwise. This precedes project()
+# because project() presets the cache entry to Debug under MSVC. CMake 3.22 and newer take a type
+# from the CMAKE_BUILD_TYPE environment variable; older versions ignore that variable.
+get_property(NYXUS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(NOT NYXUS_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE AND ("$ENV{CMAKE_BUILD_TYPE}" STREQUAL "" OR CMAKE_VERSION VERSION_LESS 3.22))
+	set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+endif()
+
 project(AxleNyxus)
 include(GNUInstallDirs)
 include(CheckLanguage)
@@ -18,6 +27,7 @@ option(USE_ARROW "Use Arrow" OFF)
 option(USE_STATIC_ARROW "Link Arrow/Parquet statically and keep their symbols private (macOS)" OFF)
 option(ALLEXTRAS "Building with all I/O support" OFF)
 option(NOEXTRAS "Building with Only Tiff and Pybind11(For Python package)" ON)
+option(REQUIRE_ALLEXTRAS "Fail the configure when an ALLEXTRAS part is unavailable" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake-modules")
 
@@ -112,10 +122,6 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- /EHsc /bigobj /Zc:__cplusplus")
-endif()
-
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Release)
 endif()
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")
@@ -502,6 +508,20 @@ message(STATUS "Z5      | ${Z5_REQUESTED} | ${USE_Z5}")
 message(STATUS "Arrow   | ${ARROW_REQUESTED} | ${USE_ARROW}")
 message(STATUS "Dicom   | ${DCMTK_REQUESTED} | ${USE_DCMTK}")
 message(STATUS "CUDA    | ${CUDA_REQUESTED} | ${USEGPU}")
+
+# Release wheels set this, so that none of them can ship without a file format.
+if(REQUIRE_ALLEXTRAS)
+	set(NYXUS_PARTS_OFF "")
+	foreach(part USE_Z5 USE_ARROW USE_DCMTK)
+		if(NOT ${part})
+			list(APPEND NYXUS_PARTS_OFF ${part})
+		endif()
+	endforeach()
+	if(NYXUS_PARTS_OFF)
+		message(FATAL_ERROR "REQUIRE_ALLEXTRAS is set and these parts are off: ${NYXUS_PARTS_OFF}")
+	endif()
+endif()
+
 ## Running Tests
 if (RUN_GTEST)
 	# Download and unpack googletest at configure time

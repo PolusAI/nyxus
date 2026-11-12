@@ -36,12 +36,11 @@ The PyPI wheels are built for CPython 3.10, 3.11, 3.12 and 3.13 on these platfor
 * Windows x86_64;
 * macOS x86_64 (10.15 or newer) and arm64 (11.0 or newer).
 
-PyPI has no source distribution, so where no wheel fits, ``pip`` falls back to an older release
-without a warning, or stops with ``No matching distribution found for nyxus``:
+Later releases also publish a source distribution once all their wheels are on PyPI; where no
+wheel fits, ``pip`` builds it, which needs CMake, a C++20 compiler and the libraries listed in
+`Building from source`_. Releases up to 0.12.1, and a release with a wheel missing, have none, so
+where no wheel fits, ``pip`` falls back to an older release without a warning, or stops with ``No matching distribution found for nyxus``:
 
-* Release 0.11.0 has no wheel for CPython 3.13 on Linux x86_64, so ``pip install nyxus`` installs
-  0.10.0 there. Use Python 3.10 to 3.12, conda-forge or a source build to get 0.11.0. This is a known
-  issue (`#525 <https://github.com/PolusAI/nyxus/issues/525>`__).
 * On Linux with a glibc older than 2.28 (for example CentOS 7 or Ubuntu 18.04), ``pip`` installs
   0.8.3, the last release built for ``manylinux2014``, on x86_64 with Python 3.8 to 3.12, and an
   even older release with Python 3.6 or 3.7. With Python 3.13 or on aarch64 it stops with ``No
@@ -82,7 +81,7 @@ output, in addition to TIFF, OME-TIFF and NIfTI. They also read OME-Zarr and com
 
 * The Windows wheels on PyPI (``nyxus`` 0.9.3 and 0.11.0, and ``nyxus-cuda12x`` 0.9.3) were built
   without OME-Zarr support, and so without ``.nii.gz``: they refuse OME-Zarr and fail on
-  ``.nii.gz`` files. This is a known issue (`#527 <https://github.com/PolusAI/nyxus/issues/527>`__).
+  ``.nii.gz`` files. The ``nyxus`` Windows wheels of 0.12.0 and later read both.
 * The first conda-forge Windows builds of 0.11.0 (build number 0, a build string ending in ``_0``
   in ``conda list nyxus``) read none of OME-Zarr, ``.nii.gz`` and DICOM; conda installs one of
   them into an environment that holds ``libarrow`` 19 or 20.
@@ -92,8 +91,8 @@ libraries it finds (see `Building from source`_).
 
 .. warning::
 
-   The conda-forge Windows packages of 0.11.0 were built in Debug mode: their extension module
-   imports the Visual Studio debug runtime (``MSVCP140D.dll``, ``VCRUNTIME140D.dll``,
+   The conda-forge Windows packages of 0.11.0, 0.12.0 and 0.12.1 were built in Debug mode: their
+   extension module imports the Visual Studio debug runtime (``MSVCP140D.dll``, ``VCRUNTIME140D.dll``,
    ``ucrtbased.dll``), which only an installation of Visual Studio provides, not the Visual C++
    redistributable. Without Visual Studio, ``import nyxus`` fails. This is a known issue
    (`#528 <https://github.com/PolusAI/nyxus/issues/528>`__).
@@ -337,10 +336,6 @@ Getting the dependencies
       uses for ``.zip`` files. The script does not stop when a step fails, so check its output for
       errors before building.
 
-      The script's Boost download, in its OME-Zarr part, currently fails: the URL returns HTTP
-      404. The Windows release wheels built with the script since 0.9.3 have no OME-Zarr support.
-      This is a known issue (`#527 <https://github.com/PolusAI/nyxus/issues/527>`__).
-
       The dependency DLLs in ``local_install\bin`` must be on ``PATH`` when you run the
       command-line program. Python does not search ``PATH`` for an extension module's DLLs, so in
       Python call ``os.add_dll_directory(r"<source tree>\local_install\bin")`` before
@@ -403,6 +398,11 @@ CMake options
      - ``OFF``
      - Turns ``USE_Z5``, ``USE_DCMTK`` and ``USE_ARROW`` on. It takes precedence over
        ``NOEXTRAS``. ``setup.py`` always passes it.
+   * - ``REQUIRE_ALLEXTRAS``
+     - ``OFF``
+     - Stops the configure with an error when ``USE_Z5``, ``USE_DCMTK`` or ``USE_ARROW`` is off.
+       Without it, a part whose libraries are missing is dropped with a warning. The ``nyxus``
+       wheels on PyPI are built with it; the ``nyxus-cuda11x`` and ``nyxus-cuda12x`` wheels are not.
    * - ``USE_Z5``
      - ``OFF``
      - OME-Zarr input. Also enables compressed NIfTI (``.nii.gz``), which needs the zlib that this
@@ -435,10 +435,9 @@ CMake options
      - ``OFF``
      - Builds the ``bench_convex_hull`` micro-benchmark (see ``benchmarks/README.md``).
    * - ``CMAKE_BUILD_TYPE``
-     - ``Release`` (``Debug`` with MSVC)
-     - Single-configuration generators build ``Release`` unless told otherwise. With MSVC, CMake
-       itself presets ``Debug``, so pass ``-DCMAKE_BUILD_TYPE=Release`` when you use Ninja or
-       NMake. This is a known defect (`#524 <https://github.com/PolusAI/nyxus/issues/524>`__).
+     - ``Release``
+     - Single-configuration generators, such as Ninja and NMake, build ``Release`` unless told
+       otherwise.
 
 The C++ standard is C++20 and is required (``CMAKE_CXX_STANDARD 20``). On MSVC the build adds
 ``/permissive- /EHsc /bigobj /Zc:__cplusplus``.

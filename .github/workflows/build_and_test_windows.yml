@@ -40,6 +40,32 @@ jobs:
         conda install mamba
         mamba install --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
 
+    - name: Check that a Ninja configure defaults to Release
+      shell: bash -l {0}
+      run: |
+        set -e
+        cmake -S . -B build-default-type -G Ninja -DCMAKE_CXX_COMPILER=cl -DCMAKE_PREFIX_PATH=$CONDA_PREFIX/Library
+        grep '^CMAKE_BUILD_TYPE:STRING=Release$' build-default-type/CMakeCache.txt
+
+    - name: Check that CMake older than 3.22 ignores a build type in the environment
+      shell: bash -l {0}
+      run: |
+        set -e
+        python -m pip install --target "$RUNNER_TEMP/cmake-3.21" cmake==3.21.4
+        CMAKE_BUILD_TYPE=RelWithDebInfo "$RUNNER_TEMP/cmake-3.21/cmake/data/bin/cmake" -S . -B build-old-cmake -G Ninja -DCMAKE_CXX_COMPILER=cl -DCMAKE_PREFIX_PATH=$CONDA_PREFIX/Library
+        grep '^CMAKE_BUILD_TYPE:STRING=Release$' build-old-cmake/CMakeCache.txt
+
+    - name: Check that REQUIRE_ALLEXTRAS refuses a dropped part
+      shell: bash -l {0}
+      run: |
+        set -e
+        if cmake -S . -B build-required-extras -G Ninja -DCMAKE_CXX_COMPILER=cl -DCMAKE_PREFIX_PATH=$CONDA_PREFIX/Library -DALLEXTRAS=ON -DREQUIRE_ALLEXTRAS=ON -DCMAKE_DISABLE_FIND_PACKAGE_Arrow=ON > required-extras.log 2>&1; then
+          cat required-extras.log
+          exit 1
+        fi
+        cat required-extras.log
+        grep 'these parts are off: USE_ARROW' required-extras.log
+
     - name: Configure CMake
       run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON -DRUN_GTEST=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
 

@@ -33,8 +33,9 @@ conda install nyxus -c conda-forge
 ```
 
 The conda-forge package has no build for Apple Silicon Macs or Linux aarch64; use `pip` there.
-On Windows, the PyPI wheels do not read OME-Zarr or compressed NIfTI (`.nii.gz`), and the
-conda-forge packages of 0.11.0 need Visual Studio installed (they were built in Debug mode).
+On Windows, the PyPI wheels older than 0.12.0 do not read OME-Zarr or compressed NIfTI
+(`.nii.gz`), and the conda-forge packages of 0.11.0, 0.12.0 and 0.12.1 need Visual Studio installed
+(they were built in Debug mode).
 GPU wheels, the Docker image and building from source are described in
 [Installation](https://nyxus.readthedocs.io/en/latest/installation.html).
 

@@ -1209,8 +1209,11 @@ Documentation
 -------------
 
 The documentation is a Sphinx site in ``docs/source``. It does not need the compiled module:
-``conf.py`` mocks ``nyxus.backend``. The pages describe the development head, so their title
-carries no version number.
+``conf.py`` mocks ``nyxus.backend``. The title carries no version number; the index page states
+the version instead. ``conf.py`` reads the latest release from ``CITATION.cff`` into ``|release|``.
+A Read the Docs build of a tag (``READTHEDOCS_VERSION_TYPE=tag``) says it describes that release,
+and every other build, a local one included, says it describes the development version newer than
+it.
 
 Building
 ^^^^^^^^
