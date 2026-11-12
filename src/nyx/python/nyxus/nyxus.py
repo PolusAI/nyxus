@@ -697,8 +697,8 @@ class Nyxus:
         -----
         Intensities are converted to ``uint32`` before featurization: an array
         whose minimum is negative is first shifted so the minimum becomes 0, and
-        fractional values are truncated (1.7 becomes 1). A 3D array is shifted in
-        place, so the caller's array changes. Labels are converted to ``uint32``.
+        fractional values are truncated (1.7 becomes 1). The caller's arrays are
+        not modified. Labels are converted to ``uint32``.
         The file-loader options (`dynamic_range`, `min_intensity`,
         `max_intensity`, `preserve_hu`) do not apply to arrays, and the ROI
         blacklist is not applied.
@@ -767,11 +767,14 @@ class Nyxus:
         if (label_images.shape[0] != len(label_names)):
             raise ValueError("Number of segmentation names must be the same as the number of images.")
         
-        # (1) check if the intensities are represented in Hounsfeld type scale, and (2) adjust them into the unsigned integer scale
+        # (1) check if the intensities are represented in Hounsfeld type scale, and (2) adjust them into the unsigned integer scale.
+        # The shift is computed in the input's dtype and written straight into a new uint32 array,
+        # so the caller's array is left as it is and only one copy is made.
         I = intensity_images
         min_raw_I = np.min (intensity_images)
         if (min_raw_I < 0):
-            I -= min_raw_I
+            I = np.empty (intensity_images.shape, dtype=np.uint32)
+            np.subtract (intensity_images, min_raw_I, out=I, casting='unsafe')
         if I.dtype != np.uint32:
             I = I.astype(np.uint32)
 
@@ -803,7 +806,7 @@ class Nyxus:
             ret = featurize_montage_imp (id(self), I, M, intensity_names, label_names, output_type, output_path)
             self.error_message = ret[0]
             if(self.error_message != ''):
-                raise RuntimeError('Error calculating features: ' + error_message[0])
+                raise RuntimeError('Error calculating features: ' + self.error_message)
             
             return get_arrow_file_imp (id(self)) # return path to file
                 
@@ -2722,7 +2725,7 @@ class ImageQuality:
             self.error_message = ret[0]
             
             if(self.error_message != ''):
-                raise RuntimeError('Error calculating features: ' + error_message[0])
+                raise RuntimeError('Error calculating features: ' + self.error_message)
             
             return get_arrow_file_imp (id(self)) # return path to file
                 
