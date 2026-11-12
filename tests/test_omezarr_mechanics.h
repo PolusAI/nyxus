@@ -55,7 +55,8 @@ void assert_omezarr_addressing(const char* store, int T, int C, int Z)
         }
 }
 
-// RawFormatLoader stack (same coverage as above).
+// RawFormatLoader stack: every voxel of every chunk of every (c,t) volume, so it also covers a
+// store whose plane spans several chunks or whose chunk spans several Z-planes.
 void assert_raw_omezarr_addressing(const char* store, int T, int C, int Z)
 {
     const int Y = 6, X = 8;
@@ -63,19 +64,27 @@ void assert_raw_omezarr_addressing(const char* store, int T, int C, int Z)
     ASSERT_TRUE(fs::exists(ds)) << ds.string();
 
     auto ldr = RawOmezarrLoader(ds.string());
+    ASSERT_EQ(ldr.fullWidth(0), (size_t)X);
+    ASSERT_EQ(ldr.fullHeight(0), (size_t)Y);
     ASSERT_EQ(ldr.fullDepth(0), (size_t)Z);
-    const size_t tw = ldr.tileWidth(0);
+    const size_t tw = ldr.tileWidth(0), th = ldr.tileHeight(0), td = ldr.tileDepth(0);
 
     for (int t = 0; t < T; ++t)
       for (int c = 0; c < C; ++c)
-        for (int z = 0; z < Z; ++z)
-        {
-            ASSERT_NO_THROW(ldr.loadTileFromFile(0, 0, z, c, t, 0));
-            for (int y = 0; y < Y; ++y)
-              for (int x = 0; x < X; ++x)
-                ASSERT_EQ(ldr.get_uint32_pixel(y * tw + x), dim5_enc(x, y, z, c, t))
-                    << store << " plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
-        }
+        for (size_t layer = 0; layer * td < (size_t)Z; ++layer)
+          for (size_t row = 0; row * th < (size_t)Y; ++row)
+            for (size_t col = 0; col * tw < (size_t)X; ++col)
+            {
+                ASSERT_NO_THROW(ldr.loadTileFromFile(row, col, layer, c, t, 0));
+                for (size_t p = 0; p < td && layer * td + p < (size_t)Z; ++p)
+                  for (size_t k = 0; k < th && row * th + k < (size_t)Y; ++k)
+                    for (size_t j = 0; j < tw && col * tw + j < (size_t)X; ++j)
+                    {
+                        const int x = (int)(col * tw + j), y = (int)(row * th + k), z = (int)(layer * td + p);
+                        ASSERT_EQ(ldr.get_uint32_pixel((p * th + k) * tw + j), dim5_enc(x, y, z, c, t))
+                            << store << " (c" << c << " t" << t << ") voxel (" << x << "," << y << "," << z << ")";
+                    }
+            }
 
     if (C > 1 && T > 1)   // distinct (c,t) planes must differ -> the offset really uses C/T
     {
@@ -541,6 +550,72 @@ void test_omezarr_diagnosed_refusals_mechanics()
     EXPECT_EQ(ldr.fullWidth(0), 8u);
     EXPECT_EQ(ldr.fullHeight(0), 6u);
     EXPECT_EQ(ldr.fullDepth(0), 4u);
+}
+
+// Z, Y and X stored in an order other than z,y,x. OME-NGFF requires z,y,x, but the 'axes' block
+// names the storage dimension of each axis, and both readers place each sample by it. Each store
+// below holds the same encoded voxels as its z,y,x counterpart (see gen_dim5.py):
+//
+//  * dim2_xy -- the 2D plane transposed;
+//  * dim3_xyz -- the spatial axes reversed, one Z-plane per chunk;
+//  * dim3_xyz_chunked -- the same, chunk (x,y,z) = (5,4,3): a Z chunk 3 planes deep and a partial
+//    last chunk on every axis, so the Z stride and the clipped extents both matter;
+//  * dim5_xtzcy -- Z, Y and X interleaved among T and C;
+//  * dim3_v3_zxy -- Zarr v3, X before Y;
+//  * dim3_mask_xyz -- dim3_mask stored x,y,z, read as a mask.
+//
+// What this discriminates: a copy loop that walks the block as if it were stored z,y,x reads
+// these arrays with their pixels out of place -- a [x,y] plane comes out transposed -- and
+// reports no error.
+void test_omezarr_spatial_axis_order_mechanics()
+{
+    struct Case { const char* store; int T, C, Z; };
+    for (const Case& k : { Case{ "dim2_xy.ome.zarr", 1, 1, 1 }, Case{ "dim3_xyz.ome.zarr", 1, 1, 4 },
+                           Case{ "dim5_xtzcy.ome.zarr", 2, 3, 4 }, Case{ "dim3_v3_zxy.ome.zarr", 1, 1, 4 } })
+    {
+        assert_omezarr_addressing(k.store, k.T, k.C, k.Z);
+        if (::testing::Test::HasFatalFailure()) return;
+        assert_raw_omezarr_addressing(k.store, k.T, k.C, k.Z);
+        if (::testing::Test::HasFatalFailure()) return;
+        assert_omezarr_facade_volume(k.store, k.T, k.C, k.Z);
+        if (::testing::Test::HasFatalFailure()) return;
+    }
+
+    // the shape the chunked case rests on
+    {
+        auto ldr = NyxusOmeZarrLoader<uint32_t>(1, omezarr_data_path("dim3_xyz_chunked.ome.zarr").string());
+        ASSERT_EQ(ldr.tileDepth(0), 3u);
+        ASSERT_EQ(ldr.tileHeight(0), 4u);
+        ASSERT_EQ(ldr.tileWidth(0), 5u);
+    }
+    assert_omezarr_facade_volume("dim3_xyz_chunked.ome.zarr", 1, 1, 4);
+    if (::testing::Test::HasFatalFailure()) return;
+    assert_raw_omezarr_addressing("dim3_xyz_chunked.ome.zarr", 1, 1, 4);
+    if (::testing::Test::HasFatalFailure()) return;
+
+    // the mask stored x,y,z labels the same voxels as dim3_mask stored z,y,x; both are one
+    // chunk per 6x8 plane, so tile (0,0) of each layer is the whole plane
+    auto ref = RawOmezarrLoader(omezarr_data_path("dim3_mask.ome.zarr").string()),
+        xyz = RawOmezarrLoader(omezarr_data_path("dim3_mask_xyz.ome.zarr").string());
+    for (const RawOmezarrLoader* l : { &ref, &xyz })
+    {
+        ASSERT_EQ(l->tileWidth(0), 8u);
+        ASSERT_EQ(l->tileHeight(0), 6u);
+        ASSERT_EQ(l->tileDepth(0), 1u);
+    }
+    const size_t n = 8 * 6;
+    size_t labelled = 0;
+    for (size_t z = 0; z < 4; ++z)
+    {
+        ref.loadTileFromFile(0, 0, z, 0, 0, 0);
+        xyz.loadTileFromFile(0, 0, z, 0, 0, 0);
+        for (size_t i = 0; i < n; ++i)
+        {
+            ASSERT_EQ(xyz.get_uint32_pixel(i), ref.get_uint32_pixel(i)) << "plane " << z << " sample " << i;
+            labelled += ref.get_uint32_pixel(i) != 0;
+        }
+    }
+    EXPECT_EQ(labelled, (size_t)(4 * 4 * 6));
 }
 
 

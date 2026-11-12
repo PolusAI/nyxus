@@ -13,6 +13,7 @@
 #ifdef OMEZARR_SUPPORT
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -75,11 +76,45 @@ namespace Nyxus
 	}
 
 	// One chunk-aligned block to read: its valid extent (the last chunk along an axis may be
-	// partial) and the z5 read window in storage-dimension order.
+	// partial), the z5 read window in storage-dimension order, and where the block's samples sit
+	// in the buffer that window is read into.
 	struct ZarrBlock
 	{
 		std::size_t depth = 1, height = 0, width = 0;
 		z5::types::ShapeType shape, offset;
+
+		// Buffer stride of one step along Z, Y and X. The buffer is C-ordered in the storage
+		// dimensions, so these follow the order the 'axes' block declares rather than z,y,x.
+		std::size_t stride_z = 0, stride_y = 0, stride_x = 0;
+
+		/// @brief Call f(tile_index, buffer_index) for every sample of the block. tile_index is
+		/// plane-major in a tile of tile_height x tile_width planes -- plane p, row k, column j at
+		/// (p*tile_height + k)*tile_width + j -- and buffer_index is where that sample sits in the
+		/// read buffer. The axes are walked from the largest buffer stride to the smallest, so the
+		/// buffer is read in storage order whatever order the array keeps Z, Y and X in; an axis
+		/// one sample long goes outermost, where it costs nothing.
+		template <class F>
+		void for_each_sample (std::size_t tile_height, std::size_t tile_width, F&& f) const
+		{
+			struct Axis { std::size_t extent, src, dst; };
+			std::array<Axis, 3> a = { { { depth, stride_z, tile_height * tile_width },
+				{ height, stride_y, tile_width }, { width, stride_x, 1 } } };
+			std::stable_sort (a.begin(), a.end(), [] (const Axis& l, const Axis& r)
+				{
+					if ((l.extent == 1) != (r.extent == 1))
+						return l.extent == 1;
+					return l.src > r.src;
+				});
+
+			for (std::size_t u = 0; u < a[0].extent; ++u)
+				for (std::size_t v = 0; v < a[1].extent; ++v)
+				{
+					std::size_t dst = u * a[0].dst + v * a[1].dst,
+						src = u * a[0].src + v * a[1].src;
+					for (std::size_t w = 0; w < a[2].extent; ++w, dst += a[2].dst, src += a[2].src)
+						f (dst, src);
+				}
+		}
 	};
 
 	// Everything a Zarr loader needs to address the array, resolved from its metadata.
@@ -130,6 +165,15 @@ namespace Nyxus
 			if (iz >= 0) { b.shape[iz] = b.depth; b.offset[iz] = z0; }
 			if (ic >= 0) b.offset[ic] = c;
 			if (it >= 0) b.offset[it] = t;
+
+			// C-order strides of the read window; C and T span one sample, so they add nothing
+			std::size_t s = 1;
+			for (std::size_t d = ndim; d-- > 0; s *= b.shape[d])
+			{
+				if ((int) d == iz) b.stride_z = s;
+				if ((int) d == iy) b.stride_y = s;
+				if ((int) d == ix) b.stride_x = s;
+			}
 			return b;
 		}
 	};

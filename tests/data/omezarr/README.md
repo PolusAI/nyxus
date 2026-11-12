@@ -49,8 +49,9 @@ below). Everything else in this directory comes from `gen_dim5.py`, whose module
 per-writer docstrings and `main()` are the inventory for those; the four described under
 "Converter-shaped and diagnostic stores" below are called out here because what they cover is a
 property of the *container*, not of the pixels. Two exceptions: `main()` does not call
-`write_label_mask`, `write_v3_sharded` or `write_v3_badcodec`, so `python gen_dim5.py` leaves
-`dim3_mask.ome.zarr`, `dim5_v3_sharded.ome.zarr` and `dim5_v3_badcodec.ome.zarr` as they are; and
+`write_v3_sharded` or `write_v3_badcodec`, and calls `write_label_mask` only for
+`dim3_mask_xyz.ome.zarr`, so `python gen_dim5.py` leaves `dim3_mask.ome.zarr`,
+`dim5_v3_sharded.ome.zarr` and `dim5_v3_badcodec.ome.zarr` as they are; and
 `dim5_v3_zstd.ome.zarr` (zarr v3, `bytes` + `zstd` codecs, one chunk per `(t, c, z)` plane, read
 only by a build with zstd) has no writer in the script.
 
@@ -72,6 +73,25 @@ added after a cross-container run over real converter output.
 `test_omezarr_nested_chunk_keys_mechanics()` and the other three through
 `test_omezarr_diagnosed_refusals_mechanics()`, which checks the message text (and that it names
 the store) rather than only that the open throws.
+
+### Spatial axes out of z, y, x order
+
+OME-NGFF requires Z, Y and X in that order, but the `axes` block names the storage dimension of
+each, and both readers place every sample by it. These stores hold the same encoded voxels as
+their z, y, x counterparts with the spatial axes stored in another order:
+
+| Store | `axes` | Chunk | Same voxels as |
+|-------|--------|-------|----------------|
+| `dim2_xy.ome.zarr` | x, y | whole array | `dim2_yx.ome.zarr` |
+| `dim3_xyz.ome.zarr` | x, y, z | one Z-plane | `dim3_zyx.ome.zarr` |
+| `dim3_xyz_chunked.ome.zarr` | x, y, z | (5, 4, 3): a Z chunk 3 planes deep, partial last chunk on every axis | `dim3_zyx.ome.zarr` |
+| `dim5_xtzcy.ome.zarr` | x, t, z, c, y | one Z-plane | `dim5.ome.zarr` |
+| `dim3_v3_zxy.ome.zarr` | z, x, y (Zarr v3) | one Z-plane | `dim3_zyx.ome.zarr` |
+| `dim3_mask_xyz.ome.zarr` | x, y, z | one Z-plane | `dim3_mask.ome.zarr` |
+
+`test_omezarr_spatial_axis_order_mechanics()` reads them voxel by voxel through both loaders and
+the facade, and `TEST_OMEZARR_SPATIAL_AXIS_ORDER_FEATURES_MECHANICS` checks that `dim3_xyz` and
+`dim3_mask_xyz`, each swapped in for its z, y, x counterpart, give the same feature row.
 
 ### `dim5.ome.zarr` — 5D channel/timeframe addressability
 

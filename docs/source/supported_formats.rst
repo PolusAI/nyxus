@@ -67,9 +67,9 @@ version 3 arrays, with OME-NGFF metadata version 0.4 or 0.5. The metadata is rea
 (version 2) or ``zarr.json`` (version 3).
 
 * The full-resolution level, the first dataset of the first multiscale, is read.
-* The axis order comes from the ``axes`` metadata. T and C may stand anywhere; Z, Y and X must
-  come in that order, as OME-NGFF requires. An array with X before Y is read with its pixels out
-  of place, without an error, a known defect (`#522 <https://github.com/PolusAI/nyxus/issues/522>`__).
+* The axis order comes from the ``axes`` metadata, so any order of T, C, Z, Y and X works.
+  OME-NGFF requires Z, Y and X in that order; an array that stores them otherwise, X before Y for
+  example, is still read with every pixel in place.
 * The physical pixel size comes from the level's ``scale`` transformation.
 * Arrays may be uncompressed or compressed with Blosc or zlib; Zstandard is read when the build
   includes it.

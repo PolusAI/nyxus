@@ -87,14 +87,14 @@ public:
         // zero-fill the buffer foreseeing its partial filling at incomplete (tail) tiles
         std::fill (dest.begin(), dest.end(), 0);
 
-        // dest is plane-major: plane p, row k at (p*tile_height + k)*tile_width. The sample is
-        // widened to double rather than narrowed to an unsigned grey level, so a negative or
-        // fractional dataset reaches the prescan as it is written.
-        const size_t th = layout_.tile_height, tw = layout_.tile_width;
-        for (size_t p = 0; p < b.depth; ++p)
-            for (size_t k = 0; k < b.height; ++k)
-                for (size_t j = 0; j < b.width; ++j)
-                    dest[(p * th + k) * tw + j] = static_cast<double> (buffer[(p * b.height + k) * b.width + j]);
+        // dest is plane-major: plane p, row k at (p*tile_height + k)*tile_width, whatever order
+        // the array stores Z, Y and X in. The sample is widened to double rather than narrowed to
+        // an unsigned grey level, so a negative or fractional dataset reaches the prescan as it is
+        // written.
+        b.for_each_sample (layout_.tile_height, layout_.tile_width, [&] (size_t to, size_t from)
+            {
+                dest[to] = static_cast<double> (buffer[from]);
+            });
     }
 
     /// @brief Tiff file height
