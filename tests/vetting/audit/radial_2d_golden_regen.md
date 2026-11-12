@@ -1,5 +1,8 @@
 # Regenerating the 2D radial goldens
 
+> **Current state.** The contour offset listed below as a precondition no longer exists; the radial
+> goldens are pinned on the corrected contour.
+
 `FRAC_AT_D`, `MEAN_FRAC`, `RADIAL_CV` — 8 radial bins each, 24 pinned values in
 `tests/test_2d_radial_regression.h`.
 

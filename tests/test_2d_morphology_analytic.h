@@ -84,3 +84,78 @@ void test_2d_morphology_roi_radius_disk_closed_form_analytic()
 			<< " -- it is not the distance from the disk's centre to its boundary";
 	}
 }
+
+// DIAMETER_INSCRIBING_CIRCLE and DIAMETER_CIRCUMSCRIBING_CIRCLE on the r=15 circle
+// (calculate_circle_shape_values): twice the smallest and the largest distance from the centroid to
+// a contour pixel. The centroid is the centre (21, 21) by symmetry, the contour pixels are the disk's
+// edge pixels, and both extremes have closed forms:
+//
+//   farthest   the axial pixel (R, 0) is inside (R^2 <= R^2) and on the edge, and no disk pixel is
+//              farther than R, so the circumscribing diameter is 2R
+//   nearest    the edge pixel at offset (1, R-1), derived for ROI_RADIUS_MAX above, so the
+//              inscribing diameter is 2 sqrt((R-1)^2 + 1)
+//
+// Both depend on the contour and the centroid being in one frame: shifting either by a pixel moves
+// the two diameters apart by up to 2 sqrt(2).
+void test_2d_morphology_circle_diameters_closed_form_analytic()
+{
+	const double R = 15.0;
+	std::vector<std::vector<double>> fvals;
+	calculate_circle_shape_values(fvals);
+
+	// the precondition the closed forms rest on, not a claim about the centroid features
+	const double cx = fvals[static_cast<int>(Nyxus::Feature2D::CENTROID_X)][0],
+		cy = fvals[static_cast<int>(Nyxus::Feature2D::CENTROID_Y)][0];
+	ASSERT_EQ(cx, 21.0);
+	ASSERT_EQ(cy, 21.0);
+
+	SCOPED_TRACE("ANALYTIC_ORACLE__CIRCLE_DIAMETERS__R15");
+	const double circ = 2.0 * R, insc = 2.0 * std::sqrt((R - 1.0) * (R - 1.0) + 1.0);
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE)][0], circ, 1e-12 * circ);
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE)][0], insc, 1e-12 * insc);
+}
+
+// The two diameters are measured to the ROI's outer borders only, the external contour imea reads:
+// a hole's border is not part of the outline. The r=15 disk of the case above with a centred 3x3
+// hole keeps its centroid at the centre by symmetry and its outer border unchanged, so both closed
+// forms hold as they do for the solid disk. The hole's border is 2 from the centre, and measuring
+// to it would give an inscribing diameter of 4.
+void test_2d_morphology_circle_diameters_holed_disk_analytic()
+{
+	const double R = 15.0;
+	std::vector<std::vector<double>> fvals;
+	calculate_disks_circle_values({ { 21, 21 } }, R, 1, fvals);
+
+	// the precondition the closed forms rest on, not a claim about the centroid features
+	const double cx = fvals[static_cast<int>(Nyxus::Feature2D::CENTROID_X)][0],
+		cy = fvals[static_cast<int>(Nyxus::Feature2D::CENTROID_Y)][0];
+	ASSERT_EQ(cx, 21.0);
+	ASSERT_EQ(cy, 21.0);
+
+	SCOPED_TRACE("ANALYTIC_ORACLE__CIRCLE_DIAMETERS__R15_HOLED");
+	const double circ = 2.0 * R, insc = 2.0 * std::sqrt((R - 1.0) * (R - 1.0) + 1.0);
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE)][0], circ, 1e-12 * circ);
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE)][0], insc, 1e-12 * insc);
+}
+
+// A ROI of several fragments has one outer border per fragment, and the diameters are measured from
+// the ROI's centroid to all of them. Two disks of radius 10 with centres D = 40 apart have their
+// centroid midway; the nearest outer-border pixel is the axial one facing it, D/2 - R away, and the
+// farthest the axial one opposite, D/2 + R away, so the diameters are D - 2R = 20 and D + 2R = 60.
+void test_2d_morphology_circle_diameters_two_fragments_analytic()
+{
+	const double R = 10.0, D = 40.0;
+	std::vector<std::vector<double>> fvals;
+	calculate_disks_circle_values({ { 13, 13 }, { 53, 13 } }, R, -1, fvals);
+
+	// the precondition the closed forms rest on, not a claim about the centroid features
+	const double cx = fvals[static_cast<int>(Nyxus::Feature2D::CENTROID_X)][0],
+		cy = fvals[static_cast<int>(Nyxus::Feature2D::CENTROID_Y)][0];
+	ASSERT_EQ(cx, 33.0);
+	ASSERT_EQ(cy, 13.0);
+
+	SCOPED_TRACE("ANALYTIC_ORACLE__CIRCLE_DIAMETERS__TWO_R10_DISKS");
+	const double circ = D + 2.0 * R, insc = D - 2.0 * R;
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_CIRCUMSCRIBING_CIRCLE)][0], circ, 1e-12 * circ);
+	ASSERT_NEAR(fvals[static_cast<int>(Nyxus::Feature2D::DIAMETER_INSCRIBING_CIRCLE)][0], insc, 1e-12 * insc);
+}

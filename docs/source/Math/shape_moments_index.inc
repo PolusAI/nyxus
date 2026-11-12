@@ -308,93 +308,93 @@
    * - :ref:`WEIGHTED_SPAT_MOMENT_00 <feature-weighted-spat-moment-00>`
      - Weighted raw moment (0, 0)
      - —
-     - regression
-     - −42.77
+     - invariant
+     - −95.4
    * - :ref:`WEIGHTED_SPAT_MOMENT_01 <feature-weighted-spat-moment-01>`
      - Weighted raw moment (0, 1)
      - —
      - regression
-     - −113.6
+     - −296
    * - :ref:`WEIGHTED_SPAT_MOMENT_02 <feature-weighted-spat-moment-02>`
      - Weighted raw moment (0, 2)
      - —
      - regression
-     - −473.2
+     - −1415
    * - :ref:`WEIGHTED_SPAT_MOMENT_03 <feature-weighted-spat-moment-03>`
      - Weighted raw moment (0, 3)
      - —
      - regression
-     - −2419
+     - −7333
    * - :ref:`WEIGHTED_SPAT_MOMENT_10 <feature-weighted-spat-moment-10>`
      - Weighted raw moment (1, 0)
      - —
      - regression
-     - −170.2
+     - −360.2
    * - :ref:`WEIGHTED_SPAT_MOMENT_11 <feature-weighted-spat-moment-11>`
      - Weighted raw moment (1, 1)
      - —
      - regression
-     - −298.8
+     - −1007
    * - :ref:`WEIGHTED_SPAT_MOMENT_12 <feature-weighted-spat-moment-12>`
      - Weighted raw moment (1, 2)
      - —
      - regression
-     - −795.9
+     - −4467
    * - :ref:`WEIGHTED_SPAT_MOMENT_20 <feature-weighted-spat-moment-20>`
      - Weighted raw moment (2, 0)
      - —
      - regression
-     - −860.8
+     - −1864
    * - :ref:`WEIGHTED_SPAT_MOMENT_21 <feature-weighted-spat-moment-21>`
      - Weighted raw moment (2, 1)
      - —
      - regression
-     - −1315
+     - −5023
    * - :ref:`WEIGHTED_SPAT_MOMENT_30 <feature-weighted-spat-moment-30>`
      - Weighted raw moment (3, 0)
      - —
      - regression
-     - −4942
+     - −10600
    * - :ref:`WEIGHTED_CENTRAL_MOMENT_02 <feature-weighted-central-moment-02>`
      - Weighted central moment (0, 2)
      - —
      - regression
-     - −171.6
+     - −496.9
    * - :ref:`WEIGHTED_CENTRAL_MOMENT_03 <feature-weighted-central-moment-03>`
      - Weighted central moment (0, 3)
      - —
      - regression
-     - −251.6
+     - 141.3
    * - :ref:`WEIGHTED_CENTRAL_MOMENT_11 <feature-weighted-central-moment-11>`
      - Weighted central moment (1, 1)
      - —
      - regression
-     - 153.2
+     - 110.8
    * - :ref:`WEIGHTED_CENTRAL_MOMENT_12 <feature-weighted-central-moment-12>`
      - Weighted central moment (1, 2)
      - —
      - regression
-     - 274.1
+     - 190
    * - :ref:`WEIGHTED_CENTRAL_MOMENT_20 <feature-weighted-central-moment-20>`
      - Weighted central moment (2, 0)
      - —
      - regression
-     - −183.1
+     - −504.2
    * - :ref:`WEIGHTED_CENTRAL_MOMENT_21 <feature-weighted-central-moment-21>`
      - Weighted central moment (2, 1)
      - —
      - regression
-     - −248.6
+     - −74.72
    * - :ref:`WEIGHTED_CENTRAL_MOMENT_30 <feature-weighted-central-moment-30>`
      - Weighted central moment (3, 0)
      - —
      - regression
-     - −57.93
+     - 244.2
    * - :ref:`WT_NORM_CTR_MOM_02 <feature-wt-norm-ctr-mom-02>`
      - Weighted normalized central moment (0, 2)
      - —
      - regression
-     - −0.09385
+     - −0.05459
    * - :ref:`WT_NORM_CTR_MOM_03 <feature-wt-norm-ctr-mom-03>`
      - Weighted normalized central moment (0, 3)
      - —
@@ -404,7 +404,7 @@
      - Weighted normalized central moment (1, 1)
      - —
      - regression
-     - 0.08376
+     - 0.01217
    * - :ref:`WT_NORM_CTR_MOM_12 <feature-wt-norm-ctr-mom-12>`
      - Weighted normalized central moment (1, 2)
      - —
@@ -414,7 +414,7 @@
      - Weighted normalized central moment (2, 0)
      - —
      - regression
-     - −0.1001
+     - −0.05539
    * - :ref:`WT_NORM_CTR_MOM_21 <feature-wt-norm-ctr-mom-21>`
      - Weighted normalized central moment (2, 1)
      - —
@@ -429,12 +429,12 @@
      - Weighted Hu invariant 1
      - —
      - regression
-     - −0.194
+     - −0.11
    * - :ref:`WEIGHTED_HU_M2 <feature-weighted-hu-m2>`
      - Weighted Hu invariant 2
      - —
      - regression
-     - 0.0281
+     - 0.0005931
    * - :ref:`WEIGHTED_HU_M3 <feature-weighted-hu-m3>`
      - Weighted Hu invariant 3
      - —
