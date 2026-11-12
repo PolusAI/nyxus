@@ -1,6 +1,7 @@
 #define NOMINMAX	// keep Windows min/max macros from breaking dcmtk's OFvariant (DICOM tests)
 #include <gtest/gtest.h>
 #include <fstream>		// reading a written CSV back in TEST_CSV_MULTICHANNEL_NO_OVERWRITE_MECHANICS
+#include <map>			// a CSV row by column in TEST_OMEZARR_SPATIAL_AXIS_ORDER_FEATURES_MECHANICS
 #include "test_2d_gabor_mechanics.h"
 #include "test_2d_gabor_skimage.h"
 #include "../src/nyx/environment.h"
@@ -4943,6 +4944,95 @@ TEST(TEST_NYXUS, TEST_OMEZARR_MULTITIMEFRAME_MASK_PRESCAN_MECHANICS) {
 	ASSERT_NO_THROW(ok = Nyxus::scan_slide_props(p, 3, e.anisoOptions, e.use_physical_spacing(), e.fpimageOptions, e.resultOptions.need_annotation()));
 	EXPECT_TRUE(ok);
 	EXPECT_EQ(p.max_roi_area, (size_t)(4 * 4 * 6));
+}
+
+// Z, Y and X stored in an order other than z,y,x, read through both loader stacks and the facade.
+TEST(TEST_NYXUS, TEST_OMEZARR_SPATIAL_AXIS_ORDER_MECHANICS) {
+	ASSERT_NO_THROW (test_omezarr_spatial_axis_order_mechanics());
+}
+
+// The same volume and mask give the same feature row whichever order their spatial axes are stored
+// in: dim3_xyz and dim3_mask_xyz hold the voxels of dim3_zyx and dim3_mask with X first and Z last.
+// The intensity and the mask are swapped one at a time, so neither can hide the other: a mask read
+// out of place with an intensity read out of place the same way pairs the same values, and the
+// intensity features would agree. What this discriminates: a copy loop that walks a block as if it
+// were stored z,y,x reads either store with its voxels out of place, and the ROI's extrema, shape
+// and texture move with them (3MIN 10 becomes 3, 3MAX 183 becomes 190).
+TEST(TEST_NYXUS, TEST_OMEZARR_SPATIAL_AXIS_ORDER_FEATURES_MECHANICS) {
+	for (const char* s : { "dim3_zyx.ome.zarr", "dim3_mask.ome.zarr", "dim3_xyz.ome.zarr", "dim3_mask_xyz.ome.zarr" })
+		ASSERT_TRUE(fs::exists(omezarr_data_path(s))) << omezarr_data_path(s).string();
+
+	// one CSV line split at the commas outside double quotes, quotes dropped -- the file-name
+	// cells are quoted and may hold a comma
+	auto split = [](const std::string& ln)
+	{
+		std::vector<std::string> cells(1);
+		bool quoted = false;
+		for (char ch : ln)
+			if (ch == '"') quoted = !quoted;
+			else if (ch == ',' && !quoted) cells.emplace_back();
+			else cells.back() += ch;
+		return cells;
+	};
+
+	auto run = [&split](const char* intens, const char* mask) -> std::map<std::string, std::string>
+	{
+		fs::path ip = omezarr_data_path(intens), mp = omezarr_data_path(mask);
+		fs::path outdir = fs::temp_directory_path() / (std::string("nyxus_zarr_axis_order_") + intens + "_" + mask);
+		fs::remove_all(outdir); fs::create_directories(outdir);
+
+		Environment e;
+		e.set_dim (3);
+		e.theFeatureSet.enableAll(false);
+		e.theFeatureSet.enableFeatures(D3_VoxelIntensityFeatures::featureset);
+		e.theFeatureSet.enableFeatures(D3_SurfaceFeature::featureset);
+		e.theFeatureSet.enableFeatures(D3_GLCM_feature::featureset);
+		EXPECT_TRUE(e.theFeatureMgr.compile());
+		e.theFeatureMgr.apply_user_selection (e.theFeatureSet);
+		EXPECT_TRUE(e.theFeatureMgr.init_feature_classes (e.using_gpu()));
+		e.compile_feature_settings();
+		EXPECT_TRUE(e.set_ram_limit (64));	// the volume is kilobytes; 64 MB keeps the ROI in RAM
+		e.output_dir = outdir.string();
+
+		std::vector<Nyxus::Imgfile3D_layoutA> ifiles{ Nyxus::Imgfile3D_layoutA (ip.string()) },
+			mfiles{ Nyxus::Imgfile3D_layoutA (mp.string()) };
+		EXPECT_EQ(Nyxus::processDataset_3D_segmented (e, ifiles, mfiles, 1, Nyxus::SaveOption::saveCSV, outdir.string()), 0);
+
+		// column -> value of the single ROI row, without the two file-name columns
+		std::map<std::string, std::string> row;
+		size_t datarows = 0;
+		for (auto& de : fs::directory_iterator(outdir))
+			if (de.path().extension() == ".csv")
+			{
+				std::ifstream f(de.path());
+				std::string header, ln;
+				std::getline(f, header);
+				while (std::getline(f, ln))
+				{
+					if (ln.empty()) continue;
+					++datarows;
+					const std::vector<std::string> hs = split(header), vs = split(ln);
+					EXPECT_EQ(hs.size(), vs.size()) << de.path().string();
+					for (size_t i = 0; i < (std::min)(hs.size(), vs.size()); ++i)
+						if (hs[i] != Nyxus::colname_intensity_image && hs[i] != Nyxus::colname_mask_image)
+							row[hs[i]] = vs[i];
+				}
+			}
+		EXPECT_EQ(datarows, (size_t)1) << intens << " + " << mask;
+		fs::remove_all(outdir);
+		return row;
+	};
+
+	const auto ref = run("dim3_zyx.ome.zarr", "dim3_mask.ome.zarr");
+	ASSERT_GT(ref.size(), (size_t)10);
+	for (auto [intens, mask] : { std::pair{ "dim3_xyz.ome.zarr", "dim3_mask.ome.zarr" },
+		std::pair{ "dim3_zyx.ome.zarr", "dim3_mask_xyz.ome.zarr" } })
+	{
+		const auto got = run(intens, mask);
+		ASSERT_EQ(got.size(), ref.size()) << intens << " + " << mask;
+		for (const auto& [col, v] : ref)
+			EXPECT_EQ(got.at(col), v) << col << " of " << intens << " + " << mask;
+	}
 }
 
 #endif // OMEZARR_SUPPORT
