@@ -91,8 +91,8 @@ libraries it finds (see `Building from source`_).
 
 .. warning::
 
-   The conda-forge Windows packages of 0.11.0 and 0.12.0 were built in Debug mode: their extension
-   module imports the Visual Studio debug runtime (``MSVCP140D.dll``, ``VCRUNTIME140D.dll``,
+   The conda-forge Windows packages of 0.11.0, 0.12.0 and 0.12.1 were built in Debug mode: their
+   extension module imports the Visual Studio debug runtime (``MSVCP140D.dll``, ``VCRUNTIME140D.dll``,
    ``ucrtbased.dll``), which only an installation of Visual Studio provides, not the Visual C++
    redistributable. Without Visual Studio, ``import nyxus`` fails. This is a known issue
    (`#528 <https://github.com/PolusAI/nyxus/issues/528>`__).
