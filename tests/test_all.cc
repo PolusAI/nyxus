@@ -58,6 +58,7 @@
 #include "test_initialization_mechanics.h"
 #include "test_feature_manager_mechanics.h"
 #include "test_feature_settings_mechanics.h"
+#include "test_wholeslide_dirs_mechanics.h"
 #include "test_2d_glcm_ibsi.h"
 #include "test_2d_glcm_pyradiomics.h"
 #include "test_2d_glcm_mirp.h"
@@ -1823,6 +1824,22 @@ TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_COARSE_GRAY_DEPTH_CLI_ACCEPTED_MECHANICS)
 
 TEST(TEST_NYXUS, TEST_FEATURE_SETTINGS_COARSE_GRAY_DEPTH_CLI_REFUSED_MECHANICS) {
 	ASSERT_NO_FATAL_FAILURE(test_feature_settings_coarse_gray_depth_cli_refused_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_WHOLESLIDE_DIRS_SAME_DIRECTORY_SPELLINGS_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_wholeslide_dirs_same_directory_spellings_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_WHOLESLIDE_DIRS_CLI_ANY_SPELLING_IS_WHOLESLIDE_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_wholeslide_dirs_cli_any_spelling_is_wholeslide_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_WHOLESLIDE_DIRS_CLI_CASE_DIFFERING_DIRS_STAY_SEGMENTED_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_wholeslide_dirs_cli_case_differing_dirs_stay_segmented_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_WHOLESLIDE_DIRS_MISSING_DIR_REFUSED_MECHANICS) {
+	ASSERT_NO_FATAL_FAILURE(test_wholeslide_dirs_missing_dir_refused_mechanics());
 }
 
 TEST(TEST_NYXUS, TEST_TEXTURE_BINNING_ROI_CUBE_VOXEL_AT_ZERO_MECHANICS) {

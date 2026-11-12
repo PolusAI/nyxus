@@ -11,7 +11,7 @@ values = "no value"
 build = ""
 summary = "Prints the usage screen and exits."
 notes = "Running nyxus with no arguments also prints the usage screen."
-evidence = "environment.cpp:409-414, 422-426; main_nyxus.cpp:17-18"
+evidence = "environment.cpp:408-413, 421-425; main_nyxus.cpp:17-18"
 
 [[option]]
 name = "--intDir"
@@ -22,7 +22,7 @@ values = "path to an existing directory"
 build = ""
 summary = "Directory holding the intensity images."
 notes = "Required even when --intSegMapFile is used: mapped intensity file names are resolved relative to this directory. When it is the same directory as --segDir, Nyxus runs in whole-slide mode and treats each image as one ROI."
-evidence = "environment.cpp:563-567, 575-578; dirs_and_files.cpp:65-66, 135"
+evidence = "environment.cpp:562-566, 573-578; dirs_and_files.cpp:28-41, 83-84, 154"
 
 [[option]]
 name = "--segDir"
@@ -33,7 +33,7 @@ values = "path to an existing directory"
 build = ""
 summary = "Directory holding the label (mask) images that define the ROIs."
 notes = "Set it to the same directory as --intDir for whole-slide mode, where each intensity image is a single ROI and no mask is read. Required even with --intSegMapFile: mapped mask file names are resolved relative to this directory."
-evidence = "environment.cpp:558-562, 575-578; main_nyxus.cpp:83-91, 147-168; dirs_and_files.cpp:74-91, 139"
+evidence = "environment.cpp:557-561, 573-578; main_nyxus.cpp:83-91, 147-168; dirs_and_files.cpp:28-41, 88-105, 158"
 
 [[option]]
 name = "--filePattern"
@@ -45,7 +45,7 @@ values = "regular expression (2D); regular expression or file pattern with `{d+}
 build = ""
 summary = "Selects which files in the input directories are processed. In 2D the pattern must match the whole file name."
 notes = "A regular expression, so use `.*\\.tif` rather than `*.tif`. In 3D a pattern containing `{set d+}` is read as a z-slice file pattern, for example `BRATS_{d+}_z{set d+}_t{d+}.ome.tif`. Such a pattern currently matches no files and the run stops with 'No intensity and/or label file pairs to process'. Not applied to pairs listed in an --intSegMapFile."
-evidence = "environment_basic.h:27; environment.cpp:345-346, 519-523, 538-554; environment_basic.cpp:19-55; strpat.cpp:9-35; dirs_and_files.cpp:28-46"
+evidence = "environment_basic.h:27; environment.cpp:344-345, 518-522, 537-553; environment_basic.cpp:19-55; strpat.cpp:9-35; dirs_and_files.cpp:43-61"
 
 [[option]]
 name = "--intSegMapFile"
@@ -56,7 +56,7 @@ values = "file name inside --intSegMapDir"
 build = ""
 summary = "Names a text file that lists explicit intensity/mask pairs, one pair per line, instead of matching files by name."
 notes = "Each line holds an intensity file name and then a mask file name, separated by whitespace. Intensity names are relative to --intDir and mask names to --segDir. Requires --intSegMapDir. --filePattern is not applied to listed pairs. 2D only."
-evidence = "dirs_and_files.cpp:71, 117-153; environment.cpp:433; main_nyxus.cpp:62-71, 174-183"
+evidence = "dirs_and_files.cpp:86, 132-168; environment.cpp:432; main_nyxus.cpp:62-71, 174-183"
 
 [[option]]
 name = "--intSegMapDir"
@@ -67,7 +67,7 @@ values = "path to an existing directory"
 build = ""
 summary = "Directory that contains the --intSegMapFile pairing file."
 notes = "Has no effect unless --intSegMapFile is also given."
-evidence = "dirs_and_files.cpp:71, 117-124; environment.cpp:432"
+evidence = "dirs_and_files.cpp:86, 132-139; environment.cpp:431"
 
 [[option]]
 name = "--dim"
@@ -79,7 +79,7 @@ values = "2 | 3"
 build = ""
 summary = "Sets whether the dataset is processed as 2D images or as 3D volumes."
 notes = "In 3D the default feature set is *3D_ALL*, the Gabor and nested-ROI options are rejected, and --intSegMapFile is ignored."
-evidence = "environment.cpp:124, 527-537, 589-592, 999-1003, 1048-1052; main_nyxus.cpp:58, 145"
+evidence = "environment.cpp:123, 526-536, 589-592, 999-1003, 1048-1052; main_nyxus.cpp:58, 145"
 
 [[option]]
 name = "--outDir"
@@ -90,7 +90,7 @@ values = "path to an existing directory"
 build = ""
 summary = "Directory where result files are written."
 notes = "The directory must already exist."
-evidence = "environment.cpp:568-572; dirs_and_files.cpp:62-63, 275-276"
+evidence = "environment.cpp:567-571; dirs_and_files.cpp:77-78, 290-291"
 
 [[option]]
 name = "--outputType"
@@ -101,7 +101,7 @@ values = "separatecsv | singlecsv | arrowipc | parquet (case-insensitive)"
 build = ""
 summary = "Selects the result format: one CSV per image pair, one combined CSV, an Arrow IPC file, or a Parquet file."
 notes = "There is no default. arrowipc and parquet need a build with Arrow support."
-evidence = "environment.cpp:94-95, 581-585, 604-641"
+evidence = "environment.cpp:93-94, 581-585, 604-641"
 
 [[option]]
 name = "--resultFname"
@@ -113,7 +113,7 @@ values = "non-empty file name without extension"
 build = ""
 summary = "Base name of the result file for singlecsv, arrowipc and parquet output."
 notes = "Ignored with separatecsv, which names each file after its image pair."
-evidence = "environment.cpp:77, 345-346, 597-601; output_2_csv.cpp:212-219; workflow_2d_segmented.cpp:277"
+evidence = "environment.cpp:76, 344-345, 597-601; output_2_csv.cpp:212-219; workflow_2d_segmented.cpp:277"
 
 [[option]]
 name = "--noval"
@@ -196,7 +196,7 @@ values = "true | 1 | on (case-insensitive); any other value means false"
 build = ""
 summary = "Turns on IBSI compliance mode: texture families skip grey-level binning and follow IBSI definitions, and the Intensity Histogram family becomes available."
 notes = "Invalid values are not reported; they silently mean false."
-evidence = "environment.cpp:120, 884-885; env_features.cpp:515-528; features/glcm.cpp:356; features/glrlm.cpp:85; features/ngtdm.cpp:48"
+evidence = "environment.cpp:119, 884-885; env_features.cpp:515-528; features/glcm.cpp:356; features/glrlm.cpp:85; features/ngtdm.cpp:48"
 
 [[option]]
 name = "--mergerois"
@@ -231,7 +231,7 @@ values = "integer >= 1"
 build = ""
 summary = "Distance in pixels within which two ROIs count as neighbors, for the neighbor features."
 notes = ""
-evidence = "environment.cpp:87, 655-663; env_features.cpp:728"
+evidence = "environment.cpp:86, 655-663; env_features.cpp:728"
 
 [[option]]
 name = "--pixelsPerCentimeter"
@@ -253,7 +253,7 @@ values = "any string"
 build = ""
 summary = "Accepted for compatibility."
 notes = "The value is accepted and shown in the run summary but does not affect any result."
-evidence = "environment.cpp:81, 274, 438 (only uses)"
+evidence = "environment.cpp:80, 273, 437 (only uses)"
 
 [[option]]
 name = "--onlineStatsThresh"
@@ -264,7 +264,7 @@ values = "not accepted"
 build = ""
 summary = "Reserved option name."
 notes = "The name is reserved but the option is not accepted: passing it stops the run as an unrecognized argument."
-evidence = "cli_option_constants.h:15; environment.cpp:428-489 (not in the parse list), 507-513"
+evidence = "cli_option_constants.h:15; environment.cpp:427-488 (not in the parse list), 507-513"
 
 [[option]]
 name = "--coarseGrayDepth"
@@ -276,7 +276,7 @@ values = "integer: > 0 MATLAB-style bins from 0 to the ROI maximum, < 0 |n| PyRa
 build = ""
 summary = "Grey depth used to bin intensities for every 2D and 3D texture family, and the bin count of the ENTROPY, UNIFORMITY and HISTOGRAM histograms and of the Intensity Histogram (IH_*) family."
 notes = "A family's own greydepth metaparameter (set_metaparam in Python) overrides it for that family. NGLDM bins a positive value its own way, to levels 0 to n. The histograms use |n| bins, and 24 at 0; HISTOGRAM writes one column per bin, and the IH_* features return the --noval substitute with a single bin. --ibsi=true makes every texture family skip binning, except the 2D GLCM test for a constant ROI. A value that is not an integer, or whose magnitude is past 2147483647, stops the run with an error."
-evidence = "environment.cpp:106, 664-679; env_features.cpp:726, 736, 741-744; helpers/helpers.h:129; features/texture_feature.h:79-99, 141-157; constants.h:10-15; features/intensity_histogram.cpp:311"
+evidence = "environment.cpp:105, 664-679; env_features.cpp:726, 736, 741-744; helpers/helpers.h:129; features/texture_feature.h:79-99, 141-157; constants.h:10-15; features/intensity_histogram.cpp:311"
 
 [[option]]
 name = "--glcmAngles"
@@ -488,7 +488,7 @@ values = "integer >= 1"
 build = ""
 summary = "Number of CPU threads used to calculate features."
 notes = ""
-evidence = "environment.cpp:84, 645-653; main_nyxus.cpp:88, 98, 162, 194; reduce_trivial_rois.cpp:775-785"
+evidence = "environment.cpp:83, 645-653; main_nyxus.cpp:88, 98, 162, 194; reduce_trivial_rois.cpp:775-785"
 
 [[option]]
 name = "--ramLimit"
@@ -499,7 +499,7 @@ values = "integer megabytes >= 0, not above available RAM"
 build = ""
 summary = "Memory budget in megabytes. ROIs whose estimated footprint reaches it are processed out of core, and the rest are batched to fit within it."
 notes = "The value is read as its leading integer: 100.5 and 100MB both run as 100. A value above available RAM, a negative value, or a value that does not start with an integer stops the run with an error."
-evidence = "environment.cpp:137-138, 693-712, 944-960; workflow_2d_segmented.cpp:123-148; workflow_3d_segmented.cpp:103-133"
+evidence = "environment.cpp:136-137, 693-712, 944-960; workflow_2d_segmented.cpp:123-148; workflow_3d_segmented.cpp:103-133"
 
 [[option]]
 name = "--tempDir"
@@ -566,7 +566,7 @@ values = "integer >= 0"
 build = ""
 summary = "Amount of console output. The version banner, the list of recognized arguments, and errors and warnings are printed at every level; 1 adds the run summary, and higher levels add timing, per-ROI and diagnostic detail."
 notes = "At level 2 and above, ROI metric files are also written to the output directory."
-evidence = "environment_basic.h:28; environment.cpp:500-504, 682-690; main_nyxus.cpp:15, 20; workflow_2d_segmented.cpp:101; environment.h:302-306"
+evidence = "environment_basic.h:28; environment.cpp:499-503, 682-690; main_nyxus.cpp:15, 20; workflow_2d_segmented.cpp:101; environment.h:302-306"
 
 [[option]]
 name = "--exclusivetiming"
@@ -578,7 +578,7 @@ values = "true | 1 | on (case-insensitive); any other value means false"
 build = "CHECKTIMING builds"
 summary = "In timing builds, true measures time per image pair (exclusive) and false measures the whole collection (inclusive)."
 notes = "Rejected as unrecognized in builds without CHECKTIMING."
-evidence = "cli_option_constants.h:27-29; environment.cpp:480-482, 818-827; helpers/timing.cpp:10"
+evidence = "cli_option_constants.h:27-29; environment.cpp:479-481, 818-827; helpers/timing.cpp:10"
 
 [[option]]
 name = "--useGpu"
@@ -590,7 +590,7 @@ values = "true | false (case-insensitive)"
 build = "GPU builds"
 summary = "Runs supported feature calculations on a CUDA GPU."
 notes = "Other values stop the run with an error. If the chosen device cannot be initialized, the run stops and suggests --useGpu=false. Rejected as unrecognized in non-GPU builds."
-evidence = "cli_option_constants.h:31-34; cli_gpu_options.h:28; cli_gpu_options.cpp:76-94; environment.cpp:484-487, 831-839; main_nyxus.cpp:22-31"
+evidence = "cli_option_constants.h:31-34; cli_gpu_options.h:28; cli_gpu_options.cpp:76-94; environment.cpp:483-486, 831-839; main_nyxus.cpp:22-31"
 
 [[option]]
 name = "--gpuDeviceID"
@@ -602,4 +602,4 @@ values = "comma-separated integers >= 0"
 build = "GPU builds"
 summary = "GPU device IDs to choose from. Nyxus uses the listed device with the most free memory at startup."
 notes = "Ignored unless --useGpu=true. A value that does not start with a non-negative integer stops the run with an error. A listed device that cannot be used is skipped; if none of them can be used, the run stops with an error."
-evidence = "cli_gpu_options.cpp:68-106; gpu/gpu_helpers.cu:60-86; environment.cpp:486"
+evidence = "cli_gpu_options.cpp:68-106; gpu/gpu_helpers.cu:60-86; environment.cpp:485"

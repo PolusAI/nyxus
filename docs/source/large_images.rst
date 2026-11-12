@@ -33,9 +33,10 @@ image as one ROI with label 1 that covers every pixel, including zero-intensity 
          0  slides/slide1.ome.tif                     1  2002.230794      224.0
          1  slides/slide2.ome.tif                     1  1981.880208      224.0
 
-      ``featurize_directory`` switches to whole-slide mode when ``label_dir`` is ``None`` or the
-      same path string as ``intensity_dir``. For whole volumes, background included, call
-      ``Nyxus3D.featurize_directory(volume_dir, None, ".*")`` or
+      ``featurize_directory`` switches to whole-slide mode when ``label_dir`` is ``None`` or names
+      the same directory as ``intensity_dir``, however it is written: a trailing separator, a
+      relative or absolute path and a symbolic link all count. For whole volumes, background
+      included, call ``Nyxus3D.featurize_directory(volume_dir, None, ".*")`` or
       ``Nyxus3D.featurize_directory(volume_dir, volume_dir, ".*")``.
       ``Nyxus3D.featurize_files(volumes, volumes, single_roi=True)`` is not whole-volume mode: it
       uses each volume as its own mask, so the ROI is the volume's nonzero voxels (see
