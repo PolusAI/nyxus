@@ -142,6 +142,27 @@ def _run_2d(intdir, segdir, outdir, extra=()):
 
 
 @needs_cli
+def test_cli_wholeslide_any_spelling_of_the_dir_is_one_roi_mechanics(tmp_path):
+    """--segDir naming the --intDir directory in another spelling is still whole-slide: one row.
+
+    What this discriminates: comparing the two arguments as strings, which reads "slide/" against
+    "slide" as two directories and runs segmented with the slide as its own mask, one ROI per
+    distinct intensity.
+    """
+    d = _slide_only(tmp_path)
+    for i, seg in enumerate([str(d), str(d) + "/", str(d) + os.sep, str(d / ".." / d.name)]):
+        outdir = tmp_path / ("out%d" % i)
+        outdir.mkdir()
+        r = _run_2d(d, seg, outdir)
+        assert r.returncode == 0, "%r:\n%s\n%s" % (seg, r.stdout[-1500:], r.stderr[-1500:])
+        rows = sum(
+            max(0, sum(1 for ln in p.read_text().splitlines() if ln.strip()) - 1)
+            for p in outdir.glob("*.csv")
+        )
+        assert rows == 1, "%r: %d rows, not one whole-slide row" % (seg, rows)
+
+
+@needs_cli
 def test_cli_wholeslide_exits_nonzero_when_the_slide_cannot_be_featurized_mechanics(tmp_path):
     """A 2D whole-slide run that refused its slide exits non-zero and writes no row.
 
