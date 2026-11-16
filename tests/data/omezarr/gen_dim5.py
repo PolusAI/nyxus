@@ -1,10 +1,13 @@
-"""Generate OME-Zarr v2 fixtures whose every voxel encodes its own (x,y,z,c,t)
-coordinate, so a reader that mis-orders or fails to address the C/T/Z axes reads
-a provably wrong value.
+"""Generate OME-Zarr fixtures, Zarr v2 unless a writer says v3, most of them holding
+voxels that encode their own (x,y,z,c,t) coordinate, so a reader that mis-orders or
+fails to address an axis reads a provably wrong value.
 
     value(x,y,z,c,t) = 1 + ((((t*C + c)*Z + z)*Y + y)*X + x)     # C=3,Z=4,Y=6,X=8
 
-Stores (same encoding throughout; absent axes are pinned to index 0):
+The label masks (write_label_mask) and the illegal stores at the end of main() hold other
+values; each writer's docstring says what.
+
+Stores with the coordinate encoding (absent axes are pinned to index 0):
 
   dim5.ome.zarr        axes t,c,z,y,x   default TCZYX
   dim5_ctzyx.ome.zarr  axes c,t,z,y,x   non-default (C/T swapped) -> proves 'axes' is honored
@@ -18,6 +21,11 @@ Stores (same encoding throughout; absent axes are pinned to index 0):
   dim3_xyz_chunked.ome.zarr axes x,y,z  the same, chunk (5,4,3) -> Z chunk 3 deep, uneven grid
   dim5_xtzcy.ome.zarr  axes x,t,z,c,y   5D with Z, Y, X interleaved among T and C
   dim3_v3_zxy.ome.zarr axes z,x,y       Zarr v3 with X before Y
+
+Label mask:
+
+  dim3_mask_xyz.ome.zarr axes x,y,z     dim3_mask.ome.zarr (label 1 over z=all, y 1..4, x 1..6)
+                                        stored x,y,z
 
 Unless its writer below says otherwise, a store is chunked one z-slice per chunk and written
 UNCOMPRESSED (compressor=None) so it reads with header-only z5 (no blosc/zlib link).

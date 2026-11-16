@@ -91,20 +91,14 @@ namespace Nyxus
 		/// plane-major in a tile of tile_height x tile_width planes -- plane p, row k, column j at
 		/// (p*tile_height + k)*tile_width + j -- and buffer_index is where that sample sits in the
 		/// read buffer. The axes are walked from the largest buffer stride to the smallest, so the
-		/// buffer is read in storage order whatever order the array keeps Z, Y and X in; an axis
-		/// one sample long goes outermost, where it costs nothing.
+		/// buffer is read in storage order whatever order the array keeps Z, Y and X in.
 		template <class F>
 		void for_each_sample (std::size_t tile_height, std::size_t tile_width, F&& f) const
 		{
 			struct Axis { std::size_t extent, src, dst; };
 			std::array<Axis, 3> a = { { { depth, stride_z, tile_height * tile_width },
 				{ height, stride_y, tile_width }, { width, stride_x, 1 } } };
-			std::stable_sort (a.begin(), a.end(), [] (const Axis& l, const Axis& r)
-				{
-					if ((l.extent == 1) != (r.extent == 1))
-						return l.extent == 1;
-					return l.src > r.src;
-				});
+			std::stable_sort (a.begin(), a.end(), [] (const Axis& l, const Axis& r) { return l.src > r.src; });
 
 			for (std::size_t u = 0; u < a[0].extent; ++u)
 				for (std::size_t v = 0; v < a[1].extent; ++v)

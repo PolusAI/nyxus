@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <fstream>		// reading a written CSV back in TEST_CSV_MULTICHANNEL_NO_OVERWRITE_MECHANICS
 #include <map>			// a CSV row by column in TEST_OMEZARR_SPATIAL_AXIS_ORDER_FEATURES_MECHANICS
+#include <random>		// its output directory's unique suffix
 #include "test_2d_gabor_mechanics.h"
 #include "test_2d_gabor_skimage.h"
 #include "../src/nyx/environment.h"
@@ -4978,7 +4979,10 @@ TEST(TEST_NYXUS, TEST_OMEZARR_SPATIAL_AXIS_ORDER_FEATURES_MECHANICS) {
 	auto run = [&split](const char* intens, const char* mask) -> std::map<std::string, std::string>
 	{
 		fs::path ip = omezarr_data_path(intens), mp = omezarr_data_path(mask);
-		fs::path outdir = fs::temp_directory_path() / (std::string("nyxus_zarr_axis_order_") + intens + "_" + mask);
+		// a name of this run's own, so two test processes sharing the temp directory cannot
+		// remove each other's output
+		fs::path outdir = fs::temp_directory_path() / (std::string("nyxus_zarr_axis_order_") + intens + "_" + mask
+			+ "_" + std::to_string(std::random_device{}()));
 		fs::remove_all(outdir); fs::create_directories(outdir);
 
 		Environment e;
@@ -5029,9 +5033,15 @@ TEST(TEST_NYXUS, TEST_OMEZARR_SPATIAL_AXIS_ORDER_FEATURES_MECHANICS) {
 		std::pair{ "dim3_zyx.ome.zarr", "dim3_mask_xyz.ome.zarr" } })
 	{
 		const auto got = run(intens, mask);
-		ASSERT_EQ(got.size(), ref.size()) << intens << " + " << mask;
+		EXPECT_EQ(got.size(), ref.size()) << intens << " + " << mask;
 		for (const auto& [col, v] : ref)
-			EXPECT_EQ(got.at(col), v) << col << " of " << intens << " + " << mask;
+		{
+			auto it = got.find(col);
+			if (it == got.end())
+				ADD_FAILURE() << col << " missing from " << intens << " + " << mask;
+			else
+				EXPECT_EQ(it->second, v) << col << " of " << intens << " + " << mask;
+		}
 	}
 }
 
