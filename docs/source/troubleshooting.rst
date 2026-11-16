@@ -204,10 +204,7 @@ physical memory available when Nyxus starts. A ROI whose estimated footprint rea
 is processed out of core, and the other ROIs are processed in batches that fit within it. In
 Python, ``get_params("ram_limit")`` reports the budget in megabytes. ``Nyxus3D`` accepts
 ``ram_limit`` in its constructor only, not in ``set_params``. :doc:`large_images` says which
-features differ when a ROI is processed out of core. On a 2D striped TIFF larger than
-1024 x 1024 pixels, out-of-core processing raises an error for most 2D families or gives wrong
-values, depending on the family and the ROI; tiled TIFF files are processed correctly. See
-:ref:`large-images-tiles`.
+features differ when a ROI is processed out of core.
 
 Cost of the feature families
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -21,9 +21,7 @@ rough or ragged shapes give larger values.
    * - **Out-of-core**
      - Yes. Out of core both features have their in-memory values: box counting follows the same
        rule for the padded side :math:`S`, and the divider walks the same borders, traced the same
-       way (the worked example gives 1.3732 and 1.1311 on both paths). On a striped image larger
-       than 1024 pixels in either direction out-of-core processing raises an error or returns wrong
-       values, depending on the ROI (see :ref:`large-images-tiles`).
+       way (the worked example gives 1.3732 and 1.1311 on both paths).
    * - **IBSI**
      - Neither feature has an IBSI identifier; IBSI defines no fractal dimension.
 

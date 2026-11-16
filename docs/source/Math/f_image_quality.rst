@@ -19,10 +19,8 @@ computed on the ROI's bounding box as a rectangular image.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Partly, with a label image only. On tiled TIFF files and on striped files of up to
-       1024 × 1024 pixels (see :ref:`large-images-tiles`), ``FOCUS_SCORE`` and
-       ``LOCAL_FOCUS_SCORE`` have the same values as in memory, and so do the saturations unless
-       the ROI is constant.
+     - Partly, with a label image only. ``FOCUS_SCORE`` and ``LOCAL_FOCUS_SCORE`` have the same
+       values as in memory, and so do the saturations unless the ROI is constant.
        ``POWER_SPECTRUM_SLOPE`` and ``SHARPNESS`` are not computed out of core, a known defect
        (`#508 <https://github.com/PolusAI/nyxus/issues/508>`__; see :ref:`imq-possible-issues`). In whole-image mode an image too large for memory is refused.
    * - **IBSI**

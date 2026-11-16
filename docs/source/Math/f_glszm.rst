@@ -21,9 +21,7 @@ small zones; coarse or homogeneous textures give few large ones.
        level non-uniformity, grey level variance and zone variance do not follow the formulas on
        this page.
    * - **Out-of-core**
-     - Yes, with the same values as in memory on tiled TIFF files and on striped files of up to
-       1024 × 1024 pixels. On a larger striped file out-of-core processing of this family raises
-       an error or returns wrong values, depending on the ROI (see :ref:`large-images-tiles`).
+     - Yes, with the same values as in memory.
    * - **IBSI**
      - All 16 features have an IBSI identifier.
 
