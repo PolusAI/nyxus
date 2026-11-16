@@ -10,6 +10,36 @@ control its threads and memory and how to time a run. Every option it names is d
 Common errors
 -------------
 
+.. _troubleshooting-install:
+
+Installing
+^^^^^^^^^^
+
+* ``pip`` stops with ``No matching distribution found for nyxus`` when no wheel fits your Python
+  and platform: Python 3.14 (use conda-forge), Linux with a glibc older than 2.28 such as CentOS 7
+  (use conda-forge on x86_64), and musl-based Linux, Windows on ARM or 32-bit systems (build from
+  source, see :doc:`building`). An older ``pip`` may instead install an old release that still had
+  a wheel for your system, so check the version with
+  ``python -c "import nyxus; print(nyxus.__version__)"``.
+* ``conda install`` reports ``PackagesNotFoundError`` on Apple Silicon Macs and Linux aarch64,
+  where conda-forge has no build. Install the pip wheel into the conda environment:
+
+  .. code-block:: bash
+
+     conda create -n nyxus -c conda-forge python=3.12 numpy pandas
+     conda activate nyxus
+     pip install nyxus
+
+* On Windows, ``import nyxus`` from the conda-forge package fails on a machine without Visual
+  Studio: the package is built in Debug mode and needs the Visual Studio debug runtime
+  (``MSVCP140D.dll``). Install the pip wheel instead. This is a known issue
+  (`#528 <https://github.com/PolusAI/nyxus/issues/528>`__).
+* A CUDA package whose libraries are missing fails at ``import nyxus``, on Linux with
+  ``ImportError: libcufft.so.11: cannot open shared object file`` (``libcufft.so.10`` for
+  ``nyxus-cuda11x``), on Windows with ``ImportError: DLL load failed while importing backend``.
+  Install the CUDA runtime and cuFFT of the package's CUDA version; on Linux, put the toolkit's
+  ``lib64`` directory on ``LD_LIBRARY_PATH``.
+
 Feature names
 ^^^^^^^^^^^^^
 
@@ -150,11 +180,8 @@ A build without an optional part refuses its files or outputs:
   available. Please install Nyxus with Arrow enabled to use this functionality.`` and the call
   raises ``RuntimeError``.
 
-The PyPI and conda packages include all of them, except that the Windows wheels on PyPI of 0.9.3
-and 0.11.0 have no OME-Zarr support (see :doc:`installation`). The first conda-forge Windows builds of
-0.11.0 (build number 0) also lack OME-Zarr, ``.nii.gz`` and DICOM; conda installs one of them into
-an environment that holds ``libarrow`` 19 or 20.
-:ref:`installation-check` shows how to check a build.
+The PyPI and conda packages include all of them, so these messages come from source builds (see
+:doc:`building`). :ref:`installation-check` shows how to check a build.
 
 GPU
 ^^^
