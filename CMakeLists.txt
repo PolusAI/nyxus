@@ -1,13 +1,4 @@
 cmake_minimum_required(VERSION 3.20)
-
-# A single-configuration generator builds Release unless told otherwise. This precedes project()
-# because project() presets the cache entry to Debug under MSVC. CMake 3.22 and newer take a type
-# from the CMAKE_BUILD_TYPE environment variable; older versions ignore that variable.
-get_property(NYXUS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-if(NOT NYXUS_MULTI_CONFIG AND NOT CMAKE_BUILD_TYPE AND ("$ENV{CMAKE_BUILD_TYPE}" STREQUAL "" OR CMAKE_VERSION VERSION_LESS 3.22))
-	set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
-endif()
-
 project(AxleNyxus)
 include(GNUInstallDirs)
 include(CheckLanguage)
@@ -122,6 +113,10 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive- /EHsc /bigobj /Zc:__cplusplus")
+endif()
+
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
 endif()
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O2")

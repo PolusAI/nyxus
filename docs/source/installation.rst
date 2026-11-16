@@ -433,9 +433,10 @@ CMake options
      - ``OFF``
      - Builds the ``bench_convex_hull`` micro-benchmark (see ``benchmarks/README.md``).
    * - ``CMAKE_BUILD_TYPE``
-     - ``Release``
-     - Single-configuration generators, such as Ninja and NMake, build ``Release`` unless told
-       otherwise.
+     - ``Release`` (``Debug`` with MSVC)
+     - Single-configuration generators build ``Release`` unless told otherwise. With MSVC, CMake
+       itself presets ``Debug``, so pass ``-DCMAKE_BUILD_TYPE=Release`` when you use Ninja or
+       NMake. This is a known defect (`#524 <https://github.com/PolusAI/nyxus/issues/524>`__).
 
 The C++ standard is C++20 and is required (``CMAKE_CXX_STANDARD 20``). On MSVC the build adds
 ``/permissive- /EHsc /bigobj /Zc:__cplusplus``.
