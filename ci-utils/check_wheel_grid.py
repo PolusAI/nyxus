@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """Check that PyPI holds every wheel of a release.
 
-pip prefers a new version's source distribution over an older wheel, so publish_pypi.yml uploads
-the source distribution only when this check passes. Usage: check_wheel_grid.py <sdist>
+The wheel jobs of publish_pypi.yml continue on error, so a release can lack wheels while its run
+stays green, and pip then installs an older release on the platforms concerned. publish_pypi.yml
+runs this check after the wheel jobs. Usage: check_wheel_grid.py <version>
 """
 import argparse
 import fnmatch
 import json
-import re
 import sys
 import time
 import urllib.error
 import urllib.request
-from pathlib import Path
 
 PYTHONS = ("cp310", "cp311", "cp312", "cp313")
 PLATFORMS = {
@@ -40,13 +39,6 @@ def missing_wheels(filenames, version):
     return [python + " " + label for python in PYTHONS for label in PLATFORMS if (python, label) not in present]
 
 
-def version_of_sdist(path):
-    match = re.fullmatch(r"nyxus-(.+)\.tar\.gz", Path(path).name)
-    if match is None:
-        raise SystemExit(f"'{path}' is not a nyxus source distribution.")
-    return match.group(1)
-
-
 def fetch_filenames(version):
     """List the files PyPI holds for this version; a version PyPI does not know has none."""
     try:
@@ -60,13 +52,15 @@ def fetch_filenames(version):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Check that PyPI holds every wheel of a release.")
-    parser.add_argument("sdist", help="Path of the source distribution about to be uploaded.")
+    parser.add_argument("version", help="The release's version, as setuptools-scm gives it.")
     # PyPI's JSON API can trail an upload by a few minutes.
     parser.add_argument("--attempts", type=int, default=6)
     parser.add_argument("--delay", type=float, default=30.0, help="Seconds between attempts.")
     args = parser.parse_args(argv)
 
-    version = version_of_sdist(args.sdist)
+    version = args.version
+    if not version or any(char.isspace() for char in version):
+        raise SystemExit(f"'{version}' is not a version.")
     for attempt in range(1, args.attempts + 1):
         missing = missing_wheels(fetch_filenames(version), version)
         if not missing:

@@ -1,9 +1,9 @@
-"""A release's source distribution reaches PyPI only beside its full wheel grid.
+"""A release run reports every wheel of the grid that PyPI lacks.
 
-pip prefers a new version's source distribution over an older wheel, so a platform whose wheel
-is missing would attempt a source build. ci-utils/check_wheel_grid.py compares PyPI's file list
-with the grid publish_pypi.yml builds, and the release wheels are configured so that a dropped
-ALLEXTRAS part fails the build.
+The wheel jobs continue on error, so a release can lack wheels with its run green, and pip then
+installs an older release on the platforms concerned. ci-utils/check_wheel_grid.py compares PyPI's
+file list with the grid publish_pypi.yml builds, and the release wheels are configured so that a
+dropped ALLEXTRAS part fails the build.
 """
 import importlib.util
 import pathlib
@@ -79,20 +79,28 @@ def test_other_versions_and_sdists_cover_no_cell_mechanics():
     assert len(_grid().missing_wheels(files, VERSION)) == 20
 
 
-def test_sdist_name_gives_the_version_mechanics():
-    assert _grid().version_of_sdist("dist/nyxus-0.13.0.post2.dev5.tar.gz") == "0.13.0.post2.dev5"
+def test_version_argument_is_the_one_queried_mechanics(monkeypatch):
+    grid = _grid()
+    asked = []
+    monkeypatch.setattr(grid, "fetch_filenames", lambda version: asked.append(version) or _complete(version))
+    assert grid.main(["0.13.0.post2.dev5", "--attempts", "1"]) == 0
+    assert asked == ["0.13.0.post2.dev5"]
 
 
-def test_foreign_sdist_name_refused_mechanics():
+@pytest.mark.parametrize("version", ["", "0.13.0 0.13.1"])
+def test_empty_or_split_version_refused_mechanics(monkeypatch, version):
+    # an empty "$(python -m setuptools_scm)" would otherwise query the URL of no version
+    grid = _grid()
+    monkeypatch.setattr(grid, "fetch_filenames", lambda version: pytest.fail("PyPI queried"))
     with pytest.raises(SystemExit):
-        _grid().version_of_sdist("dist/other-1.2.3.tar.gz")
+        grid.main([version])
 
 
 def test_incomplete_grid_exits_nonzero_and_names_the_cells_mechanics(monkeypatch, capsys):
     grid = _grid()
     files = [name for name in _complete() if "arm64" not in name]
     monkeypatch.setattr(grid, "fetch_filenames", lambda version: files)
-    assert grid.main(["dist/nyxus-" + VERSION + ".tar.gz", "--attempts", "2", "--delay", "0"]) == 1
+    assert grid.main([VERSION, "--attempts", "2", "--delay", "0"]) == 1
     assert "cp310 macOS arm64" in capsys.readouterr().err
 
 
@@ -100,19 +108,27 @@ def test_grid_appearing_between_attempts_passes_mechanics(monkeypatch):
     grid = _grid()
     answers = iter([[], _complete()])
     monkeypatch.setattr(grid, "fetch_filenames", lambda version: next(answers))
-    assert grid.main(["dist/nyxus-" + VERSION + ".tar.gz", "--attempts", "2", "--delay", "0"]) == 0
+    assert grid.main([VERSION, "--attempts", "2", "--delay", "0"]) == 0
 
 
-def test_grid_check_precedes_the_sdist_upload_mechanics():
-    job = _jobs("publish_pypi.yml")["sdist"]
-    check = job.index("ci-utils/check_wheel_grid.py dist/*.tar.gz")
-    assert check < job.index("twine upload dist/*.tar.gz")
+def test_grid_job_checks_the_built_version_mechanics():
+    job = _jobs("publish_pypi.yml")["wheel_grid"]
+    assert 'ci-utils/check_wheel_grid.py "$(python -m setuptools_scm)"' in job
+    assert job.index("ci-utils/sync_version.py") < job.index("check_wheel_grid.py")
 
 
-def test_sdist_job_waits_for_every_wheel_job_mechanics():
-    needs = re.search(r"^    needs: \[(.*)\]$", _jobs("publish_pypi.yml")["sdist"], re.M).group(1)
+def test_grid_job_waits_for_every_wheel_job_mechanics():
+    job = _jobs("publish_pypi.yml")["wheel_grid"]
+    needs = re.search(r"^    needs: \[(.*)\]$", job, re.M).group(1)
     needed = {name.strip() for name in needs.split(",")}
     assert set(_wheel_jobs("publish_pypi.yml")) <= needed
+    assert "if: ${{ !cancelled() }}" in job
+
+
+def test_release_publishes_no_source_distribution_mechanics():
+    workflow = (REPO / ".github" / "workflows" / "publish_pypi.yml").read_text(encoding="utf-8")
+    assert "--sdist" not in workflow
+    assert "*.tar.gz" not in workflow
 
 
 def test_grid_matches_the_wheel_jobs_pythons_mechanics():
