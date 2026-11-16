@@ -746,26 +746,43 @@ def _make_striped_tiled_pairs(tmp_path):
     return dirs
 
 
-@pytest.mark.parametrize("feats", [["*ALL_INTENSITY*"], ALL_2D_FEATURE_GROUPS], ids=["intensity", "all_groups"])
-def test_2d_ooc_2d_striped_over_one_tile_matches_in_ram_invariant(tmp_path, feats):
+STRIPED_CASES = {
+    "intensity": (["*ALL_INTENSITY*"], 1.0),
+    "all_groups": (ALL_2D_FEATURE_GROUPS, 1.0),
+    "anisotropic": (["*ALL_INTENSITY*", "*ALL_MORPHOLOGY*"], 2.0),
+}
+
+
+@pytest.mark.parametrize("case", list(STRIPED_CASES))
+def test_2d_ooc_2d_striped_over_one_tile_matches_in_ram_invariant(tmp_path, case):
     """Out-of-core featurization of a striped TIFF read as several 1024 x 1024 tiles equals the
     in-memory one and the out-of-core featurization of a tiled copy, every column of every ROI.
 
     A tile buffer is always a full tile, and only the part inside the image holds this tile's
     pixels, so the ROIs are placed to have pixels in the first tile and in each partial edge tile.
     The intensity run compares the features built from sums over the ROI's pixels; the run of every
-    group adds the families that size a buffer from the ROI's box."""
+    group adds the families that size a buffer from the ROI's box; the anisotropic run adds the scan
+    of the ROI resampled twice along x.
+
+    The out-of-core runs are checked to have taken the out-of-core path: ROIs 2 and 3 lie a few
+    pixels apart, so in memory each has a neighbor, while out of core the neighbor features are not
+    computed and read 0."""
+    feats, aniso = STRIPED_CASES[case]
     dirs = _make_striped_tiled_pairs(tmp_path)
 
     frames = {}
     for name, kind, ram_mb in (("ram", "striped", RAM_LIMIT_LARGE_MB), ("ooc", "striped", 0),
                                ("ooc_tiled", "tiled", 0)):
-        nyx = nyxus.Nyxus(list(feats))
+        kw = {"anisotropy_x": aniso} if aniso != 1.0 else {}
+        nyx = nyxus.Nyxus(list(feats) + ["NUM_NEIGHBORS"], **kw)
         _set_ram_limit_mb(nyx, ram_mb)
         frames[name] = nyx.featurize_directory(*dirs[kind]).sort_values("ROI_label").reset_index(drop=True)
 
     df_ram = frames["ram"]
     assert list(df_ram["ROI_label"]) == [1, 2, 3]
+    assert list(df_ram["NUM_NEIGHBORS"])[1:] == [1, 1]
+    for other in ("ooc", "ooc_tiled"):
+        assert list(frames[other]["NUM_NEIGHBORS"]) == [0, 0, 0], "%s did not run out of core" % other
     cols = [c for c in _feature_cols(df_ram)[0] if not c.startswith(NEIGHBOR_FEATURE_PREFIXES)]
     assert "MEAN" in cols
 

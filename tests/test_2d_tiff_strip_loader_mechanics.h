@@ -46,6 +46,8 @@
 //     columns, whatever the strip height -- including a strip height that does not divide 1024, a
 //     single strip spanning the whole image, and a grid that is past 1024 in height only;
 //   - the same holds when the tiles are read out of order;
+//   - a partial edge tile zero-fills the part of the buffer the image does not reach, rather than
+//     keep the tile read before it there;
 //   - a strip that does not decode makes the tile read throw, naming the row, rather than hand
 //     back the previous contents of the scanline buffer as pixels.
 //
@@ -335,9 +337,10 @@ void test_2d_raw_tiff_strip_loader_tile_out_of_grid_refused_mechanics()
     ldr.free_tile();
 }
 
-// Read tile (tr, tc) through the featurize-side loader and check every in-image pixel against
-// nyxus_ut_strip_enc. Only the in-image part is checked: this loader writes the image's own rows
-// and columns and leaves the rest of the buffer to the caller, which skips pixels past the image.
+// Read tile (tr, tc) through the featurize-side loader and check the whole buffer: every in-image
+// pixel against nyxus_ut_strip_enc, and the part of a partial edge tile past the image against 0.
+// The buffer is reused from tile to tile, so a read that leaves that part alone hands the earlier
+// tile's pixels to every caller that walks the buffer.
 static inline void nyxus_ut_assert_grayscale_strip_tile (NyxusGrayscaleTiffStripLoader<uint32_t>& ldr,
     std::shared_ptr<std::vector<uint32_t>>& tile, const char* stem, size_t W, size_t H, size_t tr, size_t tc)
 {
@@ -350,10 +353,13 @@ static inline void nyxus_ut_assert_grayscale_strip_tile (NyxusGrayscaleTiffStrip
         validH = (std::min) (th, H - row0),
         validW = (std::min) (tw, W - col0);
 
-    for (size_t r = 0; r < validH; r++)
-        for (size_t c = 0; c < validW; c++)
-            ASSERT_EQ ((*tile)[r * tw + c], nyxus_ut_strip_enc (col0 + c, row0 + r))
+    for (size_t r = 0; r < th; r++)
+        for (size_t c = 0; c < tw; c++)
+        {
+            const uint32_t expected = (r < validH && c < validW) ? nyxus_ut_strip_enc (col0 + c, row0 + r) : 0u;
+            ASSERT_EQ ((*tile)[r * tw + c], expected)
                 << stem << " tile (" << tr << "," << tc << ") at in-tile (" << c << "," << r << ")";
+        }
 }
 
 // Walk the whole tile grid of a strip TIFF of the given geometry, in row-major order -- the order

@@ -16,6 +16,7 @@
 #include "../dirs_and_files.h"
 #include "../image_loader1x.h"
 #include "../results_cache.h"
+#include "../volume_walk.h"
 #include "../helpers/fsystem.h"
 #include "../helpers/helpers.h"
 
@@ -96,10 +97,10 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 	// Read the tiff
 	size_t ntHor = imlo.get_num_tiles_hor(),	// tiles across a row
 		ntVert = imlo.get_num_tiles_vert(),	// tiles down a column
-		fw = imlo.get_tile_width(),
 		th = imlo.get_tile_height(),
 		tw = imlo.get_tile_width(),
-		tileSize = imlo.get_tile_size();
+		fullwidth = imlo.get_full_width(),
+		fullheight = imlo.get_full_height();
 
 	int cnt = 1;
 	for (unsigned int row = 0; row < ntVert; row++)
@@ -122,20 +123,17 @@ bool gatherRoisMetrics_H(const std::string& fpath, std::unordered_set <int>& uni
 			auto tileIdx = row * ntHor + col;
 			auto data = imlo.get_tile_buffer();
 
-			// 1st image -> uniqueLabels1, roiData1
-			for (size_t i = 0; i < tileSize; i++)
+			// 1st image -> uniqueLabels1, roiData1, from the tile's pixels inside the image
+			Nyxus::walk_tile_pixels (row, col, tw, th, fullwidth, fullheight, [&](size_t i, size_t x, size_t y)
 			{
 				// Skip non-mask pixels
 				auto label = data[i];
 				if (label != 0)
 				{
-					int y = row * th + i / tw,
-						x = col * tw + i % tw;
-
 					// Update pixel's ROI metrics
-					Nyxus::feed_pixel_2_metrics_H(uniqueLabels, roiData, x, y, label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
+					Nyxus::feed_pixel_2_metrics_H(uniqueLabels, roiData, (int) x, (int) y, label, tileIdx); // Updates 'uniqueLabels' and 'roiData'
 				}
-			}
+			});
 
 #ifdef WITH_PYTHON_H
 			if (PyErr_CheckSignals() != 0)

@@ -226,10 +226,12 @@ ROIs, 30 of them crossing 64 x 64 tile borders, gave the same features tiled and
 Out of core, tiling does not change the results either: a tiled TIFF of several tiles, and a
 striped TIFF larger than 1024 pixels in either direction, give the values of a copy of the same
 image in the other layout, and the in-memory values, for ROIs inside one tile, for ROIs that span
-tiles, and for ROIs in the partial tiles at the right and bottom edges of the image. On a striped
-1120 x 1080 image with a ROI in the first tile, one across all four tiles and one inside the
-partial corner tile, all 738 columns of ``*ALL*`` other than the neighbor features matched the
-in-memory run.
+tiles, and for ROIs in the partial tiles at the right and bottom edges of the image. The test suite
+checks this on a striped 1120 x 1080 image with a ROI in the first tile, one across all four tiles
+and one inside the partial corner tile: out of core, on the striped image and on a tiled copy, every
+column of the intensity, intensity histogram, morphology, texture, moments, Gabor and Zernike groups
+other than the neighbor features matches the in-memory run, and so do the intensity and morphology
+columns with ``anisotropy_x`` set to 2.
 
 Out-of-core processing of a volume streams it one read at a time. When a single read of the
 intensity or label file returns the whole volume, as with a NIfTI file or an OME-Zarr array

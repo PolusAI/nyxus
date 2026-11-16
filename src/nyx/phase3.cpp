@@ -170,31 +170,22 @@ namespace Nyxus
 					}
 					auto& dataI = env.theImLoader.get_int_tile_buffer();
 					auto& dataL = env.theImLoader.get_seg_tile_buffer();
-					for (unsigned long i = 0; i < env.theImLoader.get_tile_size(); i++)
+					walk_tile_pixels (row, col, tw, th, fullwidth, fullheight, [&](size_t i, size_t x, size_t y)
 					{
 						auto pixLabel = dataL[i];
 
 						// Skip blanks and other ROI's pixel
 						if (pixLabel == 0 || pixLabel != r.label)
-							continue;
-
-						// Pixel intensity and global position
-						auto intens = dataI[i];
-						size_t y = row * th + i / tw,
-							x = col * tw + i % tw;
-
-						// Skip tile buffer pixels beyond the image's bounds: the buffer is always a
-						// full tile, and the part of an edge tile past the image holds no pixels of it
-						if (x >= fullwidth || y >= fullheight)
-							continue;
+							return;
 
 						// Track the streamed extrema (see the aux_min/aux_max reset above)
+						auto intens = dataI[i];
 						r.aux_min = (std::min)(r.aux_min, (PixIntens)intens);
 						r.aux_max = (std::max)(r.aux_max, (PixIntens)intens);
 
 						// Feed the pixel to online features and helper objects
 						r.raw_pixels_NT.add_pixel(Pixel2((StatsInt)x, (StatsInt)y, intens));
-					}
+					});
 				}
 
 			//=== Features requiring non-raster access to pixels
