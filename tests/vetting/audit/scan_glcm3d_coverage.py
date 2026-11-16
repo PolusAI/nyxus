@@ -19,6 +19,8 @@ ANALYTIC_TEST = os.path.join("python", "test_3d_glcm_analytic.py")
 SOURCES = [
     "test_3d_glcm_pyradiomics.h",
     "test_3d_glcm_regression.h",
+    "test_3d_glcm_analytic.h",
+    "test_3d_glcm_mechanics.h",
     os.path.join("python", "test_nyxus.py"),
     VOLMIN_TEST,
     ANALYTIC_TEST,

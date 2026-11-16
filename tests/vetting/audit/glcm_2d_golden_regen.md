@@ -71,7 +71,7 @@ One tool quantity can cover several Nyxus names. The mapping lives in the genera
 |---|---|---|---|
 | `GLCM_ASM`, `GLCM_ENERGY` | `JointEnergy` | `cm_energy` | the two Nyxus names are one quantity |
 | `GLCM_ID`, `GLCM_HOM1` | `Id` | `cm_inv_diff` | |
-| `GLCM_IDM`, `GLCM_HOM2` | `Idm` | `cm_inv_diff_mom` | `GLCM_HOM2` has no `_AVE` twin |
+| `GLCM_IDM`, `GLCM_HOM2` | `Idm` | `cm_inv_diff_mom` | |
 | `GLCM_JE`, `GLCM_ENTROPY` | `JointEntropy` | `cm_joint_entr` | |
 | `GLCM_JVAR`, `GLCM_VARIANCE` | `SumSquares` | `cm_joint_var` | IBSI joint variance UR99 |
 | `GLCM_CLUTEND`, `GLCM_SUMVARIANCE` | `ClusterTendency` | `cm_clust_tend`, `cm_sum_var` | PyRadiomics dropped SumVariance as a duplicate; MIRP reports both |
@@ -86,8 +86,8 @@ One tool quantity can cover several Nyxus names. The mapping lives in the genera
 - **Log-based features** - `DIFENTRO`, `JE`/`ENTROPY`, `SUMENTROPY`, `INFOMEAS1`, `INFOMEAS2` land
   1e-3..3e-3 off both tools because Nyxus sums through `fast_log10` with an `EPSILON` guard. Assert
   those at `rel=5e-3`; everything else holds at `rel=1e-9`.
-- **`GLCM_VARIANCE` vs `GLCM_JVAR`** - different routines in Nyxus (marginal mean vs level index)
-  reaching the same quantity. If a future change makes them differ, the fixture will show it: both
+- **`GLCM_VARIANCE` vs `GLCM_JVAR`** - different routines in Nyxus (`GLCM_VARIANCE` takes its own
+  mean of the reference level, `GLCM_JVAR` reuses `GLCM_JAVE`) reaching the same quantity. If a future change makes them differ, the fixture will show it: both
   are pinned to the same tool value.
 - **Grey-level gaps** - at identity binning both tools build the matrix over the image's own levels,
   so a fixture with absent levels is fine; verified on the IBSI phantom (levels {1,3,4,6}), where

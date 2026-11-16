@@ -95,7 +95,7 @@ def emit(values, name_map, tool_note):
     once for its _AVE twin - because the oracle reports the angle-averaged value, which is what
     _AVE holds and what averaging the 4 angled values of the base feature produces. Both names have
     to appear literally: the coverage report credits a feature only where a test or its table names
-    it. GLCM_HOM2 is the one quantity with no _AVE twin in the feature set."""
+    it."""
     print(tool_note)
     emitted = {}
     for oracle_name in sorted(name_map):
@@ -103,7 +103,7 @@ def emit(values, name_map, tool_note):
             print("// MISSING from this build of the tool: %s" % oracle_name)
             continue
         for feature in name_map[oracle_name]:
-            names = [feature] if feature == "GLCM_HOM2" else [feature, feature + "_AVE"]
+            names = [feature, feature + "_AVE"]
             for n in names:
                 emitted[n] = values[oracle_name]
                 print('    {"%s", %.17g},   // %s' % (n, values[oracle_name], oracle_name))

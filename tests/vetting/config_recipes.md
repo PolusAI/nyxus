@@ -15,6 +15,20 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
   phantom (`test_2d_glcm_ibsi.h`, in-mask levels {1,3,4,6}) and a dense 8x8 phantom where every
   level 1..8 and every level pair occurs (`test_2d_glcm_common.h`).
 
+## glcm.analytic_default_asymmetric
+- `bench_square5_glcm_example` and its left-right mirror, built in `test_2d_glcm_analytic.h`, at the
+  default settings: `ibsi=False`, `GLCM_GREYDEPTH=64` (MATLAB-style binning, `floor(64 x / max + 1)`
+  clipped to `1..64` over the ROI's maximum), `symmetric_glcm=false`, offset 1, angles
+  `{0, 45, 90, 135}`. Each ordered pair is counted once, so the matrix is asymmetric.
+- Oracle: `analytic`, the IBSI definitions evaluated in the test, per angle, on the co-occurrence
+  matrix it counts from the fixture itself. PyRadiomics with `symmetricalGLCM=False`, `binWidth=1` on
+  the binned levels (a constant shift, which none of these features sees) agrees with that reference
+  to 2e-15 on both orientations.
+- Used by `test_2d_glcm_cluster_and_sum_variance_asymmetric_analytic`,
+  `test_2d_glcm_jvar_asymmetric_analytic` and `test_2d_glcm_infomeas1_asymmetric_analytic`:
+  cluster tendency, shade and prominence, sum variance, joint variance and variance at `rel=1e-9`;
+  information correlation 1 at `rel=1.5e-2`, the fast_log10 entropies putting up to 7.0e-3 on it.
+
 ## glcm.pyradiomics_symmetric
 - `ibsi=False`, fixed bin count, symmetric GLCM averaged over directions, distance 1.
 - Oracle: `pyradiomics` (symmetricalGLCM=True, binCount matched). Used by: `test_2d_glcm_pyradiomics.h`.
@@ -697,6 +711,17 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
   PyRadiomics does not report them under their own name: `DIS≡DIFAVE`, `ENERGY≡ASM`,
   `ENTROPY≡JE`, `HOM1≡ID`, `SUMVARIANCE≡CLUTEND`, `VARIANCE≡JVAR`. The identities are asserted at
   1e-6, and the twin carries the oracle claim.
+
+## glcm3d.analytic_default_asymmetric
+- `bench_box5x5x3_glcm_asymmetric` and its x-mirror, built in `test_3d_glcm_analytic.h`, at the
+  default binning of `glcm.analytic_default_asymmetric` (`GLCM_GREYDEPTH=64`, MATLAB-style), offset 1,
+  all 13 directions, each checked on its own.
+- Oracle: `analytic`, the IBSI definitions evaluated in the test on the matrix it counts from the
+  fixture. PyRadiomics with `symmetricalGLCM=False` over its 13 directions agrees with the reference's
+  13-direction mean to 3e-15 for cluster tendency, shade, prominence and `Imc1`. Used by
+  `test_3d_glcm_cluster_and_sum_variance_asymmetric_analytic`,
+  `test_3d_glcm_jvar_asymmetric_analytic` and `test_3d_glcm_infomeas1_asymmetric_analytic` at
+  `rel=1e-9`, and information correlation 1 at `rel=2e-2` (fast_log10 puts up to 1.4e-2 on it).
 
 ## glcm3d.regression_ut_phantom
 - The segmented phantom (`phantoms/ut_inten.nii` + `phantoms/ut_mask57.nii`, label 57) at

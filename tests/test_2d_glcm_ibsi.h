@@ -397,6 +397,11 @@ void test_2d_glcm_idm_ave_ibsi()
     assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_IDM_AVE, "GLCM_IDM_AVE");
 }
 
+void test_2d_glcm_hom2_ave_ibsi()
+{
+    assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_HOM2_AVE, "GLCM_HOM2_AVE");
+}
+
 void test_2d_glcm_infomeas1_ave_ibsi()
 {
     assert_glcm_feature_ibsi(Nyxus::Feature2D::GLCM_INFOMEAS1_AVE, "GLCM_INFOMEAS1_AVE");

@@ -135,14 +135,18 @@ oracle tests use. Under the asymmetric config the keys split in two:
 
 - **Symmetrisation-invariant** - they depend only on the grey-level difference `p_{x-y}` / `|i-j|`
   (`CONTRAST`, `DIFAVE`, `DIS`, `DIFENTRO`, `DIFVAR`, `ID`, `HOM1`, `IDM`, `IV`) or on the sum
-  distribution `p_{x+y}` (`SUMENTROPY`). These land within 1% of PyRadiomics run on the same
-  per-slice MATLAB-binned images, because this phantom's binning relabels levels without rescaling
-  them. They are *not* invariant to level scaling - that only holds here.
-- **Transpose-sensitive** - they read individual matrix entries or the grey-tone marginal means
-  `mu_x`/`mu_y`, and diverge from any symmetric-matrix tool as configured. Measured:
-  `ASM`/`ENERGY` 3.7%, `CLUSHADE` 46%, `CLUTEND`/`SUMVARIANCE` 3.2%, `JE` 9.3%,
-  `JVAR`/`VARIANCE` ~10%. `CLUTEND`/`SUMVARIANCE` are in this group because Nyxus computes them
-  from the single row-marginal mean `by_row_mean`.
+  distribution `p_{x+y}` (`SUMENTROPY`, and `CLUPROM`, `CLUSHADE`, `CLUTEND`/`SUMVARIANCE`, which
+  centre `i + j` on `mu_x + mu_y`, the mean of `p_{x+y}`). The difference features and `SUMENTROPY`
+  land within 1% of PyRadiomics run on the same per-slice MATLAB-binned images, because this
+  phantom's binning relabels levels without rescaling them. They are *not* invariant to level
+  scaling - that only holds here.
+- **Transpose-sensitive** - they read individual matrix entries or one marginal, and diverge from
+  any symmetric-matrix tool as configured. Measured: `ASM`/`ENERGY` 3.7%, `JE` 9.3%,
+  `JVAR`/`VARIANCE` ~10%. `INFOMEAS1` divides by the larger marginal entropy and is in this group
+  too.
+- The asymmetric configuration has its own vetting for `CLUPROM`, `CLUSHADE`, `CLUTEND`,
+  `SUMVARIANCE`, `JVAR`, `VARIANCE` and `INFOMEAS1`: `test_2d_glcm_analytic.h` evaluates their IBSI
+  definitions on the asymmetric matrix itself (recipe `glcm.analytic_default_asymmetric`).
 
 So the snapshot is a drift guard and nothing more; comparing it to a tool would require rerunning
 it with `symmetric_glcm=true`, at which point it is the oracle tests' recipe.

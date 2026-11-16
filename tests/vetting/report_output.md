@@ -8,14 +8,14 @@ what [`oracle_coverage.csv`](oracle_coverage.csv) CLAIMS to what the test tree A
 
 ## Coverage
 
-Features vetted by >=1 oracle: 646/758 (85%)
+Features vetted by >=1 oracle: 648/760 (85%)
 regression: 112  invariant: 0  untested: 0
 
 | family | total | vetted | regression | invariant | untested |
 |---|---|---|---|---|---|
 | firstorder | 72 | 67 | 5 | 0 | 0 |
 | gabor | 1 | 1 | 0 | 0 | 0 |
-| glcm | 118 | 118 | 0 | 0 | 0 |
+| glcm | 120 | 120 | 0 | 0 | 0 |
 | gldm | 28 | 28 | 0 | 0 | 0 |
 | gldzm | 36 | 32 | 4 | 0 | 0 |
 | glrlm | 64 | 64 | 0 | 0 | 0 |
@@ -32,11 +32,11 @@ regression: 112  invariant: 0  untested: 0
 
 ## Verdicts
 
-1263 of 1263 assertion rows agree with the tree.
+1279 of 1279 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 1263 | the claim and the tree say the same thing |
+| `agree` | 1279 | the claim and the tree say the same thing |
 
 ### How far each verdict reaches
 
@@ -45,8 +45,8 @@ regression: 112  invariant: 0  untested: 0
 
 | scope | rows | what was compared |
 |---|---:|---|
-| `feature` | 640 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
-| `row` | 388 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
+| `feature` | 642 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
+| `row` | 402 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 | `row+config` | 235 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
 ## Every oracle a feature was matched against
@@ -59,7 +59,7 @@ that alone understates every family that corroborates.
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 2D | firstorder | 9 | . | . | 13 | . | 31 | . | . | 18 | . | 2 |
 | 2D | gabor | . | . | . | . | . | . | . | . | . | 1 | . |
-| 2D | glcm | . | . | . | 55 | . | . | 59 | . | 59 | . | . |
+| 2D | glcm | 7 | . | . | 56 | . | . | 60 | . | 60 | . | . |
 | 2D | gldm | . | . | . | 14 | . | . | . | . | 14 | . | . |
 | 2D | gldzm | . | . | . | 14 | . | . | 16 | . | . | . | 2 |
 | 2D | glrlm | 14 | . | . | 32 | . | . | 32 | . | 32 | . | . |
@@ -73,7 +73,7 @@ that alone understates every family that corroborates.
 | 2D | radial | . | . | . | . | . | . | . | . | . | . | 3 |
 | 2D | zernike | 1 | . | . | . | . | . | . | . | . | . | . |
 | 3D | firstorder | 9 | . | . | . | . | 29 | . | . | 17 | . | 3 |
-| 3D | glcm | 2 | . | . | . | . | . | . | . | 59 | . | . |
+| 3D | glcm | 9 | . | . | . | . | . | . | . | 60 | . | . |
 | 3D | gldm | . | . | . | . | . | . | . | . | 14 | . | . |
 | 3D | gldzm | . | . | . | . | . | . | 16 | . | . | . | 2 |
 | 3D | glrlm | 14 | . | . | . | . | . | . | . | 32 | . | . |
@@ -82,14 +82,14 @@ that alone understates every family that corroborates.
 | 3D | ngldm | . | . | . | . | . | . | 16 | . | . | . | 3 |
 | 3D | ngtdm | . | . | . | . | . | . | 5 | . | 5 | . | . |
 | IMQ | imq | 1 | 2 | . | . | . | . | . | 2 | . | . | 2 |
-| | **all** | **103** | **10** | **2** | **182** | **20** | **95** | **219** | **3** | **275** | **127** | **112** |
+| | **all** | **117** | **10** | **2** | **183** | **20** | **95** | **220** | **3** | **277** | **127** | **112** |
 
 ## By dimensionality
 
 | dim | features | vetted | scanned | no oracle assertion | unscanned |
 |---|---:|---:|---:|---:|---:|
-| 2D | 539 | 437 | 539 | 102 | 0 |
-| 3D | 213 | 205 | 213 | 8 | 0 |
+| 2D | 540 | 438 | 540 | 102 | 0 |
+| 3D | 214 | 206 | 214 | 8 | 0 |
 | IMQ | 6 | 4 | 6 | 2 | 0 |
 
 ## Reading a row

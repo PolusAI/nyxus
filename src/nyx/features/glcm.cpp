@@ -32,69 +32,10 @@ void GLCMFeature::calculate (LR& r, const Fsettings& s)
 	auto binnedMax = bin_pixel(r.aux_max, r.aux_min, r.aux_max, nGreys);
 	if (binnedMin == binnedMax)
 	{
-		auto w = softNAN;		// safe NAN
-
-		// assign it to each angled feature value 
-		auto n = angles.size();
-		r.fvals[(int)Feature2D::GLCM_ASM].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ACOR].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CLUPROM].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CLUSHADE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CLUTEND].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CONTRAST].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_CORRELATION].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_DIFAVE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_DIFENTRO].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_DIFVAR].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_DIS].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ENERGY].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ENTROPY].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_HOM1].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_HOM2].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_IDMN].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ID].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_IDN].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_INFOMEAS1].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_INFOMEAS2].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_IDM].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_IV].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_JAVE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_JE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_JMAX].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_JVAR].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_SUMAVERAGE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_SUMENTROPY].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_SUMVARIANCE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_VARIANCE].assign(n, w);
-		r.fvals[(int)Feature2D::GLCM_ASM_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ACOR_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CLUPROM_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CLUSHADE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CLUTEND_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CONTRAST_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_CORRELATION_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIFAVE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIFENTRO_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIFVAR_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_DIS_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ENERGY_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ENTROPY_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_HOM1_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_ID_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IDN_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IDM_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IDMN_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_IV_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JAVE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS1_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_INFOMEAS2_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JMAX_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_JVAR_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_SUMAVERAGE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_SUMENTROPY_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_SUMVARIANCE_AVE][0] =
-			r.fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = w;
+		// One grey level: every angle reports the substitute, which save_value() writes to the
+		// angled columns and averages into the _AVE ones
+		for (size_t a = 0; a < angles.size(); a++)
+			push_noval (softNAN);
 		return;
 	}
 
@@ -121,43 +62,9 @@ void GLCMFeature::refuse_roi (int label, double w, const char* reason)
 
 	clear_result_buffers();
 	for (size_t i = 0; i < angles.size(); i++)
-		push_angle_value (w);
+		push_noval (w);
 
 	std::cerr << "Error: ROI " + std::to_string(label) + ": GLCM features not calculated, set to the no-value substitute: " + reason + "\n";
-}
-
-void GLCMFeature::push_angle_value (double w)
-{
-	fvals_ASM.push_back(w);
-	fvals_acor.push_back(w);
-	fvals_cluprom.push_back(w);
-	fvals_clushade.push_back(w);
-	fvals_clutend.push_back(w);
-	fvals_contrast.push_back(w);
-	fvals_correlation.push_back(w);
-	fvals_diff_avg.push_back(w);
-	fvals_diff_var.push_back(w);
-	fvals_diff_entropy.push_back(w);
-	fvals_dis.push_back(w);
-	fvals_energy.push_back(w);
-	fvals_entropy.push_back(w);
-	fvals_homo.push_back(w);
-	fvals_hom2.push_back(w);
-	fvals_id.push_back(w);
-	fvals_idn.push_back(w);
-	fvals_IDM.push_back(w);
-	fvals_idmn.push_back(w);
-	fvals_meas_corr1.push_back(w);
-	fvals_meas_corr2.push_back(w);
-	fvals_iv.push_back(w);
-	fvals_jave.push_back(w);
-	fvals_je.push_back(w);
-	fvals_jmax.push_back(w);
-	fvals_jvar.push_back(w);
-	fvals_sum_avg.push_back(w);
-	fvals_sum_var.push_back(w);
-	fvals_sum_entropy.push_back(w);
-	fvals_variance.push_back(w);
 }
 
 void GLCMFeature::clear_result_buffers()
@@ -204,10 +111,7 @@ void GLCMFeature::copyfvals(AngledFeatures& dst, const AngledFeatures& src)
 void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 {
 	copyfvals(fvals[(int)Feature2D::GLCM_ASM], fvals_ASM);
-
 	copyfvals(fvals[(int)Feature2D::GLCM_ACOR], fvals_acor);
-	copyfvals(fvals[(int)Feature2D::GLCM_ACOR], fvals_acor);
-
 	copyfvals(fvals[(int)Feature2D::GLCM_CLUPROM], fvals_cluprom);
 	copyfvals(fvals[(int)Feature2D::GLCM_CLUSHADE], fvals_clushade);
 	copyfvals(fvals[(int)Feature2D::GLCM_CLUTEND], fvals_clutend);
@@ -250,6 +154,7 @@ void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::GLCM_ENERGY_AVE][0] = calc_ave(fvals_energy);
 	fvals[(int)Feature2D::GLCM_ENTROPY_AVE][0] = calc_ave(fvals_entropy);
 	fvals[(int)Feature2D::GLCM_HOM1_AVE][0] = calc_ave(fvals_homo);
+	fvals[(int)Feature2D::GLCM_HOM2_AVE][0] = calc_ave(fvals_hom2);
 	fvals[(int)Feature2D::GLCM_ID_AVE][0] = calc_ave(fvals_id);
 	fvals[(int)Feature2D::GLCM_IDN_AVE][0] = calc_ave(fvals_idn);
 	fvals[(int)Feature2D::GLCM_IDM_AVE][0] = calc_ave(fvals_IDM);
@@ -265,7 +170,6 @@ void GLCMFeature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature2D::GLCM_SUMAVERAGE_AVE][0] = calc_ave(fvals_sum_avg);
 	fvals[(int)Feature2D::GLCM_SUMVARIANCE_AVE][0] = calc_ave(fvals_sum_var);
 	fvals[(int)Feature2D::GLCM_SUMENTROPY_AVE][0] = calc_ave(fvals_sum_entropy);
-	fvals[(int)Feature2D::GLCM_VARIANCE_AVE][0] = calc_ave(fvals_variance);
 }
 
 void GLCMFeature::extract (LR& r, const Fsettings& s)
@@ -317,19 +221,18 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 
 	calculateCoocMatAtAngle (P_matrix, s, dx, dy, grays, min_val, max_val);
 
-	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
+	// Blank cooc-matrix? -- no point to use it, assign each feature value the substitute and return.
 	if (sum_p == 0)
 	{
-		push_angle_value (s[(int)NyxSetting::SOFTNAN].rval);
-
+		push_noval (s[(int)NyxSetting::SOFTNAN].rval);
 		return;
 	}
 
 	// Output - 'Pxpy' (meaning: 'x plus y') and 'Pxmy' (meaning: 'x minus y')
 	calculatePxpmy();
 
-	// Calculate by-row mean. (Output - 'by_row_mean')
-	calculate_by_row_mean();
+	// Output - 'mean_x' and 'mean_y'
+	calculate_marginal_means();
 
 	// Compute Haralick statistics 
 	fvals_ASM.push_back (f_asm(P_matrix));
@@ -337,7 +240,10 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	fvals_correlation.push_back (f_corr(s[(int)NyxSetting::SOFTNAN].rval));
 	fvals_energy.push_back (f_energy(P_matrix));
 	fvals_homo.push_back (f_homogeneity());
-	fvals_variance.push_back (f_var(P_matrix));
+	// GLCM_VARIANCE and GLCM_JVAR are both IBSI joint variance, sum_ij (i - mu_x)^2 p(i,j), so it is
+	// calculated once
+	double jvar = f_var(P_matrix);
+	fvals_variance.push_back (jvar);
 	fvals_IDM.push_back (f_idm());
 	fvals_sum_avg.push_back (f_savg());
 	fvals_sum_entropy.push_back (f_sentropy());
@@ -351,7 +257,9 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	fvals_cluprom.push_back (f_GLCM_CLUPROM());
 	fvals_clushade.push_back (f_GLCM_CLUSHADE());
 
-	// 'cluster tendency' is equivalent to 'sum variance', so calculate it once
+	// Cluster tendency, sum_ij (i + j - mu_x - mu_y)^2 p(i,j), and IBSI sum variance,
+	// sum_k (k - SA)^2 p_{x+y}(k), are the same sum on every matrix because the IBSI sum average
+	// SA = sum_k k p_{x+y}(k) is mu_x + mu_y, so it is calculated once
 	double clutend = f_GLCM_CLUTEND();
 	fvals_clutend.push_back (clutend);
 	fvals_sum_var.push_back (clutend);
@@ -368,7 +276,7 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 
 	fvals_je.push_back (f_GLCM_JE(P_matrix));
 	fvals_jmax.push_back (f_GLCM_JMAX(P_matrix));
-	fvals_jvar.push_back (f_GLCM_JVAR(P_matrix, jave));
+	fvals_jvar.push_back (jvar);
 }
 
 void GLCMFeature::allocate_cooc (SimpleMatrix<double>& GLCM, size_t n_levels)
@@ -546,27 +454,55 @@ void GLCMFeature::calculatePxpmy()
 		}
 }
 
-void GLCMFeature::calculate_by_row_mean()
+void GLCMFeature::calculate_marginal_means()
 {
 	int n_levels = I.size();
 
-	// px[i] is the (i-1)th entry in the marginal probability matrix obtained
-	// by summing the rows of p[i][j]
-	std::vector<double> px(n_levels);
-	for (int j = 0; j < n_levels; j++)
-		for (int i = 0; i < n_levels; i++)
-			px[i] += P_matrix.xy(i, j) / sum_p;
+	// P_matrix.yx(r, c) counts the pairs whose reference pixel has level I[r] and whose neighbour
+	// has level I[c], so the reference marginal sums a row and the neighbour marginal a column.
+	// The two means differ unless the matrix is symmetric.
+	mean_x = mean_y = 0;
+	for (int r = 0; r < n_levels; r++)
+		for (int c = 0; c < n_levels; c++)
+		{
+			double p = P_matrix.yx(r, c) / sum_p;
+			mean_x += p * I[r];
+			mean_y += p * I[c];
+		}
+}
 
-	// Now calculate the means and standard deviations of px and py */
-	// - fix supplied by J. Michael Christensen, 21 Jun 1991 */
-	// - further modified by James Darrell McCauley, 16 Aug 1991
-	// after realizing that meanx=meany and stddevx=stddevy
-	by_row_mean = 0;
-	for (int i = 0; i < n_levels; ++i)
-	{
-		double ival = I[i];
-		by_row_mean += px[i] * ival;
-	}
+void GLCMFeature::push_noval (double softnan)
+{
+	fvals_ASM.push_back (softnan);
+	fvals_acor.push_back (softnan);
+	fvals_cluprom.push_back (softnan);
+	fvals_clushade.push_back (softnan);
+	fvals_clutend.push_back (softnan);
+	fvals_contrast.push_back (softnan);
+	fvals_correlation.push_back (softnan);
+	fvals_diff_avg.push_back (softnan);
+	fvals_diff_var.push_back (softnan);
+	fvals_diff_entropy.push_back (softnan);
+	fvals_dis.push_back (softnan);
+	fvals_energy.push_back (softnan);
+	fvals_entropy.push_back (softnan);
+	fvals_homo.push_back (softnan);
+	fvals_hom2.push_back (softnan);
+	fvals_id.push_back (softnan);
+	fvals_idn.push_back (softnan);
+	fvals_IDM.push_back (softnan);
+	fvals_idmn.push_back (softnan);
+	fvals_meas_corr1.push_back (softnan);
+	fvals_meas_corr2.push_back (softnan);
+	fvals_iv.push_back (softnan);
+	fvals_jave.push_back (softnan);
+	fvals_je.push_back (softnan);
+	fvals_jmax.push_back (softnan);
+	fvals_jvar.push_back (softnan);
+	fvals_sum_avg.push_back (softnan);
+	fvals_sum_var.push_back (softnan);
+	fvals_sum_entropy.push_back (softnan);
+	fvals_variance.push_back (softnan);
 }
 
 /* Angular Second Moment
@@ -878,10 +814,11 @@ void GLCMFeature::calcH(const SimpleMatrix<double>& P, std::vector<double>& px, 
 
 double GLCMFeature::f_info_meas_corr1 (const SimpleMatrix<double>& P, double softnan)
 {
+	// IMC1 = (HXY - HXY1) / max(HX, HY), HX and HY the entropies of the two marginals
 
 	auto Ng = P.width();
 
-	double HX = 0, HXY = 0, HXY1 = 0;
+	double HX = 0, HY = 0, HXY = 0, HXY1 = 0;
 
 	std::vector<double> px, py;
 	px.resize (Ng);
@@ -905,12 +842,12 @@ double GLCMFeature::f_info_meas_corr1 (const SimpleMatrix<double>& P, double sof
 
 	for (int i = 0; i < Ng; ++i) {
 		HX += px[i] * fast_log10(px[i] + EPSILON) / LOG10_2;
-
+		HY += py[i] * fast_log10(py[i] + EPSILON) / LOG10_2;
 	}
 
-	// Undefined when a grey-tone marginal is a single level (HX -> 0 -> 0/0 -> NaN), which can
-	// happen on a tiny/uniform ROI once out-of-ROI background is correctly excluded.
-	double r = (HXY - HXY1) / HX;
+	// The sums above are the negated entropies, so the larger entropy is the smaller sum.
+	// Undefined when both marginals are a single level (0/0 -> NaN), as on a tiny or uniform ROI.
+	double r = (HXY - HXY1) / std::min (HX, HY);
 	if (!std::isfinite(r))
 		return softnan;
 	return r;
@@ -998,9 +935,7 @@ double GLCMFeature::f_GLCM_ACOR(const SimpleMatrix<double>& P)
 	return f;
 }
 
-//
-// Argument 'mean_x' is calculated by f_corr()
-//
+// The cluster features centre i + j on mu_x + mu_y (calculate_marginal_means())
 double GLCMFeature::f_GLCM_CLUPROM()
 {
 	int n_levels = I.size();
@@ -1015,7 +950,7 @@ double GLCMFeature::f_GLCM_CLUPROM()
 		for (int c = 0; c < n_levels; c++)
 		{
 			double cval = I[c];
-			double m = rval + cval - by_row_mean - by_row_mean;
+			double m = rval + cval - mean_x - mean_y;
 			f += m * m * m * m * P_matrix.yx(r,c) / sum_p;
 		}
 	}
@@ -1037,7 +972,7 @@ double GLCMFeature::f_GLCM_CLUSHADE()
 		for (int c = 0; c < n_levels; c++)
 		{
 			double cval = I[c];
-			double m = rval + cval - by_row_mean - by_row_mean;
+			double m = rval + cval - mean_x - mean_y;
 			f += m * m * m * P_matrix.yx(r, c) / sum_p;
 		}
 	}
@@ -1064,7 +999,7 @@ double GLCMFeature::f_GLCM_CLUTEND()
 			for (int y = 0; y < n_levels; y++)
 			{
 				double yval = I[y];
-				double m = xval + yval - by_row_mean * 2.0;
+				double m = xval + yval - mean_x - mean_y;
 				f += m * m * P_matrix.xy(x, y) / sum_p ;
 			}
 		}
@@ -1213,25 +1148,6 @@ double GLCMFeature::f_GLCM_JMAX(const SimpleMatrix<double>& P_matrix)
 		}
 
 	return max_p;
-}
-
-double GLCMFeature::f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, double joint_ave)
-{
-	int n_levels = I.size();
-
-	// joint variance = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i-\mu_x) ^2 p(i,j)
-	//		where \mu_x is the value of joint average feature (IBSI: "Fcm.joint.avg"), 
-	//		\mu_x = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} i p(i,j)
-
-	double f = 0;
-	for (int x = 0; x < n_levels; x++)
-	{
-		double d = double(x + 1) - joint_ave,
-			d2 = d * d;
-		for (int y = 0; y < n_levels; y++)
-			f += d2 * P_matrix.xy(x, y) / sum_p;
-	}
-	return f;
 }
 
 // 'afv' is angled feature values
