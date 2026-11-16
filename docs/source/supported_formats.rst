@@ -36,10 +36,9 @@ in a directory are read, so a file with an unsupported extension that matches th
 run with that error.
 
 OME-Zarr and DICOM support are optional parts of a source build (see the CMake options in
-:doc:`installation`). The PyPI and conda packages include both, except that the Windows wheels
-on PyPI have no OME-Zarr support since 0.9.3, and the first conda-forge Windows builds of
-0.11.0 (build number 0) have neither. Reading ``.nii.gz`` needs zlib, which a build includes
-together with OME-Zarr support, so those packages do not read ``.nii.gz`` either.
+:doc:`building`). The PyPI and conda packages include both. Reading ``.nii.gz`` needs zlib,
+which a build includes together with OME-Zarr support, so a source build without OME-Zarr does not
+read ``.nii.gz`` either.
 
 TIFF and OME-TIFF
 -----------------
