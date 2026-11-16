@@ -3084,6 +3084,11 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_FAMILY_PYRADIOMICS)
 	ASSERT_NO_THROW(test_2d_glcm_family_pyradiomics());
 }
 
+TEST(TEST_NYXUS, TEST_2D_GLCM_GAP_LEVELS_PYRADIOMICS)
+{
+	ASSERT_NO_THROW(test_2d_glcm_gap_levels_pyradiomics());
+}
+
 TEST(TEST_NYXUS, TEST_2D_GLCM_FAMILY_MIRP)
 {
 	ASSERT_NO_THROW(test_2d_glcm_family_mirp());
@@ -6619,6 +6624,7 @@ TEST(TEST_NYXUS, TEST_3D_GLCM_JVAR_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_gl
 TEST(TEST_NYXUS, TEST_3D_GLCM_SUMAVERAGE_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_sumaverage_ave_pyradiomics()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_SUMENTROPY_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_sumentropy_ave_pyradiomics()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_AVE_EQUIVALENCE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_ave_equivalence_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_GAP_LEVELS_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_gap_levels_pyradiomics()); }
 
 // JVAR had a complete assertion that no TEST() ever called (not_covered.md B.2)
 TEST(TEST_NYXUS, TEST_3D_GLCM_JVAR_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_jvar_pyradiomics()); }

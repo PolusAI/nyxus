@@ -631,11 +631,9 @@ Constant ROI
    ``set_metaparam("3glcm/greydepth=8")``, ``get_metaparam("3glcm/greydepth")`` returns 64, the
    2D default. The features use the value that was set.
 
-Grey-level values and indices
-   As in 2D, with PyRadiomics-style binning some features use positions 1 to :math:`N_g` in the
-   list of grey levels present, and others the levels themselves. ``DIFAVE``, ``SUMAVERAGE``,
-   ``IV``, ``JVAR`` and ``DIFVAR`` mix the two as on the 2D page, a known defect
-   (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__).
+Levels absent from the ROI
+   As in 2D, with PyRadiomics-style binning every feature works on the grey levels themselves when
+   some bins are empty, and :math:`N_g` in ``IDN`` and ``IDMN`` is the highest level present.
 
 
 Validation
@@ -644,7 +642,8 @@ Validation
 The test suite checks every 3D GLCM feature against PyRadiomics 3.0.1 with PyRadiomics-style
 binning (20 bins), where both matrices are symmetric. Each plain feature is compared direction by
 direction, all 13 values against PyRadiomics' own per-direction values, and each ``_AVE`` code
-against PyRadiomics' direction-averaged value. Entropy features are compared at a looser tolerance
+against PyRadiomics' direction-averaged value. A second fixture, a crop of a CT volume whose levels
+leave bins empty, is compared feature by feature on the direction-averaged values. Entropy features are compared at a looser tolerance
 because of the approximate logarithm. Values with the default binning are covered by regression
 tests only, and IBSI mode only by the worked-example script on this page.
 
