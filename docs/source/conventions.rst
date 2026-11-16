@@ -257,7 +257,7 @@ they differ in these ways:
      - Every family takes the mask from the ROI's voxels and leaves the voxels outside it out, in
        every mode. See `Background`_.
    * - Constant ROI
-     - Every GLCM feature returns 0, whatever ``--noval`` is, a known defect (`#511 <https://github.com/PolusAI/nyxus/issues/511>`__).
+     - Every GLCM feature returns the substitute.
      - Most 3D GLCM features return their limiting values when the ROI fills its bounding box. See
        `Constant ROIs and missing values`_.
    * - Neighbourhood size
@@ -489,7 +489,7 @@ A ROI whose pixels all have one intensity is the most common case:
      - Every ``IH_*`` feature returns the substitute
      - No 3D family
    * - GLCM (:doc:`2D <Math/f_glcm>`, :doc:`3D <Math/f_glcm_3d>`)
-     - Every feature returns 0, whatever ``--noval`` is, a known defect (`#511 <https://github.com/PolusAI/nyxus/issues/511>`__)
+     - Every feature returns the substitute, the ``_AVE`` columns included
      - Limiting values (``3GLCM_ASM`` 1, ``3GLCM_CONTRAST`` 0); ``3GLCM_CORRELATION`` and
        ``3GLCM_INFOMEAS1`` return the substitute (``-0.0`` in Arrow and Parquet)
    * - GLRLM, GLSZM, GLDM, GLDZM

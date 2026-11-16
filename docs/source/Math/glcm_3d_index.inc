@@ -23,17 +23,17 @@
    * - :ref:`3GLCM_CLUPROM <feature-3glcm-cluprom>`
      - Cluster prominence
      - AE86
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 15.47
    * - :ref:`3GLCM_CLUSHADE <feature-3glcm-clushade>`
      - Cluster shade
      - 7NFM
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - −0.08299
    * - :ref:`3GLCM_CLUTEND <feature-3glcm-clutend>`
      - Cluster tendency
      - DG8W
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 2.83
    * - :ref:`3GLCM_CONTRAST <feature-3glcm-contrast>`
      - Contrast
@@ -108,7 +108,7 @@
    * - :ref:`3GLCM_INFOMEAS1 <feature-3glcm-infomeas1>`
      - Information measure of correlation 1
      - R8DG
-     - PyRadiomics (rel. 4e-2)
+     - analytic (rel. 2e-2), PyRadiomics (rel. 4e-2)
      - −0.0914
    * - :ref:`3GLCM_INFOMEAS2 <feature-3glcm-infomeas2>`
      - Information measure of correlation 2
@@ -138,7 +138,7 @@
    * - :ref:`3GLCM_JVAR <feature-3glcm-jvar>`
      - Joint variance
      - UR99
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 1.194
    * - :ref:`3GLCM_SUMAVERAGE <feature-3glcm-sumaverage>`
      - Sum average
@@ -153,10 +153,10 @@
    * - :ref:`3GLCM_SUMVARIANCE <feature-3glcm-sumvariance>`
      - Sum variance
      - OEEB
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 2.83
    * - :ref:`3GLCM_VARIANCE <feature-3glcm-variance>`
      - Variance
      - —
-     - PyRadiomics (rel. 1e-9)
+     - analytic (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 1.194

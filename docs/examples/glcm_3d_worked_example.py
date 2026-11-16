@@ -59,7 +59,7 @@ check(features, "3GLCM_CORRELATION_AVE", -0.03872, "IBSI")
 # Default settings (64-level binning, ordered pairs)
 default = run(img, seg, "default", False)
 for column, expected in {"3GLCM_CONTRAST": 478.61, "3GLCM_CONTRAST_AVE": 620.39,
-                         "3GLCM_JVAR": 257.66, "3GLCM_VARIANCE": 334.03}.items():
+                         "3GLCM_JVAR": 334.03, "3GLCM_VARIANCE": 334.03}.items():
     check(default, column, expected, "default")
 
 # 3glcm/greydepth and coarse_gray_depth both set the number of levels

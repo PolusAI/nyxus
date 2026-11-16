@@ -2,7 +2,7 @@ Nyxus
 =====
 
 Nyxus computes intensity, texture, morphology and image quality features for every region of
-interest (ROI) in 2D images and 3D volumes: 758 features in all, 539 for 2D images, 213 for 3D
+interest (ROI) in 2D images and 3D volumes: 760 features in all, 540 for 2D images, 214 for 3D
 volumes and 6 image quality features. It runs from the command line or from Python, reads
 TIFF, OME-TIFF, OME-Zarr, NIfTI and DICOM files (OME-TIFF and OME-Zarr with up to five
 dimensions), and assembles ROIs that span several image tiles.

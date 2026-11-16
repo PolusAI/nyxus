@@ -913,6 +913,12 @@ void test_3d_glcm_idm_ave_pyradiomics()
     assert_3d_glcm_ave_feature_pyradiomics (Nyxus::Feature3D::GLCM_IDM_AVE, "3GLCM_IDM");
 }
 
+// Homogeneity 2 is PyRadiomics' Idm, so its direction average has Idm's golden
+void test_3d_glcm_hom2_ave_pyradiomics()
+{
+    assert_3d_glcm_ave_feature_pyradiomics (Nyxus::Feature3D::GLCM_HOM2_AVE, "3GLCM_IDM");
+}
+
 void test_3d_glcm_idmn_ave_pyradiomics()
 {
     assert_3d_glcm_ave_feature_pyradiomics (Nyxus::Feature3D::GLCM_IDMN_AVE, "3GLCM_IDMN");
@@ -969,7 +975,7 @@ void test_3d_glcm_sumentropy_ave_pyradiomics()
 }
 
 
-// The six *_AVE features PyRadiomics does not report under their own name. Each is numerically
+// The seven *_AVE features PyRadiomics does not report under their own name. Each is numerically
 // identical to a twin that does, and the identity is not an assumption: it is asserted at 1e-6 on
 // the per-angle values by test_3d_glcm_equivalence_dump_pyradiomics(). This pins the same identity
 // on the stored *_AVE features, so the twin's PyRadiomics golden carries both.
@@ -1019,6 +1025,7 @@ void test_3d_glcm_ave_equivalence_pyradiomics()
         { F::GLCM_ENERGY_AVE, F::GLCM_ASM_AVE, "3GLCM_ENERGY_AVE", "3GLCM_ASM_AVE", "3GLCM_ASM" },
         { F::GLCM_ENTROPY_AVE, F::GLCM_JE_AVE, "3GLCM_ENTROPY_AVE", "3GLCM_JE_AVE", "3GLCM_JE" },
         { F::GLCM_HOM1_AVE, F::GLCM_ID_AVE, "3GLCM_HOM1_AVE", "3GLCM_ID_AVE", "3GLCM_ID" },
+        { F::GLCM_HOM2_AVE, F::GLCM_IDM_AVE, "3GLCM_HOM2_AVE", "3GLCM_IDM_AVE", "3GLCM_IDM" },
         { F::GLCM_SUMVARIANCE_AVE, F::GLCM_CLUTEND_AVE, "3GLCM_SUMVARIANCE_AVE", "3GLCM_CLUTEND_AVE", "3GLCM_CLUTEND" },
         { F::GLCM_VARIANCE_AVE, F::GLCM_JVAR_AVE, "3GLCM_VARIANCE_AVE", "3GLCM_JVAR_AVE", "3GLCM_JVAR" }
     };

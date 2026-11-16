@@ -33,10 +33,10 @@ even ``*ALL_INTENSITY*``.
      - Features
      - Families
    * - ``*ALL*``
-     - 539
+     - 540
      - :ref:`Intensity <features-intensity>`, :ref:`Basic morphology <features-basic-morphology>`, :ref:`Ellipse fitting <features-ellipse>`, :ref:`Contour <features-contour>`, :ref:`Convex hull <features-convex-hull>`, :ref:`Erosion <features-erosion>`, :ref:`Fractal dimension <features-fractal>`, :ref:`Feret diameters <features-feret>`, :ref:`Martin diameters <features-martin>`, :ref:`Nassenstein diameters <features-nassenstein>`, :ref:`Chords <features-chords>`, :ref:`Euler number <features-euler>`, :ref:`Extrema <features-extrema>`, :ref:`Inscribing and circumscribing circles <features-circles>`, :ref:`Geodetic length and thickness <features-geodetic>`, :ref:`ROI radius <features-roi-radius>`, :ref:`Neighbors <features-neighbors>`, :ref:`Grey-level co-occurrence matrix (GLCM) <features-glcm>`, :ref:`Grey-level run-length matrix (GLRLM) <features-glrlm>`, :ref:`Grey-level distance-zone matrix (GLDZM) <features-gldzm>`, :ref:`Grey-level size-zone matrix (GLSZM) <features-glszm>`, :ref:`Grey-level dependence matrix (GLDM) <features-gldm>`, :ref:`Neighbouring grey-level dependence matrix (NGLDM) <features-ngldm>`, :ref:`Neighbourhood grey-tone difference matrix (NGTDM) <features-ngtdm>`, :ref:`Radial distribution <features-radial>`, :ref:`Gabor <features-gabor>`, :ref:`Zernike <features-zernike>`, :ref:`Shape moments <features-shape-moments>`, :ref:`Intensity moments <features-intensity-moments>`, :ref:`IBSI intensity histogram <features-intensity-histogram>`
    * - ``*WHOLESLIDE*``
-     - 283
+     - 284
      - :ref:`Intensity <features-intensity>`, :ref:`Contour <features-contour>`, :ref:`Grey-level co-occurrence matrix (GLCM) <features-glcm>`, :ref:`Grey-level run-length matrix (GLRLM) <features-glrlm>`, :ref:`Grey-level size-zone matrix (GLSZM) <features-glszm>`, :ref:`Grey-level dependence matrix (GLDM) <features-gldm>`, :ref:`Neighbouring grey-level dependence matrix (NGLDM) <features-ngldm>`, :ref:`Neighbourhood grey-tone difference matrix (NGTDM) <features-ngtdm>`, :ref:`Radial distribution <features-radial>`, :ref:`Gabor <features-gabor>`, :ref:`Zernike <features-zernike>`, :ref:`Intensity moments <features-intensity-moments>`
    * - ``*ALL_INTENSITY*``
      - 36
@@ -48,7 +48,7 @@ even ``*ALL_INTENSITY*``.
      - 15
      - :ref:`Basic morphology <features-basic-morphology>`
    * - ``*ALL_GLCM*``
-     - 59
+     - 60
      - :ref:`Grey-level co-occurrence matrix (GLCM) <features-glcm>`
    * - ``*ALL_GLRLM*``
      - 32
@@ -95,7 +95,7 @@ even ``*ALL_INTENSITY*``.
      - Features
      - Families
    * - ``*3D_ALL*``
-     - 213
+     - 214
      - :ref:`Intensity (3D) <features-intensity-3d>`, :ref:`Shape (3D) <features-shape-3d>`, :ref:`GLCM (3D) <features-glcm-3d>`, :ref:`GLDM (3D) <features-gldm-3d>`, :ref:`GLDZM (3D) <features-gldzm-3d>`, :ref:`NGLDM (3D) <features-ngldm-3d>`, :ref:`NGTDM (3D) <features-ngtdm-3d>`, :ref:`GLSZM (3D) <features-glszm-3d>`, :ref:`GLRLM (3D) <features-glrlm-3d>`
    * - ``*3D_ALL_INTENSITY*``
      - 36
@@ -104,10 +104,10 @@ even ``*ALL_INTENSITY*``.
      - 14
      - :ref:`Shape (3D) <features-shape-3d>`
    * - ``*3D_ALL_TEXTURE*``
-     - 163
+     - 164
      - :ref:`GLCM (3D) <features-glcm-3d>`, :ref:`GLDM (3D) <features-gldm-3d>`, :ref:`GLDZM (3D) <features-gldzm-3d>`, :ref:`NGLDM (3D) <features-ngldm-3d>`, :ref:`NGTDM (3D) <features-ngtdm-3d>`, :ref:`GLSZM (3D) <features-glszm-3d>`, :ref:`GLRLM (3D) <features-glrlm-3d>`
    * - ``*3D_GLCM*``
-     - 59
+     - 60
      - :ref:`GLCM (3D) <features-glcm-3d>`
    * - ``*3D_GLDM*``
      - 14

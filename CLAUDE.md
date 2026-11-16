@@ -6,8 +6,8 @@ Guidance for Claude Code (and humans) working in this repository.
 
 Nyxus is a scalable C++/Python library that computes engineered features
 (intensity, texture, morphology, moments, digital-filter) from segmented and
-whole-slide/whole-volume images. It computes 758 features in all, 539 for 2D
-images, 213 for 3D volumes and 6 image quality features, at the ROI or
+whole-slide/whole-volume images. It computes 760 features in all, 540 for 2D
+images, 214 for 3D volumes and 6 image quality features, at the ROI or
 whole-image level (`docs/tools/gen_feature_reference.py --check` keeps these
 counts equal to the code), and is
 designed to operate at any scale by assembling ROIs that span multiple image

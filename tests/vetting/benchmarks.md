@@ -723,3 +723,28 @@ Tests reaching it today: `test_2d_contour_invariant.h`
 
 **It is a literal table rather than a closed form** because nothing about it is regular: it is the
 mask the defect was first measured on, kept as found.
+
+---
+
+## `bench_square5_glcm_example` — the 5 x 5 GLCM example image of the PyRadiomics documentation
+
+| | |
+|---|---|
+| Fixture | `glcm_2d_asym_image` in `tests/test_2d_glcm_analytic.h`, inside a one-pixel background frame, and its left-right mirror |
+| ROI | the whole 5 x 5 square, intensities 1..5 |
+| Why it exists | at the default MATLAB-style binning every angle's co-occurrence matrix is asymmetric, so the features that read the two marginals separately are told apart from a definition that mixes them; the mirror turns the 0-degree matrix into its transpose |
+
+Recipes: `glcm.analytic_default_asymmetric`. Tests: `test_2d_glcm_analytic.h`. The same image is the
+worked example of the 2D GLCM documentation page.
+
+---
+
+## `bench_box5x5x3_glcm_asymmetric` — three transformed copies of `bench_square5_glcm_example`
+
+| | |
+|---|---|
+| Fixture | built in `tests/test_3d_glcm_analytic.h`: slice 0 the 5 x 5 example image, slice 1 its left-right mirror, slice 2 its transpose; and the x-mirror of the whole box |
+| ROI | every voxel of the 5 x 5 x 3 box |
+| Why it exists | asymmetric matrices in all 13 directions at the default binning; the x-mirror pairs direction (1, dy, dz) with the transpose of (1, -dy, -dz) |
+
+Recipes: `glcm3d.analytic_default_asymmetric`. Tests: `test_3d_glcm_analytic.h`.

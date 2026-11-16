@@ -55,6 +55,7 @@ static const ref_vals_map<double> glcm_2d_mirp_ref_vals
     {"GLCM_IDM", 0.27853769782341209},   // cm_inv_diff_mom
     {"GLCM_IDM_AVE", 0.27853769782341209},   // cm_inv_diff_mom
     {"GLCM_HOM2", 0.27853769782341209},   // cm_inv_diff_mom
+    {"GLCM_HOM2_AVE", 0.27853769782341209},   // cm_inv_diff_mom
     {"GLCM_IDMN", 0.88734163285067313},   // cm_inv_diff_mom_norm
     {"GLCM_IDMN_AVE", 0.88734163285067313},   // cm_inv_diff_mom_norm
     {"GLCM_IDN", 0.77947925090782233},   // cm_inv_diff_norm

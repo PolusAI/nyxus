@@ -10,7 +10,7 @@ along each of the 13 directions of the 26-voxel neighbourhood. Every formula is 
    :widths: 26 74
 
    * - **Feature codes**
-     - ``3GLCM_*``: 30 features, each a single column, and 29 ``3GLCM_*_AVE`` direction averages
+     - ``3GLCM_*``: 30 features, each a single column, and 30 ``3GLCM_*_AVE`` direction averages
    * - **Group**
      - ``*3D_GLCM*``; also part of ``*3D_ALL_TEXTURE*`` and ``*3D_ALL*``
    * - **Dimensions**
@@ -22,9 +22,9 @@ along each of the 13 directions of the 26-voxel neighbourhood. Every formula is 
        When one read of the file returns the whole volume (NIfTI, or OME-Zarr chunked over all of
        Z), an oversized ROI stops the run with an error (see :doc:`/large_images`).
    * - **IBSI**
-     - 25 of the 30 features have an IBSI identifier. Four of the other 5 return the same value as
-       one that does; ``3GLCM_VARIANCE`` equals IBSI joint variance, which ``3GLCM_JVAR`` matches
-       only on a symmetric matrix. The ``_AVE`` codes follow the IBSI *3D:avg* aggregation (ITBB).
+     - 25 of the 30 features have an IBSI identifier. The other 5 return the same value as one that
+       does; ``3GLCM_VARIANCE`` is IBSI joint variance, ``3GLCM_JVAR``. The ``_AVE`` codes follow
+       the IBSI *3D:avg* aggregation (ITBB).
 
 .. tip::
 
@@ -280,8 +280,7 @@ Cluster prominence
 :Code: ``3GLCM_CLUPROM``
 :Range: :math:`[0, \infty)`, grey levels to the fourth power
 
-Defined as :ref:`GLCM_CLUPROM <feature-glcm-cluprom>`, centred on :math:`2\mu_y`. This equals the
-IBSI centre :math:`\mu_x + \mu_y` only on a symmetric matrix.
+Defined as :ref:`GLCM_CLUPROM <feature-glcm-cluprom>`, centred on :math:`\mu_x + \mu_y`.
 
 
 .. _feature-3glcm-clushade:
@@ -292,7 +291,7 @@ Cluster shade
 :Code: ``3GLCM_CLUSHADE``
 :Range: :math:`(-\infty, \infty)`, grey levels cubed
 
-Defined as :ref:`GLCM_CLUSHADE <feature-glcm-clushade>`, centred on :math:`2\mu_y`.
+Defined as :ref:`GLCM_CLUSHADE <feature-glcm-clushade>`, centred on :math:`\mu_x + \mu_y`.
 
 
 .. _feature-3glcm-clutend:
@@ -303,7 +302,7 @@ Cluster tendency
 :Code: ``3GLCM_CLUTEND``
 :Range: :math:`[0, \infty)`, squared grey levels
 
-Defined as :ref:`GLCM_CLUTEND <feature-glcm-clutend>`, centred on :math:`2\mu_y`.
+Defined as :ref:`GLCM_CLUTEND <feature-glcm-clutend>`, centred on :math:`\mu_x + \mu_y`.
 ``3GLCM_SUMVARIANCE`` returns the same value.
 
 
@@ -415,11 +414,11 @@ Defined as :ref:`GLCM_HOM1 <feature-glcm-hom1>`. Equal to ``3GLCM_ID``.
 Homogeneity 2
 ^^^^^^^^^^^^^
 
-:Code: ``3GLCM_HOM2`` (no ``_AVE`` column)
+:Code: ``3GLCM_HOM2``
 :Range: :math:`(0, 1]`, dimensionless
 
-Defined as :ref:`GLCM_HOM2 <feature-glcm-hom2>`. Equal to ``3GLCM_IDM``; for the direction average
-use ``3GLCM_IDM_AVE``.
+Defined as :ref:`GLCM_HOM2 <feature-glcm-hom2>`. Equal to ``3GLCM_IDM``, and ``3GLCM_HOM2_AVE`` to
+``3GLCM_IDM_AVE``.
 
 
 .. _feature-3glcm-id:
@@ -474,9 +473,10 @@ Information measure of correlation 1
 :Code: ``3GLCM_INFOMEAS1``
 :Range: :math:`[-1, 0]`, dimensionless
 
-Defined as :ref:`GLCM_INFOMEAS1 <feature-glcm-infomeas1>`: it divides by :math:`HY`, the entropy of
-the neighbour marginal. When :math:`HY = 0`, as on a constant ROI, the result is the ``--noval``
-substitute, 0 by default (``-0.0`` in Arrow and Parquet files; see :ref:`conventions-missing`).
+Defined as :ref:`GLCM_INFOMEAS1 <feature-glcm-infomeas1>`: it divides by :math:`\max(HX, HY)`.
+When :math:`HX = HY = 0`, as on a constant ROI, the result is the ``--noval`` substitute, 0 by
+default (``-0.0`` in Arrow and Parquet files; see :ref:`conventions-missing`). A direction where
+this happens enters ``3GLCM_INFOMEAS1_AVE`` with the substitute, like a direction without pairs.
 
 
 .. _feature-3glcm-infomeas2:
@@ -542,9 +542,9 @@ Joint variance
 :Code: ``3GLCM_JVAR``
 :Range: :math:`[0, \infty)`, squared grey levels
 
-Defined as :ref:`GLCM_JVAR <feature-glcm-jvar>`: the neighbour's level :math:`j` around the
-reference mean :math:`\mu_x`. It equals ``3GLCM_VARIANCE`` on a symmetric matrix; with the default
-counting the worked example gives 257.66 against 334.03.
+Defined as :ref:`GLCM_JVAR <feature-glcm-jvar>`: the reference voxel's level :math:`i` around its
+mean :math:`\mu_x`. It returns the same value as ``3GLCM_VARIANCE``, 334.03 on the worked example
+with the default settings.
 
 
 .. _feature-3glcm-sumaverage:
@@ -577,8 +577,7 @@ Sum variance
 :Code: ``3GLCM_SUMVARIANCE``
 :Range: :math:`[0, \infty)`, squared grey levels
 
-Returns the ``3GLCM_CLUTEND`` value, as :ref:`GLCM_SUMVARIANCE <feature-glcm-sumvariance>` does in
-2D.
+Defined as :ref:`GLCM_SUMVARIANCE <feature-glcm-sumvariance>`. Equal to ``3GLCM_CLUTEND``.
 
 
 .. _feature-3glcm-variance:
@@ -590,7 +589,7 @@ Variance
 :Range: :math:`[0, \infty)`, squared grey levels
 
 Defined as :ref:`GLCM_VARIANCE <feature-glcm-variance>`; it matches the IBSI joint variance on
-every matrix.
+every matrix and returns the same value as ``3GLCM_JVAR``.
 
 
 .. _glcm-3d-possible-issues:
@@ -612,18 +611,16 @@ Directions without pairs enter the average
    ``3GLCM_CONTRAST_AVE`` is 0.673, while the mean of the 4 in-plane directions is 2.1875.
 
 Asymmetric matrix by default
-   As in 2D, the default counting takes each ordered pair once, so features centred on
-   :math:`2\mu_y` (``CLUPROM``, ``CLUSHADE``, ``CLUTEND``, ``SUMVARIANCE``), ``JVAR`` and
-   ``INFOMEAS1`` differ from IBSI and can change when the volume is mirrored. See
-   :ref:`glcm-possible-issues` on the 2D page.
+   As in 2D, the default counting takes each ordered pair once, so the matrix is not symmetric and
+   the features that read one side of the pair, such as ``JAVE``, ``VARIANCE`` and ``JVAR``, can
+   change when the volume is mirrored. See :ref:`glcm-possible-issues` on the 2D page.
 
 Constant ROI
    When all voxels share one grey level the matrix is a single diagonal entry and the features take
    their limiting values (``3GLCM_ASM`` 1, ``3GLCM_CONTRAST`` 0, ``3GLCM_JAVE`` the level).
    ``3GLCM_CORRELATION`` and ``3GLCM_INFOMEAS1`` divide by zero; the result is the ``--noval``
    substitute in CSV files and pandas, and ``-0.0`` in Arrow and Parquet files. This differs from
-   the 2D family, which returns 0 for every feature in every format, whatever ``--noval`` is, a
-   known defect (`#511 <https://github.com/PolusAI/nyxus/issues/511>`__; see :ref:`glcm-possible-issues`).
+   the 2D family, which returns the substitute for every feature (see :ref:`glcm-possible-issues`).
 
 ``get_metaparam("3glcm/...")`` returns the 2D settings
    ``get_metaparam("3glcm/greydepth")`` and ``get_metaparam("3glcm/offset")`` return the 2D GLCM
@@ -634,7 +631,7 @@ Constant ROI
 Grey-level values and indices
    As in 2D, with PyRadiomics-style binning some features use positions 1 to :math:`N_g` in the
    list of grey levels present, and others the levels themselves. ``DIFAVE``, ``SUMAVERAGE``,
-   ``IV``, ``JVAR`` and ``DIFVAR`` mix the two as on the 2D page, a known defect
+   ``IV`` and ``DIFVAR`` mix the two as on the 2D page, a known defect
    (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__).
 
 
@@ -645,8 +642,11 @@ The test suite checks every 3D GLCM feature against PyRadiomics 3.0.1 with PyRad
 binning (20 bins), where both matrices are symmetric. Each plain feature is compared direction by
 direction, all 13 values against PyRadiomics' own per-direction values, and each ``_AVE`` code
 against PyRadiomics' direction-averaged value. Entropy features are compared at a looser tolerance
-because of the approximate logarithm. Values with the default binning are covered by regression
-tests only, and IBSI mode only by the worked-example script on this page.
+because of the approximate logarithm. With the default binning, cluster prominence, shade and
+tendency, sum variance, joint variance and the first information measure of correlation are checked
+in all 13 directions against their IBSI definitions on an independently counted matrix, on a volume
+and on its mirror; the other features are covered there by regression tests only. IBSI mode is
+covered only by the worked-example script on this page.
 
 
 References

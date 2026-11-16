@@ -153,6 +153,7 @@ void D3_GLCM_feature::save_value(std::vector<std::vector<double>>& fvals)
 	fvals[(int)Feature3D::GLCM_ENERGY_AVE][0] = calc_ave(fvals_energy);
 	fvals[(int)Feature3D::GLCM_ENTROPY_AVE][0] = calc_ave(fvals_entropy);
 	fvals[(int)Feature3D::GLCM_HOM1_AVE][0] = calc_ave(fvals_homo);
+	fvals[(int)Feature3D::GLCM_HOM2_AVE][0] = calc_ave(fvals_hom2);
 	fvals[(int)Feature3D::GLCM_ID_AVE][0] = calc_ave(fvals_id);
 	fvals[(int)Feature3D::GLCM_IDN_AVE][0] = calc_ave(fvals_idn);
 	fvals[(int)Feature3D::GLCM_IDM_AVE][0] = calc_ave(fvals_IDM);
@@ -185,45 +186,15 @@ void D3_GLCM_feature::finalize_angle (double soft_nan)
 	// Blank cooc-matrix? -- no point to use it, assign each feature value '0' and return.
 	if (sum_p == 0)
 	{
-		auto _ = soft_nan;
-		fvals_ASM.push_back(_);
-		fvals_acor.push_back(_);
-		fvals_cluprom.push_back(_);
-		fvals_clushade.push_back(_);
-		fvals_clutend.push_back(_);
-		fvals_contrast.push_back(_);
-		fvals_correlation.push_back(_);
-		fvals_diff_avg.push_back(_);
-		fvals_diff_var.push_back(_);
-		fvals_diff_entropy.push_back(_);
-		fvals_dis.push_back(_);
-		fvals_energy.push_back(_);
-		fvals_entropy.push_back(_);
-		fvals_homo.push_back(_);
-		fvals_hom2.push_back(_);
-		fvals_id.push_back(_);
-		fvals_idn.push_back(_);
-		fvals_IDM.push_back(_);
-		fvals_idmn.push_back(_);
-		fvals_meas_corr1.push_back(_);
-		fvals_meas_corr2.push_back(_);
-		fvals_iv.push_back(_);
-		fvals_jave.push_back(_);
-		fvals_je.push_back(_);
-		fvals_jmax.push_back(_);
-		fvals_jvar.push_back(_);
-		fvals_sum_avg.push_back(_);
-		fvals_sum_var.push_back(_);
-		fvals_sum_entropy.push_back(_);
-		fvals_variance.push_back(_);
+		push_noval (soft_nan);
 		return;
 	}
 
 	// Output - 'Pxpy' (meaning: 'x plus y') and 'Pxmy' (meaning: 'x minus y')
 	calculatePxpmy();
 
-	// Calculate by-row mean
-	calculate_by_row_mean();
+	// Output - 'mean_x' and 'mean_y'
+	calculate_marginal_means();
 
 	// Compute Haralick statistics 
 	fvals_ASM.push_back(f_asm(P_matrix));
@@ -231,7 +202,10 @@ void D3_GLCM_feature::finalize_angle (double soft_nan)
 	fvals_correlation.push_back(f_corr());
 	fvals_energy.push_back(f_energy(P_matrix));
 	fvals_homo.push_back(f_homogeneity());
-	fvals_variance.push_back(f_var(P_matrix));
+	// 3GLCM_VARIANCE and 3GLCM_JVAR are both IBSI joint variance, sum_ij (i - mu_x)^2 p(i,j), so it is
+	// calculated once
+	double jvar = f_var(P_matrix);
+	fvals_variance.push_back(jvar);
 	fvals_IDM.push_back(f_idm());
 	fvals_sum_avg.push_back(f_savg());
 	fvals_sum_entropy.push_back(f_sentropy());
@@ -239,12 +213,15 @@ void D3_GLCM_feature::finalize_angle (double soft_nan)
 	fvals_diff_var.push_back(f_dvar(P_matrix));
 	fvals_diff_entropy.push_back(f_dentropy(P_matrix));
 	fvals_diff_avg.push_back(f_difference_avg());
-	fvals_meas_corr1.push_back(f_info_meas_corr1(P_matrix));
+	fvals_meas_corr1.push_back(f_info_meas_corr1(P_matrix, soft_nan));
 	fvals_meas_corr2.push_back(f_info_meas_corr2(P_matrix));
 	fvals_acor.push_back(f_GLCM_ACOR(P_matrix));
 	fvals_cluprom.push_back(f_GLCM_CLUPROM());
 	fvals_clushade.push_back(f_GLCM_CLUSHADE());
-	double clutend = f_GLCM_CLUTEND();		// 'cluster tendency' is equivalent to 'sum variance', so calculate it once
+	// Cluster tendency, sum_ij (i + j - mu_x - mu_y)^2 p(i,j), and IBSI sum variance,
+	// sum_k (k - SA)^2 p_{x+y}(k), are the same sum on every matrix because the IBSI sum average
+	// SA = sum_k k p_{x+y}(k) is mu_x + mu_y, so it is calculated once
+	double clutend = f_GLCM_CLUTEND();
 	fvals_clutend.push_back(clutend);
 	fvals_sum_var.push_back(clutend);
 	fvals_dis.push_back(f_GLCM_DIS(P_matrix));
@@ -257,7 +234,41 @@ void D3_GLCM_feature::finalize_angle (double soft_nan)
 	fvals_jave.push_back(jave);
 	fvals_je.push_back(f_GLCM_JE(P_matrix));
 	fvals_jmax.push_back(f_GLCM_JMAX(P_matrix));
-	fvals_jvar.push_back(f_GLCM_JVAR(P_matrix, jave));
+	fvals_jvar.push_back(jvar);
+}
+
+void D3_GLCM_feature::push_noval (double softnan)
+{
+	fvals_ASM.push_back (softnan);
+	fvals_acor.push_back (softnan);
+	fvals_cluprom.push_back (softnan);
+	fvals_clushade.push_back (softnan);
+	fvals_clutend.push_back (softnan);
+	fvals_contrast.push_back (softnan);
+	fvals_correlation.push_back (softnan);
+	fvals_diff_avg.push_back (softnan);
+	fvals_diff_var.push_back (softnan);
+	fvals_diff_entropy.push_back (softnan);
+	fvals_dis.push_back (softnan);
+	fvals_energy.push_back (softnan);
+	fvals_entropy.push_back (softnan);
+	fvals_homo.push_back (softnan);
+	fvals_hom2.push_back (softnan);
+	fvals_id.push_back (softnan);
+	fvals_idn.push_back (softnan);
+	fvals_IDM.push_back (softnan);
+	fvals_idmn.push_back (softnan);
+	fvals_meas_corr1.push_back (softnan);
+	fvals_meas_corr2.push_back (softnan);
+	fvals_iv.push_back (softnan);
+	fvals_jave.push_back (softnan);
+	fvals_je.push_back (softnan);
+	fvals_jmax.push_back (softnan);
+	fvals_jvar.push_back (softnan);
+	fvals_sum_avg.push_back (softnan);
+	fvals_sum_var.push_back (softnan);
+	fvals_sum_entropy.push_back (softnan);
+	fvals_variance.push_back (softnan);
 }
 
 // prerequisite: needs previously grey-binned ROI. No grey binning is done in this method
@@ -402,27 +413,21 @@ void D3_GLCM_feature::calculatePxpmy()
 		}
 }
 
-void D3_GLCM_feature::calculate_by_row_mean()
+void D3_GLCM_feature::calculate_marginal_means()
 {
 	int n_levels = I.size();
 
-	// px[i] is the (i-1)th entry in the marginal probability matrix obtained
-	// by summing the rows of p[i][j]
-	std::vector<double> px(n_levels);
-	for (int j = 0; j < n_levels; j++)
-		for (int i = 0; i < n_levels; i++)
-			px[i] += P_matrix.xy(i, j) / sum_p;
-
-	// Now calculate the means and standard deviations of px and py */
-	// - fix supplied by J. Michael Christensen, 21 Jun 1991 */
-	// - further modified by James Darrell McCauley, 16 Aug 1991
-	// after realizing that meanx=meany and stddevx=stddevy
-	by_row_mean = 0;
-	for (int i = 0; i < n_levels; ++i)
-	{
-		double ival = I[i];
-		by_row_mean += px[i] * ival;
-	}
+	// P_matrix.yx(r, c) counts the pairs whose reference voxel has level I[r] and whose neighbour
+	// has level I[c], so the reference marginal sums a row and the neighbour marginal a column.
+	// The two means differ unless the matrix is symmetric.
+	mean_x = mean_y = 0;
+	for (int r = 0; r < n_levels; r++)
+		for (int c = 0; c < n_levels; c++)
+		{
+			double p = P_matrix.yx(r, c) / sum_p;
+			mean_x += p * I[r];
+			mean_y += p * I[c];
+		}
 }
 
 /* Angular Second Moment
@@ -725,12 +730,13 @@ void D3_GLCM_feature::calcH(const SimpleMatrix<double>& P, std::vector<double>& 
 	}
 }
 
-double D3_GLCM_feature::f_info_meas_corr1(const SimpleMatrix<double>& P)
+double D3_GLCM_feature::f_info_meas_corr1(const SimpleMatrix<double>& P, double softnan)
 {
+	// IMC1 = (HXY - HXY1) / max(HX, HY), HX and HY the entropies of the two marginals
 
 	auto Ng = P.width();
 
-	double HX = 0, HXY = 0, HXY1 = 0;
+	double HX = 0, HY = 0, HXY = 0, HXY1 = 0;
 
 	std::vector<double> px, py;
 	px.resize(Ng);
@@ -754,10 +760,15 @@ double D3_GLCM_feature::f_info_meas_corr1(const SimpleMatrix<double>& P)
 
 	for (int i = 0; i < Ng; ++i) {
 		HX += px[i] * fast_log10(px[i] + EPSILON) / LOG10_2;
-
+		HY += py[i] * fast_log10(py[i] + EPSILON) / LOG10_2;
 	}
 
-	return (HXY - HXY1) / HX;
+	// The sums above are the negated entropies, so the larger entropy is the smaller sum.
+	// Undefined when both marginals are a single level (0/0 -> NaN), as on a constant ROI.
+	double r = (HXY - HXY1) / std::min (HX, HY);
+	if (!std::isfinite(r))
+		return softnan;
+	return r;
 }
 
 double D3_GLCM_feature::f_info_meas_corr2(const SimpleMatrix<double>& P)
@@ -842,9 +853,7 @@ double D3_GLCM_feature::f_GLCM_ACOR(const SimpleMatrix<double>& P)
 	return f;
 }
 
-//
-// Argument 'mean_x' is calculated by f_corr()
-//
+// The cluster features centre i + j on mu_x + mu_y (calculate_marginal_means())
 double D3_GLCM_feature::f_GLCM_CLUPROM()
 {
 	int n_levels = I.size();
@@ -859,7 +868,7 @@ double D3_GLCM_feature::f_GLCM_CLUPROM()
 		for (int c = 0; c < n_levels; c++)
 		{
 			double cval = I[c];
-			double m = rval + cval - by_row_mean - by_row_mean;
+			double m = rval + cval - mean_x - mean_y;
 			f += m * m * m * m * P_matrix.yx(r, c) / sum_p;
 		}
 	}
@@ -881,7 +890,7 @@ double D3_GLCM_feature::f_GLCM_CLUSHADE()
 		for (int c = 0; c < n_levels; c++)
 		{
 			double cval = I[c];
-			double m = rval + cval - by_row_mean - by_row_mean;
+			double m = rval + cval - mean_x - mean_y;
 			f += m * m * m * P_matrix.yx(r, c) / sum_p;
 		}
 	}
@@ -902,7 +911,7 @@ double D3_GLCM_feature::f_GLCM_CLUTEND()
 		for (int y = 0; y < n_levels; y++)
 		{
 			double yval = I[y];
-			double m = xval + yval - by_row_mean - by_row_mean;
+			double m = xval + yval - mean_x - mean_y;
 			f += m * m * P_matrix.xy(x,y) / sum_p;
 		}
 	}
@@ -1051,26 +1060,6 @@ double D3_GLCM_feature::f_GLCM_JMAX(const SimpleMatrix<double>& P_matrix)
 		}
 
 	return max_p;
-}
-
-double D3_GLCM_feature::f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, double joint_ave)
-{
-	int n_levels = I.size();
-
-	// joint variance = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} (i-\mu_x) ^2 p(i,j)
-	//		where \mu_x is the value of joint average feature (IBSI: "Fcm.joint.avg"), 
-	//		\mu_x = \sum^{N_g}_{i=1} \sum^{N_g}_{j=1} i p(i,j)
-
-	double f = 0;
-	for (int x = 0; x < n_levels; x++)
-	{
-		double d = double(x+1) - joint_ave,
-			d2 = d * d;
-
-		for (int y = 0; y < n_levels; y++)
-			f += d2 * P_matrix.xy(x, y) / sum_p;
-	}
-	return f;
 }
 
 void D3_GLCM_feature::reduce (size_t start, size_t end, std::vector<int>* ptrLabels, std::unordered_map <int, LR>* ptrLabelData, const Fsettings & s, const Dataset & _)
