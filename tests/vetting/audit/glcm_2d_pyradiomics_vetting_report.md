@@ -96,15 +96,22 @@ absent levels ({1,3,4,6}, so 2 and 5 never occur).
 | `GLCM_SUMVARIANCE` | 5.472932478 | 5.47293247778 | 4.0e-11 | vetted |
 | `GLCM_VARIANCE` | 2.687695905 | 2.68769590492 | 2.8e-11 | vetted |
 
-## Finding: the level-gap concern does not apply at this recipe
+## Absent grey levels
 
-The dense fixture was chosen partly on the belief - carried in a comment since the PR #356 review -
-that PyRadiomics re-indexes the grey levels it finds, so a phantom with an absent level would give
-it a different `Ng` from Nyxus' and make `Idn`, `Idmn` and `Autocorrelation` incomparable. Fixture 2
-tests exactly that case and **the concern does not hold at `binWidth=1`**: on levels {1,3,4,6}
-PyRadiomics reproduces Nyxus (and MIRP) to 1e-15 on all three. The comment has been corrected; the
-dense phantom is kept because it exercises every level and a fuller matrix, not because the IBSI one
-is unusable.
+PyRadiomics builds its matrix over every level up to the highest one in the ROI and drops the empty
+rows, keeping the levels' values, so `Ng` is the highest level, not the count of levels present.
+Under this recipe (IBSI identity, `binWidth=1`) Nyxus keeps every level 1 to the highest one too,
+so an absent level is an empty row on both sides: on fixture 2's levels {1,3,4,6} PyRadiomics
+reproduces Nyxus (and MIRP) to 1e-15 on `Idn`, `Idmn` and `Autocorrelation`. The dense phantom is
+kept because it exercises every level and a fuller matrix.
+
+Under PyRadiomics-style binning (negative grey depth) Nyxus' matrix holds only the levels present,
+so a matrix row and the level it stands for differ whenever a bin is empty. That configuration is
+covered by a third fixture in the same test file, `TEST_2D_GLCM_GAP_LEVELS_PYRADIOMICS`: a 12x12
+crop of a CT slice at binCount 20 whose pixels occupy levels {1..8, 11, 13, 20}, every 2D GLCM
+feature pinned to PyRadiomics 3.0.1 at the bands above. Goldens and their re-verification:
+`tests/vetting/oracles/gen_glcm_gap_levels_pyradiomics.py`, which also covers the 3D crop of
+`TEST_3D_GLCM_GAP_LEVELS_PYRADIOMICS`.
 
 ## Why the log-based features are not exact
 

@@ -21,6 +21,21 @@ chosen reference tool (SPEC 5). Oracle tests reference a recipe by id; this file
 - Note: Nyxus 3D GLCM ground-truth was asymmetric/1-offset/100-level; the 3D recipe must force
   symmetric + 13-direction to match pyradiomics (see MIGRATION.md 5.8).
 
+## glcm.pyradiomics_gap_levels_bincount20
+- `IBSI=false`, `GREYDEPTH=100`, `GLCM_GREYDEPTH=-20` (PyRadiomics binCount 20 over the ROI's own
+  range), `GLCM_OFFSET=1`, symmetric matrix. 2D: angles 0/45/90/135; 3D: the 13 directions.
+- Fixtures: a 12x12 crop of a CT slice (`glcm_2d_gap_levels_pixels`, `test_2d_glcm_pyradiomics.h`)
+  and a 9x9x5 crop of a CT volume (`glcm_3d_gap_levels_voxels`, `test_3d_glcm_pyradiomics.h`), each
+  box inside one segmented structure, Hounsfield units shifted so the box minimum is 1, the whole box
+  one ROI. At 20 bins their voxels leave interior bins empty and put a few voxels alone in the top
+  bin, so the matrix, which holds only the levels present, has rows whose index is not their level.
+- Oracle: `pyradiomics` 3.0.1, `binCount=20`, `symmetricalGLCM=True`, `distances=[1]`,
+  `weightingNorm=None`, no resampling; 2D as a one-slice volume with `force2D=True`. One value per
+  feature over the direction set, the `*_AVE` aggregation; every GLCM feature and its `*_AVE` is
+  pinned, twins (`DIS`, `HOM1`, `HOM2`, `ENERGY`, `ENTROPY`, `SUMVARIANCE`, `VARIANCE`, `JVAR`) to
+  their PyRadiomics quantity. Generator: `oracles/gen_glcm_gap_levels_pyradiomics.py`. Used by
+  `TEST_2D_GLCM_GAP_LEVELS_PYRADIOMICS` and `TEST_3D_GLCM_GAP_LEVELS_PYRADIOMICS`.
+
 ## firstorder.pyradiomics_default
 - Non-discretised intensity statistics. Oracle: `pyradiomics` firstorder. Used by: `test_2d_firstorder_pyradiomics.h`.
 
