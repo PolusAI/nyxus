@@ -70,6 +70,27 @@ namespace Nyxus
 			}
 	}
 
+	/// @brief Visit the pixels of tile (tile_row, tile_col) of a 2D image cut into tile_w x tile_h
+	/// tiles, row by row: pixel(i, x, y) receives each pixel of the tile that lies inside the
+	/// full_w x full_h image, at offset i of the tile buffer and position (x, y) in the image. A tile
+	/// buffer is always a full tile, and the part of an edge tile past the image's right or bottom
+	/// edge holds none of its pixels, so it is not visited.
+	template <class Pixel>
+	void walk_tile_pixels (std::size_t tile_row, std::size_t tile_col, std::size_t tile_w, std::size_t tile_h,
+		std::size_t full_w, std::size_t full_h, Pixel&& pixel)
+	{
+		const std::size_t row0 = tile_row * tile_h,
+			col0 = tile_col * tile_w;
+		if (row0 >= full_h || col0 >= full_w)
+			return;
+
+		const std::size_t valid_h = (std::min) (tile_h, full_h - row0),
+			valid_w = (std::min) (tile_w, full_w - col0);
+		for (std::size_t r = 0; r < valid_h; r++)
+			for (std::size_t c = 0; c < valid_w; c++)
+				pixel (r * tile_w + c, col0 + c, row0 + r);
+	}
+
 	/// @brief Walk a whole X*Y*Z volume, tile layer by tile layer (see walk_tile_layer).
 	/// Featurization (ImageLoader::stream_volume_planes, tile layer by tile layer) and the prescan
 	/// (RawImageLoader::for_each_voxel) all walk through here, so they see the same voxels.

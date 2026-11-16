@@ -10,7 +10,6 @@
 #include "raw_nifti.h"
 #include "ome/format_detect.h"		// container-family classification for loader dispatch
 #include "mask_plane.h"
-#include "volume_walk.h"
 
 ImageLoader::ImageLoader() {}
 

@@ -9,6 +9,7 @@
 #include "abs_tile_loader.h"
 #include "cli_fpimage_options.h"
 #include "slideprops.h"
+#include "volume_walk.h"
 
 /// @brief Incapsulates access to an intensity and mask image file pair
 class ImageLoader

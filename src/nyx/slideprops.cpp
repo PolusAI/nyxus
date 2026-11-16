@@ -152,10 +152,8 @@ namespace Nyxus
 		// Read the image/volume. The image loader is put in the open state in processDataset_XX_YY ()
 		size_t ntHor = ilo.get_num_tiles_hor(),	// tiles across a row
 			ntVert = ilo.get_num_tiles_vert(),	// tiles down a column
-			fw = ilo.get_tile_width(),
 			th = ilo.get_tile_height(),
 			tw = ilo.get_tile_width(),
-			tileSize = ilo.get_tile_size(),
 			fullwidth = ilo.get_full_width(),
 			fullheight = ilo.get_full_height();
 
@@ -175,17 +173,10 @@ namespace Nyxus
 					return false;
 				}
 
-				// Iterate pixels
+				// Iterate the tile's pixels inside the image
 				uint32_t prevMsk = 0;	// the label of the pixel to the left in the tile's row
-				for (size_t i = 0; i < tileSize; i++)
+				walk_tile_pixels (row, col, tw, th, fullwidth, fullheight, [&](size_t i, size_t x, size_t y)
 				{
-					int y = row * th + i / tw,
-						x = col * tw + i % tw;
-
-					// Skip tile buffer pixels beyond the image's bounds
-					if (x >= fullwidth || y >= fullheight)
-						continue;
-
 					// the offset the loader will apply is driven by every pixel, so this runs
 					// before the mask filter below
 					double dxequiv_I = ilo.get_cur_tile_dpequiv_pixel(i);
@@ -213,7 +204,7 @@ namespace Nyxus
 
 					// Skip non-mask pixels
 					if (!msk)
-						continue;
+						return;
 
 					// dynamic range within- and off-ROI
 					if (finite_I)
@@ -239,7 +230,7 @@ namespace Nyxus
 						// Initialize basic counters
 						r.aux_area = 1;
 						r.aux_min = r.aux_max = 0; //we don't have uint-cast intensities at this moment
-						r.init_aabb(x, y);
+						r.init_aabb((int) x, (int) y);
 
 						//		- not storing file names (r.segFname = segFile, r.intFname = intFile) but will do so in the future
 
@@ -257,9 +248,9 @@ namespace Nyxus
 						r.aux_area++;
 
 						// save
-						r.update_aabb(x, y);
+						r.update_aabb((int) x, (int) y);
 					}
-				} // scan tile
+				}); // scan tile
 
 				// free tile buffers
 				ilo.free_tile_buffers();

@@ -123,10 +123,8 @@ namespace Nyxus
 		// Read the tiffs
 		size_t ntHor = ldr.get_num_tiles_hor(),
 			ntVert = ldr.get_num_tiles_vert(),
-			fw = ldr.get_tile_width(),
 			th = ldr.get_tile_height(),
 			tw = ldr.get_tile_width(),
-			tileSize = ldr.get_tile_size(),
 			fullwidth = ldr.get_full_width(),
 			fullheight = ldr.get_full_height();
 
@@ -152,8 +150,8 @@ namespace Nyxus
 				const std::shared_ptr<std::vector<uint32_t>>& spL = ldr.get_seg_tile_sptr();
 				bool wholeslide = env.singleROI;
 
-				// Iterate pixels
-				for (unsigned long i = 0; i < tileSize; i++)
+				// Iterate the tile's pixels inside the image
+				walk_tile_pixels (row, col, tw, th, fullwidth, fullheight, [&](size_t i, size_t x, size_t y)
 				{
 					// mask label if not in the wholeslide mode
 					PixIntens label = 1;
@@ -167,20 +165,12 @@ namespace Nyxus
 
 					// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
 					if (! env.singleROI && ! std::binary_search(whiteList.begin(), whiteList.end(), label))
-						continue;
+						return;
 
-					auto inten = dataI[i];
-					int y = row * th + i / tw,
-						x = col * tw + i % tw;
-
-					// Skip tile buffer pixels beyond the image's bounds
-					if (x >= fullwidth || y >= fullheight)
-						continue;
-
-					// Cache this pixel 
+					// Cache this pixel
 					LR& r = env.roiData [label];
-					feed_pixel_2_cache_LR (x, y, dataI[i], r);
-				}
+					feed_pixel_2_cache_LR ((int) x, (int) y, dataI[i], r);
+				});
 
 				VERBOSLVL2 (env.get_verbosity_level(),
 					// Show stayalive progress info
@@ -319,10 +309,8 @@ namespace Nyxus
 		// Read the tiffs
 		size_t ntHor = ldr.get_num_tiles_hor(),	// tiles across a row
 			ntVert = ldr.get_num_tiles_vert(),	// tiles down a column
-			fw = ldr.get_tile_width(),
 			th = ldr.get_tile_height(),
 			tw = ldr.get_tile_width(),
-			tileSize = ldr.get_tile_size(),
 			fullwidth = ldr.get_full_width(),
 			fullheight = ldr.get_full_height();
 
@@ -346,20 +334,11 @@ namespace Nyxus
 				// Get ahold of tile's pixel buffer
 				const std::vector<uint32_t>& dataI = ldr.get_int_tile_buffer();
 
-				// Iterate pixels
-				for (unsigned long i = 0; i < tileSize; i++)
+				// Cache the tile's pixels inside the image
+				walk_tile_pixels (row, col, tw, th, fullwidth, fullheight, [&](size_t i, size_t x, size_t y)
 				{
-					auto inten = dataI[i];
-					int y = row * th + i / tw,
-						x = col * tw + i % tw;
-
-					// Skip tile buffer pixels beyond the image's bounds
-					if (x >= fullwidth || y >= fullheight)
-						continue;
-
-					// Cache this pixel 
-					feed_pixel_2_cache_LR (x, y, dataI[i], vroi);
-				}
+					feed_pixel_2_cache_LR ((int) x, (int) y, dataI[i], vroi);
+				});
 			}
 
 			return true;

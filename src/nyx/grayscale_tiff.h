@@ -509,6 +509,11 @@ public:
             startCol = indexColGlobalTile * tileWidth_,
             endCol = std::min((indexColGlobalTile + 1) * tileWidth_, fullWidth_);
 
+        // The buffer is always a full tile. A partial edge tile fills only its part inside the
+        // image, and the rest is set to 0 so that it holds no pixels or labels of an earlier tile.
+        if (endLayer - startLayer < tileDepth_ || endRow - startRow < tileHeight_ || endCol - startCol < tileWidth_)
+            std::fill (tileDataVec.begin(), tileDataVec.end(), (DataType) 0);
+
         for (layer = startLayer; layer < endLayer; ++layer)
         {
             // OME-TIFF: the plane's directory per DimensionOrder; plain multi-page TIFF: directory = Z
@@ -623,45 +628,35 @@ private:
     }
     #endif
 
-    /// @brief Private function to copy and cast the values
+    /// @brief Private function to copy and cast the values of one scanline's part inside the tile
     /// @tparam FileType Type inside the file
     /// @param src Piece of memory coming from libtiff
     /// @param dest_as_vector Feature extraction facing buffer to fill
     /// @param layer Destination layer
     /// @param row Destination row
-    /// @param startCol Starting column tile to copy
-    /// @param endCol End column tile to copy
+    /// @param start_col First image column to copy
+    /// @param end_col Image column past the last one to copy, at most the image's width
     template<typename FileType>
     void copyRow(const void* src,
         std::vector<DataType>& dest_as_vector,
         size_t layer,
         size_t row,
         size_t start_col,
-        size_t end_col) 
+        size_t end_col)
     {
         // Get ahold of the raw pointer
         DataType* dest = dest_as_vector.data();
 
         for (size_t col = start_col; col < end_col; col++)
         {
-            // Logic to prevent "noise" in images whose dimensions are smaller than the default tile buffer size 1024x1024
-            DataType dataItem = (DataType) 0;    // Zero-fill gaps
-
-            // - Informative zone of the strip
-            if (layer < fullDepth_ && row < fullHeight_ && col < fullWidth_)
-            {
-                // The same load-time map the tile loader applies: an offset by the slide's floored
-                // minimum, which is what keeps a signed int16 CT pixel from wrapping to ~4.29e9 and
-                // blowing up the max-intensity-sized grey-bin/histogram allocation (#373), or the
-                // min-max rescale when the slide is real-valued.
-                dataItem = map_intensity ((double)((const FileType*)(src))[col]);
-            }
-            
-            // - Save the informative or zero-filled value
+            // The same load-time map the tile loader applies: an offset by the slide's floored
+            // minimum, which is what keeps a signed int16 CT pixel from wrapping to ~4.29e9 and
+            // blowing up the max-intensity-sized grey-bin/histogram allocation (#373), or the
+            // min-max rescale when the slide is real-valued.
             dest[
                 tileWidth_ * tileHeight_ * layer
                     + tileWidth_ * row
-                    + col - start_col] = dataItem;
+                    + col - start_col] = map_intensity ((double)((const FileType*)(src))[col]);
         }
     }
 
