@@ -706,3 +706,81 @@ def test_2d_ooc_2d_tiled_matches_untiled_invariant(tmp_path):
             if np.isnan(p) != np.isnan(q) or abs(p - q) > 1e-6 * max(abs(p), abs(q), 1.0) + 1e-9:
                 bad.append((lab, c, p, q))
     assert not bad, "out-of-core features of a tiled TIFF diverge from its untiled copy: %r" % (bad[:8],)
+
+
+# A striped TIFF is read in 1024 x 1024 tiles, so a 1120 x 1080 striped image is 2 tiles across and
+# 2 down, and the last tile column (96 wide) and the last tile row (56 high) are partial. The image
+# is not square, so swapping the two partial extents also moves pixels.
+STRIPED_W, STRIPED_H, STRIPED_TILE = 1120, 1080, 1024
+
+
+def _make_striped_tiled_pairs(tmp_path):
+    """The same intensity and mask arrays written as striped TIFFs and as 64 x 64 tiled TIFFs.
+
+    Label 1 lies inside the first tile. Label 2 spans all four tiles, so it has pixels in the
+    partial last column, the partial last row and the partial corner tile. Label 3 lies inside the
+    partial corner tile."""
+    yy, xx = np.mgrid[0:STRIPED_H, 0:STRIPED_W]
+    inten = (1 + xx % 500 + 2 * (yy % 300)).astype(np.uint32)
+    mask = np.zeros((STRIPED_H, STRIPED_W), np.uint32)
+    mask[100:140, 200:250] = 1
+    mask[((xx - 1024) / 30.0) ** 2 + ((yy - 1024) / 25.0) ** 2 <= 1.0] = 2
+    mask[1040:1070, 1050:1100] = 3
+    T = STRIPED_TILE
+    assert (mask[:T, :T] == 1).sum() == 40 * 50
+    for part in (mask[:T, :T], mask[:T, T:], mask[T:, :T], mask[T:, T:]):
+        assert (part == 2).any()
+    assert (mask[T:, T:] == 3).sum() == 30 * 50
+
+    dirs = {}
+    for kind, kw in (("striped", {}), ("tiled", {"tile": (64, 64)})):
+        intdir = tmp_path / kind / "int"
+        segdir = tmp_path / kind / "seg"
+        intdir.mkdir(parents=True)
+        segdir.mkdir(parents=True)
+        tifffile.imwrite(str(intdir / "img.tif"), inten, **kw)
+        tifffile.imwrite(str(segdir / "img.tif"), mask, **kw)
+        with tifffile.TiffFile(str(intdir / "img.tif")) as tf:
+            assert tf.pages[0].is_tiled == (kind == "tiled")
+        dirs[kind] = (str(intdir) + os.sep, str(segdir) + os.sep)
+    return dirs
+
+
+@pytest.mark.parametrize("feats", [["*ALL_INTENSITY*"], ALL_2D_FEATURE_GROUPS], ids=["intensity", "all_groups"])
+def test_2d_ooc_2d_striped_over_one_tile_matches_in_ram_invariant(tmp_path, feats):
+    """Out-of-core featurization of a striped TIFF read as several 1024 x 1024 tiles equals the
+    in-memory one and the out-of-core featurization of a tiled copy, every column of every ROI.
+
+    A tile buffer is always a full tile, and only the part inside the image holds this tile's
+    pixels, so the ROIs are placed to have pixels in the first tile and in each partial edge tile.
+    The intensity run compares the features built from sums over the ROI's pixels; the run of every
+    group adds the families that size a buffer from the ROI's box."""
+    dirs = _make_striped_tiled_pairs(tmp_path)
+
+    frames = {}
+    for name, kind, ram_mb in (("ram", "striped", RAM_LIMIT_LARGE_MB), ("ooc", "striped", 0),
+                               ("ooc_tiled", "tiled", 0)):
+        nyx = nyxus.Nyxus(list(feats))
+        _set_ram_limit_mb(nyx, ram_mb)
+        frames[name] = nyx.featurize_directory(*dirs[kind]).sort_values("ROI_label").reset_index(drop=True)
+
+    df_ram = frames["ram"]
+    assert list(df_ram["ROI_label"]) == [1, 2, 3]
+    cols = [c for c in _feature_cols(df_ram)[0] if not c.startswith(NEIGHBOR_FEATURE_PREFIXES)]
+    assert "MEAN" in cols
+
+    # Tolerance: same build, same pixels, same formulas; only the summation order differs.
+    bad = []
+    for other in ("ooc", "ooc_tiled"):
+        df = frames[other]
+        assert list(df["ROI_label"]) == [1, 2, 3]
+        for row in range(df_ram.shape[0]):
+            lab = int(df_ram["ROI_label"].iloc[row])
+            for c in cols:
+                p = float(df_ram[c].iloc[row])
+                q = float(df[c].iloc[row])
+                if np.isnan(p) and np.isnan(q):
+                    continue
+                if np.isnan(p) != np.isnan(q) or abs(p - q) > 1e-6 * max(abs(p), abs(q), 1.0) + 1e-9:
+                    bad.append((other, lab, c, p, q))
+    assert not bad, "out-of-core features of a striped TIFF over 1024 x 1024 diverge from in-RAM: %r" % (bad[:10],)
