@@ -26,8 +26,8 @@ static inline uint32_t dim5_enc(int x, int y, int z, int c, int t)
 
 // AbstractTileLoader stack. (T,C,Z) are the store's extents (X=8,Y=6 fixed). The
 // encoded value is axis-order- AND rank-invariant, so one body covers the default
-// TCZYX, the non-default CTZYX, the lower-rank 3D/2D stores, and the no-axes
-// (legacy fallback) store — all of which must return the same encoded values.
+// TCZYX, the non-default CTZYX, the lower-rank 3D/2D stores, the no-axes (legacy
+// fallback) store and the chunked ones -- all of which must return the same encoded values.
 void assert_omezarr_addressing(const char* store, int T, int C, int Z)
 {
     const int Y = 6, X = 8;
@@ -38,21 +38,31 @@ void assert_omezarr_addressing(const char* store, int T, int C, int Z)
     ASSERT_EQ(ldr.fullWidth(0), (size_t)X);
     ASSERT_EQ(ldr.fullHeight(0), (size_t)Y);
     ASSERT_EQ(ldr.fullDepth(0), (size_t)Z);
-    const size_t tw = ldr.tileWidth(0);
-    auto tile = std::make_shared<std::vector<uint32_t>>(ldr.tileHeight(0) * tw, 0u);
+    const size_t tw = ldr.tileWidth(0), th = ldr.tileHeight(0), td = ldr.tileDepth(0);
 
+    // One tile buffer for every read, as the loader's callers use it, primed with a value no
+    // voxel holds. Every chunk of every plane is read, and the part of the tile a partial chunk
+    // does not cover must come back zero -- neither the priming value nor the previous chunk.
+    auto tile = std::make_shared<std::vector<uint32_t>>(td * th * tw, 0xFFFFFFFFu);
     for (int t = 0; t < T; ++t)
       for (int c = 0; c < C; ++c)
-        for (int z = 0; z < Z; ++z)
-        {
-            std::fill(tile->begin(), tile->end(), 0u);
-            ASSERT_NO_THROW(ldr.loadTileFromFile(tile, 0, 0, z, c, t, 0));
-            const std::vector<uint32_t>& buf = *tile;
-            for (int y = 0; y < Y; ++y)
-              for (int x = 0; x < X; ++x)
-                ASSERT_EQ(buf[y * tw + x], dim5_enc(x, y, z, c, t))
-                    << store << " plane (z" << z << " c" << c << " t" << t << ") at (" << x << "," << y << ")";
-        }
+        for (size_t layer = 0; layer * td < (size_t)Z; ++layer)
+          for (size_t row = 0; row * th < (size_t)Y; ++row)
+            for (size_t col = 0; col * tw < (size_t)X; ++col)
+            {
+                ASSERT_NO_THROW(ldr.loadTileFromFile(tile, row, col, layer, c, t, 0));
+                const std::vector<uint32_t>& buf = *tile;
+                for (size_t p = 0; p < td; ++p)
+                  for (size_t k = 0; k < th; ++k)
+                    for (size_t j = 0; j < tw; ++j)
+                    {
+                        const int x = (int)(col * tw + j), y = (int)(row * th + k), z = (int)(layer * td + p);
+                        const bool inside = x < X && y < Y && z < Z;
+                        ASSERT_EQ(buf[(p * th + k) * tw + j], inside ? dim5_enc(x, y, z, c, t) : 0u)
+                            << store << " (c" << c << " t" << t << ") chunk (" << row << "," << col << "," << layer
+                            << ") sample (" << j << "," << k << "," << p << ")" << (inside ? "" : " past the array");
+                    }
+            }
 }
 
 // RawFormatLoader stack: every voxel of every chunk of every (c,t) volume, so it also covers a
@@ -352,8 +362,13 @@ void test_omezarr_malformed_throws_mechanics()
 // The facade's volume must hold every plane of every chunk at its own place. What this
 // discriminates: a reader that fills only the first Z-plane of a chunk leaves planes 1 and 2
 // zero, and an assembly that reads only chunk (0,0) of a plane leaves the rest of it wrong.
+// The tile loader read chunk by chunk into one buffer must leave the part a partial chunk does
+// not cover at zero: a loader that writes only the valid extent hands back the previous
+// chunk's samples there.
 void test_omezarr_chunked_facade_volume_mechanics()
 {
+    assert_omezarr_addressing("dim3_chunked.ome.zarr", 1, 1, 4);
+    if (::testing::Test::HasFatalFailure()) return;
     ASSERT_NO_THROW (assert_omezarr_facade_volume("dim3_chunked.ome.zarr", 1, 1, 4));
 
     auto ldr = NyxusOmeZarrLoader<uint32_t>(1, omezarr_data_path("dim3_chunked.ome.zarr").string());
@@ -588,6 +603,8 @@ void test_omezarr_spatial_axis_order_mechanics()
         ASSERT_EQ(ldr.tileHeight(0), 4u);
         ASSERT_EQ(ldr.tileWidth(0), 5u);
     }
+    assert_omezarr_addressing("dim3_xyz_chunked.ome.zarr", 1, 1, 4);
+    if (::testing::Test::HasFatalFailure()) return;
     assert_omezarr_facade_volume("dim3_xyz_chunked.ome.zarr", 1, 1, 4);
     if (::testing::Test::HasFatalFailure()) return;
     assert_raw_omezarr_addressing("dim3_xyz_chunked.ome.zarr", 1, 1, 4);

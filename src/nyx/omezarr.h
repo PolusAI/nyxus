@@ -88,7 +88,9 @@ public:
         // dest is plane-major: plane p, row k at (p*tile_height + k)*tile_width, matching the
         // stride ImageLoader::assemble_tile_layer reads, whatever order the array stores Z, Y and X
         // in. The sample goes through the same load-time map every other backend applies, so a
-        // signed dataset keeps its negatives and a real-valued one its fraction.
+        // signed dataset keeps its negatives and a real-valued one its fraction. A partial chunk
+        // at the end of an axis fills only part of dest; the rest is zero, not the previous chunk.
+        std::fill (dest.begin(), dest.end(), (DataType) 0);
         b.for_each_sample (layout_.tile_height, layout_.tile_width, [&] (size_t to, size_t from)
             {
                 dest[to] = map_intensity ((double) buffer[from]);
