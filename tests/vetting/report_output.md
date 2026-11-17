@@ -32,11 +32,11 @@ regression: 112  invariant: 0  untested: 0
 
 ## Verdicts
 
-1263 of 1263 assertion rows agree with the tree.
+1381 of 1381 assertion rows agree with the tree.
 
 | verdict | rows | meaning |
 |---|---:|---|
-| `agree` | 1263 | the claim and the tree say the same thing |
+| `agree` | 1381 | the claim and the tree say the same thing |
 
 ### How far each verdict reaches
 
@@ -45,7 +45,7 @@ regression: 112  invariant: 0  untested: 0
 
 | scope | rows | what was compared |
 |---|---:|---|
-| `feature` | 640 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
+| `feature` | 758 | `test_name` is empty, so the tree was read for the feature and not for this row's own assertion |
 | `row` | 388 | the case named in `test_name` asserts this feature, at this row's kind; its configuration is unchecked, the family declaring no recipe reader |
 | `row+config` | 235 | the case named in `test_name` asserts this feature at this `config_recipe` |
 
