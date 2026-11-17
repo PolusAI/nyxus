@@ -172,8 +172,8 @@ private:
 	double f_sentropy();
 	double f_svar(const SimpleMatrix<double>& P_matrix, double sum_entropy);
 	double f_entropy(const SimpleMatrix<double>& P_matrix);
-	double f_dvar(const SimpleMatrix<double>& P_matrix);
-	double f_dentropy(const SimpleMatrix<double>& P_matrix);
+	double f_dvar();
+	double f_dentropy();
 	double f_GLCM_ACOR(const SimpleMatrix<double>& P_matrix);
 	double f_GLCM_CLUPROM();
 	double f_GLCM_CLUSHADE();
@@ -250,10 +250,8 @@ private:
 	const double LOG10_2 = 0.30102999566;	// precalculated log 2 base 10
 	SimpleMatrix<double> P_matrix;
 	std::vector<PixIntens> I;	// unique sorted intensities
-	std::vector<double> Pxpy,
-		Pxmy,
-		kValuesSum,	// intensities x+y
-		kValuesDiff;	// intensities x-y
+	std::vector<double> Pxpy,	// p_{x+y}(k), k = 0 .. 2*Ng, the sum of two grey levels
+		Pxmy;	// p_{x-y}(k), k = 0 .. Ng-1, the difference of two grey levels
 	double by_row_mean;
 	const double EPSILON = 0.000000001;
 };

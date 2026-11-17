@@ -236,8 +236,8 @@ void D3_GLCM_feature::finalize_angle (double soft_nan)
 	fvals_sum_avg.push_back(f_savg());
 	fvals_sum_entropy.push_back(f_sentropy());
 	fvals_entropy.push_back(f_entropy(P_matrix));
-	fvals_diff_var.push_back(f_dvar(P_matrix));
-	fvals_diff_entropy.push_back(f_dentropy(P_matrix));
+	fvals_diff_var.push_back(f_dvar());
+	fvals_diff_entropy.push_back(f_dentropy());
 	fvals_diff_avg.push_back(f_difference_avg());
 	fvals_meas_corr1.push_back(f_info_meas_corr1(P_matrix));
 	fvals_meas_corr2.push_back(f_info_meas_corr2(P_matrix));
@@ -378,20 +378,13 @@ void D3_GLCM_feature::calculatePxpmy()
 	// p_{x+y}(k) and p_{x-y}(k) are distributions over grey-level values: bucket k collects the pairs
 	// whose levels I[x], I[y] sum, respectively differ, to k. Matrix row x stands for level I[x], and
 	// under radiomics binning 'I' lists only the levels present in the ROI, so a row index is not a
-	// level whenever a bin is empty. Both distributions span every k up to the highest level Ng, so
-	// Pxmy.size() == Ng, as in PyRadiomics.
+	// level whenever a bin is empty. Both distributions span every k up to Ng, the highest level of
+	// 'I', so Pxmy.size() == Ng, as in PyRadiomics. Ng is the highest level present under radiomics
+	// binning and the bin count under MATLAB and IBSI binning, where 'I' is 1 .. bin count.
 	int Ng = I.empty() ? 0 : (int)I.back();	// 'I' is sorted ascending
 
 	Pxpy.assign(2 * Ng + 1, 0);	// k = 0 .. 2*Ng
 	Pxmy.assign(Ng, 0);			// k = 0 .. Ng-1
-
-	kValuesSum.resize(Pxpy.size());
-	for (size_t k = 0; k < kValuesSum.size(); k++)
-		kValuesSum[k] = double(k);
-
-	kValuesDiff.resize(Pxmy.size());
-	for (size_t k = 0; k < kValuesDiff.size(); k++)
-		kValuesDiff[k] = double(k);
 
 	int n = (int)I.size();
 	for (int x = 0; x < n; x++)
@@ -582,8 +575,8 @@ double D3_GLCM_feature::f_savg()
 	double f = 0;
 	auto n = Pxpy.size();
 
-	for (int i = 0; i < n; i++)
-		f += kValuesSum[i] * Pxpy[i];
+	for (int k = 0; k < n; k++)
+		f += double(k) * Pxpy[k];
 
 	return f;
 }
@@ -624,7 +617,7 @@ double D3_GLCM_feature::f_entropy(const SimpleMatrix<double>& P)
 }
 
 /* Difference Variance */
-double D3_GLCM_feature::f_dvar(const SimpleMatrix<double>& P)
+double D3_GLCM_feature::f_dvar()
 {
 	// difference variance = \sum^{N_g-1}_{k=0} (k - DA)^2 p_{x-y}(k), k the grey-level difference
 	double diffAvg = f_difference_avg();
@@ -632,7 +625,7 @@ double D3_GLCM_feature::f_dvar(const SimpleMatrix<double>& P)
 
 	for (size_t k = 0; k < Pxmy.size(); k++)
 	{
-		double d = kValuesDiff[k] - diffAvg;
+		double d = double(k) - diffAvg;
 		var += d * d * Pxmy[k];
 	}
 
@@ -640,7 +633,7 @@ double D3_GLCM_feature::f_dvar(const SimpleMatrix<double>& P)
 }
 
 /* Difference Entropy */
-double D3_GLCM_feature::f_dentropy(const SimpleMatrix<double>& P)
+double D3_GLCM_feature::f_dentropy()
 {
 	double sum = 0;
 
@@ -658,8 +651,8 @@ double D3_GLCM_feature::f_difference_avg()
 	double f = 0;
 	auto n = Pxmy.size();
 
-	for (int i = 0; i < n; i++)
-		f += kValuesDiff[i] * Pxmy[i];
+	for (int k = 0; k < n; k++)
+		f += double(k) * Pxmy[k];
 
 	return f;
 }
@@ -937,7 +930,7 @@ double D3_GLCM_feature::f_GLCM_HOM2(const SimpleMatrix<double>& P_matrix)
 double D3_GLCM_feature::f_GLCM_IDMN()
 {
 	// IDMN = \sum^{N_g-1}_{k=0} \frac {p_{x-y}(k)} {1+\frac{k^2}{N_g^2}}
-	//		where N_g is the highest grey level, Pxmy.size() (see calculatePxpmy)
+	//		where N_g = Pxmy.size(), the highest level of 'I' (see calculatePxpmy)
 
 	double f = 0;
 
@@ -964,7 +957,7 @@ double D3_GLCM_feature::f_GLCM_ID()
 double D3_GLCM_feature::f_GLCM_IDN()
 {
 	// inverse difference normalized = \sum^{N_g-1}_{k=0} \frac {p_{x-y}(k)} {1+\frac{k}{N_g}}
-	//		where N_g is the highest grey level, Pxmy.size() (see calculatePxpmy)
+	//		where N_g = Pxmy.size(), the highest level of 'I' (see calculatePxpmy)
 
 	double Ng = double(Pxmy.size());
 
@@ -985,8 +978,7 @@ double D3_GLCM_feature::f_GLCM_IV()
 
 	for (int k = 1; k < n; k++)
 	{
-		//f += Pxmy[k] / (double(I[k]) * double(I[k]));
-		double kval = kValuesDiff[k];
+		double kval = double(k);
 		f += Pxmy[k] / (kval * kval);
 	}
 

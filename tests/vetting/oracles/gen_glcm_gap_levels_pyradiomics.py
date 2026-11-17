@@ -47,8 +47,7 @@ HEADER_2D = os.path.join(TESTS, "test_2d_glcm_pyradiomics.h")
 HEADER_3D = os.path.join(TESTS, "test_3d_glcm_pyradiomics.h")
 SHAPE_2D = (1, 12, 12)       # (z, y, x)
 SHAPE_3D = (5, 9, 9)
-LOG = ("DIFENTRO", "ENTROPY", "INFOMEAS1", "INFOMEAS2", "JE", "SUMENTROPY")
-RELTOL, LOGTOL = 1e-12, 1e-12   # pins are PyRadiomics' own output at %.17g; the bands live in the headers
+TOL = 1e-12   # pins are PyRadiomics' own output at %.17g; the bands against Nyxus live in the headers
 
 SETTINGS = dict(binCount=20, symmetricalGLCM=True, distances=[1], weightingNorm=None, label=1,
                 interpolator=None, resampledPixelSpacing=None)
@@ -103,8 +102,7 @@ def verify(header, table_name, computed):
             print(f"  FAIL {name}: produced but not pinned"); ok = False
         else:
             got, want = computed[name], pins[name]
-            tol = LOGTOL if any(name.endswith(t) or name.endswith(t + "_AVE") for t in LOG) else RELTOL
-            if abs(got - want) > tol * max(abs(want), 1e-300):
+            if abs(got - want) > TOL * max(abs(want), 1e-300):
                 print(f"  FAIL {name}: oracle={got!r} pinned={want!r}"); ok = False
     print(f"  {len(pins)} pins checked against {len(computed)} computed values")
     return ok

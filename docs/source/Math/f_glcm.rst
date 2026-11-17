@@ -117,9 +117,10 @@ Notation
    * - Symbol
      - Meaning
    * - :math:`N_g`
-     - Number of grey levels, the highest grey level. With PyRadiomics-style binning a ROI need
-       not occupy every level below it; an absent level has :math:`p_{ij} = 0` in its row and
-       column.
+     - Number of grey levels, :math:`1 \ldots N_g`. With MATLAB-style and IBSI binning it is
+       the bin count. With PyRadiomics-style binning it is the highest level present in the ROI,
+       and the ROI need not occupy every level below it; an absent level has :math:`p_{ij} = 0`
+       in its row and column.
    * - :math:`i,\; j`
      - Grey level of the reference pixel (:math:`i`) and of its neighbour :math:`\delta` pixels
        along :math:`\theta` (:math:`j`).

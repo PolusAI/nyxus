@@ -240,7 +240,8 @@ void test_2d_glcm_gap_levels_pyradiomics()
     s[(int)NyxSetting::GREYDEPTH].ival = 100;
     s[(int)NyxSetting::GLCM_GREYDEPTH].ival = -20;   // negative: PyRadiomics binCount binning
 
-    const std::vector<int> saved_angles = GLCMFeature::angles;
+    // the angle set is a static; restore it however this test exits
+    struct Restore { std::vector<int> a; ~Restore() { GLCMFeature::angles = a; } } restore { GLCMFeature::angles };
     GLCMFeature::angles = {0, 45, 90, 135};
     LR roidata;
     GLCMFeature f;
@@ -248,7 +249,6 @@ void test_2d_glcm_gap_levels_pyradiomics()
     f.calculate (roidata, s);
     roidata.initialize_fvals();
     f.save_value (roidata.fvals);
-    GLCMFeature::angles = saved_angles;
 
     for (const auto& [feature_name, golden] : glcm_2d_pyradiomics_gap_levels_ref_vals)
     {
