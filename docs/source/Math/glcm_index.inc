@@ -18,7 +18,7 @@
    * - :ref:`GLCM_ACOR <feature-glcm-acor>`
      - Autocorrelation
      - QWB0
-     - MIRP (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 6.85
    * - :ref:`GLCM_CLUPROM <feature-glcm-cluprom>`
      - Cluster prominence
@@ -28,7 +28,7 @@
    * - :ref:`GLCM_CLUSHADE <feature-glcm-clushade>`
      - Cluster shade
      - 7NFM
-     - MIRP (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 4.8
    * - :ref:`GLCM_CLUTEND <feature-glcm-clutend>`
      - Cluster tendency
@@ -73,7 +73,7 @@
    * - :ref:`GLCM_ENTROPY <feature-glcm-entropy>`
      - Entropy (same as joint entropy)
      - —
-     - MIRP (rel. 5e-3)
+     - MIRP (rel. 5e-3), PyRadiomics (rel. 5e-3)
      - 3.805
    * - :ref:`GLCM_HOM1 <feature-glcm-hom1>`
      - Homogeneity 1 (same as inverse difference)
@@ -83,7 +83,7 @@
    * - :ref:`GLCM_HOM2 <feature-glcm-hom2>`
      - Homogeneity 2 (same as inverse difference moment)
      - —
-     - MIRP (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 0.45
    * - :ref:`GLCM_ID <feature-glcm-id>`
      - Inverse difference
@@ -108,7 +108,7 @@
    * - :ref:`GLCM_INFOMEAS1 <feature-glcm-infomeas1>`
      - Information measure of correlation 1
      - R8DG
-     - MIRP (rel. 5e-3)
+     - MIRP (rel. 5e-3), PyRadiomics (rel. 5e-3)
      - −0.2276
    * - :ref:`GLCM_INFOMEAS2 <feature-glcm-infomeas2>`
      - Information measure of correlation 2
@@ -123,7 +123,7 @@
    * - :ref:`GLCM_JAVE <feature-glcm-jave>`
      - Joint average
      - 60VM
-     - MIRP (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 2.5
    * - :ref:`GLCM_JE <feature-glcm-je>`
      - Joint entropy
@@ -138,12 +138,12 @@
    * - :ref:`GLCM_JVAR <feature-glcm-jvar>`
      - Joint variance
      - UR99
-     - MIRP (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 2.05
    * - :ref:`GLCM_SUMAVERAGE <feature-glcm-sumaverage>`
      - Sum average
      - ZGXS
-     - MIRP (rel. 1e-9)
+     - MIRP (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 5
    * - :ref:`GLCM_SUMENTROPY <feature-glcm-sumentropy>`
      - Sum entropy
@@ -158,5 +158,5 @@
    * - :ref:`GLCM_VARIANCE <feature-glcm-variance>`
      - Variance
      - —
-     - IBSI (rel. 1e-9)
+     - IBSI (rel. 1e-9), PyRadiomics (rel. 1e-9)
      - 2.05

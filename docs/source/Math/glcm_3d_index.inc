@@ -73,7 +73,7 @@
    * - :ref:`3GLCM_ENTROPY <feature-3glcm-entropy>`
      - Entropy (same as joint entropy)
      - —
-     - PyRadiomics (rel. 1e-9)
+     - PyRadiomics (rel. 1e-3, rel. 1e-9)
      - 3.808
    * - :ref:`3GLCM_HOM1 <feature-3glcm-hom1>`
      - Homogeneity 1 (same as inverse difference)
