@@ -69,10 +69,12 @@ public:
         case 16: // NIFTI_TYPE_FLOAT32
                 get_uint32_pixel_typeresolved = get_uint32_pixel_imp <float>;
                 get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <float>;
+                fp_pixels_ = holds_fraction();
                 break;
         case 64: // NIFTI_TYPE_FLOAT64
                 get_uint32_pixel_typeresolved = get_uint32_pixel_imp <double>;
                 get_dpequiv_pixel_typeresolved = get_dp_pixel_imp <double>;
+                fp_pixels_ = holds_fraction();
                 break;
         default:
                 std::string erm = "error: unrecognized NIFTI data type " + std::to_string(nii_->datatype) + " in " + slide_path_;
@@ -193,6 +195,24 @@ private:
     int bitsPerSample_ = 1;
 
     std::string slide_path_;
+
+    // Whether a real-valued volume carries a fraction anywhere: a finite voxel whose header-rescaled
+    // value is not a whole number. Such a volume reports itself as real-valued, so the scan records
+    // the quantized map a real-valued TIFF or OME-Zarr takes and a volume normalised to [0, 1]
+    // keeps its fraction. A FLOAT32/FLOAT64 volume holding whole values only -- a CT stored as
+    // float, a label-like phantom -- reports itself as integer and keeps 1 grey level == 1
+    // intensity unit, so its texture features are binned in its own units. Non-finite voxels say
+    // nothing about the volume's values and are skipped, as the scan skips them.
+    bool holds_fraction() const
+    {
+        for (size_t i = 0; i < nii_->nvox; i++)
+        {
+            double v = get_dpequiv_pixel (i);
+            if (std::isfinite (v) && v != std::floor (v))
+                return true;
+        }
+        return false;
+    }
 };
 
 template<class DataType>
@@ -204,9 +224,13 @@ public:
         std::string const& slide_path,
         double inten_offset = 0.0,		// the shift the scan recorded: physical units, or stored units with the rescale off
         bool rescale_to_physical = true,		// off for a mask volume, whose voxels are labels, and on the stored map
-        bool round_offset = false)		// offset map: round to nearest instead of truncating
+        bool round_offset = false,		// offset map: round to nearest instead of truncating
+        bool quantize = false,			// min-max rescale a real-valued volume, instead of the offset map
+        double inten_max = 1.0,			// upper end of the clamp, used only when quantize is set
+        double target_dyn_range = 1e4)	// grey levels the rescale spans, used only when quantize is set
         : AbstractTileLoader<DataType>("NiftiLoader", 1/*numberThreads*/, slide_path),
-          inten_offset_(inten_offset), rescale_(rescale_to_physical), round_offset_(round_offset)
+          inten_offset_(inten_offset), rescale_(rescale_to_physical), round_offset_(round_offset),
+          quantize_(quantize), inten_max_(inten_max), target_dyn_range_(target_dyn_range)
     {
         slide_path_ = slide_path;
 
@@ -341,36 +365,67 @@ private:
 
     // The shift this volume's grey levels carry. On the offset map voxels are rescaled to physical
     // units and shifted by SlideProps::inten_offset (0 unless the volume's own minimum is
-    // negative). On the stored map rescale_ is off, so the stored integers are shifted by
-    // SlideProps::inten_stored_shift and the rescale lives in the recorded inverse instead. The
-    // intensity families apply that inverse, so reported statistics are in the volume's own domain
-    // either way. cur_scl_* hold the current read's header rescale, shared with rescale_offset().
+    // negative). On the quantized map, which a volume holding fractional values takes when read
+    // without --preserve-hu, inten_offset_ is the low end of the [fpmin, fpmax] window the physical values are
+    // clamped to and rescaled from. On the stored map rescale_ is off, so the stored integers are
+    // shifted by SlideProps::inten_stored_shift and the rescale lives in the recorded inverse
+    // instead. The intensity families apply that inverse, so reported statistics are in the
+    // volume's own domain on every map. cur_scl_* hold the current read's header rescale, shared
+    // with rescale_offset().
     double inten_offset_ = 0.0;
     bool rescale_ = true;
     bool round_offset_ = false;		// offset map: round to nearest (--preserve-hu) instead of truncating
     double cur_scl_slope_ = 1.0, cur_scl_inter_ = 0.0;
 
+    // Whether this volume is min-max rescaled into [0, target_dyn_range_] (a real-valued volume
+    // left in its default mode) or carried on the offset map. SlideProps::inten_map is where the
+    // choice is made and recorded; ImageLoader::open passes it here, exactly as it does for TIFF
+    // and OME-Zarr.
+    bool quantize_ = false;
+    double inten_max_ = 1.0,
+        target_dyn_range_ = 1e4;
+
    template <class til, class fra>
    void rescale_offset (std::vector<til>& nyxbuf, const fra* houbuf, size_t n)
    {
-       // Rescale stored -> physical (slope*stored + intercept) unless the rescale is off, then shift
-       // by the recorded offset so sub-minimum voxels (negative CT values among them) clamp to 0
-       // instead of wrapping on the unsigned cast. With the rescale off the stored integers are
-       // shifted as they are, and the narrowing below is exact. Reading the volume's own minimum
-       // here instead would produce a shift nothing downstream could undo.
-       //
-       // Nyxus::grey_level() carries the narrowing every load-time map shares. A non-finite voxel
-       // takes grey level 0 -- a float volume is free to hold NaN, a masked-out background most
-       // often -- and one above the grey type's maximum saturates, which a 64-bit volume or a
-       // large scl_slope can reach. round_offset_ rounds to nearest under --preserve-hu, where
-       // scl_slope is routinely fractional on a PET-derived volume and the scale-1 inverse could
-       // not recover a truncated fraction; a volume read without the flag truncates, which is what
-       // a real-valued NIfTI has always done. An integer volume read without the flag takes the
-       // stored map, where there is no fraction to narrow.
+       // Rescale stored -> physical (slope*stored + intercept) unless the rescale is off, then map
+       // the physical value the way the scan recorded. The scan measured its range on the same
+       // rescaled values (RawNiftiLoader::get_dpequiv_pixel), so the quantized window and the
+       // offset are both in physical units. With the rescale off the stored integers are shifted
+       // as they are, and the narrowing is exact.
        for (size_t i = 0; i < n; ++i)
        {
            double v = cur_scl_slope_ * (double)houbuf[i] + cur_scl_inter_;
-           nyxbuf[i] = Nyxus::grey_level<til> (v - inten_offset_, round_offset_);
+           nyxbuf[i] = map_intensity<til> (v);
        }
+   }
+
+   // One physical value -> the grey level stored for it. Both branches narrow through the
+   // Nyxus::grey_level* calls the TIFF and OME-Zarr loaders use, so no backend can drift from
+   // another. A non-finite voxel takes grey level 0 on either -- a float volume is free to hold
+   // NaN, a masked-out background most often -- and one above the grey type's maximum saturates,
+   // which a 64-bit volume or a large scl_slope can reach on the offset map.
+   //
+   // The offset map shifts by the recorded offset so sub-minimum voxels (negative CT values among
+   // them) clamp to 0 instead of wrapping on the unsigned cast. round_offset_ rounds to nearest
+   // under --preserve-hu, where scl_slope is routinely fractional on a PET-derived volume and the
+   // scale-1 inverse could not recover a truncated fraction; otherwise it truncates. Without the
+   // flag the volumes that reach it hold no fraction to lose: a FLOAT32/FLOAT64 volume of whole
+   // values (RawNiftiLoader::holds_fraction), an integer one whose header rescale the stored map
+   // cannot carry (a zero, negative or non-finite slope), or a constant real-valued volume, which
+   // has no window to quantize into.
+   //
+   // The quantized map hard-clamps to [inten_offset_, inten_max_] and spreads that window over
+   // target_dyn_range_ grey levels, so a volume normalised to [0, 1] keeps its fraction.
+   template <class til>
+   til map_intensity (double v) const
+   {
+       if (! quantize_)
+           return Nyxus::grey_level<til> (v - inten_offset_, round_offset_);
+       // Ahead of the clamp, as in the TIFF loaders: the clamp would store +Inf as the top level.
+       if (! std::isfinite (v)) return (til) 0;
+       double t = v < inten_offset_ ? inten_offset_ : v;
+       t = t > inten_max_ ? inten_max_ : t;
+       return Nyxus::grey_level_truncated<til> (target_dyn_range_ * (t - inten_offset_) / (inten_max_ - inten_offset_));
    }
 };

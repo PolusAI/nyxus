@@ -36,6 +36,7 @@ Tests: `test_2d_firstorder_{matlab,pyradiomics,regression}.h`.
 | Files | `tests/data/nifti/phantoms/ut_inten.nii` + `tests/data/nifti/phantoms/ut_mask57.nii` |
 | ROI | label **57** |
 | Shape | 100×100×100 voxels at 1×1×1 spacing; the ROI is **274 432** voxels, ~27% of the volume |
+| Values | float32 holding whole values only, `[-1024, 2000]`, so Nyxus loads it at one grey level per unit (a float NIfTI with fractional values would be quantized instead). The values are the floor of the phantom's original fractional ones, which is what every value pinned on it was computed from |
 | Why it exists | a solid single-label 3D ROI, large enough that a 13-direction texture matrix is well populated in every direction and small enough to featurise inside a unit test |
 
 Recipes: `firstorder3d.matlab_native`, `firstorder3d.regression_ut_phantom`,
