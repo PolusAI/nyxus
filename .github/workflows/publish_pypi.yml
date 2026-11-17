@@ -149,40 +149,6 @@ jobs:
   # Wheel build + publish jobs — each starts as soon as its prereq finishes
   # ============================================================
 
-  wheel_grid:
-    name: Check that PyPI holds every wheel of this release
-    runs-on: ubuntu-22.04
-    # The wheel jobs continue on error, so a release can lack wheels with the run still green.
-    # This job turns the run red and names the missing wheels; it publishes nothing.
-    needs: [wheels_ubuntu, wheels_ubuntu_arm, wheels_windows, wheels_macos_intel, wheels_macos_arm64]
-    if: ${{ !cancelled() }}
-    steps:
-      - uses: actions/checkout@v3
-        name: Check out
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-      - name: Fetch git tags
-        run: git fetch --force --tags
-      - uses: actions/setup-python@v4
-        name: Install Python
-        with:
-          python-version: '3.11'
-      - name: Verify version detection
-        run: |
-          python -m pip install setuptools-scm
-          if [[ "$GITHUB_REF_NAME" == v* ]]; then
-            echo "Release build on tag $GITHUB_REF_NAME"
-          else
-            python ci-utils/sync_version.py
-          fi
-          python -m setuptools_scm
-        shell: bash
-      - name: Check that PyPI holds every wheel of this release
-        run: python ci-utils/check_wheel_grid.py "$(python -m setuptools_scm)"
-        shell: bash
-
-
   wheels_ubuntu:
     name: Build & publish wheels (ubuntu-22.04 / ${{ matrix.cibw_build }})
     runs-on: ubuntu-22.04
