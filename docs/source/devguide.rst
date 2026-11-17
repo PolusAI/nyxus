@@ -1260,7 +1260,7 @@ without ``--check`` to rewrite its pages; with ``--check`` it fails if a page is
 ``gen_feature_reference.py`` fails, and writes nothing, when a code has no description, a
 description names no code, a code belongs to no family, a family page lacks a code's entry,
 ``feature_extras.toml`` lists a code that is not a base code of that family, or a file in
-``COUNT_PAGES`` does not state the current feature counts ("758 features in all, 539 for 2D
+``COUNT_PAGES`` does not state the current feature counts ("760 features in all, 540 for 2D
 images, ...").
 
 Documenting a new feature

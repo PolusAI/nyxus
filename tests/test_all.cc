@@ -152,6 +152,9 @@
 #include "test_3d_glszm_analytic.h"
 #include "test_3d_coverage_common.h"
 #include "test_2d_glcm_mechanics.h"
+#include "test_2d_glcm_analytic.h"
+#include "test_3d_glcm_analytic.h"
+#include "test_3d_glcm_mechanics.h"
 #ifdef USE_ARROW
     #include "test_arrow_mechanics.h"
     #include "test_arrow_file_name_mechanics.h"
@@ -3022,6 +3025,11 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_IDM_AVE_IBSI)
 	ASSERT_NO_THROW(test_2d_glcm_idm_ave_ibsi());
 }
 
+TEST(TEST_NYXUS, TEST_2D_GLCM_HOM2_AVE_IBSI)
+{
+	ASSERT_NO_THROW(test_2d_glcm_hom2_ave_ibsi());
+}
+
 TEST(TEST_NYXUS, TEST_2D_GLCM_INFOMEAS1_AVE_IBSI)
 {
 	ASSERT_NO_THROW(test_2d_glcm_infomeas1_ave_ibsi());
@@ -3326,6 +3334,11 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_IDM_AVE_REGRESSION)
 	ASSERT_NO_THROW(test_2d_glcm_idm_ave_regression());
 }
 
+TEST(TEST_NYXUS, TEST_2D_GLCM_HOM2_AVE_REGRESSION)
+{
+	ASSERT_NO_THROW(test_2d_glcm_hom2_ave_regression());
+}
+
 TEST(TEST_NYXUS, TEST_2D_GLCM_IDMN_AVE_REGRESSION)
 {
 	ASSERT_NO_THROW(test_2d_glcm_idmn_ave_regression());
@@ -3396,6 +3409,63 @@ TEST(TEST_NYXUS, TEST_2D_GLCM_BUG_OFFSET_DEFAULT_IS_ONE_MECHANICS)
 TEST(TEST_NYXUS, TEST_2D_GLCM_OWN_GREYDEPTH_BINS_THE_MATRIX_MECHANICS)
 {
 	ASSERT_NO_THROW(test_2d_glcm_own_greydepth_bins_the_matrix_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_CONSTANT_ROI_REPORTS_NOVAL_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_glcm_constant_roi_reports_noval_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_TWO_LEVEL_ROI_COMPUTES_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_glcm_two_level_roi_computes_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_HOM2_AVE_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_glcm_hom2_ave_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_INFOMEAS1_SINGLE_LEVEL_REPORTS_NOVAL_MECHANICS)
+{
+	ASSERT_NO_THROW(test_2d_glcm_infomeas1_single_level_reports_noval_mechanics());
+}
+
+//***** 2D and 3D GLCM on an asymmetric co-occurrence matrix vs the IBSI definitions *****
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_CLUSTER_AND_SUM_VARIANCE_ASYMMETRIC_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_glcm_cluster_and_sum_variance_asymmetric_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_JVAR_ASYMMETRIC_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_glcm_jvar_asymmetric_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLCM_INFOMEAS1_ASYMMETRIC_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_2d_glcm_infomeas1_asymmetric_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLCM_CLUSTER_AND_SUM_VARIANCE_ASYMMETRIC_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_3d_glcm_cluster_and_sum_variance_asymmetric_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLCM_JVAR_ASYMMETRIC_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_3d_glcm_jvar_asymmetric_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLCM_INFOMEAS1_ASYMMETRIC_ANALYTIC)
+{
+	ASSERT_NO_THROW(test_3d_glcm_infomeas1_asymmetric_analytic());
+}
+
+TEST(TEST_NYXUS, TEST_3D_GLCM_INFOMEAS1_SINGLE_LEVEL_REPORTS_NOVAL_MECHANICS)
+{
+	ASSERT_NO_THROW(test_3d_glcm_infomeas1_single_level_reports_noval_mechanics());
 }
 
 //***** PyRadiomics tests of 2D GLDM *****
@@ -6576,6 +6646,7 @@ TEST(TEST_NYXUS, TEST_3D_GLCM_ENTROPY_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(t
 TEST(TEST_NYXUS, TEST_3D_GLCM_HOM1_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_hom1_grey64_regression()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_HOM1_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_hom1_ave_grey64_regression()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_HOM2_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_hom2_grey64_regression()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_HOM2_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_hom2_ave_grey64_regression()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_IDMN_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_idmn_ave_grey64_regression()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_IDM_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_idm_ave_grey64_regression()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_IDN_AVE_GREY64_REGRESSION) { ASSERT_NO_THROW(test_3d_glcm_idn_ave_grey64_regression()); }
@@ -6607,6 +6678,7 @@ TEST(TEST_NYXUS, TEST_3D_GLCM_DIFENTRO_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3
 TEST(TEST_NYXUS, TEST_3D_GLCM_DIFVAR_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_difvar_ave_pyradiomics()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_ID_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_id_ave_pyradiomics()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_IDM_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_idm_ave_pyradiomics()); }
+TEST(TEST_NYXUS, TEST_3D_GLCM_HOM2_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_hom2_ave_pyradiomics()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_IDMN_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_idmn_ave_pyradiomics()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_IDN_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_idn_ave_pyradiomics()); }
 TEST(TEST_NYXUS, TEST_3D_GLCM_INFOMEAS1_AVE_PYRADIOMICS) { ASSERT_NO_THROW(test_3d_glcm_infomeas1_ave_pyradiomics()); }

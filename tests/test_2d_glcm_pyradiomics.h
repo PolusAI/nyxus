@@ -56,6 +56,7 @@ static const ref_vals_map<double> glcm_2d_pyradiomics_ref_vals
     {"GLCM_IDM", 0.27853769782341203},   // Idm
     {"GLCM_IDM_AVE", 0.27853769782341203},   // Idm
     {"GLCM_HOM2", 0.27853769782341203},   // Idm
+    {"GLCM_HOM2_AVE", 0.27853769782341203},   // Idm
     {"GLCM_IDMN", 0.88734163285067313},   // Idmn
     {"GLCM_IDMN_AVE", 0.88734163285067313},   // Idmn
     {"GLCM_IDN", 0.77947925090782222},   // Idn

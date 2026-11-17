@@ -356,6 +356,7 @@ static const ref_vals_map<std::vector<double>> glcm_3d_regression_grey64_ref_val
 	{ "3GLCM_ENTROPY_AVE", { 9.0190088166756421 } },
 	{ "3GLCM_HOM1", { 0.36892514882970728, 0.45044986312487578, 0.36892514882970728, 0.41424874300616815, 0.49224180198970136, 0.41424874300616815, 0.36892514882970728, 0.45044986312487578, 0.36892514882970728, 0.39005648807915821, 0.45950108578725052, 0.39005648807915821, 0.58069852668437139 } },
 	{ "3GLCM_HOM1_AVE", { 0.42443478447696592 } },
+	{ "3GLCM_HOM2_AVE", { 0.35139004587558276 } },
 	{ "3GLCM_HOM2", { 0.28872829324757127, 0.38383297610972528, 0.28872829324757127, 0.33348704011686431, 0.42513980234144694, 0.33348704011686431, 0.28872829324757127, 0.38383297610972528, 0.28872829324757127, 0.30925413808751828, 0.39117578581244239, 0.30925413808751828, 0.54369352661018644 } },
 	{ "3GLCM_ID_AVE", { 0.42443478447696553 } },
 	{ "3GLCM_IDM_AVE", { 0.35139004587558276 } },
@@ -436,6 +437,7 @@ void test_3d_glcm_entropy_ave_grey64_regression() { assert_3d_glcm_feature_grey6
 void test_3d_glcm_hom1_grey64_regression() { assert_3d_glcm_feature_grey64_regression(Nyxus::Feature3D::GLCM_HOM1, "3GLCM_HOM1"); }
 void test_3d_glcm_hom1_ave_grey64_regression() { assert_3d_glcm_feature_grey64_regression(Nyxus::Feature3D::GLCM_HOM1_AVE, "3GLCM_HOM1_AVE"); }
 void test_3d_glcm_hom2_grey64_regression() { assert_3d_glcm_feature_grey64_regression(Nyxus::Feature3D::GLCM_HOM2, "3GLCM_HOM2"); }
+void test_3d_glcm_hom2_ave_grey64_regression() { assert_3d_glcm_feature_grey64_regression(Nyxus::Feature3D::GLCM_HOM2_AVE, "3GLCM_HOM2_AVE"); }
 void test_3d_glcm_idmn_ave_grey64_regression() { assert_3d_glcm_feature_grey64_regression(Nyxus::Feature3D::GLCM_IDMN_AVE, "3GLCM_IDMN_AVE"); }
 void test_3d_glcm_idm_ave_grey64_regression() { assert_3d_glcm_feature_grey64_regression(Nyxus::Feature3D::GLCM_IDM_AVE, "3GLCM_IDM_AVE"); }
 void test_3d_glcm_idn_ave_grey64_regression() { assert_3d_glcm_feature_grey64_regression(Nyxus::Feature3D::GLCM_IDN_AVE, "3GLCM_IDN_AVE"); }

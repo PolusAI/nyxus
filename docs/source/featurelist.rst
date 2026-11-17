@@ -4,7 +4,7 @@
 Feature list
 ============
 
-Nyxus computes 539 features for 2D images, 213 for 3D volumes and 6 image quality features. Request a feature by its code, or a family of features by its group (see :doc:`featuregroups`).
+Nyxus computes 540 features for 2D images, 214 for 3D volumes and 6 image quality features. Request a feature by its code, or a family of features by its group (see :doc:`featuregroups`).
 
 The *Validation* column says how each feature is tested:
 
@@ -892,14 +892,14 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm`.
      - Autocorrelation: the co-occurrence-weighted mean of the product of the two grey levels of a pixel pair, which grows with both coarseness and brightness.
      - vetted: MIRP
    * - ``GLCM_CLUPROM``
-     - Cluster prominence: the fourth moment of the sum of the two grey levels of a pair about twice the neighbour pixel's mean grey level, which is large when that distribution is asymmetric or heavy-tailed.
-     - vetted: PyRadiomics
+     - Cluster prominence: the fourth moment of the sum of the two grey levels of a pair about its mean, the sum of the two pixels' mean grey levels, which is large when that distribution is asymmetric or heavy-tailed.
+     - vetted: analytic, PyRadiomics
    * - ``GLCM_CLUSHADE``
-     - Cluster shade: the third moment of the sum of the two grey levels of a pair about twice the neighbour pixel's mean grey level, which measures the skewness of the co-occurrence matrix.
-     - vetted: MIRP
+     - Cluster shade: the third moment of the sum of the two grey levels of a pair about its mean, the sum of the two pixels' mean grey levels, which measures the skewness of the co-occurrence matrix.
+     - vetted: analytic, MIRP
    * - ``GLCM_CLUTEND``
-     - Cluster tendency: the second moment of the sum of the two grey levels of a pair about twice the neighbour pixel's mean grey level, which measures how strongly pairs group into similar grey levels.
-     - vetted: PyRadiomics
+     - Cluster tendency: the second moment of the sum of the two grey levels of a pair about its mean, the sum of the two pixels' mean grey levels, which measures how strongly pairs group into similar grey levels; it returns the same value as GLCM_SUMVARIANCE.
+     - vetted: analytic, PyRadiomics
    * - ``GLCM_CONTRAST``
      - Contrast: the co-occurrence-weighted mean squared grey-level difference between the two pixels of a pair, which grows with local intensity variation.
      - vetted: PyRadiomics
@@ -928,7 +928,7 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm`.
      - Homogeneity 1: the co-occurrence probabilities weighted by one over one plus the grey-level difference of the pair; it returns the same value as GLCM_ID.
      - vetted: PyRadiomics
    * - ``GLCM_HOM2``
-     - Homogeneity 2: the co-occurrence probabilities weighted by one over one plus the squared grey-level difference of the pair; it returns the same value as GLCM_IDM and has no _AVE code.
+     - Homogeneity 2: the co-occurrence probabilities weighted by one over one plus the squared grey-level difference of the pair; it returns the same value as GLCM_IDM.
      - vetted: MIRP
    * - ``GLCM_ID``
      - Inverse difference: the co-occurrence probabilities weighted by one over one plus the grey-level difference of the pair, which is high when paired pixels have similar grey levels.
@@ -943,8 +943,8 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm`.
      - Inverse difference moment normalized: inverse difference moment with the squared grey-level difference divided by the squared number of grey levels.
      - vetted: PyRadiomics
    * - ``GLCM_INFOMEAS1``
-     - Informational measure of correlation 1: the joint entropy minus the entropy expected if the two grey levels were independent, divided by the entropy of one marginal distribution; it measures how much the two grey levels depend on each other.
-     - vetted: MIRP
+     - Informational measure of correlation 1: the joint entropy minus the entropy expected if the two grey levels were independent, divided by the larger of the two marginal entropies; it measures how much the two grey levels depend on each other.
+     - vetted: analytic, MIRP
    * - ``GLCM_INFOMEAS2``
      - Informational measure of correlation 2: a 0-to-1 measure of the dependence between the two grey levels of a pair, computed from the gap between the joint entropy and the entropy of the product of the marginals.
      - vetted: PyRadiomics
@@ -961,8 +961,8 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm`.
      - Joint maximum: the largest co-occurrence probability, that is the share of pairs taken by the most common grey-level pair.
      - vetted: PyRadiomics
    * - ``GLCM_JVAR``
-     - Joint variance: the co-occurrence-weighted spread of the neighbour pixel's grey level around the joint average (the reference pixel's mean); it equals GLCM_VARIANCE only when the matrix is symmetric.
-     - vetted: MIRP
+     - Joint variance: the co-occurrence-weighted variance of the reference pixel's grey level about the joint average; it returns the same value as GLCM_VARIANCE.
+     - vetted: analytic, MIRP
    * - ``GLCM_SUMAVERAGE``
      - Sum average: the mean of the sum of the two grey levels of a pixel pair.
      - vetted: MIRP
@@ -970,11 +970,11 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm`.
      - Sum entropy: the base-2 entropy of the distribution of the sum of the two grey levels of a pixel pair.
      - vetted: PyRadiomics
    * - ``GLCM_SUMVARIANCE``
-     - Sum variance: the spread of the sum of the two grey levels of a pair about twice the neighbour pixel's mean grey level; this code returns the cluster tendency value, the same as GLCM_CLUTEND.
-     - vetted: PyRadiomics
+     - Sum variance: the variance of the sum of the two grey levels of a pair; it returns the same value as GLCM_CLUTEND.
+     - vetted: analytic, PyRadiomics
    * - ``GLCM_VARIANCE``
      - Variance: the co-occurrence-weighted variance of the reference pixel's grey level about its mean (PyRadiomics sum of squares).
-     - vetted: IBSI
+     - vetted: analytic, IBSI
    * - ``GLCM_ASM_AVE``
      - Angular second moment, averaged over the angles.
      - vetted: PyRadiomics
@@ -1017,6 +1017,9 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm`.
    * - ``GLCM_HOM1_AVE``
      - Homogeneity 1, averaged over the angles.
      - vetted: PyRadiomics
+   * - ``GLCM_HOM2_AVE``
+     - Homogeneity 2, averaged over the angles.
+     - vetted: IBSI
    * - ``GLCM_ID_AVE``
      - Inverse difference, averaged over the angles.
      - vetted: IBSI
@@ -2321,14 +2324,14 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
      - Angular second moment: the sum of the squared co-occurrence probabilities, which is high when a few grey-level pairs dominate (a uniform texture).
      - vetted: PyRadiomics
    * - ``3GLCM_CLUPROM``
-     - Cluster prominence: the fourth moment of the sum of the two grey levels of a pair about twice the mean grey level, which is large when that distribution is asymmetric or heavy-tailed.
-     - vetted: PyRadiomics
+     - Cluster prominence: the fourth moment of the sum of the two grey levels of a pair about its mean, the sum of the two voxels' mean grey levels, which is large when that distribution is asymmetric or heavy-tailed.
+     - vetted: analytic, PyRadiomics
    * - ``3GLCM_CLUSHADE``
-     - Cluster shade: the third moment of the sum of the two grey levels of a pair about twice the mean grey level, which measures the skewness of the co-occurrence matrix.
-     - vetted: PyRadiomics
+     - Cluster shade: the third moment of the sum of the two grey levels of a pair about its mean, the sum of the two voxels' mean grey levels, which measures the skewness of the co-occurrence matrix.
+     - vetted: analytic, PyRadiomics
    * - ``3GLCM_CLUTEND``
-     - Cluster tendency: the second moment of the sum of the two grey levels of a pair about twice the mean grey level, which measures how strongly pairs group into similar grey levels.
-     - vetted: PyRadiomics
+     - Cluster tendency: the second moment of the sum of the two grey levels of a pair about its mean, the sum of the two voxels' mean grey levels, which measures how strongly pairs group into similar grey levels; it returns the same value as 3GLCM_SUMVARIANCE.
+     - vetted: analytic, PyRadiomics
    * - ``3GLCM_CONTRAST``
      - Contrast: the co-occurrence-weighted mean squared grey-level difference between the two voxels of a pair, which grows with local intensity variation.
      - vetted: PyRadiomics
@@ -2357,7 +2360,7 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
      - Homogeneity 1: the co-occurrence probabilities weighted by one over one plus the grey-level difference of the pair; it returns the same value as 3GLCM_ID.
      - vetted: PyRadiomics
    * - ``3GLCM_HOM2``
-     - Homogeneity 2: the co-occurrence probabilities weighted by one over one plus the squared grey-level difference of the pair; it returns the same value as 3GLCM_IDM and has no _AVE code.
+     - Homogeneity 2: the co-occurrence probabilities weighted by one over one plus the squared grey-level difference of the pair; it returns the same value as 3GLCM_IDM.
      - vetted: PyRadiomics
    * - ``3GLCM_ID``
      - Inverse difference: the co-occurrence probabilities weighted by one over one plus the grey-level difference of the pair, which is high when paired voxels have similar grey levels.
@@ -2372,8 +2375,8 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
      - Inverse difference moment normalized: inverse difference moment with the squared grey-level difference divided by the squared number of grey levels.
      - vetted: PyRadiomics
    * - ``3GLCM_INFOMEAS1``
-     - Informational measure of correlation 1: the joint entropy minus the entropy expected if the two grey levels were independent, divided by the entropy of one marginal distribution; it measures how much the two grey levels depend on each other.
-     - vetted: PyRadiomics
+     - Informational measure of correlation 1: the joint entropy minus the entropy expected if the two grey levels were independent, divided by the larger of the two marginal entropies; it measures how much the two grey levels depend on each other.
+     - vetted: analytic, PyRadiomics
    * - ``3GLCM_INFOMEAS2``
      - Informational measure of correlation 2: a 0-to-1 measure of the dependence between the two grey levels of a pair, computed from the gap between the joint entropy and the entropy of the product of the marginals.
      - vetted: PyRadiomics
@@ -2390,8 +2393,8 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
      - Joint maximum: the largest co-occurrence probability, that is the share of pairs taken by the most common grey-level pair.
      - vetted: PyRadiomics
    * - ``3GLCM_JVAR``
-     - Joint variance: the co-occurrence-weighted spread of the neighbour voxel's grey level around the joint average (the reference voxel's mean).
-     - vetted: PyRadiomics
+     - Joint variance: the co-occurrence-weighted variance of the reference voxel's grey level about the joint average; it returns the same value as 3GLCM_VARIANCE.
+     - vetted: analytic, PyRadiomics
    * - ``3GLCM_SUMAVERAGE``
      - Sum average: the mean of the sum of the two grey levels of a voxel pair.
      - vetted: PyRadiomics
@@ -2399,11 +2402,11 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
      - Sum entropy: the base-2 entropy of the distribution of the sum of the two grey levels of a voxel pair.
      - vetted: PyRadiomics
    * - ``3GLCM_SUMVARIANCE``
-     - Sum variance: the spread of the sum of the two grey levels of a pair about twice the mean grey level; this code returns the cluster tendency value, the same as 3GLCM_CLUTEND.
-     - vetted: PyRadiomics
+     - Sum variance: the variance of the sum of the two grey levels of a pair; it returns the same value as 3GLCM_CLUTEND.
+     - vetted: analytic, PyRadiomics
    * - ``3GLCM_VARIANCE``
      - Variance: the co-occurrence-weighted variance of the reference voxel's grey level about its mean (PyRadiomics sum of squares).
-     - vetted: PyRadiomics
+     - vetted: analytic, PyRadiomics
    * - ``3GLCM_ASM_AVE``
      - Angular second moment, averaged over the directions.
      - vetted: analytic, PyRadiomics
@@ -2445,6 +2448,9 @@ Definitions, formulas and settings: :doc:`/Math/f_glcm_3d`.
      - vetted: PyRadiomics
    * - ``3GLCM_HOM1_AVE``
      - Homogeneity 1, averaged over the directions.
+     - vetted: PyRadiomics
+   * - ``3GLCM_HOM2_AVE``
+     - Homogeneity 2, averaged over the directions.
      - vetted: PyRadiomics
    * - ``3GLCM_ID_AVE``
      - Inverse difference, averaged over the directions.

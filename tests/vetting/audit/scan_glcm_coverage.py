@@ -18,6 +18,7 @@ SOURCES = [
     "test_2d_glcm_pyradiomics.h",
     "test_2d_glcm_regression.h",
     "test_2d_glcm_mechanics.h",
+    "test_2d_glcm_analytic.h",
     os.path.join("python", "test_2d_glcm_pyradiomics.py"),
 ]
 
@@ -28,8 +29,7 @@ ALIAS = {
     "GLCM_ENERGY": "same quantity as GLCM_ASM (PyRadiomics JointEnergy / MIRP cm_energy)",
     "GLCM_ENTROPY": "same quantity as GLCM_JE (joint entropy)",
     "GLCM_HOM1": "same quantity as GLCM_ID (PyRadiomics Id / MIRP cm_inv_diff)",
-    "GLCM_HOM2": "same quantity as GLCM_IDM (PyRadiomics Idm / MIRP cm_inv_diff_mom); no _AVE twin "
-                 "exists",
+    "GLCM_HOM2": "same quantity as GLCM_IDM (PyRadiomics Idm / MIRP cm_inv_diff_mom)",
     "GLCM_SUMVARIANCE": "equals GLCM_CLUTEND; PyRadiomics dropped SumVariance as that duplicate, "
                         "MIRP reports it natively",
     "GLCM_VARIANCE": "same quantity as GLCM_JVAR (PyRadiomics SumSquares = joint variance)",
@@ -55,7 +55,8 @@ def note(feature, cov):
 FAMILY = scanlib.Family(
     dim="2D", family="glcm",
     sources=SOURCES,
-    oracle_suffix={"ibsi": "ibsi", "mirp": "mirp", "pyradiomics": "pyradiomics"},
+    oracle_suffix={"ibsi": "ibsi", "mirp": "mirp", "pyradiomics": "pyradiomics",
+                   "analytic": "analytic"},
     notes=note,
     # test_2d_glcm_acor_family_pyradiomics loops a dict of goldens rather than naming each feature
     py_loop_tables=True,

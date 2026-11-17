@@ -72,6 +72,7 @@ public:
 		Nyxus::Feature2D::GLCM_ENERGY_AVE,
 		Nyxus::Feature2D::GLCM_ENTROPY_AVE,
 		Nyxus::Feature2D::GLCM_HOM1_AVE,
+		Nyxus::Feature2D::GLCM_HOM2_AVE,
 		Nyxus::Feature2D::GLCM_ID_AVE,
 		Nyxus::Feature2D::GLCM_IDN_AVE,
 		Nyxus::Feature2D::GLCM_IDM_AVE,
@@ -106,6 +107,7 @@ public:
 		Nyxus::Feature2D::GLCM_ENERGY_AVE,
 		Nyxus::Feature2D::GLCM_ENTROPY_AVE,
 		Nyxus::Feature2D::GLCM_HOM1_AVE,
+		Nyxus::Feature2D::GLCM_HOM2_AVE,
 		Nyxus::Feature2D::GLCM_ID_AVE,
 		Nyxus::Feature2D::GLCM_IDN_AVE,
 		Nyxus::Feature2D::GLCM_IDM_AVE,
@@ -155,7 +157,8 @@ private:
 		PixIntens max_val);
 
 	void calculatePxpmy();
-	void calculate_by_row_mean();
+	void calculate_marginal_means();
+	void push_noval (double softnan);
 
 	static inline int cast_to_range(PixIntens orig_I, PixIntens min_orig_I, PixIntens max_orig_I, int min_target_I, int max_target_I)
 	{
@@ -187,7 +190,6 @@ private:
 	double f_GLCM_JAVE();
 	double f_GLCM_JE(const SimpleMatrix<double>& P_matrix);
 	double f_GLCM_JMAX(const SimpleMatrix<double>& P_matrix);
-	double f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, double mean_x);
 
 	double calc_ave(const std::vector<double>& angled_feature_vals);
 
@@ -245,6 +247,7 @@ private:
 		Pxmy,
 		kValuesSum,	// intensities x+y
 		kValuesDiff;	// intensities x-y
-	double by_row_mean;
+	double mean_x = 0,	// mean grey level of the reference pixel, mu_x
+		mean_y = 0;	// mean grey level of its neighbour, mu_y
 	const double EPSILON = 0.000000001;
 };

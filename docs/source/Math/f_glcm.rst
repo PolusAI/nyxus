@@ -9,8 +9,8 @@ regularity that first-order intensity statistics cannot see.
    :widths: 26 74
 
    * - **Feature codes**
-     - ``GLCM_*``: 30 features, each with a column per direction, and 29 ``GLCM_*_AVE`` direction
-       averages (``GLCM_HOM2`` has none)
+     - ``GLCM_*``: 30 features, each with a column per direction, and 30 ``GLCM_*_AVE`` direction
+       averages
    * - **Group**
      - ``*ALL_GLCM*``; also part of ``*ALL*`` and ``*WHOLESLIDE*``
    * - **Dimensions**
@@ -22,9 +22,8 @@ regularity that first-order intensity statistics cannot see.
        1024 × 1024 pixels. On a larger striped file out-of-core processing of this family raises
        an error or returns wrong values, depending on the ROI (see :ref:`large-images-tiles`).
    * - **IBSI**
-     - 25 of the 30 features have an IBSI identifier. Four of the other 5 return the same value as
-       one that does; ``GLCM_VARIANCE`` equals IBSI joint variance, which ``GLCM_JVAR`` matches only
-       on a symmetric matrix.
+     - 25 of the 30 features have an IBSI identifier. The other 5 return the same value as one that
+       does; ``GLCM_VARIANCE`` is IBSI joint variance, ``GLCM_JVAR``.
 
 .. tip::
 
@@ -204,8 +203,7 @@ Each feature produces one column per enabled direction and one average:
   for each direction.
 - ``GLCM_CONTRAST_AVE``: the mean of the per-direction values.
 
-Each direction has its own matrix; the matrices are not merged. ``GLCM_HOM2`` has no ``_AVE``
-column; ``GLCM_IDM_AVE`` has the same value.
+Each direction has its own matrix; the matrices are not merged.
 
 
 .. _glcm-index:
@@ -271,11 +269,12 @@ the sums are spread far from their mean.
 
 .. math::
 
-   \mathrm{CLUPROM} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} \big(i + j - 2\mu_y\big)^4\, p_{ij}
+   \mathrm{CLUPROM} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} \big(i + j - \mu_x - \mu_y\big)^4\, p_{ij}
 
-**Possible issues.** IBSI and PyRadiomics centre on :math:`\mu_x + \mu_y`; Nyxus centres on
-:math:`2\mu_y`, twice the neighbour mean. The two are equal on a symmetric matrix. With the default
-counting they differ, and the value changes when the image is mirrored.
+.. versionchanged:: 0.12.1+
+
+   Centred on :math:`\mu_x + \mu_y`, as in IBSI and PyRadiomics. Version 0.12.1 and earlier centred
+   on :math:`2\mu_y`, twice the neighbour mean, which differs with the default one-order counting.
 
 
 .. _feature-glcm-clushade:
@@ -291,11 +290,14 @@ the mean the sums are spread.
 
 .. math::
 
-   \mathrm{CLUSHADE} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} \big(i + j - 2\mu_y\big)^3\, p_{ij}
+   \mathrm{CLUSHADE} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} \big(i + j - \mu_x - \mu_y\big)^3\, p_{ij}
 
-**Possible issues.** Centred on :math:`2\mu_y` like cluster prominence. The power is odd, so the
-difference from IBSI can change the sign: with the default settings the worked example gives
-−585.66, while the IBSI definition on the same matrix gives 9490.19.
+With the default settings the worked example gives 9490.19, and so does its left-right mirror.
+
+.. versionchanged:: 0.12.1+
+
+   Centred on :math:`\mu_x + \mu_y`. Version 0.12.1 and earlier centred on :math:`2\mu_y`, which with
+   the default counting gave a different value on the worked example and on its mirror.
 
 
 .. _feature-glcm-clutend:
@@ -310,11 +312,14 @@ Measures how grey levels group into clusters of similar values.
 
 .. math::
 
-   \mathrm{CLUTEND} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} \big(i + j - 2\mu_y\big)^2\, p_{ij}
+   \mathrm{CLUTEND} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} \big(i + j - \mu_x - \mu_y\big)^2\, p_{ij}
 
-**Relations.** ``GLCM_SUMVARIANCE`` returns the same value.
+**Relations.** Equal to ``GLCM_SUMVARIANCE`` on every matrix: :math:`\mu_x + \mu_y` is the sum
+average.
 
-**Possible issues.** Centred on :math:`2\mu_y` like cluster prominence.
+.. versionchanged:: 0.12.1+
+
+   Centred on :math:`\mu_x + \mu_y`. Version 0.12.1 and earlier centred on :math:`2\mu_y`.
 
 
 .. _feature-glcm-contrast:
@@ -480,7 +485,7 @@ the grey-level difference.
 Homogeneity 2
 ^^^^^^^^^^^^^
 
-:Code: ``GLCM_HOM2`` (no ``_AVE`` column)
+:Code: ``GLCM_HOM2``
 :Range: :math:`(0, 1]`, dimensionless
 
 Measures how close the pairs are to the matrix diagonal, with a weight that falls off with the
@@ -490,7 +495,11 @@ square of the grey-level difference.
 
    \mathrm{HOM2} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} \frac{p_{ij}}{1+(i-j)^2}
 
-**Relations.** Equal to ``GLCM_IDM``; for the direction average use ``GLCM_IDM_AVE``.
+**Relations.** Equal to ``GLCM_IDM``, and ``GLCM_HOM2_AVE`` to ``GLCM_IDM_AVE``.
+
+.. versionadded:: 0.12.1+
+
+   ``GLCM_HOM2_AVE``.
 
 .. versionchanged:: 0.11.0+
 
@@ -578,12 +587,15 @@ Values closer to −1 mean stronger dependence.
 
 .. math::
 
-   \mathrm{IMC1} = \frac{HXY - HXY1}{HY}
+   \mathrm{IMC1} = \frac{HXY - HXY1}{\max(HX, HY)}
 
-**Possible issues.** IBSI and PyRadiomics divide by :math:`\max(HX, HY)`; Nyxus divides by
-:math:`HY`, the entropy of the neighbour marginal. On a symmetric matrix :math:`HX = HY`, so the
-difference shows only with the default counting, where the value can change when the image is
-mirrored. When :math:`HY = 0` the result is the ``--noval`` substitute.
+When :math:`HX = HY = 0` the result is the ``--noval`` substitute.
+
+.. versionchanged:: 0.12.1+
+
+   Divided by :math:`\max(HX, HY)`, as in IBSI and PyRadiomics. Version 0.12.1 and earlier divided
+   by :math:`HY`, the entropy of the neighbour marginal, so with the default counting the value
+   could change when the image was mirrored.
 
 
 .. _feature-glcm-infomeas2:
@@ -682,12 +694,14 @@ Measures the spread of grey levels in the counted pairs around the joint average
 
 .. math::
 
-   \mathrm{JVAR} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} (j-\mu_x)^2\, p_{ij}
+   \mathrm{JVAR} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} (i-\mu_x)^2\, p_{ij}
 
-**Possible issues.** IBSI defines joint variance as :math:`\sum_{i,j}(i-\mu_x)^2\,p_{ij}`; Nyxus
-takes the neighbour's level :math:`j` around the reference mean :math:`\mu_x`. The two agree on a
-symmetric matrix. With the default counting they differ: 345.41 instead of 332.44 on the worked
-example with 64-level binning. ``GLCM_VARIANCE`` gives the IBSI value in both cases.
+**Relations.** Equal to ``GLCM_VARIANCE``.
+
+.. versionchanged:: 0.12.1+
+
+   The reference pixel's level :math:`i` around its mean, as IBSI defines joint variance. Version
+   0.12.1 and earlier took the neighbour's level :math:`j`, which differs with the default counting.
 
 
 .. _feature-glcm-sumaverage:
@@ -734,13 +748,18 @@ Measures the spread of the sums of the two grey levels in a pair.
 
 .. math::
 
-   \mathrm{SUMVARIANCE} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} \big(i + j - 2\mu_y\big)^2\, p_{ij}
+   \mathrm{SUMVARIANCE} = \sum_{k=2}^{2N_g} \big(k - \mu_x - \mu_y\big)^2\, p_{x+y}(k)
 
-**Relations.** Nyxus returns the ``GLCM_CLUTEND`` value. IBSI defines sum variance as
-:math:`\sum_k (k - \mathrm{SUMAVERAGE})^2\, p_{x+y}(k)`, the same quantity on a symmetric matrix.
+where :math:`\mu_x + \mu_y = \sum_k k\,p_{x+y}(k)` is the IBSI sum average.
 
-**Possible issues.** With the default counting the two differ: 882.25 instead of 867.43 on the
-worked example with 64-level binning.
+**Relations.** Equal to ``GLCM_CLUTEND`` on every matrix. On the worked example with the default
+settings it is 867.43. With PyRadiomics-style binning and missing grey levels ``GLCM_SUMAVERAGE``
+is not :math:`\mu_x + \mu_y` (see :ref:`glcm-possible-issues`).
+
+.. versionchanged:: 0.12.1+
+
+   Version 0.12.1 and earlier returned cluster tendency centred on :math:`2\mu_y`, which differs
+   with the default counting.
 
 
 .. _feature-glcm-variance:
@@ -758,8 +777,8 @@ of squares*.
 
    \mathrm{Variance} = \sum_{i=1}^{N_g}\sum_{j=1}^{N_g} (i-\mu_x)^2\, p_{ij}
 
-**Relations.** Matches the IBSI definition of joint variance on every matrix; ``GLCM_JVAR`` matches
-it only on a symmetric one.
+**Relations.** Matches the IBSI definition of joint variance on every matrix, and returns the same
+value as ``GLCM_JVAR``.
 
 
 .. _glcm-possible-issues:
@@ -769,47 +788,32 @@ Possible issues
 
 Asymmetric matrix by default
    With the default (positive) ``--coarseGrayDepth`` each ordered pair is counted once, while
-   PyRadiomics, MIRP and IBSI count both orders. Features that use only one side of the pair then
-   take it from a fixed side, and some mix the two sides:
-
-   .. list-table::
-      :widths: 40 60
-      :header-rows: 1
-
-      * - Feature
-        - Difference from IBSI with the default settings
-      * - ``CLUPROM``, ``CLUSHADE``, ``CLUTEND``, ``SUMVARIANCE``
-        - Centred on :math:`2\mu_y` instead of :math:`\mu_x + \mu_y`
-      * - ``JVAR``
-        - Neighbour level around the reference mean
-      * - ``INFOMEAS1``
-        - Divides by :math:`HY` instead of :math:`\max(HX, HY)`
-
-   These values can change when the image is mirrored. Run in IBSI mode to match IBSI,
-   PyRadiomics or MIRP.
+   PyRadiomics, MIRP and IBSI count both orders. Every feature still follows its IBSI definition,
+   but on a matrix that is not symmetric: the features that read one side of the pair, such as
+   ``JAVE``, ``VARIANCE`` and ``JVAR``, read the reference pixel's, and their values can change when
+   the image is mirrored. Run in IBSI mode to match IBSI, PyRadiomics or MIRP; PyRadiomics with
+   ``symmetricalGLCM=False`` counts one order, as Nyxus does by default.
 
 Constant ROI
    Before building any matrix, Nyxus bins the ROI's minimum and maximum intensities to
    ``--coarseGrayDepth`` levels counted from 0 (``glcm/greydepth`` from Python), in IBSI mode too.
-   When the two fall into the same level, every GLCM feature returns 0, whatever ``--noval`` is,
-   a known defect (`#511 <https://github.com/PolusAI/nyxus/issues/511>`__): the substitute is written and then overwritten by the empty
-   per-angle results, which the output pads with 0.
+   When the two fall into the same level, every GLCM feature, the ``_AVE`` columns included,
+   returns the ``--noval`` substitute (0 by default, and always 0 from Python).
    This covers a constant ROI and, with a positive grey depth :math:`N` (64 by default), any ROI
    whose minimum is at least :math:`(N-1)/N` of its maximum: in IBSI mode with the default
-   :math:`N`, a ROI of intensities 1000 and 1001 returns 0 in every column, while one of 10 and
-   11 does not. With a zero or negative ``--coarseGrayDepth`` only a constant ROI does.
+   :math:`N`, a ROI of intensities 1000 and 1001 returns the substitute in every column, while one
+   of 10 and 11 does not. With a zero or negative ``--coarseGrayDepth`` only a constant ROI does.
 
 Grey-level values and indices
    With PyRadiomics-style binning (negative ``--coarseGrayDepth``) the grey levels are the distinct
    binned values present in the ROI. Most features use those values, but ``DIS``, ``HOM1``,
    ``HOM2``, ``DIFENTRO``, ``SUMENTROPY`` and the inverse-difference features use positions 1 to
    :math:`N_g` in that list, and ``IDN`` and ``IDMN`` divide by :math:`N_g`, the number of levels
-   present. ``DIFAVE``, ``SUMAVERAGE``, ``IV``, ``JVAR`` and ``DIFVAR`` are a known defect
+   present. ``DIFAVE``, ``SUMAVERAGE``, ``IV`` and ``DIFVAR`` are a known defect
    (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__) and, when the levels present are not
    consecutive, match neither convention. ``DIFAVE``, ``SUMAVERAGE`` and ``IV`` group pairs by the
    difference or sum of their positions, but weight each group by the value difference or sum of
-   one pair in it. ``JVAR`` takes positions minus ``JAVE``, a mean of values, and ``DIFVAR`` takes
-   position differences minus ``DIFAVE``. Values and positions coincide with the default binning
+   one pair in it, and ``DIFVAR`` takes position differences minus ``DIFAVE``. Values and positions coincide with the default binning
    and in IBSI mode.
 
 
@@ -819,8 +823,10 @@ Validation
 The test suite checks every 2D GLCM feature against an independent implementation, named in the
 :ref:`index <glcm-index>`. PyRadiomics and MIRP are compared on matched settings (symmetric matrix,
 identical grey levels), and IBSI mode reproduces the IBSI consensus values on the IBSI digital
-phantom. Because the reference tools count pairs symmetrically, the default asymmetric counting is
-covered by regression tests only.
+phantom. With the default asymmetric counting, cluster prominence, shade and tendency, sum
+variance, joint variance and the first information measure of correlation are checked against their
+IBSI definitions on an independently counted matrix, on an image and on its mirror; the other
+features are covered there by regression tests only.
 
 
 References

@@ -60,6 +60,7 @@ public:
 		Nyxus::Feature3D::GLCM_ENERGY_AVE,
 		Nyxus::Feature3D::GLCM_ENTROPY_AVE,
 		Nyxus::Feature3D::GLCM_HOM1_AVE,
+		Nyxus::Feature3D::GLCM_HOM2_AVE,
 		Nyxus::Feature3D::GLCM_ID_AVE,
 		Nyxus::Feature3D::GLCM_IDN_AVE,
 		Nyxus::Feature3D::GLCM_IDM_AVE,
@@ -94,6 +95,7 @@ public:
 		Nyxus::Feature3D::GLCM_ENERGY_AVE,
 		Nyxus::Feature3D::GLCM_ENTROPY_AVE,
 		Nyxus::Feature3D::GLCM_HOM1_AVE,
+		Nyxus::Feature3D::GLCM_HOM2_AVE,
 		Nyxus::Feature3D::GLCM_ID_AVE,
 		Nyxus::Feature3D::GLCM_IDN_AVE,
 		Nyxus::Feature3D::GLCM_IDM_AVE,
@@ -162,7 +164,8 @@ private:
 		bool ibsi);
 
 	void calculatePxpmy();
-	void calculate_by_row_mean();
+	void calculate_marginal_means();
+	void push_noval (double softnan);
 
 	static inline int cast_to_range(PixIntens orig_I, PixIntens min_orig_I, PixIntens max_orig_I, int min_target_I, int max_target_I)
 	{
@@ -194,7 +197,6 @@ private:
 	double f_GLCM_JAVE();
 	double f_GLCM_JE(const SimpleMatrix<double>& P_matrix);
 	double f_GLCM_JMAX(const SimpleMatrix<double>& P_matrix);
-	double f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, double mean_x);
 
 	using AngledFeatures = std::vector<double>;
 	void copyfvals(AngledFeatures& dst, const AngledFeatures& src);
@@ -235,7 +237,7 @@ private:
 
 	double hx = -1, hy = -1, hxy = -1, hxy1 = -1, hxy2 = -1;	// Entropies for f12/f13_icorr calculation
 	void calcH(const SimpleMatrix<double>& P_matrix, std::vector<double>& px, std::vector<double>& py);
-	double f_info_meas_corr1(const SimpleMatrix<double>& P_matrix);
+	double f_info_meas_corr1(const SimpleMatrix<double>& P_matrix, double softnan);
 	double f_info_meas_corr2(const SimpleMatrix<double>& P_matrix);
 
 	double f_energy(const SimpleMatrix<double>& P_matrix);
@@ -250,7 +252,8 @@ private:
 		Pxmy,
 		kValuesSum,	// intensities x+y
 		kValuesDiff;	// intensities x-y
-	double by_row_mean;
+	double mean_x = 0,	// mean grey level of the reference voxel, mu_x
+		mean_y = 0;	// mean grey level of its neighbour, mu_y
 	const double EPSILON = 0.000000001;
 };
 

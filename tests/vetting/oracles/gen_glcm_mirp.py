@@ -131,7 +131,7 @@ def main():
             print("// MISSING from this mirp build: %s" % key)
             continue
         for feature in MIRP_TO_NYXUS[column]:
-            names = [feature] if feature == "GLCM_HOM2" else [feature, feature + "_AVE"]
+            names = [feature, feature + "_AVE"]
             for n in names:
                 emitted[n] = values[key]
                 print('    {"%s", %.17g},   // %s' % (n, values[key], column))
