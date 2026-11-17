@@ -77,9 +77,9 @@ table is therefore doing work no averaged assertion in this family can do.
 
 `GLDZMFeature::calculate` grew a zone by testing four neighbours — East, South, West, North. A GLDZM
 zone is 8-connected: two same-level pixels touching only at a corner are one zone. That is the
-connectivity IBSI defines, the one mirp implements, and the one **Nyxus' own GLSZM already used**
-(`glszm.cpp` tests E/SE/S/SW, the forward half of the 8-neighbourhood). The two families disagreed
-with each other inside the same codebase about what a zone is.
+connectivity IBSI defines, the one mirp implements, and the one **Nyxus' own GLSZM uses**
+(`glszm.cpp` walks all eight neighbours). The two families disagreed with each other inside the same
+codebase about what a zone is.
 
 On phantom slice z1 the difference is two diagonal links, which split five true zones into seven:
 

@@ -51,25 +51,20 @@ got = glszm(img, mask)["GLSZM_GLV"][0]
 assert math.isclose(got, 341.05, rel_tol=5e-4), f"default GLSZM_GLV = {got}, page says 341.05"
 
 
-# Zone growth: images whose zones are split by the east/south-east/south/south-west walk
-split = np.array([[2, 2, 1],
-                  [1, 1, 1]], dtype=np.uint32)
-f = glszm(split, np.ones_like(split), ibsi=True)
-quoted = {"ZP": 0.5, "SAE": 0.4537}
-for name, expected in quoted.items():
-    got = f[f"GLSZM_{name}"][0]
-    assert math.isclose(got, expected, rel_tol=5e-4), f"2x3 GLSZM_{name} = {got}, page says {expected}"
+# Connectivity: the four 1s of the 2 x 3 image are one zone, reached from the top right by stepping west
+west = np.array([[2, 2, 1],
+                 [1, 1, 1]], dtype=np.uint32)
+f = glszm(west, np.ones_like(west), ibsi=True)
+assert math.isclose(f["GLSZM_ZP"][0], 2 / 6), f"2x3 GLSZM_ZP = {f['GLSZM_ZP'][0]}, expected 2 zones over 6 pixels"
 
+# The 5 x 5 example of the PyRadiomics GLSZM documentation: 11 zones over 25 pixels
 pyrad = np.array([[5, 2, 5, 4, 4],
                   [3, 3, 3, 1, 3],
                   [2, 1, 1, 1, 3],
                   [4, 2, 2, 2, 3],
                   [3, 5, 3, 3, 2]], dtype=np.uint32)
 f = glszm(pyrad, np.ones_like(pyrad), ibsi=True)
-quoted = {"ZP": 0.52, "SAE": 0.6596}
-for name, expected in quoted.items():
-    got = f[f"GLSZM_{name}"][0]
-    assert math.isclose(got, expected, rel_tol=5e-4), f"PyRadiomics image GLSZM_{name} = {got}, page says {expected}"
+assert math.isclose(f["GLSZM_ZP"][0], 0.44), f"PyRadiomics image GLSZM_ZP = {f['GLSZM_ZP'][0]}, page says 0.44"
 
 # Background as grey level 1: a 6x5 ROI whose four corners are outside the mask
 roi_img = np.array([[3, 3, 7, 7, 7, 2],
@@ -83,26 +78,22 @@ roi_mask = np.array([[0, 1, 1, 1, 1, 0],
                      [1, 1, 1, 1, 1, 1],
                      [0, 1, 1, 1, 1, 0]], dtype=np.uint32)
 default = glszm(roi_img, roi_mask)
-quoted = {"ZP": 0.4, "SAE": 0.4144, "LGLZE": 0.3342}
+quoted = {"ZP": 0.3667, "SAE": 0.4261, "LGLZE": 0.3645}
 for name, expected in quoted.items():
     got = default[f"GLSZM_{name}"][0]
     assert math.isclose(got, expected, rel_tol=5e-4), f"default GLSZM_{name} = {got}, page says {expected}"
 ibsi = glszm(roi_img, roi_mask, ibsi=True)
-assert math.isclose(ibsi["GLSZM_ZP"][0], 8 / 26, rel_tol=5e-4), f"IBSI GLSZM_ZP = {ibsi['GLSZM_ZP'][0]}"
+assert math.isclose(ibsi["GLSZM_ZP"][0], 7 / 26, rel_tol=5e-4), f"IBSI GLSZM_ZP = {ibsi['GLSZM_ZP'][0]}"
 
 # Constant ROI: every feature is the missing-value substitute (0 by default)
 const = np.full((4, 4), 7, dtype=np.uint32)
 f = glszm(const, np.ones_like(const), ibsi=True)
 assert all(f[f"GLSZM_{c}"][0] == 0 for c in ("SAE", "ZE", "GLV", "ZP")), "constant ROI is not the substitute"
 
-# The 8-connected values for the 2 x 3 image: one zone of 4 pixels and one of 2
-assert math.isclose(2 / 6, 0.3333, rel_tol=5e-4), "8-connected zone percentage"
-assert math.isclose((1 / 16 + 1 / 4) / 2, 0.1563, rel_tol=5e-4), "8-connected small area emphasis"
-
 # The 6 x 5 ROI without its corners: IBSI mode on the image binned the default way, corners set to 0
 binned = np.minimum(np.floor(64 * roi_img.astype(int) / 9) + 1, 64).astype(np.uint32) * roi_mask
 f = glszm(binned, roi_mask, ibsi=True)
-quoted = {"ZP": 0.3077, "SAE": 0.1215, "LGLZE": 0.001356}
+quoted = {"ZP": 0.2692, "SAE": 0.09821, "LGLZE": 0.001379}
 for name, expected in quoted.items():
     got = f[f"GLSZM_{name}"][0]
     assert math.isclose(got, expected, rel_tol=5e-4), f"corners excluded GLSZM_{name} = {got}, page says {expected}"

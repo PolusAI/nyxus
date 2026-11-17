@@ -78,6 +78,7 @@
 #include "test_2d_glszm_ibsi.h"
 #include "test_2d_glszm_mirp.h"
 #include "test_2d_glszm_analytic.h"
+#include "test_2d_glszm_pyradiomics.h"
 #include "test_2d_firstorder_ibsi.h"
 #include "test_2d_firstorder_pyradiomics.h"
 #include "test_2d_ngldm_ibsi.h"
@@ -3862,6 +3863,24 @@ TEST(TEST_NYXUS, TEST_2D_GLSZM_ZV_MIRP) {
 
 TEST(TEST_NYXUS, TEST_2D_GLSZM_ZE_MIRP) {
 	ASSERT_NO_THROW(test_2d_glszm_ze_mirp());
+}
+
+//***** 2D GLSZM zone connectivity vs PyRadiomics *****
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_DOCS_2X3_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_2d_glszm_docs_2x3_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_PYRAD_5X5_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_2d_glszm_pyrad_5x5_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_HOOK_6X6_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_2d_glszm_hook_6x6_pyradiomics());
+}
+
+TEST(TEST_NYXUS, TEST_2D_GLSZM_APART_3X7_PYRADIOMICS) {
+	ASSERT_NO_THROW(test_2d_glszm_apart_3x7_pyradiomics());
 }
 
 //***** IBSI tests of NGLDM ***** 

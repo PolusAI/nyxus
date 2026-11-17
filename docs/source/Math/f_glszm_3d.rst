@@ -44,8 +44,8 @@ grey level that touches a voxel already in it, by a face, an edge or a corner.
 :math:`\textbf{P}(i,j)` counts the zones of grey level :math:`i` and size :math:`j` voxels.
 
 - **Connectivity:** 26-connected. All 26 neighbours of a voxel are searched: 8 in its own slice and
-  9 in each adjacent slice. A zone is the full 26-connected component, whatever the scan order. This
-  differs from the 2D family, whose zones grow only to the east, south-east, south and south-west.
+  9 in each adjacent slice. A zone is the full 26-connected component, whatever the scan order, the
+  3D counterpart of the 2D family's 8-connected zones.
 - **Directions:** none. One matrix is built per ROI, and each feature has one value.
 - **Grey levels:** set by ``--coarseGrayDepth`` (``coarse_gray_depth``, 64 by default), or by
   the ``3glszm/greydepth`` metaparameter, which overrides it for this family.

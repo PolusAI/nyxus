@@ -15,6 +15,7 @@ SOURCES = [
     "test_2d_glszm_analytic.h",
     "test_2d_glszm_ibsi.h",
     "test_2d_glszm_mirp.h",
+    "test_2d_glszm_pyradiomics.h",
     "test_2d_glszm_regression.h",
 ]
 
@@ -35,7 +36,7 @@ NOTE = {
 FAMILY = scanlib.Family(
     dim="2D", family="glszm",
     sources=SOURCES,
-    oracle_suffix={"mirp": "mirp", "ibsi": "ibsi", "analytic": "analytic"},
+    oracle_suffix={"mirp": "mirp", "ibsi": "ibsi", "analytic": "analytic", "pyradiomics": "pyradiomics"},
     notes=scanlib.dual_oracle_notes(NOTE, DUAL_ORACLE),
 )
 
