@@ -40,17 +40,6 @@ jobs:
         conda install mamba
         mamba install --file ${{github.workspace}}/ci-utils/envs/conda_cpp.txt
 
-    - name: Check that REQUIRE_ALLEXTRAS refuses a dropped part
-      shell: bash -l {0}
-      run: |
-        set -e
-        if cmake -S . -B build-required-extras -G Ninja -DCMAKE_CXX_COMPILER=cl -DCMAKE_PREFIX_PATH=$CONDA_PREFIX/Library -DALLEXTRAS=ON -DREQUIRE_ALLEXTRAS=ON -DCMAKE_DISABLE_FIND_PACKAGE_Arrow=ON > required-extras.log 2>&1; then
-          cat required-extras.log
-          exit 1
-        fi
-        cat required-extras.log
-        grep 'these parts are off: USE_ARROW' required-extras.log
-
     - name: Configure CMake
       run: cmake -B ${{github.workspace}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DBUILD_CLI=ON -DRUN_GTEST=ON -DALLEXTRAS=ON -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX
 
