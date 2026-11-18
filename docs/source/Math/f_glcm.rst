@@ -117,7 +117,10 @@ Notation
    * - Symbol
      - Meaning
    * - :math:`N_g`
-     - Number of grey levels.
+     - Number of grey levels, :math:`1 \ldots N_g`. With MATLAB-style and IBSI binning it is
+       the bin count. With PyRadiomics-style binning it is the highest level present in the ROI,
+       and the ROI need not occupy every level below it; an absent level has :math:`p_{ij} = 0`
+       in its row and column.
    * - :math:`i,\; j`
      - Grey level of the reference pixel (:math:`i`) and of its neighbour :math:`\delta` pixels
        along :math:`\theta` (:math:`j`).
@@ -799,18 +802,14 @@ Constant ROI
    :math:`N`, a ROI of intensities 1000 and 1001 returns 0 in every column, while one of 10 and
    11 does not. With a zero or negative ``--coarseGrayDepth`` only a constant ROI does.
 
-Grey-level values and indices
-   With PyRadiomics-style binning (negative ``--coarseGrayDepth``) the grey levels are the distinct
-   binned values present in the ROI. Most features use those values, but ``DIS``, ``HOM1``,
-   ``HOM2``, ``DIFENTRO``, ``SUMENTROPY`` and the inverse-difference features use positions 1 to
-   :math:`N_g` in that list, and ``IDN`` and ``IDMN`` divide by :math:`N_g`, the number of levels
-   present. ``DIFAVE``, ``SUMAVERAGE``, ``IV``, ``JVAR`` and ``DIFVAR`` are a known defect
-   (`#510 <https://github.com/PolusAI/nyxus/issues/510>`__) and, when the levels present are not
-   consecutive, match neither convention. ``DIFAVE``, ``SUMAVERAGE`` and ``IV`` group pairs by the
-   difference or sum of their positions, but weight each group by the value difference or sum of
-   one pair in it. ``JVAR`` takes positions minus ``JAVE``, a mean of values, and ``DIFVAR`` takes
-   position differences minus ``DIFAVE``. Values and positions coincide with the default binning
-   and in IBSI mode.
+Levels absent from the ROI
+   With PyRadiomics-style binning (negative ``--coarseGrayDepth``) the matrix holds a row and a
+   column only for the binned levels present in the ROI, and a CT ROI at 20 bins often leaves some
+   of them empty: a dense block of low levels and a few voxels alone in the top bin. Every feature
+   still works on the grey levels themselves, as in PyRadiomics: :math:`p_{x+y}` and
+   :math:`p_{x-y}` group pairs by the sum and difference of their levels, :math:`|i-j|` in ``DIS``,
+   ``HOM1`` and ``HOM2`` is a difference of levels, and :math:`N_g` in ``IDN`` and ``IDMN`` is the
+   highest level present, not the count of levels present.
 
 
 Validation
@@ -819,7 +818,8 @@ Validation
 The test suite checks every 2D GLCM feature against an independent implementation, named in the
 :ref:`index <glcm-index>`. PyRadiomics and MIRP are compared on matched settings (symmetric matrix,
 identical grey levels), and IBSI mode reproduces the IBSI consensus values on the IBSI digital
-phantom. Because the reference tools count pairs symmetrically, the default asymmetric counting is
+phantom. PyRadiomics is also compared with PyRadiomics-style binning (20 bins) on a crop of a CT
+image whose levels leave bins empty, which is where a grey level and its row in the matrix differ. Because the reference tools count pairs symmetrically, the default asymmetric counting is
 covered by regression tests only.
 
 
