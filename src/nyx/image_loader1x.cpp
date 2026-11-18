@@ -164,3 +164,13 @@ size_t ImageLoader1x::get_tile_width()
 {
 	return tw;
 }
+
+size_t ImageLoader1x::get_full_width()
+{
+	return fw;
+}
+
+size_t ImageLoader1x::get_full_height()
+{
+	return fh;
+}

@@ -19,9 +19,7 @@ lies.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Yes, with the same values as in memory on tiled TIFF files and on striped files of up to
-       1024 × 1024 pixels; see :ref:`intensity-possible-issues` for larger striped files and
-       :ref:`large-images-tiles`.
+     - Yes, with the same values as in memory.
    * - **IBSI**
      - 18 features have an identifier from the IBSI intensity-based statistics, which list 18
        features. ``COV`` follows a different convention from IBSI; its entry says how.
@@ -849,15 +847,6 @@ Constant ROI
 Covered range of in-memory images
    ``COVERED_IMAGE_INTENSITY_RANGE`` is not computed for arrays passed to ``Nyxus.featurize``: it
    is 0 in pandas and ``-0.0`` in Arrow and Parquet files. Write the image to a file to get it.
-
-Out-of-core ROIs of large striped TIFF files
-   A ROI processed out of core is read from the file again. For a striped (not tiled) TIFF more
-   than 1024 pixels high or wide, the pixels read back do not match the image, and the features
-   computed from them differ from the in-memory values (``MIN``, ``MAX``, ``RANGE`` and
-   ``UNIFORMITY_PIU`` come from the first pass over the image and stay correct): on a
-   1200 × 1200 image of four quadrants of 100, 1100, 2100 and 3100, ``MEAN`` was 4764.0 in place
-   of 1600. Tiled TIFF files of the same size, and striped files of 1024 × 1024 pixels, give the
-   in-memory values.
 
 Grey levels above 65535
    ``ENERGY`` and ``ROOT_MEAN_SQUARED`` square each pixel as a 32-bit unsigned integer, a known

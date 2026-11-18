@@ -147,7 +147,9 @@ namespace Nyxus
 			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
 				ntVert = env.theImLoader.get_num_tiles_vert(),	// tiles down a column
 				th = env.theImLoader.get_tile_height(),
-				tw = env.theImLoader.get_tile_width();
+				tw = env.theImLoader.get_tile_width(),
+				fullwidth = env.theImLoader.get_full_width(),
+				fullheight = env.theImLoader.get_full_height();
 			for (size_t row = 0; row < ntVert; row++)
 				for (size_t col = 0; col < ntHor; col++)
 				{
@@ -168,26 +170,22 @@ namespace Nyxus
 					}
 					auto& dataI = env.theImLoader.get_int_tile_buffer();
 					auto& dataL = env.theImLoader.get_seg_tile_buffer();
-					for (unsigned long i = 0; i < env.theImLoader.get_tile_size(); i++)
+					walk_tile_pixels (row, col, tw, th, fullwidth, fullheight, [&](size_t i, size_t x, size_t y)
 					{
 						auto pixLabel = dataL[i];
 
 						// Skip blanks and other ROI's pixel
 						if (pixLabel == 0 || pixLabel != r.label)
-							continue;
-
-						// Pixel intensity and global position
-						auto intens = dataI[i];
-						StatsInt y = (StatsInt) (row * th + i / tw),
-							x = (StatsInt) (col * tw + i % tw);
+							return;
 
 						// Track the streamed extrema (see the aux_min/aux_max reset above)
+						auto intens = dataI[i];
 						r.aux_min = (std::min)(r.aux_min, (PixIntens)intens);
 						r.aux_max = (std::max)(r.aux_max, (PixIntens)intens);
 
 						// Feed the pixel to online features and helper objects
-						r.raw_pixels_NT.add_pixel(Pixel2(x, y, intens));
-					}
+						r.raw_pixels_NT.add_pixel(Pixel2((StatsInt)x, (StatsInt)y, intens));
+					});
 				}
 
 			//=== Features requiring non-raster access to pixels

@@ -55,10 +55,8 @@ namespace Nyxus
 
 			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
 				ntVert = env.theImLoader.get_num_tiles_vert(),	// tiles down a column
-				fw = env.theImLoader.get_tile_width(),
 				th = env.theImLoader.get_tile_height(),
 				tw = env.theImLoader.get_tile_width(),
-				tileSize = env.theImLoader.get_tile_size(),
 				fullwidth = env.theImLoader.get_full_width(),
 				fullheight = env.theImLoader.get_full_height();
 
@@ -85,34 +83,26 @@ namespace Nyxus
 					auto dataI = env.theImLoader.get_int_tile_buffer(),
 						dataL = env.theImLoader.get_seg_tile_buffer();
 
-					// Iterate pixels
-					for (unsigned long i = 0; i < tileSize; i++)
+					// Iterate the tile's pixels inside the image
+					walk_tile_pixels (row, col, tw, th, fullwidth, fullheight, [&](size_t i, size_t x, size_t y)
 					{
 						// Skip non-mask pixels
 						auto label = dataL[i];
 						if (!label)
-							continue;
+							return;
 
 						// Skip this ROI if the label isn't in the pending set of a multi-ROI mode
 						if (!env.singleROI && !std::binary_search(whiteList.begin(), whiteList.end(), label))
-							continue;
-
-						auto inten = dataI[i];
-						int y = row * th + i / tw,
-							x = col * tw + i % tw;
-
-						// Skip tile buffer pixels beyond the image's bounds
-						if (x >= fullwidth || y >= fullheight)
-							continue;
+							return;
 
 						// Collapse all the labels to one if single-ROI mde is requested
 						if (env.singleROI)
 							label = 1;
 
-						// Cache this pixel 
+						// Cache this pixel
 						LR& r = env.roiData[label];
-						feed_pixel_2_cache_3D_LR (x, y, z, dataI[i], r);
-					}
+						feed_pixel_2_cache_3D_LR ((int) x, (int) y, z, dataI[i], r);
+					});
 
 					VERBOSLVL2(env.get_verbosity_level(),
 						// Show stayalive progress info

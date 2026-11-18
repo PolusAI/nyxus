@@ -19,10 +19,8 @@ unevenly the intensity is spread over the wedges.
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Yes, with or without anisotropy, with the same values as in memory on tiled TIFF files and
-       on striped files of up to 1024 × 1024 pixels: the contour is the same on both paths. On a
-       larger striped file out-of-core processing raises an error or returns wrong values,
-       depending on the ROI (see :ref:`large-images-tiles`).
+     - Yes, with or without anisotropy, with the same values as in memory: the contour is the
+       same on both paths.
    * - **IBSI**
      - None. IBSI defines no radial distribution features.
 

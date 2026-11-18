@@ -32,11 +32,8 @@ set again with every pixel also weighted by its distance to the ROI contour.
        with anisotropy the run can crash, a known defect (`#521 <https://github.com/PolusAI/nyxus/issues/521>`__). The GPU's distance search computes
        the step with a single-precision logarithm.
    * - **Out-of-core**
-     - Yes, all 180 moments, with or without anisotropy, with the same values as in memory on
-       tiled TIFF files and on striped files of up to 1024 × 1024 pixels: the weighted moments are
-       measured against the same contour on both paths. On a larger striped file out-of-core
-       processing of this family raises an error or returns wrong values, depending on the ROI
-       (see :ref:`large-images-tiles`).
+     - Yes, all 180 moments, with or without anisotropy, with the same values as in memory: the
+       weighted moments are measured against the same contour on both paths.
    * - **IBSI**
      - None. IBSI defines no geometric moment features.
 
@@ -222,8 +219,7 @@ Settings
    * - Memory limit
      - ``--ramLimit``
      - ``Nyxus(..., ram_limit=...)``
-     - ROIs whose footprint reaches the limit are computed out of core, with the same values; on
-       a striped file larger than 1024 × 1024 pixels it raises an error or changes the moments.
+     - ROIs whose footprint reaches the limit are computed out of core, with the same values.
    * - GPU
      - ``--useGpu=true``
      - ``Nyxus(..., use_gpu_device=0)``
