@@ -55,8 +55,9 @@ bounding box outside the mask.
   ``3COVERED_IMAGE_INTENSITY_RANGE`` through its slope, variances through the square of its slope,
   and the ratios ``3COV``, ``3QCOD`` and ``3UNIFORMITY_PIU`` are recomputed from the mapped parts.
   A signed integer volume is therefore reported in its own signed values. A floating-point volume
-  is reported in its own range, to the resolution of its grey levels (``--fpimgdr``, 10000 steps
-  over the volume's range by default).
+  with fractional values is reported in its own range, to the resolution of its grey levels
+  (``--fpimgdr``, 10000 steps over the volume's range by default); a floating-point NIfTI volume
+  that holds only whole values is reported exactly, as an integer volume is.
 - **Files only:** ``Nyxus3D`` reads volumes from files (``featurize_files`` or
   ``featurize_directory``); there is no in-memory path.
 - **IBSI mode:** ``--ibsi=true`` does not change any 3D intensity feature.

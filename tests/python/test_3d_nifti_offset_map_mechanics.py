@@ -14,8 +14,9 @@ so every rescaled value is integral. ``ct3d_frac.nii`` uses 0.5, and the two cas
 
 *Non-finite voxels.* A float volume is free to hold NaN -- a masked-out background, most often -- and
 converting one to an unsigned grey level is undefined. The loader stores grey level 0 for it, the
-convention every load-time map uses. ``ct3d_nan.nii`` is float32, which has no stored integers to
-keep, so it takes the offset map with or without the flag.
+convention every load-time map uses. ``ct3d_nan.nii`` is float32 holding only whole values, so it
+is not quantized as a volume with fractional values would be: it takes the offset map with or
+without the flag.
 
 Kind: *mechanics* per tests/vetting/SPEC.md 2 -- these pin loader plumbing rather than feature values
 against a reference, and establish no vetting.
