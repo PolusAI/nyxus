@@ -1181,7 +1181,7 @@ Definitions, formulas and settings: :doc:`/Math/f_glrlm`.
 Grey-level size-zone matrix (GLSZM)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A zone is a group of connected pixels sharing one grey level, grown from each unvisited pixel in scan order through same-level neighbours to its east, south-east, south and south-west; the matrix counts zones by grey level and size. The family has no directions, so each code is one value per ROI. Grey levels come from ``--coarseGrayDepth`` binning, or are the raw intensities under ``--ibsi``. With a positive ``--coarseGrayDepth`` (the default), pixels of stored intensity 0, including every bounding-box pixel outside the ROI, are binned to grey level 1 and form zones; under ``--ibsi`` or a negative ``--coarseGrayDepth`` they are skipped.
+A zone is an 8-connected group of pixels sharing one grey level, pixels touching by an edge or a corner, as IBSI defines it; the matrix counts zones by grey level and size. The family has no directions, so each code is one value per ROI. Grey levels come from ``--coarseGrayDepth`` binning, or are the raw intensities under ``--ibsi``. With a positive ``--coarseGrayDepth`` (the default), pixels of stored intensity 0, including every bounding-box pixel outside the ROI, are binned to grey level 1 and form zones; under ``--ibsi`` or a negative ``--coarseGrayDepth`` they are skipped.
 
 Definitions, formulas and settings: :doc:`/Math/f_glszm`.
 

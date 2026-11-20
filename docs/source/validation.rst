@@ -139,7 +139,6 @@ ones are:
 * Background pixels: with the default binning some families count background as grey level 1.
   See :ref:`glrlm-possible-issues`, :ref:`glszm-possible-issues`, :ref:`gldzm-possible-issues` and
   :ref:`ngtdm-possible-issues`.
-* GLSZM: 2D zones are not fully 8-connected. See :ref:`glszm-possible-issues`.
 * GLDZM: the distance next to background is one too large. See :ref:`gldzm-possible-issues`.
 * NGLDM: grey levels are converted differently from the other texture families. See
   :ref:`ngldm-possible-issues`.

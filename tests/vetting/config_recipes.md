@@ -554,6 +554,22 @@ oracle for the Nyxus-original features); it is not built in this tree, and the g
 - The band is `rel=1e-12` rather than SPEC 7's absolute exact tier, because `LAE` is 4.3e9 and an
   absolute 1e-9 is below its last bit.
 
+## glszm.pyradiomics_connectivity_2d
+- Four small literal ROIs in `test_2d_glszm_pyradiomics.h`, each featurised with `IBSI=true` and
+  `GREYDEPTH=0`. Oracle: `pyradiomics` 3.0.1 at `binWidth=1`, `force2D=True`; every fixture's
+  smallest ROI intensity is 1, so PyRadiomics' grey levels are the intensities. Generator:
+  `oracles/gen_glszm_pyradiomics.py`, which re-verifies every pin in the header. Config matrix:
+  `matrix/glszm.md`.
+- **What it is for.** The IBSI phantom has no zone that turns back up or to the left, so it cannot
+  tell 8-connectivity from a walk that steps only east, south-east, south and south-west. Three
+  fixtures can: `glszm_2d_docs_2x3` (a zone reached by stepping west), `glszm_2d_pyrad_5x5` (the
+  PyRadiomics documentation example, 11 zones) and `glszm_2d_hook_6x6` (a zone that turns north-east
+  and climbs north). The generator fails unless each has fewer 8-connected zones than forward-walk
+  zones. `glszm_2d_apart_3x7` is the negative case: same-level pixels two steps apart, and two
+  level-4 columns joined only through a column outside the mask, must stay separate zones.
+- Fifteen features at SPEC 7's exact tier (absolute 1e-9), `GLSZM_ZE` at `rel=4e-3` for
+  `Nyxus::fast_log10`, as in `glszm.ibsi_phantom_2d`.
+
 ## glrlm.ibsi_ng128
 - The four IBSI digital-phantom slices (`ibsi_phantom_z1..z4`, `test_data.h`), each featurised on
   its own with `IBSI=true` and `GREYDEPTH=128`, the four in-slice directions averaged, then the four

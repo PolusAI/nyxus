@@ -245,8 +245,7 @@ they differ in these ways:
      - ``3GLCM_*`` and ``3GLRLM_*`` are one column: the direction :math:`(1,1,1)` only. ``_AVE``
        averages the 13 directions.
    * - Zones
-     - GLSZM zones grow only east, south-east, south and south-west, so some 8-connected zones
-       split (see :ref:`glszm-possible-issues`). GLDZM zones are 8-connected.
+     - GLSZM and GLDZM zones are 8-connected.
      - GLSZM and GLDZM zones are 26-connected.
    * - GLDZM distance
      - A walk along the pixel's row and column to the first pixel of grey level 0 or the box
