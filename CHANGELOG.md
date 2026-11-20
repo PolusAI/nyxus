@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.13.0](https://github.com/PolusAI/nyxus/compare/v0.12.1...v0.13.0) (2026-11-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **contour:** every contour-based feature, in RAM and out of core, changes value on ROIs with holes, several fragments or one-pixel-wide parts, and the following change on every ROI: ROI_RADIUS_*, the inscribing and circumscribing circle diameters, the radial distribution (FRAC_AT_D, MEAN_FRAC, RADIAL_CV, whole-slide mode included), and all 62 weighted moments. With the contour on the ROI's edge pixels the weighted mass of a disk is negative up to a radius of about 11, so for such ROIs the odd-order weighted normalized central moments and weighted Hu invariants 3 to 7, shape and intensity, return 0, and near the sign change they are very large (on a disk of radius 12 WT_NORM_CTR_MOM_30 is -33355).
+
+### Bug Fixes
+
+* **2d features:** keep one-pixel and long thin ROIs from crashing or reading stale values ([2411943](https://github.com/PolusAI/nyxus/commit/24119436bf572b416bbbc1c1c3101c2410eeca0c))
+* **arrow:** raise when the Arrow or Parquet output file cannot be opened ([4221b80](https://github.com/PolusAI/nyxus/commit/4221b80bec4a831e0d826f627f66229e7289c085))
+* **build:** default MSVC Ninja builds to Release and publish an sdist ([c041284](https://github.com/PolusAI/nyxus/commit/c04128464db8b9813d313c8c83211d0e01cc546d))
+* **ci:** leave the build type as on main and drop the CI-code tests ([8560243](https://github.com/PolusAI/nyxus/commit/85602436bd142943e5dc2e4689833bb3feb9f44a))
+* **ci:** publish the sdist only beside a full wheel grid ([e578bc4](https://github.com/PolusAI/nyxus/commit/e578bc48a7076525d7c95e74413d831ca4e6c507))
+* **ci:** report missing release wheels instead of publishing an sdist ([28a113c](https://github.com/PolusAI/nyxus/commit/28a113c5e975901709515deb7f6e45ef52fe8fb3))
+* **contour:** trace every ROI border in order, in absolute coordinates ([6552ee5](https://github.com/PolusAI/nyxus/commit/6552ee551c2c8715d172d232ae2b21a23ce7a8cc))
+* **fractal:** walk each border separately for FRACT_DIM_PERIMETER ([bdb006b](https://github.com/PolusAI/nyxus/commit/bdb006b4dde32d4abbb6d3a45e0640d71e1cf2a3))
+* **glcm:** refuse a ROI whose 2D co-occurrence matrix cannot be held on its own ([fe93a90](https://github.com/PolusAI/nyxus/commit/fe93a90530e3c1ddb0b52739ec98bd17dc4e1105))
+* **omezarr:** place each sample by the declared order of Z, Y and X ([7d40a32](https://github.com/PolusAI/nyxus/commit/7d40a3283e69ea59d79fc43bf7aa0891308f9fd2)), closes [#522](https://github.com/PolusAI/nyxus/issues/522)
+* **omezarr:** zero the tile past a partial chunk ([509acfa](https://github.com/PolusAI/nyxus/commit/509acfa484fa6d155c71ba86ee9003d58ee76f57))
+* **ooc:** make every contour-based feature out of core equal its in-memory value ([e3474e5](https://github.com/PolusAI/nyxus/commit/e3474e5bb719b5d10d0e59f77869f0887a21740d))
+* **python:** leave the caller's array unchanged in featurize and raise the Arrow error text ([a0d1bce](https://github.com/PolusAI/nyxus/commit/a0d1bceb77a2352571d4647a2db877d535d12d8b))
+
+
+### Documentation
+
+* name 0.12.1 among the Debug-built conda-forge Windows packages ([17bf68f](https://github.com/PolusAI/nyxus/commit/17bf68f184e191506767d9628664b8cb17644d49))
+* say which releases carry an sdist and which wheels require all extras ([7a173a1](https://github.com/PolusAI/nyxus/commit/7a173a1a40e31b64470b1e4cb7dd40f0f5013d31))
+* state on the index page which Nyxus version the pages describe ([7d0d7ba](https://github.com/PolusAI/nyxus/commit/7d0d7ba9345a7d8803ed297afdb31b8d8517d95e))
+* state the Windows package facts of 0.12.0 and 0.12.1 ([e85a0ff](https://github.com/PolusAI/nyxus/commit/e85a0ffb163b952572d35ef6d065af80be9a3d38))
+* **vetting:** count the Arrow open-failure tests in not_covered.md ([d679b7f](https://github.com/PolusAI/nyxus/commit/d679b7f6fe0a543d53b8b85a6c96cd553ced437f))
+
 ## [0.12.1](https://github.com/PolusAI/nyxus/compare/v0.12.0...v0.12.1) (2026-11-10)
 
 
