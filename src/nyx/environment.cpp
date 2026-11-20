@@ -6,6 +6,7 @@
 #include <vector>
 #include <exception>
 #include <iterator>
+#include "dirs_and_files.h"
 #include "environment.h"
 #include "featureset.h"
 #include "features/glcm.h"
@@ -20,8 +21,6 @@
 
 namespace Nyxus
 {
-	bool existsOnFilesystem(const std::string&);
-
 	std::string strip_punctn_and_comment(const std::string& src)
 	{
 		std::string s = src;
@@ -76,7 +75,7 @@ Environment::Environment() : BasicEnvironment()
 	intSegMapFile = "";
 	nyxus_result_fname = "NyxusFeatures";	// Default file name without extension ".csv", ".arrow", etc
 
-	singleROI = false; // Applies to dim()==2: singleROI is set to 'true' parse_cmdline() if labels_dir==intensity_dir
+	singleROI = false; // see environment.h
 
 	embedded_pixel_size = "";
 
@@ -571,10 +570,11 @@ bool Environment::parse_cmdline(int argc, char** argv)
 		return false;
 	}
 
-	//==== whole-slide mode
-	if (Nyxus::toupper(labels_dir) == Nyxus::toupper(intensity_dir))
+	//==== whole-slide mode: the label directory is the intensity directory
+	if (auto ermsg = Nyxus::same_directory (labels_dir, intensity_dir, singleROI))
 	{
-		singleROI = true;
+		std::cerr << "Error: " << *ermsg << "\n";
+		return false;
 	}
 
 

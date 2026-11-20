@@ -53,7 +53,7 @@ public:
 	bool is_imq() {return is_imq_;};
 	void set_imq(bool is_imq) {is_imq_ = is_imq;}
 
-	bool singleROI; //= false; // Applies to dim()==2: singleROI is set to 'true' parse_cmdline() if labels_dir==intensity_dir
+	bool singleROI; //= false; // Whole-slide (2D) or whole-volume (3D) mode: parse_cmdline() and featurize_directory set it when labels_dir names the same directory as intensity_dir; featurize_files and featurize_montage take it from their caller
 
 	// --mergerois: merge all nonzero mask labels into a single whole-foreground ROI
 	// (background label 0 is still excluded). Unlike singleROI/wholeslide, the mask is

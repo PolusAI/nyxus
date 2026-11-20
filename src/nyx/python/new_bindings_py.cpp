@@ -236,12 +236,16 @@ py::tuple featurize_directory_imp(
         throw std::invalid_argument ("Invalid filepattern " + file_pattern);
     env.set_file_pattern (file_pattern);
 
+    // (whole-slide flag)
+    bool wholeslide = false;
+    if (auto ermsg = Nyxus::same_directory (intensity_dir, labels_dir, wholeslide))
+        throw std::runtime_error ("Error reading the dataset: " + *ermsg);
+
     // (directories)
     env.intensity_dir = intensity_dir;
     env.labels_dir = labels_dir;
 
-    // (whole-slide flag)
-    env.singleROI = (intensity_dir == labels_dir);
+    env.singleROI = wholeslide;
     env.refresh_feature_settings_singleroi();
 
     // read the dataset directory (file names, file pairs)
@@ -373,12 +377,17 @@ py::tuple featurize_directory_imq_imp (
         throw std::invalid_argument ("Invalid filepattern " + file_pattern);
     theEnvironment.set_file_pattern(file_pattern);
 
+    // Check the directories
+    bool wholeslide = false;
+    if (auto ermsg = Nyxus::same_directory (intensity_dir, labels_dir, wholeslide))
+        throw std::runtime_error ("Error traversing the dataset: " + *ermsg);
+
     // Cache the directories
     theEnvironment.intensity_dir = intensity_dir;
     theEnvironment.labels_dir = labels_dir;
 
     // Set the whole-slide/multi-ROI flag
-    theEnvironment.singleROI = intensity_dir == labels_dir;
+    theEnvironment.singleROI = wholeslide;
     theEnvironment.refresh_feature_settings_singleroi();
 
     // Read image pairs from the intensity and label directories applying the filepattern
@@ -463,12 +472,17 @@ py::tuple featurize_directory_3D_imp(
     // No need to set the raw file pattern separately for 3D
     //      theEnvironment.set_file_pattern(file_pattern);
 
+    // Check the directories
+    bool wholeslide = false;
+    if (auto ermsg = Nyxus::same_directory (intensity_dir, labels_dir, wholeslide))
+        throw std::runtime_error ("Error traversing the dataset: " + *ermsg);
+
     // Cache the directories
     theEnvironment.intensity_dir = intensity_dir;
     theEnvironment.labels_dir = labels_dir;
 
     // Set the whole-slide/multi-ROI flag
-    theEnvironment.singleROI = intensity_dir == labels_dir;
+    theEnvironment.singleROI = wholeslide;
     theEnvironment.refresh_feature_settings_singleroi();
 
     // We're good to extract features. Reset the feature results cache
