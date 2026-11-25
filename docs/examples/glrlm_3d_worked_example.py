@@ -7,6 +7,8 @@ import math
 import os
 from pathlib import Path
 
+from nyxus import Nyxus
+
 # example-start
 import numpy as np
 import tifffile
@@ -76,6 +78,25 @@ holes[0, 0, 2] = holes[2, 0, 0] = 0
 masked = run(img, holes, metaparam="3glrlm/greydepth=2")
 check(masked, "3GLRLM_RP", 0.72, "masked greydepth=2")
 check(masked, "3GLRLM_LGLRE", 0.4583, "masked greydepth=2")
+
+# A ROI one plane thick, the middle plane alone: the 9 directions with dz != 0 hold runs of length 1
+# only and enter the average. The page quotes PyRadiomics' values, measured offline with PyRadiomics
+# 3.0.1 (binWidth=1): the mean of the 4 in-plane directions, which is the 2D GLRLM _AVE of that
+# plane, checked here. The page's statement that MIRP's 3d_average gives the Nyxus values was also
+# measured offline (MIRP 2.6.0, no discretisation). Neither tool is a dependency of this script.
+plane = np.zeros_like(img)
+plane[1] = 1
+thin = run(img, plane, ibsi=True)
+check(thin, "3GLRLM_SRE", 1.0, "one-plane")
+check(thin, "3GLRLM_RP", 1.0, "one-plane")
+assert math.isclose(thin["3GLRLM_RV"][0], 0.0, abs_tol=1e-12), "one-plane 3GLRLM_RV"
+check(thin, "3GLRLM_SRE_AVE", 0.9598, "one-plane")
+check(thin, "3GLRLM_RV_AVE", 0.0398, "one-plane")
+in_plane = Nyxus(["*ALL_GLRLM*"], ibsi=True).featurize(img[1].astype(np.uint32), np.ones((3, 3), np.uint32))
+check(in_plane, "GLRLM_SRE_AVE", 0.8694, "in-plane mean")
+check(in_plane, "GLRLM_RV_AVE", 0.1294, "in-plane mean")
+assert math.isclose(thin["3GLRLM_SRE_AVE"][0], (9 + 4 * in_plane["GLRLM_SRE_AVE"][0]) / 13, rel_tol=1e-12)
+assert math.isclose(thin["3GLRLM_RV_AVE"][0], 4 / 13 * in_plane["GLRLM_RV_AVE"][0], rel_tol=1e-12)
 
 # Constant ROI: every 3D GLRLM column, the _AVE columns included, is the substitute (0 by default)
 const = np.full((2, 2, 2), 7, dtype=np.uint16)
