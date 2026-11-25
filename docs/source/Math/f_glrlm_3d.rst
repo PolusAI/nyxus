@@ -30,10 +30,12 @@ what is specific to 3D.
 .. tip::
 
    The plain codes, such as ``3GLRLM_SRE``, report a single direction, not an average. Use the
-   ``_AVE`` codes to compare with IBSI, PyRadiomics or MIRP values, which aggregate over all
-   directions. By default the family bins grey levels into 64 MATLAB-style levels, as every texture
-   family does; ``--coarseGrayDepth=0`` turns binning off and gives the IBSI-mode values (see
-   :ref:`glrlm-3d-settings`).
+   ``_AVE`` codes to compare with IBSI, PyRadiomics or MIRP values, which aggregate over the
+   directions; PyRadiomics 3.0.1 leaves out a direction whose every line meets the ROI in one
+   voxel at most, such as the 9 that cross slices on a ROI one plane thick (see
+   :ref:`glrlm-3d-possible-issues`). By default the family bins grey levels into 64 MATLAB-style
+   levels, as every texture family does; ``--coarseGrayDepth=0`` turns binning off and gives the
+   IBSI-mode values (see :ref:`glrlm-3d-settings`).
 
 
 How the matrix is built
@@ -453,6 +455,21 @@ Grey-level values depend on the binning
    level's value: the bin number by default, the intensity without binning or in IBSI mode. On the
    worked example the default 64 levels give grey level variance 229.4 where the unbinned value is
    0.9225. Compare them only between runs with the same setting.
+
+Directions that cross the ROI one voxel at a time enter the average
+   When every line along a direction meets the ROI in one voxel at most, every voxel is a run of
+   length 1. Nyxus keeps such a direction, and it enters the ``_AVE`` columns, as in the IBSI
+   average over the 13 directions. PyRadiomics 3.0.1 counts no runs along it and leaves it out of
+   its average, so the ``_AVE`` columns differ from PyRadiomics. On a ROI one plane thick these
+   are the 9 directions with :math:`\Delta z \neq 0`, direction 1 among them, so the plain codes
+   report runs of length 1 only (``3GLRLM_SRE`` and ``3GLRLM_RP`` are 1, ``3GLRLM_RV`` is 0);
+   there MIRP's ``3d_average`` gives the Nyxus values. A sheet one voxel thick tilted at 45°, such
+   as the voxels with :math:`z = x`, loses 9 directions the same way. On the middle plane of the
+   worked example, masked alone, in IBSI mode, ``3GLRLM_SRE_AVE`` is 0.9598 and ``3GLRLM_RV_AVE``
+   0.0398, while PyRadiomics with ``binWidth=1`` returns the mean of the 4 in-plane directions,
+   0.8694 and 0.1294. Run variance is 0 along a direction of length-1 runs, so ``3GLRLM_RV_AVE``
+   is 4/13 of the in-plane mean. That mean is also the 2D :doc:`GLRLM <f_glrlm>` ``_AVE`` of the
+   plane.
 
 Constant ROI
    When all of a ROI's voxels have one intensity, every 3D GLRLM feature, including the ``_AVE``

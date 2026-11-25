@@ -29,7 +29,9 @@ texture is fine (many short runs) or coarse (few long runs).
    To reproduce IBSI, PyRadiomics or MIRP values, run in IBSI mode: ``--ibsi=true`` on the command
    line, ``ibsi=True`` in Python. With the default settings the grey levels are binned from 0, so
    every feature that weights runs by grey level differs from those tools, and pixels of the
-   bounding box outside the mask take part in runs (see :ref:`glrlm-possible-issues`).
+   bounding box outside the mask take part in runs (see :ref:`glrlm-possible-issues`). In IBSI
+   mode too, the ``_AVE`` columns differ from PyRadiomics on a ROI that every line along some
+   direction crosses in one pixel at most, such as a single row (same section).
 
 
 How the matrix is built
@@ -490,6 +492,18 @@ Direction labels
    45° runs down and to the right with rows numbered from the top. Tools that measure angles
    counter-clockwise with the row axis pointing up call this diagonal 135°. Compare per-direction
    values by step, not by label; the ``_AVE`` columns are unaffected.
+
+Directions that cross the ROI one pixel at a time enter the average
+   When every line along a direction meets the ROI in one pixel at most, every pixel is a run of
+   length 1. Nyxus keeps such a direction, and it enters the ``_AVE`` columns, as in the IBSI
+   average over the directions. PyRadiomics 3.0.1 counts no runs along it and leaves it out of its
+   average, so the ``_AVE`` columns differ from PyRadiomics. On a single row or column three of the
+   four directions are like that, and on a diagonal line one pixel wide too; a right-angled L of
+   two such lines loses one. On row 2 of the worked example, masked alone, in IBSI mode,
+   ``GLRLM_SRE_AVE`` is 0.9259 and ``GLRLM_RV_AVE`` 0.2222, while PyRadiomics with ``binWidth=1``
+   returns 0.7037 and 0.8889, the values of ``GLRLM_SRE_0`` and ``GLRLM_RV_0``, the one direction
+   along the row. PyRadiomics' feature extractor accepts a ROI one row or column thick only with
+   ``minimumROIDimensions=1``.
 
 Constant ROI
    When all of a ROI's pixels have one intensity, every GLRLM feature, including the ``_AVE``

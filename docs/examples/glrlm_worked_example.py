@@ -99,3 +99,17 @@ def exact_run_entropy(dy, dx):
 rel = [abs(features[f"GLRLM_RE_{a}"][0] / exact_run_entropy(dy, dx) - 1)
        for a, (dy, dx) in zip((0, 45, 90, 135), ((0, 1), (1, 1), (1, 0), (1, -1)))]
 assert 2e-4 <= min(rel) and max(rel) <= 1.2e-3, f"run entropy relative differences {rel}"
+
+# A ROI one pixel tall, row 2 of the page (3 3 3 1 3): 45, 90 and 135 degrees hold runs of length 1
+# only and enter the average. The page quotes PyRadiomics' values, measured offline with PyRadiomics
+# 3.0.1 (binWidth=1, minimumROIDimensions=1); they equal the 0-degree values checked here, because
+# PyRadiomics drops the other three directions. PyRadiomics is not a dependency of this script.
+row = np.zeros_like(img)
+row[1, :] = 1
+thin = Nyxus(["*ALL_GLRLM*"], ibsi=True).featurize(img, row)
+for name, ave, along in (("SRE", 0.9259, 0.7037), ("RV", 0.2222, 0.8889)):
+    assert math.isclose(thin[f"GLRLM_{name}_AVE"][0], ave, rel_tol=5e-4), f"one-row GLRLM_{name}_AVE"
+    assert math.isclose(thin[f"GLRLM_{name}_0"][0], along, rel_tol=5e-4), f"one-row GLRLM_{name}_0"
+    for a in (45, 90, 135):
+        assert math.isclose(thin[f"GLRLM_{name}_{a}"][0], 1.0 if name == "SRE" else 0.0, abs_tol=1e-12), \
+            f"one-row GLRLM_{name}_{a}"
