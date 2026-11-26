@@ -25,6 +25,21 @@ namespace Nyxus
 		return fs::exists(p);
 	}
 
+	std::optional<std::string> same_directory (const std::string& dir1, const std::string& dir2, bool& same)
+	{
+		same = false;
+		std::error_code ec;
+		for (const auto& d : { dir1, dir2 })
+			if (!fs::is_directory(d, ec))
+				return { "cannot access directory " + d };
+
+		same = fs::equivalent (dir1, dir2, ec);
+		if (ec)
+			return { "cannot compare directories " + dir1 + " and " + dir2 + ": " + ec.message() };
+
+		return std::nullopt;
+	}
+
 	void readDirectoryFiles_2D (const std::string& dir, const std::string& file_pattern, std::vector<std::string>& fullpaths, std::vector<std::string>& purefnames)
 	{
 		std::regex re(file_pattern);
@@ -70,11 +85,14 @@ namespace Nyxus
 
 		if (intLabMappingFile.empty())
 		{
+			// -- whole slide ?
+			bool wholeslide = dirLabels.empty();
+			if (!wholeslide)
+				if (auto ermsg = same_directory (dirIntens, dirLabels, wholeslide))
+					return ermsg;
+
 			std::vector<std::string> purefnames_i, purefnames_m; // we need these temp sets to check the 1:1 matching
 			readDirectoryFiles_2D (dirIntens, filePatt, intensFiles, purefnames_i);
-
-			// -- whole slide ?
-			bool wholeslide = (dirIntens == dirLabels) || dirLabels.empty();
 
 			if (wholeslide)
 			{
@@ -83,9 +101,6 @@ namespace Nyxus
 			}
 			else
 			{
-				if (!wholeslide && !existsOnFilesystem(dirLabels))
-					return { "cannot access directory " + dirLabels };
-
 				// read segmentation counterparts
 				readDirectoryFiles_2D(dirLabels, filePatt, labelFiles, purefnames_m);
 

@@ -21,7 +21,13 @@ namespace Nyxus
 	/// @param dir 
 	/// @return 
 	bool existsOnFilesystem(const std::string& dir);
-	
+
+	/// @brief Checks if two directory arguments name one directory on the filesystem, however each
+	/// is spelled: a trailing separator, "./", a relative or absolute path, a symbolic link
+	/// @param same Receives the answer
+	/// @return Error message if either argument is not an accessible directory
+	std::optional<std::string> same_directory (const std::string& dir1, const std::string& dir2, bool& same);
+
 	/// @brief Reads all the files in a directory with respect to a file pattern
 	/// @return 0 if success, otherwise an error code (error details in 'error_message')
 	/// @param dir 

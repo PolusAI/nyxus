@@ -84,6 +84,10 @@ DIM_AGNOSTIC = {
     "test_hu_analytic.h": "closed form of the scalar load-time intensity map on SlideProps",
     "test_io_plumbing_mechanics.h":
         "readers and accumulators shared by both dims - a TIFF sample type and a value histogram",
+    "test_wholeslide_dirs_mechanics.h":
+        "whole-slide detection from the directory arguments, which 2D and 3D share",
+    "test_wholeslide_dirs_mechanics.py":
+        "whole-slide detection from the directory arguments, asserted on a 2D run and a 3D one",
     "test_cli_mechanics.py":
         "the CLI's exit-status contract, asserted on a 2D whole-slide run and a 3D one",
     "test_coarse_gray_depth_mechanics.py":

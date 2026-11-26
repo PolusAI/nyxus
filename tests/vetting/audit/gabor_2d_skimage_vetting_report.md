@@ -284,7 +284,7 @@ eleven times the tolerance.
    moment it is used; remove it or fix it together with §1.
 3. **The `gabor_freqs` units contract is stated three ways and implemented as none of them.**
    `src/nyx/python/nyxus/nyxus.py:103` documents `gabor_freqs` as "comma-separated denominators of
-   `\pi`" with a default of `[4, 16, 32, 64]`; `src/nyx/environment.cpp:219` documents the same flag
+   `\pi`" with a default of `[4, 16, 32, 64]`; `src/nyx/environment.cpp:218` documents the same flag
    as denominators of pi with a *different* default, `1,2,4,8,16,32,64`; and
    `src/nyx/cli_gabor_options.cpp:37` stores whatever number it is given, which
    `GaborFeature::Gabor` consumes as `lambda = 2*pi/f0`. Nothing in the tree divides by pi. So a
