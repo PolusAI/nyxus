@@ -181,9 +181,8 @@ the last digits (see :doc:`Math/f_morphology_3d`). A test volume with two ROIs, 
 volume. This holds for inputs Nyxus can stream; see the end of
 :ref:`large-images-tiles` for those it refuses.
 
-In 2D, every family matches the in-memory values on tiled TIFF files and on striped files of up to
-1024 x 1024 pixels (see :ref:`large-images-tiles` for larger striped files), with these
-exceptions:
+In 2D, every family matches the in-memory values, on tiled and striped TIFF files of any size, with
+these exceptions:
 
 * In IBSI mode 2D NGTDM matches only on the first ROI computed out of core, a known defect
   (`#512 <https://github.com/PolusAI/nyxus/issues/512>`__; see :doc:`Math/f_ngtdm`).
@@ -207,9 +206,7 @@ neighbor features for large ROIs, raise the RAM limit so that the ROIs are compu
 When a feature fails on an out-of-core 2D ROI, Python raises ``RuntimeError`` with the message
 ``Error while computing feature ... over oversized ROI ...``. The command line prints the same
 message and continues: the ROI's row is written with 0 in that feature's columns, and the run
-exits with status 0. For example, on a 300 x 300 ROI of a striped 1200 x 1200 image, the contour
-failed out of core with ``pixel ... lies outside the bounding box ... that sizes its buffer`` (see
-:ref:`large-images-tiles`). After a command-line run with large ROIs, search the console output for
+exits with status 0. After a command-line run with large ROIs, search the console output for
 ``Error while computing feature``.
 
 .. _large-images-tiles:
@@ -226,30 +223,15 @@ same tile size; a pair with different tile sizes is refused with an error that s
 In memory and in whole-slide mode, tiling does not change the results: a 256 x 256 image with 66
 ROIs, 30 of them crossing 64 x 64 tile borders, gave the same features tiled and striped.
 
-Out of core, tiling does not change the results either: a tiled TIFF of several tiles gives the
-values of a striped copy of the same image, and the in-memory values, for ROIs inside one tile and
-for ROIs that span tiles.
-
-.. warning::
-
-   Out-of-core processing of a 2D striped TIFF larger than 1024 pixels in either direction, which
-   Nyxus reads as several 1024 x 1024 tiles, places the pixels of later tiles at wrong positions
-   and can read ROI pixels more than once, so the results depend on the family. Measured on a
-   300 x 300 square and a 300 x 240 elliptical ROI inside the first 1024 x 1024 region of a
-   striped 1200 x 1200 image:
-
-   * Every family that builds the ROI's pixel matrix or contour (the texture families, the
-     moments, morphology, the radial distribution, the fractal dimension, Zernike and Gabor) stops
-     when a misplaced pixel lies outside the ROI's bounding box: from Python the call raises
-     ``RuntimeError`` ("pixel ... lies outside the bounding box ... that sizes its buffer"); the
-     command line prints that error and leaves those features uncomputed.
-   * When every misplaced pixel stays inside the bounding box, the same families return wrong
-     values without an error.
-   * ROI pixels were read more than once: the intensity features built from sums, such as
-     ``MEAN``, differed from the in-memory values, while ``MIN`` and ``MAX`` kept them.
-
-   Keep large 2D ROIs of such images in memory by raising the RAM limit, store the images as tiled
-   TIFF files, or split them so that each is at most 1024 x 1024 pixels.
+Out of core, tiling does not change the results either: a tiled TIFF of several tiles, and a
+striped TIFF larger than 1024 pixels in either direction, give the values of a copy of the same
+image in the other layout, and the in-memory values, for ROIs inside one tile, for ROIs that span
+tiles, and for ROIs in the partial tiles at the right and bottom edges of the image. The test suite
+checks this on a striped 1120 x 1080 image with a ROI in the first tile, one across all four tiles
+and one inside the partial corner tile: out of core, on the striped image and on a tiled copy, every
+column of the intensity, intensity histogram, morphology, texture, moments, Gabor and Zernike groups
+other than the neighbor features matches the in-memory run, and so do the intensity and morphology
+columns with ``anisotropy_x`` set to 2.
 
 Out-of-core processing of a volume streams it one read at a time. When a single read of the
 intensity or label file returns the whole volume, as with a NIfTI file or an OME-Zarr array

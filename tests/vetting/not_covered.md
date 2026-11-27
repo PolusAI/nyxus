@@ -17,7 +17,7 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 
 ---
 
-## A. Test files no registry row references — 34 files, 124 test functions
+## A. Test files no registry row references — 34 files, 132 test functions
 
 Both totals are the sum of the two tables below, counting each distinct file once and
 skipping any row struck through as closed, so they can be recomputed from the tables.
@@ -46,7 +46,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_2d_moments_mechanics.h` | 1 | the whole-slide weighting on a slide one pixel wide or high whose box ends on its last pixel, so its contour has fewer than 4 distinct corners; a degenerate-input guard that a file run, whose whole-slide box ends one past the last pixel, never reaches |
 | `test_2d_contour_mechanics.h` | 1 | `BorderedContour` refuses to bind a temporary pixel vector; a compile-time property of the type |
 | `test_2d_tiff_loader_mechanics.h` | 1 | uint32 strip loader |
-| `test_2d_ooc_invariant.py` | 9 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
+| `test_2d_ooc_invariant.py` | 17 | out-of-core == in-RAM equality; spans all features, per-feature rows would be meaningless |
 | `test_2d_ooc_mechanics.py` | 1 | oversized-montage failure path |
 | `test_vetting_mechanics.py` | 5 | self-test of `check_coverage.py` |
 | `test_3d_coverage_common.h`, `test_3d_morphology_common.h`, `test_2d_moments_common.h`, `test_2d_morphology_common.h`, `test_2d_radial_common.h`, `test_2d_zernike_common.h` | 0 | shared fixtures; the kind belongs to the files that include them |

@@ -32,10 +32,8 @@ namespace Nyxus
 		// Read the tiff. The image loader is put in the open state in processDataset()
 		size_t ntHor = L.get_num_tiles_hor(),
 			ntVert = L.get_num_tiles_vert(),
-			fw = L.get_tile_width(),
 			th = L.get_tile_height(),
 			tw = L.get_tile_width(),
-			tileSize = L.get_tile_size(),
 			fullwidth = L.get_full_width(),
 			fullheight = L.get_full_height();
 
@@ -60,8 +58,8 @@ namespace Nyxus
 				const std::shared_ptr<std::vector<uint32_t>>& spL = L.get_seg_tile_sptr();
 				bool wholeslide = env.singleROI;
 
-				// Iterate pixels
-				for (size_t i = 0; i < tileSize; i++)
+				// Iterate the tile's pixels inside the image
+				walk_tile_pixels (row, col, tw, th, fullwidth, fullheight, [&](size_t i, size_t x, size_t y)
 				{
 					// mask label if not in the wholeslide mode
 					PixIntens label = 1;
@@ -70,22 +68,15 @@ namespace Nyxus
 
 					// Skip non-mask pixels
 					if (! label)
-						continue;
+						return;
 
 					// Merge all foreground labels into a single ROI if requested
 					if (env.mergeLabels)
 						label = 1;
 
-					int y = row * th + i / tw,
-						x = col * tw + i % tw;
-
-					// Skip tile buffer pixels beyond the image's bounds
-					if (x >= fullwidth || y >= fullheight)
-						continue;
-
 					// Update pixel's ROI metrics
-					feed_pixel_2_metrics (env.uniqueLabels, env.roiData, x, y, dataI[i], label, sidx);
-				}
+					feed_pixel_2_metrics (env.uniqueLabels, env.roiData, (int) x, (int) y, dataI[i], label, sidx);
+				});
 
 #ifdef WITH_PYTHON_H
 				if (PyErr_CheckSignals() != 0)
@@ -146,10 +137,8 @@ namespace Nyxus
 			// Read the tiff. The image loader is put in the open state in processDataset()
 			size_t ntHor = env.theImLoader.get_num_tiles_hor(),	// tiles across a row
 				ntVert = env.theImLoader.get_num_tiles_vert(),	// tiles down a column
-				fw = env.theImLoader.get_tile_width(),
 				th = env.theImLoader.get_tile_height(),
 				tw = env.theImLoader.get_tile_width(),
-				tileSize = env.theImLoader.get_tile_size(),
 				fullwidth = env.theImLoader.get_full_width(),
 				fullheight = env.theImLoader.get_full_height();
 
@@ -174,28 +163,21 @@ namespace Nyxus
 					auto dataI = env.theImLoader.get_int_tile_buffer(),
 						dataL = env.theImLoader.get_seg_tile_buffer();
 
-					// Iterate pixels
-					for (size_t i = 0; i < tileSize; i++)
+					// Iterate the tile's pixels inside the image
+					walk_tile_pixels (row, col, tw, th, fullwidth, fullheight, [&](size_t i, size_t x, size_t y)
 					{
 						// Skip non-mask pixels
 						auto label = dataL[i];
 						if (!label)
-							continue;
-
-						int y = row * th + i / tw,
-							x = col * tw + i % tw;
-
-						// Skip tile buffer pixels beyond the image's bounds
-						if (x >= fullwidth || y >= fullheight)
-							continue;
+							return;
 
 						// Collapse all the labels to one if single-ROI mde is requested
 						if (env.singleROI)
 							label = 1;
 
 						// Update pixel's ROI metrics
-						feed_pixel_2_metrics_3D  (env.uniqueLabels, env.roiData, x, y, z, dataI[i], label, sidx); // Updates 'uniqueLabels' and 'roiData'
-					}
+						feed_pixel_2_metrics_3D  (env.uniqueLabels, env.roiData, (int) x, (int) y, z, dataI[i], label, sidx); // Updates 'uniqueLabels' and 'roiData'
+					});
 
 					#ifdef WITH_PYTHON_H
 					if (PyErr_CheckSignals() != 0)

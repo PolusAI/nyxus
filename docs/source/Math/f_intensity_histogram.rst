@@ -20,9 +20,7 @@ indices, as IBSI defines it, and over the bin-centre intensities, in the image's
    * - **GPU**
      - No; computed on the CPU in every build.
    * - **Out-of-core**
-     - Yes, with the same values as in memory on tiled TIFF files and on striped files of up to
-       1024 × 1024 pixels; see :ref:`intensity-histogram-possible-issues` for larger striped files
-       and :ref:`large-images-tiles`.
+     - Yes, with the same values as in memory.
    * - **IBSI**
      - 23 features have an identifier from the IBSI intensity histogram features, which list 23
        features: the 19 ``_IDX`` statistics other than ``IH_ROBUST_MEAN_IDX`` and the 4 gradient
@@ -744,16 +742,6 @@ In-memory arrays are not in the input's units
    features back. For the worked example minus 10, ``IH_MINIMUM_VAL`` is 0 and ``IH_MEAN_VAL``
    1.84. Read from a file, the same image gives :math:`-9` and :math:`-7.16`. The ``_IDX`` features
    do not change.
-
-Out-of-core ROIs of large striped TIFF files
-   A ROI processed out of core is read from the file again. For a striped (not tiled) TIFF more
-   than 1024 pixels high or wide, the pixels read back do not match the image, and most ``IH_*``
-   features differ from the in-memory values; the minimum, maximum, range, bin size and number of
-   bins come from the first pass over the image and do not change. On a 1200 × 1200 image of four
-   quadrants of 100, 1100, 2100 and 3100, ``IH_MAX_GRADIENT`` was 1123200 in place of 360000 and
-   ``IH_MEAN_VAL`` 1635.0 in place of 1600. The intensity features are affected too; see
-   :ref:`intensity-possible-issues`. Tiled TIFF files of the same size, and striped files of
-   1024 × 1024 pixels, give the in-memory values.
 
 
 Validation

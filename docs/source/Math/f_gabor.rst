@@ -25,9 +25,7 @@ orientation.
        from Python. The GPU values are not checked against the CPU values (see
        :ref:`gabor-possible-issues`).
    * - **Out-of-core**
-     - Yes, with the same values as in memory on tiled TIFF files and on striped files of up to
-       1024 × 1024 pixels. On a larger striped file out-of-core processing of this family raises
-       an error or returns wrong values, depending on the ROI (see :ref:`large-images-tiles`).
+     - Yes, with the same values as in memory.
    * - **IBSI**
      - No identifier. IBSI defines no Gabor feature; its image-feature chapter names Gabor filters
        only as an image transformation.

@@ -26,9 +26,8 @@ intensity-weighted features, they use only the ROI's mask.
      - Partly. Out of core the contour is traced as in memory, every border of the ROI in image
        coordinates, so every contour-based feature, with or without anisotropy, has its in-memory
        value. The neighbour features are not computed: they are 0, and ``POLYGONALITY_AVE`` and
-       ``HEXAGONALITY_*`` are −1. On a striped file larger than 1024 × 1024 pixels out-of-core
-       processing raises an error or returns wrong values, depending on the ROI. See
-       :ref:`morphology-possible-issues`, :doc:`/large_images` and :ref:`large-images-tiles`.
+       ``HEXAGONALITY_*`` are −1. See :ref:`morphology-possible-issues` and
+       :doc:`/large_images`.
    * - **IBSI**
      - None. IBSI defines morphological features in 3D only (DHQ4), so no 2D code on this page
        has an identifier.
@@ -1313,8 +1312,7 @@ Out of core
    0, and an out-of-core ROI is also not seen as a neighbour by the ROIs computed in memory, so
    their neighbour features leave it out. ``POLYGONALITY_AVE`` and ``HEXAGONALITY_*``, which need
    the neighbour count, are −1 out of core. On the worked example every other code gives its
-   in-memory value; on striped files larger than 1024 × 1024 pixels see
-   :ref:`large-images-tiles`, and for the families that differ see :doc:`/large_images`.
+   in-memory value; for the families that differ see :doc:`/large_images`.
 
 Codes that need companions
    Several codes read values that another family computes, and are wrong when no code of that
