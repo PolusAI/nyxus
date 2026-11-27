@@ -121,49 +121,33 @@ void GLSZMFeature::calculate (LR& r, const Fsettings& s)
 			int zoneArea = 1;
 			D.yx(y, x) = VISITED;
 
+			// A zone is 8-connected, the connectivity IBSI defines for GLSZM and the one PyRadiomics and
+			// MIRP implement: the walk steps to all eight neighbours, so a zone that turns back up or
+			// to the left stays one zone.
+			static const int dxs[] = { 1, 1, 0, -1, -1, -1, 0, 1 },
+				dys[] = { 0, 1, 1, 1, 0, -1, -1, -1 };
 			for (;;)
 			{
-				if (D.safe(y, x + 1) && D.yx(y, x + 1) != VISITED && D.yx(y, x + 1) == pi)
+				bool advanced = false;
+				for (int k = 0; k < 8; k++)
 				{
-					D.yx(y, x + 1) = VISITED;
-					zoneArea++;
+					int nx = x + dxs[k],
+						ny = y + dys[k];
+					if (D.safe(ny, nx) && D.yx(ny, nx) != VISITED && D.yx(ny, nx) == pi)
+					{
+						D.yx(ny, nx) = VISITED;
+						zoneArea++;
 
-					// Remember this pixel
-					history.push_back({ x,y });
-					// Advance
-					x = x + 1;
-					// Proceed
-					continue;
+						// Remember this pixel and advance to the neighbour
+						history.push_back({ x,y });
+						x = nx;
+						y = ny;
+						advanced = true;
+						break;
+					}
 				}
-				if (D.safe(y + 1, x + 1) && D.yx(y + 1, x + 1) != VISITED && D.yx(y + 1, x + 1) == pi)
-				{
-					D.yx(y + 1, x + 1) = VISITED;
-					zoneArea++;
-
-					history.push_back({ x,y });
-					x = x + 1;
-					y = y + 1;
+				if (advanced)
 					continue;
-				}
-				if (D.safe(y + 1, x) && D.yx(y + 1, x) != VISITED && D.yx(y + 1, x) == pi)
-				{
-					D.yx(y + 1, x) = VISITED;
-					zoneArea++;
-
-					history.push_back({ x,y });
-					y = y + 1;
-					continue;
-				}
-				if (D.safe(y + 1, x - 1) && D.yx(y + 1, x - 1) != VISITED && D.yx(y + 1, x - 1) == pi)
-				{
-					D.yx(y + 1, x - 1) = VISITED;
-					zoneArea++;
-
-					history.push_back({ x,y });
-					x = x - 1;
-					y = y + 1;
-					continue;
-				}
 
 				// Return from the branch
 				if (history.size() > 0)

@@ -39,14 +39,21 @@ How the matrix is built
 -----------------------
 
 Nyxus scans the ROI's bounding box row by row, from the top left. Each pixel that is not yet in a
-zone and has a non-zero grey level starts a new zone. The zone grows through pixels of the same grey
-level, one step at a time, to the east, south-east, south or south-west of a pixel already in the
-zone. :math:`\textbf{P}(i,j)` counts the zones of grey level :math:`i` and size :math:`j` pixels.
+zone and has a non-zero grey level starts a new zone. The zone grows through every pixel of the same
+grey level that touches a pixel already in it, by an edge or a corner.
+:math:`\textbf{P}(i,j)` counts the zones of grey level :math:`i` and size :math:`j` pixels.
 
-- **Connectivity:** the steps cover half of the 8-neighbourhood. A zone whose pixels can all be
-  reached this way from its first pixel is the 8-connected zone that IBSI defines. A zone that needs
-  a step to the west, north-west, north or north-east is split into several zones (see
-  :ref:`glszm-possible-issues`).
+- **Connectivity:** 8-connected, as IBSI, PyRadiomics and MIRP define it. A zone is the full
+  8-connected component, whatever the scan order, including one that turns back up or to the left.
+  In the image below the four pixels of level 1 are one zone, though the zone starts at the top
+  right and reaches the bottom left only by stepping west:
+
+  .. math::
+
+     \begin{bmatrix} 2 & 2 & 1\\ 1 & 1 & 1 \end{bmatrix}
+
+  On the 5 × 5 example of the PyRadiomics GLSZM documentation Nyxus finds the same 11 zones as
+  PyRadiomics, and a zone percentage of 0.44.
 - **Directions:** none. One matrix is built per ROI, and each feature has one value.
 - **Grey levels:** intensities are first binned into :math:`N` grey levels, as set by
   ``--coarseGrayDepth`` (64 by default). A pixel of intensity :math:`x` gets level
@@ -75,8 +82,7 @@ Take a 5 × 5 ROI that already has five grey levels:
 
 In IBSI mode (no binning) the matrix is below; rows are grey levels 1 to 5 and columns are zone
 sizes 1 to 6. The six pixels of level 1 in the lower left form one zone; the 3 at the start of row
-2 joins the 3 below it to the south-east, a zone of size 2. Every zone of this image is the same
-under Nyxus' scan and under full 8-connectivity.
+2 joins the 3 below it to the south-east, a zone of size 2.
 
 .. math::
 
@@ -332,8 +338,8 @@ The mean over all zones of one over the squared grey level. High when dark zones
    \mathrm{LGLZE} = \frac{1}{N_z}\sum_{i=1}^{N_g} \frac{s_i}{g_i^{\,2}}
 
 **Possible issues.** With the default binning the background zones have level 1 and weight 1, far
-above any binned ROI level. On the ROI in :ref:`glszm-possible-issues` the value is 0.3342 with
-them and 0.001356 without them.
+above any binned ROI level. On the ROI in :ref:`glszm-possible-issues` the value is 0.3645 with
+them and 0.001379 without them.
 
 
 .. _feature-glszm-sae:
@@ -350,9 +356,6 @@ fine texture. IBSI calls it *small zone emphasis*.
 .. math::
 
    \mathrm{SAE} = \frac{1}{N_z}\sum_{j=1}^{N_s} \frac{s_j}{j^2}
-
-**Possible issues.** A zone split by the scan adds smaller zones and changes the value: 0.4537
-instead of 0.1563 on the 2 × 3 image in :ref:`glszm-possible-issues`.
 
 
 .. _feature-glszm-sahgle:
@@ -478,23 +481,6 @@ The variance of the zone size over all zones. IBSI calls it *zone size variance*
 Possible issues
 ---------------
 
-Zones are not fully 8-connected
-   A zone grows only by steps to the east, south-east, south and south-west. A same-level pixel that
-   can be reached only by a step to the west, north-west, north or north-east starts a zone of its
-   own. In the image below, the 1 at the lower left touches the 1 to its right, but the zone starts
-   at the top-right 1 and never steps west, so Nyxus finds zones of size 3 and 1 where IBSI has one
-   zone of size 4.
-
-   .. math::
-
-      \begin{bmatrix} 2 & 2 & 1\\ 1 & 1 & 1 \end{bmatrix}
-
-   Every feature can change. On this image zone percentage is 0.5 instead of 0.3333, and small area
-   emphasis 0.4537 instead of 0.1563. On the 5 × 5 example of the PyRadiomics GLSZM documentation
-   Nyxus finds 13 zones instead of 11, zone percentage is 0.52 instead of 0.44 and small area
-   emphasis 0.6596 instead of 0.5912. Of the 512 ways to fill a 3 × 3 image with two grey levels,
-   152 give a different set of zones. IBSI mode does not change the scan.
-
 Background as grey level 1 with the default binning
    With a positive ``--coarseGrayDepth``, intensity 0 bins to level 1. The bounding-box pixels
    outside the mask then form zones of level 1, and :math:`N_p` is the size of the bounding box. ROI
@@ -510,10 +496,10 @@ Background as grey level 1 with the default binning
       6 & 6 & 4 & 9 & 4 & 4\\
       \cdot & 6 & 4 & 4 & 4 & \cdot \end{bmatrix}
 
-   With the default settings the four corners add four zones of size 1. Nyxus counts 12 zones over
-   30 pixels, so zone percentage is 0.4; without the corners the same binning gives 8 zones over 26
-   pixels, 0.3077. Small area emphasis is 0.4144 instead of 0.1215, and low grey level zone
-   emphasis 0.3342 instead of 0.001356. IBSI mode excludes the corners and gives 8 zones over 26
+   With the default settings the four corners add four zones of size 1. Nyxus counts 11 zones over
+   30 pixels, so zone percentage is 0.3667; without the corners the same binning gives 7 zones over
+   26 pixels, 0.2692. Small area emphasis is 0.4261 instead of 0.09821, and low grey level zone
+   emphasis 0.3645 instead of 0.001379. IBSI mode excludes the corners and gives 7 zones over 26
    pixels.
 
 Pixels of intensity 0 inside the mask
@@ -539,9 +525,14 @@ phantom in IBSI mode. Fifteen features agree to an absolute 10\ :sup:`-9`; zone 
 relative 4 × 10\ :sup:`-3`, which allows for the approximate logarithm. The four-slice means are
 also compared with IBSI's published consensus values at a relative 10\ :sup:`-2`, the precision
 those values are published to; that comparison is a consistency check, not one of the validations
-in the index. The phantom's zones are the same under Nyxus' scan and under
-8-connectivity, so these comparisons do not cover the split zones described above. The default
-mode is covered by regression tests only.
+in the index.
+
+The phantom has no zone that turns back up or to the left, so the zone connectivity is checked
+against PyRadiomics on four more images in IBSI mode: the 2 × 3 image above, the 5 × 5 example of
+the PyRadiomics documentation, a zone that turns north-east and climbs north, and an image whose
+same-level pixels touch only across a gap or through a pixel outside the mask, which must stay
+separate zones. Fifteen features agree to an absolute 10\ :sup:`-9` and zone entropy to a relative
+4 × 10\ :sup:`-3`. The default mode is covered by regression tests only.
 
 
 References
