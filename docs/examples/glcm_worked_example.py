@@ -30,13 +30,16 @@ for code, facts in extras.items():
 
 # Values the page quotes for the default settings (64-level binning, ordered pairs)
 default = Nyxus(["*ALL_GLCM*"]).featurize(img, mask)
-quoted = {"CONTRAST": 473.45, "VARIANCE": 332.44, "JVAR": 345.41, "CLUSHADE": -585.66,
-          "SUMVARIANCE": 882.25, "CLUTEND": 882.25}
+quoted = {"CONTRAST": 473.45, "VARIANCE": 332.44, "JVAR": 332.44, "CLUSHADE": 9490.19,
+          "SUMVARIANCE": 867.43, "CLUTEND": 867.43}
 for name, expected in quoted.items():
     got = default[f"GLCM_{name}_0"][0]
     assert math.isclose(got, expected, rel_tol=5e-4), f"default GLCM_{name}_0 = {got}, page says {expected}"
+mirrored = Nyxus(["*ALL_GLCM*"]).featurize(np.ascontiguousarray(img[:, ::-1]), mask)
+assert math.isclose(mirrored["GLCM_CLUSHADE_0"][0], 9490.19, rel_tol=5e-4), "mirrored cluster shade"
+assert math.isclose(default["GLCM_HOM2_AVE"][0], default["GLCM_IDM_AVE"][0], rel_tol=1e-12), "HOM2_AVE vs IDM_AVE"
 
-# The default-settings values the IBSI definitions give on the same 64-level matrix of ordered pairs
+# The default-settings values are the IBSI definitions on the same 64-level matrix of ordered pairs
 binned = np.minimum(np.floor(64 * img.astype(int) / 5 + 1), 64).astype(int)
 P = np.zeros((64, 64))
 for r in range(5):

@@ -62,9 +62,9 @@ are. The 2D families affected are:
      - No conversion.
 
 One binning step remains in IBSI mode: before building the 2D GLCM, Nyxus bins the ROI's minimum
-and maximum to ``--coarseGrayDepth`` levels and when they fall into one level every GLCM feature returns 0, whatever
-``--noval`` is (a known defect, `#511 <https://github.com/PolusAI/nyxus/issues/511>`__), so a ROI whose minimum is at least 63/64 of its maximum gets 0
-in every GLCM column (see :ref:`glcm-possible-issues`).
+and maximum to ``--coarseGrayDepth`` levels and when they fall into one level every GLCM feature
+returns the ``--noval`` substitute, so a ROI whose minimum is at least 63/64 of its maximum gets the
+substitute in every GLCM column (see :ref:`glcm-possible-issues`).
 
 The 3D twins of these families skip binning in the same way; by default they bin into 64 levels
 like the 2D families (see :ref:`conventions-grey-levels`).

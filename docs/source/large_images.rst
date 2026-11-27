@@ -177,7 +177,7 @@ Which features differ out of core
 
 In 3D, every family gives the same values out of core as in memory, the 3D axis features up to
 the last digits (see :doc:`Math/f_morphology_3d`). A test volume with two ROIs, computed with
-``ram_limit=0``, matched the in-memory run in the 213 ``*3D_ALL*`` features, and so did a whole
+``ram_limit=0``, matched the in-memory run in every ``*3D_ALL*`` feature, and so did a whole
 volume. This holds for inputs Nyxus can stream; see the end of
 :ref:`large-images-tiles` for those it refuses.
 

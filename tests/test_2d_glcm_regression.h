@@ -30,9 +30,9 @@ static const ref_vals_map<double> glcm_2d_regression_ref_vals
 {
     {"GLCM_ACOR", 1437.33},                 // absolute-level-dependent: matlab binning re-maps levels, so ibsi=False diverges from a symmetric oracle by ~43%. Vetted on the IBSI path instead -- see below.
     {"GLCM_ASM", 0.381801},
-    {"GLCM_CLUPROM", 6.1972e+06},
-    {"GLCM_CLUSHADE", 21905.3},
-    {"GLCM_CLUTEND", 1.5639042057291665e+03},
+    {"GLCM_CLUPROM", 6.0407190524108699e+06},
+    {"GLCM_CLUSHADE", 3.1988865940239932e+04},
+    {"GLCM_CLUTEND", 1.5133468428950318e+03},   // == GLCM_SUMVARIANCE: the sum average is mu_x + mu_y
     {"GLCM_CONTRAST", 1.4448130208333334e+03},   // sym-invariant
     {"GLCM_CORRELATION", 0.000690135},
     {"GLCM_DIFAVE", 23.6493},                    // sym-invariant
@@ -47,16 +47,16 @@ static const ref_vals_map<double> glcm_2d_regression_ref_vals
     {"GLCM_IDM", 0.572168},                      // sym-invariant
     {"GLCM_IDMN", 9.0029152005531590e-01},  // Ng-dependent, same story as ACOR
     {"GLCM_IDN", 8.4432100308124380e-01},   // Ng-dependent, same story as ACOR
-    {"GLCM_INFOMEAS1", -0.184406},
+    {"GLCM_INFOMEAS1", -1.7279222821916787e-01},
     {"GLCM_INFOMEAS2", 0.495817},
     {"GLCM_IV", 0.000206466},                    // sym-invariant
     {"GLCM_JAVE", 35.5215},
     {"GLCM_JE", 1.87602},
     {"GLCM_JMAX", 0.527914},
-    {"GLCM_JVAR", 828.383},
+    {"GLCM_JVAR", 6.7487128442258143e+02},      // == GLCM_VARIANCE: both are IBSI joint variance
     {"GLCM_SUMAVERAGE", 72.0369},           // absolute-level-dependent, same story as ACOR
     {"GLCM_SUMENTROPY", 1.61957},                // sym-invariant
-    {"GLCM_SUMVARIANCE", 1.5639042057291665e+03},
+    {"GLCM_SUMVARIANCE", 1.5133468428950318e+03},
     {"GLCM_VARIANCE", 674.871}
 };
 // ACOR/IDN/IDMN/SUMAVERAGE are genuinely third-party-vetted on the IBSI path (symmetric matrix,
@@ -397,6 +397,11 @@ void test_2d_glcm_idn_ave_regression()
 void test_2d_glcm_idm_ave_regression()
 {
     assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_IDM_AVE, "GLCM_IDM_AVE");
+}
+
+void test_2d_glcm_hom2_ave_regression()
+{
+    assert_glcm_feature_regression(Nyxus::Feature2D::GLCM_HOM2_AVE, "GLCM_HOM2_AVE");
 }
 
 void test_2d_glcm_idmn_ave_regression()
