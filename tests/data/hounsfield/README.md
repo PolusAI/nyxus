@@ -65,7 +65,9 @@ loader path (`RawNiftiLoader`/`NiftiLoader`). `ct3d_int16.nii` is also the overs
 | `ct3d_int16.nii` | 8×8×8 signed int16, `scl_slope=2`, `scl_inter=-1024` | stored `idx-200` (−200..311, crosses 0); true HU = 2·stored−1024 |
 | `ct3d_frac.nii` | 8×8×8 signed int16, `scl_slope=0.5`, `scl_inter=-1024` | stored `idx` (0..511); physical = 0.5·idx−1024 over −1024..−768.5, half the voxels fractional |
 | `ct3d_nan.nii` | 8×8×8 float32, no rescale | `v(idx) = idx`, with NaN at 3, +Inf at 5, −Inf at 7 |
-| `mask3d.nii` | 8×8×8 uint8, all ones | single ROI over the whole volume, shared by all three |
+| `ct3d_unit.nii` | 8×8×8 float32, no rescale (`scl_slope=0`) | `v(idx) = idx/511` over 0..1, every voxel but the two ends fractional |
+| `ct3d_float_slope.nii` | 8×8×8 float32, `scl_slope=2`, `scl_inter=-1024` | stored `idx + 0.25`; physical = 2·idx − 1023.5 over −1023.5..−1.5 |
+| `mask3d.nii` | 8×8×8 uint8, all ones | single ROI over the whole volume, shared by all five |
 
 The non-unit `scl_slope` makes the HU rescale observable: in HU mode the loader maps each voxel to
 `u = round((2·stored − 1024) − floor(HU min)) = 2·stored + 400` (offset domain 0..1022, mean 511),
@@ -83,11 +85,25 @@ maps that `ct3d_int16.nii` cannot show:
   level is `round(0.5·idx)` (MAX −768, MEAN −896): `inten_scale` is 1 on the offset map, so a
   fraction dropped there is unrecoverable. Without the flag the stored map keeps `idx` as the grey
   level and reports the fractions exactly (MAX −768.5, MEAN −896.25). Both are pinned.
-- **Non-finite voxels.** `ct3d_nan.nii` is float32, so it takes the offset map either way. They are
-  left out of the scanned extrema and stored as grey level 0, so the finite range stays `[0, 511]`
-  and the mean is `(130816 − 3 − 5 − 7)/512 = 255.470703125`.
+- **Non-finite voxels.** `ct3d_nan.nii` is float32 holding whole values only, so it takes the offset
+  map either way. They are left out of the scanned extrema and stored as grey level 0, so the finite
+  range stays `[0, 511]` and the mean is `(130816 − 3 − 5 − 7)/512 = 255.470703125`.
 
-Both were produced by patching `ct3d_int16.nii`'s own 352-byte header block — its `datatype`
+`ct3d_unit.nii` and `ct3d_float_slope.nii` are consumed by `tests/test_3d_nifti_mechanics.h`
+(`TEST_3D_NIFTI_FLOAT_*`). A float NIfTI whose header-rescaled values carry a fraction takes the
+quantized map a float TIFF takes, and these pin it:
+
+- **A volume normalised to 0..1.** `ct3d_unit.nii` spreads over grey levels 0..10000, its 512 values
+  on 512 distinct levels, each reading back to within 1e-4. Narrowed to whole units it would read
+  back as 0 everywhere but its last voxel.
+- **The rescale comes first.** `ct3d_float_slope.nii` is quantized over the physical window
+  `[−1023.5, −1.5]` the scan measures on rescaled values, so each voxel reads back to within
+  1022/10000. Narrowed to whole units, every voxel lands half a unit off.
+- **Not quantized.** Under `--preserve-hu`, `ct3d_unit.nii` takes the offset map and rounds (0.499 →
+  0, 0.501 → 1). `ct3d_nan.nii`, float32 of whole values, keeps one grey level per unit.
+  `ct3d_frac.nii` keeps the stored map.
+
+All four were produced by patching `ct3d_int16.nii`'s own 352-byte header block — its `datatype`
 (offset 70), `bitpix` (72), `scl_slope` (112), `scl_inter` (116), `cal_max` (124) and `cal_min`
 (128) — and appending new little-endian payload, so every field the loader does not read stays
 byte-identical to the fixture already in the tree:
@@ -109,7 +125,15 @@ write("ct3d_frac.nii", 4, 16, 0.5, -1024.0,
 v = [float(i) for i in range(512)]
 v[3], v[5], v[7] = math.nan, math.inf, -math.inf
 write("ct3d_nan.nii", 16, 32, 1.0, 0.0, struct.pack("<512f", *v), 0.0, 511.0)
+
+write("ct3d_unit.nii", 16, 32, 0.0, 0.0,
+      struct.pack("<512f", *[i / 511.0 for i in range(512)]), 0.0, 1.0)
+write("ct3d_float_slope.nii", 16, 32, 2.0, -1024.0,
+      struct.pack("<512f", *[i + 0.25 for i in range(512)]), -1023.5, -1.5)
 ```
+
+`tests/python/test_3d_nifti_float_mechanics.py` writes its own random float32 and float64 volumes
+in the same way at test time.
 
 ## Real-scanner fixture
 

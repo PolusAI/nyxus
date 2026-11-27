@@ -93,8 +93,11 @@ bool ImageLoader::open (SlideProps & p, const FpImageOptions & fpopts)
 				if (fmt == Nyxus::ContainerKind::Nifti)
 				{
 					// Same as DICOM for an integer volume. A real-valued one never takes the stored
-					// map, so it rescales and shifts by the offset the scan recorded.
-					intFL = new NiftiLoader<uint32_t> (int_fpath, medical_shift, medical_rescale, round_offset);
+					// map: one holding fractional values takes the quantization a real-valued TIFF
+					// or Zarr takes, and one of whole values the offset map, as does either under
+					// preserve_hu -- every map after the header rescale. On the quantized map
+					// medical_shift is fpmin.
+					intFL = new NiftiLoader<uint32_t> (int_fpath, medical_shift, medical_rescale, round_offset, quantize, fpmax, dr);
 				}
 				else 
 				{

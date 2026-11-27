@@ -21,10 +21,11 @@ intensity = niftiread(fullfile(phantoms, 'ut_inten.nii'));
 mask = niftiread(fullfile(phantoms, 'ut_mask57.nii'));
 header_text = fileread(fullfile(repo_root, 'tests', 'test_3d_firstorder_matlab.h'));
 
-% Match what Nyxus reports: the loader offsets a volume holding negative values by its floored
-% minimum and truncates to integer grey levels, and the intensity family adds that offset back,
-% so the reported domain is the volume's own with the truncation kept. Fixture setup, not a
-% feature formula.
+% Match what Nyxus reports for a volume of whole values: the loader offsets a volume holding
+% negative values by its floored minimum and keeps one grey level per unit, and the intensity
+% family adds that offset back, so the reported domain is the volume's own. ut_inten.nii holds
+% whole values only, so the fix() below changes nothing on it; it is kept so the setup states the
+% offset map exactly. Fixture setup, not a feature formula.
 intensity = double(intensity);
 offset = floor(min(intensity, [], 'all'));
 if offset < 0

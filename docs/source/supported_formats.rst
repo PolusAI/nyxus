@@ -151,8 +151,11 @@ they are reported in the image's own units:
   ``0 .. --fpimgdr`` grey levels (10000 by default). ``--fpimgmin`` and ``--fpimgmax`` replace the
   image's own range with a fixed one; giving any of the three options switches every
   floating-point image to that fixed range, which is 0 to 1 unless set.
-* A floating-point NIfTI volume is not rescaled: its values are truncated to whole units (after
-  the shift, when it has negative values), so fractional values are lost.
+* A floating-point NIfTI volume with fractional values (after its ``scl_slope`` and ``scl_inter``
+  rescale) is rescaled the same way, so a volume normalised to 0 .. 1 keeps its fraction. One that
+  holds only whole values, such as a CT saved as float, is not rescaled: it is shifted like an
+  integer image, so one grey level is one intensity unit and texture features are binned in its own
+  units.
 * A DICOM image, or an integer NIfTI volume, keeps its stored integers as grey levels and applies
   its rescale slope and intercept when converting back, so a fractional rescaled value is reported
   exactly.

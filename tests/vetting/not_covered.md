@@ -17,19 +17,19 @@ Regenerate by re-deriving both sets; keep this file in step with each reorg wave
 
 ---
 
-## A. Test files no registry row references — 34 files, 124 test functions
+## A. Test files no registry row references — 35 files, 131 test functions
 
 Both totals are the sum of the two tables below, counting each distinct file once and
 skipping any row struck through as closed, so they can be recomputed from the tables.
 
-### A.1 Correctly absent — plumbing, fixtures and framework self-tests (27 files)
+### A.1 Correctly absent — plumbing, fixtures and framework self-tests (28 files)
 
 These assert no feature value, so they have no `(feature × config × oracle)` row by construction
 (SPEC §1). Recording them here so their absence is a documented decision, not an oversight.
 
 | file | functions | why it has no row |
 |---|---:|---|
-| `test_3d_nifti_mechanics.h` | 2 | NIfTI loader geometry / data access |
+| `test_3d_nifti_mechanics.h` | 8 | NIfTI loader geometry / data access, and the load-time map of a float volume: quantized when its values carry a fraction, one grey level per unit when they are whole, the offset map under `--preserve-hu` |
 | `test_arrow_mechanics.h` | 4 | Arrow + Parquet writer plumbing, including an output path that cannot be opened |
 | `test_arrow_file_name_mechanics.h` | 1 | output-file naming rules |
 | `test_2d_glcm_mechanics.h` | 4 | guards the `GLCM_OFFSET` default and own grey depth (settings, not values) and the substitute for a ROI whose matrix cannot be held |
@@ -42,6 +42,7 @@ These assert no feature value, so they have no `(feature × config × oracle)` r
 | `test_2d_nonfinite_pixels_mechanics.py` | 6 | a real-valued slide holding NaN or an infinity, segmented and whole-slide; spans the scan and every load-time map, so per-feature rows would be meaningless |
 | `test_2d_intensity_constant_roi_mechanics.py` | 4 | an ROI of one intensity end to end, on a mapped and on an identity-map slide, through the in-RAM and the out-of-core paths; pins the reported values, not an oracle |
 | `test_3d_nifti_offset_map_mechanics.py` | 4 | the NIfTI load-time maps on a fractional `scl_slope` — rounded on the offset map under `--preserve-hu`, exact on the stored map without it — and a non-finite voxel taking grey level 0 either way; loader plumbing, no oracle |
+| `test_3d_nifti_float_mechanics.py` | 1 | random float32 and float64 NIfTI volumes over [0, 1) and [0, 1000) read back to within one quantization step of numpy; loader plumbing, no oracle |
 | `test_roi_blacklist_mechanics.h` | 1 | ROI blacklisting |
 | `test_2d_moments_mechanics.h` | 1 | the whole-slide weighting on a slide one pixel wide or high whose box ends on its last pixel, so its contour has fewer than 4 distinct corners; a degenerate-input guard that a file run, whose whole-slide box ends one past the last pixel, never reaches |
 | `test_2d_contour_mechanics.h` | 1 | `BorderedContour` refuses to bind a temporary pixel vector; a compile-time property of the type |
@@ -516,26 +517,20 @@ A drift guard pins what the code produces. When that value is outside the range 
 definition allows, the pin is still the right thing to assert — it detects change — but the row is
 not merely "unvetted", it is known-wrong, and the registry says so in `flag`.
 
-| feature | pinned | bound | why |
-|---|---|---|---|
-| 3D `3COVERED_IMAGE_INTENSITY_RANGE` | 1.0002043207290587 | ≤ 1 | the ratio compares two different intensity domains |
+No feature is in this section today.
 
-`3d_intensity.cpp` computes it as `double(r.aux_max - r.aux_min) / (p.max_preroi_inten -
-p.min_preroi_inten)`, then multiplies the numerator by the slide's `inten_scale` so both ends are
-in the slide's own domain. That closes the half of the mismatch that came from a quantized
-floating-point slide, but not the **truncation**: the numerator is still a difference of integer
-grey levels. `ut_inten.nii` stores `[-1024, 2000]`, so the ROI's grey levels span `[1024, 3024]`
-and the numerator is exactly `2000`, while the denominator comes from `SlideProps` filled by
-`RawNiftiLoader::get_dpequiv_pixel` with the unrounded values, giving `2000 - 0.40855798 =
-1999.5914`.
+3D `3COVERED_IMAGE_INTENSITY_RANGE` was, at 1.0002043207290587 against a bound of 1. It is pinned at
+exactly 1 now. `3d_intensity.cpp` computes it as `double(r.aux_max - r.aux_min) /
+(p.max_preroi_inten - p.min_preroi_inten)`, with the numerator multiplied by the slide's
+`inten_scale` so both ends are in the slide's own domain. Both ends are now also measured at the
+same resolution. A floating-point NIfTI volume with fractional values is quantized, so the ROI's
+grey-level range maps back onto the scanned range. A floating-point NIfTI of whole values keeps one
+grey level per unit, with nothing dropped. `ut_inten.nii` holds whole values over `[-1024, 2000]`,
+and the ROI spans all of it. The bound is an invariant rather than a snapshot, and it belongs in an
+`_invariant` file; until one exists, `test_3d_firstorder_regression.h` pins the value.
 
-An ROI cannot span more than the slide containing it, so the bound is definitional and the excess
-is the truncation, not a rounding artifact. Asserting the bound today would still fail; a bound is
-an invariant rather than a snapshot and belongs in an `_invariant` file once both ends are measured
-the same way. Until then `test_3d_firstorder_regression.h` pins the current value and states why.
-
-This supersedes the earlier registry note that the segmented workflow never sets `roi.slide_idx`.
-It is set on this path; the value is not the fallback `1`.
+The segmented workflow sets `roi.slide_idx` on this path, so the denominator is the slide's own
+range, not the fallback `1`.
 
 ---
 

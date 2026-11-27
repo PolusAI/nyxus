@@ -7,10 +7,9 @@
 // Nyxus snapshots only: these values guard current behavior and establish no oracle vetting.
 static const ref_vals_map<double> firstorder_3d_regression_ref_vals
 {
-    // Both ends are now in the volume's own domain, but the ROI range is a difference of integer
-    // grey levels while the volume range keeps its fraction, so this ratio still exceeds its
-    // implied upper bound of one by that truncation.
-    { "3COVERED_IMAGE_INTENSITY_RANGE", 1.0002043207290587 },
+    // The ROI spans the same range the scan measures, [-1024, 2000], and ut_inten.nii holds whole
+    // values only, so numerator and denominator are the same difference and the ratio is one.
+    { "3COVERED_IMAGE_INTENSITY_RANGE", 1.0 },
     // MATLAB mad(x,1) takes the median absolute deviation; Nyxus takes the mean absolute
     // deviation about its median. Keep regression-only until the intended definition is resolved.
     { "3MEDIAN_ABSOLUTE_DEVIATION", 507.12380480410445 },

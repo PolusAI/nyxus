@@ -4706,6 +4706,26 @@ TEST(TEST_NYXUS, TEST_3D_NIFTI_FACADE_STREAM_EQUIVALENCE_MECHANICS) {
 	ASSERT_NO_THROW (test_3d_nifti_facade_stream_equivalence_mechanics());
 }
 
+TEST(TEST_NYXUS, TEST_3D_NIFTI_FLOAT_REPORTS_REAL_VALUED_VOXELS_MECHANICS) {
+	ASSERT_NO_THROW (test_3d_nifti_float_reports_real_valued_voxels_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NIFTI_FLOAT_UNIT_RANGE_QUANTIZED_MECHANICS) {
+	ASSERT_NO_THROW (test_3d_nifti_float_unit_range_quantized_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NIFTI_FLOAT_SLOPE_QUANTIZED_MECHANICS) {
+	ASSERT_NO_THROW (test_3d_nifti_float_slope_quantized_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NIFTI_FLOAT_FPIMAGE_WINDOW_MECHANICS) {
+	ASSERT_NO_THROW (test_3d_nifti_float_fpimage_window_mechanics());
+}
+
+TEST(TEST_NYXUS, TEST_3D_NIFTI_FLOAT_NOT_QUANTIZED_MECHANICS) {
+	ASSERT_NO_THROW (test_3d_nifti_float_not_quantized_mechanics());
+}
+
 //***** Nested-ROI table *****
 
 TEST(TEST_NYXUS, TEST_2D_NESTED_ROI_TABLE_CARRIES_LEADING_COLUMNS_MECHANICS) {
