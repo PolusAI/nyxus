@@ -342,8 +342,8 @@ void GLCMFeature::Extract_Texture_Features2 (const Fsettings& s, int angle, cons
 	fvals_sum_avg.push_back (f_savg());
 	fvals_sum_entropy.push_back (f_sentropy());
 	fvals_entropy.push_back (f_entropy(P_matrix));
-	fvals_diff_var.push_back (f_dvar(P_matrix));
-	fvals_diff_entropy.push_back (f_dentropy(P_matrix));
+	fvals_diff_var.push_back (f_dvar());
+	fvals_diff_entropy.push_back (f_dentropy());
 	fvals_diff_avg.push_back (f_difference_avg());
 	fvals_meas_corr1.push_back (f_info_meas_corr1(P_matrix, s[(int)NyxSetting::SOFTNAN].rval));
 	fvals_meas_corr2.push_back (f_info_meas_corr2(P_matrix));
@@ -519,30 +519,27 @@ void GLCMFeature::calculateCoocMatAtAngle(
 
 void GLCMFeature::calculatePxpmy()
 {
-	int Ng = I.size();
+	// p_{x+y}(k) and p_{x-y}(k) are distributions over grey-level values: bucket k collects the pairs
+	// whose levels I[x], I[y] sum, respectively differ, to k. Matrix row x stands for level I[x], and
+	// under radiomics binning 'I' lists only the levels present in the ROI, so a row index is not a
+	// level whenever a bin is empty. Both distributions span every k up to Ng, the highest level of
+	// 'I', so Pxmy.size() == Ng, as in PyRadiomics. Ng is the highest level present under radiomics
+	// binning and the bin count under MATLAB and IBSI binning, where 'I' is 1 .. bin count.
+	int Ng = I.empty() ? 0 : (int)I.back();	// 'I' is sorted ascending
 
-	Pxpy.resize (2 * Ng);
-	std::fill(Pxpy.begin(), Pxpy.end(), 0);
+	Pxpy.assign (2 * Ng + 1, 0);	// k = 0 .. 2*Ng
+	Pxmy.assign (Ng, 0);			// k = 0 .. Ng-1
 
-	Pxmy.resize (Ng);
-	std::fill(Pxmy.begin(), Pxmy.end(), 0);
-
-	kValuesSum.resize (2* Ng);
-	std::fill(kValuesSum.begin(), kValuesSum.end(), 0);
-
-	kValuesDiff.resize (Ng, 0);
-	std::fill (kValuesDiff.begin(), kValuesDiff.end(), 0);
-
-	for (int x = 0; x < Ng; x++)
-		for (int y = 0; y < Ng; y++)
+	int n = (int)I.size();
+	for (int x = 0; x < n; x++)
+		for (int y = 0; y < n; y++)
 		{
 			// normalize with '/sum_p' per IBSI
-			Pxpy [x+y] += P_matrix.yx (x,y) / sum_p;
-			Pxmy [std::abs(x-y)] += P_matrix.yx (x,y) / sum_p;
-
-			double xval = I[x], yval = I[y];
-			kValuesSum [x+y] = xval + yval;
-			kValuesDiff [std::abs(x-y)] = std::abs(xval - yval);
+			double p = P_matrix.yx (x,y) / sum_p;
+			int xval = I[x],
+				yval = I[y];
+			Pxpy [xval + yval] += p;
+			Pxmy [std::abs(xval - yval)] += p;
 		}
 }
 
@@ -711,12 +708,11 @@ double GLCMFeature::f_var(const SimpleMatrix<double>& P)
 /* Inverse Difference Moment */
 double GLCMFeature::f_idm()
 {
-	int n_levels = I.size();
-
 	double idm = 0;
 
-	for (int k = 0; k < n_levels; ++k) {
-		idm += Pxmy[k] / (1 + (k * k));
+	// k is the grey-level difference (see calculatePxpmy)
+	for (size_t k = 0; k < Pxmy.size(); ++k) {
+		idm += Pxmy[k] / (1.0 + double(k) * double(k));
 	}
 
 	return idm;
@@ -730,8 +726,8 @@ double GLCMFeature::f_savg()
 	double f = 0;
 	auto n = Pxpy.size();
 
-	for (int i = 0; i < n; i++)
-		f += kValuesSum[i] * Pxpy [i];
+	for (int k = 0; k < n; k++)
+		f += double(k) * Pxpy [k];
 
 	return f;
 }
@@ -772,43 +768,28 @@ double GLCMFeature::f_entropy(const SimpleMatrix<double>& P)
 }
 
 /* Difference Variance */
-double GLCMFeature::f_dvar(const SimpleMatrix<double>& P)
+double GLCMFeature::f_dvar()
 {
-	auto Ng = P.width();
-
-	int n_levels = I.size();
-
-	size_t n = Pxmy.size();
-
+	// difference variance = \sum^{N_g-1}_{k=0} (k - DA)^2 p_{x-y}(k), k the grey-level difference
 	double diffAvg = f_difference_avg ();
-	std::vector<double> var (n, 0);
+	double var = 0;
 
-	for (int x = 0; x < n; x++) 
+	for (size_t k = 0; k < Pxmy.size(); k++)
 	{
-		for (int k = 0; k < n; k++) 
-		{
-			var[k] += pow((k - diffAvg), 2) * Pxmy[k];
-		}
+		double d = double(k) - diffAvg;
+		var += d * d * Pxmy[k];
 	}
 
-	double sum = 0;
-	for (int x = 0; x < n; x++)
-		sum += var[x];
-
-	return sum / double(n);
+	return var;
 }
 
 /* Difference Entropy */
-double GLCMFeature::f_dentropy(const SimpleMatrix<double>& P)
+double GLCMFeature::f_dentropy()
 {
-	auto Ng = P.width();
-
-	int n_levels = I.size();
-
-	std::vector<double> entropy(n_levels, 0);
 	double sum = 0;
 
-	for (int k = 0; k < n_levels; ++k) {
+	// every grey-level difference k = 0 .. Ng-1 (see calculatePxpmy)
+	for (size_t k = 0; k < Pxmy.size(); ++k) {
 		if (Pxmy[k] == 0) continue; // avoid NaN from log2 (note that Pxmy will never be negative)
 		sum += Pxmy[k] * fast_log10(Pxmy[k] + EPSILON) / LOG10_2;
 	}
@@ -821,8 +802,8 @@ double GLCMFeature::f_difference_avg()
 	double f = 0;
 	auto n = Pxmy.size();
 
-	for (int i = 0; i < n; i++)
-		f += kValuesDiff [i] * Pxmy[i];
+	for (int k = 0; k < n; k++)
+		f += double(k) * Pxmy[k];
 
 	return f;
 }
@@ -970,9 +951,10 @@ double GLCMFeature::f_homogeneity()
 
 	double homogeneity = 0.0;
 
+	// |i-j| is the distance between the grey levels I[r], I[c], not between the matrix rows
 	for (int r = 0; r < Ng; r++)
 		for (int c = 0; c < Ng; c++)
-			homogeneity += P_matrix.yx(r,c) / sum_p / (1.0 + (double)std::abs(r - c));
+			homogeneity += P_matrix.yx(r,c) / sum_p / (1.0 + std::fabs(double(I[r]) - double(I[c])));
 
 	return homogeneity;
 }
@@ -1080,9 +1062,10 @@ double GLCMFeature::f_GLCM_DIS(const SimpleMatrix<double>& P_matrix)
 
 	double f = 0;
 
+	// i, j are the grey levels I[x], I[y]
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
-			f += std::fabs(double(x + 1) - double(y + 1)) * P_matrix.xy(x, y) / sum_p;
+			f += std::fabs(double(I[x]) - double(I[y])) * P_matrix.xy(x, y) / sum_p;
 
 	return f;
 }
@@ -1095,25 +1078,27 @@ double GLCMFeature::f_GLCM_HOM2(const SimpleMatrix<double>& P_matrix)
 
 	double hom2 = 0.0;
 
+	// p(i,j) is the joint probability (count / sum_p); i, j are the grey levels I[x], I[y]
 	for (int x = 0; x < n_levels; x++)
 		for (int y = 0; y < n_levels; y++)
-			// FIX: normalize by sum_p (joint probability), matching f_idm/f_GLCM_JE. Was summing the
-			// UNNORMALIZED co-occurrence counts -> homogeneity > 1 (e.g. 14.79 on the IBSI phantom).
-			hom2 += (P_matrix.xy(x, y) / sum_p) / (1.0 + (double)std::abs(x - y) * (double)std::abs(x - y));
+		{
+			double d = double(I[x]) - double(I[y]);
+			hom2 += (P_matrix.xy(x, y) / sum_p) / (1.0 + d * d);
+		}
 
 	return hom2;
 }
 
 double GLCMFeature::f_GLCM_IDMN()
 {
-	auto Ng = P_matrix.width();
-
 	// IDMN = \sum^{N_g-1}_{k=0} \frac {p_{x-y}(k)} {1+\frac{k^2}{N_g^2}}
+	//		where N_g = Pxmy.size(), the highest level of 'I' (see calculatePxpmy)
 
 	double f = 0;
 
-	double Ng2 = double(Ng) * double(Ng);
-	for (int k = 0; k < Ng; k++)
+	double Ng = double(Pxmy.size()),
+		Ng2 = Ng * Ng;
+	for (size_t k = 0; k < Pxmy.size(); k++)
 		f += Pxmy[k] / (1.0 + (double(k) * double(k)) / Ng2);
 
 	return f;
@@ -1123,10 +1108,9 @@ double GLCMFeature::f_GLCM_ID()
 {
 	// inverse difference = \sum^{N_g-1}_{k=0} \frac {p_{x-y}(k)} {1+k}
 
-	auto Ng = I.size();
 	double f = 0;
 
-	for (int k = 0; k < Ng; k++)
+	for (size_t k = 0; k < Pxmy.size(); k++)
 		f += Pxmy[k] / (1.0 + double(k));
 
 	return f;
@@ -1135,12 +1119,13 @@ double GLCMFeature::f_GLCM_ID()
 double GLCMFeature::f_GLCM_IDN()
 {
 	// inverse difference normalized = \sum^{N_g-1}_{k=0} \frac {p_{x-y}(k)} {1+\frac{k}{N_g}}
+	//		where N_g = Pxmy.size(), the highest level of 'I' (see calculatePxpmy)
 
-	auto Ng = I.size();
+	double Ng = double(Pxmy.size());
 
 	double f = 0;
 
-	for (int k = 0; k < Ng; k++)
+	for (size_t k = 0; k < Pxmy.size(); k++)
 		f += Pxmy[k] / (1.0 + double(k) / Ng);
 
 	return f;
@@ -1155,8 +1140,7 @@ double GLCMFeature::f_GLCM_IV ()
 
 	for (int k = 1; k < n; k++)
 	{
-		//f += Pxmy[k] / (double(I[k]) * double(I[k]));
-		double kval = kValuesDiff [k];
+		double kval = double(k);
 		f += Pxmy[k] / (kval * kval);
 	}
 
@@ -1226,7 +1210,7 @@ double GLCMFeature::f_GLCM_JVAR(const SimpleMatrix<double>& P_matrix, double joi
 	double f = 0;
 	for (int x = 0; x < n_levels; x++)
 	{
-		double d = double(x + 1) - joint_ave,
+		double d = double(I[x]) - joint_ave,	// i is the grey level I[x], the same i joint_ave averages
 			d2 = d * d;
 		for (int y = 0; y < n_levels; y++)
 			f += d2 * P_matrix.xy(x, y) / sum_p;

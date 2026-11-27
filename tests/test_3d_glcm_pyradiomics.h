@@ -1,16 +1,11 @@
 #pragma once
 
-#include <gtest/gtest.h>
 #include <algorithm>
-#include <cmath>
-#include <iostream>
 #include <tuple>
-#include "../src/nyx/environment.h"
 #include "../src/nyx/featureset.h"
-#include "../src/nyx/roi_cache.h"
 #include "../src/nyx/features/3d_glcm.h"
-#include "../src/nyx/helpers/fsystem.h"
 #include "test_ref_vals.h"   // ref_vals_map, and the <string> / <vector> it already includes
+#include "test_main_nyxus.h" // run_3d_feature_on_volume, and the <gtest/gtest.h> / <cmath> / <iostream> / environment.h / roi_cache.h / fsystem.h it already includes
 
 // PyRadiomics goldens for the 3D GLCM family (SPEC 6.4 provenance).
 // tool=pyradiomics 3.0.1 (SimpleITK 2.3.1, Python 3.8); env=nyxus_oracle (conda, needs Python <=3.9);
@@ -1031,5 +1026,180 @@ void test_3d_glcm_ave_equivalence_pyradiomics()
         EXPECT_NEAR(va, vb, std::abs(vb) * 1e-6 + 1e-9) << p.an << " != " << p.bn;
         // (2) and the twin still matches its PyRadiomics golden, so the identity carries the claim
         ASSERT_TRUE(agrees_gt(vb, glcm_3d_pyradiomics_ref_vals.at(p.golden), 10.));
+    }
+}
+
+
+// ---------------------------------------------------------------------------------------------
+// Second fixture: grey levels that leave bins empty
+//
+// A 9x9x5 box cut from inside one segmented structure of a contrast CT volume, Hounsfield units
+// shifted so the box minimum is 1, the whole box one ROI. At PyRadiomics binCount 20
+// (GLCM_GREYDEPTH=-20) its voxels occupy levels {1, 2, 3, 4, 5, 6, 7, 9, 10, 12, 20} only: interior bins are empty and a few
+// voxels sit alone in the top bin, which is what CT ROIs look like at this binning. Nyxus then
+// builds the matrix over the levels present, so matrix row x stands for level I[x] and the two
+// differ. An implementation that reads x where it means I[x] - in the sum and difference
+// distributions, the homogeneity and inverse-difference weights, N_g, or the joint variance - lands
+// far from these goldens; the compat phantom above occupies all 20 bins, where it would not.
+// Goldens: tests/vetting/oracles/gen_glcm_gap_levels_pyradiomics.py, which reads this array.
+static const int glcm_3d_gap_levels_w = 9, glcm_3d_gap_levels_h = 9, glcm_3d_gap_levels_d = 5;
+static const std::vector<PixIntens> glcm_3d_gap_levels_voxels =   // z-major, then y, then x
+{
+	 154,  159,  226,  240,  214,  147,   89,  194,  214,
+	 142,  148,  112,  133,  106,  204,  156,  113,  146,
+	 116,   16,  183,  208,  186,  175,  179,  140,  186,
+	 200,  166,  131,  223,  192,  211,  222,  270,  275,
+	 173,  123,  141,  156,  117,  269,  249,  253,  267,
+	 173,  228,  290,  331,  337,  318,  292,  168,  183,
+	 313,  310,  344,  227,  201,  203,  274,  271,  419,
+	 214,  121,  216,  275,  200,  113,  201,  317,  660,
+	 123,  156,  161,  150,  194,  301,  311,  578, 1418,
+
+	  93,   92,  287,  370,  122,  155,  109,  135,  260,
+	  70,  124,  158,  187,  112,  150,  102,   87,   57,
+	 172,   67,  139,  221,  236,  145,  102,   54,   47,
+	  82,  127,  111,  145,  122,  196,  228,  116,  156,
+	 139,  148,  123,  159,  166,  203,  117,  146,  167,
+	 210,  212,  237,  211,  251,  255,  221,   98,  132,
+	 190,  177,  239,  192,  165,  221,  263,  175,  187,
+	 131,  123,  176,  160,  175,  223,  251,  235,  310,
+	  91,  173,  199,  223,  102,  185,  243,  325,  795,
+
+	  65,   43,  255,  448,   69,  103,  100,   89,  331,
+	  74,   59,  249,  457,   36,   51,   25,  118,  178,
+	 127,   88,  220,  469,  185,  112,   38,   65,    1,
+	  92,  142,  169,  236,  167,   52,   79,   70,   80,
+	 165,  149,  158,  163,  184,  170,   65,   20,  132,
+	 213,  127,  181,  112,  158,  161,  136,  116,   24,
+	 182,  155,  219,  135,  134,  186,  214,   66,   88,
+	 174,  219,  227,  150,  193,  215,  183,   84,  154,
+	 154,  254,  219,  215,   83,  153,  141,  160,  318,
+
+	  57,    1,   93,  263,   90,   72,   21,    1,  131,
+	 101,   65,  180,  244,   40,   25,  137,  174,  236,
+	  45,   21,  326,  481,  183,  107,  110,   25,  174,
+	  98,  169,  410,  383,   55,   21,   87,   49,   59,
+	 182,  289,  358,  249,  105,  110,   60,   30,   97,
+	  99,   61,  250,  145,   78,   38,   41,  138,   12,
+	 169,  107,  211,  142,  135,  112,   80,   78,   44,
+	 138,  219,  110,  141,  153,   60,  102,    5,   44,
+	 124,  176,  147,  140,   60,  145,  134,   65,  120,
+
+	  61,   18,   82,  139,  100,   70,   49,   43,   70,
+	  89,  126,  166,   79,   90,   45,  152,  150,  156,
+	  60,   69,  254,  278,  231,  108,  150,   25,  166,
+	  89,  197,  424,  233,  103,   44,  110,  139,   65,
+	 157,  309,  446,  135,   89,  104,   38,  130,  143,
+	  61,  146,  297,  131,   14,    2,   38,  127,   57,
+	 125,  109,  207,  222,  189,   71,  124,    1,   40,
+	  79,  125,   18,   88,   78,    8,   64,   77,  149,
+	  77,   89,   86,  122,  113,  198,  136,   74,   43,
+};
+
+// pyradiomics v3.0.1, recipe glcm.pyradiomics_gap_levels_bincount20, 13 directions
+static const ref_vals_map<double> glcm_3d_pyradiomics_gap_levels_ref_vals
+{
+    {"3GLCM_ACOR", 8.1355798907882235},
+    {"3GLCM_ACOR_AVE", 8.1355798907882235},
+    {"3GLCM_ASM", 0.061375872023524097},
+    {"3GLCM_ASM_AVE", 0.061375872023524097},
+    {"3GLCM_CLUPROM", 563.63409183846375},
+    {"3GLCM_CLUPROM_AVE", 563.63409183846375},
+    {"3GLCM_CLUSHADE", 30.413305335162377},
+    {"3GLCM_CLUSHADE_AVE", 30.413305335162377},
+    {"3GLCM_CLUTEND", 5.7853636596303293},
+    {"3GLCM_CLUTEND_AVE", 5.7853636596303293},
+    {"3GLCM_CONTRAST", 2.7348869301994299},
+    {"3GLCM_CONTRAST_AVE", 2.7348869301994299},
+    {"3GLCM_CORRELATION", 0.35555475133730963},
+    {"3GLCM_CORRELATION_AVE", 0.35555475133730963},
+    {"3GLCM_DIFAVE", 1.1243159425451092},
+    {"3GLCM_DIFAVE_AVE", 1.1243159425451092},
+    {"3GLCM_DIFENTRO", 1.9128659874880261},
+    {"3GLCM_DIFENTRO_AVE", 1.9128659874880261},
+    {"3GLCM_DIFVAR", 1.4502277512475605},
+    {"3GLCM_DIFVAR_AVE", 1.4502277512475605},
+    {"3GLCM_DIS", 1.1243159425451092},
+    {"3GLCM_DIS_AVE", 1.1243159425451092},
+    {"3GLCM_ENERGY", 0.061375872023524097},
+    {"3GLCM_ENERGY_AVE", 0.061375872023524097},
+    {"3GLCM_ENTROPY", 4.4323280979058506},
+    {"3GLCM_ENTROPY_AVE", 4.4323280979058506},
+    {"3GLCM_HOM1", 0.5977898521508952},
+    {"3GLCM_HOM1_AVE", 0.5977898521508952},
+    {"3GLCM_HOM2", 0.56218139737890271},
+    {"3GLCM_ID", 0.5977898521508952},
+    {"3GLCM_IDM", 0.56218139737890271},
+    {"3GLCM_IDMN", 0.99362115314645549},
+    {"3GLCM_IDMN_AVE", 0.99362115314645549},
+    {"3GLCM_IDM_AVE", 0.56218139737890271},
+    {"3GLCM_IDN", 0.94950064568562142},
+    {"3GLCM_IDN_AVE", 0.94950064568562142},
+    {"3GLCM_ID_AVE", 0.5977898521508952},
+    {"3GLCM_INFOMEAS1", -0.087502161416082302},
+    {"3GLCM_INFOMEAS1_AVE", -0.087502161416082302},
+    {"3GLCM_INFOMEAS2", 0.55956759140842771},
+    {"3GLCM_INFOMEAS2_AVE", 0.55956759140842771},
+    {"3GLCM_IV", 0.48629594566587275},
+    {"3GLCM_IV_AVE", 0.48629594566587275},
+    {"3GLCM_JAVE", 2.7151768755935421},
+    {"3GLCM_JAVE_AVE", 2.7151768755935421},
+    {"3GLCM_JE", 4.4323280979058506},
+    {"3GLCM_JE_AVE", 4.4323280979058506},
+    {"3GLCM_JMAX", 0.10748679368471036},
+    {"3GLCM_JMAX_AVE", 0.10748679368471036},
+    {"3GLCM_JVAR", 2.1300626474574398},
+    {"3GLCM_JVAR_AVE", 2.1300626474574398},
+    {"3GLCM_SUMAVERAGE", 5.4303537511870843},
+    {"3GLCM_SUMAVERAGE_AVE", 5.4303537511870843},
+    {"3GLCM_SUMENTROPY", 3.0497848904565981},
+    {"3GLCM_SUMENTROPY_AVE", 3.0497848904565981},
+    {"3GLCM_SUMVARIANCE", 5.7853636596303293},
+    {"3GLCM_SUMVARIANCE_AVE", 5.7853636596303293},
+    {"3GLCM_VARIANCE", 2.1300626474574398},
+    {"3GLCM_VARIANCE_AVE", 2.1300626474574398},
+};
+
+void test_3d_glcm_gap_levels_pyradiomics()
+{
+    // Every 3D GLCM feature the build exposes has to be pinned here.
+    for (const auto& [name, code] : Nyxus::UserFacing_3D_featureNames)
+        if (name.rfind ("3GLCM_", 0) == 0)
+            ASSERT_TRUE (glcm_3d_pyradiomics_gap_levels_ref_vals.count (name)) << name << " has no pyradiomics golden";
+
+    // recipe glcm.pyradiomics_gap_levels_bincount20: the non-IBSI path at PyRadiomics binCount 20
+    Fsettings s;
+    s.resize((int)NyxSetting::__COUNT__);
+    s[(int)NyxSetting::SOFTNAN].rval = 0.0;
+    s[(int)NyxSetting::TINY].rval = 0.0;
+    s[(int)NyxSetting::SINGLEROI].bval = false;
+    s[(int)NyxSetting::GREYDEPTH].ival = 100;
+    s[(int)NyxSetting::PIXELSIZEUM].rval = 100;
+    s[(int)NyxSetting::PIXELDISTANCE].ival = 5;
+    s[(int)NyxSetting::USEGPU].bval = false;
+    s[(int)NyxSetting::VERBOSLVL].ival = 0;
+    s[(int)NyxSetting::IBSI].bval = false;
+    s[(int)NyxSetting::GLCM_GREYDEPTH].ival = -20;  // negative: PyRadiomics binCount binning
+    s[(int)NyxSetting::GLCM_OFFSET].ival = 1;
+    s[(int)NyxSetting::GLCM_SPARSEINTENS].bval = true;
+
+    std::vector<std::vector<double>> fvals;
+    D3_GLCM_feature f;
+    run_3d_feature_on_volume (fvals, glcm_3d_gap_levels_voxels,
+        glcm_3d_gap_levels_w, glcm_3d_gap_levels_h, glcm_3d_gap_levels_d, s, f);
+    ASSERT_FALSE (::testing::Test::HasFatalFailure());
+
+    for (const auto& [feature_name, golden] : glcm_3d_pyradiomics_gap_levels_ref_vals)
+    {
+        auto it_code = Nyxus::UserFacing_3D_featureNames.find (feature_name);
+        ASSERT_TRUE (it_code != Nyxus::UserFacing_3D_featureNames.end()) << feature_name;
+        const auto& fv = fvals [(int) it_code->second];
+        const bool ave = feature_name.size() > 4 && feature_name.compare (feature_name.size() - 4, 4, "_AVE") == 0;
+        const double value = ave ? fv[0] : f.calc_ave (fv);   // PyRadiomics averages its 13 directions
+        // the bands above, by base feature; ENTROPY is JE under another name and carries its band
+        std::string base = ave ? feature_name.substr (0, feature_name.size() - 4) : feature_name;
+        const double tol = glcm_3d_pyradiomics_tol (base == "3GLCM_ENTROPY" ? "3GLCM_JE" : base);
+        EXPECT_NEAR (value, golden, std::abs (golden) * tol + 1e-12)
+            << feature_name << ": nyxus " << value << ", pyradiomics " << golden;
     }
 }
